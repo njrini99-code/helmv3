@@ -137,6 +137,19 @@ export interface CausalEvidence {
   doseResponseConfirmed: boolean;
   confoundersControlled: string[];
   naturalExperiments: NaturalExperiment[];
+  /**
+   * Honest-correlation fields (2026-09-28, `correlation-gate.ts`). Present on
+   * every row the engine writes from then on; absent on older rows, which the
+   * read path therefore hides. `correlation` is the SIGNED same-round Pearson
+   * r; `strength` on the relationship is its absolute value.
+   */
+  method?: string;
+  correlation?: number;
+  sampleN?: number;
+  pValue?: number;
+  qValue?: number;
+  hypothesesTested?: number;
+  lagCorrelation?: number;
 }
 
 /** A natural experiment observation */

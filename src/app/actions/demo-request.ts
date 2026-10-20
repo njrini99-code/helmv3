@@ -40,7 +40,7 @@ export interface DemoRequestResult {
  * none of them, so there was no way to tell which surface actually converts.
  * Persisted to demo_requests.source.
  */
-export type DemoRequestSource = 'landing' | 'pricing' | 'mobile_nav';
+export type DemoRequestSource = 'landing' | 'pricing' | 'mobile_nav' | 'signup';
 
 export interface DemoRequestDetails {
   /** Requester's name, from the landing modal. */
@@ -53,6 +53,12 @@ export interface DemoRequestDetails {
   message?: string;
   /** Which marketing surface captured the lead (defaults to 'landing'). */
   source?: DemoRequestSource;
+  /**
+   * Who is asking, when the form knows (the sign-up's Request access asks
+   * coach, athletic director or player). demo_requests.interest_type's CHECK
+   * allows these; anything unset stays 'other', as the landing form sends.
+   */
+  interestType?: 'golf_coach' | 'golf_player' | 'organization';
 }
 
 /**
@@ -391,6 +397,7 @@ export async function submitDemoRequest(
   const phone = capped(details?.phone, 40);
   const message = capped(details?.message, 2000);
   const source: DemoRequestSource = details?.source ?? 'landing';
+  const interestType = details?.interestType ?? 'other';
 
   const requestContext = await captureRequestContext();
 
@@ -436,7 +443,7 @@ export async function submitDemoRequest(
     // with the admin views already rendering it — nothing new should read it.
     const demoRequestRow: DemoRequestInsertWithAttribution = {
       email,
-      interest_type: 'other',
+      interest_type: interestType,
       status: 'pending',
       name,
       organization: school,

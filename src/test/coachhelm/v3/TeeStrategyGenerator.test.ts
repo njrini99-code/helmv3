@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   TeeStrategyGenerator,
+  classifyTeeStrategy,
   laggyDiagnosticStrokesImpact,
 } from '@/lib/coachhelm/v3/generators/tee-strategy';
+import { resolveTeeFairway } from '@/lib/coachhelm/v3/engine/shot-source';
 
 const PLAYER_ID = 'p-1';
 
@@ -48,6 +50,7 @@ function makeAgg(opts: {
     fairwayGap: driverFw - ndFw,
     distanceGap: driverDist - ndDist,
     roundsCovered: opts.roundsCovered ?? 20,
+    gapCi: null as { low: number; high: number } | null,
   };
 }
 
@@ -107,11 +110,13 @@ describe('TeeStrategyGenerator', () => {
     const c = g.composeContent(makeAgg({ pattern: 'laggy', driverAttempts: 30, ndAttempts: 12 }));
     expect(c.evidence.metric).toBe('sg_ott');
     expect(c.evidence.unit).toBe('percent');
-    expect(c.evidence.comparison_label).toBe('Non-driver fairway%');
+    expect(c.evidence.comparison_label).toBe('Non-driver fairway% (n=12)');
     expect(c.evidence.comparison_source).toBe('your_baseline');
     expect(c.evidence.window_days).toBe(90);
-    // Sample is sum of both clubs
-    expect(c.evidence.sample_n).toBe(42);
+    // Audit row 29: n is the headline (driver) sample, not the sum of both
+    // clubs (42 read as if both sides had 42 shots); each side is in detail.
+    expect(c.evidence.sample_n).toBe(30);
+    expect(c.evidence.detail).toMatchObject({ driver_n: 30, non_driver_n: 12 });
   });
 
   it('signature stays stable across rounds with the same pattern', () => {
@@ -211,5 +216,50 @@ describe('TeeStrategyGenerator — travel vs progress (addendum §5)', () => {
       makeAgg({ pattern: 'sharp', driverFw: 0.68, ndFw: 0.7, driverDist: 275, ndDist: 240, driverDerivedN: 1 }),
     );
     expect(c.content).toContain('1 of 45 tee distances are estimated progress toward the hole');
+  });
+});
+
+describe('audit row 29 — tee strategy statistics', () => {
+  const side = (hits: number, attempts: number, avgDistance: number) => ({
+    attempts, fairwayHits: hits, fairwayPct: hits / attempts, avgDistance,
+    derivedDistanceN: 0, distanceN: attempts,
+  });
+
+  it('a 15-point gap on 8 non-driver shots is inconclusive: its interval spans zero', () => {
+    // Old rule: gap −15pp and distance gap < 35 yd → "laggy".
+    const r = classifyTeeStrategy(side(9, 15, 260), side(6, 8, 240));
+    expect(r.pattern).toBe('inconclusive');
+    expect(r.gapCi!.low).toBeLessThan(0);
+    expect(r.gapCi!.high).toBeGreaterThan(0);
+  });
+
+  it('a well-sampled gap whose interval excludes zero is laggy', () => {
+    const r = classifyTeeStrategy(side(40, 100, 260), side(45, 60, 240));
+    expect(r.pattern).toBe('laggy');
+    expect(r.gapCi!.high).toBeLessThan(0);
+  });
+
+  it('sharp needs the interval to rule out the laggy threshold, not just a small point gap', () => {
+    // Point gap −1.7pp, but 12 non-driver shots leave a ±30-point interval.
+    expect(classifyTeeStrategy(side(65, 100, 270), side(8, 12, 240)).pattern).toBe('inconclusive');
+    // Same point gap on 200 / 90 shots: the interval stays above −15pp.
+    expect(classifyTeeStrategy(side(130, 200, 270), side(60, 90, 240)).pattern).toBe('sharp');
+  });
+
+  it('stores driver and non-driver n separately; sample_n is the headline (driver) n', () => {
+    const c = new TeeStrategyGenerator(PLAYER_ID).composeContent({
+      ...makeAgg({ pattern: 'inconclusive', driverAttempts: 133, ndAttempts: 21 }),
+      gapCi: { low: -20, high: 5 },
+    });
+    expect(c.evidence.sample_n).toBe(133);
+    expect(c.evidence.detail).toMatchObject({ driver_n: 133, non_driver_n: 21, gap_ci_95: { low: -20, high: 5 } });
+    expect(c.evidence.comparison_label).toContain('n=21');
+  });
+
+  it('an unrecorded hole fairway flag is unknown, not a miss', () => {
+    expect(resolveTeeFairway(null, 'rough')).toBeNull();
+    expect(resolveTeeFairway(null, 'fairway')).toBeNull();
+    expect(resolveTeeFairway(true, 'rough')).toBe(true);
+    expect(resolveTeeFairway(false, 'fairway')).toBe(false);
   });
 });

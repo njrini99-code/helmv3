@@ -151,17 +151,20 @@ describe('CausalEngine — can explain a component, not only the score', () => {
     expect(chain?.mechanism ?? '').toMatch(/fairway|lie/i);
   });
 
-  it('still keeps the component -> score hypotheses', () => {
-    // The tautologies are weak insights but they are not wrong, and removing
-    // them would drop 5,641 rows of existing history on the floor.
+  it('no longer tests the component -> score hypotheses (owner decision, 2026-09-28)', () => {
+    // These were kept as "weak but not wrong" until the 2026-09-28 audit
+    // showed they were 56 of 96 live rows and the story they told read
+    // backwards once the sign was dropped. Owner decision "honest
+    // correlation": drop score arithmetic. History rows are retired by the
+    // supersede pass, not deleted.
     const engine = new CausalEngine('player-1', 'team-1');
     const hypotheses = (engine as unknown as EngineInternals).generateHypotheses();
 
-    for (const metric of ['total_gir', 'total_putts', 'total_fairways_hit', 'rounds_per_week']) {
+    for (const metric of ['total_gir', 'total_putts', 'total_fairways_hit']) {
       expect(
         hypotheses.some((h) => h.causeMetric === metric && h.effectMetric === 'score_to_par'),
         metric,
-      ).toBe(true);
+      ).toBe(false);
     }
   });
 

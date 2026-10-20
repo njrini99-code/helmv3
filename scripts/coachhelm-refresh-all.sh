@@ -18,24 +18,39 @@
 # any HTTP != 200.
 #
 # Usage:
-#   npm run coachhelm:refresh
+#   npm run coachhelm:refresh -- --apply
 #   # or directly:
-#   ./scripts/coachhelm-refresh-all.sh
+#   ./scripts/coachhelm-refresh-all.sh --apply
+#
+# Default is a DRY RUN: it lists the crons it would fire and fires none.
+# --apply fires them (they write to the database behind HELM_HOST).
 #
 # Reads CRON_SECRET from .env.local (or the env). Targets prod by default;
 # override with HELM_HOST=https://your-preview.vercel.app.
 
 set -euo pipefail
 
+APPLY=0
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    --apply) APPLY=1 ;;
+    *) echo "unknown argument: $arg (see --help)" >&2; exit 2 ;;
+  esac
+done
+
 # ── Config ──────────────────────────────────────────────────────────────────
 HELM_HOST="${HELM_HOST:-https://helmsportslabs.com}"
 ENV_FILE="${ENV_FILE:-.env.local}"
 TIMEOUT_SECS="${TIMEOUT_SECS:-290}"
 
-if [[ -z "${CRON_SECRET:-}" ]] && [[ -f "$ENV_FILE" ]]; then
+if [[ "$APPLY" -eq 1 ]] && [[ -z "${CRON_SECRET:-}" ]] && [[ -f "$ENV_FILE" ]]; then
   CRON_SECRET=$(grep '^CRON_SECRET' "$ENV_FILE" | head -1 | cut -d'"' -f2)
 fi
-if [[ -z "${CRON_SECRET:-}" ]]; then
+if [[ "$APPLY" -eq 1 ]] && [[ -z "${CRON_SECRET:-}" ]]; then
   echo "ERROR: CRON_SECRET not set. Add to .env.local or export it." >&2
   exit 1
 fi
@@ -66,6 +81,10 @@ for entry in "${crons[@]}"; do
   cron="${entry%% *}"
   desc=$(echo "$entry" | sed 's/^[^ ]* *//')
   printf "\n[%d/%d] %s\n      %s\n" "$step" "$total" "$cron" "$desc"
+  if [[ "$APPLY" -eq 0 ]]; then
+    printf "      [dry-run] would GET %s/api/cron/%s\n" "$HELM_HOST" "$cron"
+    continue
+  fi
 
   t0=$(date +%s)
   response=$(curl -sS -w "\n__HTTP__%{http_code}" \
@@ -85,6 +104,12 @@ for entry in "${crons[@]}"; do
     failed=$((failed + 1))
   fi
 done
+
+if [[ "$APPLY" -eq 0 ]]; then
+  echo ""
+  echo "[dry-run] fired nothing. Re-run with --apply to fire the $total crons against $HELM_HOST."
+  exit 0
+fi
 
 total_secs=$(($(date +%s) - t_run_start))
 echo ""

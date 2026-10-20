@@ -242,7 +242,8 @@ function makeSupabaseMock(opts: {
       if (
         table === 'golf_team_members' ||
         table === 'golf_team_coach_staff' ||
-        table === 'golf_coachhelm_coach_weights'
+        table === 'golf_coachhelm_coach_weights' ||
+        table === 'golf_coaches'
       ) {
         return buildEmptyLookupBuilder();
       }

@@ -18,6 +18,13 @@
 // Locks name a pid. A lock whose pid is gone is removed on the next scan, so a
 // crashed gate never blocks anyone. Set HELM_GATE_NOWAIT=1 to bypass the queue
 // for a one-off, or HELM_GATE_SLOTS=<n> to change the width on a bigger box.
+//
+// QUEUE CAP (2026-10-07). A gate waits at most HELM_GATE_MAX_WAIT_MS (default
+// 8 minutes). Past that it does NOT run anyway, as it used to after 20 minutes:
+// it exits 75 (EX_TEMPFAIL) at once with "queued, retry with: <cmd>". A caller
+// that blocks for 20 minutes behind two other gates has nothing to show for it,
+// and an agent shell cannot tell a hung gate from a queued one. Exit 75 is
+// distinct from a gate that ran and failed, so a wrapper can retry only that.
 
 import { spawn } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -27,8 +34,11 @@ import { fileURLToPath } from 'node:url';
 
 const SLOTS = Math.max(1, Number(process.env.HELM_GATE_SLOTS ?? 2));
 const DIR = process.env.HELM_GATE_DIR ?? join(homedir(), '.helm-gates');
-const MAX_WAIT_MS = Number(process.env.HELM_GATE_MAX_WAIT_MS ?? 20 * 60 * 1000);
-const POLL_MS = 2000;
+export const DEFAULT_MAX_WAIT_MS = 8 * 60 * 1000;
+/** Exit status for "no slot within the wait cap" (sysexits EX_TEMPFAIL). */
+export const QUEUED_EXIT_CODE = 75;
+const MAX_WAIT_MS = Number(process.env.HELM_GATE_MAX_WAIT_MS ?? DEFAULT_MAX_WAIT_MS);
+const POLL_MS = Math.max(10, Number(process.env.HELM_GATE_POLL_MS ?? 2000));
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..');
@@ -55,6 +65,21 @@ if (isMain && cmd.length === 0) {
 // short gate identifier when this runs via `npm run <script>`; fall back to
 // the wrapped command line for a direct invocation.
 const GATE_NAME = process.env.npm_lifecycle_event || cmd.join(' ');
+
+/** Quote one argument for a copy-pasteable shell command. */
+function shellQuote(arg) {
+  return /^[A-Za-z0-9_@%+=:,./-]+$/.test(arg) ? arg : `'${arg.replace(/'/g, `'\\''`)}'`;
+}
+
+/** The message printed when the queue cap is hit. Pure, so the wording is testable. */
+export function queuedMessage({ holders: n, slots, waitedMs, command }) {
+  const minutes = Math.round(waitedMs / 6000) / 10;
+  return (
+    `[serialize] queued: ${n} heavy gate(s) held all ${slots} slot(s) for ${minutes} min, so this gate did not start.\n` +
+    `[serialize] retry with: ${command.map(shellQuote).join(' ')}\n` +
+    `[serialize] (HELM_GATE_NOWAIT=1 skips the queue for a one-off; HELM_GATE_MAX_WAIT_MS changes the cap.)`
+  );
+}
 
 /**
  * Append one timing row to the ledger and trim rows older than 30 days.
@@ -157,8 +182,8 @@ async function acquire() {
       warned = true;
     }
     if (Date.now() - started > MAX_WAIT_MS) {
-      console.error('[serialize] waited past HELM_GATE_MAX_WAIT_MS; running anyway');
-      return Date.now() - started;
+      console.error(queuedMessage({ holders: running.length, slots: SLOTS, waitedMs: Date.now() - started, command: cmd }));
+      process.exit(QUEUED_EXIT_CODE);
     }
     await new Promise((r) => setTimeout(r, POLL_MS));
   }

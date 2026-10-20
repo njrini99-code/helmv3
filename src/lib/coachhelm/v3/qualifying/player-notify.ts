@@ -13,16 +13,54 @@
  * sendPushNotification) — never a raw insert — so stored notification
  * preferences are respected exactly like every other golf notification.
  * Best-effort: a failure here must never fail confirmSelection.
+ *
+ * Three outcomes, not two: an entrant who never posted a score was never
+ * ranked, so telling them 'not_selected' claims a comparison that did not
+ * happen (8 of 14 entrants on the two live qualifiers with selections). They
+ * get a distinct 'not_scored' notice. When nobody was selected at all there is
+ * no result to announce and nobody is notified. Every notice also writes an
+ * in-app `notifications` row carrying the outcome — the bell entry and the
+ * receipt that lets a send be audited.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { sendEmailNotification } from '@/lib/notifications/email';
 import { sendPushNotification } from '@/lib/notifications/push';
-import type { QualifyingWorkspace } from './types';
+import { recordInAppNotification } from '@/lib/notifications/in-app';
+import type { QualifyingWorkspace, SelectionCandidate } from './types';
 import { allSettledReported } from '@/lib/settled-failures';
 
 type Sb = SupabaseClient<Database>;
+
+export type SelectionOutcome = 'selected' | 'not_selected' | 'not_scored';
+
+/** An entrant with no posted score was never ranked against anyone. */
+export function selectionOutcomeFor(
+  candidate: Pick<SelectionCandidate, 'total_score' | 'rounds_completed'>,
+  selected: boolean,
+): SelectionOutcome {
+  if (selected) return 'selected';
+  if (candidate.total_score === null || candidate.rounds_completed === 0) return 'not_scored';
+  return 'not_selected';
+}
+
+export function selectionOutcomeCopy(
+  outcome: SelectionOutcome,
+  qualifierName: string,
+): { title: string; body: string } {
+  switch (outcome) {
+    case 'selected':
+      return { title: 'You made the travel squad', body: `${qualifierName}: you were selected.` };
+    case 'not_selected':
+      return { title: 'Qualifier results posted', body: `${qualifierName}: you were not selected this time.` };
+    case 'not_scored':
+      return {
+        title: 'No qualifier score recorded',
+        body: `${qualifierName}: no score was recorded for you, so you were not ranked. Check with your coach.`,
+      };
+  }
+}
 
 /**
  * Notify every candidate in the workspace of the just-committed selection
@@ -37,6 +75,18 @@ export async function notifyPlayersOfSelectionOutcome(
 ): Promise<void> {
   const playerIds = workspace.candidates.map((c) => c.player_id);
   if (playerIds.length === 0) return;
+
+  // Re-read the committed rows so "selected" reflects what confirmSelection
+  // just wrote, not the pre-confirm workspace snapshot this function was
+  // handed (coach-pick rows can predate confirmation; top_score rows do not).
+  const { data: finalSelections } = await supabase
+    .from('golf_qualifier_selections')
+    .select('player_id')
+    .eq('qualifier_id', workspace.qualifier_id);
+  const selectedPlayerIds = new Set((finalSelections ?? []).map((s) => s.player_id));
+  // Nobody selected means there is no result to announce; telling every
+  // entrant 'not_selected' would be false for all of them.
+  if (selectedPlayerIds.size === 0) return;
 
   const { data: playerRows } = await supabase
     .from('golf_players')
@@ -59,22 +109,21 @@ export async function notifyPlayersOfSelectionOutcome(
 
   const emailByUser = new Map(userRows.map((u) => [u.id, u.email]));
 
-  // Re-read the committed rows so "selected" reflects what confirmSelection
-  // just wrote, not the pre-confirm workspace snapshot this function was
-  // handed (coach-pick rows can predate confirmation; top_score rows do not).
-  const { data: finalSelections } = await supabase
-    .from('golf_qualifier_selections')
-    .select('player_id')
-    .eq('qualifier_id', workspace.qualifier_id);
-  const selectedPlayerIds = new Set((finalSelections ?? []).map((s) => s.player_id));
 
   await Promise.allSettled(
     workspace.candidates.map(async (c) => {
       const userId = userIdByPlayer.get(c.player_id);
       if (!userId) return;
       const email = emailByUser.get(userId);
-      const outcome = selectedPlayerIds.has(c.player_id) ? 'selected' : 'not_selected';
-      const data = { qualifierName: workspace.name, outcome };
+      const outcome = selectionOutcomeFor(c, selectedPlayerIds.has(c.player_id));
+      const copy = selectionOutcomeCopy(outcome, workspace.name);
+      const data = {
+        qualifierName: workspace.name,
+        qualifierId: workspace.qualifier_id,
+        outcome,
+        title: copy.title,
+        body: copy.body,
+      };
 
       // Reasons reported, not swallowed — see INC-2026-08-27. A failed send
       // here previously left no trace anywhere the Bridge could see.
@@ -84,6 +133,19 @@ export async function notifyPlayersOfSelectionOutcome(
             ? sendEmailNotification('qualifier_updated', userId, email, data)
             : Promise.resolve({ success: true }),
           sendPushNotification('qualifier_updated', userId, data),
+          recordInAppNotification({
+            userIds: [userId],
+            type: 'event_reminder',
+            title: copy.title,
+            body: copy.body,
+            actionUrl: `/golf/dashboard/qualifiers/${workspace.qualifier_id}`,
+            data: {
+              kind: 'qualifier_selection',
+              qualifier_id: workspace.qualifier_id,
+              qualifier_outcome: outcome,
+            },
+            context: 'coachhelm.qualifying.notifyPlayers',
+          }),
         ],
         { action: 'coachhelm.qualifying.notifyPlayers', featureArea: 'qualifiers', label: outcome },
       );

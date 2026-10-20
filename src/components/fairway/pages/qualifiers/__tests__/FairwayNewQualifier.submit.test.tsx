@@ -42,7 +42,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push, refresh }),
 }));
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/qualifier-actions', () => ({
   createGolfQualifier: (...args: unknown[]) => createGolfQualifier(...args),
 }));
 
@@ -143,6 +143,24 @@ describe('FairwayNewQualifier — submit reaches the server action (#1270)', () 
     expect(createGolfQualifier.mock.calls[0]?.[0]).toMatchObject({
       playerIds: ['p1', 'p2'],
     });
+  });
+
+  it('never sends a squad over the database cap of 12', async () => {
+    const user = userEvent.setup();
+    render(<FairwayNewQualifier players={players} />);
+
+    typeName('Big squad');
+    await pickDate(user, 'Start date', 25);
+    confirmSingleRoundCap();
+    const squad = screen.getByRole('textbox', { name: 'Squad size' }) as HTMLInputElement;
+    expect(squad.value).toBe('5');
+    fireEvent.change(squad, { target: { value: '30' } });
+    fireEvent.blur(squad);
+
+    fireEvent.click(screen.getByRole('button', { name: /Create qualifier/i }));
+
+    await waitFor(() => expect(createGolfQualifier).toHaveBeenCalledTimes(1));
+    expect(createGolfQualifier.mock.calls[0]?.[0]).toMatchObject({ selectionSlotsTotal: 12 });
   });
 
   it('blocks a blank name VISIBLY rather than silently', async () => {

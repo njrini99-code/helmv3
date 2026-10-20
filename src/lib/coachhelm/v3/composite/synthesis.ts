@@ -12,6 +12,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v3';
+import { notifyCompositeInsight } from '@/lib/coachhelm/v3/notifications/notify';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { isEvidenceRefusal } from '@/lib/coachhelm/v2/insights/upsert';
 import { calcConfidence } from '@/lib/coachhelm/v2/insights/types';
@@ -458,6 +459,22 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       // signature — the sweep must not archive an existing row just because
       // the gate suppressed this run's refresh (mirrors BaseGenerator).
       emittedSignatures.add(`v3:${sig}`);
+      // Audit row 53: only a NEW composite notifies (a refresh of a pattern the
+      // player already has must not ping daily). upsertInsightV3 returns only
+      // the id, so check for the signature first.
+      // Failure-safe: a lookup error means "don't notify", never a rule error.
+      let isNewComposite = false;
+      try {
+        const { data: priorComposite, error: priorErr } = await supabase
+          .from('golf_coach_insights')
+          .select('id')
+          .eq('player_id', playerId)
+          .eq('signature', `v3:${sig}`)
+          .limit(1);
+        isNewComposite = !priorErr && Array.isArray(priorComposite) && priorComposite.length === 0;
+      } catch {
+        isNewComposite = false;
+      }
       const upsertResult = await upsertInsightV3(supabase, {
         player_id: playerId,
         category: rule.category,
@@ -470,6 +487,9 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       });
       if (upsertResult !== GATED_OUT) {
         result.rule_emitted += 1;
+        if (isNewComposite) {
+          await notifyCompositeInsight({ player_id: playerId, insight_id: upsertResult });
+        }
       }
     } catch (err) {
       const message = `synthesizeForPlayer: rule ${rule.id} compose/upsert threw for ${playerId}: ${err instanceof Error ? err.message : String(err)}`;

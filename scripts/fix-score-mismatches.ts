@@ -28,6 +28,15 @@
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/fix-score-mismatches.ts',
+  summary:
+    "Fix score mismatches between round-level `total_score` and the per-hole sum.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 interface HoleRow {
   par: number | null;

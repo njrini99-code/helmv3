@@ -151,6 +151,14 @@ function categorise(path, body) {
   return 'UNKNOWN';
 }
 
+/** `.claude/skills/<name>/` for every skill recorded in skills-lock.json. */
+function vendoredSkillDirectories() {
+  const lockPath = resolve(ROOT, 'skills-lock.json');
+  if (!existsSync(lockPath)) return [];
+  const lock = JSON.parse(readFileSync(lockPath, 'utf-8'));
+  return Object.keys(lock.skills ?? {}).map((name) => `.claude/skills/${name}/`);
+}
+
 /** Explicit lifecycle, read from the document rather than inferred. */
 function lifecycle(path, body) {
   const head = body.slice(0, 1200);
@@ -210,10 +218,16 @@ function buildRows() {
     for (const r of outgoing.get(f)) if (incoming.has(r)) incoming.set(r, incoming.get(r) + 1);
   }
 
+  // Third-party skills vendored verbatim and hash-locked in skills-lock.json:
+  // their backticked paths name files in the upstream repo, not this one, and
+  // editing them would break the lock hash. Their refs are never dead here.
+  const vendoredSkillDirs = vendoredSkillDirectories();
+
   const rows = files.map((f) => {
     const body = bodies.get(f);
     const out = outgoing.get(f);
-    const deadRefList = out.filter((r) => {
+    const vendored = vendoredSkillDirs.some((dir) => f.startsWith(dir));
+    const deadRefList = vendored ? [] : out.filter((r) => {
       if (r.includes('*')) return false;
       const clean = r.endsWith('/') ? r.slice(0, -1) : r;
       if (allTracked.has(r) || allTracked.has(clean)) return false;

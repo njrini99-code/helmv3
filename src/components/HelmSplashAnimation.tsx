@@ -1,6 +1,6 @@
 "use client";
 
-import { useAnimate, motion } from "framer-motion";
+import { useAnimate, motion } from "motion/react";
 import { useState, useEffect, useCallback } from "react";
 import { DM_Sans } from "next/font/google";
 

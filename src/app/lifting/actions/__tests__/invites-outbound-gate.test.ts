@@ -1,9 +1,10 @@
 /**
  * Outbound customer-email kill switch (owner decision, 2026-09-06) for the
  * Lift Lab invite email — see src/lib/email/outbound-gate.ts and
- * memory/features/email_outbound.md. `sendInviteEmail` is a private helper
- * exercised here through `__testables` (mirrors src/lib/notifications
- * /email.ts's pattern) so this test doesn't need to drive the full
+ * memory/features/email_outbound.md. The email leg lives in
+ * src/lib/lifting/invite-email.ts (NOT the `'use server'` actions file: a
+ * non-function export there broke every action reachable from it, incident
+ * 2026-10-13 d9ed17ef), so this test doesn't need to drive the full
  * head-coach-authority + DB flow of `inviteLiftingCoach`.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -34,9 +35,9 @@ afterEach(() => vi.unstubAllEnvs());
 describe('lifting invites — outbound gate', () => {
   it('does not call resend.emails.send when HELM_CUSTOMER_EMAIL_ENABLED is off', async () => {
     vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', '');
-    const { __testables } = await import('@/app/lifting/actions/invites');
+    const { sendLiftingInviteEmail } = await import('@/lib/lifting/invite-email');
 
-    await __testables.sendInviteEmail({
+    await sendLiftingInviteEmail({
       toEmail: 'coach@example.com',
       inviterName: 'Head Coach',
       orgName: 'Example U',
@@ -50,9 +51,9 @@ describe('lifting invites — outbound gate', () => {
 
   it('calls resend.emails.send when HELM_CUSTOMER_EMAIL_ENABLED is "true"', async () => {
     vi.stubEnv('HELM_CUSTOMER_EMAIL_ENABLED', 'true');
-    const { __testables } = await import('@/app/lifting/actions/invites');
+    const { sendLiftingInviteEmail } = await import('@/lib/lifting/invite-email');
 
-    await __testables.sendInviteEmail({
+    await sendLiftingInviteEmail({
       toEmail: 'coach@example.com',
       inviterName: 'Head Coach',
       orgName: 'Example U',
@@ -62,5 +63,23 @@ describe('lifting invites — outbound gate', () => {
     });
 
     expect(sendMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('lifting invites — accept URL', () => {
+  it('uses NEXT_PUBLIC_APP_URL when set (not the scheme-less VERCEL_URL)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://helmsportslabs.com');
+    vi.stubEnv('VERCEL_URL', 'helmv3-abc123.vercel.app');
+    const { buildLiftingInviteAcceptUrl } = await import('@/lib/lifting/invite-email');
+    expect(buildLiftingInviteAcceptUrl('tok')).toBe('https://helmsportslabs.com/lifting/join/tok');
+  });
+
+  it('adds https:// to a bare VERCEL_URL and falls back to production', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '');
+    vi.stubEnv('VERCEL_URL', 'helmv3-abc123.vercel.app');
+    const { buildLiftingInviteAcceptUrl } = await import('@/lib/lifting/invite-email');
+    expect(buildLiftingInviteAcceptUrl('tok')).toBe('https://helmv3-abc123.vercel.app/lifting/join/tok');
+    vi.stubEnv('VERCEL_URL', '');
+    expect(buildLiftingInviteAcceptUrl('tok')).toBe('https://helmsportslabs.com/lifting/join/tok');
   });
 });

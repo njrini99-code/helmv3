@@ -53,8 +53,11 @@ let mockFromResult: ReturnType<typeof createChainableMock>;
 // individual tests can override mockCoachResult if they want to assert the
 // "not a coach" path. Most error-path tests want to assert post-auth failures.
 let mockCoachResult: ReturnType<typeof createChainableMock>;
+// Per-table results for one test (reset in beforeEach): lets a test give the staff check or the event read a result
+// of its own while every other table keeps answering from mockFromResult.
+let mockTableOverrides: Record<string, ReturnType<typeof createChainableMock>> = {};
 const mockFrom = vi.fn((table: string) =>
-  table === 'golf_coaches' ? mockCoachResult : mockFromResult,
+  mockTableOverrides[table] ?? (table === 'golf_coaches' ? mockCoachResult : mockFromResult),
 );
 const mockGetUser = vi.fn((): { data: { user: { id: string } | null }; error: null } => ({
   data: { user: { id: 'user-1' } },
@@ -115,6 +118,7 @@ import type {
 describe('travel server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockTableOverrides = {};
     mockFromResult = createChainableMock({ data: { id: 'new-1' }, error: null });
     // Default: a valid coach exists for user-1 so the auth check passes.
     // Tests that want to assert the "not a coach" path can replace mockCoachResult.
@@ -197,10 +201,70 @@ describe('travel server actions', () => {
 
     it('handles Supabase insert error gracefully', async () => {
       mockFromResult = createChainableMock({ data: null, error: { message: 'DB error' } });
+      // The coach is staffed on the team (create now checks), so the failure reached is the insert's own.
+      mockTableOverrides.golf_team_coach_staff = createChainableMock({ data: { id: 'staff-1' }, error: null });
 
       const result = await createGolfTravelItinerary(validInput);
       expect(result.success).toBe(false);
       expect(result.error).toBe('Operation failed. Please try again.');
+    });
+
+    // C-27: create trusted the client's team_id and event_id; every sibling action checks staff on the team.
+    it('refuses a team the coach is not staffed on, and inserts nothing', async () => {
+      const mock = createChainableMock({ data: { id: 'new-1' }, error: null });
+      mockFromResult = mock;
+      mockTableOverrides.golf_team_coach_staff = createChainableMock({ data: null, error: null });
+
+      const result = await createGolfTravelItinerary(validInput);
+
+      expect(result).toEqual({ success: false, error: 'Not authorized for this team' });
+      expect(mock.insert as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
+    });
+
+    it('refuses to link an event that is on another team, and inserts nothing', async () => {
+      const mock = createChainableMock({ data: { id: 'new-1' }, error: null });
+      mockFromResult = mock;
+      mockTableOverrides.golf_events = createChainableMock({ data: { team_id: 'some-other-team' }, error: null });
+
+      const result = await createGolfTravelItinerary({ ...validInput, event_id: '550e8400-e29b-41d4-a716-446655440009' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/isn't on this team/);
+      expect(mock.insert as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
+    });
+
+    it('refuses an event id that matches no event', async () => {
+      const mock = createChainableMock({ data: { id: 'new-1' }, error: null });
+      mockFromResult = mock;
+      mockTableOverrides.golf_events = createChainableMock({ data: null, error: null });
+
+      const result = await createGolfTravelItinerary({ ...validInput, event_id: '550e8400-e29b-41d4-a716-446655440009' });
+
+      expect(result.success).toBe(false);
+      expect(mock.insert as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
+    });
+
+    it('says to retry, not "wrong team", when the event read fails', async () => {
+      const mock = createChainableMock({ data: { id: 'new-1' }, error: null });
+      mockFromResult = mock;
+      mockTableOverrides.golf_events = createChainableMock({ data: null, error: { message: 'timeout' } });
+
+      const result = await createGolfTravelItinerary({ ...validInput, event_id: '550e8400-e29b-41d4-a716-446655440009' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toMatch(/try again/i);
+      expect(mock.insert as ReturnType<typeof vi.fn>).not.toHaveBeenCalled();
+    });
+
+    it("links an event on the itinerary's own team", async () => {
+      const mock = createChainableMock({ data: { id: 'new-1' }, error: null });
+      mockFromResult = mock;
+      mockTableOverrides.golf_events = createChainableMock({ data: { team_id: validInput.team_id }, error: null });
+
+      const result = await createGolfTravelItinerary({ ...validInput, event_id: '550e8400-e29b-41d4-a716-446655440009' });
+
+      expect(result.success).toBe(true);
+      expect((mock.insert as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toMatchObject({ event_id: '550e8400-e29b-41d4-a716-446655440009' });
     });
 
     it('converts flight_info string to JSON object', async () => {

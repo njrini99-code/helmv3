@@ -28,7 +28,8 @@
  * whether their OWN player-history comparisons respect an as-played time
  * bound was not verified as part of this package — that engine is Package 7
  * (evidence packets / v3) territory, not this one. A pre-warmed review is
- * therefore `engine_version: 'rule-based-v2-prewarm'`, one generation behind
+ * therefore `engine_version: '<RULE_BASED_ENGINE_VERSION>-prewarm'` (today
+ * 'rule-based-v3-prewarm'), one generation behind
  * a live CoachHelm-enhanced review; the existing on-open path is untouched
  * and will still enhance a review the first time its owner opens it, subject
  * to whatever the CoachHelm engine's own history bound turns out to be.
@@ -37,14 +38,50 @@ import {
   generateReviewContent,
   buildHoleBreakdowns,
   calculateComparisonAverages,
+  selectBaselineRounds,
+  BASELINE_ROUND_COLUMNS,
+  BASELINE_FETCH_LIMIT,
   type HoleParRow,
-  type ComparisonRoundRow,
+  RULE_BASED_ENGINE_VERSION,
+  type BaselineRoundRow,
 } from '@/app/golf/actions/round-review-content';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RoundData, ShotRow, RoundReviewContent } from '@/app/golf/actions/round-review-system';
 import type { createAdminClient } from '@/lib/supabase/admin';
-import type { Json } from '@/lib/types/database';
+import type { Database, Json } from '@/lib/types/database';
 
 export type AdminSupabaseClient = ReturnType<typeof createAdminClient>;
+
+/**
+ * The ONE as-played baseline read, shared by the on-open action
+ * (`computeAndStoreRoundReview`) and this worker-safe path so the two cannot
+ * drift again (audit row 39 found both copies unfiltered):
+ *   - as-played: rounds strictly before the reviewed round's date (repair
+ *     plan §5.4 R4 / N4 — `.lt` on a DATE also excludes same-day rounds);
+ *   - `is_test = false` in the query, and `selectBaselineRounds` applies the
+ *     countable-round rule after the fetch, then keeps the newest 20.
+ * Returns the query error to the caller, which owns how to report it.
+ */
+export async function loadAsPlayedBaselineRounds(
+  supabase: Pick<SupabaseClient<Database>, 'from'>,
+  args: { playerId: string; roundId: string; roundDate: string },
+): Promise<{ rows: BaselineRoundRow[]; error: { message: string } | null }> {
+  const { data, error } = await supabase
+    .from('golf_rounds')
+    .select(BASELINE_ROUND_COLUMNS)
+    .eq('player_id', args.playerId)
+    .eq('status', 'completed')
+    .eq('is_test', false)
+    .not('total_score', 'is', null)
+    .neq('id', args.roundId)
+    .lt('round_date', args.roundDate)
+    .order('round_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(BASELINE_FETCH_LIMIT);
+  if (error) return { rows: [], error };
+  return { rows: selectBaselineRounds((data ?? []) as unknown as BaselineRoundRow[]), error: null };
+}
 
 export type DeterministicReviewResult =
   | {
@@ -111,26 +148,18 @@ export async function buildDeterministicRoundReview(
     ? buildHoleBreakdowns(shotRows, roundData, holeParRows.length > 0 ? holeParRows : undefined)
     : [];
 
-  // Repair plan §5.4 R4 / N4: as-played baseline. Comparison evidence must
-  // predate the reviewed round — `.lt` (strict) on a DATE column also
-  // excludes same-day rounds, matching computeAndStoreRoundReview's fix.
-  const { data: playerRounds, error: cmpError } = await supabase
-    .from('golf_rounds')
-    .select('id, created_at, total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
-    .eq('player_id', roundData.player_id)
-    .eq('status', 'completed')
-    .not('total_score', 'is', null)
-    .neq('id', roundId)
-    .lt('round_date', roundData.round_date)
-    .order('round_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(20);
+  // Repair plan §5.4 R4 / N4 as-played baseline, test/non-countable rounds
+  // dropped (audit row 39) — the query shared with computeAndStoreRoundReview.
+  const { rows: playerRounds, error: cmpError } = await loadAsPlayedBaselineRounds(supabase, {
+    playerId: roundData.player_id,
+    roundId,
+    roundDate: roundData.round_date,
+  });
   if (cmpError) {
     return { ok: false, roundId, reason: 'query_failed', detail: cmpError.message };
   }
 
-  const playerAvgs = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]);
+  const playerAvgs = calculateComparisonAverages(playerRounds);
   const content = generateReviewContent(roundData, holeBreakdowns, playerAvgs, shotRows);
 
   return {
@@ -179,7 +208,7 @@ export function toReviewInsertPayload(result: Extract<DeterministicReviewResult,
     insights_count: insightsCount,
     round_score: result.roundScore,
     round_score_to_par: result.roundScoreToPar,
-    engine_version: 'rule-based-v2-prewarm',
+    engine_version: `${RULE_BASED_ENGINE_VERSION}-prewarm`,
     updated_at: new Date().toISOString(),
   };
 }

@@ -27,7 +27,7 @@
 // same hover-lift motion (src/lib/coachhelm/v3/motion), same a11y labels.
 // =============================================================================
 
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';

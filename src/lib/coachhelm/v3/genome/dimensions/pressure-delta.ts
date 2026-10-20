@@ -22,7 +22,6 @@ const dim: GenomeDimension = {
   id: 'pressure_delta',
   category: 'pressure_response',
   label: 'Pressure delta',
-  min_rounds: 8,
 
   compute(ctx: GenomeContext): DimensionResult {
     const result = computePressureGap(ctx.rounds, { minPerSide: MIN_PER_SIDE });

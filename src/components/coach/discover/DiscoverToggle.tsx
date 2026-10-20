@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconBuilding } from '@/components/icons';
 import { Button } from '@/components/ui/button';

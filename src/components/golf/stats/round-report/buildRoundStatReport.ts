@@ -34,7 +34,7 @@
  * NOTHING IS RECOMPUTED HERE. Every number is a field `getDetailedStats(
  * playerId, roundId)` already returns; this file only formats and groups them.
  * Strokes gained is deliberately absent — SG is served from
- * `golf_player_stats_cache` (see .claude/rules/golf-review.md), and Round
+ * `golf_player_stats_cache` (see .claude/rules/golf.md), and Round
  * Review already renders it from that cache via `RoundSGSummary`. Rendering
  * the calculator's recomputed SG here would put a second, potentially
  * disagreeing read path on the same screen.
@@ -170,7 +170,7 @@ interface Sample {
  * do not: `totalBirdies`, `totalPutts`, `threePuttsTotal` and friends are
  * plain integers that sit at 0 both for "none happened" and for "nothing was
  * logged". Rendering the second as `0` is precisely the fabricated zero
- * .claude/rules/golf-review.md forbids — a scorecard-only round would have
+ * .claude/rules/golf.md forbids — a scorecard-only round would have
  * claimed 0 birdies, 0 pars and 0 putts with equal confidence.
  */
 function observed(condition: boolean, value: number): number | null {

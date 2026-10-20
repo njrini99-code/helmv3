@@ -48,7 +48,7 @@ import {
   Skeleton,
 } from '@/components/fairway';
 import { cn } from '@/lib/utils';
-import type { QualifierRoundCourse } from '@/app/golf/actions/golf';
+import type { QualifierRoundCourse } from '@/app/golf/actions/qualifier-actions';
 import { formatToPar } from '@/lib/golf/format-to-par';
 
 import {

@@ -74,7 +74,8 @@ credential — that part requires the steps below.
             (`.mcp.json` here only has the project ref, not a key, but
             double check any personal/global MCP config outside this
             repo).
-- [ ] Redeploy production (`vercel --prod` or trigger via dashboard) after
+- [ ] Redeploy production (`./node_modules/.bin/vercel deploy --prod` from the linked
+      checkout, or the Vercel connector) after
       the env vars are updated, so the running app picks up the new key.
 - [ ] Smoke test: sign in as a real coach/player account in production
       immediately after redeploy to confirm auth + RLS-protected reads

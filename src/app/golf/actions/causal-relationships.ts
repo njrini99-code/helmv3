@@ -20,6 +20,17 @@
  *
  *     `${player_id}|${cause}|${effect}|${relationship_type}`
  *
+ * HONEST CORRELATION (owner decision 2026-09-28, deep audit rows 33/34 and
+ * defect 3): the rows are signed CORRELATIONS, not causes. By default this
+ * action returns only rows that (a) carry the engine's `correlation_v1`
+ * evidence and still pass `correlation-gate.ts` (n >= 15, BH q < 0.05,
+ * |r| >= 0.3, not score arithmetic), (b) were re-confirmed by the engine
+ * (`updated_at`) within MAX_ROW_AGE_DAYS, and (c) belong to a player with a
+ * completed non-test round within ACTIVE_PLAYER_WINDOW_DAYS. A dormant
+ * player's rows are never re-run, so without (b) and (c) they stayed live
+ * forever (144 of 240 active rows on 2026-09-28). `includeInactive` is the
+ * history view and skips all three.
+ *
  * Scope facts (verified): rows are keyed by `player_id` only — the `team_id`
  * column is NULL on every row, so team scope is resolved via `golf_team_members`
  * (active) → fetch per player, NOT a `team_id` filter. `confounders` is always
@@ -33,6 +44,13 @@ import {
 } from '@/lib/auth/verify-player-access';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import {
+  ACTIVE_PLAYER_WINDOW_DAYS,
+  MAX_ROW_AGE_DAYS,
+  isScoreArithmetic,
+  passesCorrelationGate,
+  readCorrelationEvidence,
+} from '@/lib/coachhelm/v3/causality/correlation-gate';
 
 /** One de-duplicated causal relationship row for the browsing panels. */
 export interface CausalRelationshipRow {
@@ -57,6 +75,17 @@ export interface CausalRelationshipRow {
    * `updated_at > created_at`.
    */
   updated_at: string | null;
+  /**
+   * SIGNED same-round Pearson r from the engine's evidence (positive: the two
+   * rise and fall together; negative: one rises as the other falls). Null only
+   * on the includeInactive history view for rows written before the gate.
+   */
+  correlation: number | null;
+  /** Rounds the correlation was computed over. */
+  sample_n: number | null;
+  /** Two-sided t-test p-value, and the Benjamini-Hochberg q across the player's hypotheses. */
+  p_value: number | null;
+  q_value: number | null;
 }
 
 /** The raw row shape we select from `golf_causal_relationships`. */
@@ -75,10 +104,11 @@ interface RawCausalRow {
   intervention_potential: number | null;
   created_at: string | null;
   updated_at: string | null;
+  evidence: unknown;
 }
 
 const SELECT_COLUMNS =
-  'id, player_id, cause, cause_metric, effect, effect_metric, relationship_type, strength, confidence, mechanism, dose_response, intervention_potential, created_at, updated_at';
+  'id, player_id, cause, cause_metric, effect, effect_metric, relationship_type, strength, confidence, mechanism, dose_response, intervention_potential, created_at, updated_at, evidence';
 
 /**
  * Cap the per-player fetch so a 2,033-row player doesn't over-fetch. We order
@@ -116,6 +146,7 @@ function dedupeAndRank(rows: RawCausalRow[]): CausalRelationshipRow[] {
     const key = naturalKey(row);
     if (seen.has(key)) continue;
     seen.add(key);
+    const ev = readCorrelationEvidence(row.evidence);
     out.push({
       id: row.id,
       player_id: row.player_id,
@@ -131,6 +162,10 @@ function dedupeAndRank(rows: RawCausalRow[]): CausalRelationshipRow[] {
       intervention_potential: row.intervention_potential ?? 0,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      correlation: ev?.correlation ?? null,
+      sample_n: ev?.sampleN ?? null,
+      p_value: ev?.pValue ?? null,
+      q_value: ev?.qValue ?? null,
     });
   }
 
@@ -142,6 +177,62 @@ function dedupeAndRank(rows: RawCausalRow[]): CausalRelationshipRow[] {
   );
 
   return out;
+}
+
+function daysAgoIso(days: number, now: Date = new Date()): string {
+  return new Date(now.getTime() - days * 86_400_000).toISOString();
+}
+
+/**
+ * Does this row still pass the honest-correlation gate, and is it fresh?
+ * Rows without `correlation_v1` evidence were never tested this way.
+ */
+function passesReadGate(row: RawCausalRow, rowCutoffIso: string): boolean {
+  if (isScoreArithmetic(row.cause_metric, row.effect_metric)) return false;
+  const ev = readCorrelationEvidence(row.evidence);
+  if (!ev) return false;
+  if (!passesCorrelationGate({ r: ev.correlation, n: ev.sampleN, q: ev.qValue })) return false;
+  if (!row.updated_at || row.updated_at < rowCutoffIso) return false;
+  return true;
+}
+
+/**
+ * True when the player has a completed, non-test round inside
+ * ACTIVE_PLAYER_WINDOW_DAYS. Fails closed (false) on a read error: hiding a
+ * card is the honest failure, showing a dormant one is not.
+ */
+async function playerHasRecentRound(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('golf_rounds')
+    .select('id')
+    .eq('player_id', playerId)
+    .eq('status', 'completed')
+    .eq('is_test', false)
+    .gte('round_date', daysAgoIso(ACTIVE_PLAYER_WINDOW_DAYS).slice(0, 10))
+    .limit(1);
+  if (error) {
+    await logServerError(
+      `causal-relationships recent-round check failed: ${error.message ?? String(error)}`,
+      { action: 'causal-relationships.playerHasRecentRound', playerId },
+    );
+    return false;
+  }
+  return (data ?? []).length > 0;
+}
+
+/** Applies the default (non-history) read gates to one player's raw rows. */
+async function applyReadGates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  rows: RawCausalRow[],
+): Promise<RawCausalRow[]> {
+  const rowCutoffIso = daysAgoIso(MAX_ROW_AGE_DAYS);
+  const passing = rows.filter((r) => passesReadGate(r, rowCutoffIso));
+  if (passing.length === 0) return [];
+  return (await playerHasRecentRound(supabase, playerId)) ? passing : [];
 }
 
 /**
@@ -194,7 +285,8 @@ async function fetchPlayerRowsDeduped(
     return [];
   }
 
-  return dedupeAndRank((data ?? []) as unknown as RawCausalRow[]);
+  const raw = (data ?? []) as unknown as RawCausalRow[];
+  return dedupeAndRank(includeInactive ? raw : await applyReadGates(supabase, playerId, raw));
 }
 
 const TEAM_FETCH_CONCURRENCY = 8;
@@ -268,7 +360,11 @@ async function fetchTeamRowsDeduped(
           return null;
         }
 
-        return { playerId, rows: (data ?? []) as unknown as RawCausalRow[] };
+        const raw = (data ?? []) as unknown as RawCausalRow[];
+        return {
+          playerId,
+          rows: includeInactive ? raw : await applyReadGates(supabase, playerId, raw),
+        };
       }),
     );
 

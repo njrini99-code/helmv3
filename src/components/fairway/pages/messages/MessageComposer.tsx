@@ -24,7 +24,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AlertCircle, Loader2, Send } from 'lucide-react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { cn } from '@/lib/utils';
 import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
@@ -434,7 +434,7 @@ export function MessageComposer({
     // never blocks typing — which means `message` can grow underneath us.
     const sentRaw = message;
 
-    let success = false;
+    let success: boolean;
     if (hasAttachments) {
       // G-21 — FAIL CLOSED. This used to be `if (hasAttachments &&
       // onSendWithAttachments) { … } else { onSend(text) }`, so a missing

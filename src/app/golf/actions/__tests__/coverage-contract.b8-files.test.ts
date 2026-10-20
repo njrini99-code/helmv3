@@ -12,7 +12,7 @@ import { assertAreaFullyWrapped } from '@/lib/admin/__tests__/coverage-contract.
  *
  * Features: insights_management, intelligence_dashboard, coachhelm_analytics,
  * coaching_intelligence_settings.
- * Files fully wrapped this batch: insight-management.ts + insight-evidence.ts
+ * Files fully wrapped this batch: insight-management.ts (insight-evidence.ts deleted as dead, audit row 22)
  * (insights_management, 8 exports — `bulkDismissInsights`,
  * `bulkAcknowledgeInsights`, `bulkResolveInsights` removed 2026-09-22 as dead
  * code, down from 11), intelligence-dashboard.ts + team-category-insights.ts
@@ -29,7 +29,6 @@ describe('coverage-contract — B8-FILES coachhelm coach surfaces (insights_mana
     expect(() =>
       assertAreaFullyWrapped([
         'src/app/golf/actions/insight-management.ts',
-        'src/app/golf/actions/insight-evidence.ts',
         'src/app/golf/actions/intelligence-dashboard.ts',
         'src/app/golf/actions/team-category-insights.ts',
         'src/app/golf/actions/coachhelm-data.ts',

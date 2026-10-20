@@ -1,0 +1,272 @@
+# P003 — Roster: verification
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+RosterPeek uses zero-duration transitions when motion is disabled.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Roster cards/list, player peek, invite, requests and read-only player view.
+
+Check profile push/pop, note blur save, approve/decline feedback and roster
+refresh without losing scroll.
+
+Fresh WebKit 26.6: `/clubhouse-preview/roster` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 15
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p003-roster). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is `docs/clubhouse/screens/roster.md`.
+
+## 2026-10-02 — Desktop Message target parity
+
+- The desktop player panel and list-row Message menu now carry the selected
+  player's encoded `?player=` target, matching the supported phone deep link.
+- `./node_modules/.bin/vitest run --project unit-dom
+  src/clubhouse/__tests__/roster.test.tsx --maxWorkers=1`:
+  68/68 passed, exit 0. The two added regressions exercise different players,
+  keyboard activation of the panel link and keyboard opening of each row menu.
+- ESLint for `Roster.tsx`, `RosterPeek.tsx` and `roster.test.tsx`: exit 0;
+  `git diff --check`: exit 0.
+- Local WebKit at 1024 × 900 confirmed Theo and Jonah have distinct panel and
+  row-menu URLs; Enter opens their cards and menus, Escape closes them. All
+  eight
+  table headers remained present, and the menus fit inside the viewport.
+- Artifacts: `/tmp/helm-clubhouse-desktop-daily/roster-table-1024.png` and
+  `/tmp/helm-clubhouse-desktop-daily/roster-selected-1024.png`.
+- This verifies the destination link and keyboard access. Real-account thread
+  resolution or message delivery was not exercised in this pass.
+
+## Historical verification status
+
+```text
+Status:     partial
+Commit/PR:  agent/clubhouse (local, not committed when this was written; draft PR #2102 is behind it)
+Date:       2026-09-30
+```
+
+## Static checks
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Typecheck | `npm run -s typecheck:fast` | exit 0 (2026-09-30, after this pass) |
+| Lint | `npx eslint src/clubhouse/screens/roster src/clubhouse/routes/roster.tsx src/clubhouse/__tests__/roster.test.tsx` and the Roster page under `src/app/golf/(dashboard)/dashboard/roster/` | exit 0 |
+| Clubhouse check | `npm run -s clubhouse:check` | not run in this pass (the lead runs it with the registry sync); the registry and contract rules were dry-run against the merged Bridge list with no violation for P003 |
+| Knowledge check | `npm run -s docs:check` | exit 1, not from this page: `memory/projects/golfhelm.md` says 236 routes and the source has 237 (this pass added no `page.tsx`) |
+| Build | `npm run build` | not run in this pass; no server action changed, and the page now calls the new route adapter |
+
+## Automated tests
+
+| Test | Contract | Result |
+| --- | --- | --- |
+| `src/clubhouse/__tests__/roster.test.tsx` (63 cases, each named by the codes and Bridge IDs it forces) | every catalog row of kinds 0 to 5 that is not preview, CH-3306, and the 22 hand contracts (30101 to 32401) | pass (`npx vitest run src/clubhouse` 536/536, 2026-09-30) |
+| `src/clubhouse/__tests__/shell.test.tsx` | the shell contracts this page inherits (10703, 10802, 12001 and the rest) | pass |
+
+Mutation checks (2026-09-30): each new test was watched to fail with the code it
+guards broken, and pass again with it restored (only Roster's own files were
+broken). Checked: 30101, 30102 (phone, and desktop ignoring the link), 30303
+(players and requests), 30502, 30701 (approve, Approve all, remove and note sent
+without `useAction`), 30801, 30802 (members by team, notes by coach), 30803,
+30901, 31202 (storage write, and its try/catch), 31203 (desktop and phone),
+31301 (hide at once, restore on refusal, other decisions wait), 31403 (the
+dialog, the note, the request), 31704, 32001 (trim, skip an unchanged note),
+32101, 32301 (action name, breadcrumb), 32401, CH-3306 (copy, and the class the
+phone hides), CH-3703 Share (dismissed, and the fallback), CH-3803 Esc inside a
+dialog. Not mutation-checked: the success haptic and the offline refusal
+themselves, which live in shared `useAction` (not touched; 30701 was checked by
+taking `useAction` out of each Roster caller in turn), and the existing tests
+that only gained an ID in their title.
+
+## Visual verification
+
+### Desktop
+
+```text
+Viewport:  924, 1280 and 1400px (preview)
+Reference: design/handoff/screenshots/roster-01..05 (v1); Coach - Roster.html (v2, same screen)
+Result:    matched, logged 2026-09-29 in PROGRESS.md (cards, list, panel, requests, invite, empty, failed, partial and
+           loading states). Not re-checked after the v2 motion, haptics and empty state, or after this pass.
+```
+
+### Phone
+
+```text
+Viewport:     390 × 844 (preview)
+Device/shell: not yet on a real iPhone (npm run ios:dev, owner)
+Reference:    design/handoff/mobile/Roster Mobile.html; Coach - Roster - Mobile.html (v2)
+Result:       built to the approved spec and compared with the boards on 2026-09-29; 430px, toasts over content and
+              drag to dismiss are open
+```
+
+## Forced states
+
+| State | Contract | How forced | Observed result |
+| --- | --- | --- | --- |
+| P003__profile__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Theo profile with16px gutters/gaps and layered figures |
+| P003__profile__coach__390__populated__before__cca081c.png | before | cca081c (working-tree before) | WebKit iPhone 13; Theo profile before matching parent spacing and figure material |
+| P003__list__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone roster before page spacing and material repairs |
+| P003__list__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered card surface,72px player rows, full wrapped status notes and16px spacing |
+| Skeleton | 30201 | test (`aria-busy`), `/clubhouse-preview/roster?state=loading` | skeleton in Roster's shape |
+| Empty | 30401 to 30406 | tests, `?state=empty` | distinct from a failed read; no team is Roster's own state |
+| Validation | 30501 | test | the counter and the limit |
+| Server failure | 30601 to 30616 | tests; `?state=failed`, `partial` | toast or notice with its code; the text stays in the field |
+| Offline | 30701 | test | nothing sent, the action named, the screen unchanged |
+| Permission | 30801 to 30803 | tests | a player session gets nothing; the loader is scoped; the server's sentence is shown |
+| Destructive | 31101, 31704 | tests | confirm first, the warning haptic, then success |
+| Optimistic rollback | 31301 | tests | the request comes back in its place |
+| Retry | 31401 to 31403 | tests | Retry finishes the change on screen |
+| Refresh | 30303, 31402 | test | new data replaces the first copy |
+
+Not forced against a live session: removal, approval, decline and note failures.
+A state never observed in a browser is not verified
+(08_CI_PROGRESS_AND_VERIFICATION.md).
+
+## Accessibility
+
+```text
+Keyboard:       Esc closes the panel except while typing a note (roster.test CH-3803). Dialogs are native <dialog>, which
+                traps focus; that is not tested here. A full keyboard walk at 1280 and 390 is open.
+VoiceOver:      the phone row reads as one button (CH-3806); not tried on a device.
+Focus:          a pushed profile takes focus on its title (the shell's CH-1809).
+Reduced motion: the panel fades instead of sliding (RosterPeek); not tested in this file.
+Contrast:       clubhouse:a11y (axe, WCAG 2.2 AA) for roster ran clean at 1280 and 390 on 2026-09-29 (15 pages) before the
+                v2 changes and this pass; the rerun is open, and RosterNoTeam is new.
+Text scaling:   not checked.
+```
+
+## Performance
+
+```text
+Layout shift:      not measured
+Request waterfall: none on the client. The server makes two parallel rounds (the second needs the first's player ids);
+                   not timed.
+Large list:        not measured. The member read has no pagination (one team); season rounds page at 1,000 rows and the id
+                   lists are chunked at 200.
+Animation:         v2 tokens only
+Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
+```
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P003__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P003__player-peek__coach__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
+| `P003__player-peek__coach__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | player-peek (coach), 1280x844px, reduced-motion |
+| `P003__premium-audit__coach__1280__case-002-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-002-webkit-reduce; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__1280__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__390__case-002-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-002-webkit-reduce; /clubhouse-preview/roster; synthetic preview |
+| `P003__premium-audit__coach__390__case-010-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-010-chromium-normal; /clubhouse-preview/roster; synthetic preview |
+| `P003__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P003__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P003__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
+| `P003__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+
+## 2026-10-02 — Mobile design fidelity verification
+
+- WebKit iPhone 13 previews at 375, 390 and 430 CSS pixels: populated page has
+  no horizontal document overflow; roster status notes and stats figure labels
+  remain inside their columns.
+- Before/after captures at 390 show the shared sheet gradient, inset highlight
+  and layered shadow. The captures use deterministic preview fixtures, not a
+  live customer session.
+- At 390, empty and failed coach states retain their explanatory copy and
+  controls. Roster player populated/empty, Team Hub player populated and Player
+  Stats early-read states were checked where applicable.
+- Physical iPhone Safari performance and real account data remain unverified.
+  Failed fixtures also logged AdminLoggerClient event-send failures in the local
+  development browser; no production data was changed.
+
+## 2026-10-02 — Intuitive improvement verification
+
+- WebKit fixture walkthrough opened Theo from his visible roster row; the named
+  profile and its Roster back affordance remained. Settled profile capture shows
+  16px gutter/gap and layered figures, with zero horizontal overflow at 390.
+- Fixture actions do not touch production. These checks do not establish
+  intended-user discoverability, physical iPhone performance or durable
+  live-data outcomes.
+
+## Historical verification gaps
+
+- The iPhone pass through `npm run ios:dev` (owner); 430px and toasts over
+  content (merge pass).
+- A browser pass with a real coach account (Q-4), including forced remove,
+  approve, decline and note failures.
+- The full keyboard walk; `clubhouse:a11y` rerun after the v2 changes and this
+  pass; LCP and layout shift.
+- Not verified: that an approved player appears on the roster in a real session.
+  30303 relies on Next sending the
+  revalidated page back after the server action (each action calls
+  `revalidatePath`); the test simulates that page
+  with `rerender`, and nothing has watched it in a browser.
+- Fixed 2026-09-30, each with a test that fails without the fix: the toast's
+  Retry did not finish the change on
+  screen (a retried removal left the player listed and the dialog open, a
+  retried approval put the request back);
+  Try again after a failed read showed "No players yet" because the screen kept
+  its first copy; a saved note read
+  back as the old text; Remove player fired no warning haptic (D-70); a coach
+  with no team saw Home's empty state;
+  on desktop, Approve on a second request while the first was in flight did
+  nothing and said nothing; the CSV export
+  wrote a player's name that starts with `=`, `+`, `-` or `@` as it was typed,
+  which a spreadsheet may read as a
+  formula; Esc inside the Remove or Invite dialog also closed the player panel.
+- Found, not fixed (owner or lead decides):
+  - Fairway's roster warned when one student is on the roster twice (#1477);
+    Clubhouse dropped that notice.
+  - Resolved 2026-10-02: the desktop player panel and row menu now carry the
+    player's thread target (`?player=`), matching the phone and P007 entry
+    contract.
+  - The join-request notification links to `roster?tab=requests`; Roster ignores
+    `tab`, though the requests are the
+    first thing under the header.
+  - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is
+    two parallel rounds (corrected).
+  - The Clubhouse roster files are not mapped to a feature in
+    `memory/registry.yml` (`knowledge:map` finds none), so
+    no feature doc is updated by a Roster change.
+  - The desktop Schedule 1:1 (panel) and View insights (row menu, CoachHelm
+    `?player=`) were built 2026-09-30
+    (CLICKABLES gaps 4 and 16).
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+17 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

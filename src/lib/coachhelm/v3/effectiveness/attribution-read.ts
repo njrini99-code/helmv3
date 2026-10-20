@@ -246,9 +246,16 @@ async function fetchAttributionRows(
   }
 
   if (primary.error) return { ok: false };
+  // Deep audit row 35 (2026-09-28): a NULL method_version on a table that has
+  // the column is a legacy v1 row, computed by the removed post-vs-ambient
+  // math that cancelled its own baseline. It is excluded from every read so
+  // it can never be shown or averaged next to a real measurement. (The
+  // degraded path above cannot tell v1 from later rows, so it keeps them.)
   const attached = await attachAnchorKind(
     sb,
-    (primary.data ?? []).map((r) => ({ ...r, method_version: r.method_version ?? null })),
+    (primary.data ?? [])
+      .filter((r) => r.method_version != null)
+      .map((r) => ({ ...r, method_version: r.method_version ?? null })),
   );
   return attached;
 }

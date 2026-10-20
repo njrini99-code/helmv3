@@ -192,7 +192,7 @@ describe('GET /api/cron/v3/weekly-coach-email — opt-out gate', () => {
       coach_first_name: 'Coach',
       week_start_iso: '2026-07-02T00:00:00.000Z',
       week_end_iso: '2026-07-09T00:00:00.000Z',
-      totals: { rounds_played: 3, insights_surfaced: 2, goals_active: 1, avg_score_to_par: 1.2 },
+      totals: { rounds_played: 3, insights_new: 2, insights_updated: 5, goals_active: 1, avg_score_to_par: 1.2 },
       active_players: [],
       top_patterns: [],
     });

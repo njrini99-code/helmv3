@@ -29,6 +29,13 @@ import {
   type RawGolfShotRow,
   type ReviewShotInput,
 } from './round-review-shots';
+import { sgBaselineLabelForScale } from './shot-strokes-gained';
+import {
+  computeTeamSgComparison,
+  TEAM_SG_WINDOW_DAYS,
+  type TeamSgComparison,
+  type TeamSgRoundRow,
+} from './team-sg-comparison';
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -96,6 +103,8 @@ export interface FilmstripReviewProps {
    *  piece's honest-empty state rather than a fabricated value (see
    *  `RoundSGSummary`'s own doc comment). */
   strokesGainedTotal: number | null;
+  /** The round's team (golf_rounds.team_id), for the team SG line (audit row 46). */
+  teamId?: string | null;
   strokesGainedTee: number | null;
   strokesGainedApproach: number | null;
   strokesGainedAroundGreen: number | null;
@@ -125,6 +134,7 @@ export function FilmstripReview({
   holes,
   playerName,
   strokesGainedTotal,
+  teamId = null,
   strokesGainedTee,
   strokesGainedApproach,
   strokesGainedAroundGreen,
@@ -132,7 +142,32 @@ export function FilmstripReview({
 }: FilmstripReviewProps) {
   const [shotsByHole, setShotsByHole] = useState<Map<number, ReviewShotInput[]> | null>(null);
   const [shotsError, setShotsError] = useState<string | null>(null);
+  const [sgBaselineLabel, setSgBaselineLabel] = useState<string | null>(null);
+  const [teamSg, setTeamSg] = useState<TeamSgComparison | null>(null);
   const supabase = useMemo(() => createClient(), []);
+
+  // Team cohort line (audit row 46): the team's countable, non-test rounds in
+  // the window. Failure-silent — RLS or an outage hides the line, never the page.
+  useEffect(() => {
+    if (!teamId) return;
+    let cancelled = false;
+    (async () => {
+      const since = new Date(Date.now() - TEAM_SG_WINDOW_DAYS * 86_400_000).toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from('golf_rounds')
+        .select('id, strokes_gained_total, holes_played, total_score, front_nine, back_nine, total_putts')
+        .eq('team_id', teamId)
+        .eq('status', 'completed')
+        .eq('is_test', false)
+        .gte('round_date', since)
+        .limit(1000);
+      if (cancelled || error || !data) return;
+      setTeamSg(computeTeamSgComparison(data as TeamSgRoundRow[], roundId, strokesGainedTotal));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, teamId, roundId, strokesGainedTotal]);
 
   // Focus-area prescription — the same FocusAreaModal PlayersGridView and
   // DevelopmentDrill use, pre-filled from the round-review takeaway
@@ -179,6 +214,7 @@ export function FilmstripReview({
         // Keep the unscaled (1.0) default — see comment above.
       }
       if (cancelled) return;
+      setSgBaselineLabel(sgBaselineLabelForScale(sgScale));
 
       const { data, error } = await supabase
         .from('golf_shots')
@@ -320,6 +356,7 @@ export function FilmstripReview({
         strokesGainedAroundGreen={strokesGainedAroundGreen}
         strokesGainedPutting={strokesGainedPutting}
         isWomens={isWomens}
+        teamComparison={teamSg}
       />
 
       <ReviewHero
@@ -332,6 +369,7 @@ export function FilmstripReview({
         holeMeta={holeMeta}
         shotsByHole={shotsByHole}
         playerId={playerId}
+        sgBaselineLabel={sgBaselineLabel}
       />
       {shotsError ? (
         <p className="font-fw-sans text-caption italic text-text-tertiary">

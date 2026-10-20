@@ -14,7 +14,7 @@
  *   └────────────────────────────────────────────────────────┘
  */
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import type { StandingBarProps } from './types';
 import {
   deltaVsTeam,

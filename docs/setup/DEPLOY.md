@@ -1,195 +1,82 @@
-# 🚀 Helm Sports Labs - Deployment Guide
+# Deploying Helm Sports Labs
 
-## Recommended: Deploy to Vercel (Free)
+Production is one Vercel project (`helmv3`, id in `config/release-policy.yml`).
+`vercel.json` disables Vercel Git deployments for every branch, so **merging or
+pushing to `main` does not deploy**. A deploy is a CLI (or connector) call you
+make when the change should be live. Docs-only changes need no deploy.
 
-Vercel made Next.js, so it's the easiest and fastest option.
+## Deploy
 
----
-
-## Step 1: Push to GitHub
-
-First, get your code on GitHub:
-
-```bash
-cd /path/to/helmv3
-
-# Initialize git if not already
-git init
-
-# Add all files
-git add .
-
-# Commit
-git commit -m "Production ready - Dec 2025"
-
-# Create repo on GitHub, then:
-git remote add origin https://github.com/YOUR_USERNAME/helm-sports-labs.git
-git branch -M main
-git push -u origin main
-```
-
----
-
-## Step 2: Deploy to Vercel
-
-### Option A: One-Click (Easiest)
-
-1. Go to [vercel.com](https://vercel.com)
-2. Sign in with GitHub
-3. Click **"Add New Project"**
-4. Select your `helm-sports-labs` repo
-5. Vercel auto-detects Next.js settings
-6. Add environment variables (see below)
-7. Click **Deploy**
-
-### Option B: CLI
+Run it from a checkout linked to the real project (canonical
+`/Users/ricknini/Downloads/helmv3` is; a worktree is linked only if `.vercel/`
+exists in it). From an unlinked directory `vercel deploy` silently creates a
+stray project named after the directory (this made two accidental
+`helmv3-*-release-*` projects), so check `.vercel/project.json` first and
+compare its `projectId` with `production.vercel_project_id` in
+`config/release-policy.yml`.
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-cd /path/to/helmv3
-vercel
-
-# Follow the prompts:
-# - Link to existing project? No
-# - What's your project name? helm-sports-labs
-# - Which directory? ./
-# - Override settings? No
+SHA=$(git rev-parse HEAD)          # a commit that is on origin/main
+SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
+./node_modules/.bin/vercel deploy --prod --yes --archive=tgz --scope "$SCOPE" \
+  --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" \
+  --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA"
 ```
 
----
+- The Vercel connector (`create_deployment`) works too; stamp the same release.
+- `NEXT_PUBLIC_SENTRY_RELEASE` puts the commit in the served bundle. Without it
+  the release tag on production Sentry events is a stale SHA from an earlier
+  deploy, and `release:status` cannot match the served commit.
+- `--archive=tgz` avoids the Vercel file-count and request-size limits that
+  rejected plain uploads before.
+- Use the repo-local CLI (`./node_modules/.bin/vercel`); a bare `vercel` may not
+  be on `PATH`.
+- Deploy from `main`'s tip when you can, so what is live is what is merged.
+- `.vercelignore` replaces Vercel's default ignore list: every secret-bearing
+  ignored path must be listed (checked by `npm run check:vercelignore`).
 
-## Step 3: Add Environment Variables
-
-In Vercel Dashboard → Your Project → Settings → Environment Variables:
-
-| Variable | Value |
-|----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://qmnssrrolpinvwjjnufo.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your publishable key from Supabase (new format, `sb_publishable_...`; falls back to `NEXT_PUBLIC_SUPABASE_ANON_KEY` if unset — see `src/lib/supabase/keys.mjs`) |
-| `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` (update after first deploy) |
-| `NEXT_PUBLIC_APP_NAME` | `Helm Sports Labs` |
-
-**To get your Supabase keys:**
-1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Select your project
-3. Settings → API
-4. Copy "Project URL" and the publishable key (or the legacy "anon public" key)
-
----
-
-## Step 4: Configure Supabase for Production
-
-### Update Auth Redirect URLs
-
-In Supabase Dashboard → Authentication → URL Configuration:
-
-```
-Site URL: https://your-app.vercel.app
-
-Redirect URLs:
-- https://your-app.vercel.app/**
-- https://your-app.vercel.app/baseball/dashboard
-- https://your-app.vercel.app/golf/dashboard
-```
-
-### Run the Production SQL
-
-Go to Supabase → SQL Editor and run:
-supabase/production-setup.sql
-
----
-
-## Step 5: Custom Domain (Optional)
-
-1. Vercel Dashboard → Your Project → Settings → Domains
-2. Add your domain (e.g., `helmsportslab.com`)
-3. Update DNS records as instructed
-4. Update `NEXT_PUBLIC_APP_URL` env var
-5. Update Supabase redirect URLs
-
----
-
-## Quick Commands Reference
+## Verify
 
 ```bash
-# Build locally to check for errors
-npm run build
-
-# Deploy to production
-vercel --prod
-
-# Deploy preview (for testing)
-vercel
-
-# Check deployment logs
-vercel logs
+npm run release:status
 ```
 
----
+It reads the served bundle and reports whether production is at `origin/main`.
+Call a release live only after it shows the SHA you deployed. If the CLI
+crashes after the upload finished, the deploy may still be fine: check
+`release:status` before redeploying.
 
-## Deployment Checklist
+Also glance at runtime errors after a deploy (Vercel connector
+`get_runtime_errors`, or Sentry; see the `helm-sentry` skill).
 
-### Before Deploy
-- [ ] Run `npm run build` locally (no errors)
-- [ ] Run Supabase SQL script
-- [ ] Test signup/login locally
+## Roll back
 
-### After Deploy
-- [ ] Update Supabase redirect URLs
-- [ ] Test signup on production
-- [ ] Test coach onboarding
-- [ ] Test player onboarding
-- [ ] Verify all pages load
+Promote the previous production deployment (Vercel dashboard, the connector's
+`request_rollback`, or `./node_modules/.bin/vercel promote <deployment-url>`),
+then run `release:status`. A rollback does not undo migrations; a schema change
+is rolled back with a forward migration (`docs/operations/APPLY_PATH.md`).
 
----
+## Environment and Supabase
+
+Required variables are listed in `.env.example` and checked by
+`npm run check:env`. Core ones: `NEXT_PUBLIC_SUPABASE_URL`
+(`https://qmnssrrolpinvwjjnufo.supabase.co`),
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (falls back to
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`; see `src/lib/supabase/keys.mjs`) and
+`NEXT_PUBLIC_APP_URL`. Set them in Vercel (Project, Settings, Environment
+Variables) or with `vercel env add`. `vercel env pull` writes sensitive values
+as empty strings, so an empty pulled value is not proof a variable is unset
+(`memory/context/agent-operations.md`).
+
+Supabase auth redirect URLs must include the production domain (Authentication,
+URL Configuration). Schema changes reach production through
+`docs/operations/APPLY_PATH.md`, not a deploy.
 
 ## Troubleshooting
 
-### Build Fails
-```bash
-# Check for type errors
-npm run typecheck
-
-# Check for lint errors
-npm run lint
-```
-
-### Auth Not Working
-- Check Supabase redirect URLs include your Vercel domain
-- Verify env variables are set correctly
-- Check browser console for errors
-
-### Pages 404
-- Make sure all dynamic routes have proper fallbacks
-- Check `next.config.js` for any issues
-
----
-
-## Alternative Hosting Options
-
-### Netlify
-```bash
-npm i -g netlify-cli
-netlify deploy --prod
-```
-
-### Railway
-1. Go to railway.app
-2. New Project → Deploy from GitHub
-3. Add env variables
-4. Deploy
-
----
-
-## Cost Estimate
-
-| Service | Free Tier | Paid |
-|---------|-----------|------|
-| Vercel | 100GB bandwidth/mo | $20/mo Pro |
-| Supabase | 500MB DB, 2GB storage | $25/mo Pro |
-| Domain | - | $12/year |
-
-**Total to start: $0** (free tiers are generous)
+- **Build fails:** `npm run typecheck`, `npm run lint`, then `npm run build`.
+- **Auth not working:** check the redirect URLs and the Supabase env vars.
+- **Deploy "skipped":** `scripts/vercel-ignore-build.sh` skips any build that
+  carries `VERCEL_GIT_COMMIT_REF` (Git-triggered builds); CLI deploys do not.
+- **Cost:** each production deploy uses Vercel build minutes; batch ready PRs
+  before deploying.

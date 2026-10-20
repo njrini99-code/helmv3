@@ -8,6 +8,7 @@
  */
 
 import { describeError } from '@/lib/utils/describe-error';
+import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import type { AdminEventType, AdminEventSeverity } from './admin-logger';
 
 // ============================================
@@ -70,6 +71,8 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(event),
+      // A navigation used to cancel the log in flight ("Load failed" in Safari); keepalive lets it finish.
+      keepalive: true,
     });
     
     if (!response.ok) {
@@ -88,7 +91,12 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
 
     return true;
   } catch (err) {
-    console.error('[AdminLoggerClient] Failed to send event:', describeError(err));
+    // A request the network or a navigation cut off is not an app error: console.error is captured by Sentry
+    // (captureConsoleIntegration), so these filled it with "[AdminLoggerClient] Failed to send event: Load failed"
+    // (Clubhouse audit A-05, 2026-10-14). Anything else still reports.
+    const detail = describeError(err);
+    if (isTransientNetworkErrorMessage(detail)) console.warn('[AdminLoggerClient] Event not sent (network):', detail);
+    else console.error('[AdminLoggerClient] Failed to send event:', detail);
     return false;
   }
 }

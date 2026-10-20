@@ -147,7 +147,7 @@ function checkNoConcurrently(fileText) {
 function checkGitState(fileBasename) {
   let ok = true;
 
-  let branch = '';
+  let branch;
   try {
     branch = sh('git', ['rev-parse', '--abbrev-ref', 'HEAD']).trim();
   } catch {
@@ -155,7 +155,7 @@ function checkGitState(fileBasename) {
   }
   ok = step('HEAD is main', branch === 'main', `actual: ${branch}`) && ok;
 
-  let clean = false;
+  let clean;
   try {
     clean = sh('git', ['status', '--porcelain']).trim() === '';
   } catch {
@@ -171,7 +171,7 @@ function checkGitState(fileBasename) {
   // also means it verified nothing. Raising maxBuffer only moves the cliff;
   // `rev-list -1 -- <path>` is bounded by one commit id regardless of repo
   // size, and is correct under squash-merge (the add commit is on main).
-  let inOriginMainLog = false;
+  let inOriginMainLog;
   try {
     const rev = sh('git', [
       'rev-list', '-1', 'origin/main', '--', `supabase/migrations/${fileBasename}`,
@@ -432,7 +432,7 @@ async function main() {
   }
 
   process.stdout.write(`\n--- APPLYING ${fileBasename} ---\n`);
-  let applyOk = true;
+  let applyOk;
   // A temp dir, not the repo: the body is a build artifact and the worktree is
   // shared. Removed in `finally` so a failed apply leaves nothing behind.
   const scratch = mkdtempSync(join(tmpdir(), 'helm-db-apply-'));

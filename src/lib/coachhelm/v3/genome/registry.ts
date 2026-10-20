@@ -5,16 +5,17 @@
  * GENOME_DIMENSIONS. The orchestrator runs whatever is in this array,
  * so adding a new dimension is one line + one new file under dimensions/.
  *
- * 8 dims shipped — one per category — so the radar has data in every
- * spoke. The remaining 72 (toward the 80-dim target) land as data
- * sources mature.
+ * 7 dims shipped — one per category — so the radar has data in every
+ * spoke. The weather_sensitivity stub was retired (audit row 18,
+ * 2026-09-28): no weather or temperature is recorded, so it could never
+ * produce a value and only padded the count ("6 of 8 real"). A weather
+ * dimension comes back with a data source, not before.
  */
 
 import missSideBias from './dimensions/miss-side-bias';
 import pressureDelta from './dimensions/pressure-delta';
 import scramblingRate from './dimensions/scrambling-rate';
 import par3Proficiency from './dimensions/par3-proficiency';
-import weatherSensitivityStub from './dimensions/weather-sensitivity-stub';
 import backNineDelta from './dimensions/back-nine-delta';
 import scoringTrend from './dimensions/scoring-trend';
 import driverUsage from './dimensions/driver-usage';
@@ -26,7 +27,6 @@ export const GENOME_DIMENSIONS: readonly GenomeDimension[] = [
   pressureDelta,           // pressure_response
   scramblingRate,          // recovery_patterns
   par3Proficiency,         // course_type_affinity
-  weatherSensitivityStub,  // weather_sensitivity (deferred — no data)
   backNineDelta,           // stamina
   scoringTrend,            // learning_velocity
   driverUsage,             // strategic_profile

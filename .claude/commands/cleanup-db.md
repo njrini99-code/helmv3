@@ -187,7 +187,7 @@ For each table name, also search for:
 ### Pass 5 — Edge Function + migration scan
 
 - Search ALL files in `supabase/functions/` for table/column references
-- Search ALL files in `supabase/migrations/` — if a recent migration (last 3 months of files by filename timestamp) references a table, it's active
+- Search ALL files in `supabase/migrations/` for references to the table from OTHER objects (foreign keys, policies, functions, views, triggers). A migration that only creates, alters or drops the table itself is not a usage, or every table would count as referenced. A table created or changed in the last 3 months (by filename timestamp) is too new to judge: classify it ⚠️
 - Search any `seed.sql` or `seed.ts` files
 
 ### Pass 6 — Indirect dependency chain
@@ -228,7 +228,7 @@ For each table, assign ONE of these statuses:
 - **DEFAULT TO THIS CATEGORY IF ANY DOUBT EXISTS**
 
 ### ❌ CONFIRMED UNREFERENCED
-- Zero string literal matches in ALL source files, edge functions, migrations, seeds
+- Zero string literal matches in ALL source files, edge functions and seeds, and no reference from another object in any migration (the table's own CREATE/ALTER/DROP migrations do not count)
 - Zero matches for camelCase/PascalCase/singular/plural variants
 - Not a FK target of any referenced table
 - Not in any RLS policy, trigger, view, or function
@@ -242,7 +242,7 @@ For each table, assign ONE of these statuses:
 
 ## Phase 4: Column Analysis
 
-Only analyze columns for tables marked ✅ CONFIRMED REFERENCED.
+Only analyze columns for tables marked ✅ CONFIRMED REFERENCED or ✅ REFERENCED VIA DEPENDENCY.
 
 For each column (skip `id`, `created_at`, `updated_at`, `deleted_at`, `uuid`, `created_by`, `updated_by`):
 
@@ -304,4 +304,4 @@ workflow, including `supabase/migrations/HELD.md` when applicable.
 - **NEVER run DROP TABLE or ALTER TABLE.** Report only.
 - **If a `.from(variable)` pattern exists ANYWHERE in the codebase, assume ANY table could be dynamically referenced and flag all ambiguous tables as ⚠️.**
 - **Check EVERY search path**: src/, app/, lib/, pages/, components/, hooks/, utils/, actions/, api/, server/, scripts/, supabase/functions/, supabase/migrations/, tests/, __tests__/, cypress/, e2e/
-- **A single reference ANYWHERE — even in a comment, test, or disabled code — means the table is REFERENCED.**
+- **A single reference ANYWHERE — even in a comment, test, or disabled code — means the table is REFERENCED.** Exceptions: the generated `src/lib/types/database.ts` and the table's own DDL migrations.

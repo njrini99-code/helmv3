@@ -27,10 +27,16 @@
  * verifier: a number that was never handed to the model is still rejected.
  */
 import { describe, it, expect } from 'vitest';
-import { verifyCitations } from '@/lib/coachhelm/v3/llm/citations';
+import {
+  citationField,
+  isFieldedEvidence,
+  verifyCitations,
+  type CitationField,
+} from '@/lib/coachhelm/v3/llm/citations';
 import {
   buildRecapEvidence,
   buildRecapEvidencePacket,
+  buildRecapFieldEvidence,
   type RecapPacketRound,
   type RecapPacketStats,
 } from '@/lib/coachhelm/v3/llm/recap-evidence';
@@ -151,5 +157,88 @@ describe('buildRecapEvidencePacket (Package 8 slice 2)', () => {
     expect(packet.window_start).toBe('2026-06-01T00:00:00.000Z');
     expect(packet.window_end).toBe('2026-06-01T00:00:00.000Z');
     expect(packet.player_id).toBe('player-1');
+  });
+});
+
+describe('buildRecapFieldEvidence (field-aware audit, deep audit row 40a)', () => {
+  const ROUND18: RecapPacketRound = {
+    player_id: 'player-1',
+    round_date: '2026-06-01',
+    total_score: 74,
+    score_to_par: 2,
+    total_putts: 30,
+    front_nine: 38,
+    back_nine: 36,
+    holes_played: 18,
+  };
+  const STATS: RecapPacketStats = { scoring_average: 76.2, best_round: 70, rounds_played: 12 };
+  const LABELS = ['Pinehurst No. 4', 'Pinehurst, NC'];
+
+  it('registers only fielded keys, so compose() audits the recap field by field', () => {
+    const evidence = buildRecapFieldEvidence(ROUND18, STATS, 71.4, 66.7, LABELS);
+    expect(isFieldedEvidence(evidence)).toBe(true);
+  });
+
+  it('is built from the typed claim packet: every packet value is registered under its field', () => {
+    const packet = buildRecapEvidencePacket(ROUND18, STATS, 71.4, 66.7);
+    const evidence = buildRecapFieldEvidence(ROUND18, STATS, 71.4, 66.7, LABELS);
+    const values = new Set(evidence.map((e) => `${e.field}=${e.value}`));
+    const FIELD_FOR_METRIC: Record<string, CitationField> = {
+      total_score: 'score',
+      total_putts: 'putts',
+      fairways_hit_pct: 'fairways_pct',
+      gir_pct: 'gir_pct',
+      front_nine: 'front_nine',
+      back_nine: 'back_nine',
+      holes_played: 'holes',
+      season_scoring_average: 'season_avg',
+      season_best_round: 'season_best',
+    };
+    for (const entry of packet.entries) {
+      if (entry.metric_id === 'score_to_par') continue; // registered as |to-par|, checked below
+      const field = FIELD_FOR_METRIC[entry.metric_id];
+      expect(field, entry.metric_id).toBeTruthy();
+      expect(values.has(`${citationField(field!)}=${entry.value}`), entry.metric_id).toBe(true);
+    }
+  });
+
+  it('accepts a truthful recap and rejects the same numbers in the wrong slots', () => {
+    const evidence = buildRecapFieldEvidence(ROUND18, STATS, 71.4, 66.7, LABELS);
+    expect(
+      verifyCitations(
+        'Caden carded 74 at Pinehurst No. 4 with 30 putts and 71% of fairways. That sits 2.2 strokes below his 76.2 average.',
+        evidence,
+      ).unmatched_tokens,
+    ).toEqual([]);
+    expect(
+      verifyCitations('Caden carded 74 with 71.4% of greens and 30 fairways.', evidence).unmatched_tokens,
+    ).toEqual(['71.4%', '30']);
+  });
+
+  it('checks to-par as |to-par| and season comparisons by direction', () => {
+    const evidence = buildRecapFieldEvidence(ROUND18, STATS, 71.4, 66.7, LABELS);
+    expect(verifyCitations('Caden finished 2 over par.', evidence).verified).toBe(true);
+    expect(verifyCitations('Caden was 2.2 strokes better than his season average.', evidence).verified).toBe(true);
+    expect(verifyCitations('Caden was 2.2 strokes worse than his season average.', evidence).verified).toBe(false);
+  });
+
+  it('withholds season figures for a 9-hole round, exactly as the prompt does', () => {
+    const nine = { ...ROUND18, holes_played: 9, total_score: 37, front_nine: null, back_nine: null };
+    const evidence = buildRecapFieldEvidence(nine, STATS, 71.4, 66.7, LABELS);
+    const fields = evidence.map((e) => e.field);
+    expect(fields).not.toContain(citationField('season_avg'));
+    expect(fields).not.toContain(citationField('season_best'));
+    expect(fields).not.toContain(citationField('season_avg_below'));
+  });
+
+  it('registers a negative to-par in its signed form too', () => {
+    const under = { ...ROUND18, total_score: 70, score_to_par: -2 };
+    const evidence = buildRecapFieldEvidence(under, null, null, null, LABELS);
+    expect(verifyCitations('Caden posted 70 (-2) at Pinehurst No. 4.', evidence).verified).toBe(true);
+    expect(verifyCitations('Caden finished 2 under par.', evidence).verified).toBe(true);
+  });
+
+  it('leaves buildRecapEvidence (round-review-narrative) on the legacy field-blind match', () => {
+    expect(isFieldedEvidence(buildRecapEvidence(FACTS))).toBe(false);
   });
 });

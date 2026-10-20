@@ -31,11 +31,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  savePartialRound,
-  submitGolfRoundComprehensive,
-  type PartialRoundData,
-} from '@/app/golf/actions/golf';
+import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
+import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
+import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { fairwayToast } from '@/components/fairway';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import {
@@ -87,6 +85,8 @@ interface OfflineRoundData {
       roundDate: string;
       qualifierId?: string;
       qualifierRoundNumber?: number;
+      /** Shotgun start: the hole position the round started on (play-order.ts). Omitted, hole 1. */
+      startHole?: number;
     };
     holes: Array<{ number: number; par: number; yardage: number; score: number | null }>;
     completedHoleStats: HoleStats[];
@@ -273,7 +273,8 @@ export function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
   return results;
 }
 
-function mapModernPendingRound(round: ModernOfflineRound): OfflineRoundData | null {
+/** Exported for tests: maps a queued IndexedDB round into the recover list. */
+export function mapModernPendingRound(round: ModernOfflineRound): OfflineRoundData | null {
   const draftData = round.draftData as Partial<OfflineRoundData['draftData']> | undefined;
   if (!draftData?.setupData || !Array.isArray(draftData.completedHoleStats)) {
     return null;
@@ -298,6 +299,8 @@ function mapModernPendingRound(round: ModernOfflineRound): OfflineRoundData | nu
         roundDate: draftData.setupData.roundDate || '',
         qualifierId: draftData.setupData.qualifierId,
         qualifierRoundNumber: draftData.setupData.qualifierRoundNumber,
+        // A shotgun start's play order must survive recovery, or the restored round finishes after the card's last hole.
+        startHole: typeof draftData.setupData.startHole === 'number' ? draftData.setupData.startHole : undefined,
       },
       holes: Array.isArray(draftData.holes) ? draftData.holes : [],
       completedHoleStats: draftData.completedHoleStats,
@@ -503,6 +506,7 @@ export function FairwayRecoverRound({ playerId }: FairwayRecoverRoundProps) {
           qualifierId: draft.setupData.qualifierId || undefined,
           qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
           currentHole: Math.max(1, Math.min(draft.currentHoleIndex + 1, holesToPlay)),
+          startHole: normalizeStartHole(draft.setupData.startHole, holesToPlay),
           holesToPlay,
           holes: stats,
           inProgressShots,

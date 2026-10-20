@@ -30,6 +30,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { PlayerStandingRow } from '@/app/golf/actions/stats-leak-maps-types';
 import type { TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import { tourLabel, type TourKey } from '@/lib/golf/benchmarks/tour';
 import { sgToTrackPct, formatSgSigned, buildCategoryTrends, type StatsArea } from './buildStatsViewModel';
 
 function finite(n: number | null | undefined): number | null {
@@ -166,6 +167,10 @@ export interface StatsBentoProps {
   strengths: StatisticalStrengthWeakness[];
   weaknesses: StatisticalStrengthWeakness[];
   leakArea: StatsArea;
+  /** The tour the Tour ticks and sentences refer to: PGA Tour for a men's
+   *  team, LPGA Tour for a women's team, null (neutral "the Tour") when the
+   *  stage does not know yet. Resolved once by `StatsSpineStage`. */
+  tour?: TourKey | null;
 }
 
 /** PGA tick position (0-100) for a make%/gir%/fairway% row, from the standing map.
@@ -184,9 +189,12 @@ export function StatsBento({
   strengths,
   weaknesses,
   leakArea,
+  tour = null,
 }: StatsBentoProps) {
   const stage = useStage();
   const s = detailedStats;
+  // "the PGA Tour" / "the LPGA Tour" / "the Tour" — never a guessed PGA.
+  const theTour = tour ? `the ${tourLabel(tour)}` : tourLabel(null);
 
   const puttingRows: RailBarRow[] = [
     { label: '0-3ft', pct: finite(s?.puttMakePct0_3) ?? 0, value: fmtPct(finite(s?.puttMakePct0_3)) },
@@ -281,7 +289,7 @@ export function StatsBento({
         ? `Biggest leak: ${worstCategory.label}.`
         : bestCategory
           ? `Strongest: ${bestCategory.label}.`
-          : 'Every metric vs PGA Tour and the team.';
+          : `Every metric vs ${theTour} and the team.`;
 
   return (
     <Bento separated>
@@ -314,7 +322,7 @@ export function StatsBento({
         label="Putting"
         chip={leakArea === 'putting' ? { tone: 'leak', text: 'Leak' } : undefined}
         headline={{ value: fmtPct(finite(s?.puttMakePct5_10)), unit: '5-10ft' }}
-        sentence="Make rate by distance band, vs the PGA Tour tick."
+        sentence={`Make rate by distance band, vs ${theTour} tick.`}
         span={leakArea === 'putting' ? 2 : 1}
         rows={leakArea === 'putting' ? 2 : 1}
         onOpen={() => stage.open('putting')}

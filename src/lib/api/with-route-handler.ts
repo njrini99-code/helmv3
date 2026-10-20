@@ -32,7 +32,7 @@ import { NextResponse } from 'next/server';
 import { logServerException } from '@/lib/server-error-logger';
 
 export interface WithRouteHandlerOptions {
-  /** Defaults to 'route_handler'. Use 'cron' for scheduled/Inngest-triggered routes. */
+  /** Defaults to 'route_handler'. Use 'cron' for scheduled routes. */
   source?: 'route_handler' | 'cron';
   sport?: 'golf' | 'baseball' | 'shared';
   feature?: string;

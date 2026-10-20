@@ -44,6 +44,8 @@
  * ========================================================================== */
 
 import { cn } from '@/lib/utils';
+import type { TeamSgComparison } from './team-sg-comparison';
+import { TEAM_SG_WINDOW_DAYS } from './team-sg-comparison';
 import {
   InstrumentPanel,
   InstrumentCluster,
@@ -75,6 +77,10 @@ export interface RoundSGSummaryProps extends RoundSGCategoryInputs {
    *  (men's / unknown — matches every other PGA/LPGA label call site's
    *  default, e.g. `pgaReferenceLabel`/`tourLabel`). */
   isWomens?: boolean;
+  /** Same round against the player's own team (audit row 46): the team's
+   *  mean SG: Total per countable round over the window. Null hides the line
+   *  (thin roster, or the rounds could not be read). */
+  teamComparison?: TeamSgComparison | null;
   className?: string;
 }
 
@@ -166,6 +172,7 @@ export function RoundSGSummary({
   strokesGainedAroundGreen,
   strokesGainedPutting,
   isWomens = false,
+  teamComparison = null,
   className,
 }: RoundSGSummaryProps) {
   const categories = buildSGCategoryData({
@@ -222,6 +229,14 @@ export function RoundSGSummary({
       {hasBaseline ? (
         <p className="font-fw-sans text-caption text-text-tertiary">
           vs the {tour} baseline used for this round
+        </p>
+      ) : null}
+
+      {teamComparison ? (
+        <p data-slot="round-sg-vs-team" className="font-fw-sans text-caption text-text-tertiary">
+          {teamComparison.vsTeam !== null
+            ? `${formatSigned(teamComparison.vsTeam)} vs your team's average (${formatSigned(teamComparison.teamMean)} over ${teamComparison.rounds} rounds, last ${TEAM_SG_WINDOW_DAYS} days)`
+            : `Team average ${formatSigned(teamComparison.teamMean)} over ${teamComparison.rounds} rounds, last ${TEAM_SG_WINDOW_DAYS} days`}
         </p>
       ) : null}
 

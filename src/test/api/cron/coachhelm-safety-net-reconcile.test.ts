@@ -544,3 +544,66 @@ describe('safety net — coverage read is batched (Sentry N+1 JAVASCRIPT-NEXTJS-
     expect((await round('quiet-old')).data).toMatchObject({ coachhelm_failure_reason: 'engine_covered_by_later_run' });
   });
 });
+
+describe('safety net — wake-decision reads are batched (Sentry N+1 JAVASCRIPT-NEXTJS-15E / 107, 2026-10-03)', () => {
+  // On release ef6e017a2 (after #2078 batched the coverage read) the 02:30Z
+  // tick still fired both N+1s: hasActiveMembership/meetsRoundFloor read
+  // golf_team_members and counted golf_rounds once per parked player.
+  async function readsFor(reason: string, playerCount: number): Promise<Record<string, number>> {
+    seed({
+      golf_rounds: Array.from({ length: playerCount }, (_, i) =>
+        parked(reason, { id: `r${i}`, player_id: `p${i}`, created_at: ago(HOUR_MS + i * MINUTE_MS) }),
+      ),
+      golf_team_members: Array.from({ length: playerCount }, (_, i) => ({ player_id: `p${i}`, team_id: 't1', status: 'active' })),
+      golf_teams: [{ id: 't1', organization_id: 'o1' }],
+      golf_coaches: [{ id: 'c1', organization_id: 'o1', created_at: '2026-01-01' }],
+      golf_coach_philosophy: [{ coach_id: 'c1', min_rounds_for_signal: 5 }],
+    });
+    const fromSpy = vi.spyOn(fake, 'from');
+    await callGet();
+    const counts: Record<string, number> = {};
+    for (const [table] of fromSpy.mock.calls) counts[table as string] = (counts[table as string] ?? 0) + 1;
+    return counts;
+  }
+
+  it('floor-parked players: golf_team_members and golf_rounds reads do not grow with the player count', async () => {
+    const one = await readsFor('engine_below_round_floor', 1);
+    const five = await readsFor('engine_below_round_floor', 5);
+    expect(five.golf_team_members).toBe(one.golf_team_members);
+    expect(five.golf_rounds).toBe(one.golf_rounds);
+  });
+
+  it('membership-parked players: golf_team_members reads do not grow with the player count', async () => {
+    const one = await readsFor('engine_no_team_membership', 1);
+    const five = await readsFor('engine_no_team_membership', 5);
+    expect(five.golf_team_members).toBe(one.golf_team_members);
+  });
+
+  it('the batched reads decide exactly as the per-player reads did', async () => {
+    seed({
+      golf_rounds: [
+        parked('engine_no_team_membership', { id: 'm-in', player_id: 'pin', created_at: ago(2 * HOUR_MS) }),
+        parked('engine_no_team_membership', { id: 'm-out', player_id: 'pout', created_at: ago(2 * HOUR_MS) }),
+        parked('engine_below_round_floor', { id: 'f-1', player_id: 'pf', created_at: ago(3 * HOUR_MS) }),
+        parked('engine_below_round_floor', { id: 'f-2', player_id: 'pf', created_at: ago(2 * HOUR_MS) }),
+        parked('engine_below_round_floor', { id: 'g-1', player_id: 'pg', created_at: ago(2 * HOUR_MS) }),
+      ],
+      golf_team_members: [
+        { player_id: 'pin', team_id: 't1', status: 'active' },
+        { player_id: 'pout', team_id: 't1', status: 'inactive' },
+        { player_id: 'pf', team_id: 't1', status: 'active' },
+        { player_id: 'pg', team_id: 't1', status: 'active' },
+      ],
+      golf_teams: [{ id: 't1', organization_id: 'o1' }],
+      golf_coaches: [{ id: 'c1', organization_id: 'o1', created_at: '2026-01-01' }],
+      golf_coach_philosophy: [{ coach_id: 'c1', min_rounds_for_signal: 2 }],
+    });
+
+    const body = (await (await callGet()).json()) as { reconciled: { woken: number; stillParked: number } };
+    const woken = postRoundTriggerMock.mock.calls.map(([, args]) => args.roundId).sort();
+    // pin has an active row; pf has 2 completed rounds against a floor of 2.
+    // pout's only row is inactive; pg has 1 round.
+    expect(woken).toEqual(['f-2', 'm-in']);
+    expect(body.reconciled.woken).toBe(2);
+  });
+});

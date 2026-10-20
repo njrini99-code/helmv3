@@ -21,7 +21,7 @@
 // =============================================================================
 
 import { useState, useCallback, useTransition } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { haptic } from '@/lib/lifting/haptics';

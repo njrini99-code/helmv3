@@ -165,6 +165,11 @@ function makeSupabaseMock(rows: RawRow[], orderCalls: OrderCall[]) {
     },
     from: vi.fn((table: string) => {
       if (table === 'golf_coach_insights') return builder;
+      // The signed-in coach's own row: exposure rows are attributed from the session.
+      if (table === 'golf_coaches') {
+        const self = { select: () => self, eq: () => self, maybeSingle: async () => ({ data: { id: 'coach-self' }, error: null }) };
+        return self;
+      }
       throw new Error(`unexpected table "${table}" in coach-feed test`);
     }),
   };
@@ -249,6 +254,11 @@ function makePaginatedSupabaseMock(
     },
     from: vi.fn((table: string) => {
       if (table === 'golf_coach_insights') return builder;
+      // The signed-in coach's own row: exposure rows are attributed from the session.
+      if (table === 'golf_coaches') {
+        const self = { select: () => self, eq: () => self, maybeSingle: async () => ({ data: { id: 'coach-self' }, error: null }) };
+        return self;
+      }
       throw new Error(`unexpected table "${table}" in coach-feed test`);
     }),
   };

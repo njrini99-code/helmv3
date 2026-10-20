@@ -1,0 +1,271 @@
+import './dialog-polyfill';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { LazyMotion, domAnimation } from 'motion/react';
+import { render } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+
+/**
+ * Rule 5 (docs/clubhouse/PAGE_PERFORMANCE.md): a window change does not move what is on screen, and a skeleton is the page's geometry.
+ * The pixel heights themselves are measured in a browser (`npm run clubhouse:perf`, "geometry" and the switches' layout shift); these pin the
+ * structure that holds them: the reserved lines exist in every window, and the skeletons draw them.
+ */
+
+vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
+vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams(), usePathname: () => '/golf/dashboard' }));
+vi.mock('@/app/golf/actions/development', () => ({ createFocusArea: vi.fn() }));
+
+import { StatsTeam } from '../screens/stats/StatsTeam';
+import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { StatsProfileSkeleton, StatsSkeleton } from '../screens/stats/StatsSkeleton';
+import { StatsPlayerPhoneSkeleton, StatsTeamPhoneSkeleton } from '../screens/stats/StatsPhoneSkeleton';
+import { HomeSkeleton } from '../screens/home/HomeSkeleton';
+import { ClubhouseMarker } from '../shell/context';
+import { ToastProvider } from '../ui/Toast';
+import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
+import { filterFor } from '../data/stats-filter';
+import type { ChTeamStats } from '../data/stats-team';
+import type { ChPlayerProfile } from '../data/stats-player';
+
+
+const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/stats.css'), 'utf8');
+const shell = (node: React.ReactNode) => (
+  <LazyMotion features={domAnimation}>
+    <ToastProvider>
+      <div className="ch-root" data-ui="clubhouse">
+        {node}
+      </div>
+    </ToastProvider>
+  </LazyMotion>
+);
+const team = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
+const player = (over: Partial<ChPlayerProfile> = {}): ChPlayerProfile => ({ ...PREVIEW_PLAYER, ...over });
+
+describe('Team stats hold their geometry across windows', () => {
+  it('Team stats draw no figure cards (the trend and its tape replace them); a profile keeps its five cards at the same height in every window', () => {
+    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    expect(container.querySelector('.ch-fg')).toBeNull();
+    unmount();
+    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    for (const g of profile.container.querySelectorAll('.ch-fg')) expect(g.classList.contains('ch-fg--hold')).toBe(false);
+  });
+
+  it('strokes gained heads the trend, the five supporting figures follow as one tape under it, and the skeleton draws the same', () => {
+    const { container, unmount } = render(shell(<StatsTeam data={team()} />));
+    const order = [...container.querySelectorAll('.ch-sgt, .ch-tp')].map((c) => c.className.split(' ')[0]);
+    expect(order).toEqual(['ch-sgt', 'ch-tp']);
+    expect(container.querySelector('.ch-sgt__hero .ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
+    expect(container.querySelectorAll(':scope .ch-tp > .ch-tp__c')).toHaveLength(5);
+    unmount();
+    const skel = render(shell(<StatsSkeleton />));
+    expect(skel.container.querySelector('.ch-sgt .ch-sgt__hero')).not.toBeNull();
+    expect(skel.container.querySelectorAll('.ch-tp > .ch-tp__c')).toHaveLength(5);
+    skel.unmount();
+    // The profile keeps its five equal cards.
+    const profile = render(shell(<StatsPlayer data={player()} coachId="c1" />));
+    expect(profile.container.querySelector('.ch-fg--lead')).toBeNull();
+  });
+
+  it('the hole-coverage line is in every window: the note when there is one, an empty line when there is none', () => {
+    const noted = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: 'Hole stats from 8 of 10 rounds' })) })} />));
+    const lines = noted.container.querySelectorAll('.ch-st-cover');
+    expect(lines).toHaveLength(1);
+    expect(lines[0]!.textContent).toBe('Hole stats from 8 of 10 rounds');
+    noted.unmount();
+    const none = render(shell(<StatsTeam data={team({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, note: undefined })) })} />));
+    const empty = none.container.querySelectorAll('.ch-st-cover');
+    expect(empty).toHaveLength(1);
+    expect(empty[0]!.textContent).toBe('');
+    expect(empty[0]!.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('the trend plot is as tall as the team (its players set --ch-ends), with rounds or without, so a window with fewer players keeps the card', () => {
+    const full = render(shell(<StatsTeam data={team()} />));
+    const plot = full.container.querySelector('.ch-sgt__plot') as HTMLElement;
+    expect(plot.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));
+    full.unmount();
+    // A window with no weeks at all: the empty state sits in a box of the same height.
+    const none = render(shell(<StatsTeam data={team({ weeks: [], team: { sg: [], score: [], sgMean: null, scoreMean: null } })} />));
+    expect(none.container.querySelector('.ch-sgt__plot')).toBeNull();
+    const hold = none.container.querySelector('.ch-sgt__hold') as HTMLElement;
+    expect(hold.style.getPropertyValue('--ch-ends')).toBe(String(PREVIEW_TEAM_STATS.players.length));
+    expect(hold.textContent).toMatch(/No strokes gained in this window/);
+  });
+
+  it('the stylesheet holds them: the held cards, the plot, the caption line, and the skeleton card in each of its three layouts', () => {
+    expect(css).toMatch(/\.ch-fg--hold \.ch-fg__d\s*{\s*min-height: calc\(22px \+ 8px \+ 1\.3 \* 12\.5px\)/);
+    expect(css).toMatch(/\.ch-fg--hold \.ch-fg__n\s*{\s*min-height: calc\(2 \* 1\.3 \* 12\.5px\)/);
+    expect(css).toMatch(/\.ch-sgt__plot\s*{[^}]*min-height: calc\(30px \+ var\(--ch-ends, 0\) \* 34px\)/);
+    expect(css).toMatch(/\.ch-st-cover\s*{[^}]*min-height: 18px/);
+    // The trend's list keeps its top when it shortens, and a tab's count is two digits wide at least.
+    expect(css).toMatch(/\.ch-sgt__ends\s*{[^}]*align-self: start/);
+    expect(css).toMatch(/\.ch-tab-t__n\s*{[^}]*min-width: 2ch/);
+    // 200 six across with one-line labels, 217 where they wrap (a canvas of 901 to 1116px), 159 two across (re-measured 2026-10-07); the skeleton's card and the held card share it.
+    expect(css).toMatch(/\.ch-fg\s*{\s*--ch-fg-h: 200px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 1116px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 217px/);
+    expect(css).toMatch(/min-width: 901px\) and \(max-width: 940px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 233px/);
+    expect(css).toMatch(/\(max-width: 900px\) {\s*\.ch-fg\s*{\s*--ch-fg-h: 159px/);
+    expect(css).toMatch(/\.ch-fg__c--skel,\s*\.ch-fg--hold \.ch-fg__c\s*{\s*min-height: var\(--ch-fg-h\)/);
+    // With strokes gained leading: 248 at every canvas over 900px (its 48px value, two-line note and gauge), 208 full width, and 76 a supporting row.
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 248px/);
+    expect(css).toMatch(/\.ch-fg\.ch-fg--lead\s*{\s*--ch-fg-h: 208px;/);
+    expect(css).toMatch(/\.ch-fg__group \.ch-fg__c\s*{[^}]*min-height: 76px/);
+  });
+});
+
+describe('The phone holds its panels across windows', () => {
+  const phone = (run: () => void) => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    try {
+      run();
+    } finally {
+      window.matchMedia = real;
+    }
+  };
+
+  it('Team stats: a window with no trend keeps the chart\'s frame and the reading\'s line; one with no strokes gained keeps the bars\' height', () => {
+    phone(() => {
+      const { container } = render(shell(<StatsTeam data={team({ days: [], legTotals: [null, null, null, null] })} />));
+      const trend = container.querySelector('section[aria-labelledby="ch-stm-trend"]')!;
+      expect(trend.querySelector('.ch-stm-chart-hold')!.textContent).toMatch(/The trend draws once the team has rounds on a second day/);
+      expect(trend.querySelector('.ch-stm-note[aria-hidden="true"]')).not.toBeNull();
+      expect(container.querySelector('section[aria-labelledby="ch-stm-legs"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
+    });
+    expect(css).toMatch(/\.ch-stm-chart-hold\s*{[^}]*aspect-ratio: 340 \/ 120/);
+    expect(css).toMatch(/\.ch-stm-panel--bars\s*{\s*min-height: 258px/);
+  });
+
+  it('a profile: one round keeps the trend\'s frame, and no strokes gained keeps the bars\' height', () => {
+    phone(() => {
+      const one = player({ rounds: PREVIEW_PLAYER.rounds.slice(0, 1) });
+      const { container } = render(shell(<StatsPlayer data={one} coachId="c1" />));
+      expect(container.querySelector('section[aria-labelledby="ch-spm-trend"] .ch-stm-chart-hold')!.textContent).toMatch(/One round so far/);
+    });
+    phone(() => {
+      const noSg = player({ win: { ...PREVIEW_PLAYER.win, sgPerRound: null, sgLegs: { tee: null, approach: null, around: null, putting: null } } });
+      const { container } = render(shell(<StatsPlayer data={noSg} coachId="c1" />));
+      expect(container.querySelector('section[aria-labelledby="ch-spm-sg"]')!.classList.contains('ch-stm-panel--bars')).toBe(true);
+    });
+  });
+});
+
+describe('A profile holds its hero across windows', () => {
+  it('the strokes gained figure keeps its change line when the window has no change to show', () => {
+    const noChange = player({ sgChange: { delta: null, context: '' } });
+    const { container } = render(shell(<StatsPlayer data={noChange} coachId="c1" />));
+    const figs = [...container.querySelectorAll('.ch-pf-hero__figs > div')];
+    const sg = figs.find((f) => f.querySelector('dt')?.textContent === 'SG / round')!;
+    const line = sg.querySelector('.ch-pf-hero__chg');
+    expect(line).not.toBeNull();
+    expect(line!.textContent).toBe('');
+    expect(css).toMatch(/\.ch-pf-hero__figs \.ch-pf-hero__chg\s*{[^}]*min-height: 22px/);
+  });
+});
+
+describe('Skeletons draw the loaded page\'s lines', () => {
+  it('Team stats: the caption line under the cards, and a trend with its headline, a plot as tall as a team of eight and the note line', () => {
+    const { container } = render(<StatsSkeleton />);
+    expect(container.querySelector('.ch-tp + .ch-st-cover')).not.toBeNull();
+    expect(container.querySelector('.ch-sgt .ch-sgt__hero')).not.toBeNull();
+    expect((container.querySelector('.ch-sgt__hold') as HTMLElement).style.getPropertyValue('--ch-ends')).toBe('8');
+  });
+
+  it('a profile: the strokes gained figure has its change line; a coach\'s also has the way back and the three actions (a player\'s has neither)', () => {
+    const player = render(<StatsProfileSkeleton />);
+    expect(player.container.querySelectorAll('.ch-pf-hero__figs > div')).toHaveLength(4);
+    expect(player.container.querySelectorAll('.ch-pf-hero__figs .ch-pf-hero__chg')).toHaveLength(1);
+    expect(player.container.querySelector('.ch-st-back')).toBeNull();
+    expect(player.container.querySelector('.ch-pf-hero__act')).toBeNull();
+    player.unmount();
+    const coach = render(<StatsProfileSkeleton coach />);
+    expect(coach.container.querySelector('.ch-st-back')).not.toBeNull();
+    expect(coach.container.querySelector('.ch-pf-hero__act')!.children).toHaveLength(3);
+  });
+
+  it('a profile holds its overview figures (measured in WebKit 2026-10-07: 169px, 194px in the middle band), the serif name and the switch\'s width', () => {
+    const { container } = render(<StatsProfileSkeleton coach />);
+    // The first zones sit after the filter bar, as loaded.
+    const order = [...container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(order.indexOf('ch-sf'), order.indexOf('ch-sf') + 2)).toEqual(['ch-sf', 'ch-zns']);
+    expect(container.querySelectorAll('.ch-zns > .ch-zn')).toHaveLength(2);
+    // The change line under strokes gained never wraps (it grew the hero 24px on a 680–770px canvas).
+    expect(css).toMatch(/\.ch-pf-hero__figs \.ch-sgchg\s*{\s*flex-wrap: nowrap/);
+    // The window switch keeps the loaded one's foot.
+    expect(css).toMatch(/\.ch-pf-tabs \.ch-seg,\s*\.ch-pf-tabs > \.ch-skel:last-child\s*{\s*margin-bottom: 8px/);
+  });
+
+  it('the phone skeletons keep the loaded order (a profile: head, the window and filter row, then the figures) and give each figure its second line', () => {
+    const profile = render(<StatsPlayerPhoneSkeleton />);
+    const order = [...profile.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(0, 3)).toEqual(['ch-spm-head', 'ch-stm-controls', 'ch-stm-overview']);
+    const overview = profile.container.querySelector('.ch-stm-overview')!;
+    expect(overview.getAttribute('aria-hidden')).toBe('true');
+    expect(overview.querySelector('.ch-stm-figs.is-three')).not.toBeNull();
+    expect(overview.querySelector('.ch-stm-figs > div:last-child dd')?.classList.contains('is-words')).toBe(true);
+    expect(overview.querySelector('.ch-stm-overview__meta')).not.toBeNull();
+    expect(overview.textContent).toBe('');
+    expect(profile.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading player stats');
+    profile.unmount();
+    const teamPhone = render(<StatsTeamPhoneSkeleton />);
+    // Team stats (direction A): the large title, the window row, the hero, its trend, then the round and strokes gained groups.
+    const teamOrder = [...teamPhone.container.querySelector('main')!.children].map((c) => c.className.split(' ')[0]);
+    expect(teamOrder).toEqual(['ch-stm-head', 'ch-stm-controls', 'ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel', 'ch-stm-panel', 'ch-sr-only']);
+    expect(teamPhone.container.querySelector('main')!.className).toBe('ch-stm is-team');
+    // The hero holds the value's line and the comparison's; the groups hold the loaded rows at their fixed heights.
+    expect(teamPhone.container.querySelectorAll('.ch-stm-hero > dd')).toHaveLength(2);
+    expect(teamPhone.container.querySelectorAll('.ch-stm-figrow')).toHaveLength(3);
+    expect(teamPhone.container.querySelectorAll('.ch-stm-sgfig + .ch-stm-legs > .ch-stm-leg')).toHaveLength(5);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-figrow\s*{[^}]*min-height: 60px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-sgfig\s*{[^}]*height: 64px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-leg\s*{[^}]*height: 44px/);
+    // The trend's hold is the plot's own box (the same bleed), and its reading holds the two lines it wraps to beside the mean's key.
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-plot\s*{[^}]*aspect-ratio: 340 \/ 120;\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-chart-hold\s*{\s*margin-inline: -4px/);
+    expect(css).toMatch(/\.ch-stm\.is-team \.ch-stm-trend \.ch-stm-note\s*{[^}]*min-height: calc\(2 \* 1\.4 \* 14px\)/);
+    // A profile's three figures take the stat line and gauge row.
+    const profilePhone = render(<StatsPlayerPhoneSkeleton />);
+    expect(profilePhone.container.querySelector('.ch-stm-overview > .ch-stm-figs.is-three.is-line + .ch-stm-gauges')).not.toBeNull();
+    profilePhone.unmount();
+    expect(css).toMatch(/\.ch-stm-gauges\s*{[^}]*min-height: 39px/);
+    expect(teamPhone.container.querySelector('.ch-stm-cover')?.getAttribute('aria-hidden')).toBe('true');
+    expect(teamPhone.container.querySelector('.ch-stm-chart-hold')).not.toBeNull();
+    expect(teamPhone.container.querySelector('main')?.getAttribute('aria-label')).toBe('Loading stats');
+  });
+
+  it('Home: the head has its sentence and its two actions, as loaded', () => {
+    const { container } = render(<HomeSkeleton />);
+    const head = container.querySelector('.ch-h-head')!;
+    expect(head.querySelector('.ch-h-head__actions')!.children).toHaveLength(2);
+  });
+
+  it('Home: a coach\'s head is followed by the scoring form\'s band and its Up next card has invitees and an action; a player\'s has neither, nor the brief (review 2026-10-18)', () => {
+    const coach = render(<HomeSkeleton />);
+    const main = coach.container.querySelector('main')!;
+    const order = [...main.children].map((c) => c.className.split(' ')[0]);
+    expect(order.slice(order.indexOf('ch-h-head'), order.indexOf('ch-h-head') + 3)).toEqual(['ch-h-head', 'ch-h-form', 'ch-h-sheet']);
+    expect(main.querySelectorAll('.ch-h-form .ch-h-form__figs > div')).toHaveLength(3);
+    // Shapes only: the plot's box is there, with no line drawn in it.
+    expect(main.querySelector('.ch-h-form__plot')!.children).toHaveLength(0);
+    expect(main.querySelector('.ch-h-head')!.children).toHaveLength(4);
+    expect(main.querySelector('.ch-hm-skel__act')).not.toBeNull();
+    coach.unmount();
+    // The shell's role prop (a variable, as classes.test passes it: jsx-a11y reads a literal as an ARIA role).
+    const shellRole = 'player' as const;
+    const player = render(
+      <ClubhouseMarker role={shellRole}>
+        <HomeSkeleton />
+      </ClubhouseMarker>,
+    );
+    expect(player.container.querySelector('.ch-h-form')).toBeNull();
+    expect(player.container.querySelector('.ch-h-head')!.children).toHaveLength(3);
+    expect(player.container.querySelector('.ch-h-head .ch-h-head__actions')!.children).toHaveLength(2);
+    expect(player.container.querySelector('.ch-hm-skel__act')).toBeNull();
+  });
+
+  it('a profile skeleton takes the wide canvas\'s layout too, so its tabs land where they load at 1280 (review 2026-10-18)', () => {
+    expect(css).toContain(".ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {");
+    expect(css).not.toMatch(/\.ch-st\.is-desk\[data-canopy\] \.ch-pf-hero/);
+  });
+});

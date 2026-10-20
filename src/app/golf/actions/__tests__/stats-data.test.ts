@@ -620,6 +620,31 @@ describe('getWorstHoleAnalysis — a failed hole read is not "no worst holes"', 
     await expect(getWorstHoleAnalysis('player-1')).rejects.toThrow();
   });
 
+  it('reads holes by the player\'s round ids, never through an embedded golf_rounds join', async () => {
+    // Bridge b99a5da6 / Sentry Z0: the embedded `golf_rounds!inner(...)` became
+    // a LATERAL subquery Postgres could not flatten, so every golf_holes row on
+    // the platform was RLS-checked before this player's rounds were found, and
+    // the read hit the 8 s statement_timeout. The rounds are read first now, and
+    // golf_holes is read through `in('round_id', ...)` on its index.
+    const { getWorstHoleAnalysis } = await import('../stats-data');
+    mockRoundsData = [{ id: 'r1', round_date: '2026-09-01' }];
+    mockHolesError = { message: 'stop after the hole read', code: 'TEST' };
+    mockFrom.mockClear();
+
+    await expect(getWorstHoleAnalysis('player-1')).rejects.toThrow();
+
+    type Chain = { select: { mock: { calls: unknown[][] } }; in: { mock: { calls: unknown[][] } } };
+    const holeChains = mockFrom.mock.calls
+      .map((call, i) => ({ table: call[0], chain: mockFrom.mock.results[i]!.value as unknown as Chain }))
+      .filter((c) => c.table === 'golf_holes');
+    expect(holeChains.length).toBeGreaterThan(0);
+    for (const { chain } of holeChains) {
+      const selected = chain.select.mock.calls.map((args) => String(args[0])).join(' ');
+      expect(selected).not.toContain('golf_rounds');
+      expect(chain.in.mock.calls).toContainEqual(['round_id', ['r1']]);
+    }
+  });
+
   it('still returns the empty analysis when the player genuinely has no holes', async () => {
     const { getWorstHoleAnalysis } = await import('../stats-data');
     mockRoundsData = [];

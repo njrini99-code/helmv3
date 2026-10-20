@@ -33,19 +33,17 @@
  * older than the threshold, so a silent backlog can never again hide
  * behind a query window that simply stopped looking.
  *
- * 2026-07-25 companion change (Fix 3 of the same plan, layered on top of
- * the rewrite above — same file, applied second): round submits now route
- * through Inngest for durable retries when INNGEST_EVENT_KEY/
- * INNGEST_SIGNING_KEY are configured (src/app/golf/actions/golf.ts,
- * src/lib/inngest/functions.ts's onCoachHelmRoundSubmitted). This cron is
- * still the correct backstop either way — Inngest delivery isn't
- * guaranteed to be configured, and even when it is, a durable retry can
- * still exhaust its attempts. MIN_AGE_MS below adds a floor so this cron
- * doesn't fire a redundant direct call while a round is still inside its
- * first Inngest attempt's own retry backoff window; see the constant's own
- * comment for the exact math. This cron never calls Inngest itself — it
- * always calls postRoundTrigger directly, which is fine: a 30-minute
- * re-scheduled cron tick is itself already a durable retry mechanism.
+ * Round submits trigger the analysis via the pgmq queue when enabled
+ * (HELM_QUEUE_ENABLED, src/lib/jobs/enqueue.ts) and otherwise by a direct
+ * `postRoundTrigger` call from `after()` (src/app/golf/actions/golf.ts).
+ * Neither is guaranteed to complete (an `after()` callback can be torn down
+ * with its instance), so this cron is the correct backstop either way.
+ * MIN_AGE_MS below adds a floor so this cron doesn't fire a redundant direct
+ * call while a round's own trigger may still be running; see the constant's
+ * own comment. This cron always calls postRoundTrigger directly, which is
+ * fine: a 30-minute re-scheduled cron tick is itself already a durable retry
+ * mechanism. (Inngest, which used to carry a third trigger path, was removed
+ * 2026-10-06; nothing about this cron's contract depended on it.)
  *
  * 2026-09-12 (repair plan R3 / Package 4): the engine's result is a typed
  * `AnalysisOutcome` and the round columns now carry THREE populations, not
@@ -131,28 +129,18 @@ function getSoftDeadlineMs(): number {
     : DEFAULT_SOFT_DEADLINE_MS;
 }
 
-// 2026-07-25 addition (Fix 3 of the CoachHelm remediation plan, layered on
-// top of the 2026-07-25 rewrite above): a floor so this cron never
-// re-triggers a round that's still inside its first Inngest attempt's own
-// retry backoff window. Inngest's documented default retry backoff is a
-// fixed table — 15s, 30s, 1m, 2m, ... — plus up to 30s of jitter per
-// attempt (github.com/inngest/inngest pkg/backoff/backoff.go). For
-// `retries: 3` (see onCoachHelmRoundSubmitted in
-// src/lib/inngest/functions.ts), the worst case delay before the LAST
-// retry attempt even starts is 15s+30s+60s = 105s base + up to 3*30s = 90s
-// jitter = up to 195s (3m15s). The plan's starting suggestion was 5
-// minutes; this uses 10 minutes instead — over 3x the 195s backoff-only
-// figure, leaving ~405s of headroom for the final attempt's own execution
-// time (including LLM calls) instead of the ~105s a 5-minute floor would
-// leave. The extra 5 minutes costs nothing in practice: this cron only
-// runs every 30 minutes, so a 5-vs-10-minute floor changes which of the
-// next one or two ticks first sees a given round, not whether it's
-// eventually recovered — the age-independent eligibility gate above
-// guarantees that regardless. NOT required for correctness:
-// postRoundTrigger's terminal write is idempotent at the column level and
-// duplicate insight rows are structurally prevented by
-// golf_coach_insights's unique dedup index — this floor only avoids
-// wasted duplicate engine runs while an Inngest retry may still succeed.
+// A floor so this cron never re-triggers a round whose own post-submit trigger
+// (the `after()` direct call or the queue consumer) may still be running.
+// 10 minutes leaves ample headroom for that run's own execution time
+// (including LLM calls). The floor costs nothing in practice: this cron only
+// runs every 30 minutes, so a 5-vs-10-minute floor changes which of the next
+// one or two ticks first sees a given round, not whether it's eventually
+// recovered — the age-independent eligibility gate above guarantees that
+// regardless. NOT required for correctness: postRoundTrigger's terminal write
+// is idempotent at the column level and duplicate insight rows are
+// structurally prevented by golf_coach_insights's unique dedup index — this
+// floor only avoids wasted duplicate engine runs while the first attempt may
+// still succeed.
 const MIN_AGE_MS = 10 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
@@ -176,9 +164,8 @@ async function handleSafetyNet(): Promise<NextResponse> {
   // query cheap without needing a date filter to narrow the scan.
   //
   // The `.lte('created_at', ...)` MIN_AGE_MS floor (see const above) is
-  // layered on top for Fix 3: it excludes rounds still inside their first
-  // Inngest attempt's own retry window so this cron doesn't race a
-  // still-in-flight durable retry with a redundant direct call.
+  // layered on top: it excludes rounds whose own post-submit trigger may still
+  // be in flight so this cron doesn't race it with a redundant direct call.
   const minAgeCutoffIso = new Date(Date.now() - MIN_AGE_MS).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: rounds, error } = await (supabase as any)
@@ -551,7 +538,12 @@ async function logWakeReadFailure(read: string, message: string, extra: Record<s
 }
 
 /** Does the player have an active roster membership right now? */
-async function hasActiveMembership(supabase: SupabaseClient, playerId: string): Promise<boolean> {
+async function hasActiveMembership(
+  supabase: SupabaseClient,
+  playerId: string,
+  prefetched: WakePrefetch,
+): Promise<boolean> {
+  if (prefetched.teamByPlayer.has(playerId)) return prefetched.teamByPlayer.get(playerId) != null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_team_members')
@@ -643,21 +635,30 @@ async function analysisEnabledFor(supabase: SupabaseClient, teamId: string | nul
  * disagreed, a woken run would park again and be re-woken every tick. An
  * unknown count or a failed read keeps the round parked.
  */
-async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Promise<boolean> {
+async function meetsRoundFloor(
+  supabase: SupabaseClient,
+  playerId: string,
+  prefetched: WakePrefetch,
+): Promise<boolean> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const client = supabase as any;
-  const { data: membership, error: membershipError } = await client
-    .from('golf_team_members')
-    .select('team_id')
-    .eq('player_id', playerId)
-    .eq('status', 'active')
-    .limit(1)
-    .maybeSingle();
-  if (membershipError) {
-    await logWakeReadFailure('golf_team_members', membershipError.message, { playerId });
-    return false;
+  let teamId: string | undefined;
+  if (prefetched.teamByPlayer.has(playerId)) {
+    teamId = prefetched.teamByPlayer.get(playerId) ?? undefined;
+  } else {
+    const { data: membership, error: membershipError } = await client
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    if (membershipError) {
+      await logWakeReadFailure('golf_team_members', membershipError.message, { playerId });
+      return false;
+    }
+    teamId = membership?.team_id as string | undefined;
   }
-  const teamId = membership?.team_id as string | undefined;
   if (!teamId) return false;
   const coachId = await resolveEngineCoachId(supabase, teamId);
   if (!coachId) return false;
@@ -672,6 +673,8 @@ async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Prom
   }
   const floor =
     (philosophy?.min_rounds_for_signal as number | null | undefined) ?? PHILOSOPHY_DEFAULTS.minRoundsForSignal;
+  const prefetchedCount = prefetched.completedByPlayer.get(playerId);
+  if (prefetchedCount !== undefined) return prefetchedCount >= floor;
   const { count, error: countError } = await client
     .from('golf_rounds')
     .select('id', { count: 'exact', head: true })
@@ -685,6 +688,78 @@ async function meetsRoundFloor(supabase: SupabaseClient, playerId: string): Prom
 }
 
 const COVERAGE_PREFETCH_LIMIT = 1000;
+
+/**
+ * Wake-decision answers read once per tick instead of once per parked player
+ * (Sentry N+1 JAVASCRIPT-NEXTJS-15E on golf_team_members and the floor count
+ * behind JAVASCRIPT-NEXTJS-107 on golf_rounds, still firing on ef6e017a2).
+ * Same rule as `prefetchNewestAnalyzed`: a map holds only answers the read
+ * can vouch for. A player absent from it (a capped or failed read) takes the
+ * per-player read, which keeps its fail-closed handling and logging.
+ */
+interface WakePrefetch {
+  /** Active team per player; `null` = no active membership. */
+  teamByPlayer: Map<string, string | null>;
+  /** Completed-round count per floor-parked player. */
+  completedByPlayer: Map<string, number>;
+}
+
+async function prefetchWakeReads(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: any,
+  membershipPlayerIds: string[],
+  floorPlayerIds: string[],
+): Promise<WakePrefetch> {
+  const prefetched: WakePrefetch = { teamByPlayer: new Map(), completedByPlayer: new Map() };
+  const [membership, rounds] = await Promise.all([
+    membershipPlayerIds.length === 0
+      ? null
+      : Promise.resolve()
+          .then(() =>
+            client
+              .from('golf_team_members')
+              .select('player_id, team_id')
+              .in('player_id', membershipPlayerIds)
+              .eq('status', 'active')
+              .limit(COVERAGE_PREFETCH_LIMIT),
+          )
+          .catch(() => null),
+    floorPlayerIds.length === 0
+      ? null
+      : Promise.resolve()
+          .then(() =>
+            client
+              .from('golf_rounds')
+              .select('player_id')
+              .in('player_id', floorPlayerIds)
+              .eq('status', 'completed')
+              .limit(COVERAGE_PREFETCH_LIMIT),
+          )
+          .catch(() => null),
+  ]);
+  if (membership && !membership.error) {
+    const rows = (membership.data ?? []) as Array<{ player_id: string; team_id: string }>;
+    for (const row of rows) {
+      if (!prefetched.teamByPlayer.has(row.player_id)) prefetched.teamByPlayer.set(row.player_id, row.team_id);
+    }
+    if (rows.length < COVERAGE_PREFETCH_LIMIT) {
+      for (const playerId of membershipPlayerIds) {
+        if (!prefetched.teamByPlayer.has(playerId)) prefetched.teamByPlayer.set(playerId, null);
+      }
+    }
+  }
+  if (rounds && !rounds.error) {
+    const rows = (rounds.data ?? []) as Array<{ player_id: string }>;
+    // Counts are exact only when the read was not capped.
+    if (rows.length < COVERAGE_PREFETCH_LIMIT) {
+      for (const playerId of floorPlayerIds) prefetched.completedByPlayer.set(playerId, 0);
+      for (const row of rows) {
+        prefetched.completedByPlayer.set(row.player_id, (prefetched.completedByPlayer.get(row.player_id) ?? 0) + 1);
+      }
+    }
+  }
+  return prefetched;
+}
 
 /**
  * Newest analyzed completed-round `created_at` per player, in one read.
@@ -788,9 +863,21 @@ async function reconcileParkedRounds(
   // One golf_rounds read for every player this tick can examine, instead of
   // one per player (Sentry N+1 JAVASCRIPT-NEXTJS-107). Players the batch
   // could not answer for fall back to their own read below.
-  const newestAnalyzedByPlayer = await prefetchNewestAnalyzed(
+  const examinable = [...byPlayer.keys()].slice(0, RECONCILE_PLAYER_LIMIT);
+  const newestAnalyzedByPlayer = await prefetchNewestAnalyzed(client, examinable);
+  // The newest parked row names the wake event (step 2 below); coverage may
+  // drop a player before then, which only costs an unused map entry.
+  const eventByPlayer = new Map(
+    examinable.map((playerId) => {
+      const rows = byPlayer.get(playerId)!;
+      const newestRow = rows.reduce((a, b) => (b.created_at > a.created_at ? b : a));
+      return [playerId, wakeEventFor(newestRow.coachhelm_failure_reason)] as const;
+    }),
+  );
+  const wakePrefetch = await prefetchWakeReads(
     client,
-    [...byPlayer.keys()].slice(0, RECONCILE_PLAYER_LIMIT),
+    examinable.filter((id) => eventByPlayer.get(id) === 'membership' || eventByPlayer.get(id) === 'floor'),
+    examinable.filter((id) => eventByPlayer.get(id) === 'floor'),
   );
 
   const nowIso = new Date().toISOString();
@@ -841,9 +928,9 @@ async function reconcileParkedRounds(
     const newest = remaining[remaining.length - 1]!;
     const event = wakeEventFor(newest.coachhelm_failure_reason);
     let shouldWake = false;
-    if (event === 'membership') shouldWake = await hasActiveMembership(supabase, playerId);
+    if (event === 'membership') shouldWake = await hasActiveMembership(supabase, playerId, wakePrefetch);
     else if (event === 'settings') shouldWake = await analysisEnabledFor(supabase, newest.team_id);
-    else if (event === 'floor') shouldWake = await meetsRoundFloor(supabase, playerId);
+    else if (event === 'floor') shouldWake = await meetsRoundFloor(supabase, playerId, wakePrefetch);
     if (!shouldWake) {
       summary.stillParked += remaining.length;
       continue;

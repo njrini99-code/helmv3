@@ -36,7 +36,7 @@ vi.mock('next/navigation', () => ({
 
 // The real strip animates its underline with framer-motion's layoutId; the
 // component only needs the primitives to exist for a render assertion.
-vi.mock('framer-motion', () => ({
+vi.mock('motion/react', () => ({
   motion: new Proxy(
     {},
     {

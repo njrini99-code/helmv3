@@ -54,6 +54,10 @@ const EXPECTED_SOFT_FAILURE_PATTERNS: readonly RegExp[] = [
   // for it. Without this pattern, contention that resolves itself on the
   // next tap would page as an incident.
   /^another save for this round is just finishing/i,
+  // The held submit lock's answer (20261001000000): the round changed since
+  // this client read it, and the round screen prompts a reload. Expected
+  // concurrency, the same class as 'busy' above (swap audit §16).
+  /^conflict$/i,
   // A6 (2026-09-02): moved OUT of USER_INPUT_REJECTION_PATTERNS below —
   // unlike the neighbouring qualifier-lifecycle messages there
   // (still-open-with-a-cap, already-submitted), this one is reached while a

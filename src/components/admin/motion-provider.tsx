@@ -1,6 +1,6 @@
 'use client';
 
-import { LazyMotion } from 'framer-motion';
+import { LazyMotion } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import type { ReactNode } from 'react';
 
@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
  * LazyMotion(domAnimation) at an admin route root. Without it every `<m.*>`
  * renders as static DOM and animated numbers freeze at 0 — this bit the
  * golf-admin Tracer KPI tiles before (see golf/admin/layout.tsx). Every admin
- * component that imports `m` from 'framer-motion' requires a LazyMotion
+ * component that imports `m` from 'motion/react' requires a LazyMotion
  * ancestor.
  *
  * Scoped to the admin subtree (mounted from each admin route's own

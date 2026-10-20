@@ -14,11 +14,15 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
+import {
+  loadPlayerCohort,
+  loadPlayerCohorts,
+} from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 
 import { applyGenderAnchor, type LpgaStandards } from './gender-anchor';
 import { loadStandardsForTour } from './pga-standards';
 import { applyTourBasis } from './tour-basis';
+import { applyTeamFloor } from './team-floor';
 import type { PlayerStanding } from './types';
 
 /**
@@ -99,18 +103,19 @@ function toStanding(row: RawRow): PlayerStanding | null {
 }
 
 /**
- * The two read-level overrides every loader applies, in order: the cohort
+ * The read-level overrides every loader applies, in order: the cohort
  * anchor first (women's rows get the LPGA / estimate / omission resolution),
  * then the Tour-basis rule (addendum A2 — `applyTourBasis`), so an
  * approach-proximity row is never returned with a comparable-looking Tour
- * marker no matter which loader served it. Both are pure.
+ * marker no matter which loader served it, then the team floor
+ * (`applyTeamFloor`: no team marker below 3 measured players). All pure.
  */
 function finalizeStanding(
   standing: PlayerStanding,
   gender: Awaited<ReturnType<typeof loadPlayerCohort>>['gender'],
   lpga: LpgaStandards | null,
 ): PlayerStanding {
-  return applyTourBasis(applyGenderAnchor(standing, gender, lpga));
+  return applyTeamFloor(applyTourBasis(applyGenderAnchor(standing, gender, lpga)));
 }
 
 /**
@@ -266,14 +271,10 @@ export async function loadPlayersStandingMap(
     }
   }
 
-  // Resolve each distinct player's cohort once.
-  const cohortByPlayer = new Map<string, Awaited<ReturnType<typeof loadPlayerCohort>>>();
-  const distinctIds = [...new Set(rows.map((r) => r.player_id))];
-  await Promise.all(
-    distinctIds.map(async (id) => {
-      cohortByPlayer.set(id, await loadPlayerCohort(id));
-    }),
-  );
+  // Resolve every distinct player's cohort in ONE chunked golf_team_members
+  // read. A per-player loadPlayerCohort fan-out here was Sentry
+  // JAVASCRIPT-NEXTJS-QK (N+1 on GET /golf/dashboard/roster).
+  const cohortByPlayer = await loadPlayerCohorts([...new Set(rows.map((r) => r.player_id))]);
 
   // One LPGA read for the whole roster, and only when it can be used — a
   // men's-only team never touches golf_pga_standards here.

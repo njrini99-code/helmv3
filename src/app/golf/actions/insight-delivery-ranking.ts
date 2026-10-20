@@ -1,4 +1,8 @@
-import { scoreInsight, scoreInsightWithCalibration, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import {
+  scoreInsightFactors,
+  type CoachWeights,
+  type RankScoreFactors,
+} from '@/lib/coachhelm/v3/ranking/score';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
@@ -113,49 +117,45 @@ function canonicalMetricSubject(metric: string | null | undefined): string {
   return m;
 }
 
-async function feedRankScore(
+function feedRankFactors(
   insight: RankableEvidenceInsight,
   weights: CoachWeights = {},
-  sb?: SupabaseClient<Database>,
   goals: Goal[] = [],
-): Promise<number> {
-  const rankableInsight = {
-    insight_type: insight.insight_type ?? insight.category ?? 'unknown',
-    strokes_impact: insight.evidence?.strokes_impact ?? 0,
-    confidence: insight.evidence?.confidence ?? 0,
-    metric: insight.evidence?.metric,
-    category: insight.category ?? undefined,
-    priority: insight.priority,
-    sample_n: insight.evidence?.sample_n,
-  };
-
-  // Use calibrated scoring if database client is available
-  if (sb) {
-    return scoreInsightWithCalibration(rankableInsight, weights, sb, goals);
-  }
-
-  // Fall back to non-calibrated scoring
-  return scoreInsight(rankableInsight, weights, goals);
+): RankScoreFactors {
+  return scoreInsightFactors(
+    {
+      insight_type: insight.insight_type ?? insight.category ?? 'unknown',
+      strokes_impact: insight.evidence?.strokes_impact ?? 0,
+      confidence: insight.evidence?.confidence ?? 0,
+      metric: insight.evidence?.metric,
+      category: insight.category ?? undefined,
+      priority: insight.priority,
+      sample_n: insight.evidence?.sample_n,
+    },
+    weights,
+    goals,
+  );
 }
 
 /**
  * Sort a mapped insight list by the shared composite, newest-first on ties.
- * If a database client is provided, applies calibration to confidence values.
+ *
+ * Confidence is the generator's raw support score: calibration is a
+ * documented no-op (see `scoreInsightWithCalibration` in ranking/score.ts), so
+ * `_sb` is accepted for caller compatibility and not read. Each row carries
+ * its score and the factors behind it so a surface can record both.
  */
 export async function rankEvidenceInsightsScored<T extends RankableEvidenceInsight>(
   insights: T[],
   weights: CoachWeights = {},
   goals: Goal[] = [],
-  sb?: SupabaseClient<Database>,
-): Promise<Array<{ insight: T; score: number }>> {
-  const scored = await Promise.all(
-    insights.map(async (insight) => ({
-      insight,
-      score: await feedRankScore(insight, weights, sb, goals),
-    }))
-  );
-
-  return scored
+  _sb?: SupabaseClient<Database>,
+): Promise<Array<{ insight: T; score: number; factors: RankScoreFactors }>> {
+  return insights
+    .map((insight) => {
+      const factors = feedRankFactors(insight, weights, goals);
+      return { insight, score: factors.score, factors };
+    })
     .sort((a, b) => {
       const diff = b.score - a.score;
       if (diff !== 0) return diff;

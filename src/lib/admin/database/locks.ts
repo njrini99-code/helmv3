@@ -44,11 +44,14 @@ export interface LockIncidentRow {
   feature: string | null;
   releaseSha: string | null;
   resolvedAt: string | null;
+  /** Unresolved and re-stamped inside LOCK_INCIDENT_ACTIVE_WINDOW_MS. */
+  active: boolean;
 }
 
 export interface LockIncidentsSnapshot {
   incidents: LockIncidentRow[];
-  /** Open incidents among the rows actually fetched. When
+  /** Active incidents (see isLockIncidentActive) among the rows actually
+   *  fetched. When
    *  `openCountIsFloor` is true this is a lower bound, not a total. */
   openCount: number;
   /** True when the read hit its page ceiling, so `openCount` and
@@ -74,7 +77,29 @@ interface RawLockIncidentRow {
   resolved_at: string | null;
 }
 
-function mapRow(raw: RawLockIncidentRow): LockIncidentRow {
+/**
+ * `record_db_lock_incident` (20260903191000) re-stamps `detected_at` on an
+ * unresolved incident of the same kind and query class seen again within 15
+ * minutes, and `db-health-sampler` runs every 5 minutes. So a lock that is
+ * still held is re-stamped at least twice inside this window, and an
+ * unresolved row older than it is an incident the sampler stopped seeing:
+ * it has ended. Nothing writes `resolved_at`, so without this every incident
+ * ever recorded counted as open (100 "at least" on 2026-10-13, newest
+ * 2026-10-05).
+ */
+export const LOCK_INCIDENT_ACTIVE_WINDOW_MS = 15 * 60_000;
+
+export function isLockIncidentActive(
+  incident: Pick<LockIncidentRow, 'resolvedAt' | 'detectedAt'>,
+  nowMs: number,
+): boolean {
+  if (incident.resolvedAt !== null) return false;
+  const detectedMs = Date.parse(incident.detectedAt);
+  if (Number.isNaN(detectedMs)) return true;
+  return nowMs - detectedMs <= LOCK_INCIDENT_ACTIVE_WINDOW_MS;
+}
+
+function mapRow(raw: RawLockIncidentRow, nowMs: number): LockIncidentRow {
   return {
     id: raw.id,
     detectedAt: raw.detected_at,
@@ -89,12 +114,13 @@ function mapRow(raw: RawLockIncidentRow): LockIncidentRow {
     feature: raw.feature,
     releaseSha: raw.release_sha,
     resolvedAt: raw.resolved_at,
+    active: isLockIncidentActive({ resolvedAt: raw.resolved_at, detectedAt: raw.detected_at }, nowMs),
   };
 }
 
 const DEFAULT_LIMIT = 100;
 
-export async function fetchLockIncidents(): Promise<AdminFetchResult<LockIncidentsSnapshot>> {
+export async function fetchLockIncidents(nowMs: number = Date.now()): Promise<AdminFetchResult<LockIncidentsSnapshot>> {
   const admin = createAdminClient();
 
   const { data, error } = (await admin.rpc('helm_debug_read_db_lock_incidents' as never, {
@@ -108,14 +134,15 @@ export async function fetchLockIncidents(): Promise<AdminFetchResult<LockInciden
     return failed(error.message ?? 'helm_debug_read_db_lock_incidents failed');
   }
 
-  const incidents = (data ?? []).map(mapRow);
-  const open = incidents.filter((i) => i.resolvedAt === null);
+  const incidents = (data ?? []).map((raw) => mapRow(raw, nowMs));
+  const open = incidents.filter((i) => i.active);
   // The reader asks for at most DEFAULT_LIMIT rows, so a full page means the
   // true total is unknown, not equal to the page size. `openCount` is then a
   // floor, and the tiles that render it must say so rather than present a
-  // saturated cap as a real count. Nothing writes `resolved_at` yet, so this
-  // saturates in practice, not only in theory.
-  const atCeiling = incidents.length >= DEFAULT_LIMIT;
+  // saturated cap as a real count. The RPC returns newest first, so once any
+  // fetched row has ended, every active incident is already on this page and
+  // the count is exact.
+  const atCeiling = incidents.length >= DEFAULT_LIMIT && open.length === incidents.length;
 
   const result = ok({
     incidents,

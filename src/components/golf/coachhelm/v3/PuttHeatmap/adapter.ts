@@ -18,6 +18,7 @@
  */
 
 import type { PuttRecord } from './types';
+import { puttStartFeet } from '@/lib/golf/putt-distance-buckets';
 
 /** The subset of `golf_shots` columns the heatmap needs. Matches the select
  *  list in `useRoundPutts` — kept as its own row shape (not the generated
@@ -41,9 +42,9 @@ export function buildPuttRecordsFromShotRows(rows: readonly PuttShotRow[]): Putt
   const out: PuttRecord[] = [];
   for (const r of rows) {
     if (r.putt_made === null || r.putt_made === undefined) continue;
-    const rawDistance = r.distance_to_hole_before;
-    if (rawDistance === null || rawDistance === undefined || !Number.isFinite(rawDistance)) continue;
-    const distance_feet = r.distance_unit_before === 'yards' ? rawDistance * 3 : rawDistance;
+    // Same field + unit rule as the review's puttingBreakdown (audit row 42).
+    const distance_feet = puttStartFeet(r.distance_to_hole_before, r.distance_unit_before);
+    if (distance_feet === null) continue;
     out.push({
       distance_feet,
       made: r.putt_made === true,

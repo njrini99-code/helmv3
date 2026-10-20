@@ -294,7 +294,7 @@ export async function getUserResilient(
   // returning null only ever DENIES access. `degraded: false` is deliberate —
   // we could not read a session at all, so there is no local identity to carry
   // forward, and callers must not be told there is one.
-  let session: { user: User; access_token?: string } | null = null;
+  let session: { user: User; access_token?: string } | null;
   try {
     ({ data: { session } } = await supabase.auth.getSession());
   } catch {

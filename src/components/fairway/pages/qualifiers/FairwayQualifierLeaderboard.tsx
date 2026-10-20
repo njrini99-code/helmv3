@@ -20,6 +20,13 @@
  * and the lines, and, for a coach, their scoring average over the rest of the
  * season (computed on the server, never sent to a player).
  *
+ * The order is the shared standings order (`compareStandings` in
+ * src/lib/coachhelm/v3/qualifying/ranking.ts: to par, strokes, more rounds,
+ * name), the order the selection workspace confirms from; see
+ * `deriveStandings`. Players level across the last place on score are a
+ * "Tie at cut" (Q-114), never put in or out by row order
+ * (docs/clubhouse/pages/P009-qualifiers/WIRING.md, "Standings parity").
+ *
  * Honest states (unchanged): "Awaiting first round" before anyone scores; a
  * completed qualifier with nothing posted says so; a 0-round player never gets
  * a position, an "E", or a "0". Once the coach has committed the squad,
@@ -36,6 +43,7 @@ import { Surface, EmptyState, InlineNotice, StatusPill, Skeleton, Avatar, IconBu
 import type { FwStatusTone } from '@/components/fairway/controls';
 import { formatToPar } from '@/lib/golf/format-to-par';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
+import { sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -99,7 +107,7 @@ interface FairwayQualifierLeaderboardProps {
 }
 
 /** Where a scored player sits relative to the travel squad. */
-type LineupTier = 'locked' | 'bubble' | 'out' | null;
+type LineupTier = 'locked' | 'bubble' | 'tie' | 'out' | null;
 
 /**
  * Derive the authoritative "committed selections" Set from the
@@ -185,8 +193,9 @@ export function FairwayQualifierLeaderboard({
     };
   }, [qualifierId]);
 
-  // Golf standings: a shared to-par shares the position ("T2") and the next
-  // one skips; a player with no completed round never gets a position or "E".
+  // The shared standings order (deriveStandings): level on to par AND strokes
+  // shares the position ("T2") and the next one skips; a player with no
+  // counted round never gets a position or "E".
   const rows = useMemo<Standing[]>(() => deriveStandings(entries ?? []), [entries]);
 
   // P31 — report OUR live totals up to the page so its status card and the
@@ -277,9 +286,10 @@ export function FairwayQualifierLeaderboard({
  * The standings — phone rows and the md+ table, one derivation
  * ──────────────────────────────────────────────────────────────────────── */
 
-const TIER_BADGE: Record<'locked' | 'bubble', { tone: FwStatusTone; label: string }> = {
+const TIER_BADGE: Record<'locked' | 'bubble' | 'tie', { tone: FwStatusTone; label: string }> = {
   locked: { tone: 'info', label: 'In lineup' },
   bubble: { tone: 'warning', label: 'Bubble' },
+  tie: { tone: 'warning', label: 'Tie at cut' },
 };
 
 /** What a player's detail panel reads, beyond their own row. */
@@ -343,8 +353,23 @@ function StandingsBoard({
   const drawTopScoreLine = topScoreLine > 0 && coachPicks > 0 && scored.length > topScoreLine;
   const drawTravelLine = travelLine > 0 && scored.length > travelLine;
 
-  const tierFor = (rank: number | null): LineupTier => {
+  // Q-114: players level (to par and strokes) with both the last place on
+  // score and the next player share a "Tie at cut" until the coach chooses in
+  // Manage selections; stored row order never decides it. The same rule as
+  // the selection workspace and Clubhouse's board.
+  const level = (a: Standing, b: Standing) =>
+    sameStanding(
+      { toPar: a.totalToPar as number, total: a.totalScore as number },
+      { toPar: b.totalToPar as number, total: b.totalScore as number },
+    );
+  const cutRow = topScoreLine > 0 ? scored[topScoreLine - 1] : undefined;
+  const nextRow = scored[topScoreLine];
+  const tieAtCut = !!cutRow && !!nextRow && level(cutRow, nextRow);
+
+  const tierFor = (row: Standing): LineupTier => {
+    const rank = row.rank;
     if (rank === null || travelLine <= 0) return null;
+    if (tieAtCut && level(row, cutRow!)) return 'tie';
     if (rank <= topScoreLine) return 'locked';
     if (rank <= travelLine) return coachPicks > 0 ? 'bubble' : 'locked';
     return 'out';
@@ -358,7 +383,7 @@ function StandingsBoard({
         ? { tone: 'info', label: 'Selected' }
         : { tone: 'neutral', label: 'Not selected' };
     }
-    return tier === 'locked' || tier === 'bubble' ? TIER_BADGE[tier] : null;
+    return tier === 'locked' || tier === 'bubble' || tier === 'tie' ? TIER_BADGE[tier] : null;
   };
 
   const ctx: BoardContext = {
@@ -377,7 +402,7 @@ function StandingsBoard({
   // The top-score line sits strictly above the travel cut whenever both are
   // drawn (it needs coach's picks), so a rank carries at most one rule.
   const views = rows.map((row) => {
-    const tier = tierFor(row.rank);
+    const tier = tierFor(row);
     return {
       row,
       badge: badgeFor(row, tier),
@@ -545,13 +570,17 @@ function StandingsBoard({
 
       {/* The ranking basis, for both layouts. */}
       <p className="border-t border-border-subtle px-4 py-3 font-fw-sans text-caption text-text-tertiary md:px-6">
-        Ranked by total to par, lowest first; a shared score shares the position. Every completed round counts.
+        Ranked by total to par, lowest first, then total strokes, then more rounds played; a shared to par and total shares the position.
+        Test rounds and rounds without a score don&rsquo;t count.
         {travelLine > 0
           ? coachPicks > 0
             ? ` Top ${topScoreLine} auto-qualify; ${coachPicks} coach's-pick spot${
                 coachPicks === 1 ? ' fills' : 's fill'
               } the ${travelLine}-player travel squad.`
             : ` Top ${travelLine} make the travel squad.`
+          : ''}
+        {tieAtCut && !committedSelections
+          ? ' Players level at the last place on score are tied at the cut until the coach chooses.'
           : ''}
       </p>
     </div>

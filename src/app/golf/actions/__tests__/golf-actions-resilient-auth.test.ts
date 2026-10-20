@@ -50,13 +50,9 @@ vi.mock('@/lib/auth/resilient-get-user', () => ({
   getUserResilient: vi.fn(async () => ({ user: resilientUser, degraded: resilientUser != null })),
 }));
 
-import {
-  deleteShot,
-  updateShot,
-  deleteInProgressRound,
-  getNextQualifierRoundNumber,
-  getPlayerQualifiers,
-} from '../golf';
+import { deleteShot, updateShot } from '../shot-actions';
+import { deleteInProgressRound } from '../round-partial';
+import { getNextQualifierRoundNumber, getPlayerQualifiers } from '../qualifier-actions';
 
 const SHOT = '11111111-1111-4111-8111-111111111111';
 const ROUND = '22222222-2222-4222-8222-222222222222';

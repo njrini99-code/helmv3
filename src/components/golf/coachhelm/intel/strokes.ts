@@ -1,9 +1,11 @@
 /**
- * The engine's "strokes per round available" figure, per Home theme.
+ * The team's "strokes per round available" figure, per Home theme.
  *
- * Read from the category insights the page already loads: only an
- * engine-backed insight with a live (positive, finite) counterfactual counts.
- * A template sentence or a diagnostic-only row never produces a figure.
+ * Read from `category.strokesAvailable`, which `getTeamCategoryInsights`
+ * computes as a roster mean (`team-intelligence/strokes-available.ts`): each
+ * current player's largest live counterfactual, averaged over every current
+ * player. It used to be the first engine insight's counterfactual, which is
+ * one player's figure headlining a team card (2026-09 audit rows 1 and 7).
  */
 import type { TeamCategory } from '@/app/golf/actions/team-category-insights';
 import type { IntelStrokesAvailable, IntelTheme } from '@/lib/golf/team-intelligence/types';
@@ -16,13 +18,9 @@ const CATEGORY_THEME: Record<string, IntelTheme> = {
 };
 
 export function strokesAvailable(category: TeamCategory): IntelStrokesAvailable | null {
-  for (const insight of category.insights) {
-    const perRound = insight.strokesSavedPerRound;
-    if (insight.engineBacked === true && typeof perRound === 'number' && Number.isFinite(perRound) && perRound > 0) {
-      return { perRound, message: insight.message };
-    }
-  }
-  return null;
+  const team = category.strokesAvailable;
+  if (!team || !Number.isFinite(team.perRound) || team.perRound <= 0) return null;
+  return team;
 }
 
 export function strokesByTheme(categories: readonly TeamCategory[] | null | undefined): Partial<Record<IntelTheme, IntelStrokesAvailable>> {

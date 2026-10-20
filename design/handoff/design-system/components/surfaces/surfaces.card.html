@@ -1,0 +1,21 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Surfaces" subtitle="Warm paper card, recessed inset well, deep-green feature, heavy glass over a mown fairway" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page)}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-caption);color:var(--text-tertiary);width:78px;flex:none}</style>
+</head><body class="fairway"><div id="root" style="padding:24px"></div>
+<script type="text/babel">
+const NS = window.FairwayClubhouseEdition_9c4f4d;
+
+const { Surface, Inset, GlassSurface, Numeric, Button, Badge } = NS;
+function App(){return <div style={{display:'grid',gridTemplateColumns:'1.1fr 1fr',gap:14}}>
+<Surface title="Club championship" subtitle="Round 2 of 3 · Saturday" actions={<Badge tone="outline">Qualifier</Badge>}><div className="col" style={{gap:12}}><div className="row" style={{gap:28}}><Numeric size="m" label="Position" value="T3"/><Numeric size="m" label="To par" value="−4"/></div><Inset><span style={{font:'var(--type-body-s)',color:'var(--text-secondary)'}}>Tee time 8:42 · Hole 1 · with Marchetti, Okafor</span></Inset></div></Surface>
+<div className="col" style={{gap:14}}><Surface variant="feature" title="Tomorrow" subtitle="Qualifier · Pinehurst No. 2"><Button size="sm">View pairing</Button></Surface>
+<div style={{position:'relative',borderRadius:16,padding:14,overflow:'hidden',background:'repeating-linear-gradient(90deg,#3E7A52 0 26px,#35704A 26px 52px)'}}><div style={{position:'absolute',left:18,top:6,font:'600 64px/1 var(--font-display)',letterSpacing:'-0.05em',color:'#F4F1E8',opacity:.9}}>12</div><div style={{position:'absolute',right:22,top:22,width:40,height:40,borderRadius:'50%',background:'#F4F1E8'}}></div><GlassSurface style={{padding:'12px 14px',position:'relative',borderRadius:14}}><Numeric size="s" label="Glass over imagery" value="Hole 12 · Par 3 · 155 yds"/></GlassSurface></div></div>
+</div>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

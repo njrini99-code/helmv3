@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyMigration } from '../db/check-migration-headers.mjs';
+import { classifyMigration, malformedVerifyQueries } from '../db/check-migration-headers.mjs';
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,5 +52,28 @@ describe('check-migration-headers.mjs against the real repo', () => {
     expect(() =>
       execFileSync('node', ['scripts/db/check-migration-headers.mjs'], { cwd: REPO_ROOT, stdio: 'pipe' }),
     ).not.toThrow();
+  });
+});
+
+describe('malformedVerifyQueries', () => {
+  it('accepts a multi-line VERIFY block with every line prefixed', () => {
+    const sql = [
+      "-- VERIFY: select 1 from information_schema.columns",
+      "-- VERIFY:   where table_name = 'x' and column_name = 'y';",
+    ].join('\n');
+    expect(malformedVerifyQueries(sql)).toEqual([]);
+  });
+
+  it('flags a continuation line that lost its -- VERIFY: prefix (silently vacuous query)', () => {
+    const sql = [
+      '-- VERIFY: select 1 from information_schema.columns',
+      "--   where table_name = 'x' and column_name = 'y';",
+    ].join('\n');
+    expect(malformedVerifyQueries(sql)).toHaveLength(1);
+  });
+
+  it('flags prose and a dangling clause', () => {
+    expect(malformedVerifyQueries('-- VERIFY: the two queries below (anon grants 0).')).toHaveLength(1);
+    expect(malformedVerifyQueries("-- VERIFY: select 1 from t where id = 'a' and")).toHaveLength(1);
   });
 });

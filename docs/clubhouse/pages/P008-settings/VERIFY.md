@@ -1,0 +1,392 @@
+# P008 — Settings: verification
+
+## 2026-10-19 — Save bar, per-row Saved, measure, danger zone (lane L7)
+
+Source and emulated-browser evidence only; no physical-device or owner acceptance.
+
+- Tests (exit 0): `settings-save-bar.test.tsx` (9), `settings.test.tsx` (201), `settings-staff.test.tsx`, `settings-server.test.tsx`, `settings-distance-units.test.tsx`, `settings-philosophy-save.test.tsx`, `wiring-p008-settings.test.tsx`, plus `shell-reach-css`, `course-location`, `popup-layout`, `native`, `logic`, `dialog-lifetime`, `dark-ink-guard`, `audit-a11y-motion` and the motion tests.
+- Browser (WebKit, headless, reduced motion, dev server): 1280 and 390, light and dark, of account, notifications, team, CoachHelm and preferences, the player's account and golf sections, a dirty profile and a dirty team card with the bar at the foot of the view, a CoachHelm switch and a notifications switch saying Saved in their rows, and a saved team card. Dark is the stored golf theme plus `data-fw-theme="dark"` on the root.
+- Measured in WebKit: the reorder arrows (30px) and the setting segments (26px) carry a 44px hit area (`::after`), and the arrows sit 14px apart.
+- Not verified: a physical iPhone, the native app's keyboard with the bar, VoiceOver reading of the row Saved region, Cmd+S in Safari's own Save dialog (the handler prevents it inside a card; only the unit test exercises it).
+
+<!-- clubhouse:release-audit:start -->
+## 2026-10-06 — Smoothness repair
+
+Desktop and phone sections enter immediately without an outgoing wait,
+using one normal 260ms entrance. Reduced motion and Animations off use zero
+duration. Inline validation/save feedback follows the same preference.
+
+See [repair evidence](../../SMOOTHNESS_AUDIT.md).
+Normal styling and approved handoffs remain unchanged. Physical-device
+verification and durable writes are still pending.
+
+## Current release evidence — 2026-10-06
+
+Desktop section swaps, phone pushes, settings sheets and reorder list.
+
+Check the single 260ms entrance without exit wait; verify instant reduced
+motion, drag/scroll conflicts and pending saves.
+
+Fresh WebKit 26.6: `/clubhouse-preview/settings` at
+375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
+overflow in these three fixture renders. The 430px full-page screenshot
+was inspected and recorded below. This does not exercise every popup.
+Clubhouse runtime suites: 117 files / 3,092 tests pass on this branch.
+External action suites listed in WIRING are outside that count.
+
+Additional WebKit base check: 320px also fits without horizontal overflow
+and reports zero Axe violations. The state/opener inventory completes 16
+cases for this page at applicable 1280/390px widths with zero Axe
+violations or document overflow.
+
+Current browser/test results: [all-page
+audit](../../ALL_PAGE_AUDIT.md#p008-settings). Current status remains partial.
+Physical Safari/iPhone, VoiceOver and durable authenticated writes remain
+separate acceptance checks. Earlier verification status and gap sections below
+are historical observations; use the current audit for release scope.
+<!-- clubhouse:release-audit:end -->
+
+Only what was observed. Gates are in `docs/clubhouse/PROGRESS.md`; the per-gate
+checklist is
+`docs/clubhouse/screens/settings.md`.
+
+## 2026-10-02 — Narrow desktop section visibility
+
+At 821 × 900, the horizontal Settings rail kept the last section partly
+outside the canvas even when focused. It now reveals the focused or selected
+section with bounded, immediate horizontal scrolling. Keyboard focus is
+revealed after WebKit's native alignment; a superseded focus or unmounted
+element cannot scroll the rail later. Resizing also reveals the current section.
+
+- Full scoped `settings.test.tsx`: 172/172 passed, exit 0. After the WebKit
+  timing repair, the two new rail cases passed again (170 unchanged cases
+  skipped); they cover both ends, rapid focus replacement, horizontal-only
+  immediate scrolling and the initially selected section on resize.
+- ESLint for `SettingsView.tsx` and `settings.test.tsx`: exit 0.
+- Fresh local WebKit at 821 × 900: Preferences' right edge 809.33 was inside
+  the rail's right edge 813; Account's left edge 244 was inside the rail's
+  left edge 240. Enter selected either section. The canvas stayed at scrollTop
+  0 throughout this final traversal. Reduced motion produced the same visible
+  Preferences result, and there was no document horizontal overflow.
+- Artifacts:
+  `/tmp/helm-clubhouse-desktop-daily/settings-rail-fixed-last-821.png`
+  and `/tmp/helm-clubhouse-desktop-daily/settings-rail-fixed-first-821.png`.
+- Local fixture navigation only: physical Safari, VoiceOver and account
+  persistence were not exercised by this desktop rail check.
+
+## Historical verification status
+
+```text
+Status:     partial
+Commit/PR:  agent/clubhouse (local; not committed when this was written)
+Date:       2026-09-30
+```
+
+## Static checks
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Typecheck | `npm run -s typecheck:fast` | exit 0 (2026-09-30) |
+| Lint | `npx eslint` on the changed Settings files (screens, loader, both test files, the two loading files) | exit 0 |
+| Registry and contract check | the registry's own `checkRegistry` and `renderContract`, run in memory with this page's new Bridge IDs merged in | no P008 violation; `CONTRACT.md` is what `registry.mjs sync` writes. `npm run -s clubhouse:check` itself was not run here |
+| Build | not run: no `'use server'` surface changed (the loader, the two loading files and the client screens did change) |
+
+## Automated tests
+
+| Test | Contract | Result |
+| --- | --- | --- |
+| `src/clubhouse/__tests__/settings.test.tsx` (169 cases: 113 for the desktop page, 56 for the phone) | every catalog row of kinds 0 to 5 (80xx to 85xx, including CH-8509 and CH-8510), CH-8608, CH-8701 to CH-8705, CH-8707, CH-8801 to CH-8805, CH-8807, and the hand contracts 80101, 80102, 80701, 80801, 80804, 80805, 80901 to 80903, 81002, 81003, 81204 to 81206, 81302, 81401, 81402, 81501, 81708, 81901, 82001, 82301, 82401 | pass (251/251 with `settings-server.test.tsx` and `logic.test.ts`, 2026-09-30) |
+| `src/clubhouse/__tests__/settings-server.test.tsx` (44 cases) | the loader (82101, 80804), the route and the three addresses (80101, 80102, 80405, 80801 to 80803), the three loading files (CH-8401), the live writes (80806 to 80808, 80903, CH-8002) | pass |
+| `src/clubhouse/__tests__/logic.test.ts` (settings model) | section parsing and the validators | pass |
+| `src/clubhouse/__tests__/native.test.tsx` | sign-out order (push teardown, active team, session) | pass |
+| `npx vitest run src/clubhouse` | everything above and the other pages as they stood | 553/553 |
+| `dashboard/settings/notifications` page test (3 cases) | the Fairway page for the old link | pass |
+
+Phone tests ("Settings · phone", 56 cases, each titled 81901): the coach and
+player lists and their summaries; a row
+pushing its section, Back and the edge swipe popping it, and a section named in
+the URL; a kind's summary and its
+sheet's one-write switches, a failed switch flipping back, the reads that
+failed, the weekly email and blocked push,
+quiet mode; the priority ranker (hold and drag with a tick per step and one save
+on drop, a scroll that does not lift,
+the arrow keys, a failed save going back); the profile sheet (Save off until
+changed, the discard question by Cancel and
+by a swipe, a swipe that is refused springing back, Save closing it, a failed
+save, the photo, saving, offline);
+Change email, Change password, golf details; each destructive action sheet
+(delete with its typed follow-up, leave a
+team, a new invite code, turn off CoachHelm) with Cancel leaving everything
+alone; scoring pickers (one save at a time),
+team details, reminders and CH-8111; Share and copy; every CoachHelm control;
+the head-coach lock; join a team; the
+phone skeleton, a crashing section, Preferences, Sign out and Report a problem;
+an old address (`/settings/notifications`)
+opening its section; and the unsaved-changes guard while a sheet holds edits
+(CH-8506, CH-8508).
+
+Mutation checks (phone, 2026-09-30): the 56 phone tests were each checked
+against a broken copy of the code they guard.
+67 mutations were applied in groups, one group at a time (baseline first; every
+group's failing tests were compared with
+the ones it should break; the two that share a test were each rerun alone), and
+all 67 made their test fail: for example, a swipe that no longer springs back
+fails the discard test; a
+pick that sends the state from before fails the scoring test; a switch that
+drops `busy` fails CH-8403; skipping the
+action sheet before Delete fails the delete flow. Two more (a failed write's
+callback, the props a saved value comes
+back through) changed nothing observable and were replaced by mutations that do:
+`useSaveAction` running its callback
+on failure, and the busy guard on the scoring pickers.
+
+Mutation checks (desktop, earlier pass): every test added or retitled in this
+pass was checked against a broken copy of the code it guards.
+107 mutations were applied one at a time in an isolated copy of the tree
+(baseline 157/157 first), and all 107 made a
+test fail (for example, `keepSaved` removed from `SettingsView` fails the four
+81204 cases; the old whole-object
+rollback fails 81302; the Fairway skeleton back in the two loading files fails
+CH-8401; rethrowing the team CoachHelm
+action's failure fails 82101; dropping the row count from any of the four
+updates fails 80808; not replacing the
+page's copy on a fresh read fails 81204 and 81401; resetting the draft on save
+fails 81205).
+
+## Visual verification
+
+### Desktop
+
+```text
+Viewport:  1280px (preview); states player, noteam, failed, partial, assistant, failwrites, loading
+Reference: none (no Settings screen in the handoff; D-18 and the design system)
+Result:    built to D-18 and logged 2026-09-29 in PROGRESS.md. Not re-checked after the v2 motion and haptics changes,
+           and not re-checked after this pass (which changed no styles). The owner has not reviewed the built screen.
+```
+
+### Phone
+
+```text
+Viewport:     built to the owner-approved design; not viewed in a browser at 390px (no dev server was run in the pass
+              that built it). The tests run in jsdom, which has no layout, so nothing about spacing, the 52px rows,
+              the sheets' heights or the drag is observed.
+Device/shell: not tried on an iPhone (npm run ios:dev, owner): the touch hold and drag, the haptics, the keyboard lift
+              of a sheet and the safe areas are unobserved.
+Reference:    docs/clubhouse/phone/settings.md and its mockups (approved 2026-09-30)
+Result:       the phone gate is open until the browser pass and the device pass
+```
+
+## Forced states
+
+| State | Contract | How forced | Observed result |
+| --- | --- | --- | --- |
+| Skeleton | 80201 | `?state=loading`, tests (the page and both old links) | skeleton in Settings' shape; the old links no longer show the Fairway one |
+| Empty | 80401 to 80405 | tests | distinct from a failed read; Settings opens with no team |
+| Validation | 80501 to 80515 | tests | message in place, Save disabled, nothing sent |
+| Server failure | 80601 to 80636 | tests; `?state=failwrites`, `failed`, `partial` | toast or notice with its code; edits kept |
+| Offline | 10703, 80701 | shell test; tests | a form save is refused; a switch and a CoachHelm autosave do not change |
+| Permission | 80801 to 80808 | tests; `?state=assistant` | the team switch is disabled with the reason; the old links land by role; an update that changed no row fails with "Your account doesn’t have access to do this" |
+| Destructive | 81101 to 81105 | tests | confirm first; Delete account warns when it opens |
+| Optimistic rollback | 81302 | tests | only the failed control goes back |
+| State preservation | 81201 to 81206 | tests | saved values kept, a failed save keeps its edits, Discard drops a draft |
+| Retry | 81401, 81402 | tests | Try again reads the page; Retry finishes the save |
+
+Not forced against a live session: every write against the real database
+(including an assistant coach's write
+being refused by a policy, and that PostgREST answers a policy-hidden update
+with a count of 0, which 80808 relies on:
+the tests answer from a fake client), the push subscription, the photo upload,
+the email and password flows against Supabase
+Auth, and the account delete. A state never observed is not verified
+(08_CI_PROGRESS_AND_VERIFICATION.md).
+
+## Accessibility
+
+```text
+Keyboard:       Enter in New email and in the invite code field (settings.test 82001); Esc closes a sheet (shell.test).
+                Not tested: that a dialog keeps Tab inside it. A full keyboard walk is open. Focus does not move to the
+                first invalid field (checklist item open).
+VoiceOver:      not tried on a device.
+Reduced motion: the CH-8608 test checks the stored Animations preference, not that motion stops; the shell's tests cover
+                a sheet not dragging (shell.test) and the press being off (motion.test).
+Contrast:       clubhouse:a11y (axe, WCAG 2.2 AA) ran on 2026-09-29 with 0 violations across 105 pages, the eight Settings
+                pages among them, before the v2 changes; rerun open.
+Text scaling:   not checked.
+```
+
+## Performance
+
+```text
+Layout shift:      not measured
+Request waterfall: none after paint (the server loader); on the server three batches, read from the code, not measured
+Large list:        none on this page
+Animation:         v2 tokens only
+Notes:             first-load JS and LCP are open (CH-1954)
+```
+
+## Screenshots
+
+Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
+committed) and travel in the PR description; this table is the committed record
+of them. One row per file; the label is the file's basename, named by `npm run
+clubhouse:shots -- name` (convention: `.claude/rules/clubhouse.md`). Phase is
+before, after, baseline or evidence.
+
+| Label | Phase | Commit | What it shows |
+| --- | --- | --- | --- |
+| `P008__settings-sheet__coach__390__custom-lifecycle__before__c1e81e0.png` | before | c1e81e0 | settings-sheet (coach), 390px, custom-lifecycle; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__390__keyboard-viewport__before__c1e81e0.png` | before | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__375__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 375px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__390__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 390px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__profile-sheet__coach__430__keyboard-viewport__after__c1e81e0.png` | after | c1e81e0 | profile-sheet (coach), 430px, keyboard-viewport; /clubhouse-preview/settings?section=account |
+| `P008__release-audit__coach__430x844__ready__evidence__8ee4060.png` | evidence | 8ee4060 | release-audit (coach), 430x844px, ready |
+| `P008__settings-desktop__coach__1280x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | settings-desktop (coach), 1280x844px, reduced-motion |
+| `P008__settings-phone__coach__390x844__reduced-motion__before__ee0bab8.png` | before | ee0bab8 | settings-phone (coach), 390x844px, reduced-motion |
+| `P008__settings-desktop__coach__1280x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | settings-desktop (coach), 1280x844px, reduced-motion |
+| `P008__settings-phone__coach__390x844__reduced-motion__after__ee0bab8.png` | after | ee0bab8 | settings-phone (coach), 390x844px, reduced-motion |
+| `P008__settings-notifications-normal__coach__390x844__normal__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-normal (coach), 390x844px, normal |
+| `P008__settings-notifications-off__coach__390x844__off__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-off (coach), 390x844px, off |
+| `P008__settings-notifications-os-reduce__coach__390x844__os-reduce__after__ee0bab8.png` | after | ee0bab8 | settings-notifications-os-reduce (coach), 390x844px, os-reduce |
+| `P008__cards__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__cards__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | cards (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P008__form-stress__coach__320x568__popup-audit__after__43a146a.png` | after | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__form-stress__coach__320x568__popup-audit__before__43a146a.png` | before | 43a146a | form-stress (coach), 320x568px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P008__profile__coach__390x844__popup-audit__after__43a146a.png` | after | 43a146a | profile (coach), 390x844px, popup-audit; local synthetic preview; 43a146a plus working-tree popup and depth repairs |
+| `P008__profile__coach__390x844__popup-audit__before__43a146a.png` | before | 43a146a | profile (coach), 390x844px, popup-audit; local synthetic preview; 43a146a baseline |
+| `P008__keyboard-actions__coach__390x844__focused__after__648b8d9.png` | after | 648b8d9 | keyboard-actions (coach), 390x844px, focused; development presentation fixture |
+| `P008__keyboard-actions__coach__390x844__focused__before__648b8d9.png` | before | 648b8d9 | keyboard-actions (coach), 390x844px, focused; development presentation fixture |
+| `P008__premium-audit__coach__1280__case-009-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-009-webkit-reduce; /clubhouse-preview/settings; synthetic preview |
+| `P008__premium-audit__coach__1280__case-073-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 1280px, case-073-chromium-normal; /clubhouse-preview/settings; synthetic preview |
+| `P008__premium-audit__coach__390__case-009-webkit-reduce__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-009-webkit-reduce; /clubhouse-preview/settings; synthetic preview |
+| `P008__premium-audit__coach__390__case-073-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-073-chromium-normal; /clubhouse-preview/settings; synthetic preview |
+| `P008__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
+| `P008__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+
+## Historical verification gaps
+
+- Owner review of the built desktop screen; the browser pass of the phone at
+  390px (every screen and sheet against the
+  mockups) and the iPhone pass; a check that the reorder drag does not scroll
+  the page under the finger on iOS.
+- The phone's `clubhouse:a11y` run (axe) and a VoiceOver pass of the sheets and
+  the reorder list.
+- A browser pass with a real coach account (head and assistant) and a real
+  player account, forcing the live writes.
+- `clubhouse:a11y` rerun after the v2 changes; the keyboard walk; LCP and layout
+  shift.
+- Fixed 2026-09-30 (each has a test that fails without the fix): saved values
+  snapped back after leaving a section
+  (81204); a failed CoachHelm dashboards switch put back another switch (81302);
+  Retry on a failed save left the card
+  unfinished (81402); a slider moved just before leaving was dropped (81206);
+  the two old links showed the Fairway
+  skeleton in Clubhouse (CH-8401); a throwing team CoachHelm action failed the
+  whole page and a missing profile or team
+  row was not logged (82101); Discard was silent (81708); the handicap messages
+  used a hyphen for the minus sign; a
+  profile, team, golf or coaching-settings save that a policy hides the row from
+  could say Saved while nothing
+  changed (80808; how the database answers is not observed live); a failed team
+  CoachHelm access check made a head
+  coach see the switch disabled with "Only the head coach can change this."
+  (80804).
+- Fixed 2026-10-17 (each has a test in `settings.test.tsx` that fails without
+  the fix; jsdom only, not yet seen in Safari, the Simulator or on an iPhone):
+  - Phone: the browser's Back or the iOS edge swipe while an edit sheet holds
+    edits over a section (Team details, Golf details, a reminder time, Join a
+    team, Profile over Account) now asks the CH-8509 discard question and keeps
+    the section; Keep editing leaves the sheet as typed, Discard closes it, and
+    the next Back pops the section as before. A Back while a sheet saves does
+    nothing. A clean sheet still goes with its section. The page puts the
+    section's history entry back before the stack sees the pop
+    (`SettingsPhone`, `HeldSheetsContext` in `phone/sheets.tsx`).
+  - A refused save says why instead of "Check your connection": a switch, a
+    CoachHelm autosave (CH-8022), a form save and the course location. A policy
+    refusal that arrives as an error ("violates row-level security") reads
+    "Your account doesn’t have access to do this."; only a save that threw, gave
+    no reason or failed with the browser's network wording keeps "Check your
+    connection and try again." (`saveFailureBody` in `parts.tsx`).
+- Fixed 2026-10-17 (the rest of the list):
+  - Phone: a Back while the Profile, Change email or Password sheet is open over
+    the list itself now closes the sheet instead of leaving Settings, and asks
+    first when it holds edits: a sheet over the list is a history entry of its
+    own, as a section is. Test `settings.test.tsx` (fails without the fix);
+    checked in WebKit at 390px (Back with edits stayed on Settings, asked, kept
+    the text).
+  - Two CoachHelm priority moves in a row where the first save fails and the
+    second lands: a failed save now puts back only the fields nothing has
+    changed since it was sent, so the screen keeps the second move, as the
+    server does. Test `settings-philosophy-save.test.tsx` (fails without the
+    fix).
+  - The loader reads `golf_coach_philosophy` and `golf_teams` once each (the
+    digest is a column of the philosophy row; the team name comes from the team
+    row each role reads). Test `settings-server.test.tsx` (fails without it).
+  - Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm
+    give the warning tick as their desktop confirm opens (D-70); the phone's
+    action sheets already did. Tests CH-8502 to CH-8505.
+
+## 2026-10-02 — Custom native overlay lifetime
+
+- Before captures in `/tmp/helm-clubhouse-custom-overlays/`: Settings Profile
+  and
+  Recruiting Add opened without a body scroll lock. A real History pointer drag
+  moved left 35px, paused 350ms, and wrongly dismissed on release.
+- Shared lifetime now retains the last open content and lock through
+  transform/opacity
+  exit, cancels superseded completions, restores focus with `preventScroll`,
+  and closes before releasing the lock on unmount. Dirty/busy guards are
+  preserved.
+- Final scoped runs cover 351 tests: Settings, Recruiting, Ask, shell, overlay
+  scroll and seven new custom lifecycle regressions. The old Ask pointer fixture
+  now identifies its primary pointer; its original assertions/timeouts remain.
+  Final Ask rerun:54 pass, exit0. Final helper/scroll rerun after releasing
+  retained
+  subtree references:14 pass, exit0. Scoped ESLint and diff check: exit0.
+- New shared/helper and Settings/History files are semantically unmapped and
+  reported
+  to the coordinator; existing page manifests govern them. Recruiting maps to
+  `memory/features/recruiting.md`, updated with the client lifecycle contract.
+- Fresh WebKit 375/390/430: Settings/Recruiting form tops54px, keyboard-visible
+  bottom544px at844px height with a synthetic300px keyboard. Before, both tops
+  were−246px and their headers were offscreen. Settings cards retain full row
+  heights in the scrolling body; Full name input307–339px and header85–129px.
+  Recruiting body scroll reaches Stage/Notes while Cancel/Add remain accessible.
+- Nested Settings discard prompt fits341.625–544px; closing it retains the
+  parent's lock. Both native dialogs/content remain during60ms exit; completing
+  all closes releases the final lock. Existing dirty/busy policy is unchanged.
+- History settled frames explicitly await entry animations: left0, width322.5px
+  at375 or330px at390/430, height544px above the synthetic keyboard. A35px left
+  drag held350ms stays open;120px closes with lock held through exit. Earlier
+  mid-entry captures were superseded after manual review, not accepted as final.
+- Keyboard Enter→Esc returns focus to Profile, Add prospect and Chats at every
+  tested width. Shared Modal at1440 retains its lock/content through60ms exit;
+  reduced-motion Recruiting releases the lock within50ms, without an exit slide.
+- Fresh shared Modal on Stats at375/390/430 over scroll300px: marker−250px
+  before,
+  open, PageDown,60ms exit and after. Final scroll restores300px. Short
+  Recruiting
+  fixtures have no300px scroll range, so their scroll-zero checks are not
+  presented
+  as long-page preservation evidence.
+- Final evidence: `final-matrix.json`, `focus-final.json`, `settled-final.json`,
+  `stats-scroll-final.json` and manually reviewed PNGs in
+  `/tmp/helm-clubhouse-custom-overlays/`; conventional captures logged above.
+  Browser session `overlay-audit` closed. Local ENOSPC/old-session timeouts were
+  resolved before final proof; development/HMR timings are not product timings.
+  No production/customer writes or physical-iPhone keyboard, edge-gesture or
+  frame-pacing claim. Root owns combined typecheck/build/release verification.
+
+## Repair verification — 2026-10-06
+
+Shared motion and thread regressions pass within the 3,100-test Clubhouse/
+appearance run; full typecheck and mapped travel checks pass. See the global
+[repair acceptance](../../SMOOTHNESS_AUDIT.md#repair-acceptance--2026-10-06)
+for timing, screenshots and the physical-device limits.
+
+## Premium audit matrix — 2026-10-06
+
+18 synthetic captures are recorded for this page family. The table above
+keeps representative viewport/browser evidence; the complete state/opener
+ledger and review limitations are in the
+[premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
+Captured states are not all visually approved.

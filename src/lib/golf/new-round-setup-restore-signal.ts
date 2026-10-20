@@ -20,6 +20,7 @@
 
 import { helmLog } from '@/lib/observability/structured-log';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
+import { LEGACY_NEW_ROUND_LOG_SOURCE, type RoundSessionLogSource } from '@/lib/golf/round-session/routes';
 
 export const ROUND_SETUP_RESTORED_EVENT = 'golf.round_setup.restored_after_reload';
 
@@ -28,15 +29,18 @@ export interface RoundSetupRestoredContext {
   teeId: string;
 }
 
-export function reportRoundSetupRestoredAfterReload(context: RoundSetupRestoredContext): void {
+export function reportRoundSetupRestoredAfterReload(
+  context: RoundSetupRestoredContext,
+  logSource: RoundSessionLogSource = LEGACY_NEW_ROUND_LOG_SOURCE,
+): void {
   const hasNavigator = typeof navigator !== 'undefined';
   helmLog.info(ROUND_SETUP_RESTORED_EVENT, {
     sport: 'golf',
     feature: 'round_tracking',
     action: 'round_setup_restore',
     result: 'restored',
-    component: 'NewRoundClient',
-    route: '/golf/dashboard/rounds/new',
+    component: logSource.component,
+    route: logSource.route,
     course_id: context.courseId,
     tee_id: context.teeId,
     navigator_online: hasNavigator ? navigator.onLine : null,

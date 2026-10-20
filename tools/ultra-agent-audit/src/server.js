@@ -150,8 +150,8 @@ app.get('/api/knowledge', (req, res) => {
 });
 
 // Get route context from knowledge
-app.get('/api/knowledge/route/:path(*)', (req, res) => {
-  const routePath = '/' + req.params.path;
+app.get('/api/knowledge/route/{*path}', (req, res) => {
+  const routePath = '/' + [].concat(req.params.path ?? []).join('/');
   const knowledge = orchestrator.getKnowledge();
   res.json({
     context: knowledge.getRouteContext(routePath),
@@ -255,8 +255,8 @@ app.get('/api/routes', (req, res) => {
 });
 
 // Get route summary (click on route)
-app.get('/api/route/:path(*)', (req, res) => {
-  const routePath = '/' + req.params.path;
+app.get('/api/route/{*path}', (req, res) => {
+  const routePath = '/' + [].concat(req.params.path ?? []).join('/');
   const summary = orchestrator.getRouteSummary(routePath);
   res.json(summary);
 });
@@ -264,7 +264,7 @@ app.get('/api/route/:path(*)', (req, res) => {
 // Analyze route
 app.post('/api/analyze', async (req, res) => {
   try {
-    const { routePath } = req.body;
+    const { routePath } = req.body ?? {};
     const result = await orchestrator.analyzeRoute(routePath);
     res.json(result);
   } catch (error) {
@@ -287,7 +287,7 @@ app.post('/api/audit', async (req, res) => {
 // Send to agents (generate MD)
 app.post('/api/send-to-agents', async (req, res) => {
   try {
-    const { type, issue, route, code, screenshot } = req.body;
+    const { type, issue, route, code, screenshot } = req.body ?? {};
     const md = await orchestrator.sendToAgents({ type, issue, route, code, screenshot });
     res.json(md);
   } catch (error) {
@@ -300,7 +300,7 @@ app.post('/api/send-to-agents', async (req, res) => {
 // Run the smart feature pipeline (Feature → UI Design → Validation)
 app.post('/api/pipeline', async (req, res) => {
   try {
-    const { routePath } = req.body;
+    const { routePath } = req.body ?? {};
     const result = await orchestrator.runFeaturePipeline(routePath);
     res.json(result);
   } catch (error) {
@@ -311,7 +311,7 @@ app.post('/api/pipeline', async (req, res) => {
 // Generate MD from pipeline result
 app.post('/api/pipeline/generate-md', async (req, res) => {
   try {
-    const { pipelineResult } = req.body;
+    const { pipelineResult } = req.body ?? {};
     const md = await orchestrator.generatePipelineMD(pipelineResult);
     res.json(md);
   } catch (error) {
@@ -370,7 +370,7 @@ app.get('/api/mode', (req, res) => {
 
 app.post('/api/mode', (req, res) => {
   try {
-    const { mode } = req.body;
+    const { mode } = req.body ?? {};
     const result = orchestrator.setMode(mode);
     res.json(result);
   } catch (error) {

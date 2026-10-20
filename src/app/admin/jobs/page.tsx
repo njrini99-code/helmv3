@@ -1,5 +1,5 @@
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow, type InngestHealth } from '@/lib/admin/data/jobs';
+import { fetchJobsTab, type CronBoardRow, type CronRunSummary, type IntegrityRow } from '@/lib/admin/data/jobs';
 import {
   SELFHEAL_RUNNER_LABEL,
   type SelfHealStageRow,
@@ -54,60 +54,6 @@ const JOB_TYPE_NOTE: Partial<Record<string, string>> = {
   'reliability-triage': 'Also writes a reliability-snapshot row per run by design — a separate, related job_type, not a duplicate of this one.',
   'selfheal-triage': 'Also writes a selfheal-triage-invocation row per run by design (crash-safety wrapper) — a separate, related job_type, not a duplicate of this one.',
 };
-
-/**
- * Inngest renders as three states, not a boolean. This tile printed the literal
- * word "activated" whenever both env vars were set — all `isInngestConfigured()`
- * can know — so a credential Inngest was actively REJECTING ("404 Event key not
- * found", provider-fault.ts:96-99) read exactly like a working one. That is how
- * a dead key survived 10 days here while every durable job silently went
- * nowhere. `rejecting` is the state that word was hiding.
- */
-const INNGEST_TONE: Record<InngestHealth['status'], FwStatusTone> = {
-  rejecting: 'danger',
-  activated: 'success',
-  // Keys deliberately absent is a config choice, not a fault — neutral, the
-  // same reasoning as 'never-ran' above.
-  'not-configured': 'neutral',
-};
-
-const INNGEST_LABEL: Record<InngestHealth['status'], string> = {
-  rejecting: 'rejecting keys',
-  activated: 'activated',
-  'not-configured': 'not configured',
-};
-
-/** The line under the pill. Says only what was MEASURED — "nothing has
- *  rejected them" is the strongest true claim available, because the Bridge
- *  never observes a successful Inngest delivery, only a failed one. */
-function InngestDetail({ inngest }: { inngest: InngestHealth }) {
-  if (inngest.status === 'not-configured') {
-    return (
-      <p className="mt-1.5 text-xs text-warm-500">
-        INNGEST_EVENT_KEY / INNGEST_SIGNING_KEY are absent from this deployment — events are not sent.
-      </p>
-    );
-  }
-  if (inngest.status === 'activated') {
-    return <p className="mt-1.5 text-xs text-warm-500">Keys are set and no Inngest fault is open.</p>;
-  }
-  return (
-    <>
-      <p className="mt-1.5 text-xs text-fw-danger-ink">
-        Keys are set but Inngest rejected them — events are dropped until the key is replaced.
-      </p>
-      <p className="mt-1 break-words font-fw-mono text-xs text-warm-500">
-        {inngest.faultCode ?? 'provider_inngest fault'}
-        {inngest.faultLastSeenAt ? (
-          <>
-            {' · last seen '}
-            <LocalTime iso={inngest.faultLastSeenAt} variant="datetime" />
-          </>
-        ) : null}
-      </p>
-    </>
-  );
-}
 
 // Dateline rule — replaces the retired border-l-2 "key panel" left-edge
 // stripe. Chrome, not a status signal: a helm-green h-[2px] w-7 rounded-full
@@ -618,19 +564,6 @@ async function JobsBody() {
 
   return (
     <div className="space-y-6">
-      {/* Promoted from the small Inngest tile at the bottom of this page —
-          a rejecting key means every durable job routed through Inngest is
-          silently dropped (see INNGEST_TONE's header comment: a dead key
-          survived 10 days here before this state existed at all). Kept
-          small on purpose — this is a pointer to the tile below, not a
-          duplicate of its detail. */}
-      {tab.inngest.status === 'rejecting' ? (
-        <InlineNotice tone="danger" title="Inngest is rejecting its configured keys">
-          Events are being dropped, not delivered — see the Inngest tile below for the fault code and when it was
-          last seen.
-        </InlineNotice>
-      ) : null}
-
       <HelmJobsQueuePanel status={helmJobsStatus} />
 
       <Surface padding="sm">
@@ -685,22 +618,10 @@ async function JobsBody() {
         </div>
       </Surface>
 
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatTile label="admin_events rows" value={tab.logHealth.adminEvents} tone="neutral" mono />
         <StatTile label="error_logs rows" value={tab.logHealth.errorLogs} tone="neutral" mono />
         <StatTile label="job log rows" value={tab.logHealth.jobLogs} tone="neutral" mono />
-        {/* Full row on a phone: its detail is a sentence, and a half-width
-            (~165px) cell wrapped it into a narrow column beside three
-            single-number tiles. */}
-        <Surface padding="sm" className="col-span-2 md:col-span-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-warm-500">Inngest</p>
-          <div className="mt-1.5">
-            <StatusPill tone={INNGEST_TONE[tab.inngest.status]} dot size="sm">
-              {INNGEST_LABEL[tab.inngest.status]}
-            </StatusPill>
-          </div>
-          <InngestDetail inngest={tab.inngest} />
-        </Surface>
       </section>
     </div>
   );

@@ -21,14 +21,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const { logServerEventMock, roundsData } = vi.hoisted(() => ({
   logServerEventMock: vi.fn(async () => {}),
-  roundsData: { rows: [] as unknown[] },
+  roundsData: { rows: [] as unknown[], eqs: [] as Array<[string, unknown]> },
 }));
 
 function makeRoundsBuilder() {
   const builder: Record<string, unknown> = {};
   const ret = () => builder;
   builder.select = ret;
-  builder.eq = ret;
+  builder.eq = (col: string, val: unknown) => {
+    roundsData.eqs.push([col, val]);
+    return builder;
+  };
   builder.gte = ret;
   builder.order = ret;
   builder.limit = async () => ({ data: roundsData.rows, error: null });
@@ -47,9 +50,15 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 
+// A zero-pattern mine now retires the player's stale mined patterns (audit
+// row 16), which reaches golf_patterns_v2 through fromUntyped. Resolve that
+// chain as a successful no-op; the starvation telemetry is what's under test.
 vi.mock('@/lib/supabase/untyped', () => ({
   fromUntyped: () => {
-    throw new Error('fromUntyped should not be reached — savePatterns short-circuits on 0 patterns');
+    const chain: Record<string, unknown> = {};
+    for (const m of ['update', 'in', 'eq', 'not']) chain[m] = () => chain;
+    chain.or = async () => ({ error: null });
+    return chain;
   },
 }));
 
@@ -68,6 +77,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 
 // Import AFTER mocks are registered.
 const { PatternMiner } = await import('@/lib/coachhelm/v2/mining/pattern-miner');
+const { __resetEmitThrottleForTests } = await import('@/lib/admin/emit-throttle');
 
 /** N identical, feature-flat rounds — nothing for any condition to key off:
  *  same score, same non-tournament/qualifier round_type, no days-since-last
@@ -84,6 +94,11 @@ function flatRounds(n: number) {
     total_fairways_hit: null,
     total_gir: null,
     total_gir_possible: null,
+    // Countable (round-countable.ts): the miner drops half-entered cards.
+    holes_played: 18,
+    total_score: 72,
+    front_nine: 36,
+    back_nine: 36,
   }));
 }
 
@@ -98,6 +113,9 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
   beforeEach(() => {
     logServerEventMock.mockClear();
     roundsData.rows = [];
+    // The starvation line is throttled per player per process (one line an
+    // hour): start every test from an empty throttle map.
+    __resetEmitThrottleForTests();
   });
 
   it('gives two different players two different dbFingerprints', async () => {
@@ -116,8 +134,11 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
   });
 
   it('gives the same player the same dbFingerprint across repeated cron ticks', async () => {
+    // Each cron tick is a fresh lambda in production, so the per-process
+    // throttle starts empty on every tick: reset it between the two mines.
     roundsData.rows = flatRounds(12);
     await new PatternMiner('player-cccc').minePatterns();
+    __resetEmitThrottleForTests();
     roundsData.rows = flatRounds(12);
     await new PatternMiner('player-cccc').minePatterns();
 
@@ -126,11 +147,61 @@ describe('pattern-miner starvation telemetry — per-player fingerprint', () => 
     expect(second?.dbFingerprint).toBe(first?.dbFingerprint);
   });
 
+  it('logs a player at most once per process window: a same-process re-mine is silent', async () => {
+    // analyzePlayer and predictPerformance both mine the same player within
+    // one run; 762 error_logs rows in 7 days came from exactly that. The
+    // second mine still starves (returns []) but writes no second line.
+    roundsData.rows = flatRounds(12);
+    await new PatternMiner('player-gggg').minePatterns();
+    roundsData.rows = flatRounds(12);
+    await expect(new PatternMiner('player-gggg').minePatterns()).resolves.toEqual([]);
+
+    expect(loggedFingerprints()).toHaveLength(1);
+  });
+
   it('also sets a per-player Sentry-side fingerprint (harmless today under skipSentry, correct if that ever changes)', async () => {
     roundsData.rows = flatRounds(12);
     await new PatternMiner('player-dddd').minePatterns();
 
     const [ctx] = loggedFingerprints();
     expect(ctx?.fingerprint).toEqual(['pattern-miner-starvation', 'player-dddd']);
+  });
+
+  it('stays telemetry at any round count: info severity, bursts folded (Bridge noise, 2026-10-01)', async () => {
+    // Production 2026-10-01: ~200 starvation rows in 24h across 11 players, the
+    // >=16-round ones at 'warning'. The classifier (incident-classification.ts
+    // TELEMETRY_PHRASES '.starvation') and feature-registry both call this
+    // telemetry, so a 'warning' row only joined the triage queue, got closed,
+    // and re-fired minutes later (pattern-miner-starvation:e61da37b… resolved
+    // 21:17Z, back 22:11Z as 4 rows in 3s).
+    roundsData.rows = flatRounds(20);
+    await new PatternMiner('player-eeee').minePatterns();
+    const calls = logServerEventMock.mock.calls as unknown as Array<[string, { durableCollapse?: boolean }, string]>;
+    const [, ctx, severity] = calls[0]!;
+    expect(severity).toBe('info');
+    expect(ctx.durableCollapse).toBe(true);
+  });
+});
+
+// OD-03 leak (2026-09-28 audit): mined patterns and the insights built on them
+// read QA and implausible rounds (91301a75: is_test, 37 over 18).
+describe('pattern-miner — countable, non-test rounds only', () => {
+  beforeEach(() => {
+    logServerEventMock.mockClear();
+    roundsData.rows = [];
+    roundsData.eqs = [];
+  });
+
+  it('filters is_test = false in the rounds query', async () => {
+    roundsData.rows = flatRounds(12);
+    await new PatternMiner('player-eeee').minePatterns();
+    expect(roundsData.eqs).toContainEqual(['is_test', false]);
+  });
+
+  it('drops non-countable rounds before mining: 12 hole-less cards are not enough rounds', async () => {
+    roundsData.rows = flatRounds(12).map((r) => ({ ...r, front_nine: null, back_nine: null }));
+    await expect(new PatternMiner('player-ffff').minePatterns()).resolves.toEqual([]);
+    // It stopped at "not enough rounds", before the starvation branch.
+    expect(loggedFingerprints()).toEqual([]);
   });
 });

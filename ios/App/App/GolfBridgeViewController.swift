@@ -66,6 +66,13 @@ class GolfBridgeViewController: CAPBridgeViewController {
         url.contains("/golf/dashboard/rounds/new") || url.contains("/golf/dashboard/rounds/continue")
     }
 
+    /// A page the app ships (capacitor:// or file:// origin, or localhost), such as offline.html.
+    static func isBundledPage(_ url: String) -> Bool {
+        guard let parsed = URL(string: url) else { return false }
+        if parsed.scheme == "capacitor" || parsed.scheme == "file" { return true }
+        return parsed.host == "localhost" && parsed.path.hasSuffix("offline.html")
+    }
+
     /// Clears the WKWebView HTTP cache once per installed build instead of on
     /// every launch. Next.js `/_next/static` assets are content-hashed and the
     /// HTML is served no-cache, so a warm cache never serves a stale deploy;
@@ -157,6 +164,12 @@ class GolfBridgeViewController: CAPBridgeViewController {
             // then return to the native home screen
             let isGolfPage = url.contains("/golf/")
             let isAboutPage = url.contains("/about") || url.contains("/privacy") || url.contains("/terms")
+
+            // The bundled offline page (capacitor.config errorPath, served from the app's own
+            // origin) is not "leaving golf". Treating it as such reloaded the online sign-in,
+            // which failed offline and landed back here: a reload loop on an offline cold start.
+            // offline.html retries on its own when the connection returns.
+            if Self.isBundledPage(url) { return }
 
             if !isGolfPage && !isAboutPage && !url.isEmpty {
                 // Small delay to let the navigation settle, then go back to native

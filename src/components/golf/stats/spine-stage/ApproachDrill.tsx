@@ -9,7 +9,7 @@
  * approach-distance band (0-3 through 225+ yds; only a percentage is tracked
  * per band, so `n` is honestly `null` rather than fabricated), GIR-by-lie
  * `RailBars`, and the reused `LeakMap` proximity chart (lower-is-better feet
- * vs PGA Tour).
+ * vs the team's Tour: PGA Tour for men's teams, LPGA Tour for women's).
  * ========================================================================== */
 
 import dynamic from 'next/dynamic';
@@ -39,6 +39,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { LeakBucket, PlayerLeakMaps } from '@/app/golf/actions/stats-leak-maps-types';
 import type { SprayChartResponse, TrendAnalysisResponse } from '@/app/golf/actions/stats-data-types';
 import type { BandHistogramBand } from '@/components/fairway/charts/BandHistogram';
+import { tourLabel, type TourKey } from '@/lib/golf/benchmarks/tour';
 
 function ChartLoading() {
   return (
@@ -167,40 +168,28 @@ const GIR_BANDS: ReadonlyArray<{ label: string; field: keyof GolfStats }> = [
 ];
 
 /**
- * Fixed, distance-scaled ramp-band cutoffs for the Efficiency (avg strokes to
- * hole out) and Proximity (avg feet to the hole) matrix columns below — lower
- * is better for both. No PGA/team baseline is plumbed into this component
- * (only `detailedStats` is), so these are heuristic college-golf targets
- * rather than a Tour-referenced scale — same honesty precedent as
- * PuttingDrill's flat 0-3ft band, which has no PGA standard either: closer
- * approaches should convert in fewer strokes and land nearer the hole, and
- * both cutoffs loosen band-by-band as distance grows. `[good, mid, poor]`
- * ascending — `lowerIsBetterBand` below maps a value at/under `good` to band
- * 4 (darkest/strongest), at/under `poor` to band 2, worse than `poor` to
- * band 1.
+ * The Efficiency matrix's distance bands (average strokes to hole out and
+ * proximity, by approach lie).
+ *
+ * UNGRADED BY DESIGN. These cells used to be coloured against hand-set
+ * "college-golf targets" (owner decision Q-93 removes every college or
+ * division yardstick). The Tour has no strokes-to-hole-out standard by lie, and
+ * its proximity standard is published only for 50-125, 125-175 and 175+ yd:
+ * none of these eight bands lines up with one of those, so a cell cannot be
+ * compared with a Tour number without inventing one. The honest Tour
+ * comparison for proximity is the `LeakMap` at the foot of the drill, which
+ * uses the Tour's own bands.
  */
 const APPROACH_DETAIL_BANDS = [
-  { label: '30-75 yds', efficiency: 'approachEff30_75', proximity: 'approachProx30_75', miss: '30_75', effBand: [2.3, 2.55, 2.85], proxBand: [22, 32, 45] },
-  { label: '75-100 yds', efficiency: 'approachEff75_100', proximity: 'approachProx75_100', miss: '75_100', effBand: [2.45, 2.7, 3.0], proxBand: [28, 40, 55] },
-  { label: '100-125 yds', efficiency: 'approachEff100_125', proximity: 'approachProx100_125', miss: '100_125', effBand: [2.55, 2.8, 3.1], proxBand: [33, 46, 62] },
-  { label: '125-150 yds', efficiency: 'approachEff125_150', proximity: 'approachProx125_150', miss: '125_150', effBand: [2.65, 2.9, 3.2], proxBand: [40, 54, 72] },
-  { label: '150-175 yds', efficiency: 'approachEff150_175', proximity: 'approachProx150_175', miss: '150_175', effBand: [2.75, 3.0, 3.3], proxBand: [46, 62, 82] },
-  { label: '175-200 yds', efficiency: 'approachEff175_200', proximity: 'approachProx175_200', miss: '175_200', effBand: [2.85, 3.1, 3.4], proxBand: [54, 70, 92] },
-  { label: '200-225 yds', efficiency: 'approachEff200_225', proximity: 'approachProx200_225', miss: '200_225', effBand: [2.95, 3.2, 3.5], proxBand: [64, 82, 106] },
-  { label: '225+ yds', efficiency: 'approachEff225Plus', proximity: 'approachProx225Plus', miss: '225_plus', effBand: [3.05, 3.3, 3.6], proxBand: [76, 96, 124] },
+  { label: '30-75 yds', efficiency: 'approachEff30_75', proximity: 'approachProx30_75', miss: '30_75' },
+  { label: '75-100 yds', efficiency: 'approachEff75_100', proximity: 'approachProx75_100', miss: '75_100' },
+  { label: '100-125 yds', efficiency: 'approachEff100_125', proximity: 'approachProx100_125', miss: '100_125' },
+  { label: '125-150 yds', efficiency: 'approachEff125_150', proximity: 'approachProx125_150', miss: '125_150' },
+  { label: '150-175 yds', efficiency: 'approachEff150_175', proximity: 'approachProx150_175', miss: '150_175' },
+  { label: '175-200 yds', efficiency: 'approachEff175_200', proximity: 'approachProx175_200', miss: '175_200' },
+  { label: '200-225 yds', efficiency: 'approachEff200_225', proximity: 'approachProx200_225', miss: '200_225' },
+  { label: '225+ yds', efficiency: 'approachEff225Plus', proximity: 'approachProx225Plus', miss: '225_plus' },
 ] as const;
-
-/** Adapts the shared higher-is-better `rampBandForValue` for a lower-is-better
- *  metric (strokes to hole out, feet to the hole) by negating the value and
- *  the threshold triple — same ramp math, inverted direction, so RampMatrix's
- *  one band→color scale (`RAMP_CLASSES`, "darkest = strongest") still owns
- *  the coloring; this file never reimplements it. */
-function lowerIsBetterBand(
-  value: number | null,
-  [good, mid, poor]: readonly [number, number, number],
-): 0 | 1 | 2 | 3 | 4 {
-  return rampBandForValue(value === null ? null : -value, [-poor, -mid, -good]);
-}
 
 /** Miss-direction percentages read as "how pronounced is this tendency", not
  *  good/bad — darker = a MORE dominant leak direction for that distance band,
@@ -259,6 +248,10 @@ export interface ApproachDrillProps {
   detailedStats: GolfStats | null;
   leakMaps: PlayerLeakMaps | null;
   sprayData: SprayChartResponse | null;
+  /** The tour this player's references come from, resolved once by the stage
+   *  (`resolveStageTour`); falls back to the leak map's own `tour`. Null keeps
+   *  the label neutral ("the Tour"). */
+  tour?: TourKey | null;
   /** True when the leak-map fetch genuinely FAILED (distinct from no-data). */
   leakError?: boolean;
   onRetryLeak?: () => void;
@@ -276,6 +269,7 @@ export function ApproachDrill({
   detailedStats,
   leakMaps,
   sprayData,
+  tour: tourProp = null,
   leakError = false,
   onRetryLeak,
   retryingLeak = false,
@@ -284,6 +278,7 @@ export function ApproachDrill({
 }: ApproachDrillProps) {
   const { home } = useStage();
   const s = detailedStats;
+  const tour: TourKey | null = tourProp ?? leakMaps?.tour ?? null;
   const [detail, setDetail] = useState<ApproachDetail>('gir');
 
   const categoryInsights = buildCategoryInsights(patterns);
@@ -406,7 +401,7 @@ export function ApproachDrill({
           <Surface elevation="shadow" padding="md" className="space-y-4 overflow-hidden">
             <div>
               <Eyebrow as="h4">Approach efficiency by distance and lie</Eyebrow>
-              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better, darker cells are stronger.</p>
+              <p className="mt-1 text-caption text-text-tertiary">Average strokes to hole out and proximity to the hole. Lower is better. These bands are not graded: the Tour publishes proximity only for 50-125, 125-175 and 175+ yd, so the proximity chart below is where you compare with {tourLabel(tour)}.</p>
             </div>
             <div className="overflow-x-auto">
               <RampMatrix
@@ -414,20 +409,15 @@ export function ApproachDrill({
                 rows={APPROACH_DETAIL_BANDS.map((band) => {
                   const eff = s?.[band.efficiency];
                   const prox = finite(s?.[band.proximity]);
+                  // Band 0 = neutral: no honest Tour value to grade a cell against.
                   const cells: RampCell[] = [
-                    { value: prox === null ? '—' : `${prox.toFixed(1)} ft`, band: lowerIsBetterBand(prox, band.proxBand) },
-                    { value: fmtNumber(eff?.fairway, 2), band: lowerIsBetterBand(finite(eff?.fairway), band.effBand) },
-                    { value: fmtNumber(eff?.rough, 2), band: lowerIsBetterBand(finite(eff?.rough), band.effBand) },
-                    { value: fmtNumber(eff?.sand, 2), band: lowerIsBetterBand(finite(eff?.sand), band.effBand) },
+                    { value: prox === null ? '—' : `${prox.toFixed(1)} ft`, band: 0 },
+                    { value: fmtNumber(eff?.fairway, 2), band: 0 },
+                    { value: fmtNumber(eff?.rough, 2), band: 0 },
+                    { value: fmtNumber(eff?.sand, 2), band: 0 },
                   ];
                   return { label: band.label, cells };
                 })}
-                legend={[
-                  { band: 4, label: 'Ahead of target' },
-                  { band: 3, label: 'On target' },
-                  { band: 2, label: 'Behind target' },
-                  { band: 1, label: 'Well behind target' },
-                ]}
               />
             </div>
           </Surface>
@@ -491,7 +481,8 @@ export function ApproachDrill({
             <LeakMap
               title="Approach proximity"
               overline="Approach"
-              subtitle="Average proximity to the hole by approach distance vs PGA Tour"
+              subtitle={`Average proximity to the hole by approach distance vs ${tourLabel(tour)}`}
+              referenceLabel={tour ? tourLabel(tour) : undefined}
               takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
               direction="lower_better"
               unit="feet"

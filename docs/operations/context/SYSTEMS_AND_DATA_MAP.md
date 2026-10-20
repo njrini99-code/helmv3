@@ -20,7 +20,7 @@
 | **BaseballHelm** | College baseball recruiting (coaches ↔ players) + team management | `baseball_*` |
 | **Lift Lab** | Sport-agnostic strength/lifting system (shared identity, not a baseball rename). Exists in two forms — see §4. | `helm_lifting_*` |
 
-**Stack:** Next.js 16 (App Router) · TypeScript strict · Supabase (Postgres + RLS, Auth, Storage, Realtime) · Tailwind · Framer Motion · Vercel (region `iad1`) · Inngest (durable workflows).
+**Stack:** Next.js 16 (App Router) · TypeScript strict · Supabase (Postgres + RLS, Auth, Storage, Realtime) · Tailwind · Framer Motion · Vercel (region `iad1`). Background work: Vercel Cron and the pgmq job queue.
 
 ---
 
@@ -43,9 +43,8 @@ graph LR
     ST["Storage (docs, videos, images)"]
     RT["Realtime (messages, live updates)"]
   end
-  subgraph Edge["Scheduled / durable"]
+  subgraph Edge["Scheduled"]
     CRON["Vercel Cron → /api/cron/**"]
-    INNGEST["Inngest workflows\n/api/inngest"]
   end
 
   UI --> MW --> RSC
@@ -59,7 +58,6 @@ graph LR
   UI -. subscribe .-> RT
   UI -->|upload/download| ST
   CRON --> API
-  INNGEST --> PG
 ```
 
 **Rules that make this path work (enforced in review):**
@@ -121,7 +119,7 @@ organizations  (shared — id, name, type: college|juco|high_school|showcase)
 Two mechanisms, both pointing at the same Postgres:
 
 - **Vercel Cron** → HTTP `GET /api/cron/**` route handlers. Defined in [vercel.json](../../../vercel.json) (**14 entries** as of this writing), e.g. `coachhelm-validation` (Sun 06:00), `coachhelm-calibration` (daily 03:30), `event-reminders` / `task-reminders` (hourly), `coach-morning-digest`, and the v3 batch (`v3/standing-refresh`, `v3/genome-nightly`, `v3/causality-attribute`, `v3/weekly-coach-email`, `v3/goal-suggestions-write`, `v3/goal-suggestions-evaluate`). Live handlers live under [src/app/api/cron/](../../../src/app/api/cron/).
-- **Inngest** (durable workflows, retries) → client [src/lib/inngest/client.ts](../../../src/lib/inngest/client.ts), functions [src/lib/inngest/functions.ts](../../../src/lib/inngest/functions.ts), handler [src/app/api/inngest/route.ts](../../../src/app/api/inngest/route.ts). Intended home for the heavy weekly backfills (W12/W20/W27/W33/W35); currently a scheduled health-ping scaffold (`weeklyHealthPing`) with commented-out example workflows, not yet a live backfill.
+- **pgmq job queue** (durable, retryable background work) → [docs/operations/JOBS_QUEUE.md](../JOBS_QUEUE.md).
 
 ---
 
@@ -148,7 +146,7 @@ Point automations and agents **here** instead of re-deriving structure. Note the
 **n8n (automation):**
 - To discover structure without crawling 1,752 files, read the machine-readable indexes first: [.devin/wiki.json](../../../.devin/wiki.json) (page index) and the AUTOGEN block in [memory/glossary.md](../../../memory/glossary.md) (table/function/enum inventory — but see the staleness caveat in §6). Parse these; don't scrape code.
 - To act on data, prefer the documented DB functions (e.g. `get_admin_*_rollup()`, `get_qualifier_leaderboard()`) and respect RLS — service-role access bypasses tenancy and must never be exposed client-side.
-- Scheduled jobs already exist in [vercel.json](../../../vercel.json) and Inngest; add new recurring work as an Inngest function or a `/api/cron/**` handler, not a new external scheduler, so it inherits auth + observability.
+- Scheduled jobs already exist in [vercel.json](../../../vercel.json); add new recurring work as a `/api/cron/**` handler (or a pgmq queue for retryable work), not a new external scheduler, so it inherits auth + observability.
 
 **Huly (project/issue tracking):**
 - Map issues to the feature areas named in `.devin/wiki.json` `repo_notes` and [memory/registry.yml](../../../memory/registry.yml) so tickets carry the same taxonomy as the code (CoachHelm AI, Shot Tracking, Calendar, Roster/Access Control, etc.).

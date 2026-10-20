@@ -2,7 +2,19 @@
   "mcpServers": {
     "supabase": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo"
+      "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
+    },
+    "supabase-readonly": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=qmnssrrolpinvwjjnufo&read_only=true&features=docs%2Cdatabase%2Cdebugging%2Cdevelopment%2Cnotebooks%2Cstorage"
+    },
+    "next-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "next-devtools-mcp"
+      ]
     },
     "playwright": {
       "type": "stdio",
@@ -10,6 +22,17 @@
       "args": [
         "-y",
         "@playwright/mcp@0.0.82"
+      ]
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "--no-install",
+        "chrome-devtools-mcp",
+        "--isolated",
+        "--no-usage-statistics",
+        "--no-performance-crux"
       ]
     }
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { Avatar } from '@/components/ui/avatar';
 import { cn, getFullName } from '@/lib/utils';
 import type { BaseballPlayer as Player, PipelineStage } from '@/lib/types';

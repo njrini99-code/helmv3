@@ -54,13 +54,13 @@ const REF_METRICS = [
  * every ref null: the visuals then draw no tour mark rather than a guess.
  */
 async function loadTourRefs(supabase: Supabase, tour: 'pga' | 'lpga'): Promise<IntelTourRefs> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('golf_pga_standards')
     .select('metric_id, tour, pga_tour_value')
     .in('metric_id', REF_METRICS)
     .in('tour', tour === 'lpga' ? ['lpga', 'pga'] : ['pga']);
   const value = new Map<string, number>();
-  for (const row of (data ?? []) as { metric_id: string; tour: string; pga_tour_value: number | string | null }[]) {
+  for (const row of (error ? [] : data ?? []) as { metric_id: string; tour: string; pga_tour_value: number | string | null }[]) {
     const v = row.pga_tour_value == null ? NaN : Number(row.pga_tour_value);
     if (!Number.isFinite(v)) continue;
     if (row.tour === tour || !value.has(row.metric_id)) value.set(row.metric_id, v);
@@ -82,9 +82,10 @@ export async function loadTeamIntelligence(supabase: Supabase, teamId: string, t
   ]);
   if (membersRes.error) throw new Error(`roster read failed: ${membersRes.error.message}`);
 
+  // A failed settings or team read degrades to the default tour baseline, not an error page.
   const baselineKey = effectiveSgBaseline(
-    (settingsRes.data?.sg_baseline as SgBaselineKey | null) ?? null,
-    ((teamRes.data as { gender?: string } | null)?.gender as TeamGender | undefined) ?? 'mens',
+    (settingsRes.error ? null : (settingsRes.data?.sg_baseline as SgBaselineKey | null)) ?? null,
+    ((teamRes.error ? null : (teamRes.data as { gender?: string } | null))?.gender as TeamGender | undefined) ?? 'mens',
   );
   const baselineLabel = SG_BASELINE_OPTIONS.find((o) => o.key === baselineKey)?.label ?? 'PGA Tour';
   const tour = baselineKey === 'womens' ? 'lpga' : 'pga';

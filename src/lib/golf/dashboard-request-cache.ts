@@ -3,7 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
-import { resolveCoachActiveTeamId } from '@/lib/golf/resolve-team';
+import { resolveCoachActiveTeam, type CoachTeamResolution } from '@/lib/golf/resolve-team';
 import { ACTIVE_TEAM_COOKIE } from '@/app/golf/actions/team-switcher.constants';
 
 /**
@@ -39,10 +39,18 @@ export const readActiveTeamCookie = cache(async (): Promise<string | null> => {
  * `resolveCoachTeamIdWithCookie` (cookie validated against staff rows, then
  * staffed team, then the org resolver), memoised per request.
  */
+export const resolveCoachActiveTeamForRequest = cache(
+  async (organizationId: string | null, coachId: string | null): Promise<CoachTeamResolution> => {
+    const [supabase, cookieTeamId] = await Promise.all([createClient(), readActiveTeamCookie()]);
+    return resolveCoachActiveTeam(supabase, organizationId, coachId, cookieTeamId);
+  },
+);
+
+/** The team id, or null for "no team" and "could not tell" alike (the layout's and Fairway's reading). */
 export const resolveCoachActiveTeamIdForRequest = cache(
   async (organizationId: string | null, coachId: string | null): Promise<string | null> => {
-    const [supabase, cookieTeamId] = await Promise.all([createClient(), readActiveTeamCookie()]);
-    return resolveCoachActiveTeamId(supabase, organizationId, coachId, cookieTeamId);
+    const r = await resolveCoachActiveTeamForRequest(organizationId, coachId);
+    return r.status === 'ok' ? r.teamId : null;
   },
 );
 

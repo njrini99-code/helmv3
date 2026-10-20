@@ -27,7 +27,7 @@
  *
  * Usage (hover/tap):
  * ```tsx
- * import { useReducedMotion } from 'framer-motion';
+ * import { useReducedMotion } from 'motion/react';
  * import { hoverLift, tapPress } from '@/lib/baseball/motion';
  *
  * const reduce = useReducedMotion();
@@ -36,7 +36,7 @@
  *
  * Usage (tab panel — pair with `<AnimatePresence mode="wait">`):
  * ```tsx
- * import { useReducedMotion } from 'framer-motion';
+ * import { useReducedMotion } from 'motion/react';
  * import { tabPanelMotion } from '@/lib/baseball/motion';
  *
  * const reduce = useReducedMotion();
@@ -48,7 +48,7 @@
  * ```
  */
 
-import type { TargetAndTransition } from 'framer-motion';
+import type { TargetAndTransition } from 'motion/react';
 
 /** Snappier curve for taps + hovers — settles fast, no overshoot. */
 const EASE_TAP = [0.16, 1, 0.3, 1] as const;

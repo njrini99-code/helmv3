@@ -1,0 +1,4665 @@
+/* Rounds library (design/handoff/rounds-flow.css `Library`; spec docs/clubhouse/phone/rounds.md) */
+.ch-rd {
+  container-type: inline-size;
+  container-name: chrd;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  color: var(--ch-text-primary);
+}
+.ch-rd-k {
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* A refresh with the page on screen: the page stays and says it is updating (an empty status region is not drawn) */
+.ch-rd-upd {
+  margin-left: 8px;
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-upd:empty {
+  display: none;
+}
+.ch-rd-h {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ch-rd-h h1,
+.ch-rd-h h2 {
+  margin: 8px 0 0;
+  font: 400 calc(50 * var(--ch-type-k))/1.02 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+}
+
+/* The hero: the round in progress beside the season */
+.ch-rd-hero {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.4fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.ch-rd-unf {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 22px 18px;
+  border-radius: var(--ch-radius-xl);
+  color: var(--ch-on-fill-100);
+  background: var(--ch-field-green);
+  box-shadow: inset 0 1px 0 rgb(210 244 221 / 0.12), var(--ch-elevation-cast);
+}
+.ch-rd-unf.is-idle {
+  background: radial-gradient(120% 90% at 100% 0%, rgb(123 199 154 / 0.12), transparent 60%), var(--ch-green-800);
+}
+.ch-rd-unf .ch-notice {
+  margin: auto 0;
+}
+.ch-rd-unf__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ch-rd-unf__k {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-rd-unf__k i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7bc79a;
+  box-shadow: 0 0 0 3px rgb(123 199 154 / 0.22);
+}
+.ch-rd-unf__k.is-idle i {
+  background: rgb(244 241 232 / 0.35);
+  box-shadow: none;
+}
+.ch-rd-unf__t {
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: rgb(244 241 232 / 0.6);
+}
+.ch-rd-unf__c {
+  margin-top: 18px;
+  font: 600 calc(28 * var(--ch-type-k))/1.05 var(--ch-font-sans);
+  letter-spacing: -0.03em;
+  font-variation-settings: 'wdth' 96;
+}
+.ch-rd-unf__m {
+  margin-top: 5px;
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: rgb(244 241 232 / 0.7);
+}
+/* The holes so far, set like the scoreboard: centred in the card's free height so the card never ends in a dead
+   band, with the board's finishes (a red disc under par, an ivory outline over it). */
+.ch-rd-strip {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 44px));
+  gap: 6px 4px;
+  margin: auto 0;
+  padding: 20px 0 18px;
+}
+.ch-rd-strip span {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: var(--ch-radius-sm);
+  font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  background: rgb(0 0 0 / 0.18);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
+  /* An unplayed hole's number still reads (4.5:1 on the green); the recess, not a faded ink, says it is to come. */
+  color: var(--ch-on-green-ink-muted);
+}
+.ch-rd-strip span.is-played {
+  grid-auto-rows: min-content;
+  align-content: center;
+  gap: 1px;
+}
+.ch-rd-strip span.is-played em {
+  font: 500 9.5px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  opacity: 0.72;
+}
+.ch-rd-strip span.is-par {
+  background: rgb(255 255 255 / 0.1);
+  color: var(--ch-on-fill-100);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+.ch-rd-strip span.is-under {
+  border-radius: 50%;
+  background: linear-gradient(180deg, #d0574a 0%, #a8372b 100%);
+  color: #fff8f5;
+  box-shadow: var(--ch-board-birdie-shadow);
+}
+.ch-rd-strip span.is-over {
+  background: transparent;
+  color: var(--ch-on-green-ink);
+  box-shadow: var(--ch-board-bogey-shadow);
+}
+.ch-rd-strip span.is-next {
+  background: transparent;
+  color: var(--ch-hero-mint);
+  box-shadow: inset 0 0 0 1.5px #7bc79a;
+}
+.ch-rd-strip.is-ghost span {
+  color: rgb(244 241 232 / 0.22);
+}
+.ch-rd-unf__f {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgb(255 255 255 / 0.1);
+  font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: rgb(244 241 232 / 0.72);
+}
+.ch-rd-unf__f b {
+  font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-on-fill-100);
+}
+.ch-rd-unf__acts {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-rd-unf__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: var(--ch-radius-md);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-800);
+  text-decoration: none;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #fbf9f3, #ece8dd);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.3),
+    inset 0 1px 0 #fff;
+  transition: transform var(--ch-dur-press) var(--ch-ease);
+}
+.ch-rd-unf__cta:active {
+  transform: translateY(1px);
+}
+.ch-rd-unf__cta:focus-visible,
+.ch-rd-unf__discard:focus-visible {
+  outline: 2px solid var(--ch-hero-mint);
+  outline-offset: 2px;
+}
+.ch-rd-unf__discard {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(244 241 232 / 0.7);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rd-unf__discard:hover {
+    background: rgb(255 255 255 / 0.14);
+    color: var(--ch-on-fill-100);
+  }
+}
+
+/* Season scoring */
+.ch-rd-season {
+  position: relative;
+  padding: 20px 22px 14px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-rd-season.is-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+.ch-rd-season__none {
+  font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+}
+.ch-rd-season__nonebody {
+  max-width: 460px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-rd-season__h {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 16px 28px;
+}
+.ch-rd-season__big {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+}
+.ch-rd-season__big b {
+  font: 500 46px/0.9 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.05em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd-season__big em {
+  font: 500 13px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-secondary);
+}
+.ch-rd-season__f {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+.ch-rd-fig {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 18px;
+}
+.ch-rd-fig + .ch-rd-fig {
+  box-shadow: var(--ch-seam-y);
+}
+.ch-rd-fig dt {
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rd-fig dd {
+  margin: 0;
+}
+.ch-rd-fig__v {
+  font: 500 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.026em;
+  color: var(--ch-text-primary);
+}
+.ch-rd-fig__viz {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+/* The figure's caption: a dd, so the list stays dt/dd pairs (axe definition-list). */
+.ch-rd-fig__m {
+  overflow: hidden;
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ch-text-tertiary);
+}
+/* Best: the season's rounds on their range. */
+.ch-rd-range {
+  position: relative;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-rd-range i {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ch-ink-400);
+  translate: -50% -50%;
+}
+.ch-rd-range i.is-best {
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  background: var(--ch-green-fill-600);
+  box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+}
+.ch-rd-range b {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+.ch-rd-range__ends {
+  display: flex;
+  justify-content: space-between;
+  font: 600 12px/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+/* Putts: a bar against two putts a green (36), ticked. */
+.ch-rd-putts {
+  position: relative;
+  height: 8px;
+  margin: 3px 0;
+  border-radius: 4px;
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+/* The fill is scaled from its left edge (--ch-rd-fill, 0 to 1), not sized, so a change glides without relayout. */
+.ch-rd-putts i {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--ch-green-500), var(--ch-green-600));
+  transform: scaleX(var(--ch-rd-fill, 0));
+  transform-origin: left center;
+}
+.ch-rd-putts b {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--ch-ink-900);
+  translate: -50% 0;
+}
+/* GIR: the 18 greens of a round. */
+.ch-rd-greens {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 3px;
+}
+.ch-rd-greens i {
+  height: 7px;
+  border-radius: 2px;
+  background: var(--ch-ivory-300);
+}
+.ch-rd-greens i.is-hit {
+  background: var(--ch-green-fill-500);
+}
+.ch-rd-season__ch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin-top: 16px;
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-season__ch b {
+  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rd-rib {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 10px;
+}
+.ch-rd-rib line {
+  stroke: rgb(28 25 18 / 0.07);
+}
+.ch-rd-rib line.is-par {
+  stroke: rgb(28 27 24 / 0.45);
+}
+.ch-rd-rib line.ch-rd-rib__avg {
+  stroke: var(--ch-green-500);
+  stroke-opacity: 0.7;
+  stroke-dasharray: 1 5;
+  stroke-linecap: round;
+  stroke-width: 1.8;
+}
+.ch-rd-rib__chip {
+  fill: var(--ch-green-50);
+  stroke: rgb(21 90 57 / 0.25);
+}
+.ch-rd-rib rect.is-under {
+  fill: var(--ch-score-under);
+}
+.ch-rd-rib rect.is-even {
+  fill: var(--ch-ink-900);
+}
+/* Over par a warm grey at 3:1 on the paper (D5; #bfb59c was 1.8:1). */
+.ch-rd-rib rect.is-over {
+  fill: var(--ch-ink-400);
+}
+/* A qualifier is a second channel: a gilt outline on whatever its score is (data gilt, 3.97:1). */
+.ch-rd-rib rect.is-q {
+  stroke: #927840;
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+.ch-rd-rib__t {
+  font: 500 10.5px var(--ch-font-sans);
+  fill: var(--ch-ink-500);
+}
+.ch-rd-rib__t.is-avg {
+  fill: var(--ch-green-500);
+}
+.ch-rd-rib__v {
+  font: 600 11px var(--ch-font-sans);
+  fill: var(--ch-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rd-rib__v.is-under {
+  fill: var(--ch-score-under);
+}
+.ch-rd-rib__d {
+  font: 600 11px var(--ch-font-sans);
+  fill: var(--ch-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rd-season__lg {
+  display: flex;
+  gap: 16px;
+  padding-top: 6px;
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-season__lg span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-rd-season__lg i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.ch-rd-season__lg i.is-under {
+  background: var(--ch-score-under);
+}
+.ch-rd-season__lg i.is-over {
+  background: var(--ch-ink-400);
+}
+.ch-rd-season__lg i.is-even {
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--ch-ink-900);
+}
+.ch-rd-season__lg i.is-q {
+  background: none;
+  box-shadow: inset 0 0 0 2px #927840;
+}
+
+/* More unfinished rounds */
+.ch-rd-more {
+  padding: 14px 16px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-surface);
+  box-shadow: var(--ch-shadow-sm);
+}
+.ch-rd-more h2 {
+  margin: 0 0 6px;
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-rd-more ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rd-more li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-rd-more li:first-child {
+  border-top: 0;
+}
+.ch-rd-more li > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ch-rd-more b {
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-rd-more em {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-more__discard {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: var(--ch-text-tertiary);
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rd-more__discard:hover {
+    background: var(--ch-bg-hover);
+    color: var(--ch-text-primary);
+  }
+}
+.ch-rd-more__go {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--ch-radius-md);
+  font: 600 calc(13 * var(--ch-type-k))/34px var(--ch-font-sans);
+  color: var(--ch-green-700);
+  text-decoration: none;
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.25);
+}
+.ch-rd-more__discard:focus-visible,
+.ch-rd-more__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+
+/* A posted round with no score at all is said, not hidden (CH-11315) */
+.ch-rd-unscored {
+  margin: 0;
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
+/* Tools */
+.ch-rd-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.ch-rd-tools .ch-search {
+  min-width: 260px;
+}
+
+/* The book */
+.ch-rd-grp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+.ch-rd-grp__h {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 0 2px;
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-grp__h h2 {
+  margin: 0;
+  font: var(--ch-type-serif-s);
+  letter-spacing: -0.004em;
+  color: var(--ch-ink-950);
+}
+.ch-rd-grp__h b {
+  font-weight: 600;
+  color: var(--ch-ink-950);
+}
+.ch-rd-grp__rule {
+  flex: 1;
+  height: 1px;
+  align-self: center;
+  background: linear-gradient(90deg, rgb(176 149 96 / 0.45), rgb(176 149 96 / 0));
+}
+.ch-rd-book {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ch-rd-sc {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 64px minmax(160px, 1.1fr) auto minmax(180px, 1fr) 68px;
+  gap: 20px;
+  align-items: center;
+  padding: 10px 14px 10px 10px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--ch-elevation-reading);
+  transition:
+    box-shadow var(--ch-dur-quick) var(--ch-ease),
+    transform var(--ch-dur-quick) var(--ch-ease);
+}
+/* Off the Ledger (a narrow window), a round card that opens its review lifts 1px with a deeper shadow on hover (quick);
+   on the desktop Ledger it takes the row tint instead (CH-11601, below). */
+@media (hover: hover) {
+  a.ch-rd-sc:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ch-elevation-row-card-hover);
+  }
+}
+a.ch-rd-sc:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* No photography (Q-72a): the photo tile becomes a green date tile. */
+/* The date: an ivory key with the day as a serif numeral in the field green, like a dated card in a club ledger
+   (owner: green only for the field, selection and the scoreboard, so no green block per row). */
+.ch-rd-sc__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 64px;
+  height: 60px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-raised-bg);
+  color: var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
+}
+.ch-rd-sc__date b {
+  font: 600 23px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.ch-rd-sc__date em {
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-sc__c {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ch-rd-sc__c > b {
+  overflow: hidden;
+  font: 600 calc(16 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-rd-sc__c > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 7px;
+  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-tee {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.25);
+}
+/* Tee swatches show the tee's own colour; they are data, not status. */
+.ch-rd-tee--black {
+  background: #1c1b18;
+}
+.ch-rd-tee--blue {
+  background: #2f5e9e;
+}
+.ch-rd-tee--white {
+  background: #fff;
+}
+.ch-rd-tee--gold {
+  background: #c9a227;
+}
+.ch-rd-tee--red {
+  background: #b03a2e;
+}
+.ch-rd-tee--green {
+  background: #1e6b45;
+}
+.ch-rd-tee--silver {
+  background: #b8bcc2;
+}
+.ch-rd-pill {
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font: 600 calc(11 * var(--ch-type-k))/20px var(--ch-font-sans);
+  background: var(--ch-bg-inset);
+  color: var(--ch-text-secondary);
+}
+.ch-rd-pill.is-qualifier {
+  background: var(--ch-green-50);
+  color: var(--ch-green-700);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
+}
+.ch-rd-pill.is-tournament {
+  background: var(--ch-ink-900);
+  color: var(--ch-ivory-100);
+}
+.ch-rd-pill.is-nc {
+  background: none;
+  color: var(--ch-text-tertiary);
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
+}
+.ch-rd-sc__grid {
+  display: flex;
+  border-radius: var(--ch-radius-md);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.14);
+}
+.ch-rd-sc__grid > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 48px;
+  height: 48px;
+  background: #fff;
+}
+.ch-rd-sc__grid > span + span {
+  border-left: 1px solid rgb(28 25 18 / 0.12);
+}
+.ch-rd-sc__grid em {
+  font: 500 10.5px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-sc__grid b {
+  font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rd-sc__grid .is-tot {
+  background: var(--ch-ivory-100);
+}
+/* D18: the score box keeps one width, so a nine-hole row (Holes, Tot) doesn't pull the meters 24px left. */
+@media (min-width: 821px) {
+  .ch-rd-sc__grid {
+    justify-content: flex-end;
+    width: 146px;
+  }
+  .ch-rd-sc__grid > span {
+    flex: 1 1 0;
+  }
+}
+.ch-rd-sc__m {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ch-rd-meter {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 42px;
+  gap: 8px;
+  align-items: center;
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-meter em {
+  font-style: normal;
+}
+.ch-rd-meter b {
+  text-align: right;
+  font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-ink-950);
+  white-space: nowrap;
+}
+.ch-rd-meter__t {
+  height: 5px;
+  border-radius: 3px;
+  background: rgb(28 25 18 / 0.08);
+  overflow: hidden;
+}
+.ch-rd-meter__t i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #3e8a61, var(--ch-green-500));
+  transform: scaleX(var(--ch-rd-fill, 0));
+  transform-origin: left center;
+}
+.ch-rd-meter__t.is-p i {
+  background: linear-gradient(90deg, var(--ch-ink-400), var(--ch-ink-600));
+}
+.ch-rd-sc__s {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 58px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-ivory-100);
+  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.08);
+}
+.ch-rd-sc__s b {
+  font: 500 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.026em;
+  color: var(--ch-ink-950);
+}
+.ch-rd-sc__s em {
+  font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rd-sc__s.is-under {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+}
+.ch-rd-sc__s.is-under b {
+  color: var(--ch-score-under);
+}
+
+@container chrd (max-width: 860px) {
+  .ch-rd-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container chrd (max-width: 1000px) {
+  .ch-rd-sc {
+    grid-template-columns: 64px minmax(0, 1fr) auto 64px;
+  }
+  .ch-rd-sc__m {
+    display: none;
+  }
+}
+/* Phone (Player - Rounds - Mobile.html) */
+@container chrd (max-width: 640px) {
+  .ch-rd-h h1,
+.ch-rd-h h2 {
+    font-size: calc(38 * var(--ch-type-k));
+  }
+  .ch-rd-tools {
+    flex-wrap: nowrap;
+  }
+  .ch-rd-tools .ch-search {
+    flex: 1;
+    min-width: 0;
+  }
+  .ch-rd-unf {
+    padding: 16px 16px 14px;
+  }
+  .ch-rd-unf__c {
+    font-size: calc(23 * var(--ch-type-k));
+    margin-top: 12px;
+  }
+  .ch-rd-unf__f {
+    flex-wrap: wrap;
+    row-gap: 12px;
+  }
+  .ch-rd-unf__f > span:first-child {
+    flex-shrink: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .ch-rd-unf__acts {
+    margin-left: auto;
+  }
+  .ch-rd-unf__cta {
+    height: 44px;
+  }
+  .ch-rd-unf__discard {
+    width: 44px;
+    height: 44px;
+  }
+  .ch-rd-strip {
+    margin: 14px 0 12px;
+    gap: 3px;
+  }
+  .ch-rd-season {
+    padding: 16px 14px 10px;
+  }
+  .ch-rd-season__big b {
+    font-size: calc(36 * var(--ch-type-k));
+  }
+  .ch-rd-season__h {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ch-rd-season__f {
+    width: 100%;
+  }
+  .ch-rd-season__f > div {
+    padding: 0 10px;
+  }
+  .ch-rd-season__f > div:first-child {
+    padding-left: 0;
+  }
+  .ch-rd-grp__h {
+    gap: 10px;
+  }
+  .ch-rd-grp__h > span:nth-last-child(-n + 2) {
+    display: none;
+  }
+  .ch-rd-sc {
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    gap: 12px;
+    padding: 8px 10px 8px 8px;
+  }
+  .ch-rd-sc__grid {
+    display: none;
+  }
+  .ch-rd-sc__date {
+    width: 56px;
+    height: 54px;
+  }
+  .ch-rd-sc__c > b {
+    font-size: calc(16 * var(--ch-type-k));
+    line-height: 1.3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .ch-rd-sc__s {
+    height: 50px;
+  }
+  .ch-rd-sc__s b {
+    font-size: calc(19 * var(--ch-type-k));
+  }
+}
+.ch-rd.is-phone {
+  padding: 14px 16px 110px;
+  gap: 16px;
+}
+
+/* Round review (design/handoff/rounds-review.jsx, rounds-track.css `rv-*`) */
+.ch-rv {
+  container-type: inline-size;
+  container-name: chrv;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
+  color: var(--ch-text-primary);
+}
+.ch-rv.is-phone {
+  padding: 14px 16px 110px;
+  gap: 12px;
+}
+.ch-rv-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px 0 8px;
+  border-radius: 999px;
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  text-decoration: none;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+}
+.ch-rv-back:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* No photography (Q-72a): the green band alone. */
+.ch-rv-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 180px;
+  padding: 26px 28px;
+  border-radius: var(--ch-radius-xl);
+  box-sizing: border-box;
+  color: var(--ch-on-fill-100);
+  background: radial-gradient(120% 120% at 100% 0%, rgb(123 199 154 / 0.16), transparent 60%), var(--ch-green-800);
+  box-shadow:
+    0 0 0 1px var(--ch-green-900),
+    0 24px 48px -30px rgb(11 58 37 / 0.8);
+}
+.ch-rv-hero__l {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.ch-rv-hero__k {
+  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-rv-hero h1,
+.ch-rv-hero h2 {
+  margin: 0;
+  color: var(--ch-on-green-ink);
+  font: 400 calc(48 * var(--ch-type-k))/1 var(--ch-font-serif);
+  letter-spacing: -0.01em;
+  text-shadow: var(--ch-on-green-text-shadow);
+}
+.ch-rv-hero__m {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: 400 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: rgb(244 241 232 / 0.78);
+}
+.ch-rv-hero__s {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.ch-rv-hero__s b {
+  font: 500 84px/0.85 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
+  font-variation-settings: 'wdth' 96;
+}
+.ch-rv-hero__s em {
+  font: 600 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: #e7b866;
+}
+.ch-rv-hero__s em.is-under {
+  color: #ff9b8f;
+}
+.ch-rv-hero__s span {
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  color: rgb(244 241 232 / 0.6);
+}
+.ch-rv-figs {
+  margin: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  padding: 16px 0;
+  border-radius: var(--ch-radius-lg);
+  background: linear-gradient(180deg, var(--ch-ivory-25), #f6f9f6);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.14);
+}
+/* CH-11522: Change round type, under the figures, on the page's own ground (the hero's colour changes by layout). */
+.ch-rv-type {
+  display: flex;
+  justify-content: flex-end;
+}
+.ch-rv-figs > div {
+  padding: 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-rv-figs > div + div {
+  border-left: 1px solid rgb(21 90 57 / 0.12);
+}
+.ch-rv-figs dt {
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rv-figs dd {
+  margin: 0;
+  font: 500 28px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.ch-rv-figs dd + dd {
+  letter-spacing: normal;
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-card {
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-bg-surface);
+  box-shadow:
+    0 0 0 1px rgb(28 25 18 / 0.08),
+    0 1px 2px rgb(28 25 18 / 0.05),
+    0 14px 30px -24px rgb(28 25 18 / 0.35);
+}
+.ch-rv-card__h {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 12px;
+}
+.ch-rv-card__h h2,
+.ch-rv-card__h h3 {
+  margin: 0 0 4px;
+  font: 600 calc(17 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+  letter-spacing: -0.015em;
+}
+.ch-rv-card__h span {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-nosg {
+  margin: 0;
+  padding: 0 4px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+/* Strokes gained: the total, then a bar per leg either side of zero. Gains green, losses amber. */
+.ch-rv-sg__tot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.ch-rv-sg__tot b {
+  font: 500 32px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rv-sg__tot em {
+  font: var(--ch-type-caption);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-sg__legs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0 20px 18px;
+}
+.ch-rv-sg__r {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-rv-sg__r dt,
+.ch-rv-sg__r dd {
+  margin: 0;
+}
+.ch-rv-sg__r dd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+.ch-rv-sg__r b {
+  text-align: right;
+  font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-rv-sg .is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rv-sg .is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-rv-sg__bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ch-bg-inset);
+}
+.ch-rv-sg__z {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--ch-border-strong);
+}
+.ch-rv-sg__v {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+}
+.ch-rv-sg__v.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-rv-sg__v.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-rv-cardw {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px 18px;
+  overflow-x: auto;
+}
+.ch-rv-nine {
+  min-width: 560px;
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: var(--ch-radius-lg);
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1);
+  font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv-nine th,
+.ch-rv-nine td {
+  height: 34px;
+  padding: 0;
+  text-align: center;
+  font-weight: 500;
+}
+.ch-rv-nine tr + tr > * {
+  border-top: 1px solid rgb(28 25 18 / 0.06);
+}
+.ch-rv-nine th[scope='row'],
+.ch-rv-nine thead th:first-child {
+  width: 56px;
+  padding-left: 10px;
+  text-align: left;
+  font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-nine thead th:first-child {
+  font-weight: 700;
+  color: var(--ch-ink-950);
+}
+.ch-rv-nine thead th:last-child,
+.ch-rv-nine td:last-child {
+  width: 44px;
+}
+.ch-rv-nine thead {
+  font-size: 11.5px;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv-nine thead button {
+  width: 30px;
+  height: 28px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rv-nine thead button:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-rv-nine thead button.is-sel {
+  background: var(--ch-green-800);
+  color: var(--ch-on-fill-100);
+}
+.ch-rv-nine thead button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-rv-nine td.is-sel {
+  background: #e3eee6;
+}
+.ch-rv-nine td[data-hole] {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .ch-rv-nine td[data-hole]:not(.is-sel):hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-rv-nine .is-par {
+  color: var(--ch-text-secondary);
+}
+.ch-rv-nine b {
+  font: 700 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv-nine .is-warn {
+  color: var(--ch-warning-600);
+  font-weight: 700;
+}
+.ch-rv-yn {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.ch-rv-yn.is-y {
+  background: var(--ch-green-fill-600);
+}
+.ch-rv-yn.is-n {
+  box-shadow: inset 0 0 0 1.5px rgb(28 25 18 / 0.25);
+}
+.ch-rv-yn.is-na {
+  width: 8px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: rgb(28 25 18 / 0.25);
+}
+.ch-rv-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.ch-rv-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.ch-rv-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-rv-step button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ch-text-primary);
+  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
+  cursor: pointer;
+}
+.ch-rv-step button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ch-rv-step button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-rv-hole .ch-notice,
+.ch-rv-none {
+  margin: 0 20px 18px;
+}
+.ch-rv-none {
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-secondary);
+}
+.ch-rv-shots {
+  list-style: none;
+  margin: 0;
+  padding: 0 20px 18px;
+  display: flex;
+  flex-direction: column;
+}
+.ch-rv-shots li {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+}
+.ch-rv-shots li:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 13px;
+  top: 38px;
+  bottom: -10px;
+  width: 2px;
+  background: rgb(21 90 57 / 0.18);
+}
+.ch-rv-shots__n {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font: 700 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  background: var(--ch-green-800);
+  color: var(--ch-on-fill-100);
+  box-shadow: 0 0 0 3px var(--ch-bg-surface);
+}
+/* The off-fairway shot disc, deep enough that its ivory number keeps 4.5:1 (#8e7b4e measured 3.68). */
+.ch-rv-shots__n.is-rough,
+.ch-rv-shots__n.is-sand,
+.ch-rv-shots__n.is-other,
+.ch-rv-shots__n.is-penalty {
+  background: #75653f;
+}
+.ch-rv-shots__n.is-hole {
+  background: var(--ch-green-fill-500);
+}
+.ch-rv-shots li > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 4px;
+  min-width: 0;
+}
+.ch-rv-shots b {
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-rv-shots li > div > span {
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv-shots em {
+  font: 400 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-green-700);
+}
+.ch-rv-lie {
+  margin-top: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font: 600 calc(11 * var(--ch-type-k))/22px var(--ch-font-sans);
+  background: var(--ch-bg-inset);
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+}
+.ch-rv-lie.is-fairway,
+.ch-rv-lie.is-green,
+.ch-rv-lie.is-hole {
+  background: #e3eee6;
+  color: var(--ch-green-700);
+}
+.ch-rv-dist {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px 18px;
+}
+.ch-rv-dist__r {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 22px;
+  gap: 10px;
+  align-items: center;
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rv-dist__r b {
+  text-align: right;
+  font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-ink-950);
+}
+.ch-rv-dist__t {
+  height: 12px;
+  border-radius: 6px;
+  background: rgb(28 25 18 / 0.06);
+  overflow: hidden;
+}
+/* The bar is drawn at the track's full width and slid in from the left by its share (--ch-rv-p, 0 to 1), so a change
+   moves on transform, never on width (motion research A4, 2026-10-08). A slide rather than a scaleX keeps its rounded
+   end round; the track's clip draws the start. */
+.ch-rv-dist__t i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--ch-radius-sm);
+  background: #bfb59c;
+  transform: translateX(calc((var(--ch-rv-p, 0) - 1) * 100%));
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rv-dist__r.is-birdie i,
+.ch-rv-dist__r.is-eagle i {
+  background: var(--ch-score-under);
+}
+.ch-rv-dist__r.is-par i {
+  background: var(--ch-green-fill-700);
+}
+.ch-rv-dist__r.is-double i {
+  background: var(--ch-ink-600);
+}
+.ch-rv-recap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px;
+  border-radius: var(--ch-radius-xl);
+  background: var(--ch-green-800);
+  color: var(--ch-on-fill-100);
+}
+.ch-rv-recap__k {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-rv-recap p {
+  margin: 0;
+  font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  text-wrap: pretty;
+}
+.ch-rv-notes p {
+  margin: 0;
+  padding: 0 20px 18px;
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  white-space: pre-line;
+}
+
+@container chrv (max-width: 900px) {
+  .ch-rv-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container chrv (max-width: 640px) {
+  .ch-rv-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: 0;
+    padding: 18px;
+  }
+  .ch-rv-hero h1,
+.ch-rv-hero h2 {
+    font-size: calc(28 * var(--ch-type-k));
+  }
+  .ch-rv-hero__s {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .ch-rv-hero__s b {
+    font-size: calc(56 * var(--ch-type-k));
+  }
+  .ch-rv-figs {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 14px;
+    padding: 14px 0;
+  }
+  .ch-rv-figs > div {
+    padding: 0 12px;
+  }
+  .ch-rv-figs > div:nth-child(4) {
+    border-left: 0;
+  }
+  .ch-rv-figs dd {
+    font-size: calc(21 * var(--ch-type-k));
+  }
+  .ch-rv-cardw {
+    padding: 0 12px 14px;
+  }
+  .ch-rv-shots,
+.ch-rv-dist,
+.ch-rv-sg__legs {
+    padding: 0 16px 14px;
+  }
+}
+
+/* Phone: every control's touch area reaches 44 x 44 (Apple's minimum) without changing how it is drawn. */
+@media (max-width: 820px) {
+  .ch-rv-step button,
+.ch-rd-unf__discard,
+.ch-rd-more__discard,
+.ch-rd-more__go {
+    position: relative;
+  }
+  .ch-rv-step button::after,
+.ch-rd-unf__discard::after,
+.ch-rd-more__discard::after,
+.ch-rd-more__go::after {
+    content: '';
+    position: absolute;
+    inset: min(0px, calc(50% - 22px));
+  }
+}
+
+/* Route loading draws a desktop and a phone shape (RoundsSkeleton.tsx); the width shows one, so the server needs none. */
+.ch-rd-sk-desk,
+.ch-rv-sk-desk {
+  display: contents;
+}
+.ch-rd-sk-phone,
+.ch-rv-sk-phone {
+  display: none;
+}
+
+/* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
+   "fewer containers, one feature card"). On the phone Rounds opens on the Ledger's intro under the engraved double rule
+   (the season line as the brown eyebrow, Your rounds in the 600 sans, New round beside it); the round in progress (or
+   the idle card) is the one green feature card and keeps its scoreboard strip; season scoring is a section flush on the
+   parchment, its three figures between hairlines and the ribbon under them; and every month is a section whose rounds
+   are rows between soft seams, led by the date and ending in the score. A round's review opens on its green hero (the
+   course in the 600 sans); its five figures sit between hairlines; strokes gained, the scorecard, the hole, the
+   distribution, the recap and the notes are sections under the double rule. Kept as material: the hole strip, the
+   scorecard's grid, the search, the grouping control, the hole steps and the notices. */
+@media (max-width: 820px) {
+  .ch-rd.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  /* The eyebrow takes the page's whole width, as the intro's does; New round sits at the end of the title's line. */
+  .ch-rd.is-phone > .ch-rd-h {
+    position: relative;
+    display: block;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone > .ch-rd-h > .ch-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 44px;
+  }
+  .ch-rd.is-phone .ch-rd-h .ch-rd-k,
+.ch-rd.is-phone .ch-rd-h .ch-rd-upd {
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd.is-phone .ch-rd-h h1,
+.ch-rd.is-phone .ch-rd-h h2 {
+    margin-top: 10px;
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    letter-spacing: -0.038em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+
+  /* The round in progress: the feature card. */
+  .ch-rd.is-phone .ch-rd-hero {
+    gap: 30px;
+  }
+  .ch-rd.is-phone .ch-rd-unf {
+    padding: 18px 18px 16px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the on-green inks,
+     as on the shared feature card (shell.css); the card's own padding insets it. */
+  .ch-rd.is-phone .ch-rd-unf .ch-notice--danger {
+    --ch-notice-ink: var(--ch-notice-on-green-ink);
+    --ch-notice-icon: var(--ch-notice-on-green-ink);
+    --ch-notice-body: var(--ch-notice-on-green-body);
+  }
+
+  /* Season scoring: the label is the section's heading under the double rule; the average, then the figures between
+     hairlines, then the ribbon. */
+  .ch-rd.is-phone .ch-rd-season {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-season .ch-rd-k {
+    display: block;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-season__h {
+    gap: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big {
+    margin-top: 14px;
+  }
+  .ch-rd.is-phone .ch-rd-season__big b {
+    font-size: calc(48 * var(--ch-type-k));
+    font-weight: 600;
+    letter-spacing: -0.035em;
+  }
+  .ch-rd.is-phone .ch-rd-season__f {
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd.is-phone .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone .ch-rd-fig__v {
+    font-weight: 600;
+  }
+  .ch-rd.is-phone .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty {
+    gap: 6px;
+  }
+  .ch-rd.is-phone .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 6px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd.is-phone .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-more h2 {
+    margin: 0 0 4px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-more li {
+    min-height: 58px;
+    border-top-color: var(--ch-ledger-rule-soft);
+  }
+
+  /* The book: each month a section under the double rule; each round a row. */
+  .ch-rd.is-phone .ch-rd-grp {
+    gap: 2px;
+    margin-top: 18px;
+  }
+  .ch-rd.is-phone .ch-rd-grp__h {
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd.is-phone .ch-rd-grp__h h2 {
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd.is-phone .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd.is-phone .ch-rd-book {
+    gap: 0;
+  }
+  .ch-rd.is-phone .ch-rd-sc {
+    min-height: 64px;
+    padding: 10px 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd.is-phone a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-rd.is-phone .ch-rd-sc__date {
+    width: 44px;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s {
+    align-items: flex-end;
+    height: auto;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s b {
+    font-size: calc(20 * var(--ch-type-k));
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rd.is-phone .ch-rd-sc__s.is-under {
+    background: none;
+    box-shadow: none;
+  }
+
+  /* A round's review. */
+  .ch-rv.is-phone {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  .ch-rv.is-phone .ch-rv-hero {
+    gap: 16px;
+    padding: 18px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-feature-bg);
+    box-shadow: var(--ch-elevation-feature);
+  }
+  .ch-rv.is-phone .ch-rv-hero h1,
+.ch-rv.is-phone .ch-rv-hero h2 {
+    font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    letter-spacing: -0.03em;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rv.is-phone .ch-rv-hero__s b {
+    font-weight: 600;
+  }
+  .ch-rv.is-phone .ch-rv-figs {
+    padding: 12px 0;
+    border-radius: 0;
+    background: none;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rv.is-phone .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv.is-phone .ch-rv-figs dd {
+    font-size: calc(22 * var(--ch-type-k));
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+  .ch-rv.is-phone .ch-rv-figs dd + dd {
+    font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: normal;
+  }
+  .ch-rv.is-phone .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv.is-phone .ch-rv-card__h {
+    margin-bottom: 6px;
+    padding: 12px 0 0;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rv.is-phone .ch-rv-card__h h2,
+.ch-rv.is-phone .ch-rv-card__h h3 {
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: -0.025em;
+    font-variation-settings: 'wdth' 88;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv.is-phone .ch-rv-sg__legs,
+.ch-rv.is-phone .ch-rv-cardw,
+.ch-rv.is-phone .ch-rv-shots,
+.ch-rv.is-phone .ch-rv-dist,
+.ch-rv.is-phone .ch-rv-notes p {
+    padding-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-cardw {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+  .ch-rv.is-phone .ch-rv-hole .ch-notice,
+.ch-rv.is-phone .ch-rv-none {
+    margin-inline: 0;
+  }
+  .ch-rv.is-phone .ch-rv-shots__n {
+    box-shadow: 0 0 0 3px var(--ch-workspace);
+  }
+  /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
+     the hole are keys and compress, data-ch-press). */
+  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
+.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+    background: var(--ch-ledger-row-press);
+  }
+  .ch-rv.is-phone .ch-rv-cols {
+    gap: 28px;
+  }
+  .ch-rv.is-phone .ch-rv-side {
+    gap: 28px;
+  }
+  /* The recap: one green surface per screen (the hero), so on the phone it is a passage under a rule, its kicker green. */
+  .ch-rv.is-phone .ch-rv-recap {
+    gap: 8px;
+    padding: 14px 0 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+    color: var(--ch-text-primary);
+  }
+  .ch-rv.is-phone .ch-rv-recap__k {
+    color: var(--ch-green-600);
+  }
+  .ch-rv.is-phone .ch-rv-recap p {
+    color: var(--ch-text-secondary);
+  }
+
+  /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
+     with their figures between hairlines and their rows between soft seams. */
+  .ch-rd-sk-desk,
+.ch-rv-sk-desk {
+    display: none;
+  }
+  .ch-rd-sk-phone,
+.ch-rv-sk-phone {
+    display: contents;
+  }
+  .ch-rd[data-ch-code='CH-11401'],
+.ch-rv[data-ch-code='CH-11406'] {
+    gap: 28px;
+    padding: 14px 20px 110px;
+  }
+  /* At the loaded geometry (measured at 390): the intro is 84.5px (the eyebrow's 24px line box, the title 10px under it), New
+     round sits at the end of the title's line, the card and season scoring stand 30px apart, a month opens 18px under the tools
+     and its rows are 67.8px. */
+  .ch-rd-sk-h {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding-top: 14px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-title {
+    margin-top: 10px;
+  }
+  .ch-rd-sk-new {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+  }
+  .ch-rd-sk-hero {
+    container: chrdsk / inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+  /* The round card's place follows the idle card as the phone widens (measured in WebKit from 355 to 445px): its holes
+     are squares nine across the card, two rows of them, so it grows by two ninths of the card's width; and its foot
+     takes one line from a 359px card (a 399px phone), two below. */
+  .ch-rd-sk-hero > .ch-skel {
+    height: calc(262.5px + 22.222cqw) !important;
+  }
+  @container chrdsk (min-width: 359px) {
+    .ch-rd-sk-hero > .ch-skel {
+      height: calc(233.6px + 22.222cqw) !important;
+    }
+  }
+  .ch-rd-sk-sec.ch-rd-sk-season {
+    gap: 0;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs {
+    box-sizing: border-box;
+    height: 129.2px;
+    margin-top: 14px;
+  }
+  .ch-rd-sk-season > .ch-rd-sk-figs + span {
+    margin-top: 16px;
+  }
+  /* The chart scales with the page's width (its viewBox is 380 wide on the phone and about 216 tall for a usual season), so
+     its place does too. */
+  .ch-rd-sk-season > .ch-skel {
+    height: auto !important;
+    margin-top: 10px;
+    aspect-ratio: 380 / 216;
+  }
+  .ch-rd-sk-sec.ch-rd-sk-grp {
+    gap: 0;
+    margin-top: 18px;
+  }
+  .ch-rd-sk-sec,
+.ch-rv-sk-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  .ch-rd-sk-figs,
+.ch-rv-sk-figs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--ch-ledger-rule);
+    border-bottom: 1px solid var(--ch-ledger-rule);
+  }
+  .ch-rd-sk-figs > span,
+.ch-rv-sk-figs > span {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 0 12px;
+  }
+  .ch-rd-sk-figs > span:first-child,
+.ch-rv-sk-figs > span:nth-child(3n + 1) {
+    padding-left: 0;
+  }
+  .ch-rd-sk-figs > span + span,
+.ch-rv-sk-figs > span + span {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv-sk-figs > span:nth-child(3n + 1) {
+    box-shadow: none;
+  }
+  /* The review at its loaded geometry (measured at 390): the hero 178px, the figures 156px in two rows, each section's head
+     (the double rule, the heading and its figure) 6px over its body, strokes gained's four bars in 125px. */
+  .ch-rv-sk-phone > .ch-rv-sk-figs {
+    box-sizing: border-box;
+    height: 156px;
+    align-content: center;
+  }
+  .ch-rv-sk-sec {
+    gap: 6px;
+  }
+  .ch-rv-sk-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    height: 50.8px;
+  }
+  .ch-rv-sk-head.is-sg {
+    height: 54.2px;
+  }
+  .ch-rv-sk-head > span {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 3px;
+  }
+  .ch-rv-sk-leg {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) 30px;
+    gap: 10px;
+    align-items: center;
+    height: 26.8px;
+  }
+  .ch-rd-sk-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 67.8px;
+  }
+  .ch-rd-sk-row > span {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ch-rd-sk-row + .ch-rd-sk-row {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+}
+
+/* Dark ("Clubhouse at night"). The ivory ramp turns into the dark surfaces, so ivory type on a green band reads the
+   on-green ink, and the white wells, hairlines and lit tops written as literals above take their night values. */
+html[data-fw-theme='dark'] .ch-rd-unf,
+html[data-fw-theme='dark'] .ch-rd-unf__f b,
+html[data-fw-theme='dark'] .ch-rd-strip span.is-par,
+html[data-fw-theme='dark'] .ch-rv-hero,
+html[data-fw-theme='dark'] .ch-rv-shots__n,
+html[data-fw-theme='dark'] .ch-rv-recap {
+  color: var(--ch-on-green-ink);
+}
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-rd-unf__discard:hover {
+    color: var(--ch-on-green-ink);
+  }
+}
+html[data-fw-theme='dark'] .ch-rd-unf__cta {
+  background: linear-gradient(180deg, #e9e3d3, #d6cfbd);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.4),
+    var(--ch-elevation-control);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line {
+  stroke: var(--ch-border-hairline);
+}
+html[data-fw-theme='dark'] .ch-rd-rib line.is-par {
+  stroke: rgb(237 231 216 / 0.45);
+}
+html[data-fw-theme='dark'] .ch-rd-rib__chip {
+  stroke: rgb(107 187 140 / 0.3);
+}
+/* Over par a warm grey (4.4:1 on the card), qualifiers the gilt, so the three bar kinds stay apart. */
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-over,
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-over,
+:where(html[data-fw-theme='dark']) .ch-rv-dist__t i {
+  fill: #8a8373;
+  background: #8a8373;
+}
+html[data-fw-theme='dark'] .ch-rd-rib rect.is-q {
+  stroke: var(--ch-champagne-500);
+}
+html[data-fw-theme='dark'] .ch-rd-season__lg i.is-q {
+  box-shadow: inset 0 0 0 2px var(--ch-champagne-500);
+}
+html[data-fw-theme='dark'] .ch-rd-more__go,
+html[data-fw-theme='dark'] .ch-rd-pill.is-qualifier {
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.28);
+}
+html[data-fw-theme='dark'] .ch-rd-tee {
+  box-shadow: 0 0 0 1px rgb(237 231 216 / 0.3);
+}
+html[data-fw-theme='dark'] .ch-rd-tee--white {
+  background: #f1ece0;
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid {
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span {
+  background: var(--ch-ivory-50);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid > span + span {
+  border-left-color: var(--ch-border-subtle);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__grid .is-tot {
+  background: var(--ch-ivory-150);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t,
+html[data-fw-theme='dark'] .ch-rv-dist__t {
+  background: rgb(237 231 216 / 0.08);
+}
+html[data-fw-theme='dark'] .ch-rd-meter__t i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-500));
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__s.is-under {
+  background: var(--ch-score-under-bg);
+  box-shadow: inset 0 0 0 2px var(--ch-score-under);
+}
+html[data-fw-theme='dark'] .ch-rv-back,
+html[data-fw-theme='dark'] .ch-rv-step button {
+  background: var(--ch-ivory-50);
+  box-shadow: 0 0 0 1px var(--ch-border-control);
+}
+html[data-fw-theme='dark'] .ch-rv-hero {
+  box-shadow:
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+html[data-fw-theme='dark'] .ch-rv-figs {
+  background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-green-25));
+  box-shadow: 0 0 0 1px rgb(107 187 140 / 0.14);
+}
+html[data-fw-theme='dark'] .ch-rv-figs > div + div {
+  border-left-color: rgb(107 187 140 / 0.12);
+}
+html[data-fw-theme='dark'] .ch-rv-card {
+  box-shadow: var(--ch-elevation-reading);
+}
+html[data-fw-theme='dark'] .ch-rv-lie.is-fairway,
+html[data-fw-theme='dark'] .ch-rv-lie.is-green,
+html[data-fw-theme='dark'] .ch-rv-lie.is-hole {
+  background: var(--ch-bg-selected);
+}
+html[data-fw-theme='dark'] .ch-rv-shots li:not(:last-child)::before {
+  background: rgb(107 187 140 / 0.22);
+}
+
+/* A filled under-par disc carries an ivory numeral: the deeper filled red holds it at 4.5:1. */
+html[data-fw-theme='dark'] .ch-rd-strip span.is-under {
+  background: var(--ch-score-under-fill);
+}
+html[data-fw-theme='dark'] .ch-rd-sc__date {
+  color: var(--ch-green-700);
+}
+/* A holed shot's disc on the deep fill, so its ivory number keeps 4.5:1 (the 500 fill measured 4.4). */
+html[data-fw-theme='dark'] .ch-rv-shots__n.is-hole {
+  background: var(--ch-green-fill-600);
+}
+/* A fairway or green hit on the review's card: the deep fill measured 2.5:1 on the dark cell; the lighter green
+   keeps the dot at 3:1 or more on the cell, a hovered cell and the picked one. */
+html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
+  background: var(--ch-green-400);
+}
+
+/* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
+   under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+@media (max-width: 820px) {
+  .ch-rd-rib__t,
+  .ch-rd-rib__v,
+  .ch-rd-rib__d,
+  .ch-rd-sc__grid em,
+  .ch-rd-sc__s em,
+  .ch-rv-nine th[scope='row'],
+  .ch-rv-nine thead th:first-child,
+  .ch-rv-nine thead {
+    font-size: 12px;
+  }
+  .ch-rd-season__f dt,
+  .ch-rd-season__f dd + dd,
+  .ch-rd-season__lg,
+  .ch-rd-sc__date em,
+  .ch-rd-pill,
+  .ch-rd-meter,
+  .ch-rv-lie {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+}
+
+/* The Ledger (owner, 2026-10-07: sub-screens take the page head; "flush, not so card heavy"). On desktop the round's
+   green slab becomes the framed page head: the date and kind as the eyebrow, the course in the heavy sans, the tee
+   line, and the score on the right in forest ink. The figures and the sections sit on the canvas; the scorecard's
+   own grid and the green recap keep their material. */
+@media (min-width: 821px) {
+  .ch-rv[data-canopy] {
+    gap: 28px;
+  }
+  .ch-rv[data-canopy] .ch-rv-back {
+    height: auto;
+    margin: 0 0 -14px -4px;
+    padding: 4px 8px 4px 4px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-green-700);
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rv[data-canopy] .ch-rv-back:hover {
+      background: var(--ch-ledger-row-hover);
+    }
+  }
+  .ch-rv[data-canopy] .ch-rv-hero {
+    align-items: flex-end;
+    min-height: 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__k {
+    font: 500 11px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__m {
+    font: 400 15px/1.4 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s b {
+    font-size: calc(64 * var(--ch-type-k));
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s em.is-under {
+    color: var(--ch-score-under);
+  }
+  .ch-rv[data-canopy] .ch-rv-hero__s span {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs {
+    margin-top: -6px;
+    padding: 0 0 22px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div:first-child {
+    padding-left: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-figs > div + div {
+    border-left-color: var(--ch-ledger-rule-soft);
+  }
+  .ch-rv[data-canopy] .ch-rv-card {
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h {
+    margin-bottom: 14px;
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rv[data-canopy] .ch-rv-card__h h2,
+.ch-rv[data-canopy] .ch-rv-card__h h3 {
+    font: 600 19px/1.2 var(--ch-font-sans);
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rv[data-canopy] .ch-rv-sg__legs,
+.ch-rv[data-canopy] .ch-rv-cardw,
+.ch-rv[data-canopy] .ch-rv-shots,
+.ch-rv[data-canopy] .ch-rv-dist,
+.ch-rv[data-canopy] .ch-rv-notes p {
+    padding-inline: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-hole .ch-notice,
+.ch-rv[data-canopy] .ch-rv-none {
+    margin-inline: 0;
+  }
+  .ch-rv[data-canopy] .ch-rv-cols {
+    gap: 44px;
+  }
+  .ch-rv[data-canopy] .ch-rv-side {
+    gap: 32px;
+  }
+}
+
+/* P011-A2: the scorecard as a hung board (Augusta's hand-hung boards). Each nine is a field-green board; the hole
+   numbers are debossed into it; every figure under Par hangs on an ivory plate, the Score row's plates the largest
+   numerals in the table (D8); Tot sits past a 2px gutter. Under par keeps its red circle, over par its square. The
+   table semantics (CH-11804) are unchanged: the plates are paint on the cells. On the phone the row labels stay put
+   and the right edge fades while there is more card to scroll (D10). */
+.ch-rv .ch-rv-cardw {
+  gap: 8px;
+}
+.ch-rv .ch-rv-nine {
+  border-collapse: separate;
+  border-spacing: 3px;
+  padding: 4px 6px 6px;
+  border-radius: var(--ch-radius-lg);
+  background: linear-gradient(180deg, var(--ch-green-800), var(--ch-green-900));
+  box-shadow: var(--ch-elevation-feature);
+  color: var(--ch-on-green-ink);
+}
+.ch-rv .ch-rv-nine tr + tr > * {
+  border-top: 0;
+}
+.ch-rv .ch-rv-nine th,
+.ch-rv .ch-rv-nine td {
+  height: 30px;
+}
+.ch-rv .ch-rv-nine th[scope='row'] {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-rv .ch-rv-nine thead th:first-child {
+  color: var(--ch-champagne-300);
+}
+.ch-rv .ch-rv-nine thead {
+  color: var(--ch-on-green-ink-muted);
+}
+.ch-rv .ch-rv-nine thead button {
+  width: 100%;
+  min-width: 30px;
+  height: 34px;
+  font-weight: 600;
+  color: var(--ch-on-green-ink);
+  text-shadow:
+    0 -1px 0 rgb(2 18 10 / 0.45),
+    0 1px 0 rgb(255 255 255 / 0.1);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rv-nine thead button:hover {
+    background: rgb(244 238 221 / 0.1);
+  }
+}
+.ch-rv .ch-rv-nine thead button.is-sel {
+  background: var(--ch-on-green-ink);
+  color: var(--ch-green-900);
+  text-shadow: none;
+}
+.ch-rv .ch-rv-nine thead button:focus-visible {
+  outline-color: var(--ch-champagne-300);
+}
+.ch-rv .ch-rv-nine .is-par td {
+  color: var(--ch-on-green-ink-soft);
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td:not(:empty) {
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-ivory-50);
+  color: var(--ch-ink-900);
+  box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.08);
+}
+.ch-rv .ch-rv-nine th:last-child,
+.ch-rv .ch-rv-nine td:last-child {
+  border-left: 2px solid transparent;
+  background-clip: padding-box;
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td:last-child:not(:empty) {
+  background-color: var(--ch-ivory-200);
+}
+.ch-rv .ch-rv-nine .is-score td {
+  height: 42px;
+}
+.ch-rv .ch-rv-nine .is-marks th,
+.ch-rv .ch-rv-nine .is-marks td {
+  height: 26px;
+}
+.ch-rv .ch-rv-nine .is-score .ch-score {
+  width: 30px;
+  height: 30px;
+  font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-variation-settings: 'wdth' 88;
+}
+.ch-rv .ch-rv-nine .is-score b {
+  font: 700 18px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv .ch-rv-nine tbody tr:not(.is-par) td.is-sel:not(:empty) {
+  background: var(--ch-ivory-0);
+  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rv-nine tbody tr:not(.is-par) td[data-hole]:not(.is-sel):hover {
+    background: var(--ch-ivory-0);
+  }
+}
+/* D12: Missed is an ink ring at 3:1 or more; not applicable is the dash. */
+.ch-rv .ch-rv-yn.is-n {
+  box-shadow: inset 0 0 0 1.5px var(--ch-ink-500);
+}
+.ch-rv .ch-rv-yn.is-na {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
+  font: 500 12px/1 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-ink-500);
+}
+@media (max-width: 820px) {
+  .ch-rv.is-phone .ch-rv-cardw {
+    padding-right: 40px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+  }
+  .ch-rv.is-phone .ch-rv-nine th[scope='row'],
+.ch-rv.is-phone .ch-rv-nine thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--ch-green-800);
+    box-shadow: -6px 0 0 var(--ch-green-800);
+  }
+  .ch-rv.is-phone .ch-rv-nine thead button {
+    height: 44px;
+  }
+  .ch-rv.is-phone .ch-rv-nine .is-score td {
+    height: 46px;
+  }
+}
+
+/* The round recap (C2, D14): on every width a passage under a rule, not a second green card, its author named in words
+   under it. Only the figures it agrees with are shown (recap-check.ts). */
+.ch-rv .ch-rv-recap {
+  gap: 8px;
+  padding: 14px 0 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-recap__k {
+  margin: 0;
+  font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  letter-spacing: -0.025em;
+  color: var(--ch-ledger-ink);
+}
+.ch-rv .ch-rv-recap p {
+  font: 400 calc(15 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rv-recap__by {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+
+/* The review's head on the desktop: the eyebrow set plain, not tracked (doctrine; P001-D5). */
+@media (min-width: 821px) {
+  .ch-rv[data-canopy] .ch-rv-hero__k {
+    font: 500 13px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+  }
+}
+
+/* The Ledger on the Rounds list (owner, 2026-10-07: "flush, not so card heavy"; the page takes the framed head). On
+   desktop the title block is the framed page head with its eyebrow; the round in progress and season scoring are
+   two panes on the canvas under engraved rules, split by a soft column rule, and the in-progress hole strip keeps its
+   scoreboard; more unfinished rounds and each month are sections, and every posted round is a row between soft seams.
+   Kept as material: the hole strip's board, the date key, the Out, In and Tot scorecard and the to-par key. */
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] {
+    gap: 40px;
+  }
+  /* The head: the eyebrow is set like the framed head's date line, the title is the shell's 44px sans. */
+  .ch-rd[data-canopy] .ch-rd-h > div:first-child {
+    font: 500 13px/1.3 var(--ch-font-sans);
+    letter-spacing: 0.01em;
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-k {
+    font: inherit;
+    color: var(--ch-ledger-eyebrow);
+  }
+  .ch-rd[data-canopy] .ch-rd-h .ch-rd-upd {
+    margin-left: 10px;
+    font: inherit;
+  }
+  .ch-rd[data-canopy] .ch-rd-h[data-canopy-head] h1 {
+    margin-top: 8px;
+  }
+
+  /* The two panes */
+  .ch-rd[data-canopy] .ch-rd-hero {
+    gap: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf {
+    overflow: visible;
+    padding: 0 32px 0 0;
+    border-radius: 0;
+    color: var(--ch-text-primary);
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__top {
+    padding-bottom: 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k {
+    gap: 10px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k i {
+    width: 8px;
+    height: 8px;
+    background: var(--ch-green-fill-500);
+    box-shadow: 0 0 0 3px var(--ch-green-100);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__k.is-idle i {
+    background: var(--ch-ink-300);
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__t {
+    font: 500 13px/1.2 var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__c {
+    margin-top: 22px;
+    color: var(--ch-text-primary);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__m {
+    margin-bottom: 20px;
+    font-size: calc(14 * var(--ch-type-k));
+    color: var(--ch-text-secondary);
+  }
+  /* The holes so far stay a scoreboard: a small recessed green board with the board's finishes. The pane reads top
+     down (the course, the board, where the round stands) and ends where its content does, as Home's week does. */
+  .ch-rd[data-canopy] .ch-rd-strip {
+    align-self: flex-start;
+    margin: 0 0 18px;
+    padding: 14px;
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-board-bg);
+    box-shadow: var(--ch-board-shadow);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf .ch-notice {
+    margin: 0 0 18px;
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f {
+    margin-top: 0;
+    padding-top: 16px;
+    border-top: 0;
+    color: var(--ch-text-secondary);
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__f b {
+    color: var(--ch-text-primary);
+  }
+  /* One primary per page (New round, in the head): Continue is the raised secondary key, in green ink. */
+  .ch-rd[data-canopy] .ch-rd-unf__cta {
+    background: var(--ch-raised-bg);
+    color: var(--ch-green-700);
+    box-shadow: var(--ch-btn-secondary-shadow);
+    transition:
+      transform var(--ch-dur-press) var(--ch-ease),
+      box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
+      box-shadow: var(--ch-btn-secondary-hover-shadow);
+    }
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__discard {
+    background: none;
+    color: var(--ch-text-tertiary);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] .ch-rd-unf__discard:hover {
+      background: var(--ch-bg-hover);
+      color: var(--ch-text-primary);
+    }
+  }
+  .ch-rd[data-canopy] .ch-rd-unf__cta:focus-visible,
+.ch-rd[data-canopy] .ch-rd-unf__discard:focus-visible {
+    outline-color: var(--ch-border-focus);
+  }
+
+  /* Season scoring: the label becomes the pane's heading over the engraved rule; the average and the three figures
+     sit under it, then the ribbon. */
+  .ch-rd[data-canopy] .ch-rd-season {
+    padding: 0 0 0 32px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season .ch-rd-k {
+    grid-area: k;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    letter-spacing: -0.022em;
+    color: var(--ch-ledger-ink);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k {
+    margin-bottom: 12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h {
+    grid-template-areas:
+      'k k'
+      'big figs';
+    row-gap: 22px;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__h > div:first-child {
+    display: contents;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big {
+    grid-area: big;
+    align-self: center;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__f {
+    grid-area: figs;
+  }
+  .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
+  }
+  .ch-rd[data-canopy] .ch-rd-range i.is-best {
+    box-shadow: 0 0 0 2px var(--ch-workspace);
+  }
+  .ch-rd[data-canopy] .ch-rd-season__ch {
+    margin-top: 26px;
+  }
+  /* Rounds failed: the notice stands in the season's pane, past the column rule. */
+  .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+    align-self: start;
+    margin-left: 32px;
+  }
+
+  /* More unfinished rounds: a section, one row each. */
+  .ch-rd[data-canopy] .ch-rd-more {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-more h2 {
+    margin: 0;
+    padding-bottom: 12px;
+    font: 600 19px/1.2 var(--ch-font-sans);
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-more li {
+    padding: 12px 0;
+    border-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-more li + li {
+    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+  }
+  /* Continue and Submit share one width, so the discard buttons line up down the list. */
+  .ch-rd[data-canopy] .ch-rd-more__go {
+    box-sizing: border-box;
+    min-width: 92px;
+    text-align: center;
+  }
+
+  /* The book: the tools lead the months; each month is a section, each round a row. */
+  .ch-rd[data-canopy] .ch-rd-tools {
+    margin: 0 0 -12px;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp {
+    gap: 0;
+    margin-top: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h {
+    padding: 0 0 12px;
+    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__h h2 {
+    color: var(--ch-ledger-ink);
+  }
+  .ch-rd[data-canopy] .ch-rd-grp__rule {
+    background: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-book {
+    gap: 0;
+    margin: 6px -12px 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc {
+    position: relative;
+    padding: 12px;
+    border-radius: var(--ch-radius-md);
+    background: none;
+    box-shadow: none;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc + .ch-rd-sc::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 12px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  /* CH-11601: a round that opens its review takes the Ledger row tint on hover (quick), as Home's leaderboard rows do.
+     A flush row has no card to lift, so it neither lifts nor rings. */
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover {
+      transform: none;
+      background: var(--ch-ledger-row-hover);
+      box-shadow: none;
+    }
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover::before,
+.ch-rd[data-canopy] a.ch-rd-sc:hover + .ch-rd-sc::before {
+      opacity: 0;
+    }
+  }
+  /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
+  .ch-rd[data-canopy] a.ch-rd-sc:active {
+    background: var(--ch-ledger-row-press);
+    transition-duration: var(--ch-dur-press);
+  }
+
+  /* One column below a 860px page: the panes stack, the column rule goes. */
+  @container chrd (max-width: 860px) {
+    .ch-rd[data-canopy] .ch-rd-hero {
+      row-gap: 40px;
+    }
+    .ch-rd[data-canopy] .ch-rd-unf {
+      padding-right: 0;
+    }
+    .ch-rd[data-canopy] .ch-rd-season {
+      padding-left: 0;
+      box-shadow: none;
+    }
+    .ch-rd[data-canopy] .ch-rd-hero > .ch-notice {
+      margin-left: 0;
+    }
+  }
+  /* Below 640px (a narrow desktop window) the season's figures go under the average, as on the phone. */
+  @container chrd (max-width: 640px) {
+    .ch-rd[data-canopy] .ch-rd-season__h {
+      grid-template-areas:
+        'k'
+        'big'
+        'figs';
+    }
+    .ch-rd[data-canopy] .ch-rd-season__big {
+      justify-self: start;
+    }
+  }
+
+  /* Loading (CH-11401): the head holds the loaded head's height (the shell's 34px and 30px padding, the eyebrow's
+     line, 8px, the title's line; 133.8px in WebKit at 1440 and 1100), and its bars sit on the eyebrow and the title, so
+     nothing moves on load. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h {
+    box-sizing: border-box;
+    min-height: calc(34px + 11px * 1.3 + 8px + 44px * 1.08 + 30px);
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-h > div:first-child > .ch-skel:first-child {
+    margin-bottom: 10.8px;
+  }
+  /* Its placeholders keep the panes' gutter and the head's edges, and stand apart in the book. */
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-hero {
+    gap: 40px 64px;
+  }
+  .ch-rd[data-ch-code='CH-11401'][data-canopy] .ch-rd-book {
+    gap: 8px;
+    margin: 0;
+  }
+  /* The season pane in waiting: its head's block, then the vs-par stage at the chart's own proportion (640 by about
+     220, under the stage's 18px padding, its 43px key and 8px), so the pane, and the tools under the hero, land where
+     the loaded chart puts them at any width (WebKit 1280, 2026-10-18). */
+  .ch-rd-sk-pane {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .ch-rd-sk-stage {
+    margin-top: 30px;
+    padding: 69px 22px 8px;
+  }
+  .ch-rd-sk-stage > span {
+    display: block;
+    aspect-ratio: 640 / 220;
+  }
+}
+
+/* P011-A1: one sun for the round. The green feature cards (the round in progress, the review's hero on the phone) take
+   the shell's light (tokens.css --ch-light-*, from the team's place and the hour): the sky falls across the card from the
+   sun's side, a hairline rim catches the sun-facing top edge, and the contact shadow (the cast token) leans away from
+   the light. Paint only, on the material: the scores and figures on the card keep their ink. */
+.ch-rd-unf,
+.ch-rd.is-phone .ch-rd-unf,
+.ch-rv.is-phone .ch-rv-hero {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
+  box-shadow:
+    inset var(--ch-light-rim-x) 1px 0 color-mix(in oklab, var(--ch-light-rim) 30%, transparent),
+    0 0 0 1px var(--ch-green-900),
+    var(--ch-elevation-cast);
+}
+.ch-rd-unf.is-idle {
+  background: var(--ch-light-sky), var(--ch-feature-bg);
+}
+
+/* P011: the review as zones (RoundZones). Each area of the round is a band under a gold rule: what it is and one reading on the
+   left, the picture that fits it on the right. Prefix .ch-rz. */
+.ch-rv-hero__h {
+  margin: 4px 0 0;
+  max-width: 52ch;
+  font: 500 calc(15 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: rgb(244 241 232 / 0.86);
+}
+.ch-rv .ch-znbig.is-good {
+  color: var(--ch-green-600);
+}
+.ch-rv .ch-znbig.is-bad {
+  color: var(--ch-warning-600);
+}
+.ch-rv .ch-rzsvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+.ch-rv .ch-rzmeta {
+  margin: 14px 0 0;
+  font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rzmeta b {
+  font-weight: 700;
+  color: var(--ch-text-primary);
+}
+
+/* the cards the review already had, flush inside a zone */
+.ch-rv .ch-zn .ch-rv-card {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.ch-rv .ch-zn .ch-rv-card__h {
+  padding: 0 0 12px;
+}
+.ch-rv .ch-zn .ch-rv-sg__tot {
+  display: none;
+}
+.ch-rv .ch-zn .ch-rv-sg__legs,
+.ch-rv .ch-zn .ch-rv-dist,
+.ch-rv .ch-zn .ch-rv-shots {
+  padding-left: 0;
+  padding-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-sg__r {
+  grid-template-columns: 132px minmax(0, 1fr);
+}
+.ch-rv .ch-zn .ch-rv-sg__bar {
+  height: 14px;
+}
+.ch-rv .ch-zn .ch-rv-sg__r dt {
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-zn .ch-rv-sg__r b {
+  font-size: calc(16 * var(--ch-type-k));
+}
+.ch-rv .ch-zn .ch-rv-cardw {
+  padding-left: 0;
+  padding-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-hole .ch-notice,
+.ch-rv .ch-zn .ch-rv-none {
+  margin-left: 0;
+  margin-right: 0;
+}
+.ch-rv .ch-zn .ch-rv-hole {
+  padding-top: 8px;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rv .ch-zn .ch-rv-notes p {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* where the strokes were lost */
+.ch-rv .ch-rzcost {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-rv .ch-rzcost__r + .ch-rzcost__r {
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-rv .ch-rzcost button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 40px 44px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 6px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+}
+.ch-rv .ch-rzcost button:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzcost button:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+.ch-rv .ch-rzcost__n {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--ch-bg-inset);
+  font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv .ch-rzcost__t {
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv .ch-rzcost__t small {
+  display: block;
+  margin-top: 3px;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzcost b {
+  text-align: right;
+  font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rv .ch-rzcost em {
+  text-align: right;
+  font: 700 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-warning-600);
+}
+
+/* fairways and greens: one mark a hole */
+.ch-rv .ch-rzth {
+  display: grid;
+  gap: 20px;
+}
+.ch-rv .ch-rzhit {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.ch-rv .ch-rzhit > b {
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzhit > div {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.ch-rv .ch-rzhit__c {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+.ch-rv .ch-rzhit__c i {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
+.ch-rv .ch-rzhit__c.is-hit i {
+  background: var(--ch-green-600);
+}
+.ch-rv .ch-rzhit__c.is-miss i {
+  border: 2px solid var(--ch-warning-600);
+}
+.ch-rv .ch-rzhit__c.is-na i {
+  width: 12px;
+  height: 2px;
+  margin: 9px 0;
+  border-radius: 2px;
+  background: var(--ch-ivory-400);
+}
+.ch-rv .ch-rzhit__c em {
+  font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzpair {
+  display: flex;
+  gap: 40px;
+}
+.ch-rv .ch-rzpair > div {
+  display: grid;
+  gap: 4px;
+}
+.ch-rv .ch-rzpair b {
+  font: 600 36px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  color: var(--ch-forest-800);
+}
+.ch-rv .ch-rzpair small {
+  font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+
+/* putts a hole */
+.ch-rv .ch-rzpt {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: end;
+  gap: 6px;
+  height: 150px;
+}
+.ch-rv .ch-rzpt__c {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  justify-items: center;
+  height: 100%;
+  gap: 6px;
+}
+.ch-rv .ch-rzpt__c b {
+  font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzpt__c i {
+  /* The column fills its cell and is scaled up from the foot by its share (--ch-rz-p, 0 to 1), so a change glides on
+     transform. */
+  align-self: stretch;
+  width: min(22px, 80%);
+  transform: scaleY(var(--ch-rz-p, 0));
+  transform-origin: center bottom;
+  border-radius: var(--ch-radius-sm) var(--ch-radius-sm) 3px 3px;
+  background: var(--ch-ivory-400);
+}
+.ch-rv .ch-rzpt__c i.is-one {
+  background: var(--ch-green-500);
+}
+.ch-rv .ch-rzpt__c i.is-three {
+  background: var(--ch-warning-600);
+}
+.ch-rv .ch-rzpt__c em {
+  font: 500 11px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-rv .ch-rzsplit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin-top: 16px;
+  font: 400 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rv .ch-rzsplit b {
+  margin-right: 7px;
+  font: 700 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-rzsplit .is-warn b {
+  color: var(--ch-warning-600);
+}
+.ch-rv .ch-rzrows {
+  display: grid;
+  gap: 12px;
+}
+.ch-rv .ch-rzrow {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 70px;
+  align-items: center;
+  gap: 14px;
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzrow__t {
+  position: relative;
+  height: 12px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--ch-bg-inset);
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-rv .ch-rzrow__t i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ch-green-500);
+  /* Full width, slid in from the left by its share (--ch-rz-p, 0 to 1), as the scoring distribution's bars are: a change
+     moves on transform and the rounded end stays round; the track's clip draws the start. */
+  transform: translateX(calc((var(--ch-rz-p, 0) - 1) * 100%));
+}
+.ch-rv .ch-rzrow b {
+  text-align: right;
+  font: 700 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.ch-rv .ch-rztrail {
+  margin: 4px 0 12px;
+}
+
+@container chrv (max-width: 900px) {
+  .ch-rv .ch-rzhit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+@container chrv (max-width: 640px) {
+  .ch-rv .ch-rzrow {
+    grid-template-columns: 96px minmax(0, 1fr) 60px;
+  }
+  .ch-rv .ch-zn .ch-rv-sg__r {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+}
+
+.ch-rv .ch-zn .ch-rv-sg .ch-rv-card__h,
+.ch-rv .ch-zn .ch-rv-sg .ch-ri {
+  display: none;
+}
+.ch-rv .ch-zn .ch-rv-card__h h2,
+.ch-rv .ch-zn .ch-rv-card__h h3 {
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  letter-spacing: 0;
+  color: var(--ch-text-primary);
+}
+.ch-rv .ch-zn .ch-rv-recap__k,
+.ch-rv .ch-zn .ch-rv-recap__by {
+  font-family: var(--ch-font-sans);
+}
+.ch-rv .ch-zn .ch-rv-cardw {
+  min-width: 0;
+  max-width: 100%;
+}
+/* The pictures are drawn on a 720 unit canvas, so their words are sized by each picture's own width (its stage or plate is
+   the `chrz` container, whose content box is the drawing's width), not the review's: two side by side on a desktop are
+   about 510px each. Each step keeps the words at about 11px on screen or more. The shot numbers inside the trail's dots
+   keep their size (they fit the dot). */
+.ch-rv .ch-rzstage,
+.ch-rv .ch-rzplate {
+  container: chrz / inline-size;
+}
+@container chrz (max-width: 720px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 13.5px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 14px;
+  }
+}
+@container chrz (max-width: 600px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 16.5px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 17px;
+  }
+}
+@container chrz (max-width: 480px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in) {
+    font-size: 22px;
+  }
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 22.5px;
+  }
+  .ch-rv .ch-rzsvg__hint {
+    display: none;
+  }
+}
+/* A phone: the pictures are about 290px wide, so their words are set at 31 units (about 12px on screen) and the stages
+   give the drawing more of the width. Every other hole number and score tick gives way where they would touch
+   (RoundZones `ch-rzsvg__alt`); the trail lays its own labels out at this size. */
+@container chrz (max-width: 360px) {
+  .ch-rv .ch-rzsvg text:not(.ch-rzsvg__in),
+  .ch-rv .ch-rzsvg text[font-weight='700']:not(.ch-rzsvg__in) {
+    font-size: 31px;
+  }
+  .ch-rv .ch-rzsvg .ch-rzsvg__alt {
+    display: none;
+  }
+  /* The trail's shot numbers sit inside 7px dots here, too small to hold a figure: the dots keep their colour and
+     the list under the trail numbers the shots. */
+  .ch-rv .ch-rzsvg .ch-rzsvg__in {
+    display: none;
+  }
+}
+
+/* Premium pass: depth on the bands, a deep-green stage for the round's line and for the hole's shots, gradients on every fill, gold
+   hairlines on the numbers. Same tokens; nothing new is drawn from outside the palette. */
+.ch-rv .ch-rzstage,
+.ch-rv .ch-rzplate {
+  position: relative;
+  border-radius: var(--ch-radius-xl);
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
+    var(--ch-stage-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    var(--ch-elevation-feature);
+}
+.ch-rv .ch-rzstage {
+  padding: 22px 22px 14px;
+}
+.ch-rv .ch-rzplate {
+  margin: 4px 0 14px;
+  padding: 16px 18px 8px;
+}
+@container chrv (max-width: 440px) {
+  .ch-rv .ch-rzstage {
+    padding: 18px 12px 10px;
+  }
+  .ch-rv .ch-rzplate {
+    padding: 14px 12px 6px;
+  }
+}
+/* Each row of fairway or green marks is its own size container: where eighteen in a line would sit under the 22px mark
+   apart (a phone's are about 14px), the holes fold into nines, Out above In as the card reads, so every mark and
+   number keeps its own column. A desktop row (about 550px) keeps one line. */
+.ch-rv .ch-rzhit {
+  container: chrh / inline-size;
+}
+@container chrh (max-width: 520px) {
+  .ch-rv .ch-rzhit > div {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+}
+.ch-rv .ch-rzstage .ch-rzsvg,
+.ch-rv .ch-rzplate .ch-rzsvg {
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+.ch-rv .ch-rzplate .ch-rzsvg {
+  cursor: default;
+}
+/* The card that reads a hole out sits on a still, full-width track that is its size container; the card moves along it by
+   `translate` in container units (--ch-rz-x, 0 to 100), so it glides on the compositor and the track never leaves the stage.
+   The card centres itself on that point. */
+.ch-rv .ch-rzstage__tipx {
+  position: absolute;
+  top: 16px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rv .ch-rzstage__tip {
+  display: grid;
+  gap: 4px;
+  width: max-content;
+  min-width: 150px;
+  padding: 10px 14px;
+  border-radius: var(--ch-radius-lg);
+  background: rgb(244 238 221 / 0.96);
+  box-shadow:
+    0 0 0 1px rgb(8 43 28 / 0.12),
+    var(--ch-elevation-overlay);
+  color: var(--ch-ink-900);
+  transform: translateX(-50%);
+}
+.ch-rv .ch-rzstage__tip b {
+  font: 700 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzstage__tip span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-rv .ch-rzstage__tip span i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+.ch-rv .ch-rzstage__tip em {
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: #55503f;
+}
+
+/* the bands */
+.ch-rv .ch-znbig.is-good {
+  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+}
+.ch-rv .ch-znbig.is-bad {
+  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
+}
+
+/* strokes gained: thicker, filled with a gradient and a soft glow */
+.ch-rv .ch-zn .ch-rv-sg__bar {
+  height: 16px;
+  background: linear-gradient(180deg, var(--ch-bg-inset), var(--ch-ivory-100));
+  box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
+}
+.ch-rv .ch-zn .ch-rv-sg__z {
+  top: -6px;
+  bottom: -6px;
+  width: 2px;
+  background: var(--ch-champagne-500);
+}
+.ch-rv .ch-zn .ch-rv-sg__v.is-gain {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-rv .ch-zn .ch-rv-sg__v.is-loss {
+  background: linear-gradient(270deg, #d9a54a, #94600e);
+  box-shadow: var(--ch-elevation-mark-warn);
+}
+.ch-rv .ch-zn .ch-rv-dist__t i {
+  box-shadow: var(--ch-elevation-mark-ink);
+}
+
+/* fairway and green marks */
+.ch-rv .ch-rzhit__c i {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzhit__c.is-hit i {
+  background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
+  box-shadow: var(--ch-elevation-mark);
+}
+.ch-rv .ch-rzhit__c.is-miss i {
+  border: 2px solid var(--ch-champagne-500);
+  background: rgb(176 149 96 / 0.1);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzhit__c:hover i {
+    transform: scale(1.18);
+  }
+}
+
+/* putts a hole and first putts */
+.ch-rv .ch-rzpt__c i {
+  background: linear-gradient(180deg, var(--ch-ivory-300), var(--ch-ivory-400));
+  box-shadow: var(--ch-elevation-mark-ink);
+}
+.ch-rv .ch-rzpt__c i.is-one {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
+}
+.ch-rv .ch-rzpt__c i.is-three {
+  background: linear-gradient(180deg, #d9a54a, #94600e);
+}
+.ch-rv .ch-rzrow__t i {
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+}
+.ch-rv .ch-rzpair b {
+  background: linear-gradient(180deg, var(--ch-green-600), var(--ch-green-900));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* costliest holes */
+.ch-rv .ch-rzcost__n {
+  background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-200));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.4),
+    var(--ch-elevation-mark-ink);
+}
+.ch-rv .ch-rzcost button {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+
+/* the hero and its figures */
+.ch-rv-hero {
+  position: relative;
+  background:
+    radial-gradient(90% 140% at 100% 0%, rgb(159 224 182 / 0.2), transparent 58%),
+    radial-gradient(60% 100% at 0% 100%, rgb(231 184 102 / 0.1), transparent 62%),
+    linear-gradient(160deg, #0f4430, #082b1c);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    inset 0 -3px 0 var(--ch-champagne-500),
+    var(--ch-elevation-feature);
+}
+.ch-rv-hero__s b {
+  background: linear-gradient(180deg, #ffffff, #cfc6a8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ch-rv-figs {
+  background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
+  box-shadow:
+    inset 0 0 0 1px rgb(176 149 96 / 0.35),
+    var(--ch-elevation-plate);
+}
+.ch-rv-figs > div + div {
+  border-left-color: rgb(176 149 96 / 0.35);
+}
+.ch-rv-figs dd {
+  font-weight: 600;
+  color: var(--ch-forest-800);
+}
+.ch-rv-figs dd + dd {
+  font-weight: 400;
+  color: var(--ch-text-tertiary);
+}
+
+/* Micro motion on the round review. Every duration is a token, so Animations off and reduced motion make each of these instant; a
+   delay is zeroed for reduced motion below. The line draws once, the first time its stage is seen. */
+.ch-rv .ch-rzline {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--ch-dur-reveal) var(--ch-ease-io);
+}
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzline {
+  stroke-dashoffset: 1;
+}
+.ch-rv .ch-rzfill,
+.ch-rv .ch-rzdots {
+  transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6);
+}
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzfill,
+.ch-rv .ch-rzstage:not(.is-in) .ch-rzdots {
+  opacity: 0;
+}
+.ch-rv .ch-rzdot {
+  transform-box: view-box;
+  transition: transform var(--ch-dur-quick) var(--ch-ease-spring);
+}
+.ch-rv .ch-rzdot.is-hot {
+  transform: scale(1.35);
+}
+.ch-rv .ch-rzdot__halo {
+  opacity: 0.16;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzdot.is-hot .ch-rzdot__halo {
+  opacity: 0.34;
+}
+.ch-rv .ch-rzstage__tip {
+  opacity: 0;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 4px;
+  transition:
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    translate var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rv .ch-rzstage__tip.is-on {
+  opacity: 1;
+  translate: calc(var(--ch-rz-x, 0) * 1cqw) 0;
+}
+
+/* a hole's shots draw in the order they were hit */
+@keyframes ch-rz-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes ch-rz-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+.ch-rv .ch-rzshot__arc {
+  stroke-dasharray: 1;
+  animation: ch-rz-draw var(--ch-dur-reveal) var(--ch-ease-io) backwards;
+  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick));
+}
+.ch-rv .ch-rzshot__dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ch-rz-pop var(--ch-dur-base) var(--ch-ease-spring) backwards;
+  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick) + var(--ch-dur-reveal) * 0.7);
+}
+
+/* values that change under the pointer or the filter glide to their new length, on transform (the scoring distribution's
+   bars keep their own slide). The strokes-gained bars are sized inline and do not glide. */
+.ch-rv .ch-rzrow__t i {
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rv .ch-rzpt__c i {
+  transition:
+    transform var(--ch-dur-base) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzpt:hover .ch-rzpt__c:not(:hover) i {
+    opacity: 0.55;
+  }
+  .ch-rv .ch-rzpt__c:hover i {
+    filter: brightness(1.1) saturate(1.1);
+  }
+}
+.ch-rv .ch-rzcost button:active {
+  transform: scale(0.985);
+  transition-duration: var(--ch-dur-press);
+}
+.ch-rv .ch-rzcost button {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    transform var(--ch-dur-release) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rv .ch-rzcost button:hover .ch-rzcost__n {
+    background: var(--ch-green-800);
+    color: var(--ch-on-fill-50);
+    box-shadow: none;
+  }
+}
+.ch-rv .ch-rzcost__n {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    color var(--ch-dur-quick) var(--ch-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rv .ch-rzfill,
+  .ch-rv .ch-rzdots,
+  .ch-rv .ch-rzshot__arc,
+  .ch-rv .ch-rzshot__dot {
+    transition-delay: 0s;
+    animation-delay: 0s;
+  }
+}
+
+/* ==========================================================================================================================
+   P011 Rounds library, premium pass (2026-10-09). Presentation only: the season figures and their chart on a stage, gold heads,
+   the book's rows as a ledger with a small hung board for Out, In and Tot, a month's trend, and the micro motion that goes with them.
+   Prefix .ch-rd. Tokens only; every duration is a --ch-dur-* token, so Animations off and reduced motion make each of these instant.
+   ========================================================================================================================== */
+
+
+/* The gold segment that opens a head: the same short gilt rule the stats zones set under their titles. */
+.ch-rd-unf__top,
+.ch-rd-season .ch-rd-k,
+.ch-rd-more h2,
+.ch-rd-grp__h {
+  position: relative;
+}
+.ch-rd[data-canopy] .ch-rd-unf__top::after,
+.ch-rd[data-canopy] .ch-rd-season:not(.is-empty) .ch-rd-k::after,
+.ch-rd[data-canopy] .ch-rd-season.is-empty .ch-rd-k::after,
+.ch-rd[data-canopy] .ch-rd-more h2::after,
+.ch-rd[data-canopy] .ch-rd-grp__h::after {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 44px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
+  content: '';
+  pointer-events: none;
+}
+
+/* ---- The season: the average, then three figures that are each drawn ---- */
+.ch-rd .ch-rd-fig__v {
+  font: 600 27px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd .ch-rd-fig dt {
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+}
+/* A caption wraps to a second line before it is cut: "5.1 unde…" said nothing. */
+.ch-rd .ch-rd-fig__m {
+  display: -webkit-box;
+  overflow: hidden;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  white-space: normal;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-wrap: pretty;
+}
+/* Best's course name keeps its words together ("Carolina / GC" split it); the date takes the next line. */
+.ch-rd-fig__course {
+  white-space: nowrap;
+}
+.ch-rd.is-phone .ch-rd-fig__m {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+.ch-rd .ch-rd-fig__viz {
+  gap: 5px;
+  padding: 3px 0;
+}
+.ch-rd .ch-rd-range {
+  height: 12px;
+  border-radius: 6px;
+}
+.ch-rd .ch-rd-range i {
+  width: 6px;
+  height: 6px;
+  background: var(--ch-ink-400);
+}
+.ch-rd .ch-rd-range i.is-best {
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
+  box-shadow:
+    0 0 0 2px var(--ch-workspace),
+    0 0 0 3.5px var(--ch-champagne-500),
+    var(--ch-elevation-mark);
+}
+.ch-rd .ch-rd-range b {
+  top: -4px;
+  bottom: -4px;
+}
+.ch-rd .ch-rd-putts {
+  height: 10px;
+  margin: 2px 0;
+  border-radius: 5px;
+}
+.ch-rd .ch-rd-putts i {
+  border-radius: var(--ch-radius-xs);
+  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-rd .ch-rd-putts b {
+  top: -5px;
+  bottom: -5px;
+  background: var(--ch-champagne-500);
+}
+.ch-rd .ch-rd-greens {
+  gap: 3px;
+}
+.ch-rd .ch-rd-greens i {
+  height: 9px;
+  border-radius: 3px;
+  background: var(--ch-ivory-300);
+  box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.12);
+}
+.ch-rd .ch-rd-greens i.is-hit {
+  background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
+  box-shadow: var(--ch-elevation-mark);
+}
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] .ch-rd-season__big {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big b {
+    order: 1;
+    font: 600 58px/0.92 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    font-variation-settings: 'wdth' 90;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big::after {
+    width: 36px;
+    height: 3px;
+    margin: 12px 0 10px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--ch-champagne-500), var(--ch-champagne-300));
+    content: '';
+    order: 2;
+  }
+  .ch-rd[data-canopy] .ch-rd-season__big em {
+    order: 3;
+    font: 500 13px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+  }
+  .ch-rd[data-canopy] .ch-rd-fig + .ch-rd-fig {
+    box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.38);
+  }
+}
+
+/* ---- The chart: every round against par ---- */
+.ch-rd .ch-rd-stage {
+  --ch-rd-under-a: #ff9d8e;
+  --ch-rd-under-b: #d0574a;
+  --ch-rd-over-a: rgb(244 238 221 / 0.36);
+  --ch-rd-over-b: rgb(244 238 221 / 0.9);
+  --ch-rd-ink: var(--ch-stage-ink);
+  --ch-rd-soft: var(--ch-stage-ink-soft);
+  --ch-rd-rule: var(--ch-stage-rule);
+  --ch-rd-par: rgb(244 238 221 / 0.58);
+  --ch-rd-gold: var(--ch-stage-gold);
+  --ch-rd-avg-ink: var(--ch-stage-gold);
+  --ch-rd-chip: rgb(231 184 102 / 0.16);
+  --ch-rd-chip-ring: rgb(231 184 102 / 0.5);
+  --ch-rd-under-ink: var(--ch-stage-red);
+  position: relative;
+  margin-top: 30px;
+  padding: 18px 22px 8px;
+  border-radius: var(--ch-radius-xl);
+  background:
+    radial-gradient(90% 120% at 0% 0%, rgb(159 224 182 / 0.16), transparent 58%),
+    radial-gradient(70% 100% at 100% 100%, rgb(231 184 102 / 0.12), transparent 60%),
+    var(--ch-stage-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    var(--ch-elevation-feature);
+  color: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage__h {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px 18px;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch {
+  display: contents;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch b {
+  grid-column: 1;
+  grid-row: 1;
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__ch span {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-rd-soft);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg {
+  grid-column: 2;
+  grid-row: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px 14px;
+  padding: 0;
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-rd-soft);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-under {
+  background: linear-gradient(180deg, var(--ch-rd-under-a), var(--ch-rd-under-b));
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-over {
+  background: linear-gradient(0deg, var(--ch-rd-over-a), var(--ch-rd-over-b));
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-even {
+  height: 3px;
+  background: var(--ch-rd-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-season__lg i.is-q {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--ch-rd-gold);
+}
+.ch-rd-rib-w {
+  position: relative;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib {
+  margin-top: 8px;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line {
+  stroke: var(--ch-rd-rule);
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line.is-par {
+  stroke: var(--ch-rd-par);
+  stroke-width: 1.5;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib line.ch-rd-rib__avg {
+  stroke: var(--ch-rd-gold);
+  stroke-dasharray: 2 6;
+  stroke-opacity: 0.9;
+  stroke-width: 2;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__chip {
+  fill: var(--ch-rd-chip);
+  stroke: var(--ch-rd-chip-ring);
+}
+/* The ribbon is drawn on a 640 unit canvas about 516px wide on a desktop: its words are set at 13.75 to 14 units so they
+   read at 11px or more there (the phone's narrower canvas sets its own, below). */
+.ch-rd .ch-rd-stage .ch-rd-rib__t {
+  fill: var(--ch-rd-soft);
+  font-size: 13.75px;
+  font-weight: 500;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__t.is-par {
+  fill: var(--ch-rd-ink);
+  font-weight: 700;
+}
+/* The average's words fill a 90 unit chip, so they stay a step smaller and keep its ends clear (+12.4 still fits). */
+.ch-rd .ch-rd-stage .ch-rd-rib__t.is-avg {
+  fill: var(--ch-rd-avg-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__v {
+  fill: var(--ch-rd-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__v.is-under {
+  fill: var(--ch-rd-under-ink);
+}
+.ch-rd .ch-rd-stage .ch-rd-rib__d {
+  fill: var(--ch-rd-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.ch-rd .ch-rd-stage .ch-rd-rib rect.is-even {
+  fill: var(--ch-rd-ink);
+}
+/* A qualifier is a second channel: a gilt outline on whatever its score is. */
+.ch-rd .ch-rd-stage .ch-rd-rib rect.is-q {
+  stroke: var(--ch-rd-gold);
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+.ch-rd .ch-rd-rib__hit {
+  fill: transparent;
+  pointer-events: all;
+}
+.ch-rd .ch-rd-rib__bar {
+  --ch-rd-delay: min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal));
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--ch-dur-reveal) var(--ch-ease) var(--ch-rd-delay),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__bar.is-down {
+  transform-origin: 50% 0%;
+}
+/* The bars rise from the par line the first time the stage is seen; their scores come in as the last of them lands. */
+.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__bar {
+  transform: scaleY(0);
+}
+.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__v {
+  opacity: 0;
+}
+@keyframes ch-rd-fade {
+  from {
+    opacity: 0;
+  }
+}
+.ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
+  animation: ch-rd-fade var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6) backwards;
+}
+.ch-rd .ch-rd-rib__v {
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__bar,
+.ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__v {
+  opacity: 0.4;
+}
+.ch-rd .ch-rd-rib__g.is-hot .ch-rd-rib__bar {
+  filter: brightness(1.14) saturate(1.1);
+}
+/* The card that reads a round out: the date and kind, then the score against par. It sits on a still, full-width track that
+   is its size container and moves along it by `translate` in container units (--ch-rd-x, 0 to 100), so it glides on the
+   compositor and the track never overflows the chart; the card centres itself on that point. */
+.ch-rd .ch-rd-rib__tipx {
+  position: absolute;
+  top: 6px;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  container-type: inline-size;
+  pointer-events: none;
+}
+.ch-rd .ch-rd-rib__tip {
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  min-width: 118px;
+  padding: 9px 13px;
+  border-radius: var(--ch-radius-lg);
+  background: rgb(244 238 221 / 0.97);
+  box-shadow:
+    0 0 0 1px rgb(8 43 28 / 0.14),
+    var(--ch-elevation-overlay);
+  color: #1c1b18;
+  opacity: 0;
+  transform: translateX(-50%);
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 4px;
+  transition:
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    translate var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-rd .ch-rd-rib__tip.is-on {
+  opacity: 1;
+  translate: calc(var(--ch-rd-x, 0) * 1cqw) 0;
+}
+.ch-rd .ch-rd-rib__tip b {
+  font: 700 12.5px/1.2 var(--ch-font-sans);
+}
+.ch-rd .ch-rd-rib__tip span {
+  font: 600 13px/1.2 var(--ch-font-sans);
+}
+
+/* On the phone the chart stays on the page, as the Mobile pass has it (one green card there): the same picture in the page's own inks. */
+.ch-rd.is-phone .ch-rd-stage {
+  --ch-rd-under-a: #d9665a;
+  --ch-rd-under-b: #a8372b;
+  --ch-rd-over-a: var(--ch-ink-400);
+  --ch-rd-over-b: var(--ch-ink-500);
+  --ch-rd-ink: var(--ch-text-primary);
+  --ch-rd-soft: var(--ch-text-secondary);
+  --ch-rd-rule: rgb(110 98 62 / 0.14);
+  --ch-rd-par: rgb(28 27 24 / 0.5);
+  --ch-rd-gold: var(--ch-champagne-500);
+  --ch-rd-avg-ink: var(--ch-green-500);
+  --ch-rd-chip: var(--ch-green-50);
+  --ch-rd-chip-ring: rgb(21 90 57 / 0.25);
+  margin-top: 4px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__v.is-under {
+  fill: var(--ch-score-under);
+}
+.ch-rd.is-phone .ch-rd-stage__h {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-season__lg {
+  grid-column: 1;
+  grid-row: 3;
+  justify-content: flex-start;
+}
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__t,
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__v,
+.ch-rd.is-phone .ch-rd-stage .ch-rd-rib__d {
+  font-size: 13px;
+}
+.ch-rd.is-phone .ch-rd-rib__tip {
+  background: var(--ch-sheet-bg);
+  box-shadow:
+    0 0 0 1px rgb(28 25 18 / 0.12),
+    var(--ch-elevation-overlay);
+}
+
+/* ---- The round in progress ---- */
+.ch-rd[data-canopy] .ch-rd-strip {
+  box-shadow:
+    var(--ch-board-shadow),
+    0 0 0 1px rgb(176 149 96 / 0.5),
+    var(--ch-elevation-board);
+}
+.ch-rd[data-canopy] .ch-rd-unf__f > span:first-child {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: calc(13.5 * var(--ch-type-k));
+}
+.ch-rd[data-canopy] .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
+  font: 600 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
+  font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-variation-settings: 'wdth' 92;
+}
+.ch-rd .ch-rd-unf__cta svg {
+  transition: transform var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-rd .ch-rd-unf__cta:hover svg {
+    transform: translateX(3px);
+  }
+}
+@media (hover: hover) {
+  .ch-rd .ch-rd-more__go:hover {
+    background: var(--ch-green-50);
+    box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.45);
+  }
+}
+.ch-rd .ch-rd-more__go {
+  transition:
+    background var(--ch-dur-quick) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+
+/* ---- The book ---- */
+.ch-rd .ch-rd-grp__h h2 {
+  font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  letter-spacing: -0.025em;
+  font-variation-settings: 'wdth' 88;
+}
+.ch-rd .ch-rd-grp__h {
+  align-items: center;
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+}
+.ch-rd .ch-rd-grp__h > .ch-num {
+  font-variant-numeric: tabular-nums;
+}
+.ch-rd .ch-rd-grp__h b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+/* A month's trend: one small bar a round, oldest to newest. */
+.ch-rd-grp__spark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+}
+.ch-rd-grp__spark i {
+  display: block;
+  width: 5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--ch-ink-400), var(--ch-ink-600));
+}
+.ch-rd-grp__spark i.is-under {
+  background: linear-gradient(180deg, #d9665a, #a8372b);
+}
+@media (min-width: 821px) {
+  .ch-rd[data-canopy] .ch-rd-sc {
+    grid-template-columns: 56px minmax(160px, 1.1fr) auto minmax(180px, 1fr) 68px;
+    gap: 22px;
+  }
+  /* The date is a flush figure with a gilt hairline on its right, not a raised key. */
+  .ch-rd[data-canopy] .ch-rd-sc__date {
+    gap: 3px;
+    width: 56px;
+    height: 52px;
+    padding-right: 4px;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset -1px 0 0 rgb(176 149 96 / 0.4);
+    color: var(--ch-green-700);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__date b {
+    font: 600 27px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    font-variation-settings: 'wdth' 90;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__date em {
+    font: 500 12px/1 var(--ch-font-sans);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__c > b {
+    font-size: 16.5px;
+    transition: color var(--ch-dur-quick) var(--ch-ease);
+  }
+  /* Out, In and Tot: a small hung board, the review's scorecard in miniature. The totals hang on ivory plates; the total is gilt. */
+  .ch-rd[data-canopy] .ch-rd-sc__grid {
+    gap: 3px;
+    padding: 3px;
+    overflow: visible;
+    border-radius: var(--ch-radius-md);
+    background: linear-gradient(180deg, #0f4a2f, #082b1c);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 1px var(--ch-green-900),
+      var(--ch-elevation-board);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid > span {
+    height: 42px;
+    border-radius: var(--ch-radius-sm);
+    background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
+    box-shadow: inset 0 -1px 0 rgb(28 25 18 / 0.1);
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid > span + span {
+    border-left: 0;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot {
+    background: linear-gradient(180deg, #efe6d2, #dccda6);
+    color: #1c1b18;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid .is-tot em {
+    color: #55503f;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__grid b {
+    font-size: 17px;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t {
+    height: 6px;
+    background: var(--ch-well-soft-bg);
+    box-shadow: inset 0 1px 1px rgb(28 25 18 / 0.14);
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t i {
+    background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
+    transition: transform var(--ch-dur-base) var(--ch-ease);
+  }
+  .ch-rd[data-canopy] .ch-rd-meter__t.is-p i {
+    background: linear-gradient(90deg, var(--ch-champagne-300), var(--ch-champagne-500));
+  }
+  /* To par stands on the page; only a round under par keeps its ring. */
+  .ch-rd[data-canopy] .ch-rd-sc__s {
+    height: 52px;
+    background: none;
+    box-shadow: none;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__s b {
+    font: 600 25px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.035em;
+    font-variation-settings: 'wdth' 92;
+  }
+  .ch-rd[data-canopy] .ch-rd-sc__s.is-under {
+    border-radius: var(--ch-radius-lg);
+    background: var(--ch-score-under-bg);
+    box-shadow: inset 0 0 0 2px var(--ch-score-under);
+  }
+  @media (hover: hover) {
+    .ch-rd[data-canopy] a.ch-rd-sc:hover .ch-rd-sc__c > b {
+      color: var(--ch-green-700);
+    }
+    .ch-rd[data-canopy] a.ch-rd-sc:hover .ch-rd-sc__grid {
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.12),
+        0 0 0 1px var(--ch-green-900),
+        var(--ch-elevation-board-hover);
+    }
+  }
+}
+@container chrd (max-width: 1000px) {
+  .ch-rd[data-canopy] .ch-rd-sc {
+    grid-template-columns: 56px minmax(0, 1fr) auto 64px;
+  }
+}
+
+/* ---- The phone: flush rows keep their shape; the date and the score take the same figures ---- */
+.ch-rd.is-phone .ch-rd-sc__date {
+  color: var(--ch-green-700);
+}
+.ch-rd.is-phone .ch-rd-sc__date b {
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.ch-rd.is-phone .ch-rd-grp__h {
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ch-rd .ch-rd-rib__bar {
+    --ch-rd-delay: 0s;
+  }
+  .ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
+    animation-delay: 0s;
+  }
+}
+
+/* -- The round card (P011; docs/clubhouse/phone/round-card.md) --------------------------------------------------------
+   A scorecard on ledger paper: the thing a player keeps, shares as a picture and prints. Outline marks (a circle is a
+   birdie, a double circle an eagle or better, a square a bogey, a double square a double bogey or worse): red for under
+   par only, ink for squares. Gains are green and losses amber (D-42). Every figure is the review's own. */
+.ch-rcard-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ch-rcard {
+  --ch-rcard-lab: 56px;
+  --ch-rcard-sub: 54px;
+  --ch-rcard-mk: 22px;
+  overflow: hidden;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-sheet-bg);
+  box-shadow: var(--ch-elevation-reading);
+  color: var(--ch-text-primary);
+}
+.ch-rcard.is-phone {
+  --ch-rcard-lab: 40px;
+  --ch-rcard-sub: 38px;
+  --ch-rcard-mk: 20px;
+}
+/* It arrives once, on the smooth spring: one movement, no count-up, no stagger. Reduced motion and Animations off: none. */
+@keyframes ch-rcard-settle {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.ch-rcard.is-just {
+  animation: ch-rcard-settle var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-rcard.is-just {
+    animation: none;
+  }
+}
+.ch-rcard-h {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px 14px;
+  border-bottom: var(--ch-ledger-rule-double);
+}
+.ch-rcard-h__l {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+.ch-rcard-h h2 {
+  margin: 0;
+  font: 600 calc(17 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-rcard-h__m {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-nw {
+  white-space: nowrap;
+}
+.ch-rcard-h__s {
+  display: flex;
+  flex: none;
+  align-items: baseline;
+  gap: 8px;
+}
+.ch-rcard-h__s b {
+  font: 600 32px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.ch-rcard-h__s em {
+  font: 600 16px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
+  font-style: normal;
+  color: var(--ch-text-primary);
+}
+.ch-rcard-h__s em.is-under {
+  color: var(--ch-score-under);
+}
+.ch-rcard-h__s em.is-over {
+  color: var(--ch-chart-loss);
+}
+/* The printed head: course, date and score at paper size. Hidden on the page, where the hero says the same. */
+.ch-rcard-pr {
+  display: none;
+}
+.ch-rcard-pr__l {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-rcard-pr [data-t]::before {
+  content: attr(data-t);
+}
+.ch-rcard-pr__k,
+.ch-rcard-pr__m {
+  font: 400 12pt/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-pr__c {
+  font: 600 26pt/1.1 var(--ch-font-sans);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-rcard-pr__s {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.ch-rcard-pr__n {
+  font: 600 44pt/0.9 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.ch-rcard-pr__p {
+  font: 600 16pt/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rcard-pr__p.is-under {
+  color: var(--ch-score-under);
+}
+.ch-rcard-pr__p.is-over {
+  color: var(--ch-chart-loss);
+}
+.ch-rcard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 22px 18px;
+}
+.ch-rcard-t {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font: 400 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-t th,
+.ch-rcard-t td {
+  height: 28px;
+  padding: 0;
+  text-align: center;
+  font-weight: 400;
+}
+.ch-rcard-t th:first-child {
+  width: var(--ch-rcard-lab);
+  padding-left: 8px;
+  text-align: left;
+}
+.ch-rcard-t .is-sub,
+.ch-rcard-t .is-tot {
+  width: var(--ch-rcard-sub);
+}
+.ch-rcard-t thead tr {
+  background: var(--ch-ledger-row-hover);
+  border-bottom: 1px solid var(--ch-ledger-rule);
+}
+.ch-rcard-t thead th {
+  font-weight: 500;
+}
+.ch-rcard-t thead th:first-child,
+.ch-rcard-t thead .is-sub,
+.ch-rcard-t thead .is-tot,
+.ch-rcard-t .is-score th {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-rcard-t tbody tr + tr {
+  border-top: 1px solid var(--ch-ledger-rule-soft);
+}
+.ch-rcard-t tbody tr:last-child {
+  border-bottom: 1px solid var(--ch-ledger-rule);
+}
+.ch-rcard-t th[scope='row'] {
+  font-weight: 500;
+}
+.ch-rcard-t .is-score th,
+.ch-rcard-t .is-score td {
+  height: 40px;
+}
+.ch-rcard-t .is-sub,
+.ch-rcard-t .is-tot {
+  color: var(--ch-text-primary);
+  font-weight: 500;
+}
+.ch-rcard-t .is-sub b,
+.ch-rcard-t .is-tot b {
+  font-weight: 600;
+}
+.ch-rcard-t .is-tot {
+  border-left: 1px solid var(--ch-ledger-rule);
+}
+.ch-rcard-t .is-fir td,
+.ch-rcard-t .is-gir td {
+  height: 24px;
+}
+.ch-rcard-warn {
+  font-weight: 600;
+  color: var(--ch-chart-loss-on-tint);
+}
+.ch-rcard-mk {
+  display: inline-grid;
+  width: var(--ch-rcard-mk);
+  height: var(--ch-rcard-mk);
+  place-items: center;
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-rcard-mk b {
+  font-weight: 600;
+}
+.ch-rcard-mk.is-none {
+  color: var(--ch-text-tertiary);
+}
+.ch-rcard-mk.is-birdie,
+.ch-rcard-mk.is-eagle {
+  border: 1.5px solid var(--ch-score-under);
+  border-radius: 50%;
+  color: var(--ch-score-under);
+}
+/* Borders and outlines, not shadows: a browser's print leaves box-shadows out, and the marks must reach the paper. */
+.ch-rcard-mk.is-eagle {
+  outline: 1.5px solid var(--ch-score-under);
+  outline-offset: 2.5px;
+}
+.ch-rcard-mk.is-bogey,
+.ch-rcard-mk.is-double {
+  border: 1.5px solid var(--ch-text-primary);
+  border-radius: var(--ch-radius-xs);
+}
+.ch-rcard-mk.is-double {
+  outline: 1.5px solid var(--ch-text-primary);
+  outline-offset: 2.5px;
+}
+.ch-rcard-yn {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  font-style: normal;
+  vertical-align: middle;
+}
+.ch-rcard-yn.is-y {
+  background: var(--ch-text-primary);
+}
+.ch-rcard-yn.is-n {
+  border: 1.5px solid var(--ch-text-secondary);
+}
+.ch-rcard-yn.is-na {
+  width: auto;
+  height: auto;
+  color: var(--ch-text-tertiary);
+  line-height: 1;
+}
+.ch-rcard-sg {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--ch-ledger-rule);
+  text-align: center;
+}
+.ch-rcard-sg dt {
+  font: 500 calc(12 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-sg .is-total dt {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-rcard-sg dd {
+  margin: 4px 0 0;
+  font: 600 19px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.ch-rcard-sg .is-total dd {
+  font-size: calc(22 * var(--ch-type-k));
+}
+.ch-rcard-sg dd.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rcard-sg dd.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-rcard-story {
+  margin: 0;
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-act {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-rcard-share {
+  display: grid;
+  gap: 16px;
+}
+.ch-rcard-share__pic img,
+.ch-rcard-share__hold {
+  display: block;
+  width: 100%;
+  border-radius: var(--ch-radius-sm);
+  box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-reading);
+}
+.ch-rcard-share__hold {
+  aspect-ratio: 600 / 440;
+  background: var(--ch-bg-subtle);
+}
+.ch-rcard-share__fail {
+  margin: 0;
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-rcard-share__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (max-width: 820px) {
+  .ch-rcard-h {
+    padding: 14px 14px 12px;
+    gap: 10px;
+  }
+  .ch-rcard-h__m {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+  .ch-rcard-body {
+    padding: 10px 12px 14px;
+  }
+  .ch-rcard-t {
+    font-size: 12px;
+  }
+  .ch-rcard-t th:first-child {
+    padding-left: 4px;
+  }
+  .ch-rcard-mk {
+    font-size: 12px;
+  }
+  .ch-rcard-sg {
+    padding: 12px 10px 14px;
+    gap: 4px;
+  }
+  .ch-rcard-sg dt {
+    font-size: calc(12 * var(--ch-type-k));
+  }
+  .ch-rcard-sg dd {
+    font-size: calc(16 * var(--ch-type-k));
+  }
+  .ch-rcard-sg .is-total dd {
+    font-size: calc(18 * var(--ch-type-k));
+  }
+  .ch-rcard-act .ch-btn {
+    flex: 1;
+    min-height: 44px;
+  }
+}
+
+/* Print: the page prints the card alone, on one page, ledger rules kept, in ink on white whatever the theme (the card's
+   own tokens are re-pointed to plain colours, so a night page does not print a dark card). The shell hides its own chrome. */
+@media print {
+  .ch-rv > :not(.ch-rprint-keep) {
+    display: none !important;
+  }
+  .ch-rv {
+    display: block;
+    max-width: none;
+    padding: 0;
+  }
+  .ch-rprint-keep .ch-rcard-act,
+  .ch-rprint-keep .ch-rcard-story,
+  .ch-rprint-keep .ch-rcard-h {
+    display: none !important;
+  }
+  .ch-rprint-keep .ch-rcard-pr {
+    display: flex;
+    justify-content: space-between;
+    gap: 16pt;
+    padding: 16pt 18pt 12pt;
+    border-bottom: var(--ch-ledger-rule-double);
+  }
+  .ch-rprint-keep .ch-rcard {
+    --ch-sheet-bg: white;
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-score-under: firebrick;
+    --ch-chart-gain: darkgreen;
+    --ch-chart-loss: sienna;
+    --ch-chart-loss-on-tint: sienna;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-ledger-row-hover: whitesmoke;
+    --ch-ledger-rule-double: 3px double gray;
+    border-radius: 0;
+    background: white;
+    box-shadow: none;
+    outline: 1px solid gray;
+    break-inside: avoid;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    animation: none;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   The round card's one wide table (18 holes, Out, In, Total, in 56px and 54px columns) was drawn for a card of 650px and
+   more. On an iPad portrait with the sidebar open the card is 518px, which leaves 17px a hole, under the 22px mark, so
+   the circled and squared scores overlapped their neighbours. On a canvas under 761px it takes the phone card's narrower
+   label, subtotal and mark sizes. The nine-hole tables on the review's cards drop their 560px minimum width at any
+   canvas in the tier so they fit instead of scrolling by a few pixels. The container is the canvas (shell.css); the
+   phone has its own card. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 760px) {
+    .ch-rcard:not(.is-phone) {
+      --ch-rcard-lab: 40px;
+      --ch-rcard-sub: 38px;
+      --ch-rcard-mk: 18px;
+    }
+    .ch-rcard:not(.is-phone) .ch-rcard-t {
+      font-size: calc(12 * var(--ch-type-k));
+    }
+    .ch-rcard:not(.is-phone) .ch-rcard-mk {
+      font-size: calc(12 * var(--ch-type-k));
+    }
+  }
+  .ch-rv-nine {
+    min-width: 0;
+  }
+}

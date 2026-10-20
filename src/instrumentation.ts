@@ -76,6 +76,23 @@ const sharedIgnoreErrors = [
   /Could not find the function public\.helm_debug_record_agent_run/,
   /Could not find the function public\.helm_debug_list_agent_runs/,
   /Could not find the function public\.helm_debug_get_agent_run/,
+  // Same shape: golf_qualifier_selection_reasons comes with the HELD
+  // 20260929200000_golf_qualifier_db_hardening.sql. Every qualifier load calls it
+  // first (src/lib/golf/qualifier-selection-reasons.ts) and falls back to the
+  // column on PGRST202, so until the apply each load would raise one auto-captured
+  // event for a call that worked. Delete this line in the change that applies it.
+  /Could not find the function public\.golf_qualifier_selection_reasons\(/,
+  // Same shape: helm_debug_record_trace_steps is the flight recorder's batch writer from the HELD
+  // 20261007106000_helm_debug_record_trace_steps_batch.sql. helm-flight-recorder.ts falls back to per-step
+  // writes on PGRST202, so every save raised one auto-captured event for a write that landed (Sentry -196).
+  // The `s\(` anchor keeps the live single-step helm_debug_record_trace_step paging. Delete with the apply.
+  /Could not find the function public\.helm_debug_record_trace_steps\(/,
+  // A HELD column, the same way: golf_conversation_participants.hidden_at comes with the HELD
+  // 20261008160000_golf_conversation_hidden_at.sql. conversation-hide.ts probes it and reads 42703 as
+  // "not available yet", so each Clubhouse Messages load raised one event for a probe that worked (Sentry
+  // -1A0, 87 events in a day). Named by table and column so any other missing column still pages. Delete
+  // this line in the change that applies the migration.
+  /column golf_conversation_participants\.hidden_at does not exist/,
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
   // classifies these as handled/expected (admin_events + Sentry warning with
@@ -198,9 +215,8 @@ function makeTracesSampler(isDev: boolean): Sentry.NodeOptions['tracesSampler'] 
  * message around that code embeds table names, column names and constraint
  * names. Grouping on the message therefore scatters one bad policy across many
  * Sentry issues — the same splitting already documented for
- * `normalizeIncidentMessagePrefix`, and visible in production right now, where
- * one Inngest key mismatch occupies four fingerprints because the message
- * carries "signature was 1s old" vs "2s".
+ * `normalizeIncidentMessagePrefix`, where one underlying fault occupied four
+ * fingerprints because the message carried a varying value ("1s old" vs "2s").
  *
  * Fingerprinting on the code makes the class countable: "42501 is up 40x this
  * hour" is actionable, where forty separately-named issues are not.
@@ -431,34 +447,11 @@ export async function register() {
       .then((m) => m.recordDeployMarker())
       .catch(() => {});
 
-    // Helm Bridge: an absent or malformed Inngest credential in production is
-    // a fault, not a config state — every durable job silently turns off. The
-    // SDK's own "no signing key found" console.error fires here at start-up
-    // (3 of the 4 Sentry events on 2026-09-01 carried no request URL), so
-    // start-up is where the Bridge row is written too. Production-gated,
-    // throttled, collapsed across cold starts — see src/lib/inngest/credentials.ts.
-    //
-    // Started here, AWAITED below. register() runs before the first request
-    // and has no request scope, so `after()` is unavailable and the write
-    // takes scheduleBridgeWrite's awaited fallback (bounded at 2.5s, and handed
-    // to the Vercel request context's waitUntil when one exists). `void`ing
-    // that made it a promise nobody held on a function that freezes: the row
-    // never landed, and the throttle window it had opened silenced the next
-    // `send`/`inbound` report. In the healthy case it returns before any I/O,
-    // so cold start pays nothing.
-    const inngestCredentialReport = import('@/lib/inngest/credentials')
-      .then((m) => m.reportInngestCredentialFault('startup'))
-      .catch(() => false);
-
     // `process.on` is a Node-only API. Load the handler module only from the
     // Node runtime so Edge builds never evaluate that implementation.
     void import('@/lib/observability/register-process-error-handlers')
       .then((m) => m.registerProcessErrorHandlers())
       .catch(() => {});
-
-    // After the handlers are on their way, never before them: a slow Bridge
-    // must not delay the process-level catch-all.
-    await inngestCredentialReport;
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

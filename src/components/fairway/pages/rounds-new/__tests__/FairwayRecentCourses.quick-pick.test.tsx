@@ -27,7 +27,7 @@ vi.mock('@/components/fairway/overlays/Sheet', () => {
 });
 
 import { FairwayRecentCourses, QUICK_PICK_EXIT_MS } from '@/components/fairway/pages/rounds-new/FairwayRecentCourses';
-import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
+import type { RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
 
 const course = {
   id: 'saved-1',

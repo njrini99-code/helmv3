@@ -25,7 +25,6 @@ import {
 import {
   getCounterfactualCeiling,
   getCounterfactualConfig,
-  getCohortPlausibilityBound,
 } from './lookup-tables';
 import { cohortAnchor, type CohortGender } from './cohort-baselines';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
@@ -38,15 +37,7 @@ export interface ComputeCounterfactualInput {
   pga_value: number;
   /** Player's current 30-day scoring average. Null when not enough rounds. */
   player_30d_scoring_avg: number | null;
-  /**
-   * College/division COHORT baseline for this metric (golf_player_standing.level_avg).
-   * When present + finite this is the PRIMARY realistic target the gap is measured
-   * to (domain doc §349: college-primary, Tour-ceiling) — it stops overstating
-   * every elite-amateur weakness. Falls back to `pga_value` (Tour ceiling) when
-   * null, so the engine is unchanged until the cohort RPC populates `level_avg`.
-   */
-  cohort_value?: number | null;
-  /** Player's cohort gender — selects the per-gender anchor (DC-GENDER-1). */
+  /** Player's team gender: selects the team's Tour (LPGA for women's, DC-GENDER-1). */
   cohort_gender?: CohortGender;
   /**
    * Player's OWN per-round attempt rate for this metric (DC-ATTEMPT-1). When
@@ -74,31 +65,15 @@ export function computeCounterfactual(
     return zeroProjection(input.player_30d_scoring_avg, 'unknown_metric');
   }
 
-  // Target = the realistic baseline the gap is measured to: the college/division
-  // COHORT average when available (domain doc §349 college-primary), else the
-  // Tour value as a fallback ceiling. Until the cohort RPC populates level_avg
-  // this is exactly the old PGA-gap behavior.
-  //
-  // DC-COHORT-1: only trust the cohort when it passes per-metric plausibility
-  // bounds. The V1 cohort is the app-population average over heavily-synthetic
-  // demo data; an implausible value (e.g. sg_putting −3.94, sand-save 14.8%,
-  // proximity better than Tour) is a data artifact, not a target. Reject it and
-  // fall back to pga_value rather than gap to a fabricated baseline.
-  const cohortUsable =
-    input.cohort_value != null &&
-    Number.isFinite(input.cohort_value) &&
-    isCohortPlausible(input.metric_id, input.cohort_value, input.direction, input.pga_value);
-  // Target priority (DC-COHORT-1 → DC-GENDER-1): a plausible cohort, else the
-  // per-gender anchor (women's college target), else the Tour pga_value. The
-  // anchor is the controlled replacement for the synthetic single-value cohort.
+  // Target = the team's Tour value (Q-88, 2026-09-30: "change it all to PGA").
+  // The per-gender anchor is the LPGA value for a women's team and the PGA
+  // value otherwise; a metric with no anchor uses the standing row's
+  // pga_value. The college cohort average (golf_player_standing.level_avg) is
+  // never a target: CoachHelm does not compare with a college number.
   const anchor = input.cohort_gender
     ? cohortAnchor(input.metric_id, input.cohort_gender)
     : null;
-  const target = cohortUsable
-    ? (input.cohort_value as number)
-    : anchor != null
-      ? anchor
-      : input.pga_value;
+  const target = anchor != null ? anchor : input.pga_value;
 
   // Gap = how much the player would need to MOVE to reach the target. For
   // higher_better metrics, positive gap means player needs to gain value
@@ -178,36 +153,6 @@ export function computeCounterfactual(
     attempts_used: useAttemptRate ? (attempts as number) : null,
     confidence_band: bandFor(input.confidence),
   };
-}
-
-/**
- * DC-COHORT-1: is a cohort `level_avg` plausible enough to be a counterfactual
- * target? Rejects out-of-band cohort values (synthetic-data artifacts) so the
- * gap falls back to the Tour `pga_value` instead of an impossible baseline.
- * Returns true (cohort usable) for metrics with no declared bounds.
- */
-function isCohortPlausible(
-  metricId: string,
-  cohortValue: number,
-  direction: Direction,
-  pgaValue: number,
-): boolean {
-  const bound = getCohortPlausibilityBound(metricId);
-  if (!bound) return true;
-
-  if (bound.min != null && cohortValue < bound.min) return false;
-  if (bound.max != null && cohortValue > bound.max) return false;
-
-  // A college cohort cannot be at/past the Tour on a skill metric — for
-  // higher_better that's cohort >= pga, for lower_better that's cohort <= pga.
-  if (bound.not_better_than_pga) {
-    const cohortBeatsPga = direction === 'higher_better'
-      ? cohortValue >= pgaValue
-      : cohortValue <= pgaValue;
-    if (cohortBeatsPga) return false;
-  }
-
-  return true;
 }
 
 function zeroProjection(

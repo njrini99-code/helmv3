@@ -116,9 +116,9 @@ its source auto-memory note by filename and date.
   returned URL/exit rather than assuming failure from the printed error.
   (STU, source: `helm-review-merge-and-deploy-ops.md` dated 2026-08-16 —
   the rest of that note's deploy-policy history is superseded by
-  `.claude/rules/shipping.md`'s current policy — merging does not deploy;
-  production deploys only when the owner runs `scripts/deploy-prod.sh` —
-  and is not repeated here.)
+  `.claude/rules/shipping.md` and `docs/setup/DEPLOY.md` — merging does not
+  deploy; agents deploy with the Vercel CLI from the linked checkout — and is
+  not repeated here.)
 - **The Notion query API used by MCP tools in this environment has a hard,
   workspace-wide, rolling usage cap on `notion-query-data-sources`
   (roughly six queries), shared across every routine and session rather

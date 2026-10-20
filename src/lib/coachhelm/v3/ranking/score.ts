@@ -28,7 +28,6 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
-import { bootstrapFromDb, calibrateConfidence } from '@/lib/coachhelm/v2/reasoning/confidence-calibrator';
 
 type Sb = SupabaseClient<Database>;
 
@@ -257,6 +256,29 @@ export const URGENT_SHORT_CIRCUIT = 1000;
 export const FLOOR_SCALE = 0.001;
 
 /**
+ * Every multiplier behind one rank score (audit row 51: "persist rank_score
+ * and its factors"). `score` is exactly what {@link scoreInsight} returns;
+ * the rest is what produced it, so a stored score can be re-derived instead
+ * of reverse-engineered from the formula.
+ *
+ * `magnitude_basis` says which branch sized the magnitude term:
+ *   - 'strokes': a measured per-round strokes_impact (ceiling-clamped)
+ *   - 'priority_floor': impact rounds to 0, so the priority floor orders it
+ *   - 'exempt_zero': impact rounds to 0 on a floor-exempt metric
+ */
+export interface RankScoreFactors {
+  score: number;
+  magnitude: number;
+  magnitude_basis: 'strokes' | 'priority_floor' | 'exempt_zero';
+  confidence: number;
+  coach_weight: number;
+  goal_boost: number;
+  coachability: number;
+  sample_damping: number;
+  urgent: boolean;
+}
+
+/**
  * Pure scoring fn — the SINGLE ranking contract for every read surface
  * (Hub single-pick, player feed, coach feed, round takeaway, player CoachHelm
  * dashboard). Returns a non-negative rank score.
@@ -274,12 +296,14 @@ export const FLOOR_SCALE = 0.001;
  *   descriptive engines never crowd the actionable feed.
  * - urgent short-circuit: an urgent row is lifted above the whole non-urgent
  *   band so a small-but-urgent leak (e.g. a three-putt chain) always leads.
+ * - confidence is the generator's RAW support score. It is not calibrated:
+ *   see {@link scoreInsightWithCalibration} for why.
  */
-export function scoreInsight(
+export function scoreInsightFactors(
   insight: RankableInsight,
   weights: CoachWeights,
   activeGoals: Goal[] = [],
-): number {
+): RankScoreFactors {
   const w = weights[insight.insight_type] ?? 1.0;
   const boost = computeGoalBoost(insight, activeGoals);
   const coachability = coachabilityBoost(insight.metric);
@@ -291,12 +315,18 @@ export function scoreInsight(
   // Real per-round leak → rank on the (clamped) magnitude. Rounds to 0 → use the
   // priority floor UNLESS the metric is exempt (descriptive: keep honest 0).
   const capped = cappedStrokesImpact(insight.strokes_impact);
-  const magnitudeTerm =
-    // rounds to 2dp — a sub-0.005 strokes/round leak is effectively zero and
-    // falls to the floor band.
+  // rounds to 2dp — a sub-0.005 strokes/round leak is effectively zero and
+  // falls to the floor band.
+  const magnitudeBasis: RankScoreFactors['magnitude_basis'] =
     Math.round(capped * 100) / 100 > 0
-      ? capped
+      ? 'strokes'
       : isFloorExemptMetric(insight.metric)
+        ? 'exempt_zero'
+        : 'priority_floor';
+  const magnitudeTerm =
+    magnitudeBasis === 'strokes'
+      ? capped
+      : magnitudeBasis === 'exempt_zero'
         ? 0
         : priorityFloorScore(insight.priority) * FLOOR_SCALE;
 
@@ -304,47 +334,56 @@ export function scoreInsight(
 
   // Urgent always leads the feed — lift above the non-urgent band, preserving
   // intra-urgent order by adding the composite on top of the separator.
-  if (insight.priority === 'urgent') {
-    return URGENT_SHORT_CIRCUIT + composite;
-  }
-  return composite;
+  const urgent = insight.priority === 'urgent';
+  return {
+    score: urgent ? URGENT_SHORT_CIRCUIT + composite : composite,
+    magnitude: magnitudeTerm,
+    magnitude_basis: magnitudeBasis,
+    confidence,
+    coach_weight: w,
+    goal_boost: boost,
+    coachability,
+    sample_damping: damping,
+    urgent,
+  };
+}
+
+/** The rank score alone — see {@link scoreInsightFactors} for the contract. */
+export function scoreInsight(
+  insight: RankableInsight,
+  weights: CoachWeights,
+  activeGoals: Goal[] = [],
+): number {
+  return scoreInsightFactors(insight, weights, activeGoals).score;
 }
 
 /**
- * Async version of scoreInsight that applies calibration to the confidence value.
- * Loads calibration buckets from the database and applies them to correct the
- * raw confidence before computing the rank score.
+ * Confidence calibration for v3 insights is an EXPLICIT NO-OP (audit defect 4).
  *
- * This is the preferred entry point for new code. Falls back to raw confidence
- * if calibration load fails.
+ * This used to call `bootstrapFromDb(sb, insight.insight_type)` and map the raw
+ * confidence through the stored buckets. `golf_confidence_calibration` only
+ * holds PREDICTION types (`general`, `round_score`, `score_to_par`, checked
+ * 2026-09-28); none of the v3 insight types (`putt_distance`, `approach_miss`,
+ * …) has a row, so the lookup always came back empty and returned the raw
+ * value — one database read per ranked insight to change nothing, while the
+ * name claimed the score was calibrated.
+ *
+ * Nothing records whether a surfaced insight's claim held up, so there is no
+ * outcome data to calibrate against, and borrowing the prediction buckets
+ * would be inventing it. The ranker therefore uses the generator's raw support
+ * score. When per-insight-type outcomes exist, key the lookup by insight_type
+ * here and add the calibration job that writes them.
+ *
+ * Kept as an async entry point so existing callers need no change; `_sb` is
+ * accepted and deliberately not read.
  */
 export async function scoreInsightWithCalibration(
   insight: RankableInsight,
   weights: CoachWeights,
-  sb: Sb,
+  _sb: Sb,
   activeGoals: Goal[] = [],
 ): Promise<number> {
-  // Load calibration record for this insight type. The initializer IS the
-  // fallback: if bootstrapFromDb throws, we keep the raw confidence. The catch
-  // used to re-assign that same value, which made the initializer dead code
-  // (CodeQL "useless assignment to local variable", alert 549) and forced an
-  // unused `_err` binding past the no-unused-vars lint.
-  let calibratedConfidence = insight.confidence;
-  try {
-    const record = await bootstrapFromDb(sb, insight.insight_type);
-    // Apply calibration to the raw confidence value
-    calibratedConfidence = calibrateConfidence(insight.confidence, record);
-  } catch {
-    // Calibration unavailable — keep the raw confidence assigned above.
-  }
-
-  // Compute score with calibrated confidence
-  const insightWithCalibratedConfidence: RankableInsight = {
-    ...insight,
-    confidence: calibratedConfidence,
-  };
-
-  return scoreInsight(insightWithCalibratedConfidence, weights, activeGoals);
+  return scoreInsight(insight, weights, activeGoals);
 }
 
 /** Sort descending by score. Stable — equal scores preserve input order. */

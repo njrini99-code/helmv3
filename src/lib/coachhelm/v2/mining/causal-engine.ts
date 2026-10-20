@@ -1,22 +1,45 @@
 /**
- * Causal Discovery Engine
+ * "Moves with" relationship engine (historically the Causal Discovery Engine;
+ * the class, table and file keep that name so callers and history stay put).
  *
- * Tests for actual causation vs mere correlation including:
- * - Temporal precedence (X happens before Y)
- * - Dose-response (more X → more Y)
- * - Confounder elimination
- * - Natural experiments (when X changed, did Y follow?)
+ * Owner decision "honest correlation" (2026-09-28, CoachHelm deep audit rows
+ * 33/34): this engine finds CORRELATIONS inside one player's own rounds. It
+ * does not establish causation and nothing it writes may say so.
+ *
+ * A relationship is stored only when it passes `correlation-gate.ts`:
+ * >= 15 paired rounds, a two-sided t-test on Pearson r, Benjamini-Hochberg
+ * FDR across this player's hypotheses in the run (q < 0.05), and |r| >= 0.3.
+ * The SIGNED r, n, p and q are stored in `evidence`; `strength` is |r|;
+ * `confidence` is 1 - q; `relationship_type` is 'bidirectional' (the only
+ * value the table's CHECK allows that claims no direction).
+ *
+ * Dose-response, a centred lag-1 cross-correlation and round-to-round
+ * "natural experiments" are still recorded as DESCRIPTIVE evidence. They are
+ * not part of the gate: the lag test was previously a mean of raw un-centred
+ * products (it passed for any positive-valued metrics) and the natural
+ * experiment counted any change at all, so both passed on 100% of rows.
+ *
+ * Hypotheses whose cause is an arithmetic component of the score and whose
+ * effect is the score were dropped: they restate the scorecard.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  CORRELATION_METHOD_VERSION,
+  MIN_PAIRED_ROUNDS,
+  benjaminiHochberg,
+  correlationPValue,
+  lagOneCrossCorrelation,
+  passesCorrelationGate,
+  pearson,
+} from '@/lib/coachhelm/v3/causality/correlation-gate';
 import type {
   CausalRelationship,
   CausalEvidence,
   NaturalExperiment,
-  CausalRelationshipType,
-} from '../types';
+  } from '../types';
 
 interface RoundData {
   id: string;
@@ -65,6 +88,7 @@ export class CausalEngine {
       .from('golf_rounds')
       .select('id, score_to_par, round_date, total_putts, total_fairways_hit, total_gir')
       .eq('player_id', this.playerId)
+      .eq('is_test', false)
       .eq('status', 'completed')
       // DESCENDING + limit(100) = the player's most RECENT 100 rounds.
       //
@@ -75,19 +99,23 @@ export class CausalEngine {
       .order('round_date', { ascending: false })
       .limit(100);
 
-    if (error || !rounds || rounds.length < 10) {
-      if (error) {
-        await logServerError(
-          `causal-engine.discoverCausalRelationships: rounds query failed: ${describeError(error)}`,
-          { action: 'coachhelm.causalEngine.discoverCausalRelationships', metadata: { playerId: this.playerId } },
-        );
+    if (error || !rounds) {
+      await logServerError(
+        `causal-engine.discoverCausalRelationships: rounds query failed: ${describeError(error)}`,
+        { action: 'coachhelm.causalEngine.discoverCausalRelationships', metadata: { playerId: this.playerId } },
+      );
+      // Fails closed and touches nothing: a failed read is not evidence that
+      // a stored relationship stopped holding.
+      return [];
+    }
+
+    if (rounds.length < MIN_PAIRED_ROUNDS) {
+      // A genuine "not enough rounds" answer. Rows written under the old
+      // 10-round gate no longer pass, so a writer retires them (the supersede
+      // pass with nothing kept) instead of leaving them live.
+      if (persist) {
+        await this.saveRelationships([]);
       }
-      // Deliberate, not a swallow: this branch already covers a genuine
-      // "not enough rounds yet" case (< 10) alongside the query-error case,
-      // and both must answer the same way — no fabricated causal claim from
-      // insufficient/failed data. Background mining (v2/orchestrator.ts),
-      // fails closed. The error case is now logged, distinguishing it from
-      // "insufficient sample" in the logs even though the return is the same.
       return [];
     }
 
@@ -111,17 +139,19 @@ export class CausalEngine {
       }))
     );
 
+    // Measure every hypothesis first: the FDR correction needs the whole
+    // family of p-values before any single one can be judged.
+    const measured = this.generateHypotheses()
+      .map((h) => this.measureHypothesis(h))
+      .filter((m): m is MeasuredHypothesis => m !== null);
+    const qValues = benjaminiHochberg(measured.map((m) => m.pValue));
+
     const relationships: CausalRelationship[] = [];
-
-    // Test known potential causal relationships
-    const hypotheses = this.generateHypotheses();
-
-    for (const hypothesis of hypotheses) {
-      const result = await this.testCausality(hypothesis);
-      if (result) {
-        relationships.push(result);
-      }
-    }
+    measured.forEach((m, i) => {
+      const q = qValues[i] ?? 1;
+      if (!passesCorrelationGate({ r: m.correlation, n: m.dataPoints.length, q })) return;
+      relationships.push(this.buildRelationship(m, q, measured.length));
+    });
 
     // Save to database (writers only; see `options.persist`).
     if (persist) {
@@ -153,7 +183,12 @@ export class CausalEngine {
   }
 
   /**
-   * Generates hypotheses to test
+   * The hypotheses tested each run. Each is a pair of per-round values whose
+   * correlation is worth showing a coach. Pairs where the cause is an
+   * arithmetic component of the score and the effect is the score (putts,
+   * GIR or fairways -> score_to_par) were removed on 2026-09-28: they are the
+   * scorecard, and they made up 56 of 96 live rows. Mechanism strings are a
+   * hedged reading of the research doc, never a causal assertion.
    */
   private generateHypotheses(): CausalHypothesis[] {
     return [
@@ -167,53 +202,11 @@ export class CausalEngine {
             ? 7 / r.days_since_last
             : 7,
         getEffectValue: (r: RoundData) => r.score_to_par,
-        mechanism: 'More practice maintains muscle memory and rhythm',
+        mechanism:
+          'Playing more often may keep rhythm and feel sharper, so scores can tend to track how often rounds are played',
       },
-      {
-        cause: 'putting',
-        causeMetric: 'total_putts',
-        effect: 'scoring',
-        effectMetric: 'score_to_par',
-        getCauseValue: (r: RoundData) => r.total_putts ?? null,
-        getEffectValue: (r: RoundData) => r.score_to_par,
-        mechanism: 'Lower putts directly reduce total strokes',
-      },
-      {
-        cause: 'greens_in_regulation',
-        causeMetric: 'total_gir',
-        effect: 'scoring',
-        effectMetric: 'score_to_par',
-        getCauseValue: (r: RoundData) => r.total_gir ?? null,
-        getEffectValue: (r: RoundData) => r.score_to_par,
-        mechanism: 'Hitting more greens creates more birdie opportunities',
-      },
-      {
-        cause: 'driving_accuracy',
-        causeMetric: 'total_fairways_hit',
-        effect: 'scoring',
-        effectMetric: 'score_to_par',
-        getCauseValue: (r: RoundData) => r.total_fairways_hit ?? null,
-        getEffectValue: (r: RoundData) => r.score_to_par,
-        mechanism: 'Hitting more fairways leads to better approach opportunities',
-      },
-      // THE ONLY HYPOTHESIS HERE THAT IS NOT A TAUTOLOGY.
-      //
-      // The four above all end at `score_to_par`, and all four causes are
-      // arithmetic COMPONENTS of the score. "Hitting more greens lowers your
-      // score" is the definition of scoring, not a discovery. Production shows
-      // the consequence: 5,641 relationships across 4 cause metrics and ONE
-      // effect metric, `total_gir -> score_to_par` alone accounting for 4,282
-      // of them. The engine had never once explained why a component moved,
-      // which is the mechanism behind "insights are not root-cause".
-      //
-      // A root cause needs an effect that is not the score. This is the chain
-      // the product's own research doc documents and quantifies —
-      // docs/v3-research-golf-domain.md:146, "Drive -> Approach Distance/Lie ->
-      // GIR ... Lie quality premium: fairway -> ~65% GIR from 150; rough ->
-      // ~45%; sand -> ~25%" — which is what satisfies the blocking review rule
-      // that every causal claim trace to that document.
-      //
-      // Both fields are already on RoundData, so this costs no extra loading.
+      // docs/v3-research-golf-domain.md:146, "Drive -> Approach Distance/Lie
+      // -> GIR ... fairway -> ~65% GIR from 150; rough -> ~45%; sand -> ~25%".
       {
         cause: 'driving_accuracy',
         causeMetric: 'total_fairways_hit',
@@ -222,31 +215,12 @@ export class CausalEngine {
         getCauseValue: (r: RoundData) => r.total_fairways_hit ?? null,
         getEffectValue: (r: RoundData) => r.total_gir ?? null,
         mechanism:
-          'Approach play from the fairway holds ~65% GIR at 150 yards against ~45% from rough and ~25% from sand, so fairways won convert into greens hit (research: Drive -> Approach Lie -> GIR)',
+          'Approaches from the fairway tend to hold more greens (~65% GIR at 150 yards against ~45% from rough and ~25% from sand), which may be why these two often move together (research: Drive -> Approach Lie -> GIR)',
       },
-      // THE SECOND NON-TAUTOLOGY, and the one that changes a coach's CONCLUSION
-      // rather than only widening the engine's vocabulary.
-      //
-      // `total_putts -> score_to_par` above reports a confounded number as a
-      // cause. docs/v3-research-golf-domain.md:29 states the confound directly:
-      // "putts-per-round is *lower* for bad iron players (they chip close and
-      // 1-putt for bogey)". So a low putt count is not evidence of good
-      // putting — it can be evidence of missed greens, and a coach reading
-      // "putting looks fine" off it draws the wrong conclusion.
-      //
-      // Testing GIR -> putts makes that confound explicit per player instead of
-      // leaving it as a footnote in a research document nobody on the team
-      // reads. Where the relationship holds, "your putts per round are low
-      // BECAUSE you are missing greens" is a root cause; where it does not, the
-      // player's putting number can be read at face value.
-      //
-      // Measured 2026-08-18: of Guilford's 12 active players, 5 carry any
-      // active causal relationship and every one of those except a single
-      // `total_fairways_hit -> total_gir` terminates in `score_to_par`. Adding
-      // one research-backed pair produced the only genuine root cause on the
-      // roster. This is that lever pulled once more.
-      //
-      // Both fields are already on RoundData, so this costs no extra loading.
+      // docs/v3-research-golf-domain.md:29: "putts-per-round is *lower* for
+      // bad iron players (they chip close and 1-putt for bogey)". Where this
+      // pair moves together, a putt count can reflect greens hit rather than
+      // putting.
       {
         cause: 'greens_in_regulation',
         causeMetric: 'total_gir',
@@ -255,85 +229,71 @@ export class CausalEngine {
         getCauseValue: (r: RoundData) => r.total_gir ?? null,
         getEffectValue: (r: RoundData) => r.total_putts ?? null,
         mechanism:
-          'Putts per round is confounded by greens hit: a player who misses greens chips close and 1-putts for bogey, so a low putt count can mask poor iron play rather than show good putting (research: traditional-stat interaction effects)',
+          'Putt counts can be confounded by greens hit: a player who misses greens often chips close and 1-putts, so a putt count may track greens hit rather than putting (research: traditional-stat interaction effects)',
       },
     ];
   }
 
   /**
-   * Tests a specific causal hypothesis
+   * Pairs up one hypothesis's values and computes its signed Pearson r and
+   * t-test p-value. Null below MIN_PAIRED_ROUNDS pairs (not tested at all, so
+   * it does not enter the FDR family either).
    */
-  private async testCausality(
-    hypothesis: CausalHypothesis
-  ): Promise<CausalRelationship | null> {
-    // Get cause and effect values
+  private measureHypothesis(hypothesis: CausalHypothesis): MeasuredHypothesis | null {
     const dataPoints = this.rounds
       .map((r) => ({
         cause: hypothesis.getCauseValue(r),
         effect: hypothesis.getEffectValue(r),
         date: r.round_date,
       }))
-      .filter((d) => d.cause !== null && d.effect !== null) as Array<{
-      cause: number;
-      effect: number;
-      date: string;
-    }>;
+      .filter((d) => d.cause !== null && d.effect !== null) as DataPoint[];
 
-    if (dataPoints.length < 10) {
+    if (dataPoints.length < MIN_PAIRED_ROUNDS) {
       return null;
     }
 
-    // Test 1: Temporal precedence (cause values from earlier rounds predict later effects)
-    const temporalPrecedence = this.checkTemporalPrecedence(dataPoints);
-
-    // Test 2: Dose-response (more X → more Y)
-    const doseResponse = this.checkDoseResponse(dataPoints);
-
-    // Test 3: Analyze natural experiments
-    const naturalExperiments = this.analyzeNaturalExperiments(
-      dataPoints,
-      hypothesis.cause
+    const correlation = pearson(
+      dataPoints.map((d) => d.cause),
+      dataPoints.map((d) => d.effect),
     );
+    return {
+      hypothesis,
+      dataPoints,
+      correlation,
+      pValue: correlationPValue(correlation, dataPoints.length),
+    };
+  }
 
-    // Calculate correlation strength
-    const correlation = this.calculateCorrelation(dataPoints);
+  /** A hypothesis that passed the gate, as the stored relationship. */
+  private buildRelationship(
+    m: MeasuredHypothesis,
+    qValue: number,
+    hypothesesTested: number,
+  ): CausalRelationship {
+    const { hypothesis, dataPoints, correlation, pValue } = m;
+    const sign = Math.sign(correlation) || 1;
 
-    // Determine if causal
-    const passedTests =
-      (temporalPrecedence ? 1 : 0) +
-      (doseResponse.confirmed ? 1 : 0) +
-      (naturalExperiments.length > 0 ? 1 : 0);
+    const lag = lagOneCrossCorrelation(
+      dataPoints.map((d) => d.cause),
+      dataPoints.map((d) => d.effect),
+      sign,
+    );
+    const doseResponse = this.checkDoseResponse(dataPoints);
+    const naturalExperiments = this.analyzeNaturalExperiments(dataPoints, hypothesis, sign);
 
-    // Need at least 2 tests passed and reasonable correlation
-    if (passedTests < 2 || Math.abs(correlation) < 0.3) {
-      return null;
-    }
-
-    // Build evidence
     const evidence: CausalEvidence = {
-      temporalPrecedence,
+      method: CORRELATION_METHOD_VERSION,
+      correlation,
+      sampleN: dataPoints.length,
+      pValue,
+      qValue,
+      hypothesesTested,
+      temporalPrecedence: lag.supports,
+      lagCorrelation: lag.r,
       doseResponseConfirmed: doseResponse.confirmed,
       confoundersControlled: [],
       naturalExperiments,
     };
-
-    // Calculate confidence
-    const confidence = this.calculateCausalConfidence(
-      correlation,
-      passedTests,
-      dataPoints.length
-    );
-
-    // Determine relationship type
-    const relationshipType = this.determineRelationshipType(
-      hypothesis,
-      doseResponse
-    );
-
-    // Calculate intervention potential
-    const interventionPotential = this.calculateInterventionPotential(
-      hypothesis.cause
-    );
 
     return {
       id: crypto.randomUUID(),
@@ -343,50 +303,29 @@ export class CausalEngine {
       causeMetric: hypothesis.causeMetric,
       effect: hypothesis.effect,
       effectMetric: hypothesis.effectMetric,
-      relationshipType,
+      // A correlation claims no direction, and 'bidirectional' is the only
+      // value the table's CHECK constraint allows that says so. It also moves
+      // the natural key off the old 'direct'/'mediated' rows, so the
+      // supersede pass retires every pre-gate row on the next run.
+      relationshipType: 'bidirectional',
       strength: Math.abs(correlation),
-      confidence,
+      // How unlikely the pattern is to be chance after the FDR correction.
+      // Not a causal probability, and the panel does not call it one.
+      confidence: Math.min(0.99, 1 - qValue),
       mechanism: hypothesis.mechanism,
       confounders: [],
       doseResponse: doseResponse.confirmed,
-      interventionPotential,
+      interventionPotential: this.calculateInterventionPotential(hypothesis.cause),
       evidence,
       validationCount: 1,
     };
   }
 
   /**
-   * Checks if cause temporally precedes effect
-   */
-  private checkTemporalPrecedence(
-    dataPoints: Array<{ cause: number; effect: number; date: string }>
-  ): boolean {
-    // Compare lagged cause values with current effect
-    let laggedCorrelation = 0;
-    let count = 0;
-
-    for (let i = 1; i < dataPoints.length; i++) {
-      // Does previous round's cause relate to current round's effect?
-      const prevPoint = dataPoints[i - 1];
-      const currPoint = dataPoints[i];
-      if (!prevPoint || !currPoint) continue;
-
-      const prevCause = prevPoint.cause;
-      const currEffect = currPoint.effect;
-
-      laggedCorrelation += prevCause * currEffect;
-      count++;
-    }
-
-    // If lagged correlation is meaningful, temporal precedence exists
-    return count > 0 && Math.abs(laggedCorrelation / count) > 0.2;
-  }
-
-  /**
    * Checks for dose-response relationship
    */
   private checkDoseResponse(
-    dataPoints: Array<{ cause: number; effect: number }>
+    dataPoints: DataPoint[]
   ): { confirmed: boolean; direction: 'positive' | 'negative' } {
     // Sort by cause value
     const sorted = [...dataPoints].sort((a, b) => a.cause - b.cause);
@@ -416,16 +355,19 @@ export class CausalEngine {
   }
 
   /**
-   * Analyzes natural experiments
+   * Round-to-round "natural experiments": consecutive rounds where the cause
+   * jumped by more than one SD. One supports the pattern only when the effect
+   * moved in the direction the correlation predicts AND by more than one SD of
+   * the effect (beyond ordinary round-to-round noise). Descriptive only.
    */
   private analyzeNaturalExperiments(
-    dataPoints: Array<{ cause: number; effect: number; date: string }>,
-    causeName: string
+    dataPoints: DataPoint[],
+    hypothesis: CausalHypothesis,
+    correlationSign: number,
   ): NaturalExperiment[] {
     const experiments: NaturalExperiment[] = [];
-
-    // Look for significant changes in cause value
     const causeStdDev = this.calculateStdDev(dataPoints.map((d) => d.cause));
+    const effectStdDev = this.calculateStdDev(dataPoints.map((d) => d.effect));
 
     for (let i = 1; i < dataPoints.length; i++) {
       const currPoint = dataPoints[i];
@@ -433,62 +375,24 @@ export class CausalEngine {
       if (!currPoint || !prevPoint) continue;
 
       const causeDelta = currPoint.cause - prevPoint.cause;
+      if (Math.abs(causeDelta) <= causeStdDev) continue;
 
-      // Significant change = more than 1 std dev
-      if (Math.abs(causeDelta) > causeStdDev) {
-        const effectDelta = currPoint.effect - prevPoint.effect;
+      const effectDelta = currPoint.effect - prevPoint.effect;
+      const predictedSign = Math.sign(causeDelta) * correlationSign;
+      const supportsCausality =
+        Math.sign(effectDelta) === predictedSign && Math.abs(effectDelta) > effectStdDev;
 
-        // Did effect change in expected direction?
-        const supportsCausality =
-          (causeDelta > 0 && effectDelta !== 0) ||
-          (causeDelta < 0 && effectDelta !== 0);
+      experiments.push({
+        date: currPoint.date,
+        causeChange: `${hypothesis.causeMetric} ${causeDelta > 0 ? 'rose' : 'fell'} by ${Math.abs(causeDelta).toFixed(1)}`,
+        effectChange: `${hypothesis.effectMetric} ${effectDelta > 0 ? 'rose' : effectDelta < 0 ? 'fell' : 'did not move'}${effectDelta !== 0 ? ` by ${Math.abs(effectDelta).toFixed(1)}` : ''}`,
+        supportsCausality,
+      });
 
-        experiments.push({
-          date: currPoint.date,
-          causeChange: `${causeName} ${causeDelta > 0 ? 'increased' : 'decreased'} by ${Math.abs(causeDelta).toFixed(1)}`,
-          effectChange: `Score ${effectDelta > 0 ? 'worsened' : 'improved'} by ${Math.abs(effectDelta).toFixed(1)}`,
-          supportsCausality,
-        });
-
-        // Limit to 5 experiments
-        if (experiments.length >= 5) break;
-      }
+      if (experiments.length >= 5) break;
     }
 
     return experiments;
-  }
-
-  /**
-   * Calculates Pearson correlation
-   */
-  private calculateCorrelation(
-    dataPoints: Array<{ cause: number; effect: number }>
-  ): number {
-    const n = dataPoints.length;
-    if (n < 2) return 0;
-
-    const causes = dataPoints.map((d) => d.cause);
-    const effects = dataPoints.map((d) => d.effect);
-
-    const meanCause = causes.reduce((a, b) => a + b, 0) / n;
-    const meanEffect = effects.reduce((a, b) => a + b, 0) / n;
-
-    let numerator = 0;
-    let sumCauseSq = 0;
-    let sumEffectSq = 0;
-
-    for (let i = 0; i < n; i++) {
-      const causeVal = causes[i] ?? 0;
-      const effectVal = effects[i] ?? 0;
-      const causeDiff = causeVal - meanCause;
-      const effectDiff = effectVal - meanEffect;
-      numerator += causeDiff * effectDiff;
-      sumCauseSq += causeDiff * causeDiff;
-      sumEffectSq += effectDiff * effectDiff;
-    }
-
-    const denominator = Math.sqrt(sumCauseSq * sumEffectSq);
-    return denominator === 0 ? 0 : numerator / denominator;
   }
 
   /**
@@ -501,43 +405,6 @@ export class CausalEngine {
     const variance =
       squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
     return Math.sqrt(variance);
-  }
-
-  /**
-   * Calculates confidence in causal relationship
-   */
-  private calculateCausalConfidence(
-    correlation: number,
-    testsPassed: number,
-    sampleSize: number
-  ): number {
-    let confidence = 0.3; // Base
-
-    // Correlation strength
-    confidence += Math.min(0.3, Math.abs(correlation) * 0.4);
-
-    // Tests passed
-    confidence += testsPassed * 0.1;
-
-    // Sample size bonus
-    if (sampleSize >= 30) confidence += 0.1;
-    if (sampleSize >= 50) confidence += 0.05;
-
-    return Math.min(0.95, confidence);
-  }
-
-  /**
-   * Determines relationship type
-   */
-  private determineRelationshipType(
-    _hypothesis: CausalHypothesis,
-    doseResponse: { confirmed: boolean; direction: 'positive' | 'negative' }
-  ): CausalRelationshipType {
-    // Simple heuristic - could be made more sophisticated
-    if (doseResponse.confirmed) {
-      return 'direct';
-    }
-    return 'mediated';
   }
 
   /**
@@ -582,10 +449,12 @@ export class CausalEngine {
    * forever and the read surfaced stale strength/confidence. After the upserts
    * we soft-supersede this player's active rows that did NOT fire this run
    * (is_active=false, NEVER delete — the GolfHelm no-destructive-write-in-a-
-   * save-path rule). This is the ONLY caller and it runs only after the
-   * rounds>=10 gate in discoverCausalRelationships, so reaching here means the
-   * analysis genuinely executed: an empty `relationships` is a real "no
-   * significant relationship" signal and SHOULD retire every active row.
+   * save-path rule). discoverCausalRelationships calls this only after a
+   * successful rounds read (never on a query error), either with the
+   * relationships that passed the gate or with [] when the player has fewer
+   * than MIN_PAIRED_ROUNDS rounds: an empty `relationships` is a real "no
+   * relationship passes the gate" signal and SHOULD retire every active row,
+   * including rows written under an older, looser gate.
    */
   private async saveRelationships(
     relationships: CausalRelationship[]
@@ -697,6 +566,20 @@ export class CausalEngine {
       });
     }
   }
+}
+
+interface DataPoint {
+  cause: number;
+  effect: number;
+  date: string;
+}
+
+interface MeasuredHypothesis {
+  hypothesis: CausalHypothesis;
+  dataPoints: DataPoint[];
+  /** Signed same-round Pearson r. */
+  correlation: number;
+  pValue: number;
 }
 
 /**

@@ -15,7 +15,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';

@@ -6,6 +6,14 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/insert-college-programs-template.mjs',
+  summary:
+    "Inserts or updates the college-programs email template row in crm_email_templates on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -21,7 +29,7 @@ const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) { console.error('Missing Supabase URL / service role key in env'); process.exit(1); }
 
-const supa = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = dryRunClient(createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } }), cli);
 
 const body = readFileSync(new URL('../public/email/college-programs-2026-27.html', import.meta.url), 'utf8');
 

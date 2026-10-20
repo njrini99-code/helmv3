@@ -18,15 +18,17 @@
  * is no complete, ungrounded-claim-free answer left to validate more finely.
  *
  * The typed gate is OPT-IN per turn: it only runs when `claims` is non-null,
- * which `chat/stream/route.ts` only produces when this turn's fresh
- * measurements resolved to a single (player, window) — see
- * `chat/claims-packet.ts`. A team or multi-player turn has no packet to
- * validate typed claims against and is judged by the two checks above only,
- * same as before this gate existed.
+ * which `chat/stream/route.ts` produces only with `coachhelm_chat_claim_gate`
+ * on AND at least one player-scoped measurement in the turn. Since audit row
+ * 47(a) that covers multi-player and multi-window turns too — each claim is
+ * checked against the packet for its own (player, window); see
+ * `chat/claims-packet.ts`'s `extractAndValidateChatClaims`. A team-only turn
+ * has nothing to bind a player claim to and is judged by the two checks
+ * above only, same as before this gate existed.
  * ========================================================================== */
 
 import { auditNumericClaims } from './provenance';
-import type { Measurement, MeasurementSeries, UnsupportedClaim } from './provenance';
+import type { AuditPlayer, Measurement, MeasurementSeries, ScopedNumber, UnsupportedClaim } from './provenance';
 import type { RejectedClaim } from '../llm/claim-validator';
 import type { TypedClaimAttempt } from '../llm/claims-block';
 
@@ -80,7 +82,9 @@ export function computeTurnVerdict(args: {
   text: string;
   measurements: readonly Measurement[];
   series: readonly MeasurementSeries[];
-  detailNumbers: readonly number[];
+  /** Numbers from the tools' `detail` payloads — bare, or scoped to a
+   *  player/field by `collectScopedNumbers` (audit row 47b). */
+  detailNumbers: readonly (number | ScopedNumber)[];
   /** Every ISO date reachable inside the turn's tool evidence — see
    *  {@link auditNumericClaims}'s `extraSupportedDates` param. Optional and
    *  defaults to none, matching that param's own backward-compatible
@@ -89,6 +93,10 @@ export function computeTurnVerdict(args: {
   /** The coach's IANA zone — see {@link auditNumericClaims}'s `timezone`
    *  param. Omitted degrades to UTC-only day math, same as that param. */
   timezone?: string;
+  /** The coach's roster, so the numeric audit can recognise a player named in
+   *  the text and bind the number to them (audit row 47b). Optional; omitted,
+   *  only the evidence's own entity labels are recognised. */
+  players?: readonly AuditPlayer[];
   /**
    * The typed claim gate's result for this turn, or `null` when it did not
    * engage (no single-player packet — see `chat/claims-packet.ts`) or the
@@ -108,6 +116,7 @@ export function computeTurnVerdict(args: {
     args.detailNumbers,
     args.detailDates,
     args.timezone,
+    { players: args.players },
   );
   if (unsupported.length > 0) {
     return { outcome: 'rejected', reason: 'ungrounded_claims', note: UNGROUNDED_NOTE, unsupported };
@@ -147,4 +156,63 @@ export function computeTurnVerdict(args: {
  */
 export function verdictPartType(reason: TurnVerdictReason): 'data-grounding-flag' | 'data-turn-incomplete' {
   return reason === 'stream_incomplete' ? 'data-turn-incomplete' : 'data-grounding-flag';
+}
+
+/**
+ * Why a turn was rejected, in the durable shape both the message's verdict
+ * part and the `golf_coachhelm_llm_calls` row carry (audit row 47c). Bare
+ * number literals and `metric_id:reason` pairs only — never prose, a player
+ * name or a database value. `null` for an accepted turn.
+ */
+export interface VerdictRecord {
+  reason: TurnVerdictReason;
+  /** `ungrounded_claims`: the flagged numbers. `claim_validation_failed`:
+   *  `metric_id:reason` per rejected claim. `stream_incomplete`: empty. */
+  unmatched_tokens: string[];
+  /** The subset of `unmatched_tokens` that exist in the evidence but under a
+   *  different player or metric (row 47b). Omitted when there are none. */
+  misattributed_tokens?: string[];
+}
+
+export function verdictRecord(verdict: TurnVerdict): VerdictRecord | null {
+  if (verdict.outcome === 'accepted') return null;
+  if (verdict.reason === 'claim_validation_failed') {
+    return {
+      reason: verdict.reason,
+      unmatched_tokens: (verdict.rejectedClaims ?? []).map((r) => `${r.claim.metric_id || '(none)'}:${r.reason}`),
+    };
+  }
+  const record: VerdictRecord = { reason: verdict.reason, unmatched_tokens: verdict.unsupported.map((c) => c.text) };
+  const misattributed = verdict.unsupported.filter((c) => c.misattributed).map((c) => c.text);
+  if (misattributed.length > 0) record.misattributed_tokens = misattributed;
+  return record;
+}
+
+const VERDICT_PART_TYPES: ReadonlySet<string> = new Set(['data-grounding-flag', 'data-turn-incomplete']);
+
+/**
+ * The `ui_parts` to persist for a turn, with the verdict's reason attached
+ * (audit row 47c). The part `execute` streamed carries only the coach-facing
+ * note; this merges `{reason, unmatched_tokens, misattributed_tokens}` into
+ * it, and APPENDS one when none was streamed — the path where `onFinish`
+ * fires before `execute` ever reached a verdict, which used to store a
+ * `'failed'` row with no reason anywhere. `restore.ts` reads only
+ * `data.note`, so the extra fields never change what a coach sees.
+ */
+export function withVerdictPart(parts: readonly unknown[], verdict: TurnVerdict): unknown[] {
+  const record = verdictRecord(verdict);
+  if (!record || verdict.outcome !== 'rejected') return [...parts];
+  let merged = false;
+  const out = parts.map((p) => {
+    if (merged || !p || typeof p !== 'object') return p;
+    const part = p as { type?: unknown; data?: unknown };
+    if (typeof part.type !== 'string' || !VERDICT_PART_TYPES.has(part.type)) return p;
+    merged = true;
+    const data = part.data && typeof part.data === 'object' ? (part.data as Record<string, unknown>) : {};
+    return { ...part, data: { ...data, note: typeof data.note === 'string' ? data.note : verdict.note, ...record } };
+  });
+  if (!merged) {
+    out.push({ type: verdictPartType(verdict.reason), id: 'turn-verdict', data: { note: verdict.note, ...record } });
+  }
+  return out;
 }

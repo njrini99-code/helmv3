@@ -40,10 +40,25 @@ features:
         - memory/incidents/feature_awareness_system/INC-2026-09-04-surface-registry-miscategorized-as-generated.md
     code:
       routes: []
-      components: []
+      components:
+        - src/clubhouse/preview/ComponentPlayground.tsx
+        - src/clubhouse/preview/ComponentGallery.tsx
+        - src/clubhouse/preview/ComponentCatalog.tsx
+        - src/clubhouse/preview/component-catalog.json
+        - src/clubhouse/styles/base.css
+        - src/clubhouse/preview/playground-tokens.ts
+        - src/clubhouse/styles/component-playground.css
+        - src/app/clubhouse-preview/components/**
       api: []
       actions: []
       services:
+        - src/lib/security/clubhouse-preview-headers.mjs
+        - next.config.mjs
+        - stylelint.clubhouse.config.mjs
+        - playwright.clubhouse.config.ts
+        - scripts/clubhouse/component-catalog.mjs
+        - scripts/clubhouse/material-inventory.mjs
+        - scripts/clubhouse/premium-capture.mjs
         - scripts/knowledge/**
         - scripts/contracts/**
         - memory/journeys/**
@@ -80,11 +95,16 @@ features:
         - scripts/new-worktree.sh
         - scripts/setup-hooks.mjs
         - scripts/worktree-lifecycle.mjs
-        - scripts/deploy-prod.sh
         - .vercelignore
+        - config/repo/manifest.yml
         - config/open-pr-dispositions.json
       db: []
-      tests: []
+      tests:
+        - src/clubhouse/__tests__/playground-tokens.test.ts
+        - src/lib/security/__tests__/clubhouse-preview-headers.test.ts
+        - e2e/clubhouse-playground.spec.ts
+        - scripts/clubhouse/__tests__/component-catalog.test.mjs
+        - scripts/clubhouse/__tests__/material-inventory.test.mjs
     integrations:
       - github_actions
       - codex
@@ -235,11 +255,9 @@ features:
         - docs/v3-research-golf-domain.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/coachhelm-ai.md
         - docs/v3-decisions.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -262,20 +280,27 @@ features:
         - src/app/golf/actions/player-effectiveness.ts
         - src/app/golf/actions/player-fingerprint.ts
         - src/app/golf/actions/player-fingerprint-types.ts
-        # `insight-*.ts` never matched `insights.ts` (no hyphen), so the
-        # largest insight action file in the tree — it owns the post-round
-        # generation trigger and its coach push — resolved to NO feature and
-        # every edit to it hit the guard as an unmapped governed path.
-        - src/app/golf/actions/insights.ts
+        # `insight-*.ts` never matches the `insights*.ts` action files (no
+        # hyphen after `insight`), so the largest insight action files in the
+        # tree — insights-coachhelm.ts owns the post-round generation trigger
+        # and its coach push — resolved to NO feature and every edit to them
+        # hit the guard as an unmapped governed path. (insights.ts itself was
+        # split into these four files in plan phase 7a.)
+        - src/app/golf/actions/insights-feed.ts
+        - src/app/golf/actions/insights-player-analysis.ts
+        - src/app/golf/actions/insights-coachhelm.ts
+        - src/app/golf/actions/insights-shared.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/player-feedback.ts
         - src/app/golf/actions/v3/**
       services:
+        # v3 is canonical for new code; v2 is still on the live path (post-round
+        # trigger, orchestrator, insight types/upsert) and is being retired. The
+        # plan and every remaining v2 importer: src/lib/coachhelm/README.md.
         - src/lib/coachhelm/**
       db:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
-        - supabase/migrations/*golf_coachhelm*.sql
         - supabase/migrations/*attribution*.sql
       tests:
         - src/test/coachhelm/**
@@ -290,7 +315,6 @@ features:
       required_docs:
         - memory/features/coachhelm-ai.md
         - memory/context/coachhelm-ai.md
-        - docs/v3-testing-standards.md
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/coachhelm
@@ -374,7 +398,7 @@ features:
       api:
         - src/app/api/baseball/**
       actions:
-        - src/app/baseball/**/actions/**
+        - src/app/baseball/actions/**
       services:
         - src/lib/baseball/**
         # src/lib/recruiting/** was mapped by NO registry entry, so
@@ -382,15 +406,12 @@ features:
         # no-op rather than a wrong answer. It belongs here: stages.ts reads
         # the `baseball_pipeline_stage` enum and its only importers are 3
         # baseball files + src/lib/validation. The entry NAMED `recruiting`
-        # is golf's (golf routes, *golf_recruits*.sql) and is correct as-is.
+        # is golf's (golf routes, *recruit_documents*.sql) and is correct as-is.
         - src/lib/recruiting/**
       db:
         - supabase/migrations/*baseball*.sql
-        # Reclassified 2026-09-06 off team_access_control's retired blanket
-        # glob (Phase 5 registry glob lint) — Lift Lab (helm_lifting_*
-        # tables) bridges from baseball and has no dedicated registry
-        # feature of its own yet; filed here rather than left unowned.
-        - supabase/migrations/*helm_lifting*.sql
+        # Lift Lab's `helm_lifting_*` migrations are owned by the `lift_lab`
+        # feature below.
         - supabase/migrations/*practice_blocks*.sql
       tests:
         - supabase/tests/rls/baseball_*.sql
@@ -418,10 +439,8 @@ features:
         - docs/features/SHOT_TRACKING_VERIFICATION.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/v3-research-golf-domain.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -431,11 +450,19 @@ features:
         - src/components/fairway/pages/rounds/**
         - src/components/fairway/pages/rounds-new/**
         - src/components/fairway/pages/rounds-recover/**
+        # The shot screen's logic, shared by the Fairway and Clubhouse
+        # renderers; mapped by name like the other golf hooks.
+        - src/hooks/golf/use-shot-tracking.ts
         - src/components/fairway/pages/rounds-tracking/**
       api:
         - src/app/api/golf/rounds/**
       actions:
-        - src/app/golf/actions/golf.ts
+        # golf.ts was split by domain (plan phase 7a); round-submit.ts and
+        # round-partial.ts are also covered by the round-*.ts glob below.
+        - src/app/golf/actions/round-submit.ts
+        - src/app/golf/actions/round-partial.ts
+        - src/app/golf/actions/saved-courses.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/round-*.ts
         - src/app/golf/actions/shot-analytics.ts
         - src/app/golf/actions/player-feedback.ts
@@ -443,7 +470,6 @@ features:
       services:
         - src/lib/golf/**
         - src/lib/coachhelm/v2/post-round-trigger.ts
-        - src/lib/coachhelm/v3/llm/round-review.ts
         - scripts/coachhelm-prewarm-round-reviews.ts
       db:
         - supabase/migrations/*golf_round*.sql
@@ -466,6 +492,7 @@ features:
         - supabase/migrations/*preserve_golf_history*.sql
         - supabase/migrations/*preserve_started_round*.sql
         - supabase/migrations/*single_flight*.sql
+        - supabase/migrations/*submit_round_expected_updated_at*.sql
         - supabase/migrations/*reclassify*.sql
         - supabase/migrations/*round_stranding*.sql
         - supabase/migrations/*round_recap*.sql
@@ -476,7 +503,7 @@ features:
       tests:
         - src/app/golf/actions/__tests__/golf-schemas.test.ts
         - src/test/coachhelm/v2/post-round-trigger.test.ts
-        - e2e/**/round*.spec.ts
+        - e2e/golf-round.spec.ts
     integrations:
       - supabase
       - coachhelm_ai
@@ -486,7 +513,6 @@ features:
         - memory/features/golf-round-lifecycle.md
         - memory/context/golfhelm-database.md
         - memory/context/engineering-methodology.md
-        - docs/v3-testing-standards.md
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts
@@ -524,7 +550,7 @@ features:
         - src/app/api/cron/refresh-engagement/**
       components:
         - src/app/golf/admin/crm/components/**
-      api: null
+      api: []
       actions:
         - src/app/golf/actions/crm-*.ts
         # Both of these break the crm- convention. A sweep keyed on the prefix
@@ -538,7 +564,7 @@ features:
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) — CRM engagement tracking.
         - supabase/migrations/*engagement*.sql
-      tests: null
+      tests: []
     integrations:
       - supabase
       - resend
@@ -564,10 +590,8 @@ features:
         - docs/v3-page-audit.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -578,19 +602,27 @@ features:
       components:
         - src/components/fairway/pages/qualifiers/**
         - src/components/fairway/pages/my-qualifiers/**
-      api:
+        - src/clubhouse/screens/qualifiers/**
+        - src/clubhouse/data/qualifiers.ts
+        - src/clubhouse/routes/qualifiers.tsx
+      api: []
       actions:
-        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/qualifier-actions.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/v3/qualifying.ts
         - src/app/golf/actions/qualifier-progress.ts
+        - src/app/golf/actions/qualifier-setup.ts
       services:
         - src/lib/coachhelm/v3/qualifying/**
+        - src/lib/golf/qualifier-selection-reasons.ts
       db:
         - supabase/migrations/*qualifier*.sql
-        - supabase/migrations/*qualifying*.sql
       tests:
         - e2e/golf-qualifier.spec.ts
         - src/test/coachhelm/v3/qualifying.test.ts
+        - src/app/golf/actions/__tests__/qualifier-setup.test.ts
+        - src/clubhouse/__tests__/qualifiers.test.tsx
+        - supabase/tests/rls/golf_qualifier_db_hardening.sql
     integrations:
       - supabase
       - coachhelm_ai
@@ -625,10 +657,8 @@ features:
         - docs/features/SHOT_TRACKING_VERIFICATION.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/v3-research-golf-domain.md
-        - docs/v3-testing-standards.md
       incidents: []
     code:
       routes:
@@ -643,7 +673,10 @@ features:
       api:
         - src/app/api/golf/rounds/**
       actions:
-        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/shot-actions.ts
+        - src/app/golf/actions/round-partial.ts
+        - src/app/golf/actions/round-submit.ts
+        - src/app/golf/actions/golf-action-shared.ts
         - src/app/golf/actions/round-drafts.ts
         - src/app/golf/actions/shot-analytics.ts
       services:
@@ -656,6 +689,10 @@ features:
         # section requires. golf.ts (already mapped, above) is the only
         # caller of the recorder today, so this is where it belongs.
         - src/lib/observability/**
+        # The new-round engine (useNewRoundSession) left new-round-client.tsx on
+        # 2026-09-30 (ROUNDS_PLAN step 4b); shot tracking's review and e2e gate
+        # follow it here.
+        - src/lib/golf/round-session/**
       db:
         - supabase/migrations/*golf_round*.sql
         - supabase/migrations/*golf_shot*.sql
@@ -706,10 +743,8 @@ features:
         - docs/features/SHOT_TRACKING_VERIFICATION.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/v3-research-golf-domain.md
-        - docs/v3-testing-standards.md
       incidents: []
     code:
       routes:
@@ -717,7 +752,8 @@ features:
         - src/app/golf/(dashboard)/dashboard/roster/**
       components:
         - src/components/golf/stats/**
-      api:
+        - src/clubhouse/screens/stats/**
+      api: []
       actions:
         - src/app/golf/actions/stats.ts
         - src/app/golf/actions/stats-data.ts
@@ -735,7 +771,6 @@ features:
       db:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql
-        - supabase/migrations/*putting*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint) — strokes-gained/cohort/standing
         # calibration and seed data.
@@ -781,17 +816,22 @@ features:
         - docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/PUSH_NOTIFICATION_AUDIT.md
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/calendar/**
+        # A player's classes go on the team calendar (syncClassToCalendar); the
+        # route was unmapped, so `knowledge:map` resolved it to no feature.
+        - src/app/golf/(dashboard)/dashboard/classes/**
+        - src/clubhouse/routes/classes.tsx
       components:
         - src/components/golf/calendar/**
+        - src/clubhouse/screens/classes/**
+        - src/clubhouse/data/classes.ts
+        - src/clubhouse/data/classes-shape.ts
         # The SHIPPED calendar UI is the Fairway tree (event editor, detail
         # drawer, month/week/agenda views); only the older golf/calendar tree
         # was mapped, so `knowledge:map` resolved the live components to NO
@@ -812,6 +852,8 @@ features:
         - src/app/api/calendar/**
       actions:
         - src/app/golf/actions/attendance.ts
+        - src/app/golf/actions/calendar-blocked-time.ts
+        - src/app/golf/actions/calendar-events.ts
         - src/app/golf/actions/calendar-feeds.ts
         - src/app/golf/actions/calendar-sync.ts
         - src/app/golf/actions/event-documents.ts
@@ -841,9 +883,14 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*player_classes*.sql
         - supabase/migrations/*coach_today_schedule*.sql
+        - supabase/migrations/*home_event_rpcs*.sql
+        # golf_events table policies (2026-10-18: meetings visible to their
+        # invitees only).
+        - supabase/migrations/*golf_events_*.sql
       tests:
         - src/test/lib/calendar/**
         - src/test/api/calendar/**
+        - src/clubhouse/__tests__/classes.test.tsx
     integrations:
       - supabase
       - notifications
@@ -876,9 +923,7 @@ features:
         - docs/architecture/coachhelm-evidence-contract.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
-        - docs/v3-testing-standards.md
         - docs/v3-decisions.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
@@ -907,7 +952,6 @@ features:
         - src/app/golf/actions/alerts.ts
         - src/app/golf/actions/pattern-management.ts
         - src/app/golf/actions/insight-management.ts
-        - src/app/golf/actions/insight-evidence.ts
         - src/app/golf/actions/intelligence-dashboard.ts
         - src/app/golf/actions/coachhelm-analytics.ts
         - src/app/golf/actions/coaching-philosophy.ts
@@ -964,10 +1008,8 @@ features:
         - docs/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/v3-research-golf-domain.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1001,9 +1043,7 @@ features:
         - src/lib/coachhelm/v3/**
       db:
         - supabase/migrations/*focus_area*.sql
-        - supabase/migrations/*feedback*.sql
         - supabase/migrations/*round_review*.sql
-        - supabase/migrations/*genome*.sql
         - supabase/migrations/*goal*.sql
       tests:
         - src/test/coachhelm/**
@@ -1036,10 +1076,8 @@ features:
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1048,14 +1086,19 @@ features:
         - src/app/golf/(dashboard)/dashboard/announcements/**
       components:
         - src/components/golf/messages/**
+        - src/clubhouse/screens/messages/**
+        - src/clubhouse/styles/messages.css
         - src/components/golf/announcements/**
       api:
         - src/components/fairway/pages/messages/**
         - src/components/fairway/pages/announcements/**
       actions:
+        - src/app/actions/messages.ts
         - src/app/golf/actions/messages.ts
         - src/app/golf/actions/message-attachments.ts
         - src/app/golf/actions/announcements.ts
+        - src/app/golf/actions/calendar-notifications.ts
+        - src/app/golf/actions/team-management.ts
         - src/app/golf/actions/communication.ts
         - src/app/golf/actions/coach-notifications.ts
         - src/app/golf/actions/player-notifications.ts
@@ -1064,6 +1107,8 @@ features:
         - src/app/golf/actions/unified-notifications-model.ts
       services:
         - src/lib/supabase/**
+        - src/lib/golf/conversation-audience.ts
+        - src/lib/golf/message-replies.ts
         # `src/hooks/**` appears NOWHERE else in this registry, so every golf
         # hook resolved to no feature at all — `knowledge:map` returned an empty
         # impactedFeatures for the hook that owns the entire conversation rail.
@@ -1075,6 +1120,7 @@ features:
         # belong to other features, and a confidently wrong mapping is worse
         # than a recorded gap.
         - src/hooks/golf/use-golf-messages.ts
+        - src/clubhouse/data/messages.ts
         - src/hooks/golf/use-message-attachments.ts
         - src/hooks/golf/use-message-reactions.ts
         # Same gap, same fix (named, not globbed): the warm-start cache
@@ -1085,7 +1131,6 @@ features:
       db:
         - supabase/migrations/*messag*.sql
         - supabase/migrations/*announcement*.sql
-        - supabase/migrations/*communication*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*conversation*.sql
@@ -1096,13 +1141,19 @@ features:
         - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
       tests:
         - e2e/messages.spec.ts
+        - src/clubhouse/__tests__/messages*.test.*
+        - src/clubhouse/__tests__/thread-anchor.test.tsx
         - e2e/golf-critical-paths.spec.ts
         - supabase/tests/rls/golf_message_reactions.sql
         - src/app/golf/actions/unified-notifications-model.test.ts
         # Named explicitly rather than by a __tests__/** glob: that directory
         # holds several other features' action tests, so a glob would claim them.
         - src/app/golf/actions/__tests__/message-attachments-partial-failure.test.ts
+        - src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts
         - src/test/actions/send-message-duplicate-key-equivalence.test.ts
+        - src/test/actions/send-message-quoted-reply.test.ts
+        - src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts
+        - src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx
         - src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx
         - src/hooks/golf/__tests__/use-surface-prewarm.test.tsx
         - src/lib/golf/__tests__/client-resource-cache.test.ts
@@ -1134,10 +1185,8 @@ features:
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1152,6 +1201,8 @@ features:
         - src/components/golf/documents/**
         - src/components/fairway/pages/travel/**
         - src/components/fairway/pages/team-hub/**
+        - src/clubhouse/screens/home/**
+        - src/clubhouse/screens/hub/**
       api:
         - src/components/fairway/pages/documents/**
       actions:
@@ -1165,13 +1216,20 @@ features:
       services:
         - src/lib/supabase/**
         - src/lib/golf/nav-registry.ts
+        - src/clubhouse/data/home.ts
+        - src/clubhouse/data/player-home.ts
       db:
         - supabase/migrations/*task*.sql
-        - supabase/migrations/*document*.sql
-        - supabase/migrations/*travel*.sql
+        # Team documents only: `*document*` also matched recruiting's recruit_documents files.
+        - supabase/migrations/*golf_document*.sql
+        - supabase/migrations/*baseball_documents*.sql
+        - supabase/migrations/*documents_storage*.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
         - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts
+        - src/clubhouse/__tests__/home.test.tsx
+        - src/clubhouse/__tests__/player-home.test.tsx
+        - src/clubhouse/__tests__/home-data-completeness.test.ts
     integrations:
       - supabase
       - storage
@@ -1199,10 +1257,8 @@ features:
         - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1218,6 +1274,7 @@ features:
         - src/components/fairway/pages/team/**
       actions:
         - src/app/golf/actions/roster.ts
+        - src/app/golf/actions/team-management.ts
         - src/app/golf/actions/teams.ts
         - src/app/golf/actions/player-profile-stats.ts
         - src/app/golf/actions/team-switcher.ts
@@ -1225,7 +1282,6 @@ features:
       services:
         - src/lib/auth/**
       db:
-        - supabase/migrations/*roster*.sql
         - supabase/migrations/*team*.sql
         - supabase/migrations/*coach_staff*.sql
         # Reclassified 2026-09-06 off team_access_control's retired blanket
@@ -1260,7 +1316,6 @@ features:
         - memory/features/recruiting.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
       incidents: []
@@ -1269,16 +1324,26 @@ features:
         - src/app/golf/(dashboard)/dashboard/recruiting/**
       components:
         - src/components/fairway/pages/recruiting/**
+        - src/clubhouse/screens/recruiting/**
+        - src/clubhouse/data/recruiting.ts
+        - src/clubhouse/data/recruiting-shape.ts
+        - src/clubhouse/data/recruiting-calendar.ts
+        - src/clubhouse/routes/recruiting.tsx
       api: []
       actions:
         - src/app/golf/actions/recruiting.ts
         - src/app/golf/actions/recruit-documents.ts
         - src/app/golf/actions/recruit-documents-categories.ts
+        - src/app/golf/actions/recruit-documents-limits.ts
       services: []
       db:
-        - supabase/migrations/*golf_recruits*.sql
         - supabase/migrations/*recruit_documents*.sql
-      tests: []
+        - supabase/migrations/*golf_recruits_next_step*.sql
+      tests:
+        - src/clubhouse/__tests__/recruiting.test.tsx
+        - src/clubhouse/__tests__/recruiting-upload.test.tsx
+        - src/test/golf/actions/recruit-document-upload.test.ts
+        - src/test/golf/actions/recruiting-create.test.ts
     integrations:
       - supabase
       - team_access_control
@@ -1302,10 +1367,8 @@ features:
         - docs/security/auth-config.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/v3-rls-template.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1316,6 +1379,7 @@ features:
       components:
         - src/components/golf/onboarding/**
         - src/components/golf/settings/JoinTeamSection.tsx
+        - src/clubhouse/screens/auth/**
       api:
         - src/app/api/golf/auth/**
       actions:
@@ -1330,6 +1394,7 @@ features:
         - src/lib/auth/**
         - src/lib/supabase/**
         - src/hooks/use-presence.ts
+        - src/clubhouse/routes/auth.tsx
       db:
         - supabase/migrations/*auth*.sql
         - supabase/migrations/*user*.sql
@@ -1337,6 +1402,7 @@ features:
       tests:
         - e2e/auth.spec.ts
         - src/test/lib/auth/**
+        - src/clubhouse/__tests__/auth*.test.*
     integrations:
       - supabase
       - team_access_control
@@ -1364,10 +1430,8 @@ features:
         - docs/v3-feature-audit.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/PUSH_NOTIFICATION_AUDIT.md
     code:
@@ -1376,6 +1440,8 @@ features:
       components:
         - src/components/golf/settings/**
         - src/components/golf/coachhelm/settings/**
+        - src/clubhouse/screens/settings/**
+        - src/clubhouse/styles/settings.css
       api:
         - src/components/fairway/pages/settings/**
       actions:
@@ -1385,6 +1451,7 @@ features:
         - src/app/golf/actions/whats-new.ts
       services:
         - src/lib/coachhelm/v3/foundation/generator-toggles.ts
+        - src/hooks/golf/use-appearance-preferences.ts
       db:
         - supabase/migrations/*settings*.sql
         - supabase/migrations/*notification*.sql
@@ -1395,6 +1462,7 @@ features:
         - supabase/migrations/*avatars*.sql
       tests:
         - src/test/coachhelm/v3/notifications.test.ts
+        - src/hooks/golf/__tests__/use-appearance-preferences.test.tsx
     integrations:
       - supabase
       - notifications
@@ -1420,10 +1488,8 @@ features:
         - docs/PUSH_NOTIFICATION_AUDIT.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - memory/context/golfhelm-database.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -1441,7 +1507,6 @@ features:
       services:
         - src/lib/supabase/**
       db:
-        - supabase/migrations/*travel*.sql
         - supabase/migrations/*task*.sql
         # Narrowed 2026-09-23 — see calendar_events' db: list for why the
         # blanket `*event*.sql` was replaced with these (same set, same
@@ -1516,11 +1581,9 @@ features:
         - docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md
       ui:
         - memory/projects/golfhelm.md
-        - docs/v3-design-language.md
       business_logic:
         - docs/SECURITY_AUDIT.md
         - docs/OBSERVABILITY.md
-        - docs/v3-testing-standards.md
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
@@ -2147,6 +2210,7 @@ features:
         - src/lib/utils/push-registration.ts
         - src/lib/utils/haptics-pref.ts
         - src/lib/fairway/haptics.ts
+        - src/lib/native-haptics.ts
       native:
         - ios/App/App/**
         - ios/App/CapApp-SPM/**
@@ -2164,6 +2228,72 @@ features:
       required_checks:
         - npm run typecheck
         - npm run test -- --run src/test/lib/native-capabilities.test.ts src/test/lib/haptics-pref.test.ts
+
+  lift_lab:
+    name: Lift Lab (helm_lifting_*)
+    status: active
+    owner: product
+    criticality: high
+    observability:
+      feature_keys: []
+      reason: >-
+        Lift Lab telemetry is attributed through the baseball_lifting and
+        baseball_lift_onboarding keys owned by baseball_core; a second key
+        would double-count.
+    docs:
+      feature: memory/context/baseballhelm-features.md
+      flows:
+        - docs/lifting-lab/HELM_LIFTING_LAB_BLUEPRINT.md
+      business_logic:
+        - memory/context/baseballhelm-workflows.md
+      incidents: []
+    code:
+      routes:
+        - src/app/lifting/**
+      components:
+        - src/components/lifting/**
+      services:
+        - src/lib/lifting/**
+      db:
+        - supabase/migrations/*helm_lifting*.sql
+      tests:
+        - supabase/tests/rls/*lifting*.sql
+    integrations:
+      - supabase
+      - sentry
+    review:
+      required_docs: []
+      required_checks:
+        - npm run typecheck
+        - npm run test:rls
+  clubhouse:
+    name: Clubhouse UI (flagged, off in production)
+    status: active
+    owner: product
+    criticality: medium
+    observability:
+      feature_keys: []
+      reason: >-
+        Clubhouse is a flagged alternative UI over the golf features it
+        renders. Telemetry attributes to those features, so a Clubhouse key
+        would double-count.
+    docs:
+      feature: src/clubhouse/AGENTS.md
+      flows:
+        - .claude/rules/clubhouse.md
+        - docs/clubhouse/README.md
+      incidents: []
+    code:
+      components:
+        - src/clubhouse/**
+      tests:
+        - src/clubhouse/__tests__/**
+    integrations:
+      - vercel
+    review:
+      required_docs: []
+      required_checks:
+        - npm run clubhouse:check
 
 systems:
   supabase:
@@ -2191,6 +2321,14 @@ systems:
       - supabase/migrations/*rescope_service_policies_to_service_role*.sql
       - supabase/migrations/*realtime_publication_add_subscribed_tables*.sql
       - supabase/migrations/*bind_definer_rpcs_to_session*.sql
+      # Plan phase 6 (2026-10-07): golf RLS helper rewrite and holes/shots policy
+      # consolidation, the anon table-grant revoke, the definer-view record, and
+      # advisor foreign-key indexes. Cross-cutting across golf and baseball.
+      - supabase/migrations/*golf_rls_helpers_sql_language*.sql
+      - supabase/migrations/*golf_holes_shots_policy_consolidation*.sql
+      - supabase/migrations/*revoke_anon_public_table_grants*.sql
+      - supabase/migrations/*document_public_profile_views_definer*.sql
+      - supabase/migrations/*add_missing_foreign_key_indexes*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md
@@ -2213,7 +2351,6 @@ integrations:
   sentry:
     docs: docs/guides/SENTRY_SETUP_GUIDE.md
     code:
-      - sentry.*
       - src/instrumentation*.ts
       # Client "maximum observability" build (2026-09-02/03): the pure
       # options builder instrumentation-client.ts's Sentry.init() reads
@@ -2248,5 +2385,7 @@ observability_keys_unowned:
   integrations:
     classification: platform
     reason: >-
-      Inngest job execution. Infrastructure that carries other features' work,
-      not a product feature with behaviour of its own to document.
+      Third-party provider faults (the catch-all area for external-service
+      credential and billing faults). Infrastructure that carries other
+      features' work, not a product feature with behaviour of its own to
+      document.

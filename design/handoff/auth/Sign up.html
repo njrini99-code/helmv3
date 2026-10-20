@@ -1,0 +1,58 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Sign up</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="src/depth.css">
+<script src="src/gh-core.js"></script>
+<link rel="stylesheet" href="../gh-polish.css">
+<link rel="stylesheet" href="src/login.css">
+<link rel="stylesheet" href="src/ox.css">
+<style>html,body{margin:0;height:100%}a{color:var(--green-700)}a:hover{color:var(--green-800)}</style>
+<script>(()=>{const z=new URLSearchParams(location.search).get('zoom');if(z)document.documentElement.style.zoom=z})()</script>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#0B3A25"/><circle cx="50" cy="50" r="22" fill="none" stroke="#E6D3A2" stroke-width="4"/><path d="M50 30v40M30 50h40" stroke="#E6D3A2" stroke-width="4"/></svg></template>
+</head><body class="fairway"><div id="root" data-screen-label="Sign up"></div>
+<script type="text/babel" src="src/scene.jsx"></script>
+<script type="text/babel" src="src/ox-steps.jsx"></script>
+<script type="text/babel" src="src/ox.jsx"></script>
+<script type="text/babel">
+const KEY = 'gh-signup-rev2';
+const JUMP = [['intro', 'Welcome'], ['code', 'Team code'], ['code-ok', 'Code matched'], ['role', 'Player or assistant'], ['name', 'Your name'], ['grad', 'Player · Class year'], ['account', 'Account'], ['game', 'Player · Your game'], ['photo', 'Player · Photo'], ['done', 'Player · On the roster'], ['pending', 'Assistant · Waiting'], ['staffdone', 'Staff invite · Done'], ['title', 'Head coach · Title'], ['program', 'Head coach · Program'], ['cdone', 'Head coach · Team code'], ['rwho', 'Request · Who'], ['rdetails', 'Request · Details'], ['sent', 'Request · Sent'],
+  ['code:bad', 'Error · Wrong code'], ['code:network', 'Error · Code check offline'], ['code:rate', 'Error · Too many code attempts'], ['account:exists', 'Error · Email already registered'], ['account:network', 'Error · Account offline'], ['game:state', 'Error · State not 2 letters'], ['photo:error', 'Error · Photo too large'], ['done:joinfail', 'Error · Couldn’t join team'], ['rdetails:network', 'Error · Request offline'],
+  ['code:empty', 'Empty · Team with no players'], ['done:empty', 'Empty · First on the roster'], ['name:empty', 'Empty · Name not filled'], ['program:empty', 'Empty · No school yet']];
+function App() {
+  const [r, setR] = React.useState(() => { const q = new URLSearchParams(location.search).get('step'); return { preset: 'intro', invite: false, ...JSON.parse(localStorage.getItem(KEY) || '{}'), ...(q ? { preset: q } : {}) }; });
+  const [open, setOpen] = React.useState(false);
+  const [k, setK] = React.useState(0);
+  const flow = React.useRef(null);
+  const set = (p) => { const n = { ...r, ...p }; setR(n); localStorage.setItem(KEY, JSON.stringify(n)); setK((x) => x + 1); };
+  window.__review = { set, flow };
+  return (<>
+    <OnboardX key={k} preset={r.preset} invite={r.invite} flowRef={flow} />
+    <div className="ghp" data-gh-nopress="" data-haptic="none">
+      {open && <div className="ghp__body">
+        <p className="ghp__k">Reviewer controls. Not part of the product.</p>
+        <p className="ghp__k">Try a code</p>
+        {[['K7PQX4MN', 'Player or assistant'], ['S4VN8QRT', 'Staff invite'], ['HELM2026', 'New program'], ['ABCD1234', 'Wrong code']].map(([c, l]) => (
+          <button key={c} type="button" className="ghp__btn" style={{ background: '#EFECE4', color: '#12110E', textAlign: 'left', padding: '0 10px', display: 'flex', justifyContent: 'space-between' }} onClick={() => flow.current && flow.current.jump('code', { intent: 'code', code: c })}><b style={{ fontWeight: 600, letterSpacing: '.04em' }}>{c}</b><span style={{ fontWeight: 400, color: '#55524B' }}>{l}</span></button>
+        ))}
+        <p className="ghp__k">Jump to</p>
+        <select value={r.preset} onChange={(e) => set({ preset: e.target.value })} style={{ height: 32, borderRadius: 9, border: 0, background: '#EFECE4', padding: '0 8px', font: '500 12.5px/1 var(--font-sans)' }}>{JUMP.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+        <label className="ghp__tg"><input type="checkbox" checked={r.invite} onChange={(e) => set({ invite: e.target.checked, preset: 'intro' })} /><span>Arrived from an invite link</span></label>
+        <button type="button" className="ghp__btn" onClick={() => set({ preset: 'intro' })}>Start over</button>
+      </div>}
+      <button type="button" className="ghp__chip" aria-expanded={open} onClick={() => setOpen(!open)}><i></i><span>Prototype · Sign up</span></button>
+    </div>
+  </>);
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

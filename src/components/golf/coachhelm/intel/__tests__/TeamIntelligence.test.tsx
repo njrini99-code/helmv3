@@ -3,13 +3,15 @@
  *
  * Carries forward the strokes-figure guarantee the retired bleed board held
  * (a coach once reported strokes gained "missing" after a redesign): the
- * engine's live strokes-per-round figure appears on the matching theme card
- * and nowhere else, and a template or diagnostic-only row never makes one.
+ * team's strokes-per-round figure appears on the matching theme card and
+ * nowhere else. Since the 2026-09 accuracy audit (rows 1 and 7) that figure is
+ * the category's TEAM value (`category.strokesAvailable`, a roster mean), not
+ * the top insight's single-player counterfactual.
  */
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { CategoryInsight, TeamCategory } from '@/app/golf/actions/team-category-insights';
-import type { IntelRound, TeamIntelligenceData } from '@/lib/golf/team-intelligence/types';
+import type { IntelRound, IntelStrokesAvailable, TeamIntelligenceData } from '@/lib/golf/team-intelligence/types';
 import { TeamIntelligence } from '../TeamIntelligence';
 import { strokesAvailable, strokesByTheme } from '../strokes';
 import { NO_REFS } from '@/lib/golf/team-intelligence/__tests__/fixtures';
@@ -27,8 +29,27 @@ const engineInsight = (strokesSavedPerRound: number | null): CategoryInsight => 
   strokesSavedPerRound,
 });
 
-function category(id: string, insights: CategoryInsight[]): TeamCategory {
-  return { id, label: id, teamAvg: 0, teamAvgLabel: '', trend: 'stable', insights, players: [], primaryMetric: '', attentionCount: 0 };
+const team = (perRound: number, playersWithLeak = 2, playersCounted = 4): IntelStrokesAvailable => ({
+  perRound,
+  playersWithLeak,
+  playersCounted,
+});
+
+function category(id: string, insights: CategoryInsight[], strokesAvailable: IntelStrokesAvailable | null = null): TeamCategory {
+  return {
+    id,
+    label: id,
+    teamAvg: 0,
+    teamAvgLabel: '',
+    trend: 'stable',
+    insights,
+    players: [],
+    primaryMetric: '',
+    attentionCount: 0,
+    playersCounted: 4,
+    playersWithoutRecentRound: 0,
+    strokesAvailable,
+  };
 }
 
 function round(id: string, playerId: string, date: string, sg: Partial<IntelRound['sg']>, type: IntelRound['type'] = 'practice'): IntelRound {
@@ -49,6 +70,8 @@ const data: TeamIntelligenceData = {
     round('r1', 'p1', '2026-04-01', { tee: -0.2, app: -1.4, atg: 0.1, putt: -0.3 }, 'tournament'),
     round('r2', 'p1', '2026-05-01', { tee: -0.4, app: -1.0, atg: 0.3, putt: -0.5 }),
     round('r3', 'p2', '2026-05-02', { tee: 0.2, app: -0.2, atg: -0.1, putt: 0.4 }),
+    // A counted round with no stored SG: it must be counted as missing, not vanish.
+    round('r4', 'p2', '2026-05-03', {}),
   ],
   tee: [],
   approach: [],
@@ -62,22 +85,20 @@ const renderIt = (strokes = {}) =>
   );
 
 describe('strokesAvailable / strokesByTheme', () => {
-  it('reads only an engine-backed, live, positive figure', () => {
-    expect(strokesAvailable(category('putting', [engineInsight(0.74)]))?.perRound).toBe(0.74);
-    expect(strokesAvailable(category('putting', [{ id: 't', message: 'Template', tone: 'negative' }]))).toBeNull();
-    expect(strokesAvailable(category('putting', [engineInsight(null)]))).toBeNull();
-    expect(strokesAvailable(category('putting', [engineInsight(0)]))).toBeNull();
-    expect(strokesAvailable(category('putting', [engineInsight(Number.NaN)]))).toBeNull();
-    expect(
-      strokesAvailable(category('putting', [{ id: 'x', message: 'x', tone: 'negative', strokesSavedPerRound: 0.9 }])),
-    ).toBeNull();
+  it('reads the category\'s team figure, never a single insight\'s counterfactual', () => {
+    // The old chip took the first engine insight's 2.50 (one player) as the team's.
+    const onePlayer = category('putting', [engineInsight(2.5)]);
+    expect(strokesAvailable(onePlayer)).toBeNull();
+    expect(strokesAvailable(category('putting', [engineInsight(2.5)], team(0.6)))).toEqual(team(0.6));
+    expect(strokesAvailable(category('putting', [], team(0)))).toBeNull();
+    expect(strokesAvailable(category('putting', [], team(Number.NaN)))).toBeNull();
   });
 
   it('maps engine categories onto the four Home themes and ignores scoring', () => {
     const out = strokesByTheme([
-      category('driving', [engineInsight(0.3)]),
-      category('short_game', [engineInsight(0.05)]),
-      category('scoring', [engineInsight(1.2)]),
+      category('driving', [], team(0.3)),
+      category('short_game', [], team(0.05)),
+      category('scoring', [], team(1.2)),
     ]);
     expect(Object.keys(out).sort()).toEqual(['atg', 'tee']);
   });
@@ -94,11 +115,36 @@ describe('TeamIntelligence', () => {
     expect(screen.getByTestId('cause')).toHaveTextContent('app team');
   });
 
-  it('keeps the strokes-per-round figure on the matching card, and only there', () => {
-    renderIt(strokesByTheme([category('putting', [engineInsight(0.74)])]));
+  it('keeps the team strokes-per-round figure on the matching card, and only there, with its n', () => {
+    renderIt(strokesByTheme([category('putting', [], team(0.74, 2, 4))]));
     const putting = screen.getByRole('button', { name: /Putting/ });
-    expect(within(putting).getByText(/Up to 0\.7 strokes \/ round available/)).toBeInTheDocument();
-    expect(screen.getAllByText(/strokes \/ round available/)).toHaveLength(1);
+    expect(within(putting).getByText(/~0\.7 strokes \/ round per player available/)).toBeInTheDocument();
+    expect(within(putting).getByText(/2 of 4 current players carry a measured leak/)).toBeInTheDocument();
+    expect(screen.getAllByText(/strokes \/ round per player available/)).toHaveLength(1);
+  });
+
+  it('counts rounds with no stored SG instead of dropping them silently', () => {
+    renderIt();
+    const approach = screen.getByRole('button', { name: /Approach/ });
+    expect(within(approach).getByText(/3 rounds/)).toBeInTheDocument();
+    expect(within(approach).getByText(/1 without SG/)).toBeInTheDocument();
+  });
+
+  it('shows the last 30 days beside the season on every card', () => {
+    render(
+      <TeamIntelligence
+        result={{
+          success: true,
+          data: { ...data, rounds: [...data.rounds, round('r5', 'p1', '2026-09-20', { app: -3.0 })] },
+        }}
+        strokes={{}}
+        playerHref={() => '#'}
+      />,
+    );
+    const approach = screen.getByRole('button', { name: /Approach/ });
+    expect(within(approach).getByText(/Last 30 days −3\.0 · 1 round/)).toBeInTheDocument();
+    const putting = screen.getByRole('button', { name: /Putting/ });
+    expect(within(putting).getByText(/Last 30 days: no rounds with SG/)).toBeInTheDocument();
   });
 
   it('lists players worst to best and filters the cause visual to a tapped player', () => {
@@ -127,7 +173,7 @@ describe('TeamIntelligence', () => {
   it('filters by round type with honest counts', () => {
     renderIt();
     const types = screen.getByRole('radiogroup', { name: 'Round type' });
-    expect(within(types).getByRole('radio', { name: /All rounds/ })).toHaveTextContent('3');
+    expect(within(types).getByRole('radio', { name: /All rounds/ })).toHaveTextContent('4');
     fireEvent.click(within(types).getByRole('radio', { name: /Tournament/ }));
     const list = screen.getByRole('list', { name: /Players, worst to best/ });
     expect(within(list).getAllByRole('button')).toHaveLength(1);

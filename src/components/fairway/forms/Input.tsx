@@ -17,8 +17,8 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Input as BaseInput } from "@base-ui-components/react/input";
-import { Field } from "@base-ui-components/react/field";
+import { Input as BaseInput } from "@base-ui/react/input";
+import { Field } from "@base-ui/react/field";
 import { cn } from "@/lib/utils";
 import { fieldControlBase, sizeClasses, type FieldSize } from "./styles";
 

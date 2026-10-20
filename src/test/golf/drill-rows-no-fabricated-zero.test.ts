@@ -36,7 +36,9 @@ describe('ShortGameDrill — scrambling by distance does not invent a zero', () 
   it('renders an em-dash for a band the player has never played from', () => {
     const row = buildScramblingByDistanceRows(
       stats({ scramblingPct0_10: 55, scramblingPct10_20: 40, scramblingPct20_30: null }),
-    ).find((r) => r.label === '20-30 yds');
+      // The last band is labelled "20+ yds": `scramblingPct20_30` is every
+      // scramble from more than 20 yd, uncapped (the key is historical).
+    ).find((r) => r.label === '20+ yds');
 
     expect(row?.value).toBe('—');
     expect(row?.dim).toBe(true);
@@ -45,7 +47,7 @@ describe('ShortGameDrill — scrambling by distance does not invent a zero', () 
 
   it('still renders a REAL 0% undimmed', () => {
     const row = buildScramblingByDistanceRows(stats({ scramblingPct20_30: 0 })).find(
-      (r) => r.label === '20-30 yds',
+      (r) => r.label === '20+ yds',
     );
 
     expect(row?.value).toBe('0%');

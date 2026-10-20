@@ -314,7 +314,7 @@ export function FairwayWhatsNew({ success, error, items, truncated, timeZone, se
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    let stored: string | null = null;
+    let stored: string | null;
     try {
       stored = window.localStorage.getItem(LAST_SEEN_KEY);
     } catch {

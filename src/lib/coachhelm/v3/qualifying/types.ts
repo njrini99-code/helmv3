@@ -47,6 +47,15 @@ export interface SelectionCandidate {
   /** True when the candidate would be auto-locked under the current
    *  top-N slots count (rank <= slots_total - slots_coach_pick). */
   is_top_score_slot: boolean;
+  /** Level (to par and strokes) with the last place on score and the player after it (Q-114): the coach chooses who of
+   *  these takes the places left at the cut; a chosen one has is_top_score_slot. */
+  tied_at_cut?: boolean;
+}
+
+/** A tie at the last place on score (Q-114): `places` to give among the level players, `chosen` given so far. */
+export interface TieAtCut {
+  places: number;
+  chosen: number;
 }
 
 export interface QualifyingWorkspace {
@@ -68,4 +77,6 @@ export interface QualifyingWorkspace {
   /** True when every coach-pick slot has a chosen player. UI uses this
    *  to enable the "Confirm Selection" action. */
   coach_picks_complete: boolean;
+  /** Null when the cut falls cleanly; otherwise confirm waits until chosen === places (Q-114). */
+  tie_at_cut?: TieAtCut | null;
 }

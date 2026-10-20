@@ -99,7 +99,7 @@ beforeEach(() => {
 
 describe('G-08 — attachment insert failure is reported, not swallowed', () => {
   it('does NOT report success when the attachment rows fail and there is no text', async () => {
-    mocks.attachmentInsert.mockResolvedValue({ error: { message: 'insert denied' } });
+    mocks.attachmentInsert.mockResolvedValue({ error: { code: '42501', message: 'insert denied' } });
 
     const res = await sendGolfMessageWithAttachments('conv-1', '', [ATTACHMENT]);
 
@@ -109,7 +109,7 @@ describe('G-08 — attachment insert failure is reported, not swallowed', () => 
   });
 
   it('deletes the empty message rather than leaving a blank permanently-broken bubble', async () => {
-    mocks.attachmentInsert.mockResolvedValue({ error: { message: 'insert denied' } });
+    mocks.attachmentInsert.mockResolvedValue({ error: { code: '42501', message: 'insert denied' } });
 
     await sendGolfMessageWithAttachments('conv-1', '', [ATTACHMENT]);
 
@@ -117,7 +117,7 @@ describe('G-08 — attachment insert failure is reported, not swallowed', () => 
   });
 
   it('removes the orphaned storage objects the client already uploaded', async () => {
-    mocks.attachmentInsert.mockResolvedValue({ error: { message: 'insert denied' } });
+    mocks.attachmentInsert.mockResolvedValue({ error: { code: '42501', message: 'insert denied' } });
 
     await sendGolfMessageWithAttachments('conv-1', '', [ATTACHMENT]);
 
@@ -125,7 +125,7 @@ describe('G-08 — attachment insert failure is reported, not swallowed', () => 
   });
 
   it('keeps a message whose TEXT survived, but clears has_attachments and says so', async () => {
-    mocks.attachmentInsert.mockResolvedValue({ error: { message: 'insert denied' } });
+    mocks.attachmentInsert.mockResolvedValue({ error: { code: '42501', message: 'insert denied' } });
 
     const res = await sendGolfMessageWithAttachments('conv-1', 'Bus leaves at six', [ATTACHMENT]);
 
@@ -141,7 +141,7 @@ describe('G-08 — attachment insert failure is reported, not swallowed', () => 
   });
 
   it('still fans out the surviving text — an early return would deliver it silently', async () => {
-    mocks.attachmentInsert.mockResolvedValue({ error: { message: 'insert denied' } });
+    mocks.attachmentInsert.mockResolvedValue({ error: { code: '42501', message: 'insert denied' } });
 
     await sendGolfMessageWithAttachments('conv-1', 'Bus leaves at six', [ATTACHMENT]);
 

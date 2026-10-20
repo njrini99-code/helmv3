@@ -61,7 +61,7 @@ import {
   eachDayOfInterval,
 } from 'date-fns';
 import { AlertTriangle, ArrowRight, Plus, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Sheet, Button as FwButton, IconButton, PressTarget, fairwayToast } from '@/components/fairway';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { fwHaptic } from '@/lib/fairway/haptics';
@@ -69,8 +69,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { wallClockInZone } from '@/lib/golf/timezone';
+import { zonedMidnight, DEFAULT_TIMEZONE, getValidTimezone } from '@/lib/calendar/timezone';
+import { offsetMinutesFor, wallClockInZone } from '@/lib/golf/timezone';
 import { computeCommonFreeTime, type FreeWindow } from '@/lib/golf/common-free-time';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
@@ -401,7 +401,7 @@ export function FairwayCalendar({
     }
     let cancelled = false;
     void (async () => {
-      const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+      const { getPlayerAvailability } = await import('@/app/golf/actions/calendar-events');
       const s = format(availWindow.start, 'yyyy-MM-dd');
       const e = format(availWindow.end, 'yyyy-MM-dd');
       // Anchor each player's busy window to the COACH's local day, not the UTC
@@ -535,7 +535,19 @@ export function FairwayCalendar({
   const handleSaveEvent = React.useCallback(
     async (data: GolfEventFormData) => {
       setIsSavingEvent(true);
-      const timezoneOffset = new Date().getTimezoneOffset();
+      // The team zone's offset ON THE EVENT'S DATE, not today's device offset: an EDT device saving a November event
+      // (EST) stored it an hour off, and every later edit (dates are always sent) shifted it again. Series also get
+      // the zone itself, so each occurrence takes its own date's offset across the change.
+      const zone = getValidTimezone(teamTimezone ?? DEFAULT_TIMEZONE);
+      const timezoneOffset =
+        offsetMinutesFor(data.startDate, !data.allDay && data.startTime ? data.startTime : '12:00', zone) ??
+        new Date().getTimezoneOffset();
+      // An emptied field on edit is sent as '' (the server stores null) so a coach can clear a location or notes; an
+      // empty field the event never had stays undefined, so a series edit leaves other occurrences' values alone.
+      const clearedLocation = data.location || (editorEvent?.location ? '' : undefined);
+      const clearedDescription = data.description || (editorEvent?.description ? '' : undefined);
+      // The save landed but its invitations did not: the server says so beside `success`.
+      let invitationsError: string | undefined;
       try {
         if (!editorEvent) {
           if (data.recurrence && data.recurrence !== 'none') {
@@ -567,10 +579,12 @@ export function FairwayCalendar({
               allDay: data.allDay,
               attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
               timezoneOffset,
+              timeZone: zone,
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
+            invitationsError = result.data?.invitationsError;
           } else {
-            const { createGolfEvent } = await import('@/app/golf/actions/golf');
+            const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
             const result = await createGolfEvent({
               title: data.title,
               eventType: data.eventType,
@@ -590,6 +604,7 @@ export function FairwayCalendar({
               timezoneOffset,
             } as never);
             if (!result.success) throw new Error(result.error || 'Failed to create event');
+            invitationsError = result.data?.invitationsError;
           }
         } else if (data.editScope && data.editScope !== 'this') {
           const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
@@ -599,14 +614,15 @@ export function FairwayCalendar({
             originalStartDate: editorEvent.start_date,
             scope: data.editScope,
             timezoneOffset,
+            timeZone: zone,
             updates: {
               title: data.title,
-              description: data.description || undefined,
+              description: clearedDescription,
               startDate: data.startDate,
               endDate: data.endDate || data.startDate,
               startTime: data.allDay ? undefined : data.startTime || undefined,
               endTime: data.allDay ? undefined : data.endTime || undefined,
-              location: data.location || undefined,
+              location: clearedLocation,
               // Forward a re-patterned series rule when the editor produced one.
               recurrenceRule: data.recurrenceRule
                 ? serializeRecurrenceRule(data.recurrenceRule)
@@ -615,7 +631,7 @@ export function FairwayCalendar({
           });
           if (!result.success) throw new Error(result.error || 'Failed to update recurring event');
         } else {
-          const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+          const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
           const result = await updateGolfEvent(editorEvent.id, {
             title: data.title,
             eventType: data.eventType,
@@ -624,9 +640,9 @@ export function FairwayCalendar({
             startTime: data.allDay ? undefined : data.startTime || undefined,
             endTime: data.allDay ? undefined : data.endTime || undefined,
             allDay: data.allDay,
-            location: data.location || undefined,
+            location: clearedLocation,
             courseName: data.courseName || undefined,
-            description: data.description || undefined,
+            description: clearedDescription,
             isMandatory: data.isMandatory,
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
@@ -639,14 +655,20 @@ export function FairwayCalendar({
             timezoneOffset,
           } as never);
           if (!result.success) throw new Error(result.error || 'Failed to update event');
+          invitationsError = result.data?.invitationsError;
         }
         const wasCreate = !editorEvent;
         const isSeriesEdit = !wasCreate && data.editScope != null && data.editScope !== 'this';
         // Visible confirmation of system status (audit P238) — every successful
         // mutation gives one consistent Fairway toast.
-        fairwayToast.success(
-          wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated',
-        );
+        const savedLabel = wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated';
+        if (invitationsError) {
+          fairwayToast.warning(`${savedLabel} · invitations didn’t go out`, {
+            description: `${invitationsError} Open the event and invite them again.`,
+          });
+        } else {
+          fairwayToast.success(savedLabel);
+        }
         setEditorOpen(false);
         setEditorEvent(null);
         // A newly created event must never silently vanish: if its date falls
@@ -683,7 +705,7 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router, visibleWindow, refetchVisibleRange],
+    [editorEvent, router, visibleWindow, refetchVisibleRange, teamTimezone],
   );
 
   // Restore (un-cancel) a soft-cancelled event. Flips status back to
@@ -694,7 +716,7 @@ export function FairwayCalendar({
     if (!editorEvent) return;
     setIsSavingEvent(true);
     try {
-      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await updateGolfEvent(editorEvent.id, { status: 'confirmed' } as never);
       if (!result.success) throw new Error(result.error || 'Failed to restore event');
       fairwayToast.success('Event restored');
@@ -724,7 +746,7 @@ export function FairwayCalendar({
           const result = await deleteRecurringEvent(editorEvent.id, editorEvent.start_date, scope);
           if (!result.success) throw new Error(result.error || 'Failed to delete recurring event');
         } else {
-          const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+          const { deleteGolfEvent } = await import('@/app/golf/actions/calendar-events');
           const result = await deleteGolfEvent(editorEvent.id);
           if (!result.success) throw new Error(result.error || 'Failed to delete event');
         }
@@ -763,7 +785,7 @@ export function FairwayCalendar({
     if (!editorEvent) return;
     setIsSavingEvent(true);
     try {
-      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEventPermanently(editorEvent.id);
       if (!result.success) throw new Error(result.error || 'Failed to delete event permanently');
       fairwayToast.success('Event deleted permanently');
@@ -856,7 +878,7 @@ export function FairwayCalendar({
   //    editor uses, keyed on the drawer's own event rather than `editorEvent`.
   const drawerCancelEvent = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEvent(event.id);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -866,7 +888,7 @@ export function FairwayCalendar({
   }, [router, refetchVisibleRange]);
   const drawerRestoreEvent = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+      const { updateGolfEvent } = await import('@/app/golf/actions/calendar-events');
       const result = await updateGolfEvent(event.id, { status: 'confirmed' } as never);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -876,7 +898,7 @@ export function FairwayCalendar({
   }, [router, refetchVisibleRange]);
   const drawerDeletePermanently = React.useCallback(async (event: CalendarEvent) => {
     try {
-      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/golf');
+      const { deleteGolfEventPermanently } = await import('@/app/golf/actions/calendar-events');
       const result = await deleteGolfEventPermanently(event.id);
       if (result.success) { router.refresh(); refetchVisibleRange(); }
       return { success: result.success, error: result.error };
@@ -965,9 +987,11 @@ export function FairwayCalendar({
       setDrawerOpen(true);
       setDrawerRsvpSummary(null);
 
+      // An event that doesn't ask for replies has no reply summary or reply of the viewer's to read (owner, 2026-10-08).
+      if (event.requires_rsvp !== true) return;
       if (isCoach) {
         try {
-          const { getEventRSVP } = await import('@/app/golf/actions/golf');
+          const { getEventRSVP } = await import('@/app/golf/actions/calendar-events');
           const result = await getEventRSVP(event.id);
           if (requestId === drawerRequestRef.current && result.success && result.data?.summary) {
             const s = result.data.summary;
@@ -984,7 +1008,7 @@ export function FairwayCalendar({
         }
       } else if (!userRsvpStatuses.has(event.id)) {
         try {
-          const { getPlayerEventRSVP } = await import('@/app/golf/actions/golf');
+          const { getPlayerEventRSVP } = await import('@/app/golf/actions/calendar-events');
           const result = await getPlayerEventRSVP(event.id);
           if (result.success && result.data?.status) {
             setUserRsvpStatuses((prev) => {
@@ -1024,7 +1048,7 @@ export function FairwayCalendar({
   const handleRespond = React.useCallback(
     async (eventId: string, status: RSVPStatus): Promise<RsvpRespondResult> => {
       try {
-        const { respondToEvent } = await import('@/app/golf/actions/golf');
+        const { respondToEvent } = await import('@/app/golf/actions/calendar-events');
         const result = await respondToEvent(eventId, status);
         if (result.success) {
           setUserRsvpStatuses((prev) => {
@@ -1074,7 +1098,8 @@ export function FairwayCalendar({
     return (
       events
         .filter((e) => {
-          if (e.requires_rsvp === false) return false;
+          // RSVP is off unless the coach turned it on (owner, 2026-10-08); null reads as off.
+          if (e.requires_rsvp !== true) return false;
           if (e.status === 'cancelled') return false; // never prompt for cancelled events
           const s = e.start_time || e.start_date;
           if (!s) return false;

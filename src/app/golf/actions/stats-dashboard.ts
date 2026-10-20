@@ -8,7 +8,7 @@ import {
   getWorstHoleAnalysis,
 } from './stats-data';
 import { getPlayerLeakMaps, getPlayerStandingRows } from './stats-leak-maps';
-import { getPlayerPatterns } from './insights';
+import { getPlayerPatterns } from './insights-player-analysis';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { runWithStatsActionContext } from '@/lib/golf/stats-action-context';

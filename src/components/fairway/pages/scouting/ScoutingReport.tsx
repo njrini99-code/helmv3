@@ -39,7 +39,7 @@ import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import type { ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 
 import { getInsightsForCoachWithMeta, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
-import { refreshPlayerAnalysisAsCoach } from '@/app/golf/actions/insights';
+import { refreshPlayerAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 
 import { ClaimVisual } from './ClaimVisual';
@@ -271,7 +271,7 @@ export function ScoutingReport({ player, rounds, focusAreas, themes, evidenceIns
             : null;
       const target =
         Number.isFinite(e.your_value) && pga !== null && Number.isFinite(pga)
-          ? computeTargetValue({ playerValue: e.your_value, pgaValue: pga })
+          ? computeTargetValue({ playerValue: e.your_value, anchorValue: pga, metricId: e.metric })
           : null;
       setAssigningId(claim.id);
       startAssign(async () => {

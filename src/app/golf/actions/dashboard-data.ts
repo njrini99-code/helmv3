@@ -17,6 +17,7 @@ import {
     type RoundStatsCacheRow,
 } from '@/lib/golf/countable-round-stats';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -346,8 +347,11 @@ async function getCoachDashboardDataImpl(
         // Class meetings live on the team calendar but are one player's personal
         // schedule — counting them made "Upcoming events" read 192 on a team
         // with 22 real ones (coach report, 2026-08-05). event_type is NOT NULL,
-        // so .neq() can't silently drop untyped rows.
-        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).gte('start_time', now),
+        // so .neq() can't silently drop untyped rows. A cancelled event stays in
+        // the table (deleteGolfEvent soft-cancels), so every Home event read
+        // drops it by cancelled_at: status is nullable, and .neq() on it would
+        // drop untyped rows too.
+        supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).neq('event_type', CLASS_EVENT_TYPE).is('cancelled_at', null).gte('start_time', now),
         // NUMC-07: an impossible start date (prod has year 60824) is not "active".
         supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('is_test', false).in('status', ['upcoming', 'in_progress'])
           .gte('start_date', qualifierDateBounds.from).lte('start_date', qualifierDateBounds.to),
@@ -388,6 +392,7 @@ async function getCoachDashboardDataImpl(
             .select('id, title, event_type, start_time, end_time, location, created_at, updated_at')
             .eq('team_id', teamId)
             .neq('event_type', CLASS_EVENT_TYPE)
+            .is('cancelled_at', null)
             .gte('start_time', now)
             .order('start_time', { ascending: true })
             .limit(20),
@@ -448,7 +453,30 @@ async function getCoachDashboardDataImpl(
     // the cheerful "clear schedule" empty state. The flag lets the UI surface a
     // distinct degraded notice instead (same honesty rule as the page catch).
     const todayScheduleError = todayEventsResult.error != null;
-    const todayEvents: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
+    const todayEventsFromRpc: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
+    // Owner, 2026-10-08: RSVP is off unless the coach turns it on, so "3/6 confirmed" belongs only on an event that
+    // asks for replies. The RPC doesn't return the flag, so it is read here for today's few events; a failed read
+    // drops every count rather than showing one the coach never asked for. Null (older rows) reads as off.
+    let asksForReplies = new Set<string>();
+    if (todayEventsFromRpc.length > 0) {
+        const { data: rsvpFlags, error: rsvpFlagsError } = await supabase
+            .from('golf_events')
+            .select('id, requires_rsvp')
+            .in('id', todayEventsFromRpc.map((e) => e.id));
+        if (rsvpFlagsError) {
+            await logServerError(
+                `[getCoachDashboardData] requires_rsvp read failed; today's confirmed counts hidden: ${describeError(rsvpFlagsError)}`,
+                { action: 'getCoachDashboardData', featureArea: 'coach_dashboard' },
+            );
+        } else {
+            asksForReplies = new Set((rsvpFlags ?? []).filter((e) => e.requires_rsvp === true).map((e) => e.id));
+        }
+    }
+    const todayEvents: TodayEvent[] = todayEventsFromRpc.map((e) => {
+        if (asksForReplies.has(e.id)) return e;
+        const { rsvp_yes: _yes, rsvp_total: _total, ...rest } = e;
+        return rest;
+    });
 
     // Extract players. The roster error is the highest-impact of these: a
     // swallowed failure here empties playerIds, which skips the whole
@@ -1023,6 +1051,7 @@ async function getPlayerDashboardDataImpl(
                 .select('id, title, event_type, start_time, end_time, location, all_day')
                 .eq('team_id', teamId)
                 .neq('event_type', CLASS_EVENT_TYPE)
+                .is('cancelled_at', null)
                 // OVERLAP, not start-membership (#1496). A tournament on its
                 // 3rd day starts in the past and outside today, so filtering
                 // `start_time >= todayStart` dropped it from Today while
@@ -1050,6 +1079,7 @@ async function getPlayerDashboardDataImpl(
                 .select('id, title, event_type, start_time, end_time, location')
                 .eq('team_id', teamId)
                 .neq('event_type', CLASS_EVENT_TYPE)
+                .is('cancelled_at', null)
                 .gte('start_time', todayEnd)
                 .order('start_time', { ascending: true })
                 .limit(15)
@@ -1130,7 +1160,24 @@ async function getPlayerDashboardDataImpl(
     // row's `end_time` is UTC midnight on the INCLUSIVE last day — comparing
     // instants drops the final round of every tournament, the same
     // one-day-early bug as #1493/#1494/#1495.
-    const todayEventsRaw = (todayEventsResult.data || []).filter((e) =>
+    //
+    // A player's Home shows a meeting only when they are invited to it (their
+    // own attendance row; meeting-visibility.ts): golf_events_select_team still
+    // hands a player every team meeting until the held migration 20261018120000
+    // lands. One invite read covers Today and Upcoming; a failed read hides
+    // every meeting. A coach looking at this player's Home is unchanged.
+    const visibleEventIds = playerAccess.reason === 'coach'
+        ? null
+        : new Set(
+            (await filterMeetingsForPlayer(
+                supabase,
+                [...(todayEventsResult.data || []), ...(upcomingEventsResult.data || [])],
+                playerId,
+                { action: 'golf.playerDashboard.meetingInvites', featureArea: 'player_hub' },
+            )).map((e) => e.id),
+        );
+    const shownToViewer = (e: { id: string }) => !visibleEventIds || visibleEventIds.has(e.id);
+    const todayEventsRaw = (todayEventsResult.data || []).filter(shownToViewer).filter((e) =>
         eventRunsOnDay(e as { start_time?: string | null; end_time?: string | null; all_day?: boolean | null }, playerTeamTimezone, today),
     );
     let todayEvents: TodayEvent[] = todayEventsRaw.map(e => ({
@@ -1145,7 +1192,7 @@ async function getPlayerDashboardDataImpl(
     // DaySchedule home-dashboard card — future events beyond today. No RSVP
     // merge here (unlike todayEvents above): the card is a read-only agenda,
     // not an RSVP surface (RSVP still lives at Calendar).
-    const upcomingEvents: TodayEvent[] = (upcomingEventsResult.data || []).map(e => ({
+    const upcomingEvents: TodayEvent[] = (upcomingEventsResult.data || []).filter(shownToViewer).map(e => ({
         id: e.id,
         title: e.title,
         event_type: e.event_type,

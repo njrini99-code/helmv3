@@ -67,7 +67,7 @@ vi.mock('@/components/coach/CreateDevPlanModal', () => ({
   CreateDevPlanModal: () => null,
 }));
 
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   return {
     useReducedMotion: () => true,

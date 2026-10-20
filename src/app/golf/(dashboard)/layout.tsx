@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { onboardedGolfRole, pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { resolveCoachActiveTeamIdForRequest, getActivePlayerTeamMembership } from '@/lib/golf/dashboard-request-cache';
@@ -10,6 +11,10 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseShell } from '@/clubhouse/shell/ClubhouseShell';
+import { loadClubhouseShell } from '@/clubhouse/data/shell';
+import { phoneHint, railHint } from '@/clubhouse/lib/phone-hint';
 
 /**
  * Golf Dashboard Layout — SERVER COMPONENT
@@ -38,12 +43,12 @@ export default async function GolfDashboardLayout({
   if (!session) redirect('/golf/login');
 
   let { coach, player } = session;
-  let declaredRole: 'coach' | 'player' | null = null;
+  let declaredRole: 'coach' | 'player' | null;
 
   if (coach?.onboarding_completed || player?.onboarding_completed) {
     // Fast path (>99% of requests) — onboarded user, derive role from profiles.
     // Saves 1 users.role query; role is unambiguous from profile presence + onboarding state.
-    declaredRole = coach?.onboarding_completed ? 'coach' : 'player';
+    declaredRole = onboardedGolfRole(coach, player);
   } else {
     // Slow path — post-onboarding eventual consistency edge case.
     // Re-fetch directly (bypassing React.cache) to get fresh data after the
@@ -122,14 +127,9 @@ export default async function GolfDashboardLayout({
     if (retryPlayerResult.data) player = { ...player, ...retryPlayerResult.data } as typeof player;
   }
 
-  // 2. Resolve final role
-  const resolvedRole = coach && player
-    ? (declaredRole || 'coach')
-    : coach
-      ? 'coach'
-      : player
-        ? 'player'
-        : declaredRole;
+  // 2. Resolve final role — the one rule pages and the Clubhouse gate also use
+  //    (getGolfDashboardRole), so the shell and the page never disagree.
+  const resolvedRole = pickGolfDashboardRole({ coach, player }, declaredRole);
 
   // 3. Build userData based on resolved role, or redirect to onboarding.
   //    Team data queries are unique to the layout (not in getGolfSessionProfile),
@@ -290,6 +290,17 @@ export default async function GolfDashboardLayout({
   // 4. Render the client shell with resolved data — no loading spinner needed.
   //    Fairway is now the only dashboard shell (AppShell rail + glass top bar +
   //    hamburger drawer) — the legacy GolfDashboardShell fork was removed.
+  // Clubhouse (golf_clubhouse_ui): the from-scratch coach UI. A separate tree,
+  // never layered on Fairway; see docs/clubhouse/PROGRESS.md.
+  if ((await isClubhouseFor(userData.role))) {
+    const [shell, phone, folded] = await Promise.all([loadClubhouseShell(userData.teamId, userData.role === 'player' ? userData.playerId : null, userData.role === 'coach' ? userData.coachId : null), phoneHint(), railHint()]);
+    return (
+      <ClubhouseShell userData={userData} shell={shell} phone={phone} folded={folded}>
+        {children}
+      </ClubhouseShell>
+    );
+  }
+
   return (
     <>
       <FairwayDashboardShell userData={userData}>

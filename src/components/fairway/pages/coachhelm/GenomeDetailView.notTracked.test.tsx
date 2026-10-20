@@ -32,6 +32,27 @@ vi.mock('next/navigation', () => ({
 // Presentation-only passthrough — this suite targets the dimension grid, not
 // the shell chrome (mirrors the established pattern in
 // FairwayCoachHelmSignals.lifecycle.integration.test.tsx).
+// The registry no longer carries a permanent stub (the weather stub was
+// retired, audit row 18), so the "never available" treatment is pinned with a
+// synthetic one appended to the real registry. The UI branch stays because a
+// future dimension may again ship before its data source.
+vi.mock('@/lib/coachhelm/v3/genome/registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/genome/registry')>();
+  const stub = {
+    id: 'weather_sensitivity_stub',
+    category: 'course_type_affinity' as const,
+    label: 'Weather sensitivity',
+    neverAvailable: true,
+    compute: () => ({ value: null, confidence: null, label: 'Awaiting weather data' }),
+  };
+  const dims = [...actual.GENOME_DIMENSIONS, stub];
+  return {
+    ...actual,
+    GENOME_DIMENSIONS: dims,
+    getDimension: (id: string) => dims.find((d) => d.id === id),
+  };
+});
+
 vi.mock('./CoachHelmShell', () => ({
   CoachHelmShell: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));

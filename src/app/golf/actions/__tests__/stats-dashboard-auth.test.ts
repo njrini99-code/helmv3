@@ -61,7 +61,7 @@ vi.mock('../stats-leak-maps', () => ({
   getPlayerLeakMaps: mocks.getPlayerLeakMaps,
 }));
 
-vi.mock('../insights', () => ({
+vi.mock('../insights-player-analysis', () => ({
   getPlayerPatterns: mocks.getPlayerPatterns,
 }));
 

@@ -2,7 +2,7 @@
 
 - Feature: `admin_selfheal`
 - Surface: `/admin/errors` loop view (self-heal circuit), and repair-contract STEP 0b
-- Status: FIXED in 2bb8e2202 on `agent/health-20260927-0547`; PR pending merge, then deploy
+- Status: FIXED on main in 1a326692d (#2081), awaiting deploy; RECURRED 2026-09-30 under `metadata.runner`, fixed in #2103; RECURRED 2026-10-01 as `method = 'claude-code-scheduled-session'`, fixed by matching the `claude-code-*` family (health routine PR, 2026-10-01); RECURRED 2026-10-08 as `method = 'claude-cloud-session'`, fixed by also retiring the `claude-cloud-*` family (health routine PR #2163, 2026-10-08)
 - Risk: R1. Read-model only. No schema, RLS, grant or data change.
 - Signal: `background_job_logs` `selfheal-triage` rows with `status = 'failed'` and `metadata.method = 'claude-code-cloud-session'` at 2026-09-25 09:05Z, 2026-09-26 09:09Z and 2026-09-27 09:20Z, each a few minutes after a completed `vercel-cron` Diagnose run.
 
@@ -24,6 +24,24 @@ the whole loop red, while the real runner was healthy.
   `never-ran`).
 - repair-contract STEP 0b's freshness query applies the same filter.
 
+## Recurrence 2026-09-30 (same root cause, new key)
+
+At 2026-09-30 09:18Z the retired task wrote its `failed` row as
+`metadata.runner = 'claude-code-cloud-session'` with **no** `method` key,
+20 seconds after the completed `vercel-cron` Diagnose run (09:17:41Z). The
+method-only match did not recognise it, so the row would again decide
+Diagnose's status, and repair-contract STEP 0b's SQL would refuse to run.
+
+Fix: `selectStageHeartbeat` treats a row as retired when either
+`metadata.method` or `metadata.runner` names a retired runner; STEP 0b's SQL
+filters both keys. A live `runner` (e.g. `desktop-routine`) still counts.
+Regression test: "recognises a retired runner that names itself in
+metadata.runner" fails on c70bd65ef and passes with the fix. Replay:
+`replay/manifests/retired-runner-key-heartbeat-2026-09-30.yml`.
+
+Neither fix is live yet: production serves 6ee77e98 (2026-09-23), which
+predates #2081 too.
+
 ## Still open (owner)
 
 Disable the retired cloud scheduled task. This fix stops the false red; it
@@ -40,3 +58,36 @@ does not stop the task firing.
 
 After deploy: the loop view shows Diagnose `ok` between ~09:20Z and 15:17Z
 while the retired task's `failed` row appears in the history list.
+
+## Recurrence 2026-10-01 (third spelling)
+
+At 2026-10-01 09:18Z the retired task wrote `failed` with
+`metadata.method = 'claude-code-scheduled-session'`, 42 seconds after the
+completed `vercel-cron` run (09:17:41Z). The exact-match list missed it, so
+Diagnose read FAILED from 09:18Z until the 15:17Z cron run, and STEP 0b's SQL
+would have picked it up as the newest row.
+
+Fix: `retiredMethods` entries ending in `*` match by prefix; Diagnose's list
+is `['claude-code-*']`. STEP 0b filters `not like 'claude-code-%'` on both
+keys. No live Diagnose runner uses that prefix (`vercel-cron`, `manual-…`,
+`desktop-routine`). Test: "recognises the retired task under a new spelling".
+
+The root fix is still the owner's: disable the retired cloud scheduled task.
+Each rename is that task's own session rewriting its heartbeat.
+
+## Recurrence 2026-10-08 (fourth spelling)
+
+At 2026-10-08 09:18Z the retired task wrote `failed` with
+`metadata.method = 'claude-cloud-session'` ("npm run triage could not
+authenticate"), 19 seconds after the completed `vercel-cron` run (09:17:41Z).
+It is outside the `claude-code-*` family, so Diagnose read FAILED from 09:22Z
+until the 15:17Z cron run and STEP 0b's SQL would have taken it as the newest
+row.
+
+Fix: Diagnose's `retiredMethods` is `['claude-code-*', 'claude-cloud-*']`, and
+STEP 0b filters both prefixes on both keys. Live Diagnose runners
+(`vercel-cron`, `manual-…`, `desktop-routine`) match neither. Test:
+"recognises the retired task under a fourth spelling (claude-cloud-session,
+2026-10-08)".
+
+The root fix is still the owner's: disable the retired cloud scheduled task.

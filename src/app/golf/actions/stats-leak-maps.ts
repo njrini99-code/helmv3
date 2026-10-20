@@ -26,9 +26,10 @@
  * UNIT NORMALIZATION (critical — confirmed on the demo team):
  *   `golf_shots.distance_to_hole_after` is stored in MIXED units per row via
  *   `distance_unit_after` ('feet' OR 'yards'); PGA proximity refs are in FEET.
- *   We normalize every after-value to feet (`yards → *3`) and drop outliers
- *   (> 150 ft post-normalization, e.g. a mis-entered 265 yd blow-up shot) so
- *   the average isn't dragged. `distance_to_hole_before` is uniformly yards.
+ *   We normalize every after-value to feet (`yards → *3`). Proximity is
+ *   ALL-SHOT (misses included, the Tour reference's basis); only an on-green
+ *   finish beyond 150 ft is dropped as a mis-entry, and par-5 lay-ups leave
+ *   the 175+ band (see src/lib/golf/leak-map-buckets.ts, audit rows 9/32).
  * ========================================================================== */
 
 import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
@@ -39,9 +40,15 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { round } from '@/lib/golf/stat-formulas';
+import {
+  aggregateApproachBuckets,
+  aggregatePuttBuckets,
+  APPROACH_BANDS,
+  PUTT_BANDS,
+} from '@/lib/golf/leak-map-buckets';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
+import { resolvePlayerTeamGender } from '@/lib/golf/resolve-player-tour';
 
 import { verifyPlayerAccess } from './stats-data';
 import type {
@@ -76,43 +83,9 @@ async function requireAuth(playerId?: string) {
 }
 
 // ============================================================================
-// BUCKET DEFINITIONS (mirror metric-config.ts band edges exactly)
+// BUCKET DEFINITIONS + AGGREGATION live in '@/lib/golf/leak-map-buckets'
+// (pure; this 'use server' file may only export async functions).
 // ============================================================================
-
-/** Putt-make% bands, low → high feet. The 0-3 ft band has no PGA standard. */
-const PUTT_BANDS: ReadonlyArray<{
-  bucket_id: string;
-  label: string;
-  metric_id: string | null;
-  min: number;
-  /** upper edge, INCLUSIVE for putts (see `puttBandFor`); null = open-ended (25+). */
-  max: number | null;
-}> = [
-  { bucket_id: '0_3', label: '0-3 ft', metric_id: null, min: 0, max: 3 },
-  { bucket_id: '3_5', label: '3-5 ft', metric_id: 'putts_made_3_5ft_pct', min: 3, max: 5 },
-  { bucket_id: '5_10', label: '5-10 ft', metric_id: 'putts_made_5_10ft_pct', min: 5, max: 10 },
-  { bucket_id: '10_15', label: '10-15 ft', metric_id: 'putts_made_10_15ft_pct', min: 10, max: 15 },
-  { bucket_id: '15_25', label: '15-25 ft', metric_id: 'putts_made_15_25ft_pct', min: 15, max: 25 },
-  { bucket_id: '25_plus', label: '25+ ft', metric_id: 'putts_made_25_plus_ft_pct', min: 25, max: null },
-];
-
-/** Approach-proximity bands bucketed on `distance_to_hole_before` (yards). */
-const APPROACH_BANDS: ReadonlyArray<{
-  bucket_id: string;
-  label: string;
-  metric_id: string;
-  min: number;
-  max: number | null;
-}> = [
-  { bucket_id: '50_125', label: '50-125 yd', metric_id: 'approach_proximity_50_125ft', min: 50, max: 125 },
-  { bucket_id: '125_175', label: '125-175 yd', metric_id: 'approach_proximity_125_175ft', min: 125, max: 175 },
-  { bucket_id: '175_plus', label: '175+ yd', metric_id: 'approach_proximity_175_plus_ft', min: 175, max: null },
-];
-
-/** Drop normalized after-distances above this (ft): a mis-entered blow-up shot. */
-const APPROACH_PROXIMITY_CEILING_FT = 150;
-/** Ignore approach attempts shorter than this band floor (yd). */
-const APPROACH_MIN_BEFORE_YD = 50;
 
 /**
  * Overall safety ceiling on raw shot rows pulled per surface. Enforced via
@@ -127,63 +100,34 @@ const MAX_SHOT_ROWS = 20000;
 // RAW ROW SHAPES (golf_shots is in generated types; columns confirmed present)
 // ============================================================================
 
+/** A putting shot on the shared make % definition (src/lib/golf/putt-make.ts):
+ *  start distance = distance_to_hole_before, made = result 'hole' OR putt_made. */
 interface PuttRow {
   round_id: string;
-  putt_distance_feet: number | null;
+  distance_to_hole_before: number | null;
+  result: string | null;
   putt_made: boolean | null;
 }
 
 interface ApproachRow {
   round_id: string;
   distance_to_hole_before: number | null;
+  distance_unit_before: string | null;
   distance_to_hole_after: number | null;
   distance_unit_after: string | null;
   result: string | null;
+  lie_after: string | null;
+  golf_holes: { par: number | null } | Array<{ par: number | null }> | null;
 }
 
 interface PgaRefRow {
   metric_id: string;
   pga_tour_value: number | null;
-  div1_avg_value: number | null;
 }
 
 // ============================================================================
 // SHARED HELPERS
 // ============================================================================
-
-/** Normalize a raw after-distance to FEET given its per-row unit. */
-function toFeet(value: number, unit: string | null): number {
-  // PGA proximity refs are in feet; rows tagged 'yards' must be scaled.
-  return unit === 'yards' ? value * 3 : value;
-}
-
-/** Find the band for a value: [min, max) with the last band open-ended. */
-function bandFor<T extends { min: number; max: number | null }>(
-  bands: ReadonlyArray<T>,
-  value: number,
-): T | null {
-  for (const band of bands) {
-    if (value < band.min) continue;
-    if (band.max === null || value < band.max) return band;
-  }
-  return null;
-}
-
-/**
- * Putt band for a distance in feet, UPPER-inclusive: "3-5 ft" is (3, 5], and
- * 0-3 ft takes everything up to 3. Same edges as the cache writer
- * (`putt_make_pct_3_5ft`: feet > 3 AND feet <= 5) and the calculator's
- * `getPuttDistanceBucket`, which feed the Putting-by-distance table beside
- * this chart. Putts are entered in whole feet, so `bandFor`'s [min, max)
- * edges moved every 3-ft putt into "3-5 ft" (chart 78% vs table 47% on the
- * same 18 rounds).
- */
-function puttBandFor(feet: number): (typeof PUTT_BANDS)[number] | null {
-  for (const band of PUTT_BANDS) {
-    if (band.max === null || feet <= band.max) return band;
-  }
-  return null;
-}
 
 /**
  * Pull reference rows for a set of metric ids, gender-routed.
@@ -207,7 +151,7 @@ async function loadPgaRefs(
     // Step 1: load LPGA rows
     const { data: lpgaData } = await supabase
       .from('golf_pga_standards')
-      .select('metric_id, pga_tour_value, div1_avg_value')
+      .select('metric_id, pga_tour_value')
       .in('metric_id', metricIds)
       .eq('tour', 'lpga');
     for (const row of (lpgaData ?? []) as PgaRefRow[]) {
@@ -218,7 +162,7 @@ async function loadPgaRefs(
     if (missingIds.length > 0) {
       const { data: pgaData } = await supabase
         .from('golf_pga_standards')
-        .select('metric_id, pga_tour_value, div1_avg_value')
+        .select('metric_id, pga_tour_value')
         .in('metric_id', missingIds)
         .eq('tour', 'pga');
       for (const row of (pgaData ?? []) as PgaRefRow[]) {
@@ -229,7 +173,7 @@ async function loadPgaRefs(
     // Men's / unknown — PGA only (unchanged behaviour)
     const { data } = await supabase
       .from('golf_pga_standards')
-      .select('metric_id, pga_tour_value, div1_avg_value')
+      .select('metric_id, pga_tour_value')
       .in('metric_id', metricIds)
       .eq('tour', 'pga');
     for (const row of (data ?? []) as PgaRefRow[]) {
@@ -237,25 +181,6 @@ async function loadPgaRefs(
     }
   }
   return refs;
-}
-
-/**
- * Resolve a player's team gender. Used by player-scoped leak-map functions to
- * select the correct tour benchmark set (LPGA for women's teams, PGA otherwise).
- * Fails safe to null (PGA fallback) if the player has no active team membership.
- */
-async function resolvePlayerTeamGender(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  playerId: string,
-): Promise<string | null> {
-  const { data } = await supabase
-    .from('golf_team_members')
-    .select('golf_teams(gender)')
-    .eq('player_id', playerId)
-    .eq('status', 'active')
-    .maybeSingle();
-  const team = (data as { golf_teams: { gender?: string | null } | null } | null)?.golf_teams;
-  return team?.gender ?? null;
 }
 
 /** The countable completed rounds a leak map reads, with their date span. */
@@ -335,10 +260,7 @@ async function buildPuttBuckets(
     .filter((id): id is string => id !== null);
   const refs = await loadPgaRefs(supabase, metricIds, teamGender);
 
-  // attempts = gradeable putts (putt_made non-null); made = putt_made === true.
-  const made = new Map<string, number>();
-  const gradeable = new Map<string, number>();
-
+  let rows: PuttRow[] = [];
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
@@ -346,10 +268,12 @@ async function buildPuttBuckets(
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
-        .select('round_id, putt_distance_feet, putt_made')
+        .select('round_id, distance_to_hole_before, result, putt_made')
         .in('round_id', roundIds)
         .eq('shot_type', 'putting')
-        .not('putt_distance_feet', 'is', null)
+        // A putt without a start distance is not banded (nothing to read here).
+        // Rows with a NULL putt_made are kept: a holed result makes them a make.
+        .not('distance_to_hole_before', 'is', null)
         .order('id', { ascending: true })
         .range(from, Math.min(to, MAX_SHOT_ROWS - 1));
     }, undefined, { table: 'golf_shots', action: 'buildPuttBuckets', feature: 'stats_analytics', sport: 'golf' });
@@ -357,34 +281,10 @@ async function buildPuttBuckets(
     if (error) {
       throw new Error(`putting shot read failed: ${error.message}`);
     }
-
-    for (const row of data ?? []) {
-      const ft = row.putt_distance_feet;
-      if (ft === null || Number.isNaN(ft)) continue;
-      const band = puttBandFor(ft);
-      if (!band) continue;
-      // Only rows with a known outcome count toward make% (null = ungraded).
-      if (row.putt_made === null) continue;
-      gradeable.set(band.bucket_id, (gradeable.get(band.bucket_id) ?? 0) + 1);
-      if (row.putt_made === true) {
-        made.set(band.bucket_id, (made.get(band.bucket_id) ?? 0) + 1);
-      }
-    }
+    rows = data ?? [];
   }
 
-  return PUTT_BANDS.map((band) => {
-    const n = gradeable.get(band.bucket_id) ?? 0;
-    const ref = band.metric_id ? refs.get(band.metric_id) : undefined;
-    return {
-      metric_id: band.metric_id,
-      bucket_id: band.bucket_id,
-      label: band.label,
-      team_value: n > 0 ? round((100 * (made.get(band.bucket_id) ?? 0)) / n, 1) : null,
-      pga_value: ref?.pga_tour_value ?? null,
-      div1_value: ref?.div1_avg_value ?? null,
-      sample_n: n,
-    };
-  });
+  return aggregatePuttBuckets(rows, refs);
 }
 
 // ============================================================================
@@ -398,9 +298,7 @@ async function buildApproachBuckets(
 ): Promise<LeakBucket[]> {
   const refs = await loadPgaRefs(supabase, APPROACH_BANDS.map((b) => b.metric_id), teamGender);
 
-  const sumFt = new Map<string, number>();
-  const count = new Map<string, number>();
-
+  let rows: ApproachRow[] = [];
   if (roundIds.length > 0) {
     // Paginated past the PostgREST 1000-row cap; MAX_SHOT_ROWS is enforced by
     // stopping page accumulation (a single `.limit()` silently capped at 1000).
@@ -408,14 +306,13 @@ async function buildApproachBuckets(
       if (from >= MAX_SHOT_ROWS) return Promise.resolve({ data: [], error: null });
       return supabase
         .from('golf_shots')
-        .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after, result')
+        .select('round_id, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, golf_holes ( par )')
         .in('round_id', roundIds)
         .eq('shot_type', 'approach')
-        // ON-GREEN ONLY: proximity is a green-surface distance, so only approaches that
-        // FOUND the green count. A missed approach finishes off-green (stored in YARDS);
-        // including it ×3'd those finishes into "feet" and inflated every band ~2× (the
-        // "175+ → 63 ft" artifact). Green-hit rate covers the missed approaches instead.
-        .in('result', ['green', 'hole', 'gir'])
+        // ALL approaches, misses included (audit rows 9/32): the Tour
+        // reference counts every approach, and averaging only green-finders
+        // let a team that missed more greens look better than Tour. Units
+        // and the on-green / lay-up rules are applied in aggregateApproachBuckets.
         .not('distance_to_hole_before', 'is', null)
         .not('distance_to_hole_after', 'is', null)
         .order('id', { ascending: true })
@@ -425,39 +322,16 @@ async function buildApproachBuckets(
     if (error) {
       throw new Error(`approach shot read failed: ${error.message}`);
     }
-
-    for (const row of data ?? []) {
-      const beforeYd = row.distance_to_hole_before;
-      const afterRaw = row.distance_to_hole_after;
-      if (beforeYd === null || Number.isNaN(beforeYd)) continue;
-      if (afterRaw === null || Number.isNaN(afterRaw)) continue;
-      if (beforeYd < APPROACH_MIN_BEFORE_YD) continue;
-
-      const band = bandFor(APPROACH_BANDS, beforeYd);
-      if (!band) continue;
-
-      // Mixed units → normalize to feet, then drop blow-up outliers.
-      const afterFt = toFeet(afterRaw, row.distance_unit_after);
-      if (afterFt < 0 || afterFt > APPROACH_PROXIMITY_CEILING_FT) continue;
-
-      sumFt.set(band.bucket_id, (sumFt.get(band.bucket_id) ?? 0) + afterFt);
-      count.set(band.bucket_id, (count.get(band.bucket_id) ?? 0) + 1);
-    }
+    rows = data ?? [];
   }
 
-  return APPROACH_BANDS.map((band) => {
-    const n = count.get(band.bucket_id) ?? 0;
-    const ref = refs.get(band.metric_id);
-    return {
-      metric_id: band.metric_id,
-      bucket_id: band.bucket_id,
-      label: band.label,
-      team_value: n > 0 ? round((sumFt.get(band.bucket_id) ?? 0) / n, 1) : null,
-      pga_value: ref?.pga_tour_value ?? null,
-      div1_value: ref?.div1_avg_value ?? null,
-      sample_n: n,
-    };
-  });
+  return aggregateApproachBuckets(
+    rows.map(({ golf_holes, ...shot }) => {
+      const hole = Array.isArray(golf_holes) ? golf_holes[0] : golf_holes;
+      return { ...shot, par: typeof hole?.par === 'number' ? hole.par : null };
+    }),
+    refs,
+  );
 }
 
 // ============================================================================
@@ -529,7 +403,13 @@ async function getTeamLeakMapsImpl(
 
     return {
       success: true,
-      data: { teamId: resolvedTeamId, putting, approach, roundsIncluded: roundIds.length },
+      data: {
+        teamId: resolvedTeamId,
+        putting,
+        approach,
+        roundsIncluded: roundIds.length,
+        tour: teamGender === 'womens' ? 'lpga' : 'pga',
+      },
     };
   } catch (error) {
     await logServerError(`[LeakMaps] getTeamLeakMaps: ${describeError(error)}`, {

@@ -193,17 +193,23 @@ export interface HoleSgNarrative {
  * shot unscoreable) skips the redundant breakdown and states just the total,
  * matching this function's own "Gained 0.4 strokes here." short form.
  */
-export function formatHoleSgNarrative(sg: HoleStrokesGainedByCategory | null): HoleSgNarrative | null {
+export function formatHoleSgNarrative(
+  sg: HoleStrokesGainedByCategory | null,
+  /** The curve the shot SG was measured against ("PGA Tour" / "LPGA Tour").
+   *  Named in the sentence so a reader knows the reference (audit row 46). */
+  baselineLabel?: string | null,
+): HoleSgNarrative | null {
   if (!sg || sg.total === null) return null;
   const { total } = sg;
+  const vs = baselineLabel ? ` vs ${baselineLabel}` : '';
 
   if (Math.abs(total) < SG_NARRATIVE_NEAR_ZERO) {
-    return { text: 'Even strokes gained here.', tone: 'even' };
+    return { text: `Even strokes gained${vs} here.`, tone: 'even' };
   }
 
   const tone: 'gain' | 'loss' = total > 0 ? 'gain' : 'loss';
   const verb = tone === 'gain' ? 'Gained' : 'Lost';
-  const headline = `${verb} ${Math.abs(total).toFixed(1)} strokes here`;
+  const headline = `${verb} ${Math.abs(total).toFixed(1)} strokes${vs} here`;
 
   const contributions = (['tee', 'approach', 'around_green', 'putting'] as const)
     .map((category) => ({ category, value: sg[category] }))
@@ -249,6 +255,8 @@ export interface ReviewHeroProps {
    *  prop; wiring `playerId={playerId}` through to this component is the
    *  one remaining step to activate this end-to-end.) */
   playerId?: string | null;
+  /** Curve the per-shot SG is measured against, e.g. "PGA Tour". */
+  sgBaselineLabel?: string | null;
 }
 
 export function ReviewHero({
@@ -261,6 +269,7 @@ export function ReviewHero({
   holeMeta,
   shotsByHole,
   playerId,
+  sgBaselineLabel,
 }: ReviewHeroProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -359,7 +368,7 @@ export function ReviewHero({
     if (!openHoleShots || openHoleShots.length === 0) return null;
     return sumHoleStrokesGainedByCategory(openHoleShots, openPar ?? null);
   }, [openHoleShots, openPar]);
-  const holeNarrative = formatHoleSgNarrative(openHoleSg);
+  const holeNarrative = formatHoleSgNarrative(openHoleSg, sgBaselineLabel);
   // SG magnitude uses the app's Strokes-Gained color language (green gain /
   // warm-amber loss), matching RoundSGSummary.TONE_CLASS + StrokesGainedTornado
   // exactly — NOT the comparative red (`fw-danger`), which is reserved for

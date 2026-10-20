@@ -1,5 +1,7 @@
 import { Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { RoundRecoverSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
 
 /**
  * Route Suspense fallback for /golf/dashboard/rounds/recover.
@@ -24,7 +26,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * StatsSpineStage's own loading branch) — so there is no flash between this
  * route fallback and the in-component fallback it hands off to.
  */
-export default function RecoverRoundLoading() {
+function FairwayRecoverRoundLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -45,4 +47,9 @@ export default function RecoverRoundLoading() {
       </div>
     </div>
   );
+}
+
+// Clubhouse round recovery (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell.
+export default function RecoverRoundLoading() {
+  return <ClubhouseSwitch clubhouse={<RoundRecoverSkeleton />} fallback={<FairwayRecoverRoundLoading />} />;
 }

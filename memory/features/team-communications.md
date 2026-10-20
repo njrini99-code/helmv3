@@ -88,6 +88,42 @@ The phone composer keyboard contract is measured in
 
 These surfaces are operationally important because they touch files, notifications, task creation, player acknowledgement, and team access rules.
 
+Clubhouse Messages (`src/clubhouse/screens/messages/`) follows the owner's
+Apple Messages interaction reference while retaining the existing GolfHelm
+palette. Phone Return inserts a line; tapping Send sends. Grouped bubbles retain
+sender-run geometry, direct conversations use the available thread width, and
+long-press actions keep the selected message's context.
+
+Quoted replies use the existing nullable `golf_messages.reply_to_id` foreign
+key. Sending validates that the target belongs to the same conversation after
+participant authorization; replay equivalence includes the reply reference.
+Optimistic and failed/retried messages retain it. Unresolved parent content
+remains unavailable rather than being invented. This adds no schema or policy
+change and does not establish live-account persistence before deployment.
+
+Attachment sends distinguish complete, partial, refused and unconfirmed
+outcomes. Stable message and attachment UUIDs use the existing primary keys;
+replay must prove the sender, conversation, text, reply target and metadata
+match. An unconfirmed write never triggers destructive storage cleanup.
+A known metadata refusal with delivered text keeps only unsaved files in the
+composer; Retry does not resend that delivered text. An unconfirmed send
+retains its original payload and identity, including across a page reload,
+until a matching replay confirms its outcome. Pending send metadata is scoped
+to the authenticated viewer and conversation, without credentials or file bytes.
+Each replay rechecks the active session, and the server verifies the expected
+sender before writing. Stale hook instances cannot overwrite a newer request
+marker; logout epochs prevent late responses from confirming a new session.
+A refusal after an earlier unconfirmed request does not prove that write absent
+and therefore retains its pending identity and uploaded files. Parallel uploads
+settle before a known pre-write failure cleans their orphaned objects.
+
+The thread follows composer, quote, image and keyboard size changes only when
+the reader was already at the newest messages. Someone reading older content
+keeps that position. The phone editor fits six 20px lines, including padding
+and borders, before longer drafts scroll within the field. Desktop retains its
+132px cap. This is verified with local fixtures and disposable
+loopback data, not a claim about physical-device frame timing.
+
 ## Primary Entry Points
 
 ### Routes
@@ -203,12 +239,18 @@ React state, which dies with the component.
 
 ## Business Rules
 
+- A team broadcast reaches the whole team only with `allPlayers: true`; an empty
+  or missing player list is refused with nothing written, and only active
+  members are added (2026-10-17). Fairway Messages opens every `?conversation=`
+  and `?player=` link, not only the first. Regenerating a
+  join code fails visibly when the code was not saved.
 - Participants should only read conversations they belong to.
 - Message attachments must be scoped to the conversation/team and should not expose storage paths broadly.
 - Announcement targeting must be explicit: broadcast or recipient-specific.
 - Required acknowledgements need durable tracking per player.
 - Inline announcement tasks must stay consistent with task assignment state.
 - Urgent announcements may need push/email/in-app notification treatment; check current notification wiring before claiming it exists.
+- Notification center (2026-09-28, audit row 56): calendar rows older than 30 days (`CALENDAR_UNREAD_MAX_AGE_DAYS`) stop counting as unread in the feed and in the coach/player badges, and collapse into one read "N older calendar updates" item on the first page. The first page reserves min(5, limit/3) slots for CoachHelm receipts. Nothing is deleted or marked read in the database.
 - A text send retries ONCE, after 750 ms, when the server-action POST fails
   at the transport layer (WebKit "Load failed", Chromium "Failed to fetch" —
   `withOneTransportRetry` in `src/lib/transient-network-error.ts`). Any other
@@ -429,14 +471,12 @@ when the column is empty. That is why `GroupMember` is its own type rather than
 `GolfConversationParticipant`, whose `subtitle` is required and whose DM path
 fills the gap with `'Golf Coach'` / `'Golf Player'`.
 
-<!-- schema-drift-absent: golf_group_membership_management, golf_user_on_conversation_team, golf_active_team -->
+<!-- schema-drift-absent: golf_group_membership_management, golf_active_team -->
 <!--
-  `golf_user_on_conversation_team` is a real function, created by
-  20260907160000 — which is written and NOT applied, so it is correctly absent
-  from the production schema snapshot `db:types` generates. Delete this name
-  from the declaration above the moment the owner applies the migration and
-  re-runs `npm run db:types`; leaving it here would exempt a real object from
-  the drift check.
+  `golf_user_on_conversation_team` used to be declared here while
+  20260907160000 was unapplied. It is applied (verified live 2026-09-29, see
+  "Group membership management" below) and it is in `src/lib/types/database.ts`,
+  so it is a real object again and is no longer exempt from the drift check.
   `golf_group_membership_management` is not a database object at all — it is
   the pgTAP suite's own filename, which happens to start with `golf_`:
   `supabase/tests/rls/golf_group_membership_management.sql`.
@@ -459,8 +499,17 @@ against live production `pg_policies` before any code was written:
 That clause is
 `20260819070000_conversation_creator_cannot_inject_third_party.sql`, added
 after a **verified production attack**. So "Leave group" was the only membership
-mutation the product could perform, and it still is until
-`20260907160000_golf_team_chat_membership_management.sql` is APPLIED.
+mutation the product could perform until
+`20260907160000_golf_team_chat_membership_management.sql` was applied.
+
+**It is applied.** A read-only check of production on 2026-09-29 (metadata only,
+no rows) found: version `20260907160000` recorded in
+`supabase_migrations.schema_migrations`; `public.golf_user_on_conversation_team`
+present in `pg_proc`; the `golf_conversation_participants` INSERT policy's
+`with_check` calling it; and a DELETE policy branch bounded on `is_team_chat`
+and `created_by`. `src/lib/types/database.ts` carries the function too. Adding
+members (`addGolfGroupMember`, `getGolfGroupAddCandidates`) therefore works in
+production, and the Clubhouse view uses it (D-45, D-47; see "Clubhouse view").
 
 **The new migration is a scoped allowance, not a reversal.** The 2026-08-19
 branch authorized an insert on the sole basis that the actor created the
@@ -737,7 +786,7 @@ including its capsule margins and the home indicator; the inbox uses the same
 measurement. More defers destination prefetch until its entrance finishes and
 closes on a normal navigation tap. Shared app-shell and overlay paths remain
 unmapped in `memory/registry.yml`; their visual contract is also recorded in
-`docs/v3-design-language.md` rather than implying that the messaging feature
+`.claude/rules/design-system.md` rather than implying that the messaging feature
 owns every consumer.
 
 Historical DM identities are resolved by user ID through the authenticated
@@ -745,3 +794,64 @@ conversation-membership boundary when roster-scoped profile reads cannot
 resolve them. This does not broaden customer profile RLS, return email
 addresses, or expose a general profile directory. A truly missing profile
 keeps a generic member label.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, `/golf/dashboard/messages` is a server page that renders the Clubhouse Messages view
+(`src/clubhouse/routes/messages.tsx`) for coaches and players; otherwise it renders `FairwayMessages` as before.
+The Clubhouse view reuses `useGolfConversations`, `useGolfMessages`, `useMessageReactions` and
+`useMessageAttachments` unchanged, plus `createGolfConversation`, `createGolfTeamBroadcast` (coach groups),
+`getGolfConversationParticipantIdentities`, `getGolfMessageAttachments`, `leaveGolfGroup`, `addGolfGroupMember`,
+`getGolfGroupAddCandidates` and `getGolfConversationFiles`. The server loads only
+the directory of who may be messaged (org coaches and active team players) and the team timezone. Players start
+direct threads only, as in the Fairway sheet. Reactions render as icons (stored values unchanged).
+Checklist and decisions: `docs/clubhouse/screens/messages.md`, `docs/clubhouse/PROGRESS.md` (D-13 to D-15).
+
+Below 820px the same container renders a phone stack (`src/clubhouse/screens/messages/MessagesPhone.tsx`, spec
+`docs/clubhouse/phone/messages.md`, D-44 to D-49): inbox, thread, details, new message. It adds no hook and one
+read action.
+
+Contract changes on 2026-09-29 (desktop and phone alike):
+
+- **New groups include coaches (D-45).** A coach names the group first (CH-7104), then the container calls
+  `createGolfTeamBroadcast` with the players, and `addGolfGroupMember` once for each chosen coach. The broadcast
+  stays players-only on the server. A coach who can't be added leaves the group created and says so: "Group
+  created, but Dan wasn't added" + "Add them from Details." (CH-7019). Whole team counts players and coaches.
+- **The creator adds members (D-47).** Details offers Add only when `created_by` is the viewer, and the sheet lists
+  `getGolfGroupAddCandidates`. Both actions go through `loadGolfGroupIOwn` in `src/app/actions/messages.ts`, which
+  refuses a DM ("Only team group chats can change members") and anyone but the creator ("Only the group creator
+  can change members") before the insert, which RLS bounds again (the three axes above). A failed add is CH-7018;
+  a duplicate insert (`23505`) counts as done. Removing someone else is not offered in Clubhouse.
+
+`getGolfConversationFiles(conversationId)` (D-48) lists a conversation's shared files for Details. It is HELD
+(D-61, `docs/clubhouse/held/features/conversation-files.md`): unless `isClubhouseFor(role)` is true for the
+caller it returns "Not available" before any read. Contract otherwise: the
+caller must be a row in `golf_conversation_participants` for that conversation, checked before any attachment is
+read (a stranger and a non-existent id both get "Not a participant"); the read runs on the RLS client; files on
+deleted messages are filtered in the query, newest first, capped at 100; it returns metadata only (id, message id,
+name, MIME type, size, sent at, sender), never a storage path or signed URL. Opening a file still goes through
+`getGolfMessageAttachments` for that one message. Test:
+`src/app/golf/actions/__tests__/message-attachments-conversation-files.test.ts` (7 cases: the HELD gate, non-participant and
+signed-out refusals, metadata only, the deleted-message filter in the query, one conversation per call, a failed
+read logged). A security review (2026-09-29) found no Critical or High issue.
+
+**Queued: the attachment migration (owner, 2026-09-29).** The same review found two gaps that predate the
+Clubhouse work, both confirmed live on 2026-09-29: the `golf_message_attachments` SELECT policy has no
+`is_deleted` clause, so `getGolfMessageAttachments` still returns a storage path and a signed URL for a file on a
+deleted message; and `anon` holds 7 table grants on `golf_message_attachments` (not exploitable today: every
+policy is `TO authenticated`). The owner's decision: after Clubhouse, a forward-only migration revokes the `anon`
+grants and excludes deleted messages from the SELECT policy. It is not written or applied yet; the owner decides
+on apply (`docs/clubhouse/held/data/message-attachments-hardening.md`, `docs/clubhouse/PROGRESS.md` Data gaps).
+
+**Foundation V2 classification (D-61, 2026-09-29).** D-45 (coaches in new groups) and D-47 (the creator adds
+members) are EXISTING: they call `createGolfTeamBroadcast`, `addGolfGroupMember` and `getGolfGroupAddCandidates`,
+which predate Clubhouse (79f6e1a07) and which Fairway's `GroupDetailsSheet` already uses; no server action or
+query changed, and the policies they rest on are applied in production. D-48 is HELD-FEATURE, gated as above.
+
+## Clubhouse premium audit, October 6
+
+Quoted-message navigation uses the canonical Clubhouse reduced-motion hook,
+so both OS reduced motion and live Animations off use immediate scrolling.
+The keyboard-only Message actions alternative becomes visible when focused;
+ordinary screen-reader labels stay hidden. Evidence and remaining reaction-menu
+keyboard review are in `docs/clubhouse/PREMIUM_AUDIT.md`.

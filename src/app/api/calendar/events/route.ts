@@ -4,6 +4,7 @@ import type { CalendarEvent } from '@/lib/types/calendar';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 
 /**
  * GET /api/calendar/events
@@ -241,11 +242,20 @@ export async function GET(request: Request) {
       };
     }
 
-    const visible = attributeClassEvents(events, classOwners, {
+    const classScoped = attributeClassEvents(events, classOwners, {
       isCoach: isCoachViewer,
       playerId: viewerPlayerId,
       ownersResolved: !classOwnersError,
     });
+
+    // Same rule as the calendar page: a player gets a meeting only when they
+    // are invited to it (meeting-visibility.ts); a failed invite read returns
+    // no meetings. A coach's response is unchanged.
+    const visible = isCoachViewer
+      ? classScoped
+      : await filterMeetingsForPlayer(supabase, classScoped, viewerPlayerId, {
+          action: 'calendarEventsApi.get.meetingInvites',
+        });
 
     return NextResponse.json(visible as unknown as CalendarEvent[]);
   } catch (error) {

@@ -2,52 +2,42 @@
 
 /**
  * ============================================================================
- * Fairway · CoachHelm · CausalWhyPanel — "why your scores move" browsing panel
+ * Fairway · CoachHelm · CausalWhyPanel — "what moves together" browsing panel
  * ----------------------------------------------------------------------------
- * Surfaces the GENUINE causal-engine output stored in `golf_causal_relationships`
- * (real Pearson / temporal / dose-response analysis over real rounds) as a calm,
- * flat-matte browsing panel for BOTH the player ("Why your scores move") and the
- * coach ("Why their scores move"). Pure presentation over the already-deduped,
- * already-ranked `CausalRelationshipRow[]` from
- * `@/app/golf/actions/causal-relationships` — it does NOT fetch, mutate, sort, or
- * dedupe (the read action owns all of that).
+ * The component keeps its historical name; its content is CORRELATION, not
+ * causation (owner decision "honest correlation", 2026-09-28, deep audit rows
+ * 33/34). Pure presentation over the already-gated, deduped, ranked
+ * `CausalRelationshipRow[]` from `@/app/golf/actions/causal-relationships`: it
+ * does not fetch, mutate, sort or dedupe.
  *
- * Each relationship reads as: a plain-English `cause → effect` headline, the
- * engine's `mechanism` sentence, and a compact strip of readouts — strength,
- * confidence (as %), intervention potential, plus a "dose-responsive" badge when
- * the engine confirmed dose-response.
+ * Each relationship reads as "X moves with Y" (or "moves opposite to", from
+ * the stored SIGN of r), a sentence stating the direction, the sample size, a
+ * caveat that a pattern is not proof of cause, the engine's hedged mechanism
+ * note, and readouts: link strength (|r|), confidence (1 - FDR q: how unlikely
+ * the pattern is to be chance) and rounds.
  *
- * ROOT-CAUSE CHAINS: above that list, any two rows that connect (one's effect is
- * the next one's cause) are joined by `composeCausalChains` into a single chain
- * card. This is the one derivation the panel does, and it is done HERE rather
- * than in the read action deliberately — composing from the array the panel
- * already holds means a chain can only ever cite hops the coach can also see
- * listed individually below it. It adds no claim: every hop is a row the engine
- * detected and confirmed on its own, the chain's confidence is its WEAKEST hop,
- * and the card says so. Nothing renders when nothing connects — which is most
- * players, since almost every stored row ends at `score_to_par`.
+ * LINKED PATTERNS: rows whose metrics connect are joined by
+ * `composeCausalChains` only when every hop passed the gate, no hop is score
+ * arithmetic and the hop signs compose consistently. A linked pattern is a lead
+ * to check, never a root cause, and the card says so.
  *
- * HONEST-EMPTY: when the array is empty (player has <10 rounds, or no relationship
- * cleared the engine's bar — e.g. Tyler Passmore), render a calm EmptyState.
- * Never fabricate a relationship.
+ * HONEST-EMPTY: when the array is empty (fewer than 15 rounds, nothing passed
+ * the gate, or the player has not played in 60 days), render a calm
+ * EmptyState. Never fabricate a relationship.
  *
- * Data semantics mirror the legacy `CausalRelationshipView.tsx`, but this is a
- * GROUND-UP flat-matte build — it does NOT import that component (legacy glass).
- * Fairway tokens ONLY (Surface / Inset / Badge / StatusPill, text-text-*,
- * font-fw-*, rounded-card, bg-accent-*). No confounders affordance — that column
- * is always `[]`.
+ * Fairway tokens ONLY (Surface / Inset / Badge, text-text-*, font-fw-*).
  * ========================================================================== */
 
 import { confidenceLabel } from '@/lib/coachhelm/confidence-label';
 import { useMemo } from 'react';
-import { ArrowRight, Lightbulb } from 'lucide-react';
+import { ArrowLeftRight, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
 // Imported from each module's own leaf path, not the top `@/components/fairway`
 // barrel — this file sits under pages/coachhelm/ (re-exported from that
 // barrel via pages/coachhelm/index.ts), so importing the barrel back here
 // created an import cycle, flagged by npm run check:cycles.
 import { Surface, Inset } from '@/components/fairway/surfaces';
-import { Badge, StatusPill } from '@/components/fairway/controls';
+import { Badge } from '@/components/fairway/controls';
 import { EmptyState } from '@/components/fairway/feedback';
 import {
   composeCausalChains,
@@ -71,7 +61,7 @@ const CAUSE_LABELS: Record<string, string> = {
 };
 
 const EFFECT_LABELS: Record<string, string> = {
-  scoring: 'Scoring',
+  scoring: 'Score to par',
 };
 
 /** Humanize an unknown snake_case token ("driving_accuracy" → "Driving accuracy"). */
@@ -89,13 +79,10 @@ function effectLabel(row: CausalRelationshipRow): string {
   return EFFECT_LABELS[row.effect] ?? humanize(row.effect);
 }
 
-/** Relationship-type → plain-English tone + label (direct | mediated seen in data). */
-const TYPE_LABELS: Record<string, string> = {
-  direct: 'Direct',
-  mediated: 'Mediated',
-  moderated: 'Moderated',
-  bidirectional: 'Two-way',
-};
+/** "moves with" for a positive correlation, "moves opposite to" for a negative one. */
+function linkVerb(sign: number): string {
+  return sign < 0 ? 'moves opposite to' : 'moves with';
+}
 
 function pct(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -119,7 +106,7 @@ export interface CausalWhyPanelProps {
 
 export function CausalWhyPanel({
   relationships,
-  title = 'Why your scores move',
+  title = 'What moves together in your rounds',
   className,
 }: CausalWhyPanelProps) {
   // Pure, deterministic, and over the SAME array rendered below — see header.
@@ -146,15 +133,14 @@ export function CausalWhyPanel({
           <EmptyState
             variant="subtle"
             icon={Lightbulb}
-            title="Not enough rounds yet to map what's driving scores"
-            description="Once there are enough completed rounds, the engine surfaces the factors that actually move scoring, and how much each one matters."
+            title="No stats move together clearly enough yet"
+            description="With at least 15 recent completed rounds, the engine shows which stats rise and fall together, and only when the pattern is unlikely to be chance. A pattern is not proof that one causes the other."
           />
         </Surface>
       ) : (
         <div className="flex flex-col gap-4">
-          {/* Chains first — the deepest one is the closest thing to a root
-              cause the engine can state. Absent for most players; renders
-              nothing at all rather than an empty section. */}
+          {/* Linked patterns first. Absent for most players; renders nothing
+              at all rather than an empty section. */}
           {chains.map((chain) => (
             <CausalChainCard key={chain.metrics.join('>')} chain={chain} />
           ))}
@@ -168,15 +154,13 @@ export function CausalWhyPanel({
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * One chain — the joined path, and the honesty line that keeps it a lead
- * rather than a proof. The per-hop mechanism sentences are deliberately NOT
- * repeated here; each hop keeps its own card below.
+ * One linked pattern — the joined path with each link's sign, and the
+ * honesty line that keeps it a lead rather than a proof.
  * ────────────────────────────────────────────────────────────────────────── */
 
 /**
  * Node labels come from the hop rows' own `cause`/`effect` fields, so the chain
- * speaks the exact vocabulary the individual cards do — no second label map to
- * drift. `metrics` drives the composition; these drive the reading.
+ * speaks the exact vocabulary the individual cards do.
  */
 function chainNodeLabels(chain: CausalChain): string[] {
   const first = chain.hops[0];
@@ -186,33 +170,33 @@ function chainNodeLabels(chain: CausalChain): string[] {
 
 function CausalChainCard({ chain }: { chain: CausalChain }) {
   const nodes = chainNodeLabels(chain);
-  const endpoints = `${nodes[0] ?? ''} to ${nodes[nodes.length - 1] ?? ''}`;
+  const first = nodes[0] ?? '';
+  const last = nodes[nodes.length - 1] ?? '';
 
   return (
     <Surface
       padding="md"
       className="flex flex-col gap-4"
       role="group"
-      aria-label={`Root-cause chain: ${endpoints}`}
+      aria-label={`Linked pattern: ${first} to ${last}`}
     >
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <Badge tone="accent" variant="outline" size="sm">
-          Root-cause chain
+        <Badge tone="neutral" variant="outline" size="sm">
+          Linked pattern
         </Badge>
         <span className="font-fw-sans text-body-sm font-normal text-text-tertiary">
-          {chain.hops.length} steps
+          {chain.hops.length} links
         </span>
       </div>
 
-      {/* The path itself: every node in order, the shared metric named once. */}
+      {/* The path: every node in order, each link labelled with its sign. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
         {nodes.map((node, i) => (
           <span key={node} className="flex items-center gap-x-2.5">
             {i > 0 ? (
-              <ArrowRight
-                className="h-4 w-4 flex-shrink-0 text-accent-ink"
-                aria-hidden
-              />
+              <span className="font-fw-sans text-body-sm text-text-tertiary">
+                {linkVerb(chain.hopSigns[i - 1] ?? 1)}
+              </span>
             ) : null}
             <span className="font-fw-display text-body-lg font-medium text-text-primary">
               {node}
@@ -222,9 +206,10 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
       </div>
 
       <p className="font-fw-sans text-body text-text-secondary leading-6">
-        Each step was detected separately over this player&apos;s own rounds.
-        Read the chain as the lead to check first. The engine did not test the
-        path end to end.
+        If these links hold, {first.toLowerCase()} {linkVerb(chain.sign)}{' '}
+        {last.toLowerCase()}. Each link was detected separately in this
+        player&apos;s rounds. It is a pattern to check, not a cause: the engine
+        did not test the path end to end.
       </p>
 
       {/* A chain is only as trustworthy as its thinnest link, so both readouts
@@ -233,12 +218,12 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
         <CausalReadout
           label="Confidence"
           value={confidenceLabel(chain.confidence) ?? '—'}
-          hint="The least certain step in the chain"
+          hint="The least certain link"
         />
         <CausalReadout
-          label="Strength"
+          label="Link strength"
           value={pct(chain.strength)}
-          hint="The loosest step in the chain"
+          hint="The loosest link"
         />
       </Inset>
     </Surface>
@@ -246,57 +231,59 @@ function CausalChainCard({ chain }: { chain: CausalChain }) {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
- * One relationship — flat matte card: cause → effect headline, mechanism
- * sentence, and a readout strip (strength · confidence · intervention).
+ * One relationship — "X moves with Y", the direction in words, sample size,
+ * the not-a-cause caveat, the hedged mechanism note, and readouts.
  * ────────────────────────────────────────────────────────────────────────── */
 
 function CausalRelationshipRowCard({ rel }: { rel: CausalRelationshipRow }) {
-  const typeLabel = TYPE_LABELS[rel.relationship_type] ?? humanize(rel.relationship_type);
+  const sign = (rel.correlation ?? 0) < 0 ? -1 : 1;
+  const cause = causeLabel(rel);
+  const effect = effectLabel(rel);
+  const n = rel.sample_n;
 
   return (
     <Surface padding="md" className="flex flex-col gap-4">
-      {/* Headline: cause → effect, with the relationship-type badge. */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
         <span className="font-fw-display text-body-lg font-medium text-text-primary">
-          {causeLabel(rel)}
+          {cause}
         </span>
-        <ArrowRight className="h-4 w-4 flex-shrink-0 text-accent-ink" aria-hidden />
+        <ArrowLeftRight className="h-4 w-4 flex-shrink-0 text-accent-ink" aria-hidden />
+        <span className="font-fw-sans text-body-sm text-text-tertiary">
+          {linkVerb(sign)}
+        </span>
         <span className="font-fw-display text-body-lg font-medium text-text-primary">
-          {effectLabel(rel)}
+          {effect}
         </span>
-        <Badge tone="neutral" variant="outline" size="sm" className="ml-1">
-          {typeLabel}
-        </Badge>
-        {rel.dose_response ? (
-          <StatusPill tone="accent" size="sm">
-            Dose-responsive
-          </StatusPill>
-        ) : null}
       </div>
 
-      {/* The engine's mechanism sentence — "how this works", plain English. */}
+      <p className="font-fw-sans text-body text-text-secondary leading-6">
+        In rounds with more {cause.toLowerCase()}, {effect.toLowerCase()} tends to be{' '}
+        {sign < 0 ? 'lower' : 'higher'}
+        {n != null ? ` (${n} rounds)` : ''}. This is a pattern in these rounds, not
+        proof that one causes the other.
+      </p>
+
       {rel.mechanism ? (
-        <p className="font-fw-sans text-body text-text-secondary leading-6">
+        <p className="font-fw-sans text-body-sm text-text-tertiary leading-6">
           {rel.mechanism}
         </p>
       ) : null}
 
-      {/* Readout strip — strength · confidence · intervention potential. */}
       <Inset padding="sm" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <CausalReadout
-          label="Effect strength"
+          label="Link strength"
           value={pct(rel.strength)}
-          hint="How strongly the two move together"
+          hint="How closely the two move together"
         />
         <CausalReadout
           label="Confidence"
-          value={confidenceLabel(rel.confidence) ?? '—'}
-          hint="How sure the engine is it's causal"
+          value={confidenceLabel(rel.confidence, n) ?? '—'}
+          hint="How unlikely the pattern is to be chance"
         />
         <CausalReadout
-          label="You can change this"
-          value={pct(rel.intervention_potential)}
-          hint="How much practice can shift it"
+          label="Rounds"
+          value={n != null ? String(n) : '—'}
+          hint="Rounds with both stats recorded"
         />
       </Inset>
     </Surface>

@@ -245,6 +245,8 @@ interface ClientOpts {
    * `insertError` (or null) path above.
    */
   unknownColumnError?: { code: string; message: string };
+  /** v3: rejects any insert carrying the control/interval columns (migration 20260928230000 unapplied). */
+  controlColumnError?: { code: string; message: string };
   /**
    * A9 slice 1 (MUST 2): map of `insight_id` -> its real first `shown_at`
    * ISO string, backing the cron's per-page bulk `golf_insight_exposure`
@@ -347,6 +349,9 @@ function makeClient(rows: FixtureInsight[], opts: ClientOpts = {}) {
       attributionInserts.push(row);
       if (opts.unknownColumnError && 'method_version' in row) {
         return Promise.resolve({ error: opts.unknownColumnError });
+      }
+      if (opts.controlColumnError && 'lift_z' in row) {
+        return Promise.resolve({ error: opts.controlColumnError });
       }
       return Promise.resolve({ error: opts.insertError ?? null });
     }),
@@ -618,7 +623,13 @@ describe('causality-attribute cron P3: null-lift does not upsert coach weights',
         n_rounds_after: 3,
         improvement_lift: lift,
         lift,
-        method_version: 'v2_observed_delta' as const,
+        method_version: 'v3_did_prewindow' as const,
+        control_value: 0,
+        n_rounds_control: 3,
+        lift_ci_low: lift === null ? null : lift - 1,
+        lift_ci_high: lift === null ? null : lift + 1,
+        // v3: the weight update reads the standardized lift.
+        lift_z: lift,
       },
     };
   }
@@ -672,7 +683,12 @@ describe('causality-attribute cron P3: coach-weight upsert error is captured', (
         n_rounds_after: 3,
         improvement_lift: 0.5,
         lift: 0.5,
-        method_version: 'v2_observed_delta' as const,
+        method_version: 'v3_did_prewindow' as const,
+        control_value: 0,
+        n_rounds_control: 3,
+        lift_ci_low: -0.5,
+        lift_ci_high: 1.5,
+        lift_z: 0.5,
       },
     });
     const { client } = makeClient([fixture({ id: 'r-1' })], {
@@ -720,7 +736,13 @@ describe('causality-attribute cron N10: unknown-column retry (method_version not
         n_rounds_after: 3,
         improvement_lift: lift,
         lift,
-        method_version: 'v2_observed_delta' as const,
+        method_version: 'v3_did_prewindow' as const,
+        control_value: 0,
+        n_rounds_control: 3,
+        lift_ci_low: lift === null ? null : lift - 1,
+        lift_ci_high: lift === null ? null : lift + 1,
+        // v3: the weight update reads the standardized lift.
+        lift_z: lift,
       },
     };
   }
@@ -745,12 +767,20 @@ describe('causality-attribute cron N10: unknown-column retry (method_version not
     expect(summary.method_version_column_missing).toBe(true);
 
     // Exactly two insert attempts: first carrying method_version (rejected),
-    // second identical minus that field (accepted).
+    // second identical minus that field AND the later v3 control columns
+    // (migration 20260928230000 cannot be applied without 20260922230000).
     expect(attributionInserts).toHaveLength(2);
-    expect(attributionInserts[0]).toHaveProperty('method_version', 'v2_observed_delta');
+    expect(attributionInserts[0]).toHaveProperty('method_version', 'v3_did_prewindow');
     expect(attributionInserts[1]).not.toHaveProperty('method_version');
-    // Every other field is byte-identical between the two attempts.
-    const { method_version: _omit, ...retryComparableFirst } = attributionInserts[0]!;
+    const {
+      method_version: _omit,
+      control_value: _c1,
+      n_rounds_control: _c2,
+      lift_ci_low: _c3,
+      lift_ci_high: _c4,
+      lift_z: _c5,
+      ...retryComparableFirst
+    } = attributionInserts[0]!;
     expect(attributionInserts[1]).toEqual(retryComparableFirst);
 
     // One info-level event per RUN, not per row — never paging noise.
@@ -765,6 +795,26 @@ describe('causality-attribute cron N10: unknown-column retry (method_version not
 
     // Not a real failure — no error logged for the expected/handled retry.
     expect(logServerErrorMock).not.toHaveBeenCalled();
+  });
+
+  it('v3: only the control columns missing (migration 20260928230000 unapplied) keeps method_version and the lift', async () => {
+    computeAttributionMock.mockResolvedValue(okAttribution(0.5));
+    const { client, attributionInserts } = makeClient([fixture({ id: 'r-1' })], {
+      controlColumnError: { code: 'PGRST204', message: "Could not find the 'lift_z' column of 'golf_insight_outcome_attribution' in the schema cache" },
+    });
+    createAdminMock.mockReturnValue(client);
+
+    const res = await POST(authedRequest());
+    const summary = await res.json();
+
+    expect(summary.attributed).toBe(1);
+    expect(summary.errors).toBe(0);
+    expect(summary.control_columns_missing).toBe(true);
+    expect(summary.method_version_column_missing).toBeUndefined();
+    expect(attributionInserts).toHaveLength(2);
+    expect(attributionInserts[1]).toHaveProperty('method_version', 'v3_did_prewindow');
+    expect(attributionInserts[1]).toHaveProperty('lift', 0.5);
+    expect(attributionInserts[1]).not.toHaveProperty('lift_z');
   });
 
   it('a genuine (non-unknown-column) insert error is NOT retried and still surfaces', async () => {

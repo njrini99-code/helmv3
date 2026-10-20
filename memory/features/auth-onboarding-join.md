@@ -8,6 +8,22 @@
 
 Auth, onboarding, and join flows establish user identity, role-specific setup, player/coach profiles, and team membership. This is the front door for GolfHelm and a dependency for every dashboard feature.
 
+Clubhouse sign-in keeps the form in server HTML and ships a still of the painted
+course while its animation chunk loads. The phone layout sizes its artwork
+against the small viewport, with a scrollable form sheet. Its welcome frames the
+hole and cup, with a gentle camera push completed before automatic phone
+navigation. A protected reading veil keeps the greeting clear over trees; its
+text never blurs. The updates card uses an opaque floating surface. Reduced
+motion holds the camera still. Sign-in credentials, invite
+destinations, stale-bundle recovery and session behavior use the existing shared
+auth logic; this visual path does not change access control. Implementation:
+`src/clubhouse/screens/auth/`, page contract and design:
+`docs/clubhouse/pages/P015-auth/`.
+
+Sign-in also gates duplicate submissions synchronously before React commits the
+busy button. The gate stays set through a successful handoff or stale-bundle
+reload; a refused or failed attempt releases it so credentials can be retried.
+
 Coach and player onboarding are separate routes. Join-code links can redirect users into player onboarding when the player profile is incomplete.
 
 ## Primary Entry Points
@@ -18,6 +34,11 @@ Coach and player onboarding are separate routes. Join-code links can redirect us
 - `src/app/golf/(onboarding)/coach/**`
 - `src/app/golf/(onboarding)/player/**`
 - `src/app/golf/join/[code]/**`
+- `src/app/api/golf/auth/sign-out/route.ts` — Clubhouse sign out: POST, same-origin
+  only (Origin vs the Host / forwarded host), ends the session server-side (global,
+  then a local fallback that always clears this device's cookies) and deletes the
+  active-team cookie in the same response. Replaces the `clearActiveTeam()`
+  server action, whose cookie write re-rendered the page under the redirect.
 
 ### Components
 
@@ -86,6 +107,12 @@ Join code
 - A session that expires mid-request on `/golf/dashboard` (passes the top-of-page check, fails the data-fetch re-validation with `Not authenticated`) redirects to `/golf/login?returnTo=/golf/dashboard` instead of hitting the error boundary. Retryable auth failures (network / GoTrue 5xx) still surface to the error boundary — only a genuinely missing/expired session redirects.
 - College/coach/player role rules must be respected before granting dashboard access.
 - Service-role logic must stay server-only and admin-bounded.
+- A team join code signs up players only. `signupActionImpl` refuses any
+  other role on a roster code before `auth.signUp` runs, so no account is
+  created. Assistants join with a staff invite code, whose role lives in a
+  signed token. There is no service-role assistant join; pinned by
+  `src/app/golf/actions/__tests__/assistant-join-surface.test.ts` and
+  `auth-signup-gate.test.ts`.
 
 ## UI Contract
 
@@ -101,11 +128,26 @@ Join code
   `GenericPageSkeleton`/`FormPageSkeleton` family, which carries no
   `role="status"`/`aria-busy` of its own — the call site supplies them.
 
-- `/golf/reset-password` renders on `AuthCanvas` (`src/components/auth/golf-auth-canvas.tsx`),
-  the same flat treatment as login and forgot-password (AUTH-02, 2026-09-23).
-  `GolfAuthShell` no longer has an importer. The recovery-session logic
-  (`exchangeCodeForSession` / `verifyOtp`, with no `updateUser` until it is `ready`)
-  is unchanged.
+- `/golf/reset-password` (2026-10-18 redesign) matches the reset email, not
+  `AuthCanvas`: `reset-shell.tsx` draws the ivory canvas, lockup and ruled card,
+  with Poppins loaded for this route only (`layout.tsx`). States: checking,
+  form, expired (asks for a new link in place via `requestPasswordResetAction`),
+  sent, saved. The link is still the only authorization: every load runs
+  `verifyOtp({ type: 'recovery', token_hash })` with no branch that skips it
+  (golf links are always server-minted token_hash links, never PKCE `?code=`),
+  no `updateUser` runs before it succeeds, and the token is stripped from the
+  URL once verified. Supabase errors map to plain sentences
+  (`reset-errors.ts`). A successful save calls `signOut({ scope: 'others' })`
+  (owner decision: a reset signs out every other device) and keeps this device
+  signed in; Continue goes to `/golf/dashboard`, not back to sign-in.
+- GolfHelm reset emails go through Resend (`src/lib/auth/send-password-reset.ts`),
+  never Supabase's mailer, so `supabase/templates/recovery.html` does not reach
+  golf users. `src/lib/auth/golfhelm-reset-email.ts` renders the same design for
+  the Resend path; a test fails if the two drift. The Supabase template still
+  serves Baseball and Lift Lab client-side resets.
+- `/golf/forgot-password`'s sent state plays a one-time CSS sequence (envelope,
+  ripple, check; off under reduced motion) via the `hero` slot on `AuthCanvas`,
+  and offers a resend after a 30-second cooldown.
 - `/golf/join` (the invite-code entry page) renders on `AuthCanvas` too
   (2026-09-27). Its "Home" back link goes to `/golf`, not `/`: the in-app links
   to it (NoTeamBanner, player onboarding, travel, classes) come from signed-in

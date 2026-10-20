@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logError } from '@/lib/error-logging';
+import { isClientDeadlineAbort } from '@/lib/client-deadline-abort';
 import { describeError } from '@/lib/utils/describe-error';
 
 export const MESSAGE_REACTIONS = [
@@ -41,6 +42,10 @@ export function summarizeReactions(rows: readonly MessageReaction[], messageId: 
 function isPermissionDenied(cause: unknown): boolean {
   return typeof cause === 'object' && cause !== null && (cause as { code?: unknown }).code === '42501';
 }
+
+// The browser client's request deadline firing on a slow connection (Bridge
+// 9b8ad988): the load retries on focus, realtime and the retry control, so it
+// keeps the retry copy but is not reported. See isClientDeadlineAbort.
 
 /** Session-client reads and writes retain the database's participant RLS. */
 export function useMessageReactions(conversationId: string, messageIds: string[], userId: string) {
@@ -109,6 +114,7 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       if (isPermissionDenied(cause) && !(await hasLiveSession())) return;
       if (version !== request.current || scope.current !== conversationId) return;
       setError('Reactions could not be loaded. Tap to retry.');
+      if (isClientDeadlineAbort(cause)) return;
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'load', sport: 'golf', conversationId });
     }
   }, [client, conversationId, hasLiveSession, ids]);
@@ -153,6 +159,11 @@ export function useMessageReactions(conversationId: string, messageIds: string[]
       return true;
     } catch (cause) {
       if (scope.current === conversationId) setError('Reaction was not saved. Try again.');
+      // Same rule as the load path: the browser client's own request deadline
+      // (`AbortError: Fetch is aborted`) is the connection, not the reactions
+      // table. The retry copy stays on screen; nothing is reported (Bridge
+      // 9b8ad988 reopened on a `save` abort 2026-10-04 after the load fix).
+      if (isClientDeadlineAbort(cause)) return false;
       logError(cause instanceof Error ? cause : new Error(describeError(cause)), { component: 'MessageReactions', action: 'save', sport: 'golf', conversationId, messageId });
       return false;
     } finally {

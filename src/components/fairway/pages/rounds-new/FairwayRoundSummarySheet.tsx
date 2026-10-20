@@ -22,7 +22,7 @@
  * across the two files.
  * ========================================================================== */
 
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { Flag } from 'lucide-react';

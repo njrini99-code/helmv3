@@ -34,12 +34,16 @@
 import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
+import { meanInterval } from '@/lib/coachhelm/v3/stats/interval';
 import type {
   ComposedContent,
   GeneratorAggregate,
   InsightCategory,
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
+
+/** Tour opening-hole tax the card compares against (Research doc §9). */
+const TOUR_OPENING_TAX = 0.1;
 
 interface WarmupHoleAggregate extends GeneratorAggregate {
   /** Newest cache round date — feeds the staleness disclosure. */
@@ -52,6 +56,9 @@ interface WarmupHoleAggregate extends GeneratorAggregate {
   cause_putt_pct: number;
   cause_tee_pct: number;
   cause_penalty_pct: number;
+  /** 95% interval on the per-opener delta; the row exists only when low > 0. */
+  delta_ci_low?: number;
+  delta_ci_high?: number;
 }
 
 export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
@@ -109,6 +116,22 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     // a "warmup tax" insight for a player with no tax is noise.
     if (delta <= 0) return null;
 
+    // INTERVAL GATE (audit row 15): a +0.13 opener tax over ~12 hole-1 plays
+    // sits inside one standard error (hole SD ≈ 0.9), i.e. it cannot be told
+    // from zero. Each opener's delta vs its same-par baseline is one
+    // observation; the row exists only when the 95% interval on their mean
+    // excludes zero. Returning null here also RETRACTS a stale row whose
+    // window no longer supports it (the base sweeps the scope on no-data).
+    const perOpener: number[] = [];
+    for (const h of holes) {
+      if (h.hole_number !== 1) continue;
+      const rest = restByPar.get(h.par);
+      if (!rest || rest.n === 0) continue;
+      perOpener.push(h.score - h.par - rest.sum / rest.n);
+    }
+    const ci = meanInterval(perOpener);
+    if (!(ci.low > 0)) return null;
+
     // Cause split over the hole-1 plays: penalty (penalty_strokes>0), putting
     // (>=3 putts on the opener), else tee/approach execution (the remainder).
     const hole1Holes = holes.filter((h) => h.hole_number === 1);
@@ -135,6 +158,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       cause_penalty_pct: cpct(pen),
       cause_putt_pct: cpct(putt),
       cause_tee_pct: teePctBase,
+      delta_ci_low: ci.low,
+      delta_ci_high: ci.high,
     };
   }
 
@@ -164,6 +189,9 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
       `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
       `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
       causeClause +
+      (agg.delta_ci_low != null && agg.delta_ci_high != null
+        ? ` 95% range +${agg.delta_ci_low.toFixed(2)} to +${agg.delta_ci_high.toFixed(2)} strokes.`
+        : '') +
       ` Tour avg is ~0.1 strokes (Research doc §9).` +
       staleDataSuffix(agg.last_round_date);
 
@@ -179,14 +207,18 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
         unit: 'strokes',
         your_value: agg.playerValue,
         your_value_display: deltaDisp,
-        comparison_value: 0.1,
+        comparison_value: TOUR_OPENING_TAX,
         comparison_label: 'PGA Tour opening-hole tax',
         comparison_source: 'pga_baseline',
         sample_n: agg.rounds_with_hole1,
         window_days: 90,
         window_start: '',
         window_end: '',
-        strokes_impact: 0,
+        // Measured: the opener tax ABOVE the Tour's own ~0.1, × one opening
+        // hole per round. The row stays floor-exempt (backfilledStrokesImpact
+        // keeps this composed value), so this is what ranks it — it used to
+        // be 0 on 28 of 28 rows.
+        strokes_impact: Math.max(0, Math.round((agg.playerValue - TOUR_OPENING_TAX) * 1000) / 1000),
         strokes_impact_method: 'peer_delta',
         confidence: 0,
         confidence_factors: {
@@ -195,6 +227,11 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
           variance: 0.5,
         },
         feed_exempt: true,
+        detail: {
+          hole1_plays: agg.rounds_with_hole1,
+          delta_ci_low: agg.delta_ci_low ?? null,
+          delta_ci_high: agg.delta_ci_high ?? null,
+        },
       },
     };
   }

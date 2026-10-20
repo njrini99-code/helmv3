@@ -20,7 +20,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 
-vi.mock('framer-motion', () => ({ useReducedMotion: () => true }));
+vi.mock('motion/react', () => ({ useReducedMotion: () => true }));
 
 import {
   RoundSGSummary,

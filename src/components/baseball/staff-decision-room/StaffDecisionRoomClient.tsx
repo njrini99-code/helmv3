@@ -212,8 +212,8 @@ export function StaffDecisionRoomClient({ data }: StaffDecisionRoomClientProps) 
   const refresh = () => startTransition(() => router.refresh());
 
   // ---- Re-measure: run the outcome sweep now (the manual "did-it-move" pass) -
-  // The sweep also runs nightly (Inngest) + on every postgame review; this gives
-  // a coach an on-demand re-read in the room. Capability-gated server-side.
+  // The sweep also runs on every postgame review (there is no nightly
+  // schedule); this gives a coach an on-demand re-read in the room. Capability-gated server-side.
   const [sweeping, startSweep] = useTransition();
   const reMeasureOutcomes = () =>
     startSweep(async () => {

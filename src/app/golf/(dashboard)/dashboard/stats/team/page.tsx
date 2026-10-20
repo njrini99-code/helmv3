@@ -8,6 +8,10 @@ import { Users } from 'lucide-react';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { redirectToClubhouse } from '@/clubhouse/routes/alias';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
+import { ClubhouseStatsRoute } from '@/clubhouse/routes/stats';
 import { TeamStatsBoard } from '@/components/golf/stats/team-board/TeamStatsBoard';
 import { earliestTimestamp } from '@/components/golf/stats/team-board/teamStatsFreshness';
 import { ViewHeader, EmptyState, Button } from '@/components/fairway';
@@ -104,8 +108,19 @@ export default async function TeamStatsPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
 
+  // Clubhouse: whoever the dashboard draws as a player (no coach row, or a coach row whose dashboard role resolves to
+  // player) goes to their own Stats; before, the frame dropped this coach-only page and they stood on "not rebuilt"
+  // (readiness audit, 2026-10-17). The address is on the frame's aliased list (nav.ts), so this runs.
+  await redirectToClubhouse({ player: '/golf/dashboard/stats' });
+
   const { coach } = session;
   if (!coach) redirect('/golf/dashboard/stats'); // coach-only page
+
+  // Clubhouse: the old Team stats address opens the rebuilt Team stats in place
+  // (a redirect() from a conditional branch is what crashed /stats, see the
+  // note in ../page.tsx). Players never reach this page.
+  // The role is the dashboard layout's (getGolfDashboardRole), as on ../page.tsx; Fairway below keeps the session's.
+  if ((await isClubhouseFor('coach')) && (await getGolfDashboardRole()) === 'coach') return <ClubhouseStatsRoute />;
 
   const supabase = await createClient();
 

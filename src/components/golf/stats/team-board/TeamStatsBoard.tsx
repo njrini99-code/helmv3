@@ -42,6 +42,7 @@ import { buildTeamBoardViewModel, fmtSg, TREND_SIGNAL_MIN_ROUNDS, weightedMean, 
 import { formatTeamStatsFreshness, type TeamStatsFreshness } from './teamStatsFreshness';
 import { FORM_EARLY_READ_LABEL, FORM_LABEL, type FormScore } from '@/lib/golf/form-score';
 import { formatMetricText } from '@/lib/golf/metrics/display-registry';
+import { resolveStageTour, tourLabel } from '@/lib/golf/benchmarks/tour';
 
 // ============================================================================
 // PROPS — same shapes the route already resolves (page.tsx reuses its
@@ -97,9 +98,6 @@ const SG_CATEGORY_BARS: ReadonlyArray<{ metric: MetricId; label: string; prose: 
   { metric: 'sg_putting', label: 'Putting', prose: 'Putting', key: 'putting' },
 ];
 
-function tourLabel(isWomens: boolean): string {
-  return isWomens ? 'LPGA Tour' : 'PGA Tour';
-}
 
 function toLeakMapBuckets(buckets: LeakBucket[] | undefined): LeakMapBucket[] {
   return (buckets ?? []).map((b) => ({
@@ -242,14 +240,18 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, formBy
     }
   }, [vm.rows, teamName]);
 
-  const isWomens = React.useMemo(() => {
+  // The tour every Tour reference on this board is labelled with: the leak map's
+  // `tour` (the team's gender), else the standing rows (`is_womens` is set on every
+  // row of a women's team). With neither the tour is unknown, and the labels stay
+  // neutral ("the Tour") rather than guessing PGA for what may be a women's team.
+  const tour = React.useMemo(() => {
+    const rows: Array<{ is_womens?: boolean }> = [];
     for (const map of standingByPlayer.values()) {
-      for (const row of map.values()) {
-        if (row.is_womens) return true;
-      }
+      for (const row of map.values()) rows.push(row);
     }
-    return false;
-  }, [standingByPlayer]);
+    return resolveStageTour(leakMaps?.tour ?? null, rows);
+  }, [standingByPlayer, leakMaps?.tour]);
+  const theTour = tour ? `the ${tourLabel(tour)}` : tourLabel(null);
 
   const sgData: SGCategory[] = React.useMemo(
     () =>
@@ -430,10 +432,10 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, formBy
 
       {/* ── TEAM STROKES GAINED — demoted below the board ──────────────────────── */}
       <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(isWomens)} baseline · full rounds, per round`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
+        <StrokesGainedTornado overline="Strokes Gained" title="Team Strokes Gained" subtitle={`vs ${tourLabel(tour)} baseline · full rounds, per round`} takeaway={sgTakeaway} data={sgData} state={hasSg ? undefined : 'insufficient-data'} stateMessage={hasSg ? undefined : 'Strokes Gained appears once players log rounds with shot-level tracking. Add players to your roster and have them enter rounds shot by shot.'} />
         <InstrumentPanel depth="raised" tone="accent" eyebrow="All full rounds" header="SG: Total" className="flex flex-col justify-center">
           {vm.kpis.teamSgRaw !== null ? <Readout size="hero" label="Team SG · per round" display={fmtSg(vm.kpis.teamSgRaw)} unit="sg" /> : <Readout size="hero" label="Team SG · per round" state="awaiting" awaitingLabel="Awaiting standing" />}
-          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs the {tourLabel(isWomens)} baseline. Negative means the team is losing strokes to Tour over a round.</p>
+          <p className="mt-4 font-fw-sans text-caption text-text-tertiary">The sum of every category vs {theTour} baseline. Negative means the team is losing strokes to Tour over a round.</p>
         </InstrumentPanel>
       </section>
 
@@ -448,8 +450,8 @@ export function TeamStatsBoard({ teamName, players, intelligenceByPlayer, formBy
           ) : null}
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
-          <LeakMap overline="Putting" title="Putts Made by Distance" subtitle={`Team make% vs ${tourLabel(isWomens)}`} takeaway={puttTakeaway} data={puttBuckets} direction="higher_better" unit="percent" state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage} />
-          <LeakMap overline="Approach" title="Approach Proximity by Distance" subtitle={`Avg proximity to hole vs ${tourLabel(isWomens)}`} takeaway={approachTakeaway} data={approachBuckets} direction="lower_better" unit="feet" state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage} />
+          <LeakMap overline="Putting" title="Putts Made by Distance" subtitle={`Team make% vs ${tourLabel(tour)}`} referenceLabel={tour ? tourLabel(tour) : undefined} takeaway={puttTakeaway} data={puttBuckets} direction="higher_better" unit="percent" state={leakMaps && hasPuttSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasPuttSamples ? undefined : leakColdStartMessage} />
+          <LeakMap overline="Approach" title="Approach Proximity by Distance" subtitle={`Avg proximity to hole vs ${tourLabel(tour)}`} referenceLabel={tour ? tourLabel(tour) : undefined} takeaway={approachTakeaway} data={approachBuckets} direction="lower_better" unit="feet" state={leakMaps && hasApproachSamples ? undefined : 'insufficient-data'} stateMessage={leakMaps && hasApproachSamples ? undefined : leakColdStartMessage} />
         </div>
       </section>
     </div>

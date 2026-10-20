@@ -16,6 +16,14 @@
 import { readdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/check-migration-ledger.mjs',
+  summary:
+    "Checks that every migration file is recorded in the migration ledger, and the reverse. Read-only.",
+  secrets: 'DATABASE_URL',
+});
 
 /**
  * Pure reconciliation function — no I/O, no side effects.

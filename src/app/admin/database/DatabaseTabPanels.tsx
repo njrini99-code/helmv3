@@ -245,7 +245,7 @@ export async function CoveragePanel() {
  */
 export async function DriftPanel() {
   const missionControl = await fetchDatabaseMissionControl();
-  let migrationCount: number | null = null;
+  let migrationCount: number | null;
   try {
     const { readdirSync } = await import('node:fs');
     const { join } = await import('node:path');

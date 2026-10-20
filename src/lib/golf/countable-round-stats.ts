@@ -105,7 +105,9 @@ export function aggregateCountableRounds(
       strokes_gained_total: row.strokes_gained_total ?? stats?.strokes_gained_total ?? null,
     });
     if (reason !== null) {
-      if (reason !== 'not_completed') excluded++;
+      // "Excluded" counts real completed rounds left out as partial or
+      // implausible; an unfinished round or a test round is not one of them.
+      if (reason !== 'not_completed' && reason !== 'test_round') excluded++;
       continue;
     }
     const total = deriveRoundTotal(row).total;

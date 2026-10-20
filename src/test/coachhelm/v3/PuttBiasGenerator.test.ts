@@ -105,14 +105,55 @@ describe('PuttBiasGenerator.aggregate (F2+F3 L-vs-R distance-controlled)', () =>
   });
 
   it('excludes "multiple" and "straight" break types (not single-directional)', async () => {
-    // Only straight + multiple — no L-vs-R data → significant=false
+    // Only straight + multiple — no L-vs-R data. Audit row 26 (2026-09-28):
+    // this used to ship a "balanced" row; with zero testable cuts the test
+    // never ran, so there is no row at all (null retracts a stale one).
     puttRows = [
       ...putts('straight', 40, 30, 2, 'level'),
       ...putts('multiple', 50, 5, 15, 'level'),
     ];
     const agg = await new PuttBiasGenerator(PLAYER_ID, 'left').aggregate();
-    expect(agg).not.toBeNull();
+    expect(agg).toBeNull();
+  });
+
+  it('reports nothing (not "balanced") when no cut reaches 15 putts per side', async () => {
+    puttRows = [
+      ...putts('left_to_right', 14, 3, 15, 'level'),
+      ...putts('right_to_left', 30, 6, 15, 'level'),
+    ];
+    expect(await new PuttBiasGenerator(PLAYER_ID, 'left').aggregate()).toBeNull();
+  });
+
+  it('a balanced row carries the real pooled rates per side, never 0% vs 0%', async () => {
+    puttRows = [
+      ...putts('left_to_right', 20, 5, 15, 'level'),
+      ...putts('right_to_left', 20, 6, 15, 'level'),
+    ];
+    const g = new PuttBiasGenerator(PLAYER_ID, 'left');
+    const agg = await g.aggregate();
     expect(agg!.significant).toBe(false);
+    const c = g.composeContent(agg!);
+    expect(c.signature).toBe('putt_bias:balanced');
+    expect(c.evidence.your_value).toBe(25);
+    expect(c.evidence.comparison_value).toBe(30);
+    expect(c.evidence.sample_n).toBe(40);
+    expect(c.content).toContain('25% of left-to-right breaks (n=20)');
+    expect(c.evidence.strokes_impact).toBe(0);
+  });
+
+  it('a directional row carries a measured impact: weak-side putts/round × gap', async () => {
+    // Same 7-10 ft data as below: RtL 20% (n=40) vs LtR 50% over 2 rounds.
+    puttRows = [
+      ...putts('left_to_right', 20, 20, 8, 'level'),
+      ...putts('left_to_right', 20, 0, 8, 'level'),
+      ...putts('right_to_left', 8, 8, 8, 'level'),
+      ...putts('right_to_left', 32, 0, 8, 'level'),
+    ];
+    const g = new PuttBiasGenerator(PLAYER_ID, 'left');
+    const agg = await g.aggregate();
+    // 40 weak-side putts / 2 rounds = 20/round × 30pp = 6.0 → capped at 2.5.
+    expect(agg!.strokes_impact).toBe(2.5);
+    expect(g.composeContent(agg!).evidence.strokes_impact).toBe(2.5);
   });
 
   it('excludes unscored putts (putt_made=null)', async () => {

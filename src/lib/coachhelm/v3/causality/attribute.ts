@@ -26,6 +26,28 @@
  * (NULL — the post-vs-ambient value above) from v2 rows (the observed
  * delta) so a reader/aggregate must never average the two together.
  *
+ * v3 (`v3_did_prewindow`, deep audit row 35, 2026-09-28): the v2 lift had no
+ * control, so any drift the player was already on was credited to the
+ * insight. v3 adds a MATCHED PRE-WINDOW control: the same metric over the
+ * {@link PRE_WINDOW_DAYS} days immediately before the baseline window. The
+ * control change (baseline − control) is what the player's metric did over
+ * an equal gap with no insight; the lift is the difference-in-differences
+ *
+ *     (post − baseline) − (baseline − control)
+ *
+ * direction-corrected, with a t-based 95% interval from the per-window
+ * variance of the mean (`lift_ci_low`/`lift_ci_high`). Known limit: when an
+ * insight fires BECAUSE the baseline was unusually bad, the control change is
+ * negative and the DiD can overstate recovery (regression to the mean); the
+ * interval is wide exactly in those thin-window cases, and the weight update
+ * uses the standardized lift (lift / SE), so a noisy lift barely moves it.
+ *
+ * Ratio metrics (Σ num / Σ den) additionally need
+ * {@link MIN_RATIO_OPPORTUNITIES} opportunities in EVERY window; a 2-attempt
+ * sand-save window produced the audit's −60 outlier. Lift units are
+ * normalised before the tanh weight update: `nextWeight` takes `lift_z`
+ * (lift / SE), which is unitless, instead of a raw percent or stroke value.
+ *
  * Pure-ish: takes a Supabase client and one insight id, returns the
  * computed attribution row (or null if not enough data). The caller
  * writes the row + updates aggregates.
@@ -57,6 +79,7 @@ import {
   type HoleLevelAvgSource,
 } from '@/lib/coachhelm/v3/causality/metric-sources';
 import { improvementSign } from '@/lib/coachhelm/v3/metrics/registry';
+import { studentTCritical } from '@/lib/coachhelm/v3/causality/correlation-gate';
 
 type Sb = SupabaseClient<Database>;
 
@@ -68,6 +91,9 @@ export interface AttributionInput {
    *  insight.evidence.metric upstream. */
   target_metric_id: string;
 }
+
+/** The method_version this module writes (see file header). */
+export const ATTRIBUTION_METHOD_VERSION = 'v3_did_prewindow';
 
 export interface AttributionRow {
   insight_id: string;
@@ -91,12 +117,14 @@ export interface AttributionRow {
   n_rounds_before: number;
   n_rounds_after: number;
   /**
-   * Direction-CORRECTED observed improvement signal: `raw_delta` multiplied
-   * by the metric's improvement sign (+1 for higher-is-better, −1 for
-   * lower-is-better). Positive ALWAYS means the player got better. This is
-   * the ONLY value that may drive `nextWeight`. `null` when either window's
-   * sample is too thin to trust (see {@link MIN_WINDOW_ROUNDS}). Persisted
-   * as DB `lift`.
+   * Direction-CORRECTED, CONTROLLED improvement signal (v3): the
+   * difference-in-differences `(post − baseline) − (baseline − control)`
+   * multiplied by the metric's improvement sign (+1 higher-is-better, −1
+   * lower-is-better). Positive ALWAYS means the player improved beyond the
+   * drift they were already on. `null` when any window is too thin (see
+   * {@link MIN_WINDOW_ROUNDS} and {@link MIN_RATIO_OPPORTUNITIES}) or the
+   * control window is empty. Persisted as DB `lift`. The weight update uses
+   * the unitless {@link lift_z}, not this value.
    *
    * N10 (2026-09-22): pre-v2 this was ALSO adjusted by a 90-day "ambient"
    * window that algebraically cancelled the baseline and never did what its
@@ -118,7 +146,19 @@ export interface AttributionRow {
    * post-vs-ambient trend adjustment described in the file header. Every
    * row this module writes going forward carries `'v2_observed_delta'`.
    */
-  method_version: 'v2_observed_delta';
+  method_version: typeof ATTRIBUTION_METHOD_VERSION;
+  /** Control (matched pre-window) mean, or null when that window had no data. */
+  control_value: number | null;
+  n_rounds_control: number;
+  /** t-based 95% interval on {@link improvement_lift}; null when lift is null. */
+  lift_ci_low: number | null;
+  lift_ci_high: number | null;
+  /**
+   * Standardized lift: improvement_lift / SE. Unitless, so a percent metric
+   * and a stroke metric move coach weights on the same scale. Null when lift
+   * is null or the SE is zero/undefined. This is what `nextWeight` consumes.
+   */
+  lift_z: number | null;
 }
 
 /**
@@ -155,6 +195,32 @@ export const POST_WINDOW_DAYS = 21;
  */
 const MIN_WINDOW_ROUNDS = 2;
 
+/**
+ * Minimum opportunities (Σ denominator, e.g. sand-save attempts or greens
+ * attempted) per window before a ratio metric's lift is trusted.
+ */
+export const MIN_RATIO_OPPORTUNITIES = 10;
+
+/** Two-sided 95% for the lift interval. */
+const LIFT_CI_ALPHA = 0.05;
+
+/**
+ * Internal window stats: the public {@link WindowResult} plus the variance of
+ * the window mean (for the interval) and, for ratio metrics, the opportunity
+ * count. `averageInWindow` strips these so its public shape is unchanged.
+ */
+type WindowStats =
+  | { ok: true; avg: number; n: number; varOfMean: number | null; opportunities?: number }
+  | Exclude<WindowResult, { ok: true }>;
+
+function sampleVarOfMean(values: number[]): number | null {
+  const n = values.length;
+  if (n < 2) return null;
+  const mean = values.reduce((a, b) => a + b, 0) / n;
+  const ss = values.reduce((a, v) => a + (v - mean) * (v - mean), 0);
+  return ss / (n - 1) / n;
+}
+
 /** Average a denormalised `golf_rounds` column across completed rounds in a window. */
 async function averageGolfRoundsColumn(
   sb: Sb,
@@ -162,11 +228,12 @@ async function averageGolfRoundsColumn(
   column: string,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   const { data } = await sb
     .from('golf_rounds')
     .select(`${column}`)
     .eq('player_id', player_id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', startIso.slice(0, 10))
     .lte('round_date', endIso.slice(0, 10));
@@ -175,7 +242,7 @@ async function averageGolfRoundsColumn(
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (values.length === 0) return { ok: false, reason: 'no-data' };
   const sum = values.reduce((a, b) => a + b, 0);
-  return { ok: true, avg: sum / values.length, n: values.length };
+  return { ok: true, avg: sum / values.length, n: values.length, varOfMean: sampleVarOfMean(values) };
 }
 
 /**
@@ -192,7 +259,7 @@ async function averageRoundStatsCacheColumn(
   source: RoundStatsCacheAvgSource,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   const { data } = await sb
     .from('golf_round_stats_cache')
     .select(
@@ -208,7 +275,7 @@ async function averageRoundStatsCacheColumn(
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
   if (values.length === 0) return { ok: false, reason: 'no-data' };
   const sum = values.reduce((a, b) => a + b, 0);
-  return { ok: true, avg: sum / values.length, n: values.length };
+  return { ok: true, avg: sum / values.length, n: values.length, varOfMean: sampleVarOfMean(values) };
 }
 
 /**
@@ -229,7 +296,7 @@ async function averageRoundStatsCacheRatio(
   source: RoundStatsCacheRatioSource,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   const { data } = await sb
     .from('golf_round_stats_cache')
     .select(
@@ -255,7 +322,10 @@ async function averageRoundStatsCacheRatio(
     n += 1;
   }
   if (n === 0 || denSum <= 0) return { ok: false, reason: 'no-data' };
-  return { ok: true, avg: (numSum / denSum) * source.scale, n };
+  // Binomial variance of the pooled proportion, in the metric's scaled units.
+  const p = Math.min(1, Math.max(0, numSum / denSum));
+  const varOfMean = ((p * (1 - p)) / denSum) * source.scale * source.scale;
+  return { ok: true, avg: (numSum / denSum) * source.scale, n, varOfMean, opportunities: denSum };
 }
 
 /**
@@ -270,7 +340,7 @@ async function averageRoundStatsCacheComputed(
   source: RoundStatsCacheComputedSource,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   const allCols = ALL_SCORING_COLUMNS;
   const selectCols = `round_id, ${allCols.join(', ')}, golf_rounds!inner(round_date, status, player_id)`;
   const { data } = await sb
@@ -297,7 +367,7 @@ async function averageRoundStatsCacheComputed(
   }
   if (ratios.length === 0) return { ok: false, reason: 'no-data' };
   const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length;
-  return { ok: true, avg, n: ratios.length };
+  return { ok: true, avg, n: ratios.length, varOfMean: sampleVarOfMean(ratios) };
 }
 
 /**
@@ -312,7 +382,7 @@ async function averageHoleLevelByPar(
   source: HoleLevelAvgSource,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   const { data, error } = await fetchAllRowsResult((from, to) => sb
     .from('golf_holes')
     .select('score, par, round_id, golf_rounds!inner(round_date, status, player_id)')
@@ -338,6 +408,7 @@ async function averageHoleLevelByPar(
   type Row = Record<string, unknown>;
   const diffs: number[] = [];
   const roundIds = new Set<string>();
+  const perRound = new Map<string, number[]>();
   for (const row of (data ?? []) as unknown as Row[]) {
     const score = row['score'];
     const par = row['par'];
@@ -345,11 +416,19 @@ async function averageHoleLevelByPar(
     if (typeof score !== 'number' || typeof par !== 'number') continue;
     if (!Number.isFinite(score) || !Number.isFinite(par)) continue;
     diffs.push(score - par);
-    if (typeof roundId === 'string') roundIds.add(roundId);
+    if (typeof roundId === 'string') {
+      roundIds.add(roundId);
+      const list = perRound.get(roundId) ?? [];
+      list.push(score - par);
+      perRound.set(roundId, list);
+    }
   }
   if (diffs.length === 0 || roundIds.size === 0) return { ok: false, reason: 'no-data' };
   const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
-  return { ok: true, avg, n: roundIds.size };
+  // Holes within a round are not independent: the variance comes from the
+  // per-round means, the unit n counts.
+  const roundMeans = [...perRound.values()].map((v) => v.reduce((a, b) => a + b, 0) / v.length);
+  return { ok: true, avg, n: roundIds.size, varOfMean: sampleVarOfMean(roundMeans) };
 }
 
 /**
@@ -373,7 +452,8 @@ export async function averageInWindow(
 ): Promise<WindowResult> {
   const source = lookupMetricSource(target_metric_id);
   if (!source) return { ok: false, reason: 'unknown-metric' };
-  return dispatchWindow(sb, player_id, source, startIso, endIso);
+  const w = await dispatchWindow(sb, player_id, source, startIso, endIso);
+  return w.ok ? { ok: true, avg: w.avg, n: w.n } : w;
 }
 
 async function dispatchWindow(
@@ -382,7 +462,7 @@ async function dispatchWindow(
   source: MetricSourceDef,
   startIso: string,
   endIso: string,
-): Promise<WindowResult> {
+): Promise<WindowStats> {
   if (source.kind === 'intentional-null') {
     return { ok: false, reason: 'intentional-null', reasonCode: source.reason };
   }
@@ -445,8 +525,12 @@ export async function computeAttribution(
   const preEnd = new Date(surfacedDayTs - 86400_000).toISOString();
   const postStart = new Date(surfacedDayTs + 86400_000).toISOString();
   const postEnd = new Date(surfacedTs + POST_WINDOW_DAYS * 86400_000).toISOString();
+  // v3 control: the equal-length window immediately before the baseline.
+  const controlStart = new Date(surfacedTs - 2 * PRE_WINDOW_DAYS * 86400_000).toISOString();
+  const controlEnd = new Date(new Date(preStart).getTime() - 86400_000).toISOString();
 
-  const [base, post] = await Promise.all([
+  const [control, base, post] = await Promise.all([
+    dispatchWindow(sb, input.player_id, source, controlStart, controlEnd),
     dispatchWindow(sb, input.player_id, source, preStart, preEnd),
     dispatchWindow(sb, input.player_id, source, postStart, postEnd),
   ]);
@@ -458,24 +542,41 @@ export async function computeAttribution(
 
   // Direction-AGNOSTIC raw change in the metric's own units. Stored as `delta`.
   const rawDelta = post.avg - base.avg;
-
-  // v2 (N10): the raw lift IS the observed change — no ambient window, no
-  // fake trend subtraction (see the file header for why the old formula
-  // never did what it claimed). Gate on both windows having enough rounds to
-  // trust the averages at all.
-  const rawLift =
-    base.n >= MIN_WINDOW_ROUNDS && post.n >= MIN_WINDOW_ROUNDS ? rawDelta : null;
-
-  // P0-01: turn the raw, direction-AGNOSTIC lift into a direction-CORRECTED
-  // *improvement* signal. For a lower-is-better metric a drop in value
-  // (negative rawLift) is an improvement, so we flip the sign; for
-  // higher-is-better the sign is unchanged. After this, a positive
-  // improvement_lift ALWAYS means the player got better, regardless of metric
-  // polarity, and that is the only value that may move coach weights. Without
-  // this flip, a successful putts/penalties/scoring drop would be learned as a
-  // regression and could REDUCE the weight of an insight that worked.
   const sign = improvementSign(input.target_metric_id);
-  const improvementLift = rawLift === null ? null : sign * rawLift;
+
+  // Every window must be thick enough to trust, including the control, and a
+  // ratio metric needs real opportunities behind each rate.
+  const enoughOpportunities = (w: WindowStats): boolean =>
+    !w.ok || w.opportunities === undefined || w.opportunities >= MIN_RATIO_OPPORTUNITIES;
+  const trusted =
+    control.ok &&
+    control.n >= MIN_WINDOW_ROUNDS &&
+    base.n >= MIN_WINDOW_ROUNDS &&
+    post.n >= MIN_WINDOW_ROUNDS &&
+    enoughOpportunities(control) &&
+    enoughOpportunities(base) &&
+    enoughOpportunities(post);
+
+  let improvementLift: number | null = null;
+  let ciLow: number | null = null;
+  let ciHigh: number | null = null;
+  let liftZ: number | null = null;
+  if (trusted && control.ok) {
+    // P0-01: multiply by the improvement sign so a positive lift ALWAYS means
+    // the player got better, whatever the metric's polarity.
+    const did = rawDelta - (base.avg - control.avg);
+    improvementLift = sign * did;
+    // Var(post − 2·base + control) with independent windows.
+    const vars = [post.varOfMean, base.varOfMean, control.varOfMean];
+    if (vars.every((v): v is number => v !== null)) {
+      const se = Math.sqrt(vars[0]! + 4 * vars[1]! + vars[2]!);
+      const df = Math.max(1, Math.min(control.n, base.n, post.n) - 1);
+      const half = studentTCritical(df, LIFT_CI_ALPHA) * se;
+      ciLow = improvementLift - half;
+      ciHigh = improvementLift + half;
+      liftZ = se > 0 ? improvementLift / se : null;
+    }
+  }
 
   return {
     ok: true,
@@ -490,21 +591,25 @@ export async function computeAttribution(
       delta: rawDelta,
       n_rounds_before: base.n,
       n_rounds_after: post.n,
-      // Direction-corrected improvement (DB `lift` column). `lift` is an alias.
+      // Direction-corrected, controlled improvement (DB `lift`). `lift` is an alias.
       improvement_lift: improvementLift,
       lift: improvementLift,
-      method_version: 'v2_observed_delta',
+      method_version: ATTRIBUTION_METHOD_VERSION,
+      control_value: control.ok ? control.avg : null,
+      n_rounds_control: control.ok ? control.n : 0,
+      lift_ci_low: ciLow,
+      lift_ci_high: ciHigh,
+      lift_z: liftZ,
     },
   };
 }
 
-/** Stroke-scale for the tanh lift→target map. Calibrated from live data:
- *  SG_total round-to-round magnitude has median |value| ≈5.35 and SD ≈4.39
- *  across 173 completed rounds, but a *lift* (observed post-vs-baseline
- *  delta-of-averages, direction-corrected — see N10 in the file header) is
- *  realistically ~0.5–2 strokes. scale=1.0 makes a 1-stroke lift target
- *  1+tanh(1)≈1.76 and a 2-stroke lift ≈1.96 (near saturation) — meaningful
- *  gradation exactly where real lifts live. */
+/** Scale for the tanh signal→target map. v3 (2026-09-28): the cron feeds
+ *  `lift_z` (lift / SE, unitless), so a percent metric no longer saturates
+ *  tanh the way a raw −18.7-point sand-save lift did against a stroke-scale
+ *  1.0. At scale 1.0 a z of 1 (one standard error) targets 1+tanh(1)≈1.76 and
+ *  z≈2 (the edge of significance) ≈1.96; a z under ~0.5, i.e. noise, barely
+ *  moves the weight. */
 const LIFT_TANH_SCALE = 1.0;
 
 /**
@@ -519,7 +624,11 @@ const LIFT_TANH_SCALE = 1.0;
  * and is then hard-clamped to [0.25, 2.0]. alpha = 1/(sample_n+1) shrinks each
  * update as evidence accumulates, so later attributions move the weight less.
  */
-export function nextWeight(prev: { weight: number; sample_n: number }, lift: number | null): { weight: number; sample_n: number } {
+export function nextWeight(
+  prev: { weight: number; sample_n: number },
+  /** The standardized lift (`AttributionRow.lift_z`); any unitless signed signal. */
+  lift: number | null,
+): { weight: number; sample_n: number } {
   if (lift === null || !Number.isFinite(lift)) return prev;
   const alpha = 1 / (prev.sample_n + 1);
   // Magnitude- and sign-aware target. A bigger positive lift pushes the target

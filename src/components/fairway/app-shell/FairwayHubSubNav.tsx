@@ -32,7 +32,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from '@/components/fairway/controls/_internal';
 import {
@@ -74,7 +74,7 @@ function useRovingKeyDown(
   return React.useCallback(
     (e: React.KeyboardEvent) => {
       if (count === 0) return;
-      let next: number | null = null;
+      let next: number | null;
       switch (e.key) {
         case 'ArrowRight':
         case 'ArrowDown':

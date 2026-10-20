@@ -74,6 +74,13 @@ export function isPlausibleToPar(scoreToPar: number | null, holesPlayed: number 
 export interface CountableRoundInput {
   /** Omit when the query already filtered `status = 'completed'`. */
   status?: string | null;
+  /**
+   * `golf_rounds.is_test`. A test round (QA/demo data, OD-03) never counts. The
+   * loaders filter `.eq('is_test', false)` in SQL; a loader that also selects the
+   * flag gets the exclusion here too, so a missed SQL filter cannot let a
+   * perfect-looking test round into an average.
+   */
+  is_test?: boolean | null;
   holes_played: number | null;
   total_score: number | null;
   front_nine: number | null;
@@ -88,6 +95,7 @@ export interface CountableRoundInput {
 
 export type RoundExclusionReason =
   | 'not_completed'
+  | 'test_round'
   | 'unsupported_length'
   | 'holes_missing'
   | 'implausible_score'
@@ -111,6 +119,7 @@ function recordedHoles(round: CountableRoundInput): number {
 /** Why a round is not countable, or `null` when it counts. */
 export function roundExclusionReason(round: CountableRoundInput): RoundExclusionReason | null {
   if (round.status != null && round.status !== 'completed') return 'not_completed';
+  if (round.is_test === true) return 'test_round';
 
   const holes = round.holes_played ?? 18;
   if (!COUNTABLE_HOLE_COUNTS.includes(holes)) return 'unsupported_length';

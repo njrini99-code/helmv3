@@ -1,5 +1,5 @@
 /**
- * Execution Waterfall for cron/Inngest jobs (Bridge Premium Phase 3,
+ * Execution Waterfall for cron jobs (Bridge Premium Phase 3,
  * `/admin/jobs`).
  *
  * `data/jobs.ts`'s `fetchJobsTab()` already reads everything this needs —

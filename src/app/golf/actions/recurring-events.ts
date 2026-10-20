@@ -37,8 +37,35 @@ function formatTimezoneOffset(offsetMinutes: number): string {
   const minutes = absMinutes % 60;
   return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
+
+/**
+ * The UTC offset suffix for one occurrence. With the series' IANA zone it is that zone's offset on the occurrence's own
+ * date, so a series across a daylight-saving change keeps its wall time (CAL-05: one offset taken at save time put every
+ * occurrence after 1 Nov an hour off). Without a zone, or for one Intl does not know, the single offset as before.
+ */
+function occurrenceTz(date: string, time: string, timeZone: string | undefined, fallbackOffset: number | undefined): string {
+  if (timeZone) {
+    const minutes = offsetMinutesFor(date, time.length === 5 ? `${time}:00` : time, timeZone);
+    if (minutes != null) return formatTimezoneOffset(minutes);
+  }
+  return fallbackOffset !== undefined ? formatTimezoneOffset(fallbackOffset) : '';
+}
+/**
+ * The series' RSVP deadline as one instant, shared by every occurrence. The editor sends datetime-local wall time
+ * ("YYYY-MM-DDTHH:MM"), which used to be stored with no offset, so Postgres read it as UTC (an ET coach's 6 PM became
+ * 2 PM). It takes the zone's offset on the deadline's own date, as occurrences do; a string with an offset passes.
+ */
+function seriesRsvpDeadline(deadline: string | undefined, timeZone: string | undefined, fallbackOffset: number | undefined): string | null {
+  if (!deadline) return null;
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(deadline)) return deadline;
+  const [date, rawTime] = deadline.split('T');
+  if (!date) return null;
+  const time = rawTime || '00:00';
+  return `${date}T${time}${occurrenceTz(date, time, timeZone, fallbackOffset)}`;
+}
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { format, parseISO } from 'date-fns';
+import { offsetMinutesFor } from '@/lib/golf/timezone';
 import {
   generateOccurrences,
   parseRecurrenceRule,
@@ -142,6 +169,8 @@ interface CreateRecurringEventInput {
   maxAttendees?: number;
   teamId?: string;
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
+  /** The series' IANA zone; when present each occurrence takes that zone's offset on its own date (CAL-05). */
+  timeZone?: string;
   // golf_player ids invited onto every occurrence's attendance (roll-call).
   // Mirrors GolfEventInput.attendeeIds on the one-off create path.
   attendeeIds?: string[];
@@ -152,6 +181,14 @@ interface CreateRecurringEventInput {
    * of all-day ones.
    */
   allDay?: boolean;
+  /**
+   * Makes the create safe to repeat (same contract as createGolfEvent's
+   * `requestId`): it becomes the series root's primary key, so a repeat after a
+   * lost reply hits the key instead of creating a second series, and the
+   * existing root is returned once it is read back as this coach's own series
+   * on this team. Without it the create behaves as it always has.
+   */
+  requestId?: string;
 }
 
 interface EditRecurringEventInput {
@@ -159,6 +196,8 @@ interface EditRecurringEventInput {
   originalStartDate: string; // ISO date - identifies which instance
   scope: RecurringEditScope;
   timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
+  /** The series' IANA zone, for occurrences a rule change appends (CAL-05). */
+  timeZone?: string;
   updates: {
     title?: string;
     description?: string;
@@ -168,6 +207,8 @@ interface EditRecurringEventInput {
     endTime?: string;
     location?: string;
     recurrenceRule?: string;
+    /** Require RSVP for every event in scope; undefined leaves each event's own setting. */
+    requiresRsvp?: boolean;
   };
 }
 
@@ -315,8 +356,12 @@ function deferRecurringDeleteNotify(opts: {
   startTime: string | null;
   location: string | null;
   scope: RecurringEditScope;
+  requiresRsvp: boolean;
 }): void {
   const { userIds, eventIds, title, startTime, location, scope } = opts;
+  // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+  // that doesn't ask for replies, including its cancellation.
+  if (!opts.requiresRsvp) return;
   if (userIds.length === 0 || eventIds.length === 0) return;
 
   after(async () => {
@@ -538,6 +583,7 @@ async function applySeriesRuleUpdate(
     teamId: string | null;
     newRuleString: string;
     timezoneOffset?: number;
+    timeZone?: string;
   },
 ): Promise<ActionResult> {
   const failure = { success: false, error: 'Failed to update the recurrence rule. Please try again.' };
@@ -595,8 +641,8 @@ async function applySeriesRuleUpdate(
         title: rootRow.title,
         description: rootRow.description ?? null,
         event_type: rootRow.event_type,
-        start_time: `${date}T${startTime}${tz}`,
-        end_time: endTime ? `${date}T${endTime}${tz}` : null,
+        start_time: `${date}T${startTime}${occurrenceTz(date, startTime, opts.timeZone, opts.timezoneOffset) || tz}`,
+        end_time: endTime ? `${date}T${endTime}${occurrenceTz(date, endTime, opts.timeZone, opts.timezoneOffset) || tz}` : null,
         location: rootRow.location ?? null,
         created_by: rootRow.created_by,
         team_id: rootRow.team_id,
@@ -640,9 +686,17 @@ async function applySeriesRuleUpdate(
 // CREATE RECURRING EVENT
 // ============================================================================
 
+const REQUEST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** The create's own words for an invitation failure: the series is real, the invitations are not. */
+const SERIES_INVITATIONS_FAILED = "The series was created, but its invitations didn't all go out.";
+
 async function createRecurringEventImpl(
   input: CreateRecurringEventInput
-): Promise<ActionResult<{ eventId: string }>> {
+): Promise<ActionResult<{ eventId: string; invitationsError?: string }>> {
+  if (input.requestId !== undefined && !REQUEST_ID_RE.test(input.requestId)) {
+    return { success: false, error: 'Request id must be a UUID' };
+  }
   try {
     const supabase = await createClient();
 
@@ -694,6 +748,7 @@ async function createRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
+    const rsvpDeadline = seriesRsvpDeadline(input.rsvpDeadline, input.timeZone, input.timezoneOffset);
 
     // Same invariant the edit path guards (see END_BEFORE_START_ERROR): every
     // occurrence gets its start and end from the same date, so an end earlier
@@ -709,6 +764,9 @@ async function createRecurringEventImpl(
     }
 
     const rootRow = {
+      // The request id IS the root's id, so a repeat of the same create collides
+      // on the primary key instead of inserting a second series.
+      ...(input.requestId ? { id: input.requestId } : {}),
       title: input.title,
       description: input.description || null,
       event_type: input.eventType,
@@ -719,7 +777,7 @@ async function createRecurringEventImpl(
       team_id: teamId,
       status: 'confirmed',
       requires_rsvp: input.requiresRsvp || false,
-      rsvp_deadline: input.rsvpDeadline || null,
+      rsvp_deadline: rsvpDeadline,
       max_attendees: input.maxAttendees || null,
       all_day: input.allDay ?? false,
       recurrence_rule: input.recurrenceRule,
@@ -732,6 +790,33 @@ async function createRecurringEventImpl(
       .insert(rootRow)
       .select('id')
       .single();
+
+    if (rootError && input.requestId && (rootError as { code?: string }).code === '23505') {
+      // The id is taken. A repeat of a create that already landed (the reply was
+      // lost) only if the root reads back as the same series, made by this coach,
+      // on this team. RLS hides another team's row from this read, so an id that
+      // collides with anything else comes back empty and is refused below, never
+      // reported as saved. Occurrences, invitations and the fan-out already ran
+      // with the first attempt, so a repeat sends none of them again.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing, error: existingError } = await (supabase as any)
+        .from('golf_events')
+        .select('id, team_id, created_by, title, recurrence_rule, parent_event_id')
+        .eq('id', input.requestId)
+        .maybeSingle();
+      if (
+        !existingError &&
+        existing &&
+        existing.team_id === teamId &&
+        existing.created_by === coach.id &&
+        existing.title === input.title &&
+        existing.recurrence_rule === input.recurrenceRule &&
+        existing.parent_event_id === null
+      ) {
+        revalidatePath('/golf/dashboard/calendar');
+        return { success: true, data: { eventId: existing.id as string } };
+      }
+    }
 
     if (rootError || !rootInsert?.id) {
       await logServerError(`[createRecurringEvent Error]: ${describeError(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
@@ -746,14 +831,14 @@ async function createRecurringEventImpl(
         title: input.title,
         description: input.description || null,
         event_type: input.eventType,
-        start_time: input.startTime ? `${date}T${input.startTime}${tz}` : `${date}T00:00:00${tz}`,
-        end_time: input.endTime ? `${date}T${input.endTime}${tz}` : null,
+        start_time: `${date}T${input.startTime ?? '00:00:00'}${occurrenceTz(date, input.startTime ?? '00:00:00', input.timeZone, input.timezoneOffset)}`,
+        end_time: input.endTime ? `${date}T${input.endTime}${occurrenceTz(date, input.endTime, input.timeZone, input.timezoneOffset)}` : null,
         location: input.location || null,
         created_by: coach.id,
         team_id: teamId,
         status: 'confirmed',
         requires_rsvp: input.requiresRsvp || false,
-        rsvp_deadline: input.rsvpDeadline || null,
+        rsvp_deadline: rsvpDeadline,
         max_attendees: input.maxAttendees || null,
         all_day: input.allDay ?? false,
         recurrence_rule: null,
@@ -792,6 +877,8 @@ async function createRecurringEventImpl(
     }
 
     const seriesEventIds = [rootId, ...childIds];
+    // Set below when the invitations could not be written; the series stays.
+    let invitationsError: string | undefined;
 
     // Invite selected attendees onto EVERY occurrence's roll-call/attendance
     // panel (2026-07-10 calendar-travel audit, P0). Mirrors the one-off
@@ -828,6 +915,7 @@ async function createRecurringEventImpl(
       // the unvalidated list on a failed read is exactly the defect being
       // fixed, so this fails closed rather than open.
       if (rosterError) {
+        invitationsError = SERIES_INVITATIONS_FAILED;
         await logServerError(
           `[createRecurringEvent attendance Error]: could not verify the series roster, attached nobody: ${describeError(rosterError)}`,
           {
@@ -865,7 +953,10 @@ async function createRecurringEventImpl(
           .upsert(chunk, { onConflict: 'event_id,player_id' });
         if (attendanceError) {
           // Don't fail the whole create — the series exists; a coach can
-          // still invite players via the per-occurrence edit flow.
+          // still invite players via the per-occurrence edit flow. But say so:
+          // the coach used to be told "players notified" for a series nobody
+          // was invited to.
+          invitationsError = SERIES_INVITATIONS_FAILED;
           await logServerError(`[createRecurringEvent attendance Error]: ${attendanceError.message}`, {
             action: 'recurring_events.createRecurringEvent.attendance',
             extra: { rootId },
@@ -885,7 +976,11 @@ async function createRecurringEventImpl(
     const fanOutTitle = input.title;
     const fanOutStartDate = input.startDate;
     const fanOutLocation = input.location || '';
+    const fanOutNotifies = input.requiresRsvp === true;
     after(async () => {
+      // Owner, 2026-10-08: RSVPs are off unless the coach turns them on, and players get no notification for an event
+      // that doesn't ask for replies.
+      if (!fanOutNotifies) return;
       try {
         const adminClient = createAdminClient();
         // Same silent fan-out as createGolfEvent, and worse in scope: this one
@@ -1008,7 +1103,7 @@ async function createRecurringEventImpl(
     });
 
     revalidatePath('/golf/dashboard/calendar');
-    return { success: true, data: { eventId: rootId } };
+    return { success: true, data: { eventId: rootId, ...(invitationsError ? { invitationsError } : {}) } };
   } catch (error) {
     await logServerError(`[createRecurringEvent Error]: ${describeError(error)}`, { action: 'recurring_events.createRecurringEvent' });
     return formatSafeErrorResponse(error);
@@ -1023,7 +1118,7 @@ const observedCreateRecurringEvent = withAdminObserved(
 
 export async function createRecurringEvent(
   input: CreateRecurringEventInput
-): Promise<ActionResult<{ eventId: string }>> {
+): Promise<ActionResult<{ eventId: string; invitationsError?: string }>> {
   return observedCreateRecurringEvent(input);
 }
 
@@ -1092,8 +1187,10 @@ async function editRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
     const literalUpdates: Record<string, unknown> = {};
     if (input.updates.title) literalUpdates.title = input.updates.title;
-    if (input.updates.description !== undefined) literalUpdates.description = input.updates.description;
-    if (input.updates.location !== undefined) literalUpdates.location = input.updates.location;
+    // '' clears the field (stored as null), as on updateGolfEvent.
+    if (input.updates.description !== undefined) literalUpdates.description = input.updates.description || null;
+    if (input.updates.location !== undefined) literalUpdates.location = input.updates.location || null;
+    if (input.updates.requiresRsvp !== undefined) literalUpdates.requires_rsvp = input.updates.requiresRsvp === true;
 
     const targetDate = (targetEvent.start_time ?? '').slice(0, 10);
     const oldStartMs = targetEvent.start_time ? Date.parse(targetEvent.start_time) : NaN;
@@ -1420,6 +1517,7 @@ async function editRecurringEventImpl(
           teamId: targetEvent.team_id,
           newRuleString: input.updates.recurrenceRule,
           timezoneOffset: input.timezoneOffset,
+          timeZone: input.timeZone,
         });
         if (!ruleResult.success) return ruleResult;
       } else {
@@ -1650,6 +1748,7 @@ async function deleteRecurringEventImpl(
                 startTime: targetEvent.start_time,
                 location: targetEvent.location,
                 scope: 'thisAndFuture',
+                requiresRsvp: targetEvent.requires_rsvp === true,
               });
               break;
             }
@@ -1684,6 +1783,7 @@ async function deleteRecurringEventImpl(
             startTime: targetEvent.start_time,
             location: targetEvent.location,
             scope: 'thisAndFuture',
+            requiresRsvp: targetEvent.requires_rsvp === true,
           });
           break;
         }
@@ -1730,6 +1830,7 @@ async function deleteRecurringEventImpl(
           startTime: targetEvent.start_time,
           location: targetEvent.location,
           scope: 'thisAndFuture',
+          requiresRsvp: targetEvent.requires_rsvp === true,
         });
         break;
       }
@@ -1783,6 +1884,7 @@ async function deleteRecurringEventImpl(
           startTime: targetEvent.start_time,
           location: targetEvent.location,
           scope: 'all',
+          requiresRsvp: targetEvent.requires_rsvp === true,
         });
         break;
       }

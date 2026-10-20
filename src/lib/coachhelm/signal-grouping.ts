@@ -146,26 +146,52 @@ export function ageDaysFromCreatedAt(createdAt: string | null | undefined, now: 
 // Dedupe
 // ---------------------------------------------------------------------------
 
-/** Same player + same `category` is the same underlying issue restated.
- *  `category` doubles as the "metric" key — callers map it from
- *  `insight.category ?? insight.insight_type` or `pattern.pattern_type`
- *  (see signal-groups.ts). */
+/** The metric a signal measures: `evidence.metric` when the row carries one,
+ *  else `category` (patterns and v2-era rows have no evidence metric). */
+function metricKeyOf(signal: GroupedSignal): string {
+  const ev = signal.evidence;
+  if (ev && typeof ev === 'object') {
+    const metric = (ev as Record<string, unknown>).metric;
+    if (typeof metric === 'string' && metric.length > 0) return metric;
+  }
+  return signal.category;
+}
+
+/** Same player + same METRIC is the same underlying issue restated.
+ *
+ *  This keyed on player + `category` until the 2026-09 accuracy audit: 520
+ *  visible insights collapsed to 224 cards although 518 of the 520 were
+ *  distinct metrics, so a player's four putting leaks showed as one card and
+ *  33% of the rows carrying a measured impact were folded out of sight. */
 function dedupeKey(signal: GroupedSignal): string {
-  return `${signal.playerId ?? 'team'}::${signal.category}`;
+  return `${signal.playerId ?? 'team'}::${metricKeyOf(signal)}`;
+}
+
+/** Larger |strokeImpact| first; a known impact beats an unknown one; on a tie
+ *  the newer row (smaller `ageDays`) wins. */
+function keepFirst(a: GroupedSignal, b: GroupedSignal): number {
+  const aImpact = a.strokeImpact === null || !Number.isFinite(a.strokeImpact) ? null : Math.abs(a.strokeImpact);
+  const bImpact = b.strokeImpact === null || !Number.isFinite(b.strokeImpact) ? null : Math.abs(b.strokeImpact);
+  if (aImpact !== null && bImpact !== null && aImpact !== bImpact) return bImpact - aImpact;
+  if (aImpact !== null && bImpact === null) return -1;
+  if (aImpact === null && bImpact !== null) return 1;
+  return a.ageDays - b.ageDays;
 }
 
 /**
- * Collapses signals that restate the same player+category issue down to a
- * single, newest (smallest `ageDays`) row, folding the rest into
- * `supersededCount`. Starts each collapse from the kept signal's OWN
- * `supersededCount` so re-collapsing an already-collapsed list accumulates
- * instead of resetting.
+ * Collapses signals that restate the same player+metric issue down to the
+ * row with the LARGEST measured leak (newest on a tie), folding the rest into
+ * `supersededCount`. It used to keep the newest row, but `ageDays` comes from
+ * a `created_at` frozen at first detection, so in 34 of 224 audited groups the
+ * kept card showed a smaller leak than its group held. Starts each collapse
+ * from the kept signal's OWN `supersededCount` so re-collapsing an
+ * already-collapsed list accumulates instead of resetting.
  */
 export function collapseDuplicates(signals: GroupedSignal[]): GroupedSignal[] {
-  const newestFirst = [...signals].sort((a, b) => a.ageDays - b.ageDays);
+  const ordered = [...signals].sort(keepFirst);
   const byKey = new Map<string, GroupedSignal>();
 
-  for (const signal of newestFirst) {
+  for (const signal of ordered) {
     const key = dedupeKey(signal);
     const kept = byKey.get(key);
     if (!kept) {
@@ -206,14 +232,16 @@ function recencyBonus(_ageDays: number): number {
 }
 
 /**
- * attentionScore = (worst-severity weight x 3) + signal count + the
- * freshest signal's recency bonus. A pure function of a group's severity +
+ * attentionScore = (worst-severity weight x 1000) + signal count (capped at
+ * 999) + the freshest signal's recency bonus. Severity-first: volume only
+ * orders players within the same worst severity. It was weight x 3 + count,
+ * so four extra signals could lift a `high` player over an `urgent` one. A pure function of a group's severity +
  * signal list, callable while assembling a `SignalGroup` (as `groupSignals`
  * does) or re-derived later, e.g. to re-rank after a client-side dismiss.
  */
 export function attentionScore(group: Pick<SignalGroup, 'worstSeverity' | 'signals'>): number {
-  const severityComponent = SEVERITY_WEIGHT[group.worstSeverity] * 3;
-  const volumeComponent = group.signals.length;
+  const severityComponent = SEVERITY_WEIGHT[group.worstSeverity] * 1000;
+  const volumeComponent = Math.min(group.signals.length, 999);
   const recencyComponent = group.signals.reduce((best, s) => Math.max(best, recencyBonus(s.ageDays)), 0);
   return severityComponent + volumeComponent + recencyComponent;
 }

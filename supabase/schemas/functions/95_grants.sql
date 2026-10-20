@@ -2,6 +2,8 @@ REVOKE ALL ON FUNCTION "helm_private"."configure_trace_context"("p_round_data" "
 
 REVOKE ALL ON FUNCTION "helm_private"."guard_golf_round_lifecycle"() FROM PUBLIC;
 
+REVOKE ALL ON FUNCTION "helm_private"."prevent_qualifier_entry_active_round_stranding"() FROM PUBLIC, "anon", "authenticated";
+
 REVOKE ALL ON FUNCTION "helm_private"."prevent_active_team_member_deactivation"() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION "helm_private"."reject_completed_round_child_mutation"() FROM PUBLIC;
@@ -117,8 +119,6 @@ REVOKE ALL ON FUNCTION "public"."bridge_baseball_coach_lifting_revoke_on_delete"
 GRANT ALL ON FUNCTION "public"."bridge_baseball_coach_lifting_revoke_on_delete"() TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") FROM PUBLIC;
-
-GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") TO "service_role";
 
@@ -598,11 +598,21 @@ GRANT ALL ON FUNCTION "public"."golf_normalize_name"("p" "text") TO "authenticat
 
 GRANT ALL ON FUNCTION "public"."golf_normalize_name"("p" "text") TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") FROM PUBLIC, "anon";
+
+GRANT EXECUTE ON FUNCTION "public"."golf_qualifier_selection_reasons"("p_qualifier_id" "uuid") TO "authenticated", "service_role";
+
 REVOKE ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."golf_player_anonymize_on_unlink"() TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."golf_readable_round_ids"() FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "service_role";
 
 GRANT ALL ON FUNCTION "public"."golf_recruit_documents_assert_same_team"() TO "anon";
 
@@ -970,8 +980,6 @@ GRANT ALL ON FUNCTION "public"."reclassify_golf_round"("p_round_id" "uuid", "p_r
 
 REVOKE ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") FROM PUBLIC;
 
-GRANT ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") TO "authenticated";
-
 GRANT ALL ON FUNCTION "public"."recompute_golf_round_totals"("p_round_id" "uuid") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."recompute_team_sg"("p_team_id" "uuid") FROM PUBLIC;
@@ -1284,6 +1292,8 @@ REVOKE ALL ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_
 GRANT EXECUTE ON FUNCTION "public"."golf_round_is_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) TO "authenticated", "service_role";
 REVOKE ALL ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) FROM PUBLIC, "anon";
 GRANT EXECUTE ON FUNCTION "public"."golf_round_canonical_total"("p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer) TO "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) FROM PUBLIC, "anon";
+GRANT EXECUTE ON FUNCTION "public"."golf_round_is_score_countable"("p_status" "text", "p_holes_played" integer, "p_total_score" integer, "p_front_nine" integer, "p_back_nine" integer, "p_total_putts" integer, "p_strokes_gained_total" numeric) TO "authenticated", "service_role";
 
 REVOKE ALL ON FUNCTION "public"."update_player_stats_complete"() FROM PUBLIC;
 

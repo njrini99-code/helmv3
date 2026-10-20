@@ -98,7 +98,9 @@ function makeFakeSupabase(opts: { candidates: FakeCandidate[]; rounds?: FakeRoun
       return {
         select: () => ({
           in: () => ({
-            gte: () => Promise.resolve({ data: opts.rounds ?? [], error: null }),
+            eq: () => ({
+              gte: () => Promise.resolve({ data: opts.rounds ?? [], error: null }),
+            }),
           }),
         }),
       };

@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 
 import { haptic } from '@/lib/lifting/haptics';
 import { SORENESS_REGIONS } from '@/lib/lifting/soreness-regions';
@@ -51,7 +51,7 @@ const SORENESS_TAGS = [
 // desktop and with the keyboard down) instead of pinning to the literal
 // viewport edge.
 const KEYBOARD_LIFT =
-  'bottom-[var(--keyboard-height,0px)] transition-[bottom] duration-[250ms] motion-reduce:transition-none';
+  'bottom-[var(--keyboard-height,0px)] transition-[bottom] [transition-duration:250ms] motion-reduce:transition-none';
 
 // ---------------------------------------------------------------------------
 // Component

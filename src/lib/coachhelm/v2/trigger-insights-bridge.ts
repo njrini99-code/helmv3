@@ -9,7 +9,7 @@ import type { AnalysisOutcomeCode, PreservedCause } from '@/lib/coachhelm/v3/eng
  * SECURITY: the real implementation (service-role admin client, zero user
  * auth gate, caller-supplied player_id, generates + writes CoachHelm
  * insights) lives as a MODULE-PRIVATE function inside
- * `src/app/golf/actions/insights.ts` (a 'use server' file) — it is
+ * `src/app/golf/actions/insights-coachhelm.ts` (a 'use server' file) — it is
  * intentionally NOT exported from there. Every exported async function in a
  * 'use server' file is registered by Next.js as a public, directly-POSTable
  * server action (discoverable by its action id) regardless of whether any
@@ -37,7 +37,7 @@ import type { AnalysisOutcomeCode, PreservedCause } from '@/lib/coachhelm/v3/eng
  * at its own module scope (a side effect, not an export) to hand this
  * bridge a reference to the withAdminObserved-wrapped impl. Each legitimate
  * caller (post-round-trigger.ts, the roster-sweep cron route) carries a
- * side-effect `import '@/app/golf/actions/insights'` so that registration
+ * side-effect `import '@/app/golf/actions/insights-coachhelm'` so that registration
  * has ALREADY run, synchronously, by the time the caller's own module
  * finishes initializing. This used to be a lazy `await import()` inside
  * `triggerPlayerInsightsAfterRound` below — but that made this file the
@@ -58,7 +58,7 @@ import type { AnalysisOutcomeCode, PreservedCause } from '@/lib/coachhelm/v3/eng
 
 /**
  * Stable, non-message-derived classification produced by
- * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights.ts).
+ * triggerPlayerInsightsAfterRoundImpl (src/app/golf/actions/insights-coachhelm.ts).
  * Since 2026-09-12 (repair plan R3) it is the typed outcome code from
  * `src/lib/coachhelm/v3/engine/analysis-outcome.ts`, so the engine names its
  * own state and no consumer classifies from the message.
@@ -111,7 +111,7 @@ export async function triggerPlayerInsightsAfterRound(
   if (!impl) {
     throw new Error(
       '[trigger-insights-bridge] triggerPlayerInsightsAfterRound not registered — ' +
-        "the caller is missing its side-effect import of '@/app/golf/actions/insights' " +
+        "the caller is missing its side-effect import of '@/app/golf/actions/insights-coachhelm' " +
         '(see the wiring note in this file header), or the registration call was removed',
     );
   }

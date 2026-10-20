@@ -66,6 +66,15 @@ import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { normalizeName } from '../src/lib/golf/course-library';
 import { buildCourseSeed, type CourseFact } from '../src/lib/golf/course-scorecard-generator';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-course-library-scorecards.ts',
+  summary:
+    "Seeds course library scorecards (fixes #913, part 1 of 3).",
+  guard: "its own --apply flag (unchanged); --dry-run previews",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Course facts — the "well-known public scorecard" inputs. See PR body for

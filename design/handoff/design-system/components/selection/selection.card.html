@@ -1,0 +1,22 @@
+<!-- @dsCard group="Components" viewport="700x210" name="Selection" subtitle="Recessed segmented wells, green underline tabs, raised vs. pressed pills" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page)}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-caption);color:var(--text-tertiary);width:78px;flex:none}</style>
+</head><body class="fairway"><div id="root" style="padding:24px"></div>
+<script type="text/babel">
+const NS = window.FairwayClubhouseEdition_9c4f4d;
+
+const { Segmented, Tabs, FilterPill, Switch } = NS;
+function App(){const [w,setW]=React.useState('Last 10');const [m,setM]=React.useState('Strokes');const [t,setT]=React.useState('overview');const [f,setF]=React.useState({v:true,j:false,s:false});
+return <div className="col" style={{gap:22}}>
+<Tabs value={t} onChange={setT} tabs={[{value:'overview',label:'Overview'},{value:'rounds',label:'Rounds',count:24},{value:'genome',label:'Genome'},{value:'notes',label:'Notes',count:3}]}/>
+<div className="row" style={{justifyContent:'space-between'}}><Segmented label="Window" options={['Last 5','Last 10','Last 20','Season']} value={w} onChange={setW}/><div className="row" style={{gap:16}}><Segmented size="sm" options={['Strokes','To par']} value={m} onChange={setM}/><Switch defaultChecked label="Putts"/></div></div>
+<div className="row"><FilterPill icon="flag" selected={f.v} onToggle={v=>setF({...f,v})} onRemove={()=>setF({...f,v:false})}>Varsity</FilterPill><FilterPill selected={f.j} onToggle={v=>setF({...f,j:v})}>Juniors</FilterPill><FilterPill selected={f.s} onToggle={v=>setF({...f,s:v})}>Needs attention</FilterPill><FilterPill icon="calendar">This week</FilterPill></div>
+</div>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

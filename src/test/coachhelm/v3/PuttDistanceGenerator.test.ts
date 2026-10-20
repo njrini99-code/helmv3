@@ -45,6 +45,8 @@ function makeAgg(overrides: Partial<{
     attempts: overrides.attempts ?? 40,
     spanDays: overrides.spanDays === undefined ? 54 : overrides.spanDays,
   last_round_date: '2026-05-25',
+    attempts_per_round: (overrides.attempts ?? 40) / (overrides.rounds_played ?? 20),
+    strokes_impact: 0,
   };
 }
 
@@ -269,6 +271,74 @@ vi.mock('@/lib/supabase/untyped', () => ({
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
   loadPlayerCohort: vi.fn().mockResolvedValue({ gender: 'mens', level: null }),
 }));
+
+// No standing row → the measured impact gaps to the gender anchor (men: Tour).
+vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({
+  loadStandingForMetric: vi.fn().mockResolvedValue(null),
+}));
+
+describe('PuttDistanceGenerator — player-own attempts per round (audit defect 7)', () => {
+  it('sizes the 3-5 ft impact from the player\'s own attempts, not the fixed 0.10/pp constant', async () => {
+    // 60 band putts over 20 rounds = 3 per round, making 80% vs Tour 90.5%.
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-d7',
+        rounds_played: 20,
+        first_round_date: '2026-06-01',
+        last_round_date: '2026-09-01',
+        putt_make_pct_3_5ft: 80,
+        putt_attempts_3_5ft: 60,
+      },
+      error: null,
+    });
+    const g = new PuttDistanceGenerator('p-d7', '3_5ft');
+    const agg = await g.aggregate();
+    expect(agg?.attempts_per_round).toBe(3);
+    // 10.5 pp × 3 putts/round × 1 stroke = 0.315. The old constant path gave
+    // 10.5 × 0.10 = 1.05 — the audit's ~2× (here 3.3×) overstatement.
+    expect(agg?.strokes_impact).toBeCloseTo(0.315, 3);
+    const c = g.composeContent(agg!);
+    // Below the 0.3 display floor? No — but either way the row carries its
+    // measured value, so it ranks on strokes rather than the priority floor.
+    expect(c.evidence.strokes_impact).toBeCloseTo(0.315, 3);
+    expect(c.evidence.detail?.attempts_per_round).toBe(3);
+  });
+
+  it('publishes the make-% interval next to the number (audit row 24)', async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-ci',
+        rounds_played: 10,
+        first_round_date: '2026-06-01',
+        last_round_date: '2026-09-01',
+        putt_make_pct_10_15ft: 25,
+        putt_attempts_10_15ft: 12,
+      },
+      error: null,
+    });
+    const g = new PuttDistanceGenerator('p-ci', '10_15ft');
+    const c = g.composeContent((await g.aggregate())!);
+    expect(c.content).toMatch(/\(12 attempts\) \(95% range \d+-\d+%\)/);
+    expect(c.evidence.detail?.make_ci_low).toBeLessThan(25);
+    expect(c.evidence.detail?.make_ci_high).toBeGreaterThan(25);
+  });
+
+  it('writes 0 impact at or above the anchor (a strength is not a leak)', async () => {
+    maybeSingleMock.mockResolvedValue({
+      data: {
+        player_id: 'p-s',
+        rounds_played: 10,
+        first_round_date: '2026-06-01',
+        last_round_date: '2026-09-01',
+        putt_make_pct_5_10ft: 70,
+        putt_attempts_5_10ft: 30,
+      },
+      error: null,
+    });
+    const agg = await new PuttDistanceGenerator('p-s', '5_10ft').aggregate();
+    expect(agg?.strokes_impact).toBe(0);
+  });
+});
 
 describe('PuttDistanceGenerator — E7 aggregate() ATTEMPT_FLOOR suppression (end-to-end gate)', () => {
   it('returns null when putt_attempts_25_plus_ft is ATTEMPT_FLOOR-1 (sub-floor band is suppressed)', async () => {

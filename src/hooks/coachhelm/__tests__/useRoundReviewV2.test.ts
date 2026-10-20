@@ -22,14 +22,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useRoundReviewV2 } from '../useRoundReviewV2';
 import { generateAndStoreRoundReview, type RoundReviewContent } from '@/app/golf/actions/round-review-system';
-import { generateRoundReview, getCoachHelmStatus } from '@/app/golf/actions/insights';
+import { generateRoundReview } from '@/app/golf/actions/insights-player-analysis';
+import { getCoachHelmStatus } from '@/app/golf/actions/insights-coachhelm';
 
 vi.mock('@/app/golf/actions/round-review-system', () => ({
   generateAndStoreRoundReview: vi.fn(async () => ({ success: false, error: 'not mocked' })),
 }));
 
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-player-analysis', () => ({
   generateRoundReview: vi.fn(async () => ({ success: false })),
+}));
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   getCoachHelmStatus: vi.fn(async () => ({ success: true, enabled: false })),
 }));
 

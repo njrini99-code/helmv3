@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   isWindowedMetric,
   aggregateWindowMetric,
+  loadPlayerWindowRounds,
   type WindowRound,
 } from '../window-metric';
 
@@ -119,5 +120,54 @@ describe('aggregateWindowMetric — honest nulls (never fabricate)', () => {
 
   it('returns null for a non-windowable metric', () => {
     expect(aggregateWindowMetric('putts_made_10_15ft_pct', [round({})])).toBeNull();
+  });
+});
+
+describe('loadPlayerWindowRounds — countable rounds only, optional upper bound', () => {
+  function fakeClient(rounds: Record<string, unknown>[], stats: Record<string, unknown>[]) {
+    const calls: Array<[string, unknown]> = [];
+    const chain = (data: unknown[]) => {
+      const b: Record<string, unknown> = {};
+      for (const m of ['select', 'eq', 'gte', 'lt', 'in']) {
+        b[m] = (...args: unknown[]) => {
+          calls.push([m, args]);
+          return b;
+        };
+      }
+      b.then = (resolve: (v: unknown) => unknown) => resolve({ data, error: null });
+      return b;
+    };
+    return {
+      calls,
+      client: { from: (t: string) => chain(t === 'golf_rounds' ? rounds : stats) },
+    };
+  }
+  const full = { holes_played: 18, total_score: 74, front_nine: 37, back_nine: 37, total_putts: 31 };
+  const statRow = (round_id: string, sg: number) => ({
+    round_id, strokes_gained_total: sg, strokes_gained_putting: sg, strokes_gained_tee: null,
+    strokes_gained_approach: null, strokes_gained_around_green: null, greens_hit: null,
+    greens_total: null, sand_saves: null, sand_attempts: null, penalty_strokes: 0,
+  });
+
+  it('drops implausible and hole-less rounds so they cannot move a windowed goal', async () => {
+    const { client } = fakeClient(
+      [
+        { id: 'ok', round_date: '2026-09-10', ...full },
+        // The Sep 17 round: 18 scored holes summing to 37, SG +34.51.
+        { id: 'implausible', round_date: '2026-09-17', holes_played: 18, total_score: 37, front_nine: 19, back_nine: 18, total_putts: 18 },
+        { id: 'holeless', round_date: '2026-09-18', holes_played: 18, total_score: 73, front_nine: null, back_nine: null, total_putts: null },
+      ],
+      [statRow('ok', -1.5), statRow('implausible', 34.51), statRow('holeless', -1)],
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await loadPlayerWindowRounds(client as any, 'p1', '2026-09-01T00:00:00Z');
+    expect(rows.map((r) => r.strokes_gained_total)).toEqual([-1.5]);
+  });
+
+  it('bounds the window above when untilIso is given', async () => {
+    const { client, calls } = fakeClient([], []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await loadPlayerWindowRounds(client as any, 'p1', '2026-06-01T00:00:00Z', '2026-09-01T10:00:00Z');
+    expect(calls).toContainEqual(['lt', ['round_date', '2026-09-01']]);
   });
 });

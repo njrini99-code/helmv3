@@ -11,7 +11,7 @@
  * Ink follows the lane: `team` green (default, team/dev), `pursuit` clay
  * (recruiting). Reduced motion → rule drawn, dot solid (no breathing).
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { PaperCard } from './PaperCard';

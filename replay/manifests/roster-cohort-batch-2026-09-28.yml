@@ -1,0 +1,28 @@
+schema_version: 1
+replay_id: roster-cohort-batch-2026-09-28
+incident_id: memory/incidents/coachhelm_ai/INC-2026-09-28-roster-cohort-n-plus-one.md
+feature_id: coachhelm_ai
+title: >-
+  loadPlayersStandingMap resolved each roster player's cohort with its own
+  golf_team_members read (Sentry N+1 JAVASCRIPT-NEXTJS-QK on
+  GET /golf/dashboard/roster).
+bad_version: 08e6e2e22ee315912301ce0a87c69ae967c218be
+fixed_version: 43d33e9c40c18584da2149e7325ac281f3b7488a
+fixture:
+  - source: standing-loader-roster-cohort-batch.test.ts
+    target: src/test/coachhelm/v3/standing-loader-roster-cohort-batch.test.ts
+test_command: "./node_modules/.bin/vitest run --project unit src/test/coachhelm/v3/standing-loader-roster-cohort-batch.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic player ids and rows; no production data.
+source_incident_status: fixed
+created_at: "2026-09-28"
+notes: >-
+  On bad_version both tests fail with "expected ... to have a length of 1 but
+  got 5" (and "got 3"): one golf_team_members read per player.

@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { useState, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 
 import { haptic } from '@/lib/lifting/haptics';
 import { IconCheckCircle2, IconLoader, IconCheck } from '@/components/icons';

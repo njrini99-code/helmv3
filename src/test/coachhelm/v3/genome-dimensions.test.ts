@@ -10,7 +10,6 @@ import { describe, it, expect } from 'vitest';
 import pressureDelta from '@/lib/coachhelm/v3/genome/dimensions/pressure-delta';
 import scramblingRate from '@/lib/coachhelm/v3/genome/dimensions/scrambling-rate';
 import par3Proficiency from '@/lib/coachhelm/v3/genome/dimensions/par3-proficiency';
-import weatherStub from '@/lib/coachhelm/v3/genome/dimensions/weather-sensitivity-stub';
 import backNineDelta from '@/lib/coachhelm/v3/genome/dimensions/back-nine-delta';
 import scoringTrend from '@/lib/coachhelm/v3/genome/dimensions/scoring-trend';
 import driverUsage from '@/lib/coachhelm/v3/genome/dimensions/driver-usage';
@@ -231,17 +230,9 @@ describe('par3_proficiency', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// weather_sensitivity_stub
-// ---------------------------------------------------------------------------
-
-describe('weather_sensitivity_stub', () => {
-  it('always returns null with "awaiting weather data" label', () => {
-    const r = weatherStub.compute(ctx());
-    expect(r.value).toBeNull();
-    expect(r.label).toMatch(/weather/i);
-  });
-});
+// weather_sensitivity_stub was retired (audit row 18, 2026-09-28): no weather
+// data exists, so it could never produce a value. The registry guard lives in
+// genome-orchestrator-persistence.test.ts.
 
 // ---------------------------------------------------------------------------
 // back_nine_delta

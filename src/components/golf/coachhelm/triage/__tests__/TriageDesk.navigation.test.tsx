@@ -5,7 +5,7 @@ import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GroupedSignal, SignalGroup } from '@/lib/coachhelm/signal-grouping';
-import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights';
+import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
 import type { QueueFilterKey } from '../buildTriageViewModel';
 import { TriageDesk } from '../TriageDesk';
 
@@ -31,7 +31,7 @@ vi.mock('@/components/fairway', () => ({
   fairwayToast: { error: vi.fn(), warning: vi.fn(), success: vi.fn() },
 }));
 
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-coachhelm', () => ({
   refreshTeamAnalysisAsCoach: vi.fn(),
 }));
 

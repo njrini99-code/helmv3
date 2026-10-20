@@ -111,6 +111,33 @@ describe('coachhelm-analytics — error surfacing (no silent mock fallback)', ()
     expect(result.data?.summary.overallAccuracy).not.toBe(0.6);
   });
 
+  // Audit row 57: error_distribution holds COUNTS over a rolling 30-day window,
+  // so summing it across overlapping snapshots multi-counted every prediction.
+  it('getPredictionPerformance takes error counts from the latest snapshot, not a sum of overlapping windows', async () => {
+    const snap = (period_end: string, counts: Record<string, number>) => ({
+      period_end, accuracy_rate: 0.75, predictions_made: 20, predictions_validated: 8,
+      mean_absolute_error: 3, overconfidence_rate: 0, underconfidence_rate: 0, calibration_score: 0.9,
+      accuracy_by_confidence: {}, error_distribution: counts,
+    });
+    const snapshots = [
+      snap('2026-09-26', { overconfident: 3, underconfident: 1 }),
+      snap('2026-09-27', { overconfident: 3, underconfident: 1 }),
+      snap('2026-09-28', { overconfident: 4, underconfident: 1 }),
+    ];
+    createClientMock.mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: { id: 'u-1' } }, error: null }) },
+      from: () => ({
+        select: () => ({ eq: () => ({ gte: () => ({ order: async () => ({ data: snapshots, error: null }) }) }) }),
+      }),
+    });
+
+    const result = await getPredictionPerformance('team-1');
+    const counts = Object.fromEntries(
+      (result.data?.errorDistribution ?? []).map((e) => [e.category, e.count]),
+    );
+    expect(Object.values(counts).sort()).toEqual([1, 4]);
+  });
+
   it('getInsightEffectiveness returns Forbidden when verifyTeamAccess denies', async () => {
     const { verifyTeamAccess } = await import('@/lib/auth/verify-player-access');
     (verifyTeamAccess as ReturnType<typeof vi.fn>).mockResolvedValueOnce({

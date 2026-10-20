@@ -38,6 +38,8 @@ import { formatValue } from './format-value';
 
 /** A real, finite number. `typeof NaN === 'number'`, so the typeof check alone
  *  would let a NaN from a malformed blob through to the axis math. */
+import { tourOnlyEvidence } from '@/lib/coachhelm/v2/insights/tour-only';
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -115,7 +117,7 @@ export function evidenceHasFacts(
 ): boolean {
   if (!evidence) return false;
   if (tryRenderV3Standing(evidence)) return true;
-  if (isFiniteNumber(evidence.your_value) && isFiniteNumber(evidence.comparison_value)) return true;
+  if (isFiniteNumber(evidence.your_value) && isFiniteNumber(tourOnlyEvidence(evidence).comparison_value)) return true;
   if (isFiniteNumber(evidence.sample_n) || isFiniteNumber(evidence.window_days)) return true;
   if (isFiniteNumber(evidence.confidence)) return true;
   return !omitImpact && Math.round(Math.abs(sanitizeStrokesImpact(evidence.strokes_impact)) * 10) > 0;
@@ -148,6 +150,21 @@ export function formatWindow(
   }
   const fmt = (d: Date) => `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
   return `${days} days (${fmt(startDate)} – ${fmt(endDate)})`;
+}
+
+/**
+ * Window label for an all-time value (`window_basis: 'lifetime'`). The span
+ * dates are the first and last contributing rounds, not a window the value
+ * was computed over, so the label never says "N days" (audit row 12).
+ */
+export function formatLifetimeWindow(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 'Lifetime';
+  }
+  const fmt = (d: Date) => `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return `Lifetime (rounds ${fmt(startDate)} – ${fmt(endDate)})`;
 }
 
 /** green ≥ 0.7, amber 0.4..0.7, gray < 0.4 */
@@ -234,6 +251,9 @@ const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
   pga_baseline: 'PGA baseline',
   absolute_target: 'Target',
   estimated_target: 'Estimated target',
+  // College sources never render (tourOnlyEvidence drops them); the labels
+  // stay only because the record must cover every source.
+  cohort_avg: 'College cohort avg',
 };
 
 /**
@@ -260,6 +280,16 @@ function formatSample(sample: number, metric: string): string {
  * is the team" relative to "tour-grade." Falls back to the legacy "X vs Y"
  * pill when the metric only carries a single anchor.
  */
+/**
+ * The label for a comparison. A Tour baseline uses the insight's own label
+ * when it names the tour ("LPGA Tour avg"), so a women's card never reads
+ * "PGA baseline".
+ */
+function comparisonLabel(source: InsightEvidence['comparison_source'], label: string | undefined): string {
+  if (source === 'pga_baseline' && label && /tour/i.test(label)) return label;
+  return SOURCE_LABELS[source] ?? label ?? '';
+}
+
 function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
   const ticks: Array<{
     value: number;
@@ -273,7 +303,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     },
     {
       value: evidence.comparison_value,
-      label: SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label,
+      label: comparisonLabel(evidence.comparison_source, evidence.comparison_label),
       role: 'primary',
     },
   ];
@@ -368,14 +398,15 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
 }
 
 export function EvidencePanel({
-  evidence,
+  evidence: rawEvidence,
   compact = true,
   omitImpact = false,
   'data-testid': testId,
 }: EvidencePanelProps) {
   // Defensive: an insight minted before this phase will have no evidence
   // JSON. Render nothing rather than a half-populated panel.
-  if (!evidence) return null;
+  if (!rawEvidence) return null;
+  const evidence = tourOnlyEvidence(rawEvidence);
 
   const hasConfidence = isFiniteNumber(evidence.confidence);
   const confPct = hasConfidence ? Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100) : 0;
@@ -404,7 +435,7 @@ export function EvidencePanel({
     const scale = v3Standing ?? (hasYourValue && hasComparison ? <BenchmarkScale evidence={evidence} /> : null);
     const sampleParts = [
       hasSample ? formatSample(evidence.sample_n, metricKey) : null,
-      hasWindow ? `${evidence.window_days} days` : null,
+      hasWindow ? (evidence.window_basis === 'lifetime' ? 'lifetime' : `${evidence.window_days} days`) : null,
     ].filter((part): part is string => part !== null);
 
     const facts: Array<{ key: string; node: ReactNode }> = [];
@@ -486,7 +517,7 @@ export function EvidencePanel({
             {formatValue(evidence.comparison_value, evidence.unit)}
           </span>{' '}
           <span className="text-text-tertiary">
-            ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label})
+            ({comparisonLabel(evidence.comparison_source, evidence.comparison_label)})
           </span>
         </span>
       ),
@@ -504,7 +535,11 @@ export function EvidencePanel({
     rows.push({
       label: 'Window',
       value: (
-        <span>{formatWindow(evidence.window_start ?? '', evidence.window_end ?? '', evidence.window_days)}</span>
+        <span>
+          {evidence.window_basis === 'lifetime'
+            ? formatLifetimeWindow(evidence.window_start ?? '', evidence.window_end ?? '')
+            : formatWindow(evidence.window_start ?? '', evidence.window_end ?? '', evidence.window_days)}
+        </span>
       ),
       testId: 'evidence-row-window',
     });

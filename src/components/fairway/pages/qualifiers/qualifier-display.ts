@@ -12,16 +12,20 @@
  *     contrasting green ink, even par quiet, over par plain ink. Over par is
  *     never amber: most rows in a college field are over par, and a board of
  *     amber reads as a board of warnings.
- *   • `deriveStandings` — golf standings off the live feed. A shared to-par
- *     shares the position and every tied row reads "T"; the next position
- *     skips (1, T2, T2, 4). `rank` is the physical order among scored players,
- *     which is what the cut lines count. A player with no completed round
+ *   • `deriveStandings` — golf standings off the live feed, in the shared
+ *     standings order (`compareStandings`: to par, strokes, more rounds,
+ *     name). Players level on to par AND strokes share the position and every
+ *     tied row reads "T"; the next position skips (1, T2, T2, 4). `rank` is
+ *     the physical order among scored players, which is what the cut lines
+ *     count. A player with no counted round (none completed, or no total)
  *     never gets a position, an "E", or a zero.
  *   • `fieldProgress` — how far through its rounds the field is, from the
  *     same feed: the round up next or in play, scorecards in, per-round fill.
  *
  * Local to this folder on purpose (the `qualifier-status.ts` convention).
  * ========================================================================== */
+
+import { compareStandings, sameStanding, type StandingKey } from '@/lib/coachhelm/v3/qualifying/ranking';
 
 /** Splits the title at a spaced em or en dash; "Pre-Season" keeps its hyphen. */
 const TITLE_SUFFIX = /\s+[—–]\s+/;
@@ -67,33 +71,38 @@ export interface Standing {
 }
 
 const byName = (a: StandingsFeedEntry, b: StandingsFeedEntry) => a.player_name.localeCompare(b.player_name);
-const finite = (n: number | null | undefined, fallback: number) =>
-  typeof n === 'number' && Number.isFinite(n) ? n : fallback;
+const isFiniteNumber = (n: number | null | undefined): n is number => typeof n === 'number' && Number.isFinite(n);
+
+/** Counted: a completed round with a total and a to par. */
+const isScored = (e: StandingsFeedEntry) =>
+  e.rounds_completed > 0 && isFiniteNumber(e.total_score) && isFiniteNumber(e.total_to_par);
+
+const keyOf = (e: StandingsFeedEntry): StandingKey => ({
+  toPar: e.total_to_par as number,
+  total: e.total_score as number,
+  played: e.rounds_completed,
+  name: e.player_name,
+});
 
 export function deriveStandings(entries: ReadonlyArray<StandingsFeedEntry>): Standing[] {
-  const scored = entries
-    .filter((e) => e.rounds_completed > 0)
-    .sort(
-      (a, b) =>
-        finite(a.total_to_par, Infinity) - finite(b.total_to_par, Infinity) ||
-        finite(a.total_score, Infinity) - finite(b.total_score, Infinity) ||
-        byName(a, b),
-    );
-  const waiting = entries.filter((e) => !(e.rounds_completed > 0)).sort(byName);
+  // The shared standings order (src/lib/coachhelm/v3/qualifying/ranking.ts):
+  // to par, strokes, more rounds, name. It is the order the selection
+  // workspace confirms from and Clubhouse's board draws.
+  const scored = entries.filter(isScored).sort((a, b) => compareStandings(keyOf(a), keyOf(b)));
+  const waiting = entries.filter((e) => !isScored(e)).sort(byName);
 
-  const toParOf = (e: StandingsFeedEntry) => finite(e.total_to_par, Infinity);
   const rows: Standing[] = scored.map((entry, index) => {
-    const key = toParOf(entry);
-    const firstAtKey = scored.findIndex((e) => toParOf(e) === key);
-    const sharing = scored.reduce((n, e) => (toParOf(e) === key ? n + 1 : n), 0);
-    const totalScore = typeof entry.total_score === 'number' ? entry.total_score : null;
+    const key = keyOf(entry);
+    // Level on to par AND strokes shares the position; to par alone does not.
+    const firstAtKey = scored.findIndex((e) => sameStanding(keyOf(e), key));
+    const sharing = scored.reduce((n, e) => (sameStanding(keyOf(e), key) ? n + 1 : n), 0);
     return {
       playerId: entry.player_id,
       playerName: entry.player_name,
       roundsCompleted: entry.rounds_completed,
-      totalScore,
-      totalToPar: typeof entry.total_to_par === 'number' ? entry.total_to_par : null,
-      averageScore: totalScore !== null ? totalScore / entry.rounds_completed : null,
+      totalScore: key.total,
+      totalToPar: key.toPar,
+      averageScore: key.total / entry.rounds_completed,
       hasScore: true,
       position: firstAtKey + 1,
       tied: sharing > 1,

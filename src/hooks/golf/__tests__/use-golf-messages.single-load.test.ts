@@ -27,7 +27,7 @@ import { join } from 'node:path';
 
 const source = readFileSync(join(process.cwd(), 'src/hooks/golf/use-golf-messages.ts'), 'utf-8');
 
-describe('useGolfMessages — one fetch and one subscription per conversation', () => {
+describe('useGolfMessages (P007 72101) — one fetch and one subscription per conversation', () => {
   it('keys the fetch+subscribe effect on the conversation alone', () => {
     // The effect that calls fetchMessages() and opens the channel.
     //

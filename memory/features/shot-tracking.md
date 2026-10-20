@@ -141,8 +141,8 @@ be 1000 yards or less.", `code: 'hole_invalid'`) instead of the raw
 
 `result.error` on the `hole_invalid` result is the bare key `'hole_invalid'`,
 not a sentence — same shape as `'round_missing'`, `'conflict'`, `'busy'`.
-Both "Save & Exit" flows (`new-round-client.tsx`'s and
-`continue-round-client.tsx`'s `handleSaveForLater`) branch on
+Both "Save & Exit" flows (the new-round engine's, `use-new-round-session.ts`, and
+the continue engine's, `use-continue-round-session.ts`, `handleSaveForLater`) branch on
 `result.error === 'hole_invalid'` and surface `result.message` instead,
 matching the class of defect P1 fixed for `round_missing` — a client that
 throws/toasts `result.error` unconditionally renders the literal key.
@@ -223,8 +223,9 @@ had moved past this device's own last known checkpoint (a poll-detected
 staleness, or an explicit `conflict` result from a save). That resync made
 the NEXT save from this now-stale device pass the optimistic lock and
 overwrite the other device's holes/shots with this device's outdated
-in-memory state, with no warning. Fixed in both `continue-round-client.tsx`
-and `new-round-client.tsx`: `use-round-status-sync.ts` no longer updates the
+in-memory state, with no warning. Fixed in both the continue engine
+(`use-continue-round-session.ts`, moved out of `continue-round-client.tsx` on 2026-09-30)
+and the new-round engine (`use-new-round-session.ts`, moved out of `new-round-client.tsx` on 2026-09-30): `use-round-status-sync.ts` no longer updates the
 ref when its own staleness check is positive — it only invokes the new
 `onRoundStale` callback (previously unwired in both screens). Both screens'
 `handleRoundSyncConflict` now blocks further writes
@@ -381,14 +382,16 @@ the hole index the checkpoint started on.
 ### Components
 
 - `src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx`
-- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx`
-- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx`
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` (the new-round screen)
+- `src/lib/golf/round-session/use-new-round-session.ts` (the new-round engine the screen calls: setup, holes, tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). A second renderer starts a round with `start(form)`: it runs over the form it is handed (not state) and adopts nothing until the form passes every check (`start-form.ts`, a plain module: the start gate, the hole rules, and for a qualifier round the server's `getNextQualifierRoundNumber`, because `savePartialRound` enforces neither `num_rounds` nor entry). It numbers the holes 1..N (a back nine included), refuses a call while one runs or a round is already tracking, then the engine runs under that form. A refusal is `{ ok: false, reason, error }`; `qualifier_round_active` carries the round to Continue instead. The screen's Back to setup, Change course and submit-overlay actions live in the engine too. Its routes and error-log tags are optional inputs (`routes.ts`) that default to the Fairway values.
+- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx` (the continue-round screen)
+- `src/lib/golf/round-session/use-continue-round-session.ts` (the continue-round engine the screen calls: resume tracking, autosave, recovery, submit; moved out of the screen 2026-09-30). Its toast is a port (the legacy screen passes what `useToast()` gives it each render, on purpose, so callback identity is unchanged), its routes are optional inputs (`routes.ts`) defaulting to the Fairway ones, and the recovery, qualifier-round-number and submit-overlay actions live in it. It has no nav or haptic port because the screen never used either.
 - `src/components/fairway/pages/rounds-tracking/**`
 - `src/components/fairway/pages/rounds-recover/**`
 
 ### Actions And Services
 
-- `src/app/golf/actions/golf.ts`
+- `src/app/golf/actions/shot-actions.ts`, `round-partial.ts`, `round-submit.ts`, `golf-action-shared.ts` (the former `golf.ts`, split by domain; older prose here that says `golf.ts` means these)
 - `src/app/golf/actions/round-drafts.ts`
 - `src/app/golf/actions/shot-analytics.ts`
 - src/hooks/golf/use-auto-save-round.ts no longer exists; round persistence is `src/hooks/golf/use-offline-sync.ts`
@@ -669,6 +672,77 @@ green? Tap to confirm."), and the server accepts it.
 
 Submit failure codes: `hole_invalid` (the issue names a hole) or
 `round_implausible` (round total), with the human message in `error`.
+
+## Tap in (added 2026-10-10)
+
+A tap in is a real stroke and putt. In stroke play every ball is holed out
+(Rules of Golf 3.3c); a concession exists only in match play (3.2b). So it is
+written as a holed putt and nothing else marks it: `result: 'hole'` on a
+`putting` shot, which `derivePuttMade` writes as `putt_made = true` and
+`putt_distance_feet` holds its length. Score, putts, GIR, made-putt buckets
+and strokes gained (the 0 to 3 ft green baseline, 1.02) read it as they read
+any make. No schema change.
+
+- Plan: `planTapIn` in `src/lib/golf/shot-entry-rules.ts`, shared by both
+  renderers. Offered only on a putt (lie green) before a result or a leave is
+  picked, on a hole not yet holed, and only when no shared rule blocks the
+  rows (the hole's stroke cap). Within `TAP_IN_RANGE_FEET` (2 ft) it is one
+  holed putt from where the ball lies; farther, the putt on screen is written
+  as leaving `TAP_IN_LEAVE_FEET` (1 ft) and then a holed 1 ft putt, so the
+  chain stays continuous and strokes gained buckets each putt by its real
+  length. `tapInWords` names every stroke and the resulting score beside the
+  action, so a putt that was actually holed is never tapped in silently.
+- Write: `useShotTracking.handleTapIn` goes through `recordRows`, the same
+  tail as `handleNextShot` (reducer, `onSaveShot` per row for the device copy
+  and draft, hole checkpoint, stale-hole guard). Not offered while an undo or
+  the hole checkpoint runs. Undo lifts one row at a time: undoing a two-row
+  tap in leaves the 1 ft putt to play.
+- UI: a quiet ghost "Tap in" under the putt result in `FairwayShotEntry`
+  (hole-out `checkpoint` haptic) and Clubhouse `ShotEntry` (CH-11913: medium on
+  the tap, success once the hole saves).
+
+## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
+
+- **Held, not saved.** When an autosave or completed-hole checkpoint does not
+  reach the server (offline, conflict-blocked, queued behind another save,
+  `busy`, a refused hole, or the round was discarded), both engines throw
+  `AutoSaveHeldError(reason, onDevice)` instead of resolving. The state
+  machine keeps that fingerprint unsaved, never counts it toward the circuit
+  breaker, exposes `autoSaveHeldOnDevice`, and resends on `online` or after
+  20s (offline, queued, busy). Clubhouse shows "Saved on this phone"; "Round
+  saved" means a server acknowledgement only. Fairway's status union is
+  unchanged, so a held save shows nothing there rather than a false "Saved".
+- **Recovery.** While a device copy is undecided, an autosave of the server's
+  own shots neither writes nor clears it. Restore bumps `restoreEpoch`; both
+  renderers key the tracker by it so the restored shots load on the same
+  hole. A copy is retired by a newer server row only when the server covers
+  every hole and shot in it (`isEmergencySaveCoveredByProgress`), not by
+  comparing device and server clocks. Restoring a fully scored copy opens the
+  submit step.
+- **Discard is idempotent.** A zero-row in-progress delete probes the row: if
+  it is gone, the action succeeds (`already_removed`); if it still exists in
+  another state, it refuses as before (`stale_round_state`). Each discard
+  path (both engines, the Library) writes a device tombstone
+  (`markRoundDiscarded`) that blocks re-creation from other tabs, the recreate
+  paths and the v1 failed-submit queue. A discard on another device can still
+  be resurrected until a server tombstone exists (owner decision Q-119).
+- **Missing parent on submit.** The submit preflight answers `round_missing`
+  when no row with that id exists anywhere (an id-only service-role check),
+  so `writeRoundRecreatingIfMissing` re-creates and completes it; a row that
+  exists under another player keeps the permission refusal.
+- **Version check on submit** (Q-120, R-6). The SQL side is a HELD draft
+  (`20261001000000_submit_round_expected_updated_at.sql`); the app side is
+  wired and safe on either side of it. Both engines pass
+  `expectedUpdatedAt` (`lastServerUpdatedAtRef`) to
+  `submitGolfRoundComprehensive` once the round exists server-side, and the
+  action forwards it as `p_round_data.expected_updated_at` on the
+  existing-round RPC call only (never the new-round path, which
+  `writeRoundRecreatingIfMissing` re-sends with no id; an unparseable token
+  is dropped rather than cast). A submit `conflict` goes through
+  `handleRoundSyncConflict` like a save conflict: self-caused, re-sent once
+  under the adopted token; genuine, the round is blocked with
+  `ROUND_CONFLICT_MESSAGE` and the pre-submit device snapshot is kept. Until
+  the migration is applied the RPC ignores the key.
 
 ## Save and submit result contract (updated 2026-09-02)
 

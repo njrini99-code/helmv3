@@ -5,7 +5,7 @@ import { AuthHomeLink } from '../AuthHomeLink';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
@@ -45,13 +45,11 @@ export default function SignupPage() {
   // /golf/signup?returnTo=...). Prefills the access-code field and is forwarded
   // to onboarding so the player auto-joins the inviting team.
   const [joinCode, setJoinCode] = useState<string | null>(null);
-  // Which NAMESPACE the accepted code came from. It decides what the second
-  // role option MEANS: with a roster code it is "Assistant coach", which joins
-  // this program immediately with full access; only the global code still
-  // offers "Coach", the new-program path (the owner stands head coaches up by
-  // hand, so that door is effectively theirs). A roster code must never reach
-  // new-program onboarding — that is what minted a duplicate organization for
-  // the assistants who picked Coach.
+  // Which NAMESPACE the accepted code came from. A roster code signs up players
+  // only, so the form hides the role picker; a staff code carries its role in
+  // the invite; only the global code still offers "Coach", the new-program path
+  // (the owner stands head coaches up by hand, so that door is effectively
+  // theirs).
   const [codeScope, setCodeScope] = useState<SignupCodeScope>('generic');
   // The name of the team the roster code belongs to, so the role screen can say
   // "Join Guilford as…" instead of a bare "I am a…". A coach hands the SAME code

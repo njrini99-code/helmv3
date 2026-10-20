@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ---------------------------------------------------------------------------
 // Regression guard: the causal-relationships read must rank by LAST CONFIRMED
@@ -28,13 +28,16 @@ const { state, fromMock } = vi.hoisted(() => {
     selected: '' as string,
   };
 
-  function makeBuilder() {
+  function makeBuilder(table: string) {
     const builder: Record<string, unknown> = {};
     builder.select = (cols: string) => {
-      state.selected = cols;
+      // Only the causal-table read; the recent-round check selects from golf_rounds.
+      if (table === 'golf_causal_relationships') state.selected = cols;
       return builder;
     };
     builder.eq = () => builder;
+    // The read's recent-round check (golf_rounds) filters on round_date.
+    builder.gte = () => builder;
     builder.order = (column: string, opts?: { ascending?: boolean }) => {
       state.orderedBy = column;
       const ascending = opts?.ascending !== false;
@@ -49,7 +52,7 @@ const { state, fromMock } = vi.hoisted(() => {
     return builder;
   }
 
-  const fromMock = vi.fn(() => makeBuilder());
+  const fromMock = vi.fn((table: string) => makeBuilder(table));
   return { state, fromMock };
 });
 
@@ -98,12 +101,15 @@ function duplicatePair() {
   const base = {
     player_id: 'p1',
     cause: 'gir',
-    cause_metric: 'total_gir',
-    effect: 'scoring',
-    effect_metric: 'score_to_par',
+    cause_metric: 'total_fairways_hit',
+    effect: 'greens_in_regulation',
+    effect_metric: 'total_gir',
     relationship_type: 'direct',
     mechanism: 'more greens, lower scores',
     dose_response: true,
+    // Both duplicates pass the honest-correlation read gate, so this test
+    // still discriminates on the ORDER column alone.
+    evidence: { method: 'correlation_v1', correlation: -0.6, sampleN: 20, pValue: 0.005, qValue: 0.01 },
   };
   return [
     {
@@ -131,6 +137,10 @@ function duplicatePair() {
 
 describe('getPlayerCausalRelationships — ranks by last confirmed, not first detected', () => {
   beforeEach(() => {
+    // Both duplicates inside the read's MAX_ROW_AGE_DAYS freshness window, so
+    // only the order column decides the survivor.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-17T00:00:00.000Z'));
     state.rows = duplicatePair();
     state.orderedBy = null;
     state.selected = '';
@@ -149,6 +159,10 @@ describe('getPlayerCausalRelationships — ranks by last confirmed, not first de
     // And the survivor carries the live figures, not the stale ones.
     expect(rows[0]!.confidence).toBe(0.9);
     expect(rows[0]!.updated_at).toBe('2026-08-16T10:37:00.000Z');
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('orders the query on updated_at', async () => {

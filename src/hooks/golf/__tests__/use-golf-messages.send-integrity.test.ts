@@ -84,7 +84,7 @@ describe('use-golf-messages — realtime INSERT no longer reconciles by "first o
   });
 
   it('the same client id is reused across the transport retry, not regenerated per attempt', () => {
-    const sendStart = source.indexOf('const sendMessage = async (content: string)');
+    const sendStart = source.indexOf('const sendMessage = async (content: string,');
     expect(sendStart).toBeGreaterThan(-1);
     const retryStart = source.indexOf('withOneTransportRetry(', sendStart);
     expect(retryStart).toBeGreaterThan(sendStart);

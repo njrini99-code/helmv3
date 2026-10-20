@@ -171,6 +171,13 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ from: mockFrom, rpc: mockRpc, auth: { getUser: mockGetUser } })),
 }));
 
+
+// Season context now comes from the player's countable, non-test rounds
+// (recap-season-context.ts), not golf_player_stats_cache.
+vi.mock('@/lib/golf/recap-season-context', () => ({
+  loadRecapSeasonContext: vi.fn(async () => null),
+}));
+
 import { generateRoundRecap } from '../round-recap';
 
 describe('generateRoundRecap — §15.2 row 36 "LLM provider failure" (real compose() + real round-recap.ts)', () => {

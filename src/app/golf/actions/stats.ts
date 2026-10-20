@@ -532,6 +532,17 @@ async function onRoundCompleteActionImpl(
     const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, playerId);
     if (!authorized) return;
 
+    // The recalculation below runs with the service role on `roundId`, so the
+    // round must be this player's: otherwise any signed-in player could have
+    // another player's round recalculated by passing their own id alongside it.
+    const { data: round, error: roundError } = await supabase
+      .from('golf_rounds')
+      .select('id')
+      .eq('id', roundId)
+      .eq('player_id', playerId)
+      .maybeSingle();
+    if (roundError || !round) return;
+
     await invalidateOnRoundComplete(playerId, roundId);
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');

@@ -132,6 +132,8 @@ function animates(strippedSrc) {
 // suite fails — unlike an allowlist, it cannot rot into a silent pass.
 const SAFE_DELEGATES = new Map([
   ['useRouteRevealMotion', 'src/lib/motion/route-motion.ts'],
+  // Clubhouse's hydration-safe gate: the OS media query or Settings > Animations off.
+  ['useChReducedMotion', 'src/clubhouse/lib/reduced-motion.ts'],
 ]);
 
 function honorsReducedMotion(rawSrc) {
@@ -148,7 +150,7 @@ const PROVIDER_ONLY_IMPORTS = new Set(['LazyMotion', 'MotionConfig', 'domAnimati
 
 function isProviderShell(rawSrc) {
   const specifiers = [];
-  for (const m of rawSrc.matchAll(/import\s+\{([^}]*)\}\s+from\s+['"]framer-motion['"]/g)) {
+  for (const m of rawSrc.matchAll(/import\s+\{([^}]*)\}\s+from\s+['"](?:framer-motion|motion\/react)['"]/g)) {
     for (const raw of m[1].split(',')) {
       const name = raw.replace(/^\s*type\s+/, '').split(/\s+as\s+/)[0].trim();
       if (name) specifiers.push(name);
@@ -158,7 +160,7 @@ function isProviderShell(rawSrc) {
 }
 
 function importsFramerMotion(rawSrc) {
-  return /from\s+['"]framer-motion['"]/.test(rawSrc);
+  return /from\s+['"](?:framer-motion|motion\/react)['"]/.test(rawSrc);
 }
 
 // ---------------------------------------------------------------------------

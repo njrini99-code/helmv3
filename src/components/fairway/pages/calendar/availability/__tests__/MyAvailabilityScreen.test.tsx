@@ -17,7 +17,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { MyAvailabilityScreen } from '../MyAvailabilityScreen';
 import type { CoachBlockedTimeRow } from '../useBlockedTime';
 
-vi.mock('@/app/golf/actions/golf', () => ({
+vi.mock('@/app/golf/actions/calendar-blocked-time', () => ({
   getCoachBlockedTime: vi.fn(),
   addCoachBlockedTime: vi.fn(),
   updateCoachBlockedTime: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('@/app/golf/actions/scheduling', () => ({
   getScheduleWindow: vi.fn(),
 }));
 
-import { getCoachBlockedTime, addCoachBlockedTime } from '@/app/golf/actions/golf';
+import { getCoachBlockedTime, addCoachBlockedTime } from '@/app/golf/actions/calendar-blocked-time';
 import { getScheduleWindow } from '@/app/golf/actions/scheduling';
 
 const mockGetCoachBlockedTime = vi.mocked(getCoachBlockedTime);

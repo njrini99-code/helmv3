@@ -31,10 +31,15 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import {
+  calendarUnreadCutoffIso,
   clampNotificationsLimit,
+  composeFirstPage,
+  insightIdOfReceipt,
   mergeAndSortNotifications,
   normalizeCalendarNotificationRow,
+  partitionExpiredReceipts,
   normalizeNotificationRow,
   type NotificationSource,
   type RawCalendarNotificationRow,
@@ -63,6 +68,64 @@ export interface UnifiedNotificationsResult {
 }
 
 // ============================================================================
+// EXPIRED COACHHELM RECEIPTS (audit row 53)
+// ----------------------------------------------------------------------------
+// A receipt points at an insight via data.insightId. When that insight is later
+// archived, dismissed or otherwise hidden (5 of 90 prod receipts), the tap
+// lands on nothing, yet the row stayed unread forever. Read-side expiry: such
+// receipts are dropped from the feed and from the unread count. No row is
+// deleted. Fails open: on any query error nothing is treated as expired.
+// ============================================================================
+
+type ServerClient = Awaited<ReturnType<typeof createClient>>;
+
+const RECEIPT_EXPIRY_SCAN_LIMIT = 500;
+const INSIGHT_ID_CHUNK = 100;
+
+async function visibleInsightIds(supabase: ServerClient, ids: readonly string[]): Promise<Set<string> | null> {
+  const visible = new Set<string>();
+  for (let i = 0; i < ids.length; i += INSIGHT_ID_CHUNK) {
+    const chunk = ids.slice(i, i + INSIGHT_ID_CHUNK);
+    const { data, error } = await applyInsightVisibility(
+      supabase.from('golf_coach_insights').select('id').in('id', chunk),
+    );
+    if (error) return null;
+    for (const row of data ?? []) visible.add(row.id);
+  }
+  return visible;
+}
+
+/** Ids of the user's CoachHelm receipts whose insight is no longer visible,
+ *  and how many of those are unread. */
+async function expiredReceipts(
+  supabase: ServerClient,
+  userId: string,
+  pageRows: ReadonlyArray<{ id: string; read_at: string | null; data: RawNotificationRow['data'] }>,
+): Promise<{ expired: Set<string>; expiredUnread: number }> {
+  const none = { expired: new Set<string>(), expiredUnread: 0 };
+  try {
+    const { data: unreadRows, error } = await supabase
+      .from('notifications')
+      .select('id, read_at, data')
+      .eq('user_id', userId)
+      .is('read_at', null)
+      .not('data->>insightId', 'is', null)
+      .limit(RECEIPT_EXPIRY_SCAN_LIMIT);
+    if (error) return none;
+
+    const rows = [...pageRows, ...((unreadRows ?? []) as typeof pageRows)];
+    const insightIds = [...new Set(rows.map((r) => insightIdOfReceipt(r.data)).filter((id): id is string => !!id))];
+    if (insightIds.length === 0) return none;
+
+    const visible = await visibleInsightIds(supabase, insightIds);
+    if (!visible) return none;
+    return partitionExpiredReceipts(rows, visible);
+  } catch {
+    return none;
+  }
+}
+
+// ============================================================================
 // GET UNIFIED NOTIFICATIONS (the feed panel + home "Latest" module)
 // ============================================================================
 
@@ -87,6 +150,10 @@ async function getUnifiedNotificationsImpl(
       .limit(limit);
     if (before) notificationsQuery = notificationsQuery.lt('created_at', before);
 
+    // Calendar rows older than the cutoff no longer count as unread and are
+    // collapsed into one summary item on the first page (audit row 56).
+    const calendarCutoff = calendarUnreadCutoffIso();
+
     let calendarQuery = supabase
       .from('golf_calendar_notifications')
       .select('id, notification_type, title, message, action_url, created_at, read_at')
@@ -94,8 +161,9 @@ async function getUnifiedNotificationsImpl(
       .order('created_at', { ascending: false })
       .limit(limit);
     if (before) calendarQuery = calendarQuery.lt('created_at', before);
+    else calendarQuery = calendarQuery.gte('created_at', calendarCutoff);
 
-    const [notificationsResult, calendarResult, notificationsUnread, calendarUnread] = await Promise.all([
+    const [notificationsResult, calendarResult, notificationsUnread, calendarUnread, staleCalendar] = await Promise.all([
       notificationsQuery,
       calendarQuery,
       supabase
@@ -107,7 +175,15 @@ async function getUnifiedNotificationsImpl(
         .from('golf_calendar_notifications')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .is('read_at', null),
+        .is('read_at', null)
+        .gte('created_at', calendarCutoff),
+      before
+        ? Promise.resolve({ count: 0 })
+        : supabase
+            .from('golf_calendar_notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .lt('created_at', calendarCutoff),
     ]);
 
     if (notificationsResult.error) {
@@ -125,15 +201,26 @@ async function getUnifiedNotificationsImpl(
       });
     }
 
-    const notificationItems = (notificationsResult.data ?? []).map((row) =>
-      normalizeNotificationRow(row as RawNotificationRow),
-    );
+    const notificationRows = (notificationsResult.data ?? []) as RawNotificationRow[];
+    const { expired, expiredUnread } = await expiredReceipts(supabase, user.id, notificationRows);
+
+    const notificationItems = notificationRows
+      .filter((row) => !expired.has(row.id))
+      .map((row) => normalizeNotificationRow(row));
     const calendarItems = (calendarResult.data ?? []).map((row) =>
       normalizeCalendarNotificationRow(row as RawCalendarNotificationRow),
     );
-    const items = mergeAndSortNotifications(notificationItems, calendarItems, limit);
+    const items = before
+      ? mergeAndSortNotifications(notificationItems, calendarItems, limit)
+      : composeFirstPage({
+          notifications: notificationItems,
+          calendar: calendarItems,
+          staleCalendarCount: staleCalendar.count ?? 0,
+          limit,
+        });
 
-    const unreadCount = (notificationsUnread.count ?? 0) + (calendarUnread.count ?? 0);
+    const unreadCount =
+      Math.max(0, (notificationsUnread.count ?? 0) - expiredUnread) + (calendarUnread.count ?? 0);
 
     return { success: true, data: { items, unreadCount } };
   } catch (error) {
@@ -183,7 +270,9 @@ async function getNotificationsUnreadCountImpl(): Promise<ActionResult<{ unread:
       return { success: false, error: 'Failed to fetch unread count' };
     }
 
-    return { success: true, data: { unread: count ?? 0 } };
+    // Same expiry as the feed, so the badge never counts a receipt the feed hides.
+    const { expiredUnread } = await expiredReceipts(supabase, user.id, []);
+    return { success: true, data: { unread: Math.max(0, (count ?? 0) - expiredUnread) } };
   } catch (error) {
     await logServerError(`getNotificationsUnreadCount failed: ${describeError(error)}`, {
       action: 'getNotificationsUnreadCount',

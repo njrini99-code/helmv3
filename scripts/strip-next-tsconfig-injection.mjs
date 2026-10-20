@@ -6,11 +6,13 @@
  *   1. re-adds `.next/types/**\/*.ts` and `.next/dev/types/**\/*.ts` to `include`
  *   2. reformats arrays (e.g. `"types": ["vitest/globals"]` -> multi-line)
  *
- * Those two include entries were deliberately removed 2026-08-26: they break
- * `npm run typecheck` locally (measured exit 2 with them, exit 0 without) while
- * matching zero files in CI, where `.next` does not exist at typecheck time.
- * So every local build left the tree dirty AND re-armed a broken typecheck.
- * Two separate sessions hit it on 2026-08-27 and hand-reverted it.
+ * Those two include entries were removed 2026-08-26 because, while `.next` was
+ * not excluded, they broke `npm run typecheck` locally (measured exit 2 with
+ * them, exit 0 without) and matched zero files in CI, where `.next` does not
+ * exist at typecheck time. Two sessions hit it on 2026-08-27 and hand-reverted
+ * it. tsconfig.json at HEAD now lists both globs AND excludes `.next`, which
+ * makes them inert for `tsc` (see the comment there). This script still
+ * guards the case where HEAD lacks them and a build re-adds them.
  *
  * SAFETY: this restores from git ONLY after proving the working copy differs
  * from HEAD by nothing except those known build artifacts. If anything else

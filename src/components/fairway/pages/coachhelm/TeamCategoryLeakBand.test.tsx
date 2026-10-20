@@ -19,7 +19,7 @@ import { TeamCategoryLeakBand } from './TeamCategoryLeakBand';
 // InsightCard.test.tsx / ChatMessageList.test.tsx) — `m.div` renders as a
 // plain DOM element so `useReducedMotionGuard`'s underlying
 // `useReducedMotion()` resolves deterministically in jsdom.
-vi.mock('framer-motion', async () => {
+vi.mock('motion/react', async () => {
   const React = await import('react');
   return {
     useReducedMotion: () => false,
@@ -47,6 +47,9 @@ function makeCategory(overrides: Partial<TeamCategory> = {}): TeamCategory {
     teamAvg: 31.2,
     teamAvgLabel: '31.2 PPR',
     trend: 'declining',
+    playersCounted: 1,
+    playersWithoutRecentRound: 0,
+    strokesAvailable: null,
     insights: [],
     players: [
       {

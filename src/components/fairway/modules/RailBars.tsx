@@ -13,7 +13,7 @@
  * subtle settle rather than the block popping in as one flat unit.
  * ========================================================================== */
 
-import { LazyMotion, m } from 'framer-motion';
+import { LazyMotion, m } from 'motion/react';
 import { loadFeatures } from '@/lib/motion/load-features';
 import { cn } from '@/lib/utils';
 import { clampPct } from './logic';

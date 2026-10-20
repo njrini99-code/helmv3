@@ -1,0 +1,26 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Data table" subtitle="Ledger with smooth trend lines, mean reference and colored change" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page)}.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.col{display:flex;flex-direction:column;gap:14px}.lbl{font:var(--type-caption);color:var(--text-tertiary);width:78px;flex:none}</style>
+</head><body class="fairway"><div id="root" style="padding:24px"></div>
+<script type="text/babel">
+const NS = window.FairwayClubhouseEdition_9c4f4d;
+
+const { DataTable, PlayerIdentity, Badge, Sparkline, Surface } = NS;
+const rows=[{id:1,name:'Theo Marchetti',meta:'Senior · Captain',avg:70.9,sg:1.8,t:[72.4,71.8,72.1,71.2,70.8,71.0,70.9],s:'positive',st:'Improving'},{id:2,name:'Ava Lindqvist',meta:'Junior',avg:72.4,sg:0.6,t:[72.9,72.1,72.6,72.3,72.8,72.2,72.4],s:'neutral',st:'Steady'},{id:3,name:'Jonah Okafor',meta:'Sophomore',avg:74.1,sg:-0.9,t:[72.0,72.4,73.1,73.8,74.6,74.2,74.1],s:'warning',st:'Slipping'},{id:4,name:'Priya Natarajan',meta:'Freshman',avg:75.2,sg:-1.4,t:[78.1,77.4,77.0,76.2,75.8,75.5,75.2],s:'positive',st:'Improving'}];
+const sg=v=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1);
+function App(){const [sel,setSel]=React.useState(1);return <Surface padded={false} title="Roster" subtitle="Scoring average · last 7 rounds">
+<div style={{marginTop:14}}><DataTable rowKey="id" selectedKey={sel} onRowClick={r=>setSel(r.id)} defaultSort={{key:'avg',dir:'asc'}} rows={rows} columns={[
+{key:'name',label:'Player',render:r=><PlayerIdentity size="sm" name={r.name} meta={r.meta}/>},
+{key:'t',label:'Trend',render:r=><Sparkline data={r.t} goodWhen="down" invert baseline="mean" width={96} height={30} label={sg(r.t[r.t.length-1]-r.t[0])}/>},
+{key:'avg',label:'Avg',align:'right',numeric:true,sortable:true,render:r=>r.avg.toFixed(1)},
+{key:'sg',label:'SG total',align:'right',numeric:true,sortable:true,render:r=>sg(r.sg)},
+{key:'st',label:'Status',align:'right',render:r=><Badge tone={r.s} dot>{r.st}</Badge>}]}/></div>
+</Surface>}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

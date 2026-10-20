@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
+import { isClubhouseForTeam } from '@/clubhouse/gate';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -54,7 +55,8 @@ interface FocusAreaTimeframeFields {
 
 interface CreateFocusAreaData extends FocusAreaTimeframeFields {
   player_id: string;
-  coach_id: string;
+  /** Ignored: the coach is always the authenticated caller. Accepted so existing callers keep compiling. */
+  coach_id?: string;
   area_type: string;
   title: string;
   description: string | null;
@@ -304,6 +306,9 @@ async function resolveEvidenceRevisionForInsight(
 // FOCUS AREA OPERATIONS
 // ============================================================================
 
+/** The Clubhouse screen a player's focus areas are on: their own Stats, Development tab (Accept and Decline included). */
+const CLUBHOUSE_DEV_PLAN_PATH = '/golf/dashboard/stats?tab=dev';
+
 /**
  * #1266 — refuse a target that asks the player to move the WRONG way.
  *
@@ -358,31 +363,52 @@ async function createFocusAreaImpl(
   // ACTIVE team (cookie-aware; toggle-safe for a two-team program) rather than
   // assuming the org has a single team — the old org-filtered .maybeSingle()
   // throws/nulls when an org runs both a men's and a women's team.
-  if (coach.organization_id && data.player_id) {
-    const teamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  // The resolver also finds a staffed team for a coach with no organisation.
+  // No team, or a team that could not be read, refuses: this check used to be
+  // skipped then, leaving row-level security as the only lock.
+  if (!data.player_id) {
+    return { success: false, error: 'Not authorized to create a focus area for this player' };
+  }
+  const verifiedTeamId = await resolveCoachTeamIdWithCookie(supabase, coach.organization_id, coach.id);
+  if (!verifiedTeamId) {
+    return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
+  }
 
-    if (teamId) {
-      const { data: membership, error: membershipError } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('team_id', teamId)
-        .eq('player_id', data.player_id)
-        .eq('status', 'active')
-        .maybeSingle();
+  const { data: membership, error: membershipError } = await supabase
+    .from('golf_team_members')
+    .select('id')
+    .eq('team_id', verifiedTeamId)
+    .eq('player_id', data.player_id)
+    .eq('status', 'active')
+    .maybeSingle();
 
-      // Same shape: deny, but do not blame the roster for an outage. A
-      // discarded error told the coach this player is not on their team.
-      if (membershipError) {
-        await logServerError(
-          `[development] roster check failed — denying, but this is an outage not a roster fact: ${describeError(membershipError)}`,
-          { action: 'development.rosterCheck', featureArea: 'development', playerId: data.player_id },
-        );
-        return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
-      }
+  // Same shape: deny, but do not blame the roster for an outage. A
+  // discarded error told the coach this player is not on their team.
+  if (membershipError) {
+    await logServerError(
+      `[development] roster check failed — denying, but this is an outage not a roster fact: ${describeError(membershipError)}`,
+      { action: 'development.rosterCheck', featureArea: 'development', playerId: data.player_id },
+    );
+    return { success: false, error: "Couldn't confirm this player is on your team. Please try again." };
+  }
 
-      if (!membership) {
-        return { success: false, error: 'Player is not an active member on your team' };
-      }
+  if (!membership) {
+    return { success: false, error: 'Player is not an active member on your team' };
+  }
+
+  // A linked insight must be this player's, on this team (or teamless): the
+  // id comes from the browser, and readers trust the link.
+  if (data.from_insight_id) {
+    const { data: insight, error: insightError } = await supabase
+      .from('golf_coach_insights')
+      .select('player_id, team_id')
+      .eq('id', data.from_insight_id)
+      .maybeSingle();
+    if (insightError) {
+      return { success: false, error: 'Failed to fetch insight details' };
+    }
+    if (!insight || insight.player_id !== data.player_id || (insight.team_id && insight.team_id !== verifiedTeamId)) {
+      return { success: false, error: 'Not authorized to link this insight' };
     }
   }
 
@@ -415,9 +441,12 @@ async function createFocusAreaImpl(
     return { success: false, error: ACTIVE_FOCUS_DUPLICATE_ERROR, duplicateFocusAreaId: existingActive.id };
   }
 
+  // The team the focus area belongs to is the coach's own team the player was just confirmed on: the player's CoachHelm
+  // reads their proposals by team. The coach is the authenticated caller, never the id the browser sent.
   const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
-    coach_id: data.coach_id,
+    team_id: verifiedTeamId,
+    coach_id: coach.id,
     area_type: data.area_type,
     title: data.title,
     description: data.description,
@@ -443,54 +472,7 @@ async function createFocusAreaImpl(
   }
 
   // Notify the player (fire-and-forget)
-  try {
-    // Both reads gate the "your coach assigned you a development plan" email.
-    // A failure in either skips the notification and the block returns
-    // normally, so the coach is told the plan was created and the player is
-    // never told anything — the plan sits there unread, and the coach reads
-    // that as the player ignoring it.
-    const { data: playerRow, error: playerRowError } = await supabase
-      .from('golf_players')
-      .select('user_id')
-      .eq('id', data.player_id)
-      .single();
-
-    if (playerRowError) {
-      await logServerError(
-        `development: player read failed for ${data.player_id}; the assignment email will not be sent: ${describeError(playerRowError)}`,
-        { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
-        'warning',
-      );
-    }
-
-    if (playerRow?.user_id) {
-      const { data: userRow, error: userRowError } = await supabase
-        .from('users')
-        .select('email')
-        .eq('id', playerRow.user_id)
-        .single();
-
-      if (userRowError) {
-        await logServerError(
-          `development: email read failed for user ${playerRow.user_id}; the assignment email will not be sent: ${describeError(userRowError)}`,
-          { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
-          'warning',
-        );
-      }
-
-      if (userRow?.email) {
-        await notifyDevPlanAssigned(
-          playerRow.user_id,
-          userRow.email,
-          data.title,
-          data.area_type,
-          coach.full_name?.trim() || 'Your Coach'
-        );
-      }
-    }
-  } catch (notifErr) {
-    await logServerError(`[createFocusArea] Notification error (non-fatal): ${describeError(notifErr)}`, { action: 'development.createFocusArea' });
-  }
+  await notifyPlayerOfProposedFocus(supabase, data.player_id, data.title, data.area_type, coach.full_name, 'development.createFocusArea');
 
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
@@ -506,7 +488,7 @@ async function createFocusAreaImpl(
 
 const observedCreateFocusArea = withAdminObserved(
   'createFocusArea',
-  { sport: 'golf', feature: 'development_plans_coach' },
+  { demoSafe: true, sport: 'golf', feature: 'development_plans_coach' },
   createFocusAreaImpl,
 );
 
@@ -573,6 +555,8 @@ async function createPlayerFocusAreaImpl(
 
   const { error } = await fromUntyped(admin, 'golf_player_focus_areas').insert({
     player_id: player.id,
+    // The team they are on, as every other creator writes it (their own focus area is active, so no proposal waits on it).
+    team_id: await resolvePlayerTeamId(supabase, player.id),
     coach_id: null,
     area_type: data.area_type,
     title: data.title,
@@ -616,12 +600,46 @@ export async function createPlayerFocusArea(data: Omit<CreateFocusAreaData, 'coa
   return observedCreatePlayerFocusArea(data);
 }
 
+type OwnPlayerResult = { ok: true; playerId: string } | { ok: false; error: string };
+
+/**
+ * Accept / decline are the PLAYER's answer to a prescription, so the caller must
+ * be the player the focus area belongs to. They used to filter on the row id and
+ * status alone and lean on RLS, but RLS also lets a coach (and, depending on the
+ * policy set, a teammate) UPDATE these rows — so any signed-in user who held a
+ * focus-area id could answer for the player. Resolve the caller's own
+ * golf_players row and require `player_id` to match it.
+ */
+async function resolveOwnPlayerId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  verb: 'accept' | 'decline',
+): Promise<OwnPlayerResult> {
+  const { data: player, error } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    await logServerError(
+      `Failed to resolve player for ${verb} focus area: ${describeError(error)}`,
+      { action: `development.${verb}FocusArea` },
+    );
+    return { ok: false, error: `Failed to ${verb}. Please try again.` };
+  }
+  if (!player) {
+    return { ok: false, error: `Only the player can ${verb} a focus area` };
+  }
+  return { ok: true, playerId: player.id };
+}
+
 /**
  * Player accepts a coach-prescribed focus area: 'proposed' → 'active', and the
  * improvement window starts now (started_at = now). Idempotent-safe: only a row
- * the player owns AND that is currently 'proposed' is flipped; anything else
- * (already active, not yours, missing) is a no-op failure via the select-back
- * guard. Uses the RLS client — the player UPDATE policy gates it to own rows.
+ * the CALLER (as the player) owns AND that is currently 'proposed' is flipped;
+ * anything else (already active, not yours, missing) is a no-op failure via the
+ * select-back guard. Ownership is enforced here (`player_id` = the caller's own
+ * golf_players row), not left to RLS alone.
  */
 async function acceptFocusAreaImpl(
   id: string,
@@ -632,6 +650,9 @@ async function acceptFocusAreaImpl(
   if (userError || !user) {
     return { success: false, error: 'Not authenticated' };
   }
+
+  const own = await resolveOwnPlayerId(supabase, user.id, 'accept');
+  if (!own.ok) return { success: false, error: own.error };
 
   const nowIso = new Date().toISOString();
   // #1240: acceptance is when the improvement window actually opens, so re-anchor
@@ -646,6 +667,7 @@ async function acceptFocusAreaImpl(
   const { data: existing } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .select('current_value')
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .maybeSingle();
   const currentAtAccept = (existing as { current_value: number | null } | null)?.current_value ?? null;
@@ -658,6 +680,7 @@ async function acceptFocusAreaImpl(
       baseline_value: currentAtAccept,
     })
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .select('id');
 
@@ -709,10 +732,14 @@ async function declineFocusAreaImpl(
     return { success: false, error: 'Not authenticated' };
   }
 
+  const own = await resolveOwnPlayerId(supabase, user.id, 'decline');
+  if (!own.ok) return { success: false, error: own.error };
+
   const nowIso = new Date().toISOString();
   const { data: updated, error } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .update({ status: 'declined', updated_at: nowIso })
     .eq('id', id)
+    .eq('player_id', own.playerId)
     .eq('status', 'proposed')
     .select('id');
 
@@ -860,7 +887,10 @@ export async function updateFocusArea(id: string, data: UpdateFocusAreaData): Pr
 
 /**
  * Delete a focus area
- * Only the coach who created it can delete focus areas
+ * Any coach staffed on a team the player is on can delete it (Q-86), as
+ * `golf_player_focus_areas_delete_coach` allows. It used to delete with
+ * `.eq('coach_id', own)`: a co-staff coach matched no row, PostgREST returned
+ * error:null, and the coach was told "Focus area deleted" while it stayed.
  */
 async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult> {
   const supabase = await createClient();
@@ -870,27 +900,52 @@ async function deleteFocusAreaImpl(id: string): Promise<DevelopmentActionResult>
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Verify user is a coach
-  const { data: coach, error: coachError } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
+  // Whose focus area is it? Authorisation is by the player it belongs to, not
+  // by who created it.
+  const { data: focusArea, error: focusAreaError } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id')
+    .eq('id', id)
+    .maybeSingle();
 
-  if (coachError || !coach) {
-    return { success: false, error: 'Not authorized to delete focus areas' };
+  if (focusAreaError) {
+    await logServerError(
+      `Failed to read focus area before delete: ${describeError(focusAreaError)}`,
+      { action: 'development.deleteFocusArea' },
+    );
+    return { success: false, error: "Couldn't load this focus area. Please try again." };
   }
 
-  // Only delete if this coach owns the focus area
-  const { error } = await supabase
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  // Coach-only: a coach staffed on a team this player is on. A player reaches
+  // `reason: 'self'` for their own area and is refused: they can decline a
+  // proposal, not delete the coach's plan.
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (access.reason === 'unavailable') {
+    return { success: false, error: "Couldn't check your access right now. Please try again." };
+  }
+  if (!access.allowed || access.reason !== 'coach') {
+    return { success: false, error: 'Not authorized to delete this focus area' };
+  }
+
+  // Select the deleted row back: a DELETE matching no row (changed under us, or
+  // filtered by row-level security) returns error:null and must not read as success.
+  const { data: deleted, error } = await supabase
     .from('golf_player_focus_areas')
     .delete()
     .eq('id', id)
-    .eq('coach_id', coach.id);
+    .select('id');
 
   if (error) {
     await logServerError(`Failed to delete focus area: ${describeError(error)}`, { action: 'development.deleteFocusArea' });
     return { success: false, error: 'Failed to delete focus area. Please try again.' };
+  }
+
+  if (!deleted || deleted.length === 0) {
+    return { success: false, error: 'Focus area not found or not permitted' };
   }
 
   revalidatePath('/golf/dashboard/development');
@@ -1242,6 +1297,107 @@ export async function reactivateFocusArea(focusAreaId: string): Promise<{ succes
  * Returns the first active team membership for the player.
  * `coach_id` falls back to whichever coach staffs that team (any one), or null.
  */
+/**
+ * The team this player is active on, or null. The creators that do not resolve a team for another reason write it with this, so a
+ * focus area is never made with `team_id` null where the player has a team (the player's CoachHelm reads the proposals made to
+ * them by team). A read that fails is logged and writes no team, as before: it never fails the create.
+ */
+async function resolvePlayerTeamId(supabase: Awaited<ReturnType<typeof createClient>>, playerId: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      await logServerError(`[development] team read failed for player ${playerId}; the focus area is written without a team: ${describeError(error)}`, {
+        action: 'development.resolvePlayerTeamId',
+        featureArea: 'development',
+        playerId,
+      });
+      return null;
+    }
+    return data?.team_id ?? null;
+  } catch (err) {
+    await logServerError(`[development] team read threw for player ${playerId}; the focus area is written without a team: ${describeError(err)}`, {
+      action: 'development.resolvePlayerTeamId',
+      featureArea: 'development',
+      playerId,
+    });
+    return null;
+  }
+}
+
+/**
+ * Tells a player their coach proposed a focus area: the in-app notice and the
+ * "your coach assigned you a development plan" email. Fire-and-forget: a
+ * failure is logged and never fails the create. Shared by every coach create
+ * path (swap audit CH13-24: the CoachHelm Assign paths told nobody).
+ */
+async function notifyPlayerOfProposedFocus(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  title: string,
+  areaType: string,
+  coachName: string | null | undefined,
+  action: string,
+): Promise<void> {
+  try {
+    // Both reads gate the "your coach assigned you a development plan" email.
+    // A failure in either skips the notification and the block returns
+    // normally, so the coach is told the plan was created and the player is
+    // never told anything — the plan sits there unread, and the coach reads
+    // that as the player ignoring it.
+    const { data: playerRow, error: playerRowError } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', playerId)
+      .single();
+
+    if (playerRowError) {
+      await logServerError(
+        `development: player read failed for ${playerId}; the assignment email will not be sent: ${describeError(playerRowError)}`,
+        { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+        'warning',
+      );
+    }
+
+    if (playerRow?.user_id) {
+      const { data: userRow, error: userRowError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', playerRow.user_id)
+        .single();
+
+      if (userRowError) {
+        await logServerError(
+          `development: email read failed for user ${playerRow.user_id}; the assignment email will not be sent: ${describeError(userRowError)}`,
+          { action: 'development.notifyAssigned', featureArea: 'coachhelm' },
+          'warning',
+        );
+      }
+
+      if (userRow?.email) {
+        await notifyDevPlanAssigned(
+          playerRow.user_id,
+          userRow.email,
+          title,
+          areaType,
+          coachName?.trim() || 'Your Coach',
+          // Fairway's link redirects to a Development drill Clubhouse does not draw: send a Clubhouse player to the
+          // screen that is rebuilt, where the focus area and its Accept and Decline are. Decided by the PLAYER's team:
+          // the session here is the coach's, so isClubhouseFor would answer for the wrong user under an allowlist.
+          isClubhouseForTeam(await resolvePlayerTeamId(supabase, playerId)) ? CLUBHOUSE_DEV_PLAN_PATH : undefined
+        );
+      }
+    }
+  } catch (notifErr) {
+    await logServerError(`[${action}] Notification error (non-fatal): ${describeError(notifErr)}`, { action });
+  }
+}
+
 async function resolvePlayerTeamAndCoach(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
@@ -1390,6 +1546,8 @@ interface CreateFocusAreaFromInsightArgsV2 extends FocusAreaTimeframeFields {
   areaType: string;
   targetMetric?: string;
   targetValue?: number;
+  /** The player's value for the metric now (the insight's evidence): the starting point progress is measured from (CH13-22). */
+  currentValue?: number | null;
 }
 
 /**
@@ -1455,6 +1613,9 @@ async function createFocusAreaFromInsightV2Impl(
     status: (isCoachPromoting ? 'proposed' : 'active') as 'proposed' | 'active',
     target_metric: canonicalMetric,
     target_value: args.targetValue ?? null,
+    // CH13-22: the starting point, as createFocusArea writes it; accept re-anchors the baseline to the value then.
+    current_value: args.currentValue ?? null,
+    baseline_value: args.currentValue ?? null,
     from_insight_id: args.insightId,
     started_at: isCoachPromoting ? null : nowIso,
     ...(evidenceRevision ? { evidence_revision: evidenceRevision } : {}),
@@ -1490,6 +1651,22 @@ async function createFocusAreaFromInsightV2Impl(
       { action: 'development.createFocusAreaFromInsightV2' }
     );
     return { success: false, error: 'Failed to create focus area. Please try again.' };
+  }
+
+  // CH13-24: a coach's prescription tells the player, as createFocusArea does.
+  if (isCoachPromoting) {
+    // The coach's name only signs the notice; a failed read sends it as "Your Coach".
+    let coachName: string | null;
+    try {
+      const { data: actingCoach, error: actingCoachError } = await supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle();
+      if (actingCoachError) {
+        await logServerError(`createFocusAreaFromInsightV2: coach name read failed; the notice is signed "Your Coach": ${describeError(actingCoachError)}`, { action: 'development.createFocusAreaFromInsightV2' }, 'warning');
+      }
+      coachName = actingCoach?.full_name ?? null;
+    } catch {
+      coachName = null;
+    }
+    await notifyPlayerOfProposedFocus(supabase, args.playerId, args.title, args.areaType, coachName, 'development.createFocusAreaFromInsightV2');
   }
 
   // P1-12: creating a focus area FROM an insight is a real coach action on that
@@ -1642,7 +1819,7 @@ async function createFocusAreaFromInsightImpl(
   // Verify user is a coach
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id')
+    .select('id, full_name')
     .eq('user_id', user.id)
     .single();
 
@@ -1722,6 +1899,9 @@ async function createFocusAreaFromInsightImpl(
   const { data: focusArea, error: insertError } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .insert({
       player_id: data.player_id,
+      // The player's team now, as the other coach creators write it: the player's CoachHelm reads their proposals by it. The
+      // insight's own team is only a fallback (an old insight can carry the team the player has since left).
+      team_id: (await resolvePlayerTeamId(supabase, data.player_id)) ?? insight?.team_id ?? null,
       coach_id: coachId,
       area_type: areaType,
       title: data.title,
@@ -1759,6 +1939,9 @@ async function createFocusAreaFromInsightImpl(
     })
     .eq('id', data.insight_id);
   await (insight?.team_id ? ackQuery.eq('team_id', insight.team_id) : ackQuery);
+
+  // CH13-24: the player hears about the proposal, as from createFocusArea.
+  await notifyPlayerOfProposedFocus(supabase, data.player_id, data.title, areaType, coach.full_name, 'development.createFocusAreaFromInsight');
 
   // P1-12: record the focus-area creation as a real action on the source
   // insight (failure-silent). Only a confirmed insert of an authorized row

@@ -52,6 +52,15 @@ import {
   type AdminClient,
 } from '../src/lib/admin/triage-collect';
 import { applyPlan } from '../src/lib/admin/triage-apply';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/run-triage.ts',
+  summary:
+    "Runs the admin triage pipeline on demand. Writes only with its own --apply.",
+  guard: "its own --apply flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 interface Args {
   hours: number;

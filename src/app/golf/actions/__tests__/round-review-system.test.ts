@@ -423,7 +423,8 @@ describe('generateAndStoreRoundReview — LLM/CoachHelm provider failure (§15.2
     // Deterministic content is real, not an empty/error placeholder.
     expect(result.review?.review_content?.summary).toBeTruthy();
     // Enhancement did not apply — the fallback engine version, not coachhelm-v2.
-    expect(result.review?.ai_model_version).toBe('rule-based-v2');
+    // Bumped to v3 on purpose (audit rows 39/42/43 changed the rule engine).
+    expect(result.review?.ai_model_version).toBe('rule-based-v3');
     // The failure was captured, not silently swallowed.
     expect(vi.mocked(logServerError)).toHaveBeenCalledWith(
       expect.stringContaining('CoachHelm V2 enhancement failed'),

@@ -33,7 +33,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { TABULAR_NUMS } from './theme';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';

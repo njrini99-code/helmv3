@@ -146,6 +146,59 @@ describe('collapseDuplicates', () => {
   });
 });
 
+describe('collapseDuplicates keys on player + metric and keeps the largest leak (audit rows 4-5)', () => {
+  const withMetric = (id: string, metric: string, strokeImpact: number | null, ageDays: number) =>
+    signal({ id, category: 'putting', strokeImpact, ageDays, evidence: { metric, strokes_impact: strokeImpact } });
+
+  it('keeps every distinct metric one player carries in the same category', () => {
+    // Audit 2026-09: 520 visible rows collapsed to 224 player+category cards
+    // although 518 of them were distinct metrics.
+    const rows = [
+      withMetric('a', 'putts_made_3_5ft_pct', 0.4, 1),
+      withMetric('b', 'putts_made_5_10ft_pct', 0.2, 2),
+      withMetric('c', 'three_putt_rate', 0.9, 3),
+      withMetric('d', 'lag_putt_leave_ft', 0, 4),
+    ];
+    const result = collapseDuplicates(rows);
+    expect(result.map((s) => s.id).sort()).toEqual(['a', 'b', 'c', 'd']);
+    expect(result.every((s) => s.supersededCount === 0)).toBe(true);
+  });
+
+  it('reproduces the queue shrink: one player x 4 metrics x 2 restatements -> 4 cards, not 1', () => {
+    const rows = ['m1', 'm2', 'm3', 'm4'].flatMap((m, i) => [
+      withMetric(`${m}-old`, m, 0.1 * (i + 1), 30),
+      withMetric(`${m}-new`, m, 0.1 * (i + 1), 1),
+    ]);
+    const result = collapseDuplicates(rows);
+    expect(result).toHaveLength(4);
+    expect(result.every((s) => s.supersededCount === 1)).toBe(true);
+  });
+
+  it('keeps the largest-|impact| row of a metric, not the newest', () => {
+    const olderBigger = withMetric('older', 'three_putt_rate', -1.2, 40);
+    const newerSmaller = withMetric('newer', 'three_putt_rate', 0.3, 1);
+    const result = collapseDuplicates([newerSmaller, olderBigger]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.id).toBe('older');
+    expect(result[0]!.supersededCount).toBe(1);
+  });
+
+  it('prefers a known impact over an unknown one, then the newest on a tie', () => {
+    const unknown = withMetric('unknown', 'm', null, 1);
+    const known = withMetric('known', 'm', 0.05, 20);
+    expect(collapseDuplicates([unknown, known])[0]!.id).toBe('known');
+    const tieOld = withMetric('tie-old', 'm', 0.5, 20);
+    const tieNew = withMetric('tie-new', 'm', 0.5, 2);
+    expect(collapseDuplicates([tieOld, tieNew])[0]!.id).toBe('tie-new');
+  });
+
+  it('falls back to category for a row with no evidence metric (patterns)', () => {
+    const p1 = signal({ id: 'p1', kind: 'pattern', category: 'pressure', evidence: null, ageDays: 5 });
+    const p2 = signal({ id: 'p2', kind: 'pattern', category: 'pressure', evidence: null, ageDays: 1 });
+    expect(collapseDuplicates([p1, p2])).toHaveLength(1);
+  });
+});
+
 describe('attentionScore', () => {
   it('weights urgent severity highest', () => {
     const urgent = attentionScore({ worstSeverity: 'urgent', signals: [signal({ severity: 'urgent', ageDays: 30 })] });
@@ -202,6 +255,15 @@ describe('attentionScore', () => {
     });
     expect(olderSameShape).toBe(base);
     expect(extraSignal).toBe(base + 1);
+  });
+
+  it('is severity-first: one urgent signal outranks any number of high ones', () => {
+    const urgentOne = attentionScore({ worstSeverity: 'urgent', signals: [signal({ severity: 'urgent' })] });
+    const manyHigh = attentionScore({
+      worstSeverity: 'high',
+      signals: Array.from({ length: 12 }, (_, i) => signal({ id: `h${i}`, severity: 'high' })),
+    });
+    expect(urgentOne).toBeGreaterThan(manyHigh);
   });
 
   it('is deterministic for the same inputs', () => {

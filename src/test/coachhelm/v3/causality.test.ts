@@ -362,15 +362,17 @@ describe('averageInWindow (W35 follow-up dispatch)', () => {
       '2026-05-01T00:00:00.000Z',
     );
     expect(result).toEqual({ ok: true, avg: 3, n: 3 });
-    // Same call-chain shape the old code used: select, eq player, eq status,
-    // gte round_date, lte round_date.
+    // Same call-chain shape the old code used, plus the OD-03 is_test filter:
+    // select, eq player, eq is_test, eq status, gte round_date, lte round_date.
     expect(calls.map((c) => c.method)).toEqual([
       'select',
+      'eq',
       'eq',
       'eq',
       'gte',
       'lte',
     ]);
+    expect(calls.find((c) => c.method === 'eq' && c.args?.[0] === 'is_test')?.args).toEqual(['is_test', false]);
   });
 
   it('routes sg_total to the strokes_gained_total column on golf_rounds', async () => {
@@ -761,42 +763,37 @@ function buildWindowAwareSupabase(
 }
 
 /**
- * N10 (2026-09-12 CoachHelm repair plan §6.7) — v1's "trend adjustment"
- * fetched a 90-day ambient window and subtracted `(ambient.avg - base.avg)`
- * from the raw delta, which algebraically cancels to `post.avg - ambient.avg`
- * — the immediate baseline dropped out completely despite every comment
- * near it claiming otherwise. v2 reports the plain observed, direction-
- * corrected post-vs-baseline change and never fetches an ambient window at
- * all. These tests pin that: only two windows are ever queried, a fixture
- * that would have changed a v1 "ambient-adjusted" lift leaves the v2 lift
- * unchanged, and the too-few-rounds gate now reads the pre/post windows
- * themselves rather than a window that no longer exists.
+ * N10 (2026-09-12) removed v1's fake 90-day "ambient" adjustment, which
+ * algebraically cancelled the baseline. v3 (deep audit row 35, 2026-09-28)
+ * adds a REAL control: the equal-length window immediately before the
+ * baseline ([surfaced − 28d, surfaced − 15d]). Lift is the direction-corrected
+ * difference-in-differences (post − base) − (base − control), with a t-based
+ * 95% interval and a standardized lift_z for the weight update.
  */
-describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
-  it('never queries a third (ambient) window — only pre and post', async () => {
-    const surfaced = '2026-04-01T00:00:00.000Z';
-    const surfacedTs = new Date(surfaced).getTime();
-    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
-      .toISOString()
-      .slice(0, 10);
-    const postEndDate = new Date(surfacedTs + 21 * 86400_000)
-      .toISOString()
-      .slice(0, 10);
+describe('v3: matched pre-window control (difference-in-differences)', () => {
+  const surfaced = '2026-04-01T00:00:00.000Z';
+  const surfacedTs = new Date(surfaced).getTime();
+  const day = (offset: number) =>
+    new Date(surfacedTs + offset * 86400_000).toISOString().slice(0, 10);
 
-    const { sb, windows } = buildWindowAwareSupabase((start, _end) => {
+  /** Routes each window by its start date: control, baseline or post. */
+  function threeWindows(
+    column: string,
+    values: { control: number[]; base: number[]; post: number[] },
+  ) {
+    return buildWindowAwareSupabase((start) => {
       const s = start.slice(0, 10);
-      if (s >= preStartDate && s < surfaced.slice(0, 10)) {
-        return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
-      }
-      if (s > surfaced.slice(0, 10) && s <= postEndDate) {
-        return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
-      }
-      // If v2 regressed and queried a third (ambient) window, this branch
-      // would answer it with a value that WOULD change the lift if it were
-      // still being subtracted (see the next test).
-      return [{ strokes_gained_total: 999 }, { strokes_gained_total: 999 }];
+      const pick = s > day(0) ? values.post : s >= day(-14) ? values.base : values.control;
+      return pick.map((v) => ({ [column]: v }));
     });
+  }
 
+  it('queries exactly three windows: control, baseline, post — the control ends the day before the baseline starts', async () => {
+    const { sb, windows } = threeWindows('strokes_gained_total', {
+      control: [0, 0],
+      base: [0, 0],
+      post: [2, 2],
+    });
     const result = await computeAttribution(sb, {
       insight_id: 'i-1',
       player_id: 'p-1',
@@ -804,27 +801,21 @@ describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
       target_metric_id: 'sg_total',
     });
     if (!result.ok) throw new Error('expected ok: true');
-
-    expect(windows).toHaveLength(2);
-    expect(result.row.improvement_lift).toBeCloseTo(2, 5);
+    expect(windows).toHaveLength(3);
+    expect(windows.some((w) => w.start.slice(0, 10) === day(-28) && w.end.slice(0, 10) === day(-15))).toBe(true);
+    expect(result.row.method_version).toBe('v3_did_prewindow');
+    // Flat pre-trend: the controlled lift equals the observed change.
+    expect(result.row.lift).toBeCloseTo(2, 5);
+    expect(result.row.control_value).toBeCloseTo(0, 5);
+    expect(result.row.n_rounds_control).toBe(2);
   });
 
-  it('a distant, would-be-ambient value has NO effect on the lift (revert-check for the v1 cancellation bug)', async () => {
-    // Baseline = 0, post = +2. Under v1 this same fixture's "ambient" branch
-    // (any date before preStart) would have been queried and subtracted;
-    // here it answers with a wildly different value (999) specifically to
-    // prove v2 never fetches it and the lift is exactly the observed delta.
-    const surfaced = '2026-04-01T00:00:00.000Z';
-    const surfacedTs = new Date(surfaced).getTime();
-    const { sb } = buildWindowAwareSupabase((start) => {
-      const s = start.slice(0, 10);
-      const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
-      if (s >= postStart) return [{ strokes_gained_total: 2 }, { strokes_gained_total: 2 }];
-      const preStartDate = new Date(surfacedTs - 14 * 86400_000)
-        .toISOString()
-        .slice(0, 10);
-      if (s >= preStartDate) return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
-      return [{ strokes_gained_total: 999 }, { strokes_gained_total: 999 }]; // never queried
+  it('subtracts a drift the player was already on (no credit for improvement that would have happened anyway)', async () => {
+    // Already improving by +1 per window before the insight; post continues +1.
+    const { sb } = threeWindows('strokes_gained_total', {
+      control: [-1, -1],
+      base: [0, 0],
+      post: [1, 1],
     });
     const result = await computeAttribution(sb, {
       insight_id: 'i-2',
@@ -833,31 +824,14 @@ describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
       target_metric_id: 'sg_total',
     });
     if (!result.ok) throw new Error('expected ok: true');
-    expect(result.row.delta).toBeCloseTo(2, 5);
-    expect(result.row.lift).not.toBeNull();
-    expect(result.row.lift!).toBeCloseTo(2, 5);
-    expect(result.row.method_version).toBe('v2_observed_delta');
+    expect(result.row.delta).toBeCloseTo(1, 5); // observed change still recorded
+    expect(result.row.lift).toBeCloseTo(0, 5); // but the insight gets no credit
   });
 
-  it('lower-is-better fixture (base=10, post=8): v2 lift is 2, not v1\'s 4', async () => {
-    // Advisor-specified revert-check fixture. v1: rawDelta = 8-10 = -2;
-    // ambient=12 -> rawLift = -2 - (12-10) = -4 -> sign(-1) * -4 = 4 (WRONG:
-    // a 2-stroke improvement reported as a 4-stroke lift). v2: rawLift =
-    // rawDelta = -2 -> sign(-1) * -2 = 2 (the actual observed improvement).
-    const surfaced = '2026-04-01T00:00:00.000Z';
-    const surfacedTs = new Date(surfaced).getTime();
-    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
-    const { sb } = buildWindowAwareSupabase((start) => {
-      const s = start.slice(0, 10);
-      if (s >= postStart) return [{ score_to_par: 8 }, { score_to_par: 8 }];
-      const preStartDate = new Date(surfacedTs - 14 * 86400_000)
-        .toISOString()
-        .slice(0, 10);
-      if (s >= preStartDate) return [{ score_to_par: 10 }, { score_to_par: 10 }];
-      return [{ score_to_par: 12 }, { score_to_par: 12 }]; // would-be ambient
-    });
+  it('lower-is-better fixture (control=10, base=10, post=8): lift is +2, and the baseline does not cancel', async () => {
+    const { sb } = threeWindows('score_to_par', { control: [10, 10], base: [10, 10], post: [8, 8] });
     const result = await computeAttribution(sb, {
-      insight_id: 'i-fixture',
+      insight_id: 'i-3',
       player_id: 'p-1',
       surfaced_at: surfaced,
       target_metric_id: 'score_to_par',
@@ -866,38 +840,88 @@ describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
     expect(result.row.baseline_value).toBeCloseTo(10, 5);
     expect(result.row.post_value).toBeCloseTo(8, 5);
     expect(result.row.improvement_lift).toBeCloseTo(2, 5);
-    expect(result.row.improvement_lift).not.toBeCloseTo(4, 5);
   });
 
-  it('a second fixture changing only the would-be ambient value leaves the v2 lift unchanged', async () => {
-    const surfaced = '2026-04-01T00:00:00.000Z';
-    const surfacedTs = new Date(surfaced).getTime();
-    const postStart = new Date(surfacedTs + 1).toISOString().slice(0, 10);
-    const preStartDate = new Date(surfacedTs - 14 * 86400_000)
-      .toISOString()
-      .slice(0, 10);
-    const makeSb = (ambientValue: number) =>
-      buildWindowAwareSupabase((start) => {
-        const s = start.slice(0, 10);
-        if (s >= postStart) return [{ score_to_par: 8 }, { score_to_par: 8 }];
-        if (s >= preStartDate) return [{ score_to_par: 10 }, { score_to_par: 10 }];
-        return [{ score_to_par: ambientValue }, { score_to_par: ambientValue }];
-      }).sb;
-    const a = await computeAttribution(makeSb(12), {
-      insight_id: 'i-amb-a',
+  it('returns lift=null when the CONTROL window is thin or empty (no control, no claim)', async () => {
+    const { sb } = threeWindows('strokes_gained_total', { control: [5], base: [0, 0], post: [2, 2] });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-4',
       player_id: 'p-1',
       surfaced_at: surfaced,
-      target_metric_id: 'score_to_par',
+      target_metric_id: 'sg_total',
     });
-    const b = await computeAttribution(makeSb(-50), {
-      insight_id: 'i-amb-b',
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(2, 5);
+    expect(result.row.lift).toBeNull();
+    expect(result.row.lift_z).toBeNull();
+    expect(result.row.lift_ci_low).toBeNull();
+  });
+
+  it('carries a 95% interval and a standardized lift_z from the per-round variance', async () => {
+    const { sb } = threeWindows('strokes_gained_total', {
+      control: [-1, 1, 0],
+      base: [-1, 1, 0],
+      post: [1, 3, 2],
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-5',
       player_id: 'p-1',
       surfaced_at: surfaced,
-      target_metric_id: 'score_to_par',
+      target_metric_id: 'sg_total',
     });
-    if (!a.ok || !b.ok) throw new Error('expected ok: true');
-    expect(a.row.improvement_lift).toBeCloseTo(2, 5);
-    expect(b.row.improvement_lift).toBeCloseTo(2, 5);
+    if (!result.ok) throw new Error('expected ok: true');
+    // var of each mean = 1/3; SE = sqrt(1/3 + 4/3 + 1/3) = sqrt(2).
+    const se = Math.sqrt(2);
+    expect(result.row.lift).toBeCloseTo(2, 5);
+    expect(result.row.lift_z).toBeCloseTo(2 / se, 5);
+    // df = 2 -> t* = 4.303
+    expect(result.row.lift_ci_low).toBeCloseTo(2 - 4.303 * se, 2);
+    expect(result.row.lift_ci_high).toBeCloseTo(2 + 4.303 * se, 2);
+    // A noisy lift: the interval spans zero.
+    expect(result.row.lift_ci_low!).toBeLessThan(0);
+  });
+
+  it('ratio metrics need MIN_RATIO_OPPORTUNITIES in every window (a 2-attempt sand-save window is not a lift)', async () => {
+    const thin = (saves: number, attempts: number) => [
+      { sand_saves: saves, sand_attempts: attempts },
+      { sand_saves: 0, sand_attempts: 1 },
+    ];
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s > day(0)) return thin(0, 1); // post: 0 of 2 -> a "-60 point" style outlier
+      return [
+        { sand_saves: 3, sand_attempts: 6 },
+        { sand_saves: 3, sand_attempts: 6 },
+      ]; // control + baseline: 12 attempts each
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-6',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'scrambling_pct_sand',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.delta).toBeCloseTo(-50, 5); // recorded
+    expect(result.row.lift).toBeNull(); // but 2 post attempts is not evidence
+  });
+
+  it('a ratio metric with enough opportunities gets a lift and a binomial interval', async () => {
+    const { sb } = buildWindowAwareSupabase((start) => {
+      const s = start.slice(0, 10);
+      if (s > day(0)) return [{ sand_saves: 6, sand_attempts: 10 }, { sand_saves: 6, sand_attempts: 10 }];
+      return [{ sand_saves: 4, sand_attempts: 10 }, { sand_saves: 4, sand_attempts: 10 }];
+    });
+    const result = await computeAttribution(sb, {
+      insight_id: 'i-7',
+      player_id: 'p-1',
+      surfaced_at: surfaced,
+      target_metric_id: 'scrambling_pct_sand',
+    });
+    if (!result.ok) throw new Error('expected ok: true');
+    expect(result.row.lift).toBeCloseTo(20, 5);
+    expect(result.row.lift_z).not.toBeNull();
+    // Unitless: 20 percentage points becomes a modest z, not a saturating 20.
+    expect(Math.abs(result.row.lift_z!)).toBeLessThan(5);
   });
 
   it('returns lift=null (but still records delta) when the POST window has too few rounds', async () => {
@@ -913,7 +937,8 @@ describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
       if (s >= preStartDate && s < surfaced.slice(0, 10)) {
         return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
       }
-      return [{ strokes_gained_total: 0 }];
+      // Control window: thick enough, so only the gate under test can null the lift.
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
     });
     const result = await computeAttribution(sb, {
       insight_id: 'i-3',
@@ -940,7 +965,8 @@ describe('N10: v2 observed-delta lift (no ambient adjustment)', () => {
       if (s >= preStartDate && s < surfaced.slice(0, 10)) {
         return [{ strokes_gained_total: 0 }]; // baseline: only 1 round → below gate
       }
-      return [{ strokes_gained_total: 0 }];
+      // Control window: thick enough, so only the gate under test can null the lift.
+      return [{ strokes_gained_total: 0 }, { strokes_gained_total: 0 }];
     });
     const result = await computeAttribution(sb, {
       insight_id: 'i-4',

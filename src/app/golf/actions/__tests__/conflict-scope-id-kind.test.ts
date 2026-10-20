@@ -91,7 +91,7 @@ vi.mock('@/lib/calendar/availability', () => ({
   periodsOverlap: vi.fn(() => false),
 }));
 
-const { checkScheduleConflicts } = await import('../golf');
+const { checkScheduleConflicts } = await import('../calendar-events');
 
 beforeEach(() => {
   state.staffTeamsError = null;

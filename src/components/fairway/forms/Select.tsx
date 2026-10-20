@@ -18,7 +18,7 @@
  * ========================================================================== */
 
 import * as React from "react";
-import { Select as BaseSelect } from "@base-ui-components/react/select";
+import { Select as BaseSelect } from "@base-ui/react/select";
 import { cn } from "@/lib/utils";
 import { useModalPortalContainer } from "@/components/fairway/overlays/_shared";
 import {

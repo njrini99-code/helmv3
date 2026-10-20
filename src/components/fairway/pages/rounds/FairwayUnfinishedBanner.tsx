@@ -26,7 +26,9 @@
  *
  * Discard reuses the EXISTING non-destructive server action
  * `deleteInProgressRound` UNCHANGED (no delete-then-reinsert; the action owns
- * the safe delete + emergency-save clear). A two-step confirm guards it.
+ * the safe delete + emergency-save clear). A two-step confirm guards it. On
+ * success it also marks the round discarded on this device and drops its
+ * offline-queue copy, exactly as the round screen's Discard does.
  *
  * Coaches NEVER see this — the parent only renders it for `userRole === 'player'`
  * when `rounds.length > 0`.
@@ -41,8 +43,9 @@ import { Play, Send } from 'lucide-react';
 import { Surface, Inset } from '@/components/fairway/surfaces/surface';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { Button } from '@/components/fairway/controls/button';
-import { deleteInProgressRound } from '@/app/golf/actions/golf';
-import { clearEmergencySave } from '@/lib/utils/emergency-save';
+import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
+import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
+import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 
 export interface FairwayUnfinishedBannerProps {
@@ -170,6 +173,12 @@ function UnfinishedRow({
       const result = await deleteInProgressRound(round.id);
       if (!result.success) throw new Error(result.error);
       clearEmergencySave(round.id, playerId);
+      // R-4/R-10, as the round screen's own Discard (use-continue-round-session
+      // handleDeleteRound): no other tab may re-create it, and a failed-submit
+      // entry queued for it must not sync it back. The queue drop is best
+      // effort and never fails the discard.
+      markRoundDiscarded(round.id, playerId);
+      void Promise.resolve().then(() => deleteOfflineRound(round.id)).catch(() => {});
       onDiscarded();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to discard round');

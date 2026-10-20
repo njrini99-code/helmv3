@@ -86,19 +86,19 @@ fi
 # TWO SOURCES, and the hook says which one it used.
 #
 #   LIVE    scripts/release-status.mjs reads the served bundle and finds the
-#           stamped commit — the same check deploy-prod.sh runs after a
-#           promote. Bounded (--timeout-ms, default 5000, below this hook's
+#           stamped commit — the same check an agent runs after a deploy
+#           (`npm run release:status`). Bounded (--timeout-ms, default 5000, below this hook's
 #           10 s budget in settings.json) and never a git fetch (--no-fetch),
 #           so a dead network degrades to the marker, not to a hung hook.
 #           Skip it with HELM_SESSION_OFFLINE=1.
 #   MARKER  .claude/session-state/last-verified-release, `<sha> <date>`,
-#           written by deploy-prod.sh only after it verified the bundle. It is
+#           refreshed by this hook whenever the live probe succeeds. It is
 #           machine state and it goes stale: a deploy from a worktree left the
 #           canonical copy at 53ae81a4c while production served fb425aa2b, and
 #           this hook opened sessions claiming 16 unreleased commits against a
-#           real figure of 1. So the marker is read from the CANONICAL checkout
-#           (deploy-prod.sh now writes it there), and when it is all we have
-#           the context says "marker" and its date, never "verified".
+#           real figure of 1. So the marker is read from (and refreshed in) the
+#           CANONICAL checkout, and when it is all we have the context says
+#           "marker" and its date, never "verified".
 #
 # This block used to say a session-start hook must never make a network call.
 # It still makes none for git; the one HTTPS probe is bounded, optional, and
@@ -118,7 +118,8 @@ release_line_from() {
     CTX="${CTX}
 - UNRELEASED: ${unreleased} commit(s) are merged to origin/main but NOT in
   production (production ${label}). Merging does not ship —
-  vercel.json disables git deploys. Confirm with: npm run release:status"
+  vercel.json disables git deploys; deploy with the Vercel CLI from the
+  linked checkout. Confirm with: npm run release:status"
   else
     CTX="${CTX}
 - production: $(printf '%s' "$sha" | cut -c1-9) — serving origin/main (${label})"
@@ -167,16 +168,18 @@ fi
 WT=$(git worktree list 2>/dev/null | wc -l | tr -d ' ')
 if [ "${WT:-1}" -gt 1 ]; then
   CTX="${CTX}
-- worktrees: ${WT} (work may be happening in another checkout of this repo)"
+- worktrees: ${WT} (advisory count: other checkouts exist, not proof anyone is writing in them)"
 fi
 
-# Branch policy is AGENTS.md canonicality: work on the currently checked-out
+# Informational only, and only for the canonical checkout: a worktree on a task
+# branch is the normal state and gets no note. Work on the currently checked-out
 # branch; never switch unless asked. A push to main ships nothing (vercel.json
-# deploymentEnabled all-false; production is an on-demand promote).
+# deploymentEnabled all-false; production changes only when an agent deploys).
 if [ "$BRANCH" != "main" ] && [ "$(pwd -P)" = "$CANON_ROOT" ]; then
   CTX="${CTX}
-- NOTE: the canonical checkout should rest on main. It is on '${BRANCH}';
-  if that is not a task you are doing, say so before editing."
+- note (informational): this is the canonical checkout and it is on '${BRANCH}', not main.
+  If it is not your task, another session may own it: use your own worktree
+  (scripts/new-worktree.sh <task>)."
 fi
 
 jq -nc --arg ctx "$CTX" \

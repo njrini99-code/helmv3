@@ -58,7 +58,7 @@
 
 import { type ReactNode, useEffect, useId, useRef } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { fwFocusRing, fwTransition } from './_internal';
 import { fwHaptic } from '@/lib/fairway/haptics';

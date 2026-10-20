@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect } from 'next/navigation';
 import type { GolfRound } from '@/lib/types/golf';
 import type { Metadata } from 'next';
@@ -8,6 +9,9 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerException } from '@/lib/server-error-logger';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseRoundsRoute } from '@/clubhouse/routes/rounds';
+import { redirectToClubhouse } from '@/clubhouse/routes/alias';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { computeScoringTrendFromRounds } from '@/lib/golf/scoring-trend';
 import {
@@ -37,6 +41,17 @@ export default async function RoundsPage() {
 
   const { role: userRole, coach, player } = session;
   if (!userRole) redirect('/golf/login');
+
+  // Clubhouse Rounds (golf_clubhouse_ui): the player's library. Coaches keep
+  // this page; v2 has no coach Rounds library.
+  // The role is the dashboard layout's (getGolfDashboardRole); Fairway below keeps the session's.
+  const chRole = await getGolfDashboardRole();
+  if (chRole === 'player' && player && (await isClubhouseFor('player'))) return <ClubhouseRoundsRoute />;
+  // A coach's rounds are read through Team stats in Clubhouse (v2 has no coach library; owner, 2026-10-01: alias).
+  // Through the alias helper, and on the frame's aliased list (nav.ts), so the redirect runs: a plain redirect() here
+  // never fired, since the frame drops a page that isn't rebuilt for the role and the coach stood on "not rebuilt"
+  // (readiness audit, 2026-10-17).
+  if (chRole === 'coach' && coach) await redirectToClubhouse({ coach: '/golf/dashboard/stats/team' });
 
   const supabase = await createClient();
 
@@ -94,7 +109,7 @@ export default async function RoundsPage() {
   `;
 
   if (userRole === 'coach' && teamId) {
-    let teamMembers: { player_id: string }[] | null = null;
+    let teamMembers: { player_id: string }[] | null;
     try {
       const result = await supabase
         .from('golf_team_members')
@@ -152,7 +167,6 @@ export default async function RoundsPage() {
       })) as RoundWithPlayer[];
     }
   } else if (userRole === 'player' && player) {
-    let inProgressData: typeof inProgressRounds = [];
     // P425: surface real failures (route error.tsx offers retry) — never mask a
     // fetch error as an empty rounds list.
     const [completedResult, inProgressResult] = await Promise.all([
@@ -184,7 +198,7 @@ export default async function RoundsPage() {
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
 
-    inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
+    const inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
 
     // R8: "ready to submit" — every hole already carries a durable score, so
     // the round is stuck holding a completed scorecard, not mid-tracking

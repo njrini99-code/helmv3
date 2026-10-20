@@ -304,4 +304,4 @@ export async function getTeamPlayers(): Promise<{
 }
 
 // NOTE: updatePlayerStatus is in golf.ts
-// import { updatePlayerStatus } from '@/app/golf/actions/golf';
+// import { updatePlayerStatus } from '@/app/golf/actions/team-management';

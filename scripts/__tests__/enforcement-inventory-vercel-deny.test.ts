@@ -153,18 +153,31 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
 });
 
 describe('the live configuration', () => {
-  it('Vercel CLI and MCP are fully permitted: nothing asks or denies (owner grant)', () => {
-    // The owner granted full Vercel access. Releases still go through
-    // scripts/deploy-prod.sh by policy (AGENTS.md "Production"), not by a
-    // permission rule.
+  it('Vercel is permitted except the owner-set asks on MCP deploy, promote, rollback and domain purchase', () => {
+    // The owner granted full Vercel access, then (2026-10-07) asked for an
+    // approval prompt on the Vercel MCP tools that ship or roll back
+    // production or spend money. Nothing is denied, the CLI is not gated, and
+    // releases still go through scripts/deploy-prod.sh by policy (AGENTS.md
+    // "Production"), not by a permission rule.
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const connectors: Connector[] = JSON.parse(
       readFileSync(resolve(REPO, 'config/mcp-connector-ids.json'), 'utf-8'),
     ).connectors;
     const vercelIds = connectors.filter((c) => c.service === 'Vercel').map((c) => c.id);
-    const rules = [...settings.permissions.ask, ...settings.permissions.deny];
-    const gated = rules.filter((r: string) => /vercel|deploy-prod/i.test(r) || vercelIds.some((id) => r.includes(id)));
-    expect(gated).toEqual([]);
+    const isVercel = (r: string) => /vercel|deploy-prod/i.test(r) || vercelIds.some((id) => r.includes(id));
+    expect(settings.permissions.deny.filter(isVercel)).toEqual([]);
+    const tools = [
+      'request_promote',
+      'request_rollback',
+      'create_deployment',
+      'deploy_to_vercel',
+      'buy_domain',
+      'buy_domains',
+      'buy_single_domain',
+    ];
+    const prefixes = ['mcp__claude_ai_Vercel__', ...new Set(vercelIds.map((id) => `mcp__${id}__`))];
+    const expected = prefixes.flatMap((p) => tools.map((t) => `${p}${t}`));
+    expect([...settings.permissions.ask.filter(isVercel)].sort()).toEqual([...expected].sort());
     const { hits } = vercelMutatingDenyHits(settings.permissions.deny, connectors);
     expect(hits).toEqual([]);
   });

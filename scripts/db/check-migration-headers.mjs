@@ -21,6 +21,15 @@
  * matches the mutating-keyword pattern and lacks either header ALWAYS fails,
  * regardless of baseline size.
  *
+ * VERIFY SHAPE. scripts/db/apply.mjs joins `-- VERIFY:` lines into queries
+ * and runs them after an apply. A continuation line that lost its `-- VERIFY:`
+ * prefix (a reflow), or prose on a VERIFY line, yields a query that is cut off
+ * or not SQL at all, and the post-apply check fails AFTER production changed.
+ * Every extracted query must start with `select`/`with`, have balanced
+ * parentheses and quotes, and not end on a dangling keyword or operator.
+ * Files that already shipped with a malformed block are grandfathered in
+ * `verifyGrandfathered` (same ratchet rule).
+ *
  * Flags:
  *   --update   Rewrite the baseline from the current violations and exit 0.
  *
@@ -30,6 +39,7 @@
 import { readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractVerifyQueries } from './apply.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..');
@@ -51,6 +61,43 @@ export function classifyMigration(sqlText) {
   return { needsHeaders, hasRollback, hasVerify };
 }
 
+/** VERIFY queries in this file that apply.mjs could not run as written. */
+export function malformedVerifyQueries(sqlText) {
+  const bad = extractVerifyQueries(sqlText).filter((q) => !isRunnableVerify(q));
+  // A VERIFY line with no `;` followed by a plain `--` line: the next line is a
+  // continuation that lost its prefix, so the joined query is silently cut off.
+  const lines = sqlText.split('\n').map((l) => l.trim());
+  for (let i = 0; i < lines.length - 1; i += 1) {
+    const isVerify = /^--\s*VERIFY:/i.test(lines[i]);
+    const next = lines[i + 1];
+    if (
+      isVerify &&
+      !/;\s*(--.*)?$/.test(lines[i]) &&
+      /^--\s*\S/.test(next) &&
+      !/^--\s*(VERIFY|ROLLBACK|STATUS)\b/i.test(next)
+    ) {
+      bad.push(`${lines[i].replace(/^--\s*VERIFY:\s*/i, '')} …(continued on a line without -- VERIFY:)`);
+    }
+  }
+  return bad;
+}
+
+function isRunnableVerify(query) {
+  const body = query.replace(/;\s*$/, '').trim();
+  if (!/^(select|with)\b/i.test(body)) return false;
+  let depth = 0;
+  let inQuote = false;
+  for (const ch of body) {
+    if (inQuote) {
+      if (ch === "'") inQuote = false;
+    } else if (ch === "'") inQuote = true;
+    else if (ch === '(') depth += 1;
+    else if (ch === ')') depth -= 1;
+  }
+  if (depth !== 0 || inQuote) return false;
+  return !/(\b(in|where|and|or|from|join|on|select|by|not|as|like|then|else|when|is)|[,=(<>+*/-])$/i.test(body);
+}
+
 /** Strip `--` line comments and `/* *\/` block comments before keyword-scanning,
  *  so a migration's own prose discussing "DROP TABLE" in an explanation
  *  doesn't count as the migration doing it. */
@@ -62,11 +109,11 @@ function stripSqlComments(text) {
     .join('\n');
 }
 
-function loadBaseline() {
+function loadBaseline(key = 'grandfathered') {
   if (!existsSync(BASELINE_PATH)) return new Set();
   try {
     const parsed = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'));
-    return new Set(Array.isArray(parsed.grandfathered) ? parsed.grandfathered : []);
+    return new Set(Array.isArray(parsed[key]) ? parsed[key] : []);
   } catch {
     return new Set();
   }
@@ -77,12 +124,14 @@ function main() {
   const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
 
   const violations = [];
+  const verifyViolations = [];
   for (const file of files) {
     const text = readFileSync(join(MIGRATIONS_DIR, file), 'utf-8');
     const { needsHeaders, hasRollback, hasVerify } = classifyMigration(text);
     if (needsHeaders && (!hasRollback || !hasVerify)) {
       violations.push(file);
     }
+    if (malformedVerifyQueries(text).length > 0) verifyViolations.push(file);
   }
 
   if (update) {
@@ -96,6 +145,7 @@ function main() {
             'header. This list may only shrink — regenerate with --update only after adding ' +
             'the missing headers to a file, never to add a NEW file to it.',
           grandfathered: violations,
+          verifyGrandfathered: verifyViolations,
         },
         null,
         2,
@@ -115,6 +165,21 @@ function main() {
         `run 'node scripts/db/check-migration-headers.mjs --update' to shrink it:\n` +
         fixedFiles.map((f) => `  ${f}`).join('\n') + '\n',
     );
+  }
+
+  const verifyBaseline = loadBaseline('verifyGrandfathered');
+  const newVerifyViolations = verifyViolations.filter((f) => !verifyBaseline.has(f));
+  if (newVerifyViolations.length > 0) {
+    process.stderr.write(
+      `check-migration-headers: ${newVerifyViolations.length} migration(s) have a -- VERIFY: block ` +
+        `that apply.mjs cannot run (prose, a cut-off clause, or a continuation line missing its ` +
+        `-- VERIFY: prefix):\n` +
+        newVerifyViolations
+          .map((f) => `  ${f}: ${malformedVerifyQueries(readFileSync(join(MIGRATIONS_DIR, f), 'utf-8'))[0].slice(0, 100)}`)
+          .join('\n') +
+        '\n',
+    );
+    process.exit(1);
   }
 
   if (newViolations.length > 0) {

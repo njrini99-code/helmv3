@@ -26,16 +26,20 @@
 
 import { helmLog } from '@/lib/observability/structured-log';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
+import { LEGACY_NEW_ROUND_LOG_SOURCE, type RoundSessionLogSource } from '@/lib/golf/round-session/routes';
 
 export const ROUND_START_DUPLICATE_WARNED_EVENT = 'golf.round_start.duplicate_completed_round_warned';
 export const ROUND_START_VALIDATION_BLOCKED_EVENT = 'golf.round_start.validation_blocked';
 
-const BASE_FIELDS = {
-  sport: 'golf',
-  feature: 'round_tracking',
-  component: 'NewRoundClient',
-  route: '/golf/dashboard/rounds/new',
-} as const;
+/** The tags every guard line carries. A renderer other than the Fairway screen names its own `logSource`. */
+function baseFields(logSource: RoundSessionLogSource = LEGACY_NEW_ROUND_LOG_SOURCE) {
+  return {
+    sport: 'golf',
+    feature: 'round_tracking',
+    component: logSource.component,
+    route: logSource.route,
+  } as const;
+}
 
 export interface DuplicateCompletedRoundContext {
   completedRoundId: string | null | undefined;
@@ -45,9 +49,12 @@ export interface DuplicateCompletedRoundContext {
   roundDate: string | null | undefined;
 }
 
-export function reportDuplicateCompletedRoundWarned(context: DuplicateCompletedRoundContext): void {
+export function reportDuplicateCompletedRoundWarned(
+  context: DuplicateCompletedRoundContext,
+  logSource?: RoundSessionLogSource,
+): void {
   helmLog.info(ROUND_START_DUPLICATE_WARNED_EVENT, {
-    ...BASE_FIELDS,
+    ...baseFields(logSource),
     action: 'round_start',
     result: 'duplicate_completed_round_warned',
     completed_round_id: context.completedRoundId,
@@ -69,9 +76,12 @@ export interface RoundStartValidationContext {
   roundDate: string | null | undefined;
 }
 
-export function reportRoundStartValidationBlocked(context: RoundStartValidationContext): void {
+export function reportRoundStartValidationBlocked(
+  context: RoundStartValidationContext,
+  logSource?: RoundSessionLogSource,
+): void {
   helmLog.info(ROUND_START_VALIDATION_BLOCKED_EVENT, {
-    ...BASE_FIELDS,
+    ...baseFields(logSource),
     action: 'round_start_validation',
     result: 'blocked',
     validation_error: context.validationError,

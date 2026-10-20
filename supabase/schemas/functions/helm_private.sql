@@ -160,16 +160,19 @@ $$;
 ALTER FUNCTION "helm_private"."prevent_qualifier_active_round_stranding"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "helm_private"."prevent_qualifier_entry_active_round_stranding"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
+    LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
+  -- Runs as its owner so a round the caller's RLS can't see still counts,
+  -- and any unfinished round (in progress, draft, or anything not completed)
+  -- keeps its entry.
   IF EXISTS (
     SELECT 1
     FROM public.golf_rounds
     WHERE player_id = OLD.player_id
       AND qualifier_id = OLD.qualifier_id
-      AND status = 'in_progress'
+      AND status IS DISTINCT FROM 'completed'
   ) THEN
     RAISE EXCEPTION USING
       ERRCODE = '55000',

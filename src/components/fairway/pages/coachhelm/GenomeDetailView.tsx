@@ -109,7 +109,7 @@ export interface GenomeDetailViewProps {
 }
 
 /* ---------------------------------------------------------------------------
- * Watchout → focus-area area_type. The 8 genome categories map to the canonical
+ * Watchout → focus-area area_type. The 7 genome categories map to the canonical
  * golf_player_focus_areas.area_type vocabulary so a watchout turns into a
  * correctly-typed focus area (not an "other" catch-all). Unknown → 'other'.
  * ------------------------------------------------------------------------- */
@@ -119,7 +119,6 @@ const WATCHOUT_AREA_TYPE: Record<string, string> = {
   pressure_response: 'mental_game',
   recovery_patterns: 'short_game',
   course_type_affinity: 'course_management',
-  weather_sensitivity: 'course_management',
   stamina: 'fitness',
   learning_velocity: 'other',
   strategic_profile: 'course_management',
@@ -224,8 +223,8 @@ export function GenomeDetailView({
   /**
    * The denominator counts only dimensions that CAN become live.
    *
-   * `neverAvailable` marks a permanent stub — today `weather_sensitivity_stub`,
-   * because no weather or temperature is recorded in shot data at all. Its own
+   * `neverAvailable` marks a permanent stub (the retired
+   * `weather_sensitivity_stub` was one; none is registered today). Its own
    * docblock in genome/types.ts says the flag exists to "drive a separate 'Not
    * tracked' UI treatment so coaches don't read it as 'will unlock
    * eventually'", and the grid cell honors that. This caption did not: counting

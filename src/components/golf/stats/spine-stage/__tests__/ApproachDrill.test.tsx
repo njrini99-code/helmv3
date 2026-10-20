@@ -146,22 +146,53 @@ describe('ApproachDrill', () => {
     expect(screen.queryByText(/-round trend/)).not.toBeInTheDocument();
   });
 
-  it('bands the Efficiency table with RampMatrix (legend + strongest/weakest cells)', async () => {
+  it('leaves the Efficiency matrix ungraded: no target legend, no heat colouring (owner decision Q-93)', async () => {
     const user = userEvent.setup();
     renderApproach({ detailedStats: fixtureStats() });
     await user.click(screen.getByRole('radio', { name: 'Efficiency' }));
 
-    expect(screen.getByText('Ahead of target')).toBeInTheDocument();
-    expect(screen.getByText('Well behind target')).toBeInTheDocument();
+    // These cells used to be coloured against hand-set "college-golf targets"
+    // with an Ahead of / On / Behind target legend. The Tour has no value on
+    // these bands, so the matrix shows the numbers and grades nothing.
+    expect(screen.queryByText(/target/i)).not.toBeInTheDocument();
 
-    const matrix = document.querySelector('[data-slot="ramp-matrix"]');
+    const matrix = document.querySelector('[data-slot="ramp-matrix"]') as HTMLElement;
     expect(matrix).not.toBeNull();
-    // Fairway @ 30-75yds = 2.2 strokes, well under the 2.3 "good" cutoff → band 4 (darkest).
-    const bestCell = within(matrix as HTMLElement).getByText('2.20');
-    expect(bestCell.closest('td')?.className).toContain('ramp-4');
-    // Rough @ 30-75yds = 3.6 strokes, well past the 2.85 "poor" cutoff → band 1 (lightest colored).
-    const worstCell = within(matrix as HTMLElement).getByText('3.60');
-    expect(worstCell.closest('td')?.className).toContain('ramp-1');
+    // The measured values are still there.
+    expect(within(matrix).getByText('2.20')).toBeInTheDocument();
+    expect(within(matrix).getByText('3.60')).toBeInTheDocument();
+    expect(within(matrix).getByText('18.0 ft')).toBeInTheDocument();
+    // Every cell is neutral (sunken), none on the accent ramp.
+    const cells = Array.from(matrix.querySelectorAll('td'));
+    expect(cells.length).toBeGreaterThan(0);
+    for (const cell of cells) expect(cell.className).not.toContain('bg-ramp-');
+    // The caption points at the honest Tour comparison instead.
+    expect(screen.getByText(/the proximity chart below is where you compare with the Tour/)).toBeInTheDocument();
+  });
+
+  it("names the team's tour on the proximity chart, never a guessed PGA Tour", async () => {
+    // The LeakMap loads through next/dynamic (ssr: false), hence findByText.
+    const leak = { playerId: 'p1', putting: [], approach: [], roundsIncluded: 3 };
+    const { unmount } = renderApproach({ detailedStats: fixtureStats(), tour: 'pga' });
+    expect(await screen.findByText('Average proximity to the hole by approach distance vs PGA Tour')).toBeInTheDocument();
+    unmount();
+
+    const women = renderApproach({ detailedStats: fixtureStats(), tour: 'lpga' });
+    expect(await screen.findByText('Average proximity to the hole by approach distance vs LPGA Tour')).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/(?<!L)PGA Tour/);
+    women.unmount();
+
+    // With no stage tour the leak map's own tour is used.
+    const fromLeak = renderApproach({
+      detailedStats: fixtureStats(),
+      leakMaps: { ...leak, tour: 'lpga' as const },
+    });
+    expect(await screen.findByText(/by approach distance vs LPGA Tour$/)).toBeInTheDocument();
+    fromLeak.unmount();
+
+    // Unknown: neutral, not PGA.
+    renderApproach({ detailedStats: fixtureStats() });
+    expect(await screen.findByText('Average proximity to the hole by approach distance vs the Tour')).toBeInTheDocument();
   });
 
   it('bands the Misses table with RampMatrix (n column + direction legend)', async () => {

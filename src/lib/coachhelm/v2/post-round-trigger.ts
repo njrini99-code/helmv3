@@ -6,8 +6,7 @@
  *
  * Designed for `after(() => postRoundTrigger(admin, args))` from the round
  * submit server action — see audit Finding 2 / A-NEW-6 — and reused
- * verbatim by the Inngest function, the pgmq consumer and the safety-net
- * cron, so every path stamps the round the same way.
+ * verbatim by the pgmq consumer and the safety-net cron, so every path stamps the round the same way.
  *
  * Closes:
  *   - the HTTP self-call hop (no internal `fetch` to `/api/coachhelm/...`)
@@ -39,7 +38,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // own top-level finishes — at synchronous module-init time, so there is no
 // async gap for a concurrent request on the same warm instance to race
 // against (the cold-start TDZ crash the bridge header documents).
-import '@/app/golf/actions/insights';
+import '@/app/golf/actions/insights-coachhelm';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import {
   classifyThrown,

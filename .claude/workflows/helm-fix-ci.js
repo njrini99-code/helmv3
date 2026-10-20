@@ -44,7 +44,7 @@ const out = await pipeline(
     'and for each failing job read `gh run view <run> --job <job> --log-failed`. Identify the exact failing step and its cause. ' +
     'Common causes: stale generated docs (docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md via npm run knowledge:doc-inventory, the world model via npm run knowledge:world-model, ' +
     'the feature map via npm run knowledge:feature-map, docs/TOOL_AUTHORITY_MATRIX.md), markdown or sqlfluff ratchet growth, yamllint line length. ' +
-    'Locate the branch\'s worktree with `git worktree list` from /Users/ricknini/Downloads/helmv3. Report only; never edit.',
+    'Locate the branch\'s worktree with `git worktree list` from the repository root (`git rev-parse --show-toplevel`). Report only; never edit.',
     { label: `diagnose:${pr}`, phase: 'Diagnose', agentType: 'helm-reader', schema: DIAGNOSIS },
   ),
   (diag, pr) => {

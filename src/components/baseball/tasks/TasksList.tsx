@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import { TaskCard } from './TaskCard';
 import { IconClipboardList } from '@/components/icons';
 import { staggerContainer } from '@/lib/coachhelm/v3/motion';

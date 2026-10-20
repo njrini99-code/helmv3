@@ -26,7 +26,7 @@
  * roster before this ever mounts).
  * ========================================================================== */
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/fairway/controls/badge';
 import { Surface } from '@/components/fairway/surfaces/surface';

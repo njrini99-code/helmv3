@@ -28,7 +28,12 @@ describe('PuttSlopeBiasGenerator.composeContent — quality contracts', () => {
     expect(c.content).toContain('55%');
     expect(c.content).toContain('96%');
     expect(c.content).toContain('41');
-    expect(c.content).toContain('n=13 downhill / 13 level');
+    // The sample is the evidence's (sample_n, and each side in detail), never a "(n=…)" aside in the prose.
+    expect(c.content).not.toContain('n=');
+    expect(c.evidence.sample_n).toBe(26);
+    expect(c.title).toBe('Downhill putts from 0-3 ft: a real penalty');
+    expect(c.content.startsWith('From 0-3 ft, you')).toBe(true);
+    expect(c.evidence.metric_label).toBe('Make rate, downhill vs level, same distance');
     expect(c.content.toLowerCase()).toMatch(/ladder drill|dying the ball/);
     expect(c.priority).toBe('medium');
     expect(c.signature).toBe('putt_slope_bias:0-3 ft');
@@ -184,5 +189,31 @@ describe('selectDownhillPenaltyCut — distance-band-controlled downhill vs leve
     const cut = selectDownhillPenaltyCut(rows);
     expect(cut).not.toBeNull();
     expect(cut!.band).toBe('0-3 ft');
+  });
+});
+
+describe('audit row 27 — the stored value is what the metric name says', () => {
+  it('your_value is the downhill PENALTY (level − downhill, pp), not the downhill make %', () => {
+    const c = gen.composeContent(agg({ downhill_pct: 55, level_pct: 96, gap_pp: 41 }));
+    expect(c.evidence.metric).toBe('putt_slope_downhill_penalty_pct');
+    expect(c.evidence.your_value).toBe(41);
+    // The comparison is "no penalty", and lower is better for a penalty.
+    expect(c.evidence.comparison_value).toBe(0);
+    expect(c.evidence.polarity).toBe('lower_better');
+    // Both make rates stay machine-readable next to the gap.
+    expect(c.evidence.detail).toMatchObject({ downhill_pct: 55, level_pct: 96, downhill_n: 13, level_n: 13 });
+  });
+});
+
+describe('audit row 27 — correction for the two-band search', () => {
+  it('rejects a cut that is significant at 0.05 but not at the Bonferroni 0.025', () => {
+    // 0-3 ft: level 14/20 (70%) vs downhill 7/20 (35%), p ≈ 0.03.
+    const rows = [
+      ...Array(14).fill(0).map(() => row('level', 2, true)),
+      ...Array(6).fill(0).map(() => row('level', 2, false)),
+      ...Array(7).fill(0).map(() => row('downhill', 2, true)),
+      ...Array(13).fill(0).map(() => row('downhill', 2, false)),
+    ];
+    expect(selectDownhillPenaltyCut(rows)).toBeNull();
   });
 });

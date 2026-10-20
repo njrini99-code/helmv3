@@ -65,6 +65,7 @@ import { calcConfidence, CONFIDENCE_METHOD_VERSION, type InsightEvidence, type I
 import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analytics/effectiveness-writer';
 import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
 import { requireCronAuth } from '@/lib/cron/auth';
+import { notifyInsightResolved } from '@/lib/notifications/insight-notifier';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
@@ -92,6 +93,8 @@ type JsonRecord = Record<string, unknown>;
 
 interface InsightRow {
   id: string;
+  player_id: string | null;
+  category: string | null;
   lifecycle_state: InsightLifecycleState | null;
   evidence: InsightEvidence | null;
   metadata: JsonRecord | null;
@@ -162,7 +165,13 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   const staleBeforeIso = new Date(now - STALE_EVALUATION_MS).toISOString();
   let cursor = parseCursor(req.nextUrl.searchParams.get('cursor'));
 
-  type EvaluatedRow = { id: string; patch: UpdatePatch; observedLifecycleState: InsightLifecycleState | null };
+  type EvaluatedRow = {
+    id: string;
+    patch: UpdatePatch;
+    observedLifecycleState: InsightLifecycleState | null;
+    playerId: string | null;
+    category: string | null;
+  };
   let scannedCount = 0;
   let nextCursor: string | null = null;
   let reachedRunLimit = false;
@@ -179,7 +188,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     const limit = Math.min(PAGE_SIZE, remaining);
     let query = supabase
       .from('golf_coach_insights')
-      .select('id, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at, updated_at')
+      .select('id, player_id, category, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at, updated_at')
       .in('lifecycle_state', ['tentative', 'detected', 'matured', 'addressed'])
       .lt('updated_at', staleBeforeIso)
       .order('updated_at', { ascending: true })
@@ -235,7 +244,13 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
       try {
         const patch = evaluateRow(row, now, nowIso);
         if (!patch) continue;
-        evaluated.push({ id: row.id, patch, observedLifecycleState: row.lifecycle_state });
+        evaluated.push({
+          id: row.id,
+          patch,
+          observedLifecycleState: row.lifecycle_state,
+          playerId: row.player_id,
+          category: row.category,
+        });
       } catch (err) {
         await logServerError(
           `cron.insight_lifecycle.evaluate failed: ${describeError(err)}`,
@@ -313,7 +328,19 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
           );
           continue;
         }
-        if (patch?.lifecycle_state === 'resolved') resolvedCount++;
+        if (patch?.lifecycle_state === 'resolved') {
+          resolvedCount++;
+          // Audit row 53: a resolved insight celebrates ('goal_achieved').
+          // The notifier never throws and throttles per player per day.
+          const resolvedRow = chunk[j];
+          if (resolvedRow?.playerId && id) {
+            await notifyInsightResolved({
+              player_id: resolvedRow.playerId,
+              insight_id: id,
+              category: resolvedRow.category ?? 'general',
+            });
+          }
+        }
         if (patch?.lifecycle_state === 'archived') archivedCount++;
         if (patch?.lifecycle_state === 'tentative') demotedCount++;
         if (patch?.evidence) recencyAdjustedCount++;

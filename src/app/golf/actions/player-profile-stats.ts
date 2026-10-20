@@ -164,7 +164,7 @@ async function getPlayerProfileStatsImpl(
       // gir/score/sand_save are canonical inputs: without them the calculator
       // falls back to shot-count for score and re-derives GIR from shot results,
       // which corrupts scrambling, sand-save, and any score/par-based stat.
-      .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save')
+      .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save, penalty_strokes')
       .in('round_id', roundIdsToFetch)
       .order('id', { ascending: true })
       .range(from, to), undefined, { table: 'golf_holes', action: 'getPlayerProfileStats', feature: 'my_game_profile', sport: 'golf' }); // paginate past PostgREST 1000-row cap
@@ -208,6 +208,8 @@ async function getPlayerProfileStatsImpl(
       putts: h.putts ?? null,
       fairway_hit: h.fairway_hit ?? null,
       sand_save: h.sand_save ?? null,
+      // The one penalty count (null = 0, like the DB cache's COALESCE).
+      penalty_strokes: h.penalty_strokes ?? null,
     }));
 
     // Transform shots to RawShot format - don't filter out shots with missing distances

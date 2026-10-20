@@ -43,6 +43,12 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: vi.fn() }));
+// The team-audience check reads with the service role; this file tests the
+// insert shape, so the audience is stubbed to admit everyone. The refusal
+// itself is covered in messages-create-golf-conversation.test.ts.
+vi.mock('@/lib/golf/conversation-audience', () => ({
+  assertGolfConversationAudience: vi.fn(async () => {}),
+}));
 vi.mock('@/lib/notifications/golf-message-fanout', () => ({
   notifyGolfMessageRecipients: vi.fn(async () => {}),
 }));

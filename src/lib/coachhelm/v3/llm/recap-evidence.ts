@@ -36,10 +36,17 @@
  * the typed `EvidencePacket` for the SAME recap, engaged behind the
  * `coachhelm_recap_claim_packet` flag — an additive, opt-in second gate on
  * top of the flat scan above, not a replacement for it.
+ *
+ * `buildRecapFieldEvidence` (deep audit row 40a) is what the recap now hands
+ * the flat scan: the same packet values, keyed by field (`cite.putts`, ...),
+ * so `verifyCitations` binds each number to the stat its words name instead
+ * of accepting any evidence value anywhere. `buildRecapEvidence` stays for
+ * `round-review-narrative.ts`, which has not migrated and keeps the legacy
+ * field-blind match.
  */
 
 import type { EvidenceClaim } from './types';
-import { extractNumericTokens } from './citations';
+import { citationField, extractNumericTokens, type CitationField } from './citations';
 import type { EvidencePacket, EvidencePacketEntry } from './claim-validator';
 
 /** Matches a token the scanner returned that carries a percent sign. */
@@ -178,4 +185,77 @@ export function buildRecapEvidencePacket(
     window_end: window,
     entries,
   };
+}
+
+/** Packet metric id -> the citation field the prose audit binds it to. */
+const FIELD_FOR_METRIC: Record<string, CitationField> = {
+  total_score: 'score',
+  total_putts: 'putts',
+  fairways_hit_pct: 'fairways_pct',
+  gir_pct: 'gir_pct',
+  front_nine: 'front_nine',
+  back_nine: 'back_nine',
+  holes_played: 'holes',
+  season_scoring_average: 'season_avg',
+  season_best_round: 'season_best',
+};
+
+/**
+ * Fielded evidence for the recap's prose audit (deep audit row 40a).
+ *
+ * Built FROM `buildRecapEvidencePacket`, so the typed packet and the prose
+ * audit register one set of values and cannot drift. On top of the packet:
+ *   - percentages also in their rounded form (shown "71.4%", written "71%");
+ *   - to-par as |to-par| ("2 over", "2 under"), plus the signed value when
+ *     negative ("(-2)");
+ *   - the season-average gap, 1 dp and rounded, under `season_avg_below` or
+ *     `season_avg_above` by the round's actual direction. The prompt never
+ *     states it, but it is arithmetic on two figures it does state and it is
+ *     what a recap naturally says ("2 strokes better than his average");
+ *   - `label_figure`: digits inside names the prompt showed (the course name
+ *     and city, e.g. "Pinehurst No. 4"). These pass only as bare numbers.
+ */
+export function buildRecapFieldEvidence(
+  round: RecapPacketRound,
+  stats: RecapPacketStats | null,
+  fir: number | null,
+  gir: number | null,
+  labels: string[],
+): EvidenceClaim[] {
+  const claims: EvidenceClaim[] = [];
+  const seen = new Set<string>();
+  const add = (field: CitationField, value: string | number): void => {
+    const key = `${field}=${value}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    claims.push({ field: citationField(field), value });
+  };
+
+  const packet = buildRecapEvidencePacket(round, stats, fir, gir);
+  let average: number | null = null;
+  for (const entry of packet.entries) {
+    if (entry.metric_id === 'score_to_par') {
+      add('to_par', Math.abs(entry.value));
+      if (entry.value < 0) add('to_par', entry.value);
+      continue;
+    }
+    const field = FIELD_FOR_METRIC[entry.metric_id];
+    if (!field) continue;
+    add(field, entry.value);
+    if (field === 'fairways_pct' || field === 'gir_pct') add(field, Math.round(entry.value));
+    if (field === 'season_avg') average = entry.value;
+  }
+
+  if (average !== null && round.total_score !== null && average !== round.total_score) {
+    const gap = Math.abs(average - round.total_score);
+    const field: CitationField = round.total_score < average ? 'season_avg_below' : 'season_avg_above';
+    add(field, Number(gap.toFixed(1)));
+    add(field, Math.round(gap));
+  }
+
+  for (const label of labels) {
+    for (const token of extractNumericTokens(label)) add('label_figure', token);
+  }
+
+  return claims;
 }

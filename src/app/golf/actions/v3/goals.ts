@@ -28,13 +28,26 @@ import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import type { PgaOmissionReason } from '@/lib/coachhelm/v3/standing/types';
 import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
-import { computeTargetValue, isWorseThanAnchor } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import {
+  MIN_COHORT_N,
+  computeTargetValue,
+  isWorseThanAnchor,
+} from '@/lib/coachhelm/v3/goals/suggestion-writer';
 import {
   getMetricRenderConfig,
   type MetricRenderConfig,
 } from '@/lib/coachhelm/v3/standing/metric-config';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import {
+  GOAL_RULE_MESSAGES,
+  PRE_START_BASELINE_DAYS,
+  checkGoalMetric,
+  checkGoalTarget,
+  preStartBaseline,
+} from '@/lib/coachhelm/v3/goals/goal-rules';
+import { loadPlayerWindowRounds } from '@/lib/coachhelm/v3/goals/window-metric';
 import { describeError } from '@/lib/utils/describe-error';
+import { notifyCoachAssignedGoal } from '@/lib/coachhelm/v3/notifications/notify';
 
 export interface CreateGoalInput {
   metric_id: MetricId;
@@ -43,6 +56,10 @@ export interface CreateGoalInput {
   ends_at: string; // ISO timestamp
   target_value: number | null;
   target_source: GoalTargetSource | null;
+  /**
+   * Ignored since audit row 20: the server measures the baseline itself from
+   * the player's pre-start rounds (see createGoalImpl). Kept for callers.
+   */
   baseline_value: number | null;
   shared_with_coach?: boolean;
   // Coach-only inputs:
@@ -73,6 +90,10 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
     if (!isMetricId(input.metric_id)) {
       return { ok: false, error: 'Unknown metric_id' };
     }
+    // Audit row 20: a goal on a metric we cannot measure over its window can
+    // only ever snapshot the all-time standing — a frozen progress series.
+    const metricRule = checkGoalMetric(input.metric_id);
+    if (metricRule) return { ok: false, error: GOAL_RULE_MESSAGES[metricRule] };
 
     // Resolve the span before touching the DB — an out-of-range window would
     // otherwise surface as a raw `golf_goals_window_range` constraint error.
@@ -122,10 +143,9 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       // with no golf_team_members clause. So `player_id` was unconstrained at
       // both layers at once.
       //
-      // That mattered beyond the row itself: `loadStandingForMetric` below runs
-      // on the SERVICE-ROLE client and reads golf_player_standing for whatever
-      // player_id it is handed, then the value is persisted as this goal's
-      // baseline — a row the coach can read back. A coach could therefore
+      // That mattered beyond the row itself: the baseline read below runs on
+      // the SERVICE-ROLE client and reads the rounds of whatever player_id it
+      // is handed, then the value is persisted as this goal's baseline — a row the coach can read back. A coach could therefore
       // exfiltrate another program's player's real per-metric standing, one
       // metric per goal, without ever touching that team.
       //
@@ -195,24 +215,33 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       warning = 'soft_cap_exceeded';
     }
 
-    // #1244: capture the baseline HERE rather than trusting every caller to.
-    // `acceptGoalSuggestion` (and the team fan-out) passed a hardcoded
-    // `baseline_value: null`, which left 9 of 19 live goals — including the
-    // only active one — unable to render a progress bar at all, because
-    // FairwayGoalCard correctly refuses to compute `(current - baseline) /
-    // (target - baseline)` without a baseline. The reading is available at this
-    // exact moment: it is the same standing value the progress evaluator will
-    // read on its very next pass. Resolve it once, centrally, so no create path
-    // can ship a baseline-less goal again.
+    // #1244: capture the baseline HERE rather than trusting every caller to
+    // (the accept and team fan-out paths pass null).
     //
-    // If there is genuinely no standing reading yet the baseline stays null and
-    // the card keeps its honest "Not started — baseline captured" empty state.
-    // We never substitute the target or zero.
-    let baselineValue = input.baseline_value;
-    if (baselineValue == null) {
-      const standing = await loadStandingForMetric(player_id, input.metric_id);
-      baselineValue = standing?.player_value ?? null;
-    }
+    // Audit row 20 (2026-09-28): the baseline is the SAME windowed aggregate
+    // progress is measured with, over this player's countable rounds in the
+    // PRE_START_BASELINE_DAYS before the goal starts — not the all-time
+    // standing, which is a different quantity (sg_putting goals stored -6.475
+    // against a pre-start average of -2.77) and not a caller-supplied number
+    // (19 of 21 goals shared a round-number baseline with another player). No
+    // rounds before the start → null, and the card reads "baseline pending".
+    const startedAt = goalWindow.window.started_at;
+    const preStart = await loadPlayerWindowRounds(
+      createAdminClient(),
+      player_id,
+      new Date(Date.parse(startedAt) - PRE_START_BASELINE_DAYS * 86_400_000).toISOString(),
+      startedAt,
+    );
+    const baselineValue = preStartBaseline(input.metric_id, preStart, startedAt);
+
+    // A target on the wrong side of the baseline is achieved by construction.
+    const direction = getMetricRenderConfig(input.metric_id)?.direction ?? 'higher_better';
+    const targetRule = checkGoalTarget({
+      baseline: baselineValue,
+      target: input.target_value,
+      direction,
+    });
+    if (targetRule) return { ok: false, error: GOAL_RULE_MESSAGES[targetRule] };
 
     const insertPayload = {
       player_id,
@@ -257,6 +286,11 @@ async function createGoalImpl(input: CreateGoalInput): Promise<ActionResult> {
       return { ok: false, error: error?.message ?? 'Insert failed' };
     }
 
+    // Audit row 53: a coach-assigned goal reaches the player (never throws).
+    if (creator_role === 'coach') {
+      await notifyCoachAssignedGoal({ player_id, goal_id: data.id, goal_title: input.title });
+    }
+
     revalidatePath('/golf/dashboard/my-development');
     revalidatePath('/golf/dashboard/coachhelm');
     return { ok: true, goal_id: data.id, warning };
@@ -284,9 +318,11 @@ export async function createGoal(input: CreateGoalInput): Promise<ActionResult> 
  * ----------------------------------------------------------------------------
  * The shared driver behind the create flow's auto-fill: given a metric, read
  * the player's LIVE standing and propose a target that aims halfway from their
- * current value to the Tour reference (computeTargetValue — the same midpoint
- * heuristic the engine's suggestion-writer uses, so manual + suggested goals
- * land on the same scale). Returns the baseline (current observed value) too,
+ * current value to their college/division cohort average (computeTargetValue,
+ * the same rule the engine's suggestion-writer uses, so manual + suggested
+ * goals land on the same scale). A player already at or past the cohort is
+ * aimed halfway to the Tour instead; the Tour is otherwise context only
+ * (owner decision, audit row 21). Returns the baseline (current observed value) too,
  * so the create flow can stamp `baseline_value` and the progress track has a
  * real starting tick from day one.
  *
@@ -308,8 +344,13 @@ export interface GoalTargetSuggestion {
   /** The player's current observed value on this metric → the goal baseline. */
   baseline: number | null;
   /** The (gender-anchored) Tour reference for this metric. Null when the
-   *  loader omitted it (`no_target_reason` says why). */
+   *  loader omitted it (`no_target_reason` says why). Context, not the anchor,
+   *  unless the player is already past their cohort. */
   pga_value: number | null;
+  /** College/division cohort average, when the cohort is big enough to count. */
+  cohort_value: number | null;
+  /** What `suggested_target` aims toward. */
+  anchor: 'cohort' | 'tour' | null;
   /** Midpoint-to-Tour suggested target, or null when no standing exists or
    *  no honest midpoint can be offered (see `no_target_reason`). */
   suggested_target: number | null;
@@ -341,6 +382,8 @@ async function suggestGoalTargetImpl(
     hasStanding: false,
     baseline: null,
     pga_value: null,
+    cohort_value: null,
+    anchor: null,
     suggested_target: null,
     no_target_reason: null,
   };
@@ -375,18 +418,42 @@ async function suggestGoalTargetImpl(
     const standing = await loadStandingForMetric(playerId, metricId);
     if (!standing) return { ...base, ok: true };
 
+    const cohortValue =
+      standing.level_avg != null &&
+      Number.isFinite(standing.level_avg) &&
+      (standing.level_n ?? 0) >= MIN_COHORT_N
+        ? standing.level_avg
+        : null;
+    const tourValue = standing.pga_omitted ? null : standing.pga_value;
+    const withStanding = {
+      ...base,
+      ok: true,
+      hasStanding: true,
+      baseline: standing.player_value,
+      pga_value: tourValue,
+      cohort_value: cohortValue,
+    };
+
+    // Anchor to the cohort when the player is behind it (audit row 21).
+    if (cohortValue != null && isWorseThanAnchor(standing.player_value, cohortValue, cfg.direction)) {
+      return {
+        ...withStanding,
+        anchor: 'cohort',
+        suggested_target: computeTargetValue({
+          playerValue: standing.player_value,
+          anchorValue: cohortValue,
+          metricId,
+        }),
+      };
+    }
+
     // The loader suppressed the Tour reference (women's row with no credible
     // anchor, or the approach-proximity basis mismatch — addendum A2). A
     // midpoint toward a number that is not comparable is not a target; return
     // the baseline alone and say why.
-    if (standing.pga_omitted) {
+    if (tourValue == null) {
       return {
-        ...base,
-        ok: true,
-        hasStanding: true,
-        baseline: standing.player_value,
-        pga_value: null,
-        suggested_target: null,
+        ...withStanding,
         no_target_reason: standing.pga_omitted_reason ?? 'no_womens_anchor',
       };
     }
@@ -394,27 +461,17 @@ async function suggestGoalTargetImpl(
     // Already at or past the anchor: the midpoint would sit on the wrong side
     // of the player's own number (a 22-ft player "aiming" for 26 ft). Offer no
     // auto-target; the modal asks for one to hold or extend.
-    if (!isWorseThanAnchor(standing.player_value, standing.pga_value, cfg.direction)) {
-      return {
-        ...base,
-        ok: true,
-        hasStanding: true,
-        baseline: standing.player_value,
-        pga_value: standing.pga_value,
-        suggested_target: null,
-        no_target_reason: 'already_ahead',
-      };
+    if (!isWorseThanAnchor(standing.player_value, tourValue, cfg.direction)) {
+      return { ...withStanding, no_target_reason: 'already_ahead' };
     }
 
+    // Past the cohort but behind the Tour: the next step is toward the Tour.
     return {
-      ...base,
-      ok: true,
-      hasStanding: true,
-      baseline: standing.player_value,
-      pga_value: standing.pga_value,
+      ...withStanding,
+      anchor: 'tour',
       suggested_target: computeTargetValue({
         playerValue: standing.player_value,
-        pgaValue: standing.pga_value,
+        anchorValue: tourValue,
         metricId,
       }),
     };

@@ -1,0 +1,53 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>GolfHelm · Stats</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/colors.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/typography.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/tokens/base.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/components/components.css">
+<link rel="stylesheet" href="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="_ds/fairway-clubhouse-edition-9c4f4d81-4ed7-4b65-867b-99262bdbf662/_ds_bundle.js"></script>
+<link rel="stylesheet" href="depth.css">
+<link rel="stylesheet" href="cal.css">
+<link rel="stylesheet" href="stats.css">
+<link rel="stylesheet" href="stats-game.css">
+<link rel="stylesheet" href="sidebar.css">
+</head><body class="fairway"><div id="root"></div>
+<script src="roster-data.js"></script>
+<script type="text/babel" src="stats-sheet.jsx"></script>
+<script type="text/babel" src="stats-sg.jsx"></script>
+<script type="text/babel" src="stats-game.jsx"></script>
+<script type="text/babel" src="stats.jsx"></script>
+<script type="text/babel">
+const { FairwaySidebar, FairwayTopBar, IconButton, PlayerIdentity, Icon } = window.FairwayClubhouseEdition_9c4f4d;
+function App() {
+  const init = new URLSearchParams(location.search).get('player') || localStorage.getItem('st-player') || '';
+  const [player, setPlayer] = React.useState(init);
+  const ref = React.useRef(null);
+  const open = (id) => { setPlayer(id); localStorage.setItem('st-player', id); if (ref.current) ref.current.scrollTop = 0; };
+  const items = [
+    { id: 'home', label: 'Home', icon: 'house' }, { id: 'coachhelm', label: 'CoachHelm', icon: 'sparkles' }, { id: 'calendar', label: 'Calendar', icon: 'calendar-days' }, { id: 'messages', label: 'Messages', icon: 'message-square', count: 3 },
+    { id: 'roster', label: 'Roster', icon: 'users', count: 8, section: 'Team' }, { id: 'stats', label: 'Stats', icon: 'chart-column', section: 'Team' }, { id: 'rounds', label: 'Rounds', icon: 'flag', section: 'Team' }, { id: 'practice', label: 'Practice', icon: 'target', section: 'Team' }, { id: 'lineups', label: 'Lineups', icon: 'list-ordered', section: 'Team' },
+    { id: 'events', label: 'Events', icon: 'trophy', section: 'Program' }, { id: 'scouting', label: 'Scouting', icon: 'binoculars', section: 'Program' },
+  ];
+  const nav = (id) => { const map = { home: 'Coach Home v3.html', calendar: 'Calendar.html', messages: 'Messages.html', roster: 'Roster.html' }; if (map[id]) location.href = map[id]; if (id === 'stats') open(''); };
+  const p = window.ROSTER.players.find((x) => x.id === player);
+  return (
+    <div className="h2-app">
+      <FairwaySidebar current="stats" onNavigate={nav} items={items}
+        header={<div className="h2-brand"><img src="assets/helm-logo-white.png" alt="" /><div className="h2-brand__txt"><span className="fw-sidebar__word">GolfHelm</span><span className="fw-sidebar__team">Varsity · Fall 2026<Icon name="chevrons-up-down" size={13} /></span></div></div>}
+        footer={<><div className="h2-next"><div className="h2-next__k"><span>Next event</span><span>In 2 days</span></div><div className="h2-next__t">Pinehurst qualifier</div><div className="h2-next__bar"><span></span></div><div className="h2-next__m">5 of 6 players ready</div></div><PlayerIdentity name="Maya Reyes" meta="Head coach · Varsity" size="sm" /></>} />
+      <div className="h2-canvas" ref={ref}>
+        <FairwayTopBar crumbs={p ? ['Stats', p.name] : ['Team', 'Stats']} onSearch={() => {}} searchPlaceholder="Search players, rounds, events" actions={<><IconButton icon="bell" label="Notifications" /><IconButton icon="settings" label="Settings" /></>} />
+        {p ? <StatsPlayer key={p.id} id={p.id} back={() => open('')} openPlayer={open} /> : <StatsTeam openPlayer={open} />}
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

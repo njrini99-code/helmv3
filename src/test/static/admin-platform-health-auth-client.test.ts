@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const source = readFileSync(
-  join(process.cwd(), 'src/app/golf/actions/admin-data.ts'),
+  join(process.cwd(), 'src/app/golf/actions/admin-dashboard-data.ts'),
   'utf8',
 );
 

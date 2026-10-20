@@ -103,6 +103,7 @@ export async function getTeamOverview(sb: Sb, ctx: CoachChatContext): Promise<To
     .from('golf_rounds')
     .select('player_id, score_to_par, total_score, round_date')
     .in('player_id', ids)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false });
 
@@ -422,6 +423,7 @@ export async function getPlayerTrend(
     .from('golf_rounds')
     .select(`id, round_date, course_name, round_type, ${spec.column}`)
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
     .limit(limit);
@@ -822,6 +824,7 @@ export async function getRecentRounds(
     .from('golf_rounds')
     .select('id, round_date, course_name, round_type, total_score, score_to_par, total_putts, strokes_gained_total')
     .eq('player_id', player.id)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
     .limit(limit);
@@ -1068,14 +1071,20 @@ export async function getUpcomingEvents(
       timezone: ctx.timezone,
       events: rows.map((e) => {
         const b = byEvent.get(e.id)!;
-        return {
+        const base = {
           event_id: e.id,
           title: e.title,
           event_type: e.event_type,
           starts_at: e.start_time,
           ends_at: e.end_time,
           location: e.location,
-          requires_rsvp: e.requires_rsvp,
+          requires_rsvp: e.requires_rsvp === true,
+        };
+        // Owner, 2026-10-08: RSVP is off unless the coach turned it on (null reads as off). An event without it has
+        // no replies to count, so the model is never handed "6 have not responded" to nag about.
+        if (e.requires_rsvp !== true) return base;
+        return {
+          ...base,
           rsvp_deadline: e.rsvp_deadline,
           rsvp_accepted: b.accepted,
           rsvp_declined: b.declined,

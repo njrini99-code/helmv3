@@ -1,0 +1,411 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
+import { formatToPar, NO_DATA } from '../../../lib/format';
+import { haptic } from '../../../lib/haptics';
+import { useDialogLifetime } from '../../../lib/dialog-lifetime';
+import { Icon } from '../../../ui/Icon';
+import { Modal } from '../../../ui/Modal';
+import { ScoreMark } from '../../../ui/ScoreMark';
+import { Spinner } from '../../../ui/Spinner';
+
+/**
+ * The round's own sheets, around the shot screen: Exit (save for later, keep
+ * playing, discard), the scorecard, the finished round and its submit. The
+ * round screen owns them, because it owns the round (RoundTracking only
+ * scores the current hole); each is driven by props.
+ */
+
+/** A hole on the scorecard: its score and putts once holed. */
+export interface ChCardHole {
+  number: number;
+  par: number;
+  score: number | null;
+  putts: number | null;
+}
+
+/** One nine of the scorecard, with totals of what's scored so far. The current hole is marked. */
+function CardNine({ label, holes, current }: { label: 'Out' | 'In'; holes: ChCardHole[]; current: number | null }) {
+  if (!holes.length) return null;
+  const scored = holes.filter((h) => h.score != null);
+  const par = holes.reduce((s, h) => s + h.par, 0);
+  const score = scored.reduce((s, h) => s + (h.score ?? 0), 0);
+  const putts = scored.reduce((s, h) => s + (h.putts ?? 0), 0);
+  return (
+    <table className="ch-rt-mc ch-num">
+      <caption className="ch-sr-only">{`${label === 'Out' ? 'Front' : 'Back'} nine: par, score and putts by hole`}</caption>
+      <thead>
+        <tr>
+          <th scope="col">{label}</th>
+          {holes.map((h) => (
+            <th key={h.number} scope="col" className={h.number === current ? 'is-cur' : undefined} aria-current={h.number === current ? 'step' : undefined}>
+              {h.number}
+            </th>
+          ))}
+          <th scope="col">Tot</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="is-p">
+          <th scope="row">Par</th>
+          {holes.map((h) => (
+            <td key={h.number}>{h.par}</td>
+          ))}
+          <td>{par}</td>
+        </tr>
+        <tr>
+          <th scope="row">Score</th>
+          {holes.map((h) => (
+            <td key={h.number}>{h.score != null ? <ScoreMark score={h.score} par={h.par} size="sm" /> : NO_DATA}</td>
+          ))}
+          <td>
+            <b>{scored.length ? score : NO_DATA}</b>
+          </td>
+        </tr>
+        <tr className="is-p">
+          <th scope="row">Putts</th>
+          {holes.map((h) => (
+            <td key={h.number}>{h.putts ?? NO_DATA}</td>
+          ))}
+          <td>{scored.length ? putts : NO_DATA}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
+export function Scorecard({ holes, current }: { holes: ChCardHole[]; current: number | null }) {
+  // It scrolls sideways on a phone, so it takes focus for the arrow keys (axe scrollable-region-focusable).
+  return (
+    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- axe scrollable-region-focusable: a keyboard user must reach a region that scrolls
+    <div className="ch-rt-mcw" tabIndex={0} role="region" aria-label="Scorecard">
+      <CardNine label="Out" holes={holes.slice(0, 9)} current={current} />
+      <CardNine label="In" holes={holes.slice(9, 18)} current={current} />
+    </div>
+  );
+}
+
+/** CH-11509: the scorecard, from the top bar. */
+export function ScorecardSheet({ open, onClose, course, tee, holes, current }: { open: boolean; onClose: () => void; course: string; tee: string | null; holes: ChCardHole[]; current: number }) {
+  const done = holes.filter((h) => h.score != null);
+  // Where the player stands, as the Exit sheet says it ("thru 3 · +1"): Tot counts the whole nine's par.
+  const toPar = done.reduce((s, h) => s + (h.score ?? 0) - h.par, 0);
+  const thru = `thru ${done.length}${done.length ? ` · ${formatToPar(toPar)}` : ''}`;
+  return (
+    <Modal open={open} onClose={onClose} title="Scorecard" description={[course, tee, thru].filter(Boolean).join(' · ')} icon={Table2} width={760} code="CH-11509">
+      <Scorecard holes={holes} current={current} />
+    </Modal>
+  );
+}
+
+/**
+ * CH-11506: Exit. Save for later goes back to Rounds, where the round waits
+ * to be continued; Keep playing closes; Discard asks again before it deletes
+ * every shot (CH-11507). A failed discard keeps the sheet with the reason.
+ * A continued round also offers Change round type (`roundType`), which opens
+ * the round-type sheet (CH-11521); a new round's sheet has no such row.
+ */
+export function ExitSheet({
+  open,
+  course,
+  holes,
+  currentNumber,
+  discarding,
+  saving = false,
+  discardError,
+  onSave,
+  onKeep,
+  onDiscard,
+  roundType,
+}: {
+  open: boolean;
+  course: string;
+  holes: ChCardHole[];
+  currentNumber: number;
+  discarding: boolean;
+  /** What the round counts as now ("Practice"), and what opens the round-type sheet. Absent: no row. */
+  roundType?: { label: string; onChange: () => void };
+  /** Save for later is writing the round (R-12: it shows, and the sheet can't be dismissed under it). */
+  saving?: boolean;
+  discardError: string | null;
+  onSave: () => void;
+  onKeep: () => void;
+  onDiscard: () => void;
+}) {
+  const [confirm, setConfirm] = useState(false);
+  const done = holes.filter((h) => h.score != null);
+  const toPar = done.reduce((s, h) => s + (h.score ?? 0) - h.par, 0);
+  const busy = discarding || saving;
+  const keep = () => {
+    setConfirm(false);
+    onKeep();
+  };
+  return (
+    // R-12: Escape or the backdrop can't close the sheet while a discard or save is in flight.
+    <Modal open={open} onClose={busy ? () => {} : keep} title="Exit round" code="CH-11506">
+      <div className="ch-rt-exitc">
+        <span className="ch-rt-exitc__n">
+          <b>{done.length}</b>
+          <em>of {holes.length}</em>
+        </span>
+        <div>
+          <b>Round in progress</b>
+          <span>
+            {course} · thru {done.length}
+            {done.length ? ` · ${formatToPar(toPar)}` : ''}
+          </span>
+          <i className="ch-rt-exitc__bar" aria-hidden="true">
+            <i style={{ width: `${(done.length / Math.max(1, holes.length)) * 100}%` }} />
+          </i>
+        </div>
+      </div>
+      {confirm ? (
+        <div className="ch-rt-confirm ch-rt-confirm--danger" role="group" aria-label="Discard this round" data-ch-code="CH-11507">
+          <div>
+            <b>Discard this round?</b>
+            <span>It deletes every shot you entered at {course}. This can&rsquo;t be undone.</span>
+            {discardError && (
+              <span className="ch-rt-error" role="alert" data-ch-code="CH-11006">
+                Couldn&rsquo;t discard the round. {discardError}
+              </span>
+            )}
+          </div>
+          <button type="button" className="ch-btn ch-btn--ghost" disabled={discarding} onClick={() => setConfirm(false)}>
+            <span>Keep it</span>
+          </button>
+          <button
+            type="button"
+            className="ch-btn ch-btn--danger"
+            disabled={discarding}
+            onClick={() => {
+              haptic('warning');
+              onDiscard();
+            }}
+          >
+            <span>{discarding ? 'Discarding…' : 'Discard round'}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="ch-rt-exit__opts">
+          <button type="button" className="ch-rt-xopt is-primary" disabled={busy} onClick={onSave}>
+            <Icon icon={Bookmark} size={18} />
+            <span>
+              <b>{saving ? 'Saving…' : 'Save for later'}</b>
+              <em>{saving ? 'Keep this screen open.' : 'Continue it from Rounds.'}</em>
+            </span>
+          </button>
+          <button type="button" className="ch-rt-xopt" disabled={busy} onClick={keep}>
+            <Icon icon={CirclePlay} size={18} />
+            <span>
+              <b>Keep playing</b>
+              <em>Back to hole {currentNumber}</em>
+            </span>
+          </button>
+          {roundType && (
+            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={roundType.onChange}>
+              <Icon icon={Flag} size={18} />
+              <span>
+                <b>Change round type</b>
+                <em>{roundType.label} now. Changes what it counts toward.</em>
+              </span>
+            </button>
+          )}
+          <button type="button" className="ch-rt-xopt is-danger" onClick={() => setConfirm(true)}>
+            <Icon icon={Trash2} size={18} />
+            <span>
+              <b>Discard round</b>
+              <em>Deletes every shot. You&rsquo;ll be asked first.</em>
+            </span>
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+/** A finished hole for the summary: its fairway (null on a par 3) and green in regulation. */
+export interface ChSummaryHole extends ChCardHole {
+  fairwayHit: boolean | null;
+  gir: boolean;
+}
+
+/**
+ * CH-11508: the round is complete. The figures (putts, fairways, greens,
+ * front and back), the card, and Post round. Back returns to the last hole.
+ */
+export function RoundCompleteSheet({
+  open,
+  heading,
+  holes,
+  backHole,
+  onBack,
+  onSubmit,
+}: {
+  open: boolean;
+  /** "Finley GC · Blue · Oct 14". */
+  heading: string;
+  holes: ChSummaryHole[];
+  /** The hole Back returns to (the one the player is on: with a shotgun start, not the card's last). Omitted, the card's last. */
+  backHole?: number;
+  onBack: () => void;
+  onSubmit: () => void;
+}) {
+  const score = holes.reduce((s, h) => s + (h.score ?? 0), 0);
+  const par = holes.reduce((s, h) => s + h.par, 0);
+  const putts = holes.reduce((s, h) => s + (h.putts ?? 0), 0);
+  const fwHoles = holes.filter((h) => h.fairwayHit !== null);
+  const nine = (a: number, b: number) => holes.slice(a, b).reduce((s, h) => s + (h.score ?? 0), 0);
+  const figs: Array<[string, string]> = [
+    ['Putts', String(putts)],
+    ['Fairways', `${fwHoles.filter((h) => h.fairwayHit).length}/${fwHoles.length}`],
+    ['Greens', `${holes.filter((h) => h.gir).length}/${holes.length}`],
+    ...(holes.length > 9 ? [['Front · Back', `${nine(0, 9)} · ${nine(9, 18)}`] as [string, string]] : []),
+  ];
+  return (
+    <Modal
+      open={open}
+      onClose={onBack}
+      title="Round complete"
+      width={760}
+      code="CH-11508"
+      footer={
+        <>
+          <button type="button" className="ch-btn ch-btn--ghost" onClick={onBack}>
+            <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
+          </button>
+          <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
+            <span>Post round</span>
+            <Icon icon={Send} size={16} />
+          </button>
+        </>
+      }
+    >
+      <div className="ch-rt-sum">
+        <div className="ch-rt-sum__hero">
+          <span>{heading}</span>
+          <b>{score}</b>
+          <em className={score < par ? 'is-under' : undefined}>{formatToPar(score - par)}</em>
+        </div>
+        <dl className="ch-rt-sum__f">
+          {figs.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <Scorecard holes={holes} current={null} />
+      {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
+      <p className="ch-rt-sum__n">Posting adds this round to your stats.</p>
+    </Modal>
+  );
+}
+
+/**
+ * CH-11603: posting the round, over the screen. It names what is really
+ * happening (the shot count) instead of timing fake steps (Q-72d); the spinner
+ * stops with reduced motion. Posted: success, and the round's review (the round
+ * screen opens it after a beat). Failed (CH-11005): the round stays saved on the
+ * device, with Try again, and Go back to the finish sheet when the round screen
+ * gives it a way (`onGoBack`), so a failure that retrying won't clear isn't a
+ * dead end. Saving for over 15 seconds (CH-11909): `slowHref` says it is taking
+ * longer and names a way out to Rounds, where the saved round waits.
+ */
+export function SubmitOverlay({
+  state,
+  course,
+  shots,
+  coach,
+  score = null,
+  reviewHref,
+  error,
+  onRetry,
+  onGoBack,
+  slowHref = null,
+  open = true,
+}: {
+  state: 'saving' | 'done' | 'failed';
+  course: string;
+  shots: number;
+  coach: string | null;
+  /** The posted round's strokes and score to par, named in the success line ("Your 74 (+2) at Finley GC is posted."). */
+  score?: { strokes: number; toPar: number } | null;
+  reviewHref: string | null;
+  error: string | null;
+  onRetry: () => void;
+  onGoBack?: () => void;
+  slowHref?: string | null;
+  /** Closing (Go back after a failure) fades the card out on the dialog lifetime rather than unmounting it (A-18). */
+  open?: boolean;
+}) {
+  // D6/D7: a real modal dialog on the top layer, so the round behind it is inert and can't be reached or read through;
+  // it can't be dismissed (Esc does nothing): each state names its own way on. Focus moves to the state's title.
+  const { ref, retainContent } = useDialogLifetime(open, { direction: 'center', surfaceSelector: '.ch-rt-subm' });
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (open) title.current?.focus({ preventScroll: true });
+  }, [state, open]);
+  return (
+    <dialog ref={ref} className="ch-rt-scrim" data-ui="clubhouse" aria-labelledby="ch-rt-subm-t" onCancel={(e) => e.preventDefault()}>
+      {retainContent(
+      <div className="ch-rt-subm" role={state === 'failed' ? 'alert' : 'status'} aria-live="polite">
+        {state === 'saving' && (
+          <>
+            <Spinner size="lg" tone="mint" />
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Posting round
+            </h2>
+            <span className="ch-rt-subm__m">Saving {shots} shots, updating your stats and writing the round recap. Keep this screen open.</span>
+            {slowHref && (
+              <span className="ch-rt-subm__m" data-ch-code="CH-11909">
+                This is taking longer than usual. Your round is saved on this device, and it is waiting in{' '}
+                <a href={slowHref}>Rounds</a>.
+              </span>
+            )}
+          </>
+        )}
+        {state === 'done' && (
+          <>
+            <span className="ch-rt-subm__ok" aria-hidden="true">
+              <Icon icon={Check} size={26} />
+            </span>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1}>
+              Round posted
+            </h2>
+            <span className="ch-rt-subm__m">
+              Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach.replace(/ /g, '\u00a0')} can see it now.` : ''}
+            </span>
+            {reviewHref && (
+              <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>
+                <span>View round review</span>
+                <Icon icon={ArrowRight} size={16} />
+              </a>
+            )}
+          </>
+        )}
+        {state === 'failed' && (
+          <>
+            <span className="ch-rt-subm__bad" aria-hidden="true">
+              <Icon icon={TriangleAlert} size={24} />
+            </span>
+            <h2 id="ch-rt-subm-t" ref={title} tabIndex={-1} data-ch-code="CH-11005">
+              The round didn&rsquo;t post
+            </h2>
+            <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
+            <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
+              <span>Try again</span>
+            </button>
+            {onGoBack && (
+              <button type="button" className="ch-btn ch-btn--ghost" onClick={onGoBack}>
+                <span>Go back</span>
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      )}
+    </dialog>
+  );
+}

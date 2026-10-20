@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 import { BaseballDiamond, POSITION_COORDS } from './BaseballDiamond';
 import { PositionPlayerStack } from './PositionPlayerPill';
 import { PlayerQuickView } from './PlayerQuickView';

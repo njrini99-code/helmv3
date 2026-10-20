@@ -50,8 +50,15 @@ import type { AttributionRow } from './attribution-read';
  *  'v2_observed_delta'`), not exported, so this is named here rather than
  *  imported. */
 const LEGACY_ROUND_LEVEL_METHOD_VERSION = 'v2_observed_delta';
+/** Round-level v3 (deep audit row 35): lift against a matched pre-window control. */
+const CONTROLLED_ROUND_LEVEL_METHOD_VERSION = 'v3_did_prewindow';
 
-export type AttributionMethodLabel = 'earlier_method' | 'observed_change' | 'observed_change_limited' | 'unknown';
+export type AttributionMethodLabel =
+  | 'earlier_method'
+  | 'controlled_change'
+  | 'observed_change'
+  | 'observed_change_limited'
+  | 'unknown';
 
 export interface AttributionMethodInfo {
   label: AttributionMethodLabel;
@@ -65,6 +72,10 @@ export interface AttributionMethodInfo {
 const METHOD_INFO: Record<AttributionMethodLabel, Omit<AttributionMethodInfo, 'label'>> = {
   earlier_method: {
     description: 'Measured by an earlier method',
+    isClean: false,
+  },
+  controlled_change: {
+    description: 'Change compared with the trend in the weeks before, with a range',
     isClean: false,
   },
   observed_change: {
@@ -90,6 +101,8 @@ export function describeMethodVersion(methodVersion: string | null): Attribution
   let label: AttributionMethodLabel;
   if (methodVersion === null || methodVersion === LEGACY_ROUND_LEVEL_METHOD_VERSION) {
     label = 'earlier_method';
+  } else if (methodVersion === CONTROLLED_ROUND_LEVEL_METHOD_VERSION) {
+    label = 'controlled_change';
   } else if (methodVersion === COMPARABLE_OPPORTUNITIES_METHOD_VERSION) {
     label = 'observed_change';
   } else if (methodVersion === COMPARABLE_OPPORTUNITIES_LIMITED_METHOD_VERSION) {

@@ -27,7 +27,7 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerEvent: vi.fn(async () => {}),
 }));
 
-import { getQualifierRoundCourses } from '../golf';
+import { getQualifierRoundCourses } from '../qualifier-actions';
 import { logServerError } from '@/lib/server-error-logger';
 
 const QUALIFIER_ID = 'qualifier-1';

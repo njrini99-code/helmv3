@@ -79,7 +79,8 @@ describe('FairwayCompletedHole checkpoint recovery', () => {
 
   it('uses the same synchronous in-flight lock for retry taps as new-shot saves', () => {
     const trackingSource = readFileSync(
-      join(process.cwd(), 'src/components/fairway/pages/rounds-tracking/FairwayShotTracking.tsx'),
+      // The screen's logic moved unchanged into useShotTracking (shared with Clubhouse).
+      join(process.cwd(), 'src/hooks/golf/use-shot-tracking.ts'),
       'utf8',
     );
     const retryStart = trackingSource.indexOf('const handleRetryHoleCheckpoint');

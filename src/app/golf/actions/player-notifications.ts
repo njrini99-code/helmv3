@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { calendarUnreadCutoffIso } from './unified-notifications-model';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -176,7 +177,10 @@ async function getPlayerNotificationCountsImpl(
         .from('golf_calendar_notifications')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .is('read_at', null) as Promise<{ count: number | null; error: unknown }>,
+        .is('read_at', null)
+        // Older calendar rows no longer count as unread (audit row 56); the
+        // feed collapses them into one summary item. Same cutoff as the feed.
+        .gte('created_at', calendarUnreadCutoffIso()) as Promise<{ count: number | null; error: unknown }>,
     ]);
 
     const lastSeenAt = notifStateResult.data?.last_announcements_seen_at || null;

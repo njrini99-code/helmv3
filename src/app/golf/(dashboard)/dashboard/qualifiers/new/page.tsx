@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -8,6 +10,7 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
 import { FeatureUnavailable } from '@/components/fairway';
+import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier',
@@ -17,6 +20,9 @@ export const metadata: Metadata = {
 export default async function NewQualifierPage() {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
+
+  // Clubhouse Qualifiers (golf_clubhouse_ui): coaches and players, rendered in place (D-23, D-30).
+  if ((await isClubhouseFor(await getGolfDashboardRole()))) return <ClubhouseQualifiersRoute view="new" />;
 
   const { role, coach } = session;
   // Renders in place rather than redirecting to /qualifiers — see

@@ -1,9 +1,18 @@
+/* global document -- page.evaluate callbacks run in the browser */
 // Headless-Chrome smoke test for the team-toggle build.
 // Logs in as the demo coach and visits every coach surface touched in Phase B,
 // asserting no console errors / page errors / 5xx / Next error overlay.
 // Usage: node scripts/ui-smoke.mjs
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/ui-smoke.mjs',
+  summary:
+    "Headless-Chrome smoke test of the coach surfaces: signs in as the demo coach and asserts no console errors, page errors, 5xx responses or Next error overlay. Reads only.",
+  secrets: "SMOKE_BASE, SMOKE_EMAIL, SMOKE_PASSWORD",
+});
 
 const BASE = process.env.SMOKE_BASE || 'http://localhost:3000';
 const EMAIL = process.env.SMOKE_EMAIL || 'demo@golfhelmdemo.com';

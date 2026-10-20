@@ -112,3 +112,74 @@ describe('FocusAreaCard — completed-row outcome capture (#1290)', () => {
     expect(screen.queryByRole('button', { name: /Record outcome/i })).not.toBeInTheDocument();
   });
 });
+
+/**
+ * Q-86 (2026-09-30): `outcome_status` on the card data only reflects the SOURCE
+ * INSIGHT. A focus area graded with no insight (or whose insight credit failed)
+ * has its verdict only on its own column, so the completed row kept asking "How
+ * did it go?" for an area the coach had already graded. The card now shows the
+ * area's own `recordedOutcomeStatus` first.
+ */
+describe('FocusAreaCard — the area\'s own recorded outcome (Q-86)', () => {
+  it('does not ask "How did it go?" when only the area\'s own column holds the verdict', () => {
+    render(
+      <FocusAreaCard
+        focusArea={completedArea({ outcome_status: null, recordedOutcomeStatus: 'improved' })}
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="coach"
+        onRecordOutcome={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('How did it go?')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Record outcome/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Outcome: Improved/i)).toBeInTheDocument();
+  });
+
+  it('shows the area\'s own verdict over the insight\'s when both exist', () => {
+    render(
+      <FocusAreaCard
+        focusArea={completedArea({ outcome_status: 'worsened', recordedOutcomeStatus: 'no_change' })}
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="coach"
+        onRecordOutcome={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Outcome: No change/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Outcome: Worsened/i)).not.toBeInTheDocument();
+  });
+
+  it('falls back to the insight\'s verdict when the area\'s own column is empty', () => {
+    render(
+      <FocusAreaCard
+        focusArea={completedArea({ outcome_status: 'improved', recordedOutcomeStatus: null })}
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="coach"
+        onRecordOutcome={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('How did it go?')).not.toBeInTheDocument();
+    expect(screen.getByText(/Outcome: Improved/i)).toBeInTheDocument();
+  });
+
+  it('an active card with its own verdict shows the read-only pill, not the capture buttons', () => {
+    render(
+      <FocusAreaCard
+        focusArea={completedArea({
+          status: 'active',
+          completed_at: null,
+          outcome_status: null,
+          recordedOutcomeStatus: 'improved',
+        })}
+        // eslint-disable-next-line jsx-a11y/aria-role
+        role="coach"
+        onRecordOutcome={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /Record outcome/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/Outcome: Improved/i)).toBeInTheDocument();
+  });
+});

@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 /**
  * Upsert the "Founding 10 — First Touch (Text)" cold-outreach template into
  * crm_email_templates as a TRUE text/plain template (format='text'): no HTML,
@@ -9,7 +11,15 @@
  * Run: node scripts/insert-founding10-plain-template.mjs
  */
 import { createClient } from '@supabase/supabase-js';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/insert-founding10-plain-template.mjs',
+  summary:
+    "Replaces the Founding 10 plain-text email template in crm_email_templates (updates the target, deletes duplicates, inserts when missing) on the project in .env.local.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (.env.local)",
+});
 
 const env = {};
 for (const file of ['../.env.local', '../.env']) {
@@ -49,7 +59,7 @@ const template = {
 const url = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
 const key = env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) { console.error('Missing Supabase URL / service role key'); process.exit(1); }
-const supa = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+const supa = dryRunClient(createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } }), cli);
 
 // Find this row OR the older '(Plain)' row to convert in place.
 const { data: rows, error: selErr } = await supa
@@ -77,5 +87,6 @@ if (target) {
 
 // Local preview: exactly what the recipient sees (text, sample coach).
 const preview = body.replace(/\{last_name\}/g, 'Rini').replace(/\{school\}/g, 'Denison');
-writeFileSync('/tmp/founding10-text-preview.txt', `Subject: ${template.subject.replace(/\{school\}/g, 'Denison')}\n\n${preview}\n`);
-console.log('  preview -> /tmp/founding10-text-preview.txt');
+const previewFile = join(mkdtempSync(join(tmpdir(), 'founding10-')), 'text-preview.txt');
+writeFileSync(previewFile, `Subject: ${template.subject.replace(/\{school\}/g, 'Denison')}\n\n${preview}\n`, { mode: 0o600 });
+console.log(`  preview -> ${previewFile}`);

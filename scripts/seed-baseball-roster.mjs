@@ -1,4 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
+import { cliGuard, dryRunClient } from './lib/cli-guard.mjs';
+
+const cli = cliGuard({
+  name: 'scripts/seed-baseball-roster.mjs',
+  summary:
+    "Seeds a demo BaseballHelm roster (players, auth users, team members, stats, aggregates) into the org and coach named by BASEBALL_SEED_ORG_ID and BASEBALL_SEED_COACH_ID.",
+  secrets: "NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BASEBALL_SEED_ORG_ID, BASEBALL_SEED_COACH_ID",
+});
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,9 +23,9 @@ if (!ORG_ID || !COACH_ID) {
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
+const supabase = dryRunClient(createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
-});
+}), cli);
 
 const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];

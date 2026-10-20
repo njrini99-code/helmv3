@@ -48,9 +48,11 @@ interface AuthCanvasProps {
   contentId?: string;
   /** Accessible name for the content region. */
   contentLabel?: string;
+  /** Optional illustration at the top of the card, above the title (e.g. the "sent" seal). */
+  hero?: ReactNode;
 }
 
-export function AuthCanvas({ title, subtitle, topBar, children, footer, contentId, contentLabel }: AuthCanvasProps) {
+export function AuthCanvas({ title, subtitle, topBar, children, footer, contentId, contentLabel, hero }: AuthCanvasProps) {
   return (
     <div
       className={cn(
@@ -95,6 +97,7 @@ export function AuthCanvas({ title, subtitle, topBar, children, footer, contentI
           )}
         >
           <header className="flex flex-col items-center text-center">
+            {hero}
             <h1 className="text-title-1 font-semibold text-text-primary">{title}</h1>
             {subtitle ? <p className="mt-1.5 text-body text-text-secondary">{subtitle}</p> : null}
           </header>
@@ -219,7 +222,7 @@ export const authPrimaryButtonClass = cn(
   // The primary-action role fill (green is the contrasting colour).
   'bg-accent-fill text-body-lg font-semibold text-text-on-accent-fill',
   '[@media(hover:hover)]:hover:bg-accent-fill-hover active:bg-accent-fill-hover',
-  'transition-transform duration-[120ms] ease-out motion-reduce:transition-none',
+  'transition-transform [transition-duration:120ms] ease-out motion-reduce:transition-none',
   fwPress,
   'outline-none focus-visible:ring-2 focus-visible:ring-accent-600 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
 );

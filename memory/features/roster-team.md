@@ -107,3 +107,22 @@ Team page
 The player roster owns the standard 16px phone gutter when used as a page. Phone teammates use
 compact rows with one 44px message action; embedded rosters retain their host gutters, and desktop
 cards keep their existing layout. The route skeleton follows the compact player anatomy.
+
+## Clubhouse view (the Clubhouse UI flag in `config/feature-flags.yml`, 2026-09-29)
+
+Behind the flag, coaches get the Clubhouse Roster (`src/clubhouse/screens/roster/`) at `/golf/dashboard/roster`, on
+the existing roster and join-request actions. The status pill is read-only pending owner question Q-1 (inactive
+membership revokes RLS access). Checklist: `docs/clubhouse/screens/roster.md`.
+
+Phone (below 820px; owner design; spec `docs/clubhouse/phone/roster.md`; D-50 to D-59). `RosterPhone` replaces the
+cards: a sorted list (Avg, SG, Name by last name), then Inactive (`status = inactive`), with a pushed player profile.
+The profile shows real fields only; no captain, major, birthday, home course or bio columns are added (D-51).
+- **Approve all** (D-55) calls the existing `acceptJoinRequest` one request at a time, through
+  `useAction('roster.approveAll')`. There is no bulk server action, so each approval keeps its own checks.
+  - Every failure is named, and the toast says how many were added (CH-3007).
+  - The toast's Retry only re-runs the failures.
+  - The list and actions live in `useJoinRequests`, shared with the desktop card.
+- `ChJoinRequest` also carries `classYear`, `gradYear` and `requested` ("yesterday"), from the same
+  `getTeamJoinRequests` read.
+- **Plan 1:1** links to `calendar?new=1&with=<playerId>` (D-52), and "All N" rounds to
+  `stats?player=<id>&window=season&tab=rounds` (D-53).

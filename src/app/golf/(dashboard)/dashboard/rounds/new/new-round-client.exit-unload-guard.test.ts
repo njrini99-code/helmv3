@@ -23,10 +23,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(
+const source = [
+  // The engine moved to use-new-round-session.ts (ROUNDS_PLAN step 4b); its text comes first, as it did in the component.
+  readFileSync(
+  new URL('../../../../../../lib/golf/round-session/use-new-round-session.ts', import.meta.url),
+  'utf8',
+),
+  readFileSync(
   new URL('./new-round-client.tsx', import.meta.url),
   'utf8',
-);
+),
+].join('\n');
 
 function slice(fromMarker: string, toMarker: string): string {
   const from = source.indexOf(fromMarker);
@@ -62,18 +69,18 @@ describe('New Round — Save for later / Discard must not trigger the unload war
   it('handleSaveForLater sets roundExitedSafelyRef before navigating away', () => {
     const handler = slice('const handleSaveForLater = async () => {', 'const handleDeleteRound = async () => {');
     const setIndex = handler.indexOf('roundExitedSafelyRef.current = true;');
-    const pushIndex = handler.indexOf("router.push('/golf/dashboard/rounds');");
+    const pushIndex = handler.indexOf('router.push(routesRef.current.library);');
     expect(setIndex, 'roundExitedSafelyRef.current = true not found').toBeGreaterThanOrEqual(0);
-    expect(pushIndex, "router.push('/golf/dashboard/rounds') not found").toBeGreaterThanOrEqual(0);
+    expect(pushIndex, "router.push(routesRef.current.library) not found").toBeGreaterThanOrEqual(0);
     expect(setIndex).toBeLessThan(pushIndex);
   });
 
   it('handleDeleteRound sets roundExitedSafelyRef before navigating away, only on the success path', () => {
     const handler = slice('const handleDeleteRound = async () => {', 'const selectedCourse =');
     const setIndex = handler.indexOf('roundExitedSafelyRef.current = true;');
-    const pushIndex = handler.indexOf("router.push('/golf/dashboard/rounds');");
+    const pushIndex = handler.indexOf('router.push(routesRef.current.library);');
     expect(setIndex, 'roundExitedSafelyRef.current = true not found').toBeGreaterThanOrEqual(0);
-    expect(pushIndex, "router.push('/golf/dashboard/rounds') not found").toBeGreaterThanOrEqual(0);
+    expect(pushIndex, "router.push(routesRef.current.library) not found").toBeGreaterThanOrEqual(0);
     expect(setIndex).toBeLessThan(pushIndex);
     // Must not be set in the failure branch, which returns before reaching
     // the success tail — the failure branch text is textually EARLIER in the

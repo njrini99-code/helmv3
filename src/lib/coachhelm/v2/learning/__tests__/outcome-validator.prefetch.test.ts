@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn().mockResolvedValue(undefined),
@@ -17,6 +17,23 @@ import {
 // in production (2026-09-26), all for windows that closed empty. The batch
 // prefetch makes that one read, and must not change any grading outcome.
 // ---------------------------------------------------------------------------
+
+// The validator reads the wall clock: a closed window that is still empty
+// NO_OUTCOME_GRACE_DAYS (60) after its due date is retired, not reported as
+// `no_round_in_closed_window`. These fixtures are due 2026-08-15..08-30, so on
+// a real clock they crossed that grace on 2026-10-15 and every case here
+// started reading `retired_no_outcome`. Pin "today" to a day after every due
+// date and inside the grace, which is the state these cases describe.
+const PINNED_TODAY = '2026-09-10T12:00:00Z';
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(PINNED_TODAY));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 type Row = Record<string, unknown>;
 
@@ -98,7 +115,10 @@ describe('prefetchCandidateRounds — one golf_rounds read per batch', () => {
   it('keeps each prediction on its own window (a round outside it does not grade)', async () => {
     // Played inside the batch's union window but after p-late's due date.
     const rounds = [
-      { id: 'r1', player_id: 'A', round_date: '2026-08-20', created_at: '2026-08-20T10:00:00Z', score_to_par: 4 },
+      {
+        id: 'r1', player_id: 'A', round_date: '2026-08-20', created_at: '2026-08-20T10:00:00Z', score_to_par: 4,
+        holes_played: 18, total_score: 76, front_nine: 38, back_nine: 38, total_putts: 31, is_test: false,
+      },
     ];
     const early = prediction('p-early', 'A');
     const late = { ...prediction('p-late', 'A'), due_date: '2026-08-30' };

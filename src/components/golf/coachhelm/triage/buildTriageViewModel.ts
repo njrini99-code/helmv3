@@ -327,6 +327,9 @@ export function computeBriefCounts(groups: readonly SignalGroup[]): BriefCounts 
   for (const group of groups) {
     if (group.playerId && group.signals.length > 0) flagged.add(group.playerId);
     for (const signal of group.signals) {
+      // A team_synthesis card restates per-player rows already in the list
+      // (see `GroupedSignal.kind`); counting it would double-count urgency.
+      if (signal.kind === 'team_synthesis') continue;
       if (signal.severity === 'urgent') urgent += 1;
     }
   }

@@ -64,7 +64,7 @@ function lpgaMap(entries: Array<[MetricId, number | null]>): LpgaStandards {
 }
 
 describe('LPGA rows beat the estimate table', () => {
-  it('anchors sand save to the real LPGA 45, not the hand-authored 38', () => {
+  it("anchors sand save to the LPGA 45, never the men's 50", () => {
     const lpga = lpgaMap([['scrambling_pct_sand', 45]]);
     const s = applyGenderAnchor(rawStanding({ player_value: 40 }), 'womens', lpga);
 
@@ -77,20 +77,19 @@ describe('LPGA rows beat the estimate table', () => {
     expect(s.pga_omitted).toBe(false);
   });
 
-  it('makes the anchor HARDER than the estimate — this is the intended trade', () => {
+  it('the static fallback is the same LPGA value, so both paths agree (Q-88)', () => {
     const withLpga = applyGenderAnchor(
       rawStanding({ player_value: 40 }),
       'womens',
       lpgaMap([['scrambling_pct_sand', 45]]),
     );
-    const withEstimate = applyGenderAnchor(rawStanding({ player_value: 40 }), 'womens');
+    const withStatic = applyGenderAnchor(rawStanding({ player_value: 40 }), 'womens');
 
-    // 45 vs 38: a player unchanged at 40% moves from +2 over the estimate to
-    // −5 against the tour. Pinned so nobody "fixes" the regression later —
-    // measuring against the LPGA is the decision, not a bug.
-    expect(withEstimate.pga_delta).toBeGreaterThan(0);
-    expect(withLpga.pga_delta).toBeLessThan(0);
-    expect(withLpga.pga_value!).toBeGreaterThan(withEstimate.pga_value!);
+    // The old hand-authored 38% college estimate is gone: with or without the
+    // live LPGA row, a player at 40% is 5 points under the LPGA Tour.
+    expect(withStatic.pga_value).toBe(45);
+    expect(withStatic.pga_delta).toBe(-5);
+    expect(withLpga.pga_delta).toBe(withStatic.pga_delta);
   });
 });
 
@@ -145,7 +144,7 @@ describe('the fallback chain is preserved, and never reaches the men\'s value', 
       'womens',
       lpgaMap([['gir_pct' as MetricId, 70]]),
     );
-    expect(s.pga_value).toBe(38); // the estimate, not the men's 50
+    expect(s.pga_value).toBe(45); // the static LPGA value, not the men's 50
   });
 
   it('falls back to the estimate when the LPGA row exists but its value is null', () => {
@@ -154,7 +153,7 @@ describe('the fallback chain is preserved, and never reaches the men\'s value', 
       'womens',
       lpgaMap([['scrambling_pct_sand', null]]),
     );
-    expect(s.pga_value).toBe(38);
+    expect(s.pga_value).toBe(45);
   });
 
   it('OMITS rather than showing the men\'s value when neither source has one', () => {

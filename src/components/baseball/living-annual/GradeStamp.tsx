@@ -13,7 +13,7 @@
  * `present={false}`) = a ghost dashed outline — the projected/ceiling grade
  * not yet earned. Reduced motion → shown instantly, no press, no bleed.
  */
-import { m, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'motion/react';
 import { cn } from '@/lib/utils';
 import { gradeColor, GRADE_VAR } from './grades';
 import { inkBleed, stampPress } from './motion';

@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import {
   samplePerPlayerRounds,
   computeTeamHealth,
+  countableRatioPct,
 } from '../team-category-insights-helpers';
 
 // ---------------------------------------------------------------------------
@@ -99,5 +100,23 @@ describe('computeTeamHealth', () => {
 
   it('returns 0 when there are no categories at all', () => {
     expect(computeTeamHealth([])).toBe(0);
+  });
+});
+
+describe('countableRatioPct', () => {
+  it('pools hits over opportunities across rounds (not a mean of percentages)', () => {
+    const rows = [
+      { total_fairways_hit: 7, total_fairways: 14, total_gir: 9, total_gir_possible: 18 },
+      { total_fairways_hit: 1, total_fairways: 7, total_gir: 2, total_gir_possible: 9 },
+    ];
+    // 8/21 = 38.1%, not mean(50%, 14.3%) = 32.1%
+    expect(countableRatioPct(rows, 'driving_accuracy_percentage')).toBeCloseTo((8 / 21) * 100, 6);
+    expect(countableRatioPct(rows, 'gir_percentage')).toBeCloseTo((11 / 27) * 100, 6);
+  });
+
+  it('skips rounds without totals, returns null with none, undefined for other metrics', () => {
+    expect(countableRatioPct([{ total_fairways_hit: 3, total_fairways: null }], 'driving_accuracy_percentage')).toBeNull();
+    expect(countableRatioPct([], 'gir_percentage')).toBeNull();
+    expect(countableRatioPct([{ total_gir: 3, total_gir_possible: 9 }], 'scrambling_percentage')).toBeUndefined();
   });
 });

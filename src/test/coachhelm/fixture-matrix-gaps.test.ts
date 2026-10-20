@@ -45,10 +45,11 @@ describe('§15.2 — "Par-3 tee miss: not counted as a missed fairway opportunit
   // `recompute_golf_round_totals` (see src/lib/golf/stat-formulas.ts:11-12
   // — "fairway denominator = par-4/5 holes with a RECORDED fairway result"),
   // not in any TypeScript path. `computeFairwayPct` itself is denominator-
-  // agnostic. No pgTAP fixture in supabase/tests/rls/ exercises this
-  // function's par-3 exclusion. A vitest it.todo can't cover SQL behavior —
-  // this needs a pgTAP case (scripts/test-pgtap.sh), tracked here so the row
-  // isn't silently dropped from the matrix.
+  // agnostic. Since 2026-10-17 the pgTAP fixture
+  // supabase/tests/rls/golf_round_totals_null_putts.sql exercises it (a par-3
+  // hole with a recorded fairway result stays out of the denominator, in its
+  // fully recorded round). A vitest it.todo can't cover SQL behavior; the row
+  // stays here so it isn't silently dropped from the matrix.
   it.todo(
     'recompute_golf_round_totals excludes par-3 holes from the fairway-hit denominator — needs a pgTAP fixture, not a vitest one; none exists today',
   );

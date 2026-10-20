@@ -259,6 +259,18 @@ describe('findSignalInGroups', () => {
 });
 
 describe('computeBriefCounts', () => {
+  it('never counts a team_synthesis roll-up as an urgent signal (it restates rows already counted)', () => {
+    const groups = [
+      group({
+        playerId: null,
+        playerName: 'Team',
+        signals: [signal({ id: 'team:m', kind: 'team_synthesis', severity: 'urgent', playerId: null })],
+      }),
+      group({ playerId: 'p1', playerName: 'A', signals: [signal({ id: '1', severity: 'high' })] }),
+    ];
+    expect(computeBriefCounts(groups).urgent).toBe(0);
+  });
+
   it('counts urgent signals, signals aged <=7 days, and distinct flagged players', () => {
     const groups = [
       group({

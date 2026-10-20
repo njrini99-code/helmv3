@@ -19,7 +19,7 @@
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/golf';
+import { savePartialRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 

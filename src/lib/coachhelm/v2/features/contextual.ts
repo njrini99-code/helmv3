@@ -41,6 +41,7 @@ export async function extractContextualFeatures(
     .from('golf_rounds')
     .select('id, total_score, score_to_par, round_date, round_type')
     .eq('player_id', playerId)
+    .eq('is_test', false)
     .eq('status', 'completed')
     .gte('round_date', ninetyDaysAgo.toISOString())
     .order('round_date', { ascending: false });

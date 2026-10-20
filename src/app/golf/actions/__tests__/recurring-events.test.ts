@@ -604,6 +604,23 @@ describe('editRecurringEvent — per-row date deltas', () => {
     }
   });
 
+  it("an emptied location or notes clears it (stored null, not '')", async () => {
+    const payloads = spyOnUpdatePayloads();
+    const result = await editRecurringEvent({
+      eventId: 'ev-root',
+      originalStartDate: '2026-06-01',
+      scope: 'all',
+      timezoneOffset: 0,
+      updates: { title: 'Practice', location: '', description: '' },
+    });
+
+    expect(result.success).toBe(true);
+    expect(payloads.length).toBeGreaterThan(0);
+    for (const payload of payloads) {
+      expect(payload).toMatchObject({ location: null, description: null });
+    }
+  });
+
   it("scope 'thisAndFuture' shifts only the target occurrence and later ones", async () => {
     const result = await editRecurringEvent({
       eventId: 'ev-c2',
@@ -977,6 +994,78 @@ describe('editRecurringEvent — series extension', () => {
 // ===========================================================================
 
 describe('createRecurringEvent', () => {
+  it('CAL-05 a weekly 3 PM series across the 1 Nov clock change stays at 3 PM local with the zone given', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+    // Chicago: CDT (UTC-5) until 1 Nov 2026, then CST (UTC-6). The client's single offset is the root's (300).
+    const result = await createRecurringEvent({
+      title: 'Practice',
+      eventType: 'practice',
+      startDate: '2026-10-22',
+      startTime: '15:00',
+      endTime: '17:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=3',
+      timezoneOffset: 300,
+      timeZone: 'America/Chicago',
+    });
+    expect(result.success).toBe(true);
+    const starts = events()
+      .map((row) => new Date(String(row.start_time)).toISOString())
+      .sort();
+    expect(starts).toEqual(['2026-10-22T20:00:00.000Z', '2026-10-29T20:00:00.000Z', '2026-11-05T21:00:00.000Z']);
+    const ends = events()
+      .map((row) => new Date(String(row.end_time)).toISOString())
+      .sort();
+    expect(ends[2]).toBe('2026-11-05T23:00:00.000Z');
+  });
+
+  it('stores the series RSVP deadline with the zone offset on the deadline date, the same instant on every row', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+    // The editor sends datetime-local wall time. 6 PM on 2 Nov is CST (UTC-6), though the series starts in CDT (300).
+    const result = await createRecurringEvent({
+      title: 'Practice',
+      eventType: 'practice',
+      startDate: '2026-10-29',
+      startTime: '15:00',
+      endTime: '17:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=2',
+      requiresRsvp: true,
+      rsvpDeadline: '2026-11-02T18:00',
+      timezoneOffset: 300,
+      timeZone: 'America/Chicago',
+    });
+    expect(result.success).toBe(true);
+    expect(events()).toHaveLength(2);
+    for (const row of events()) {
+      expect(row.rsvp_deadline).toBe('2026-11-02T18:00-06:00');
+      expect(new Date(String(row.rsvp_deadline)).toISOString()).toBe('2026-11-03T00:00:00.000Z');
+    }
+  });
+
+  it('falls back to the single offset for the RSVP deadline when no zone is given', async () => {
+    seed('u-coach', {
+      golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],
+      golf_events: [],
+    });
+    const result = await createRecurringEvent({
+      title: 'Practice',
+      eventType: 'practice',
+      startDate: '2026-06-01',
+      startTime: '09:00',
+      recurrenceRule: 'RRULE:FREQ=WEEKLY;INTERVAL=1;COUNT=2',
+      requiresRsvp: true,
+      rsvpDeadline: '2026-06-01T06:00',
+      timezoneOffset: 240,
+    });
+    expect(result.success).toBe(true);
+    for (const row of events()) expect(row.rsvp_deadline).toBe('2026-06-01T06:00-04:00');
+  });
+
   it('creates a root + children series with parent links', async () => {
     seed('u-coach', {
       golf_coaches: [{ id: 'coach-1', user_id: 'u-coach', organization_id: 'org-1' }],

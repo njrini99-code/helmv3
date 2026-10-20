@@ -42,7 +42,7 @@ vi.mock('@/app/golf/actions/stats-dashboard', () => ({
 // (`ReturnType<typeof getPlayerPatterns>`), but it is a real value import at
 // runtime — the module pulls in server-only Supabase wiring, so it must be
 // stubbed for a jsdom render the same way the bundle action is.
-vi.mock('@/app/golf/actions/insights', () => ({
+vi.mock('@/app/golf/actions/insights-player-analysis', () => ({
   getPlayerPatterns: vi.fn(),
 }));
 
@@ -280,6 +280,7 @@ async function findBackChip(stage: HTMLElement): Promise<HTMLElement> {
         `Stage headings: ${headings.length ? headings.join(' | ') : '(none)'}\n` +
         `Buttons in stage (${buttons.length}): ${buttons.join(' | ') || '(none)'}\n` +
         `Original: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
     );
   }
 }

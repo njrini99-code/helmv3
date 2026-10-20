@@ -1,5 +1,24 @@
 /**
- * Compose a player's single-edge causal relationships into CHAINS.
+ * Compose a player's single-edge relationships into LINKED PATTERNS.
+ *
+ * ── HONEST CORRELATION (owner decision, 2026-09-28) ─────────────────────────
+ *
+ * Every edge is a same-round correlation, not a cause (deep audit rows 33/34).
+ * A linked pattern is drawn only when:
+ *
+ *   - every hop carries correlation evidence and passes `correlation-gate.ts`
+ *     (n >= 15, BH q < 0.05, |r| >= 0.3) — a pre-gate row cannot be a hop;
+ *   - no hop is score arithmetic (a score component -> score_to_par);
+ *   - the signs compose consistently: the product of the hop signs between
+ *     any two nodes of the path must agree with every stored edge directly
+ *     between those two nodes. On 2026-09-28 all 9 checkable triangles failed
+ *     this (the indirect path had the opposite sign of the direct edge).
+ *
+ * The chain carries its composed `sign` and each hop's sign. It is presented
+ * as a "linked pattern" to check, never a root cause: correlation is not
+ * transitive and nothing here tests the path end to end.
+ *
+ * The history below explains why the composer exists.
  *
  * ── WHY ─────────────────────────────────────────────────────────────────────
  *
@@ -31,6 +50,7 @@
  */
 
 import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
+import { isScoreArithmetic, passesCorrelationGate } from './correlation-gate';
 
 export interface CausalChain {
   /** Metric ids in order, e.g. ['total_fairways_hit','total_gir','total_putts']. */
@@ -47,9 +67,53 @@ export interface CausalChain {
   confidence: number;
   /** Weakest hop's strength, on the same reasoning. */
   strength: number;
+  /** Sign of each hop's correlation, in order (+1 together, -1 opposite). */
+  hopSigns: Array<1 | -1>;
+  /** Composed sign: how the first and last metric move together if the links hold. */
+  sign: 1 | -1;
 }
 
-/** Longest first; ties broken by confidence. The deepest chain is the root cause. */
+type Edge = CausalRelationshipRow & { cause_metric: string; effect_metric: string };
+
+function signOf(row: CausalRelationshipRow): 1 | -1 {
+  return (row.correlation ?? 0) < 0 ? -1 : 1;
+}
+
+/** A row can be a hop only if it passed the honest-correlation gate and is not arithmetic. */
+function isEligibleHop(r: CausalRelationshipRow): r is Edge {
+  if (typeof r.cause_metric !== 'string' || r.cause_metric.length === 0) return false;
+  if (typeof r.effect_metric !== 'string' || r.effect_metric.length === 0) return false;
+  if (r.cause_metric === r.effect_metric) return false;
+  if (isScoreArithmetic(r.cause_metric, r.effect_metric)) return false;
+  if (r.correlation == null || r.sample_n == null || r.q_value == null) return false;
+  return passesCorrelationGate({ r: r.correlation, n: r.sample_n, q: r.q_value });
+}
+
+function pairKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * True when every stored eligible edge between two nodes of the chain has the
+ * sign the chain's hops compose to between those nodes.
+ */
+function signsConsistent(chain: CausalChain, signsByPair: Map<string, Set<1 | -1>>): boolean {
+  const { metrics, hopSigns } = chain;
+  for (let i = 0; i < metrics.length; i++) {
+    let composed: 1 | -1 = 1;
+    for (let j = i + 1; j < metrics.length; j++) {
+      composed = (composed * hopSigns[j - 1]!) as 1 | -1;
+      const direct = signsByPair.get(pairKey(metrics[i]!, metrics[j]!));
+      if (!direct) continue;
+      for (const s of direct) {
+        if (s !== composed) return false;
+      }
+    }
+  }
+  return true;
+}
+
+/** Longest first; ties broken by confidence. */
 function byDepthThenConfidence(a: CausalChain, b: CausalChain): number {
   if (b.metrics.length !== a.metrics.length) return b.metrics.length - a.metrics.length;
   return b.confidence - a.confidence;
@@ -62,19 +126,20 @@ function byDepthThenConfidence(a: CausalChain, b: CausalChain): number {
  * promoting one to "chain" would add a claim without adding evidence.
  */
 export function composeCausalChains(rows: CausalRelationshipRow[]): CausalChain[] {
-  // Only rows with both ends named can participate; a null metric cannot be
-  // matched to anything without guessing.
-  const edges = rows.filter(
-    (r): r is CausalRelationshipRow & { cause_metric: string; effect_metric: string } =>
-      typeof r.cause_metric === 'string' &&
-      r.cause_metric.length > 0 &&
-      typeof r.effect_metric === 'string' &&
-      r.effect_metric.length > 0 &&
-      r.cause_metric !== r.effect_metric,
-  );
+  // Only gated, non-arithmetic rows with both ends named can participate; a
+  // null metric cannot be matched to anything without guessing.
+  const edges = rows.filter(isEligibleHop);
   if (edges.length < 2) return [];
 
-  const outgoing = new Map<string, typeof edges>();
+  const signsByPair = new Map<string, Set<1 | -1>>();
+  for (const e of edges) {
+    const key = pairKey(e.cause_metric, e.effect_metric);
+    const set = signsByPair.get(key) ?? new Set<1 | -1>();
+    set.add(signOf(e));
+    signsByPair.set(key, set);
+  }
+
+  const outgoing = new Map<string, Edge[]>();
   for (const e of edges) {
     const list = outgoing.get(e.cause_metric) ?? [];
     list.push(e);
@@ -83,7 +148,7 @@ export function composeCausalChains(rows: CausalRelationshipRow[]): CausalChain[
 
   const chains: CausalChain[] = [];
 
-  const walk = (path: typeof edges, visited: Set<string>): void => {
+  const walk = (path: Edge[], visited: Set<string>): void => {
     const tail = path[path.length - 1]!;
     const next = (outgoing.get(tail.effect_metric) ?? []).filter(
       // `visited` is what stops a cycle — A->B->A terminates rather than
@@ -107,7 +172,9 @@ export function composeCausalChains(rows: CausalRelationshipRow[]): CausalChain[
     walk([start], new Set([start.cause_metric, start.effect_metric]));
   }
 
-  return dedupeByPath(chains).sort(byDepthThenConfidence);
+  return dedupeByPath(chains.filter((c) => signsConsistent(c, signsByPair))).sort(
+    byDepthThenConfidence,
+  );
 }
 
 /**
@@ -142,12 +209,15 @@ function dedupeByPath(chains: CausalChain[]): CausalChain[] {
   return [...best.values()];
 }
 
-function toChain(path: Array<CausalRelationshipRow & { cause_metric: string; effect_metric: string }>): CausalChain {
+function toChain(path: Edge[]): CausalChain {
   const metrics = [path[0]!.cause_metric, ...path.map((e) => e.effect_metric)];
+  const hopSigns = path.map(signOf);
   return {
     metrics,
     hops: [...path],
     confidence: Math.min(...path.map((e) => e.confidence)),
     strength: Math.min(...path.map((e) => e.strength)),
+    hopSigns,
+    sign: hopSigns.reduce<1 | -1>((acc, s) => (acc * s) as 1 | -1, 1),
   };
 }

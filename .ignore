@@ -21,3 +21,11 @@ playwright-report/
 .superpowers/
 .ultracode/
 .dev-assets/
+# Generated maps, audit logs and progress ledgers: large, point-in-time, and
+# never the answer to "how does it work now". Search them on purpose with
+#   rg --no-ignore <pattern> <path>
+docs/architecture/system-maps/
+docs/clubhouse/PROGRESS.md
+CLICKABLES.md
+docs/audits/
+docs/generated/*.json

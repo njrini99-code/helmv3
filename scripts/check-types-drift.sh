@@ -9,6 +9,15 @@
 # Configure SUPABASE_ACCESS_TOKEN in CI to enforce it.
 set -euo pipefail
 
+case "${1:-}" in
+  -h|--help)
+    sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
+    echo ""
+    echo "Read-only: it generates types into a temp file and diffs; it never writes src/lib/types/database.ts."
+    exit 0
+    ;;
+esac
+
 PROJECT_REF="${SUPABASE_PROJECT_REF:-qmnssrrolpinvwjjnufo}"
 SUPABASE_CLI="./node_modules/.bin/supabase"
 

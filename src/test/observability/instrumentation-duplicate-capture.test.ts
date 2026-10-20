@@ -36,9 +36,6 @@ vi.mock('@/lib/observability/register-process-error-handlers', () => ({
   registerProcessErrorHandlers: vi.fn(),
 }));
 vi.mock('@/lib/admin/deploy-marker', () => ({ recordDeployMarker: vi.fn(async () => {}) }));
-vi.mock('@/lib/inngest/credentials', () => ({
-  reportInngestCredentialFault: vi.fn(async () => true),
-}));
 vi.mock('@/lib/server-error-logger', () => ({
   logServerException: mocks.logServerException,
 }));
@@ -256,5 +253,56 @@ describe('Sentry.init — vercelAIIntegration defaults to NOT recording prompts/
       recordOutputs: false,
     });
     vi.unstubAllEnvs();
+  });
+});
+
+describe('sharedIgnoreErrors — a HELD migration RPC the app already falls back from', () => {
+  beforeEach(() => {
+    vi.stubEnv('NEXT_RUNTIME', 'nodejs');
+    mocks.init.mockClear();
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  function matches(ignoreErrors: unknown[], message: string): boolean {
+    return ignoreErrors.some((p) => (p instanceof RegExp ? p.test(message) : typeof p === 'string' && message.includes(p)));
+  }
+
+  it('drops the PGRST202 auto-capture for golf_qualifier_selection_reasons, and only that function', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.golf_qualifier_selection_reasons(p_qualifier_id) in the schema cache'),
+    ).toBe(true);
+    // A live RPC that goes missing must still page.
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.get_player_hub_events(p_player_id, p_since, p_team_id) in the schema cache'),
+    ).toBe(false);
+    expect(matches(ignoreErrors, 'permission denied for function golf_qualifier_selection_reasons')).toBe(false);
+  });
+
+  // Sentry JAVASCRIPT-NEXTJS-196 (34 events in 24h to 2026-10-15): the flight recorder's batch RPC is HELD
+  // (20261007106000) and helm-flight-recorder.ts falls back to per-step writes on PGRST202.
+  it('drops the PGRST202 auto-capture for helm_debug_record_trace_steps (the batch), not the live per-step RPC', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.helm_debug_record_trace_steps(p_steps, p_trace_id) in the schema cache'),
+    ).toBe(true);
+    // The live single-step writer going missing must still page.
+    expect(
+      matches(ignoreErrors, 'Could not find the function public.helm_debug_record_trace_step(p_layer, p_metadata) in the schema cache'),
+    ).toBe(false);
+  });
+
+  // Sentry JAVASCRIPT-NEXTJS-1A0 (87 events in 24h to 2026-10-15): golf_conversation_participants.hidden_at is
+  // HELD (20261008160000); conversation-hide.ts probes the column and reads 42703 as "not available yet".
+  it('drops the 42703 auto-capture for golf_conversation_participants.hidden_at, and only that column', async () => {
+    await register();
+    const ignoreErrors = mocks.init.mock.calls[0]![0].ignoreErrors as unknown[];
+    expect(matches(ignoreErrors, 'column golf_conversation_participants.hidden_at does not exist')).toBe(true);
+    expect(matches(ignoreErrors, 'column golf_conversation_participants.last_read_at does not exist')).toBe(false);
+    expect(matches(ignoreErrors, 'column golf_messages.hidden_at does not exist')).toBe(false);
   });
 });

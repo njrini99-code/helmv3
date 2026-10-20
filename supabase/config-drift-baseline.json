@@ -1,0 +1,7 @@
+{
+  "$note": "Production config paths allowed to differ from supabase/config.toml. Read by scripts/db/config-drift.mjs. Add a path only with a reason.",
+  "accepted": [
+    { "path": "auth.email.smtp", "reason": "Production SMTP identity (host, user, admin email, sender name) is managed in the dashboard; this repository is public, so it is not committed." },
+    { "path": "auth.password_requirements", "reason": "Local sets an empty string, production leaves it unset; both mean no extra requirements. CLI reports it as local_only." }
+  ]
+}

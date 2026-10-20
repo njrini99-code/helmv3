@@ -1,9 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Note: this file uses `as any` casts on the supabase client because
-// `golf_recruits` was added in 20260429010000_golf_recruits.sql and the
-// regenerated TS types don't include it yet. Once db:types is rerun, the
-// casts can come out.
-
 'use server';
 
 /**
@@ -20,8 +14,11 @@ import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
+import type { Tables, TablesUpdate } from '@/lib/types/database';
 
 export type RecruitStatus = 'recruiting' | 'watched' | 'offered' | 'committed';
+
+const RECRUIT_STATUSES: ReadonlySet<string> = new Set<RecruitStatus>(['recruiting', 'watched', 'offered', 'committed']);
 
 export interface Recruit {
   id: string;
@@ -49,6 +46,13 @@ export interface RecruitInput {
   state?: string | null;
   notes?: string | null;
   status?: RecruitStatus;
+  /**
+   * The prospect's next step (Clubhouse P014-C1), in columns that exist only once
+   * 20261008120000_golf_recruits_next_step.sql is applied. Written only when the caller passes them; the
+   * Clubhouse sends them only after its column probe succeeds, so before the apply no write names them.
+   */
+  next_step_label?: string | null;
+  next_step_date?: string | null;
 }
 
 interface ActionResult<T = void> {
@@ -71,7 +75,25 @@ const FIELD_LIMITS = {
   hometown: 120,
   state: 2,
   notes: 5000,
+  next_step_label: 120,
 } as const;
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A real calendar day written as YYYY-MM-DD ("2026-02-30" is not one). */
+function isIsoDay(v: string): boolean {
+  if (!ISO_DAY.test(v)) return false;
+  const [y, m, d] = v.split('-').map(Number) as [number, number, number];
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
+/** The next-step fields for an insert or a patch: only the ones the caller passed, trimmed, blank as null. */
+function nextStepFields(input: Partial<RecruitInput>): Record<string, string | null> {
+  const out: Record<string, string | null> = {};
+  if (input.next_step_label !== undefined) out.next_step_label = input.next_step_label?.trim() || null;
+  if (input.next_step_date !== undefined) out.next_step_date = input.next_step_date?.trim() || null;
+  return out;
+}
 const MIN_HS_CLASS = 2020;
 const MAX_HS_CLASS = 2040;
 
@@ -104,6 +126,15 @@ function validateRecruitInput(input: Partial<RecruitInput>): string | null {
       return `Class year must be between ${MIN_HS_CLASS} and ${MAX_HS_CLASS}`;
     }
   }
+  if (input.next_step_label != null && typeof input.next_step_label !== 'string') return 'Next step must be text';
+  if (input.next_step_label && input.next_step_label.trim().length > FIELD_LIMITS.next_step_label) {
+    return 'Next step is too long';
+  }
+  if (input.next_step_date != null) {
+    if (typeof input.next_step_date !== 'string') return 'Next step date must be a date';
+    const day = input.next_step_date.trim();
+    if (day && !isIsoDay(day)) return 'Next step date must be a real date (YYYY-MM-DD)';
+  }
   return null;
 }
 
@@ -130,12 +161,20 @@ async function resolveCoachAndTeam(): Promise<
   return { ok: true, coachId: coach.id, teamId, supabase };
 }
 
+/**
+ * The column is plain text in the generated types. The table's CHECK holds it to the four statuses; a value outside
+ * them reads as the starting status rather than reaching the page as an unknown one.
+ */
+function toRecruit(row: Tables<'golf_recruits'>): Recruit {
+  return { ...row, status: RECRUIT_STATUSES.has(row.status) ? (row.status as RecruitStatus) : 'recruiting' };
+}
+
 async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
   try {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error, errorCode: ctx.errorCode };
 
-    const { data, error } = await (ctx.supabase as any)
+    const { data, error } = await ctx.supabase
       .from('golf_recruits')
       .select('*')
       .eq('team_id', ctx.teamId)
@@ -150,7 +189,7 @@ async function getRecruitsImpl(): Promise<ActionResult<Recruit[]>> {
       return { success: false, error: 'Failed to load recruits' };
     }
 
-    return { success: true, data: (data ?? []) as Recruit[] };
+    return { success: true, data: (data ?? []).map(toRecruit) };
   } catch (err) {
     await logServerError(`getRecruits error: ${describeError(err)}`, {
       action: 'recruiting.getRecruits',
@@ -170,18 +209,35 @@ export async function getRecruits(): Promise<ActionResult<Recruit[]>> {
   return observedGetRecruits();
 }
 
-async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * `opts.requestId` makes the create safe to repeat. The Clubhouse page makes one id per Add and keeps it across a
+ * Retry, and the row is inserted with that id as its primary key: a repeat after a lost reply hits the key instead
+ * of adding the prospect twice, and the existing row is returned as the answer, but only once it is read back as
+ * this coach's own, on this team, with this name. An id that belongs to anything else is refused, never reported as
+ * saved. Without a requestId (the current page) the create behaves as it always has.
+ */
+async function createRecruitImpl(
+  input: RecruitInput,
+  opts?: { requestId?: string },
+): Promise<ActionResult<{ id: string }>> {
   if (!input.first_name?.trim()) {
     return { success: false, error: 'First name is required' };
   }
   const validationError = validateRecruitInput(input);
   if (validationError) return { success: false, error: validationError };
+  const requestId = opts?.requestId;
+  if (requestId !== undefined && !UUID_RE.test(requestId)) {
+    return { success: false, error: 'Request id must be a UUID' };
+  }
 
   try {
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
 
     const row = {
+      ...(requestId ? { id: requestId } : {}),
       team_id: ctx.teamId,
       created_by: ctx.coachId,
       first_name: input.first_name.trim(),
@@ -193,13 +249,37 @@ async function createRecruitImpl(input: RecruitInput): Promise<ActionResult<{ id
       state: input.state?.trim() || null,
       notes: input.notes?.trim() || null,
       status: input.status ?? 'recruiting',
+      ...nextStepFields(input),
     };
 
-    const { data, error } = await (ctx.supabase as any)
+    const { data, error } = await ctx.supabase
       .from('golf_recruits')
       .insert(row)
       .select('id')
       .single();
+
+    if (error && requestId && error.code === '23505') {
+      // The id is taken. Saved only if it is this same prospect, added earlier by this coach on this team: RLS hides any
+      // other team's row from this read, so a colliding id from elsewhere comes back empty and is refused.
+      // A failed read falls through to the insert's own error below: the retry is
+      // refused rather than guessed to be a duplicate.
+      const { data: existing, error: existingError } = await ctx.supabase
+        .from('golf_recruits')
+        .select('id, team_id, created_by, first_name, last_name')
+        .eq('id', requestId)
+        .maybeSingle();
+      if (
+        !existingError &&
+        existing &&
+        existing.team_id === ctx.teamId &&
+        existing.created_by === ctx.coachId &&
+        existing.first_name === row.first_name &&
+        (existing.last_name ?? null) === row.last_name
+      ) {
+        revalidatePath('/golf/dashboard/recruiting');
+        return { success: true, data: { id: existing.id } };
+      }
+    }
 
     if (error) {
       await logServerError(`createRecruit failed: ${error.message}`, {
@@ -227,8 +307,11 @@ const observedCreateRecruit = withAdminObserved(
   createRecruitImpl,
 );
 
-export async function createRecruit(input: RecruitInput): Promise<ActionResult<{ id: string }>> {
-  return observedCreateRecruit(input);
+export async function createRecruit(
+  input: RecruitInput,
+  opts?: { requestId?: string },
+): Promise<ActionResult<{ id: string }>> {
+  return observedCreateRecruit(input, opts);
 }
 
 async function updateRecruitImpl(
@@ -243,7 +326,7 @@ async function updateRecruitImpl(
     const ctx = await resolveCoachAndTeam();
     if (!ctx.ok) return { success: false, error: ctx.error };
 
-    const patch: Record<string, unknown> = {
+    const patch: TablesUpdate<'golf_recruits'> = {
       updated_at: new Date().toISOString(),
     };
     if (updates.first_name !== undefined) patch.first_name = updates.first_name.trim();
@@ -255,12 +338,17 @@ async function updateRecruitImpl(
     if (updates.state !== undefined) patch.state = updates.state?.trim() || null;
     if (updates.notes !== undefined) patch.notes = updates.notes?.trim() || null;
     if (updates.status !== undefined) patch.status = updates.status;
+    Object.assign(patch, nextStepFields(updates));
 
-    const { error } = await (ctx.supabase as any)
+    // `.select('id')`: an UPDATE that matches no row (a stale id, a recruit
+    // already removed, another team's) is not an error, and used to be reported
+    // as saved while nothing changed.
+    const { data: updated, error } = await ctx.supabase
       .from('golf_recruits')
       .update(patch)
       .eq('id', id)
-      .eq('team_id', ctx.teamId);
+      .eq('team_id', ctx.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`updateRecruit failed: ${error.message}`, {
@@ -269,6 +357,9 @@ async function updateRecruitImpl(
         extra: { code: error.code, id },
       });
       return { success: false, error: 'Failed to update recruit' };
+    }
+    if (!Array.isArray(updated) || updated.length === 0) {
+      return { success: false, error: 'Recruit not found' };
     }
 
     revalidatePath('/golf/dashboard/recruiting');
@@ -307,16 +398,35 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
     // cascade removes golf_recruit_documents rows, but storage objects are not
     // cascaded — without this they'd orphan in the private recruit-documents
     // bucket.
-    const { data: docRows } = await (ctx.supabase as any)
+    //
+    // Scoped to this team like the delete below: the read used to filter on the
+    // recruit id alone, so the storage purge could be pointed at a recruit that
+    // was not this team's. A failed read stops the delete: carrying on would
+    // remove the rows that name the files and orphan the files.
+    const { data: docRows, error: docsError } = await ctx.supabase
       .from('golf_recruit_documents')
       .select('storage_path')
-      .eq('recruit_id', id);
+      .eq('recruit_id', id)
+      .eq('team_id', ctx.teamId);
 
-    const { error } = await (ctx.supabase as any)
+    if (docsError) {
+      await logServerError(`deleteRecruit document read failed: ${docsError.message}`, {
+        action: 'recruiting.deleteRecruit',
+        featureArea: 'recruiting',
+        extra: { code: docsError.code, id },
+      });
+      return { success: false, error: 'Failed to remove recruit' };
+    }
+
+    // `.select('id')`: a DELETE that matches no row is not an error. Without
+    // this a miss (stale id, another team's recruit) went on to purge the
+    // storage objects of a recruit that still existed, and said success.
+    const { data: deleted, error } = await ctx.supabase
       .from('golf_recruits')
       .delete()
       .eq('id', id)
-      .eq('team_id', ctx.teamId);
+      .eq('team_id', ctx.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`deleteRecruit failed: ${error.message}`, {
@@ -326,9 +436,14 @@ async function deleteRecruitImpl(id: string): Promise<ActionResult> {
       });
       return { success: false, error: 'Failed to remove recruit' };
     }
+    if (!Array.isArray(deleted) || deleted.length === 0) {
+      // Nothing was removed, so no document row is gone and nothing is purged.
+      revalidatePath('/golf/dashboard/recruiting');
+      return { success: false, error: "That recruit was already removed or isn't on your team." };
+    }
 
     // Recruit (and its document rows) gone — now purge the storage objects.
-    const paths = ((docRows ?? []) as { storage_path: string | null }[])
+    const paths = (docRows ?? [])
       .map((d) => d.storage_path)
       .filter((p): p is string => Boolean(p));
     if (paths.length > 0) {

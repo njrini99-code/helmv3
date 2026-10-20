@@ -205,15 +205,27 @@ describe('buildDeterministicRoundReview — as-played baseline via the worker-sa
       id: `past-${i}`, player_id: 'p1', round_date: `2026-0${5 - i}-15`, total_score: score,
       score_to_par: score - 72, total_putts: 30, total_fairways_hit: 8, total_fairways: 14,
       total_gir: 10, total_gir_possible: 18, holes_played: 18, status: 'completed',
+      is_test: false, front_nine: 36, back_nine: score - 36,
     }));
     const future = [{
       id: 'future-1', player_id: 'p1', round_date: '2026-08-01', total_score: 200,
       score_to_par: 128, total_putts: 50, total_fairways_hit: 1, total_fairways: 14,
       total_gir: 1, total_gir_possible: 18, holes_played: 18, status: 'completed',
+      is_test: false, front_nine: 100, back_nine: 100,
     }];
+    // Audit row 39: a test round and a non-countable (hole-less) round
+    // before the reviewed one must not reach the baseline either.
+    const excluded = [
+      { id: 'test-round', player_id: 'p1', round_date: '2026-06-01', total_score: 74, score_to_par: 2,
+        total_putts: 30, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18,
+        holes_played: 18, status: 'completed', is_test: true, front_nine: 37, back_nine: 37 },
+      { id: 'holeless-round', player_id: 'p1', round_date: '2026-06-02', total_score: 74, score_to_par: 2,
+        total_putts: 30, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18,
+        holes_played: 18, status: 'completed', is_test: false, front_nine: null, back_nine: null },
+    ];
 
     const store: Record<string, Row[]> = {
-      golf_rounds: [round, ...past, ...future],
+      golf_rounds: [round, ...past, ...future, ...excluded],
       golf_shots: [],
       golf_holes: [],
     };
@@ -236,6 +248,8 @@ describe('buildDeterministicRoundReview — as-played baseline via the worker-sa
     expect(seenRows).toHaveLength(1);
     const comparisonIds = (seenRows[0] as { id: string }[]).map(r => r.id);
     expect(comparisonIds).not.toContain('future-1');
+    expect(comparisonIds).not.toContain('test-round');
+    expect(comparisonIds).not.toContain('holeless-round');
     expect(comparisonIds.sort()).toEqual(['past-0', 'past-1', 'past-2']);
 
     if (result.ok) {

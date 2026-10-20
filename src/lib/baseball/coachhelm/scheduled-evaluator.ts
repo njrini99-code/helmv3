@@ -14,7 +14,7 @@ import 'server-only';
 //   daily operational heartbeat: it re-runs the engine core per active team and
 //   sweeps expired signals out of the inbox, every day, with no human click.
 //
-// DESIGN (mirrors outcome-sweep.ts — client-agnostic core, thin Inngest shell):
+// DESIGN (mirrors outcome-sweep.ts — client-agnostic core; no scheduler shell exists yet):
 //   - Discover only ACTIVE teams: a team with >=1 staff coach AND >=1 roster
 //     member. Anything else can produce no insight, so we never iterate it.
 //   - Resolve the OWNING coach per team (is_primary > head_coach > first staff)

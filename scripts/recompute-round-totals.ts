@@ -28,6 +28,15 @@
  */
 import 'dotenv/config';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/recompute-round-totals.ts',
+  summary:
+    "Recompute round-level totals + per-hole GIR flags from per-hole rows.",
+  guard: "its own --dry-run flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 interface HoleRow {
   hole_number: number;

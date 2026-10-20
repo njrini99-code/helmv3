@@ -62,6 +62,8 @@ export default tseslint.config(
       // `.gitignore` line — `scripts/*.js`, not `scripts/**/*.js`, which would
       // also swallow committed files in subdirectories.
       "scripts/*.js",
+      // Clubhouse design handoff: prototype JSX from Claude Design, reference only.
+      "design/**",
     ],
   },
   {
@@ -94,15 +96,26 @@ export default tseslint.config(
   },
   {
     // The GolfHelm Engineering OS's hooks (P2) are plain Node scripts, same
-    // shape as scripts/** above — `npm run lint` doesn't reach .claude/ (it
-    // targets src/**/*.{ts,tsx} only), but ad-hoc/future linting of these
-    // files should not report 50 fake `process`/`console` no-undef errors,
+    // shape as scripts/** above. `npm run lint` and CI's "ESLint (e2e, hooks,
+    // edge functions)" step reach them since 2026-10-07; without these
+    // globals they would report 50 fake `process`/`console` no-undef errors,
     // for the same reason the scripts/wf_*.js block above exists: that is
     // exactly how a directory ends up excluded from linting altogether.
     files: [".claude/hooks/**/*.{js,mjs,cjs}"],
     languageOptions: {
       globals: {
         ...globals.node,
+      },
+    },
+  },
+  {
+    // Supabase Edge Functions run on Deno, which injects `Deno`. `no-undef` is
+    // off for TypeScript so this is inert today; it keeps a .js/.mjs function,
+    // or a rule change, from reporting `Deno` as undefined.
+    files: ["supabase/functions/**/*.{ts,js,mjs}"],
+    languageOptions: {
+      globals: {
+        Deno: "readonly",
       },
     },
   },
@@ -220,6 +233,32 @@ export default tseslint.config(
     },
   },
   {
+    // Clubhouse (src/clubhouse): a fresh UI tree. Fairway UI is off limits,
+    // motion goes through the hydration-safe useChReducedMotion(), and haptics
+    // go through src/clubhouse/lib/haptics.ts. scripts/clubhouse/check.mjs
+    // enforces the design doctrine on top of this.
+    files: ["src/clubhouse/**/*.{ts,tsx}"],
+    ignores: ["src/clubhouse/lib/haptics.ts", "src/clubhouse/lib/reduced-motion.ts"],
+    rules: {
+      // Point at the pre-Clubhouse Button and Input; Clubhouse ships its own form styles.
+      "helm/no-raw-button": "off",
+      "helm/no-raw-input": "off",
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            { name: "framer-motion", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
+            { name: "motion/react", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
+            { name: "@/lib/utils/capacitor", importNames: ["triggerHaptic", "triggerSelectionHaptic"], message: "Use haptic() from '@/clubhouse/lib/haptics'." },
+          ],
+          patterns: [
+            { group: ["@/components/fairway/*", "@/components/fairway", "@/lib/fairway/*", "@/lib/redesign/*"], message: "Clubhouse never reuses Fairway UI. Build it in src/clubhouse." },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // MOT-RM / haptics (2026-09 golf audit): golf surfaces go through the
     // hydration-safe motion guard and the semantic haptic vocabulary. Raw
     // framer-motion useReducedMotion() returns null before hydration (#418
@@ -231,6 +270,8 @@ export default tseslint.config(
       "src/components/fairway/**/*.{ts,tsx}",
       "src/components/golf/**/*.{ts,tsx}",
       "src/app/golf/**/*.{ts,tsx}",
+      // The round engine left src/app/golf for src/lib/golf (ROUNDS_PLAN step 4b); its bans came with it.
+      "src/lib/golf/round-session/**/*.{ts,tsx}",
     ],
     ignores: [
       "src/components/golf/calendar/**",

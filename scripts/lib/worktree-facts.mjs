@@ -4,8 +4,8 @@
  * git and gh; scripts/lib/worktree-lifecycle.mjs decides from what they return.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
+import { resolve, sep } from 'node:path';
 
 /**
  * A git runner bound to `repo`. Returns trimmed stdout, or null on failure.
@@ -163,4 +163,86 @@ export function statusPorcelain(git, path) {
 export function restoreCopies(git, worktreePath, paths) {
   if (!paths?.length) return true;
   return git(['checkout', '--', ...paths], { cwd: worktreePath }) !== null;
+}
+
+// ---------------------------------------------------------------------------
+// Processes whose working directory is inside a checkout
+// ---------------------------------------------------------------------------
+//
+// This used to run `lsof +D <worktree>` once per checkout. `+D` walks the whole
+// directory tree looking for open files, which on a worktree with a symlinked
+// or populated node_modules took minutes per row. Only a process's CWD matters
+// here, and `lsof -d cwd` lists exactly those for every process in one call.
+// One scan, then a prefix match per checkout.
+//
+// The matcher is deliberately NOT less sensitive than `+D` was: it reports a
+// holder for a shell or Claude session sitting anywhere under the checkout, and
+// an unreadable scan answers `null` (unknown), never "no".
+
+/**
+ * Parse `lsof -d cwd -Fpn` output into { pid, path } pairs.
+ * Field output is one tagged field per line: `p<pid>`, `fcwd`, `n<path>`.
+ *
+ * @param {string} output
+ * @returns {Array<{ pid: number, path: string }>}
+ */
+export function parseCwdHolders(output) {
+  const holders = [];
+  let pid = NaN;
+  for (const line of String(output).split('\n')) {
+    if (line.startsWith('p')) pid = Number(line.slice(1));
+    else if (line.startsWith('n') && Number.isInteger(pid)) holders.push({ pid, path: line.slice(1) });
+  }
+  return holders;
+}
+
+/**
+ * Whether any holder's cwd is `dir` or below it. Compares both the path as
+ * given and its realpath, because lsof reports resolved paths (/private/var)
+ * while git may record the symlinked one (/var).
+ *
+ * @param {Array<{ pid: number, path: string }>} holders
+ * @param {string} dir
+ * @param {(p: string) => string} [real]
+ */
+export function hasCwdHolderIn(holders, dir, real = (p) => realpathSync(p)) {
+  const roots = new Set([resolve(dir)]);
+  try {
+    roots.add(real(dir));
+  } catch {
+    /* directory gone or unreadable: the literal path still counts */
+  }
+  return holders.some((h) => [...roots].some((r) => h.path === r || h.path.startsWith(r + sep)));
+}
+
+let cwdHoldersCache;
+
+/**
+ * One scan of every process's cwd, cached for the life of this process.
+ * Returns null when lsof is absent or produced nothing it could report.
+ *
+ * @param {(cmd: string, args: string[], opts: object) => string} [exec]
+ */
+export function listCwdHolders(exec = execFileSync) {
+  if (cwdHoldersCache !== undefined && exec === execFileSync) return cwdHoldersCache;
+  let out;
+  try {
+    out = exec('lsof', ['-d', 'cwd', '-Fpn'], { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) {
+    // lsof exits 1 when it could not stat SOME process (permission); the
+    // output it did produce is still valid. No output at all means unknown.
+    out = e && typeof e.stdout === 'string' && e.stdout.length > 0 ? e.stdout : null;
+  }
+  const result = out === null ? null : parseCwdHolders(out);
+  if (exec === execFileSync) cwdHoldersCache = result;
+  return result;
+}
+
+/**
+ * True/false when known, null when lsof could not answer.
+ * @param {string} dir
+ */
+export function hasLiveProcessIn(dir, exec) {
+  const holders = listCwdHolders(exec);
+  return holders === null ? null : hasCwdHolderIn(holders, dir);
 }

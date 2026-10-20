@@ -144,6 +144,7 @@
  */
 import { round } from '@/lib/golf/stat-formulas';
 import { bucketApproachDistance, type ApproachBucket } from '../engine/shot-source';
+import { classifyParFiveLongApproach } from './layup-intent';
 import type { AnalysisScope, HoleContext, ShotFact } from '../context/types';
 import type { MetricResult, MetricStatus, SupportFloorGap } from './types';
 
@@ -306,6 +307,7 @@ export function computeDistanceProfile(
 
     let layupExcludedN = 0;
     let missingParExcludedN = 0;
+    let unknownIntentExcludedN = 0;
     const eligible = inBand.filter((f) => {
       if (band !== '175_plus_ft') return true;
       const key = parKey(f.round_id, f.hole_number);
@@ -315,9 +317,17 @@ export function computeDistanceProfile(
         missingParExcludedN += 1;
         return false;
       }
-      const isLikelyLayup = par === 5 && !isOnGreen(f);
-      if (isLikelyLayup) layupExcludedN += 1;
-      return !isLikelyLayup;
+      // Audit row 30: intent from where the ball was LEFT (or a recorded
+      // intent tag), not from the miss itself — see layup-intent.ts.
+      const intent = classifyParFiveLongApproach({
+        par,
+        onGreen: isOnGreen(f),
+        leaveFeet: f.distance_to_hole_after_feet,
+        intent: f.intent,
+      });
+      if (intent === 'layup') layupExcludedN += 1;
+      if (intent === 'unknown') unknownIntentExcludedN += 1;
+      return intent === 'attempt';
     });
 
     const attempts = eligible.length;
@@ -327,6 +337,7 @@ export function computeDistanceProfile(
     const bandExclusions: Record<string, number> = {};
     if (layupExcludedN > 0) bandExclusions.layup = layupExcludedN;
     if (missingParExcludedN > 0) bandExclusions.missing_par = missingParExcludedN;
+    if (unknownIntentExcludedN > 0) bandExclusions.layup_intent_unknown = unknownIntentExcludedN;
 
     const dimensions = { band };
 

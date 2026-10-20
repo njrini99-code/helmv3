@@ -148,6 +148,11 @@ describe('categorizeCalendarNotificationRow', () => {
   it('categorizes event lifecycle rows as events', () => {
     expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'rsvp_response' }))).toBe('events');
     expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'event_cancelled' }))).toBe('events');
+    expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'event_updated:2026-08-14T00:00:00+00:00|2026-08-14T00:00:00+00:00' }))).toBe('events');
+  });
+
+  it('categorizes chat message rows (golf-message-fanout) as messages', () => {
+    expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'message' }))).toBe('messages');
   });
 
   it('categorizes message rows as messages', () => {

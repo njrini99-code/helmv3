@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.15"
   }
   graphql_public: {
     Tables: {
@@ -13921,6 +13921,7 @@ export type Database = {
           id: string
           insight_id: string
           player_id: string
+          rank_factors: Json | null
           rank_position: number | null
           rank_score: number | null
           shown_at: string
@@ -13932,6 +13933,7 @@ export type Database = {
           id?: string
           insight_id: string
           player_id: string
+          rank_factors?: Json | null
           rank_position?: number | null
           rank_score?: number | null
           shown_at?: string
@@ -13943,6 +13945,7 @@ export type Database = {
           id?: string
           insight_id?: string
           player_id?: string
+          rank_factors?: Json | null
           rank_position?: number | null
           rank_score?: number | null
           shown_at?: string
@@ -14077,12 +14080,17 @@ export type Database = {
         Row: {
           attributed_at: string
           baseline_value: number
+          control_value: number | null
           delta: number
           insight_id: string
           lift: number | null
+          lift_ci_high: number | null
+          lift_ci_low: number | null
+          lift_z: number | null
           method_version: string | null
           n_rounds_after: number
           n_rounds_before: number
+          n_rounds_control: number | null
           post_value: number
           surfaced_at: string
           target_metric_id: string
@@ -14090,12 +14098,17 @@ export type Database = {
         Insert: {
           attributed_at?: string
           baseline_value: number
+          control_value?: number | null
           delta: number
           insight_id: string
           lift?: number | null
+          lift_ci_high?: number | null
+          lift_ci_low?: number | null
+          lift_z?: number | null
           method_version?: string | null
           n_rounds_after: number
           n_rounds_before: number
+          n_rounds_control?: number | null
           post_value: number
           surfaced_at: string
           target_metric_id: string
@@ -14103,12 +14116,17 @@ export type Database = {
         Update: {
           attributed_at?: string
           baseline_value?: number
+          control_value?: number | null
           delta?: number
           insight_id?: string
           lift?: number | null
+          lift_ci_high?: number | null
+          lift_ci_low?: number | null
+          lift_z?: number | null
           method_version?: string | null
           n_rounds_after?: number
           n_rounds_before?: number
+          n_rounds_control?: number | null
           post_value?: number
           surfaced_at?: string
           target_metric_id?: string
@@ -16052,6 +16070,8 @@ export type Database = {
           hs_class: number | null
           id: string
           last_name: string | null
+          next_step_date: string | null
+          next_step_label: string | null
           notes: string | null
           phone: string | null
           state: string | null
@@ -16068,6 +16088,8 @@ export type Database = {
           hs_class?: number | null
           id?: string
           last_name?: string | null
+          next_step_date?: string | null
+          next_step_label?: string | null
           notes?: string | null
           phone?: string | null
           state?: string | null
@@ -16084,6 +16106,8 @@ export type Database = {
           hs_class?: number | null
           id?: string
           last_name?: string | null
+          next_step_date?: string | null
+          next_step_label?: string | null
           notes?: string | null
           phone?: string | null
           state?: string | null
@@ -17448,6 +17472,9 @@ export type Database = {
       }
       golf_team_settings: {
         Row: {
+          course_label: string | null
+          course_latitude: number | null
+          course_longitude: number | null
           created_at: string | null
           default_tees: string | null
           event_reminder_early_hours: number
@@ -17463,6 +17490,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          course_label?: string | null
+          course_latitude?: number | null
+          course_longitude?: number | null
           created_at?: string | null
           default_tees?: string | null
           event_reminder_early_hours?: number
@@ -17478,6 +17508,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          course_label?: string | null
+          course_latitude?: number | null
+          course_longitude?: number | null
           created_at?: string | null
           default_tees?: string | null
           event_reminder_early_hours?: number
@@ -21549,6 +21582,17 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      golf_event_attendance_counts: {
+        Args: { p_event_ids: string[] }
+        Returns: {
+          accepted: number
+          coach_invited: number
+          declined: number
+          event_id: string
+          invited: number
+          pending: number
+        }[]
+      }
       golf_join_team_with_code: {
         Args: { p_code: string }
         Returns: {
@@ -21569,6 +21613,11 @@ export type Database = {
         }[]
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      golf_readable_round_ids: { Args: never; Returns: string[] }
+      golf_set_course_image: {
+        Args: { p_course_id: string; p_image_url: string }
+        Returns: undefined
+      }
       golf_team_by_join_code: {
         Args: { p_code: string }
         Returns: {
@@ -22268,6 +22317,16 @@ export type Database = {
         | "dev_plan_assigned"
         | "team_join"
         | "team_join_rejected"
+        | "coachhelm_round_review_ready"
+        | "coachhelm_coach_assigned_goal"
+        | "coachhelm_goal_achieved"
+        | "coachhelm_goal_missed"
+        | "coachhelm_new_insight"
+        | "coachhelm_composite_insight"
+        | "coachhelm_weekly_digest"
+        | "coachhelm_coach_commented"
+        | "coachhelm_engine_suggested_goal"
+        | "coachhelm_standing_percentile_changed"
       organization_type: "college" | "juco" | "high_school" | "showcase"
       program_type: "mens" | "womens" | "both"
       reminder_type: "in_app" | "email" | "push" | "all"
@@ -22483,6 +22542,16 @@ export const Constants = {
         "dev_plan_assigned",
         "team_join",
         "team_join_rejected",
+        "coachhelm_round_review_ready",
+        "coachhelm_coach_assigned_goal",
+        "coachhelm_goal_achieved",
+        "coachhelm_goal_missed",
+        "coachhelm_new_insight",
+        "coachhelm_composite_insight",
+        "coachhelm_weekly_digest",
+        "coachhelm_coach_commented",
+        "coachhelm_engine_suggested_goal",
+        "coachhelm_standing_percentile_changed",
       ],
       organization_type: ["college", "juco", "high_school", "showcase"],
       program_type: ["mens", "womens", "both"],

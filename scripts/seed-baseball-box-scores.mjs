@@ -32,6 +32,15 @@
  */
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import { helpOnly } from './lib/cli-guard.mjs';
+
+helpOnly({
+  name: 'scripts/seed-baseball-box-scores.mjs',
+  summary:
+    "Seeds BaseballHelm box scores. Dry-run by default; env-gated.",
+  guard: "its own --confirm / --allow-prod flag (unchanged)",
+  secrets: 'SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_URL',
+});
 
 const KNOWN_PROD_PROJECT_REF = 'qmnssrrolpinvwjjnufo';
 

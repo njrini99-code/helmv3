@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { QualifierFormSkeleton } from '@/clubhouse/screens/qualifiers/QualifiersSkeleton';
 import { Skeleton, Surface } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
 
@@ -54,7 +56,7 @@ function FieldRow({ children, three = false }: { children: ReactNode; three?: bo
   );
 }
 
-export default function NewQualifierLoading() {
+function LegacyNewQualifierLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -155,4 +157,9 @@ export default function NewQualifierLoading() {
       </div>
     </div>
   );
+}
+
+/** Inside Clubhouse, the Clubhouse skeleton for this page; everywhere else the existing one. */
+export default function NewQualifierLoading() {
+  return <ClubhouseSwitch clubhouse={<QualifierFormSkeleton />} fallback={<LegacyNewQualifierLoading />} />;
 }

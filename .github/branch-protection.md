@@ -156,7 +156,7 @@ Advisory checks:
 - `Vercel` and `Vercel Preview Comments` (non-main preview builds skipped —
   see `docs/operations/COST_CONTROLS.md`)
 - ~~`the external review bot`~~ — **DELETED 2026-07-20**; the retired rules directory is gone.
-- `Playwright PR smoke (a11y)` — public routes only, path-filtered within PRs
+- `Playwright PR smoke (a11y)` — public routes only; nightly and `workflow_dispatch` only (`nightly.yml`), not on PRs since 2026-10-07. It was never path-filtered by a `paths:` trigger; from 2026-09-23 to then it ran on push to `main`, dispatch or a PR labelled `ci:e2e`
 - `Playwright (chromium)` — main + manual only
 - `Course picker screenshots` — manual `workflow_dispatch` only
 - `BaseballHelm seeded smoke (advisory)` — main + manual only
@@ -234,6 +234,15 @@ sqlfluff, hadolint) plus CodeQL cover the same hard rules and report on every PR
   `.claude/rules/quality-gates.md` agree); the owner can no longer
   direct-push past required checks. This reverses the "OFF" state recorded
   2026-08-20 above — read the API, not this bullet, before relying on it.
+- Require actions to be pinned to a full-length commit SHA
+  (`sha_pinning_required`): **owner-side, not set by any PR.** Every `uses:` in
+  `.github/` is already pinned (checked 2026-10-07), so turning it on
+  (Settings, Actions, General; or `PUT /repos/{o}/{r}/actions/permissions` with
+  `sha_pinning_required: true`) breaks nothing today and makes a future
+  unpinned action fail at the platform.
+- Merge queue: **none** (2026-10-07). `gh api repos/{o}/{r}/rulesets` is empty,
+  so the `merge_group` triggers were removed from the workflows. Add them back
+  before enabling a queue (docs/CI_RUNBOOK.md, 2026-10-07 section).
 - Allow force pushes: **OFF**. Required status checks, verified against
   commit `1e5d10a34` (2026-09-06): CI aggregate, Review Gate aggregate,
   Analyze (actions / javascript-typescript / python), and

@@ -28,7 +28,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PlayerCoachHelmHome } from '../PlayerCoachHelmHome';
-import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights-shared';
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
@@ -45,6 +45,7 @@ vi.mock('@/app/golf/actions/player-feedback', () => ({
 
 vi.mock('@/app/golf/actions/v3/goals', () => ({
   createGoal: vi.fn(),
+  suggestGoalTarget: vi.fn(),
 }));
 
 // Kept as lightweight stand-ins (see file header) — everything else in this

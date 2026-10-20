@@ -35,7 +35,7 @@
  * the viewport. A pure crossfade sidesteps that hazard entirely.
  */
 
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 import { useRouteRevealMotion } from '@/lib/motion/route-motion';
 import { isBridgeLateralDestination } from '@/lib/bridge/nav-registry';
 

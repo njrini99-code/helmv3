@@ -8,6 +8,7 @@ import { cachedDeployFreshness } from '@/lib/admin/deploy-freshness';
 import { getProductionDeployAt } from '@/lib/admin/auto-resolve';
 import { selectAttention, type AttentionInput } from '@/lib/admin/incidents/attention';
 import { canClaimAllClear } from '@/lib/admin/incidents/sources';
+import { deriveAllClear } from '@/lib/admin/incidents/all-clear';
 import { summarizeFlow } from '@/lib/admin/selfheal-flow';
 import { fetchHeldMigrations } from '@/lib/admin/command-deck/held-migrations';
 import { derivePostureSentence } from '@/lib/admin/command-deck/posture';
@@ -17,7 +18,7 @@ import { buildReleaseWake } from '@/lib/admin/command-deck/release-wake';
 import { buildDecisionInbox } from '@/lib/admin/command-deck/decisions';
 import { selectProofDebt } from '@/app/admin/_components/ProofDebtPanel';
 import { BlindnessBeacon } from '@/app/admin/_components/BlindnessBeacon';
-import { PostureSentenceBanner } from './PostureSentence';
+import { DeckHeadline } from './DeckHeadline';
 import { SystemOrbit } from './SystemOrbit';
 import { AttentionStack, type AttentionStackImpact } from './AttentionStack';
 import { DecisionInboxSummary } from './DecisionInboxSummary';
@@ -155,6 +156,26 @@ export async function CommandDeck() {
     now,
   });
 
+  // The page-level all-clear (`all-clear.ts`). Stricter than `allClear`
+  // above, which only gates the Attention Stack's empty state: every source
+  // must be READING (partial included), the board must hold nothing open in
+  // the window (posture cannot see a fresh defect still inside its triage
+  // window), the release watch must not be an alarm, and the older backlog
+  // must have been read. When it refuses, the posture sentence leads exactly
+  // as before.
+  const headline = deriveAllClear({
+    blindnessNote: board.blindnessNote,
+    coverage: board.coverage,
+    lensCounts: board.lensCounts,
+    staleUnresolved: { readable: board.staleUnresolved.readable, count: board.staleUnresolved.items.length },
+    windowHours: board.windowHours,
+    checkedAt: board.computedAt,
+    postureHealthy: posture.tone === 'healthy',
+    attentionTotal: attentionAll.length,
+    releaseWatch: wake.watchState,
+  });
+  const calm = headline.state !== 'none';
+
   const orbit = buildSystemOrbit({
     incidents: board.incidents,
     freshness: board.freshness,
@@ -186,7 +207,11 @@ export async function CommandDeck() {
 
   return (
     <div className="space-y-4">
-      <PostureSentenceBanner posture={posture} />
+      <DeckHeadline
+        verdict={headline}
+        posture={posture}
+        decisionCount={decisionInbox.readable ? decisionInbox.total : null}
+      />
       <BlindnessBeacon note={board.blindnessNote} coverage={board.coverage} />
 
       <Surface as="section" padding="sm" aria-label="Helm System Orbit">
@@ -207,13 +232,14 @@ export async function CommandDeck() {
             checkedAt={board.computedAt}
             canClaimAllClear={allClear}
             impactByKey={impactByKey}
+            quiet={calm}
           />
         </Surface>
         <Surface as="section" padding="sm" aria-label="Decision inbox">
           <Eyebrow as="h2" tone="tertiary" className="mb-2">
             Decision Inbox
           </Eyebrow>
-          <DecisionInboxSummary summary={decisionInbox} checkedAt={board.computedAt} />
+          <DecisionInboxSummary summary={decisionInbox} checkedAt={board.computedAt} quiet={calm} />
         </Surface>
       </div>
 
@@ -221,14 +247,14 @@ export async function CommandDeck() {
         <Eyebrow as="h2" tone="tertiary" className="mb-2">
           Release Wake
         </Eyebrow>
-        <ReleaseWakeRibbon wake={wake} />
+        <ReleaseWakeRibbon wake={wake} quiet={calm} />
       </Surface>
 
       <Surface as="section" padding="sm" aria-label="Self-heal circuit">
         <Eyebrow as="h2" tone="tertiary" className="mb-2">
           Self-Heal Circuit
         </Eyebrow>
-        <SelfHealCircuitSummary summary={circuit} proofDebt={proofDebt} />
+        <SelfHealCircuitSummary summary={circuit} proofDebt={proofDebt} quiet={calm} />
       </Surface>
     </div>
   );

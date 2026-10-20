@@ -1057,8 +1057,6 @@ export async function clearSyncedData(): Promise<{ cleared: number }> {
   expiryDate.setDate(expiryDate.getDate() - DATA_EXPIRY_DAYS);
   const expiryTimestamp = expiryDate.toISOString();
 
-  let clearedCount = 0;
-
   const clearStore = (storeName: string): Promise<number> => {
     return new Promise((resolve) => {
       const transaction = db.transaction(storeName, 'readwrite');
@@ -1090,7 +1088,7 @@ export async function clearSyncedData(): Promise<{ cleared: number }> {
     clearStore(SHOTS_STORE),
   ]);
 
-  clearedCount = clearedRounds + clearedHoles + clearedShots;
+  const clearedCount = clearedRounds + clearedHoles + clearedShots;
 
   return { cleared: clearedCount };
 }
