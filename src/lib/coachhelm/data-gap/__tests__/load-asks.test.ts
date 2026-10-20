@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const isFlagEnabled = vi.fn(() => false);
+const isFlagEnabled = vi.fn((_id: string): boolean => false);
 vi.mock('@/lib/flags', () => ({ isFlagEnabled: (id: string) => isFlagEnabled(id) }));
 const logServerError = vi.fn();
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: (...a: unknown[]) => logServerError(...a) }));
