@@ -129,7 +129,7 @@ async function recordCoachHelmCorrectionImpl(input: CorrectionInput): Promise<Co
   const coachTeams = await coachTeamsForPlayer(supabase, user.id, playerId);
   if (coachTeams.length > 0) {
     authorRole = 'coach';
-    teamId = insight.team_id && coachTeams.includes(insight.team_id) ? insight.team_id : coachTeams[0];
+    teamId = insight.team_id && coachTeams.includes(insight.team_id) ? insight.team_id : (coachTeams[0] ?? null);
   } else {
     const { data: player } = await supabase
       .from('golf_players')
