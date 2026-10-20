@@ -147,7 +147,21 @@ export function StatsPlayerPhone({
             {/* The season's count, said as such: under it the window (Last 10) counts its own rounds ("5 rounds" over "10 countable rounds", 2026-10-14). */}
             {/* Each part keeps to one line with the dot after it (stats.css): the line breaks only between parts, never
                 "21 rounds this / season", and a wrapped line never starts with a dot. */}
-            {[data.classYear, failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
+            {/* The class year has its own line: beside the season count the line always broke after it, leaving "Sophomore ·"
+                alone on the first line (2026-10-19). */}
+            {data.classYear && (
+              <>
+                <span>{data.classYear}</span>
+                {/* The dot still reads and copies between the two; only the line break is drawn. */}
+                {(!failed || data.handicap != null) && (
+                  <>
+                    <span className="ch-sr-only"> · </span>
+                    <br />
+                  </>
+                )}
+              </>
+            )}
+            {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
               .filter(Boolean)
               .map((part, i, all) => (
                 <Fragment key={i}>

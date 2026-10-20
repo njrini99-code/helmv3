@@ -42,6 +42,29 @@ Held items:     none
   client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for
   both screens.
 
+## 2026-10-19 — Player stats: bests two by two, the class year on its own line
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Four personal-best tiles are two by two. Auto-fit drew three across and
+  left Fewest putts alone on a row (Rounds tab, desktop).
+- Phone header: the class year has its own line. Beside the season count
+  the line always broke after it, leaving "Sophomore ·" alone.
+
+### Verified
+
+WebKit at 390 and 1280; no sideways scroll at 834 to 1440 (default, early
+and self).
+
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
 ```text

@@ -48,7 +48,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { compose, markCallFellBackToTemplate } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidencePacket, buildRecapFieldEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
-import { buildDeterministicRecap, checkRecapStyle } from '@/lib/coachhelm/v3/llm/recap-style';
+import { buildDeterministicRecap, checkRecapStyle, RECAP_MAX_WORDS } from '@/lib/coachhelm/v3/llm/recap-style';
 import { isFlagEnabled } from '@/lib/flags';
 import { pct } from '@/lib/golf/stat-formulas';
 import { loadRecapSeasonContext } from '@/lib/golf/recap-season-context';
@@ -58,6 +58,9 @@ import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-l
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { acquireRoundLockOrWait, type RoundLockOutcome } from '@/lib/coachhelm/round-single-flight-lock';
+
+/** The rewrite asks for headroom under the enforced cap, since models overshoot word counts. */
+const RECAP_SHORTEN_TARGET_WORDS = RECAP_MAX_WORDS - 8;
 
 interface RoundContext {
   id: string;
@@ -636,20 +639,85 @@ Output only the two sentences. Nothing else.`;
   // row 40b). A model reply that breaks them is replaced by the template,
   // which meets them by construction (recap-style.test.ts).
   if (result.used_llm) {
-    const violations = checkRecapStyle(trimmed, [round.course_name ?? '', playerName]);
+    const protectedPhrases = [round.course_name ?? '', playerName];
+    const violations = checkRecapStyle(trimmed, protectedPhrases);
     if (violations.length > 0) {
-      await logServerEvent(`round recap: model reply broke style limits (${violations.join(', ')}); using template`, {
-        action: 'generateRoundRecap.style',
-        featureArea: 'coachhelm',
-        extra: { roundId: round.id, violations, callLogId: result.call_log_id },
-      });
-      // compose() already logged this call as an LLM success; the player gets
-      // the template, so the call log must say so (Bridge 1cd457e7).
+      // compose() already logged this call as an LLM success; the player does
+      // not get this reply, so the call log must say so (Bridge 1cd457e7).
       await markCallFellBackToTemplate(result.call_log_id, { reason: 'style_violation', violations });
-      return { text: fallbackText, used_llm: false, call_log_id: result.call_log_id, claim_packet_engaged };
+
+      // Length is the one limit a second pass reliably fixes. Once the 36-word
+      // cap was enforced (deploy 2026-10-18), 5 of 5 model recaps ran long
+      // (about 68 completion tokens, roughly 45 words) and every player got
+      // the template. One rewrite pass, held to the same evidence, style and
+      // budget gates, turns most of those back into model recaps.
+      if (violations.length === 1 && violations[0] === 'too_many_words') {
+        const retry = await compose(
+          {
+            task: 'round_review',
+            coach_id: coachId,
+            player_id: round.player_id,
+            prompt: buildRecapShortenPrompt(trimmed),
+            evidence: buildRecapFieldEvidence(round, stats, fir, gir, [
+              round.course_name ?? '',
+              round.course_city ?? '',
+              round.course_state ?? '',
+            ]),
+            evidence_packet: evidencePacket,
+            max_completion_tokens: 120,
+          },
+          fallbackText,
+        );
+        const retryText = retry.text.trim();
+        if (retry.used_llm && retryText.length >= 30 && retryText.length <= 400) {
+          const retryViolations = checkRecapStyle(retryText, protectedPhrases);
+          if (retryViolations.length === 0) {
+            return { text: retryText, used_llm: true, call_log_id: retry.call_log_id, claim_packet_engaged };
+          }
+          await markCallFellBackToTemplate(retry.call_log_id, {
+            reason: 'style_violation',
+            violations: retryViolations,
+          });
+          return logStyleFallback(retryViolations, retry.call_log_id, true);
+        }
+        return logStyleFallback(violations, retry.call_log_id ?? result.call_log_id, true);
+      }
+      return logStyleFallback(violations, result.call_log_id, false);
     }
   }
   return { text: trimmed, used_llm: result.used_llm, call_log_id: result.call_log_id, claim_packet_engaged };
+
+  async function logStyleFallback(
+    violations: readonly string[],
+    callLogId: string | null,
+    retried: boolean,
+  ): Promise<LlmRecapOutcome> {
+    await logServerEvent(`round recap: model reply broke style limits (${violations.join(', ')}); using template`, {
+      action: 'generateRoundRecap.style',
+      featureArea: 'coachhelm',
+      extra: { roundId: round.id, violations, callLogId, retried },
+    });
+    return { text: fallbackText, used_llm: false, call_log_id: callLogId, claim_packet_engaged };
+  }
+}
+
+/**
+ * The one rewrite pass for a recap that only broke the word limit. It hands
+ * back the model's own draft, so no new figure can enter: the same field
+ * evidence still verifies every number.
+ */
+function buildRecapShortenPrompt(draft: string): string {
+  return `Rewrite this two-sentence golf recap in ${RECAP_SHORTEN_TARGET_WORDS} words or fewer.
+
+Rules:
+- Exactly two sentences.
+- Keep every number exactly as written, next to the same stat. Add no new numbers or names.
+- No exclamation points, no emojis, no dashes between clauses.
+
+Recap:
+${draft}
+
+Output only the two sentences. Nothing else.`;
 }
 
 /**
