@@ -183,6 +183,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies migration 20260923100000_round_recap_single_flight_lock to each environment and confirms both public.claim_round_recap_lock and public.release_round_recap_lock exist via `pg_proc`. expires_at is a review reminder, not an automatic kill — if the migration still hasn't landed by then, re-date it rather than silently expiring. Once on everywhere and stable for a season, consider promoting to a permanent `release` flag or removing the flag branch entirely (the lock becomes the only code path) — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_recheck_v1",
+    owner: "golf/coachhelm",
+    purpose: "Adds a checkpoint step to the nightly insight-lifecycle cron: a per-player counter (golf_coachhelm_player_state) fires a checkpoint at 3 new countable rounds or 20 new attempts in a shot family; at a checkpoint, putt-distance and par-scoring reads are rechecked on the newest 15 countable rounds (or 90 days, whichever has more attempts), opposing reads are paired as Contradicted, and coach corrections or a hole-total mismatch mark a read Under review until the next checkpoint. It writes evidence.recheck / conflict / under_review on v3 reads and replaces the age-based archive rules for v3 reads with round-based ones (Cleared after 2 more checkpoints, Contradicted-and-retired, Out of date for 3 checkpoints). The insight upsert stops resurrecting a read this step retired as Cleared or Contradicted. No screen reads the new fields yet. Off: nothing is read or written by this code and the age rules (30 / 90 days) run exactly as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on only after the owner applies 20261020122000_golf_coachhelm_player_state.sql (HELD.md row; the code treats the missing table as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag, the age rules for v3 reads and the flag checks once the Cleared / Contradicted / Under review lines render in Clubhouse and the step has run stably for a month.",
+  },
+  {
     feature_id: "coachhelm_round_review_narrative",
     owner: "golf/coachhelm",
     purpose: "Gates the round-review narrative end to end: checked FIRST, before any DB read tied to generation (mirroring the A4 slice 3b pattern — zero cost while off), so no code path selects, claims a lock for, or writes golf_round_reviews.ai_narrative unless this is on. Requires migration 20260923100000_round_recap_single_flight_lock applied in prod — it carries both the shared lock table/functions AND (folded into the same migration, revised in place before either piece was applied anywhere) the ai_narrative column and the golf_coachhelm_llm_calls.task CHECK widening to accept 'round_review_narrative', so neither piece can land half-applied. Until it is applied, turning this on would make every narrative generation attempt fail against columns/functions that don't exist there yet. Off by default in every environment for exactly that reason, same as coachhelm_recap_single_flight_lock's own migration-ordering rationale.",

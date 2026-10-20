@@ -56,6 +56,8 @@ import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isLifecycleRetired } from '@/lib/coachhelm/v3/lifecycle/archive-rules';
+import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
 
 /**
  * Sentinel returned by `upsertInsight` when an active philosophy gate
@@ -307,7 +309,7 @@ async function updateExisting(
     : [];
   const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
 
-  const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
+  const policyDecision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,
     confidence: evidence.confidence,
     movedThisWrite,
@@ -315,6 +317,18 @@ async function updateExisting(
     priorMaturationKeys,
     promotionEnabled,
   });
+  // CoachHelm Slice 3 (`coachhelm_recheck_v1`, off): a read the nightly
+  // lifecycle step retired as Cleared or Contradicted is NOT resurrected by a
+  // re-emit (its lifetime number can still look like a leak); only that step
+  // restores it, when the recheck holds again or the winning read goes away.
+  // The evidence still refreshes on the archived row. Flag off: unchanged.
+  const keepRetired =
+    policyDecision.transition === 'resurrected' &&
+    isLifecycleRetired(existing.lifecycle_state, priorMetadata) &&
+    isRecheckEnabled();
+  const decision: LifecycleWriteDecision = keepRetired
+    ? { next: 'archived', transition: 'none', becomesVisible: false }
+    : policyDecision;
 
   const mergedMetadata: JsonRecord = {
     ...priorMetadata,

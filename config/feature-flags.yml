@@ -697,3 +697,45 @@ flags:
       When the owner turns production on and the old entrance pages are
       retired, delete them, the layout branch that chooses between them, and
       this flag in the same change.
+
+  # CoachHelm supercharge Slice 3: lifecycle (checkpoints, recheck,
+  # Contradicted, Under review, archive rules).
+  # /mnt/project-files/coachhelm/supercharge/07-system-architecture.md §2 D,
+  # 02-accuracy-standard.md §5 and §7, 04-output-specs-and-examples.md §1.1
+  # and Examples 5 and 7. Off everywhere until the owner applies the held
+  # migration.
+  - feature_id: coachhelm_recheck_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Adds a checkpoint step to the nightly insight-lifecycle cron: a
+      per-player counter (golf_coachhelm_player_state) fires a checkpoint at
+      3 new countable rounds or 20 new attempts in a shot family; at a
+      checkpoint, putt-distance and par-scoring reads are rechecked on the
+      newest 15 countable rounds (or 90 days, whichever has more attempts),
+      opposing reads are paired as Contradicted, and coach corrections or a
+      hole-total mismatch mark a read Under review until the next checkpoint.
+      It writes evidence.recheck / conflict / under_review on v3 reads and
+      replaces the age-based archive rules for v3 reads with round-based ones
+      (Cleared after 2 more checkpoints, Contradicted-and-retired, Out of
+      date for 3 checkpoints). The insight upsert stops resurrecting a read
+      this step retired as Cleared or Contradicted. No screen reads the new
+      fields yet. Off: nothing is read or written by this code and the age
+      rules (30 / 90 days) run exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on only after the owner applies
+      20261020122000_golf_coachhelm_player_state.sql (HELD.md row; the code
+      treats the missing table as not available, so the order is not a
+      correctness issue) and runs npm run test:rls. Remove the flag, the age
+      rules for v3 reads and the flag checks once the Cleared / Contradicted
+      / Under review lines render in Clubhouse and the step has run stably
+      for a month.
