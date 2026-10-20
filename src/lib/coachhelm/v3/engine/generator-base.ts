@@ -42,6 +42,7 @@ import {
   diagnoseRootCause,
   resolveInsightFraming,
   sequenceTargetFor,
+  rollingWindowEvidence,
   type RootCauseContext,
 } from './root-cause';
 import { loadRootCauseContext } from './root-cause-context';
@@ -430,6 +431,16 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
    */
   protected readonly attachStandingWhenAvailable: boolean = false;
 
+  /**
+   * Set (in days) by a generator whose aggregate reads a ROLLING window
+   * ending today (`round_date >= now − N days`). Its evidence stamps
+   * `window_days: N` with `window_end` = the newest round, which is not the
+   * window's end, so the root-cause shot load (flag-on only) uses
+   * `rollingWindowEvidence(N)` instead of the stamped fields. Null = the
+   * stamped window is the metric's window. Changes nothing a row stores.
+   */
+  protected readonly rollingWindowDays: number | null = null;
+
   constructor(protected readonly playerId: string) {}
 
   // Subclass-supplied work
@@ -589,7 +600,9 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
     let noWindow = false;
     if (sequenceTargetFor(metric)) {
       try {
-        ctx = await loadRootCauseContext(this.playerId, evidence);
+        const windowSource =
+          this.rollingWindowDays !== null ? rollingWindowEvidence(this.rollingWindowDays) : evidence;
+        ctx = await loadRootCauseContext(this.playerId, windowSource);
         noWindow = ctx === null;
       } catch (err) {
         loadFailed = true;

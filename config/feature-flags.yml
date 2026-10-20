@@ -649,9 +649,11 @@ flags:
       (v3/engine/root-cause.ts, run from BaseGenerator.run()). When on, every
       leak row gets evidence.cause in one of three states: a counted shot
       sequence (a recorded path on at least 4 of at least 10 failures over 3
-      rounds and at least 30% of them), likely from the totals (one par x
-      length context with both arms printed, lift at least 1.25, 10 per arm,
-      Newcombe lower bound above 0), or not traced (a count-down to the
+      rounds, at least 30% of them, across at least 2 rounds; never for tee
+      shots or opening holes), likely from the totals (one par x length
+      context with both arms printed, lift at least 1.25, 10 per arm, Newcombe
+      lower bound above 0 after a Bonferroni widening over the slices tried),
+      or not traced (a count-down to the
       floor, a data gap naming the missing field, or the reason nothing was
       checked); diagnosis.root_cause is the sentence for that state and the
       "is off its benchmark" template is never written; strength and neutral

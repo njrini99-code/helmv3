@@ -348,6 +348,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
         : '';
       return {
         title: 'Putting break check: no directional bias detected',
+        // No bias is the verdict, whichever side's raw rate is lower.
+        framing: 'neutral',
         content: `Across your last ${agg.rounds_played} rounds, no break direction stands out once distance and slope are controlled for.${pooled} Keep working both ways on the practice green.`,
         priority: 'low',
         signature: 'putt_bias:balanced',
@@ -400,6 +402,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
 
     return {
       title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
+      framing: 'leak',
       content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,

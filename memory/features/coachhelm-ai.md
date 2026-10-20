@@ -79,14 +79,20 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
   unchanged):
   - A leak read's cause is counted (a recorded path on ≥ 4 and ≥ 30% of ≥ 10
-    failing events over ≥ 3 rounds), likely from totals (one par × length
-    slice against the rest, both arms ≥ 10 and printed, lift ≥ 1.25,
-    interval above zero) or not traced (a count-down, or a data gap naming
-    the one missing shot field). Contract:
+    failing events over ≥ 3 rounds, seen in ≥ 2 rounds), likely from totals
+    (one par × length slice against the rest, both arms ≥ 10 and printed,
+    lift ≥ 1.25, interval above zero after Bonferroni widening over the
+    slices tried) or not traced (a count-down, or a data gap naming the one
+    missing shot field). Contract:
     `docs/architecture/coachhelm-evidence-contract.md`.
+  - Paths with an unrecorded step, no costly shot, or the ordinary putt miss
+    are not patterns. Tee (`sg_ott`) and opening-hole reads stop at likely; a
+    repeated path there is `pattern_only`.
   - Counted maps to diagnosis level "observed", likely to "hypothesis". A
-    not-traced read is never drawn as a cause (`reads/cause-state.ts`).
-  - No stamped window means nothing is traced; there is no one-year fallback.
+    not-traced read is never drawn as a cause (`reads/cause-state.ts`); the
+    coach `DiagnosisPanel` shows it with no chip and no "Likely because".
+  - No stamped window (or a zero-day one) means nothing is traced; there is
+    no one-year fallback. Rolling generators load their own N-day window.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
 

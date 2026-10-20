@@ -255,7 +255,8 @@ export interface InsightCoachCopy {
  *   population (≥ 4 occurrences and ≥ 30% of ≥ 10 events over ≥ 3 rounds).
  * - `inferred_hypothesis` ("likely from totals"): no counted path, but the
  *   failures concentrate in one context with both arms counted (lift ≥ 1.25,
- *   ≥ 10 per arm, Newcombe 95% lower bound of the difference > 0).
+ *   ≥ 10 per arm, Newcombe lower bound of the difference > 0, family-wise 95% over the
+ *   slices tried).
  * - `not_traced`: neither; `not_traced_reason` says why (a count-down to the
  *   floor, a data gap naming the one missing field, …).
  */
@@ -268,6 +269,9 @@ export type InsightNotTracedReason =
   | 'data_gap'
   /** Population and fields are there; no single path leads. */
   | 'no_leading_path'
+  /** A path repeats, but this family may not claim a counted cause (tee shots,
+   *  opening holes: ladder cap, supercharge 02 §6-7). */
+  | 'pattern_only'
   /** No recorded shot path measures this metric (e.g. practice vs tournament). */
   | 'no_shot_path'
   /** The read carries no stamped window, so nothing was checked. */
@@ -282,7 +286,8 @@ export interface InsightCauseAlternative {
   lift: number | null;
   arm_a: { n: number; failures: number; rate: number };
   arm_b: { n: number; failures: number; rate: number };
-  /** Newcombe 95% lower bound of `arm_a.rate − arm_b.rate`, as a fraction. */
+  /** Newcombe lower bound of `arm_a.rate − arm_b.rate`, as a fraction,
+   *  Bonferroni-widened over the slices tried (family-wise 95%). */
   lower_bound: number;
   upper_bound: number;
 }
@@ -292,7 +297,8 @@ export interface InsightDataGap {
   field: string;
   /** Which shots the one tap belongs on. */
   shot_filter: Record<string, unknown>;
-  /** Tagged failures needed before the cause can be traced. */
+  /** How many of the next failures must carry the field for coverage to
+   *  reach 60%: the smallest x with (have_count + x) / (of + x) ≥ 0.6. */
   target_count: number;
   /** Failures that already carry the field. */
   have_count: number;

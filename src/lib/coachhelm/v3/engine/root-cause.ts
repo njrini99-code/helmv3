@@ -41,7 +41,8 @@
  *
  * CORROBORATION for (2): both arms hold >= LIKELY_MIN_ARM_N (10) attempts,
  * the slice fails at >= LIKELY_MIN_LIFT (1.25) times the rest's rate, and the
- * Newcombe 95% lower bound of the rate difference is above 0 (supercharge 04
+ * Newcombe lower bound of the rate difference, Bonferroni-widened over the
+ * slices the narrowing tried (family-wise 95%), is above 0 (supercharge 04
  * §2, "Corroborated association").
  *
  * WINDOW: the scope is the window the insight's own evidence stamps. PR
@@ -154,6 +155,10 @@ export interface SequenceTarget {
   populationLabel: string;
   /** Plain noun phrase for the whole checked population. */
   universeLabel: string;
+  /** Highest cause state this family may claim (ladder caps, supercharge 02
+   *  §6-7 #15/#19). A repeated tee-shot or opening-hole path is a pattern,
+   *  not a counted cause, so those families stop at "likely". */
+  maxState?: 'inferred_hypothesis';
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -172,6 +177,7 @@ export function sequenceTargetFor(metric: string): SequenceTarget | null {
       rollup: 'tee_to_next',
       populationLabel: 'costly tee shots on par 4s and 5s',
       universeLabel: 'tee shots on par 4s and 5s',
+      maxState: 'inferred_hypothesis',
     };
   }
   const approach = metric.match(/^approach_proximity_(50_125ft|125_175ft|175_plus_ft)$/);
@@ -239,6 +245,7 @@ export function sequenceTargetFor(metric: string): SequenceTarget | null {
       rollup: 'coverage',
       populationLabel: 'over-par opening holes',
       universeLabel: 'opening holes',
+      maxState: 'inferred_hypothesis',
     };
   }
   return null;
@@ -295,9 +302,10 @@ function fmtDir(dir: string | null): string {
 }
 
 /** Coarse leave for a RECOVERY shot (a chip/pitch/bunker shot), wider than
- *  the putt buckets so a repeated path actually repeats. */
-function recoveryLeave(feet: number | null): string {
-  if (feet === null) return 'an unrecorded distance';
+ *  the putt buckets so a repeated path actually repeats. Null when the leave
+ *  is not recorded: an unrecorded step is not a path (review S1). */
+function recoveryLeave(feet: number | null): string | null {
+  if (feet === null) return null;
   if (feet < 6) return 'inside 6 ft';
   if (feet < 20) return '6–20 ft';
   return '20+ ft';
@@ -313,9 +321,10 @@ function lieWord(lie: string | null): string {
   return 'trouble';
 }
 
-/** Coarse on-green leave bucket so repeated paths actually repeat. */
-function leaveBucket(feet: number | null): string {
-  if (feet === null) return 'an unrecorded distance';
+/** Coarse on-green leave bucket so repeated paths actually repeat. Null when
+ *  the leave is not recorded (the putt family's data gap names it). */
+function leaveBucket(feet: number | null): string | null {
+  if (feet === null) return null;
   if (feet < 3) return 'inside 3 ft';
   if (feet < 6) return '3–6 ft';
   if (feet < 10) return '6–10 ft';
@@ -349,12 +358,21 @@ function shotStepLabel(s: ShotFact): string {
   return 'shot';
 }
 
-/** "chip to 10–20 ft" / "chip stayed in the rough". */
-function recoveryStep(s: ShotFact): string {
+/** "chip to 10–20 ft" / "chip stayed in the rough"; null when the step
+ *  found the green but its leave is not recorded. */
+function recoveryStep(s: ShotFact): string | null {
   const label = shotStepLabel(s);
   if (isHoled(s)) return `${label} holed`;
-  if (onGreen(s)) return `${label} to ${recoveryLeave(s.distance_to_hole_after_feet)}`;
+  if (onGreen(s)) {
+    const leave = recoveryLeave(s.distance_to_hole_after_feet);
+    return leave === null ? null : `${label} to ${leave}`;
+  }
   return `${label} stayed off the green`;
+}
+
+/** Join path steps; any unrecorded step makes the whole path unrecorded. */
+function joinSteps(steps: ReadonlyArray<string | null>): string | null {
+  return steps.every((x): x is string => x !== null) ? steps.join(' → ') : null;
 }
 
 function eventFor(events: readonly SequenceEvent[], shotNumber: number | null): SequenceEvent | undefined {
@@ -362,7 +380,9 @@ function eventFor(events: readonly SequenceEvent[], shotNumber: number | null): 
   return events.find((e) => e.shotNumbers.includes(shotNumber));
 }
 
-function costlyPath(events: readonly SequenceEvent[]): string {
+/** The costly steps of a hole, or null when no single step was costly: a
+ *  hole whose strokes are spread thin has no path to count (review S1). */
+export function costlyPath(events: readonly SequenceEvent[]): string | null {
   const labels: string[] = [];
   for (const e of events) {
     const costly = e.kind === 'penalty' || (e.measuredContribution !== null && e.measuredContribution <= -COSTLY_EVENT_STROKES);
@@ -370,7 +390,7 @@ function costlyPath(events: readonly SequenceEvent[]): string {
     const label = EVENT_LABEL[e.kind];
     if (labels[labels.length - 1] !== label) labels.push(label);
   }
-  return labels.length ? labels.join(' → ') : 'no single costly shot (strokes spread across the hole)';
+  return labels.length ? labels.join(' → ') : null;
 }
 
 function holeOccurrences(
@@ -425,7 +445,7 @@ function holeOccurrences(
         const ev = eventFor(events, s.shot_number);
         let pattern: string | null = null;
         if (failed) {
-          const steps = [`approach missed${fmtDir(s.miss_direction)}`];
+          const steps: Array<string | null> = [`approach missed${fmtDir(s.miss_direction)}`];
           let j = i + 1;
           while (j < shots.length && shots[j]!.shot_type !== 'putting') {
             const r = shots[j]!;
@@ -437,8 +457,8 @@ function holeOccurrences(
             j += 1;
           }
           const putts = shots.slice(j).filter((x) => x.shot_type === 'putting').length;
-          if (!steps[steps.length - 1]!.endsWith('holed')) steps.push(puttsText(putts));
-          pattern = steps.join(' → ');
+          if (!steps[steps.length - 1]?.endsWith('holed')) steps.push(puttsText(putts));
+          pattern = joinSteps(steps);
         }
         out.push({
           ...base,
@@ -462,9 +482,17 @@ function holeOccurrences(
       let pattern: string | null = null;
       if (failed) {
         const more = shots.slice(idx + 1).filter((x) => x.shot_type === 'putting').length;
+        const leave = leaveBucket(first.distance_to_hole_after_feet);
+        // A miss that leaves a tap-in and is holed next is the ordinary
+        // result of a missed putt, not a path that explains a leak (review
+        // S4); an unrecorded leave is not a path at all (S1). Both stay in
+        // the failure count, so they still weigh against any counted path.
+        const ordinary = leave === 'inside 3 ft' && more === 1;
         pattern =
-          `first putt missed${fmtDir(first.miss_direction)}, leaving ${leaveBucket(first.distance_to_hole_after_feet)}` +
-          ` → ${more === 1 ? 'holed the next putt' : `${more} more putts`}`;
+          leave === null || ordinary
+            ? null
+            : `first putt missed${fmtDir(first.miss_direction)}, leaving ${leave}` +
+              ` → ${more === 1 ? 'holed the next putt' : `${more} more putts`}`;
       }
       out.push({
         ...base,
@@ -492,14 +520,14 @@ function holeOccurrences(
         const failed = toHoleOut > 2;
         let pattern: string | null = null;
         if (failed) {
-          const steps = [recoveryStep(s)];
+          const steps: Array<string | null> = [recoveryStep(s)];
           let j = i + 1;
           while (j < shots.length && shots[j]!.shot_type !== 'putting') {
             steps.push(shots[j]!.is_penalty ? 'penalty stroke' : recoveryStep(shots[j]!));
             j += 1;
           }
           steps.push(puttsText(shots.slice(j).filter((x) => x.shot_type === 'putting').length));
-          pattern = steps.join(' → ');
+          pattern = joinSteps(steps);
         }
         out.push({ ...base, failed, pattern, strokes: null });
       }
@@ -541,6 +569,8 @@ function holeOccurrences(
 /** Raised from PR #2073's 3 / 25% (supercharge 00 decision 6, 07 §5). */
 export const MIN_PATTERN_OCCURRENCES = 4;
 export const MIN_PATTERN_SHARE = 0.3;
+/** Rounds a counted path must span: one round is one day (02 §2, review S8). */
+export const MIN_PATTERN_ROUNDS = 2;
 
 /** Fewest steps a reported path may have. A shot-level family's path must
  *  be a real SEQUENCE (the failing shot AND what followed) — a lone
@@ -558,8 +588,10 @@ const MIN_PATH_STEPS: Record<SequenceFamily, number> = {
   opening_hole: 1,
 };
 
-function qualifies(count: number, of: number): boolean {
-  return count >= MIN_PATTERN_OCCURRENCES && count / Math.max(1, of) >= MIN_PATTERN_SHARE;
+function qualifies(count: number, of: number, roundsN: number): boolean {
+  return (
+    count >= MIN_PATTERN_OCCURRENCES && count / Math.max(1, of) >= MIN_PATTERN_SHARE && roundsN >= MIN_PATTERN_ROUNDS
+  );
 }
 
 /**
@@ -611,7 +643,7 @@ export function topPath(
     b: [string, { count: number; rounds: Set<string> }],
   ) => b[1].count - a[1].count || b[1].rounds.size - a[1].rounds.size || a[0].localeCompare(b[0]);
   const qualifying = entries
-    .filter(([, c]) => c.steps >= minSteps && qualifies(c.count, failed.length))
+    .filter(([, c]) => c.steps >= minSteps && qualifies(c.count, failed.length, c.rounds.size))
     .sort((a, b) => b[1].steps - a[1].steps || byStrength(a, b));
   const pick = qualifying[0] ?? entries.filter(([, c]) => c.full > 0).sort(byStrength)[0];
   return pick
@@ -709,7 +741,7 @@ export function observeSequence(
       `${failed.length} ${target.populationLabel} across ${rounds(failureRounds)} (need ${SEQUENCE_MIN_EVENTS} over ${SEQUENCE_MIN_ROUNDS} rounds)`,
     );
   }
-  if (!top || !qualifies(top.count, failed.length)) {
+  if (!top || !qualifies(top.count, failed.length, top.rounds)) {
     shortfalls.push(
       top
         ? `no single follow-up path repeats often enough (most common: "${top.pattern}", ${top.count} of ${failed.length})`
@@ -798,13 +830,17 @@ function isDate(s: string | undefined | null): s is string {
  * when the row stamps none.
  *
  *   - `window_start` is a date → `[window_start, window_end or today]`;
- *   - else `window_days >= 0` with `window_end` a date → `[end − days, end]`
+ *   - else `window_days > 0` with `window_end` a date → `[end − days, end]`
  *     (the lifetime generators stamp the span and the last round);
- *   - else `window_days > 0` → the rolling `[today − days, today]`
- *     (approach-miss / putt-bias stamp `''` dates with a 90-day window);
- *   - else null. PR #2073 fell back to the last 12 months here, which read a
- *     window the metric never described (supercharge 07 §5); the caller now
- *     says "not traced: no stamped window" instead.
+ *   - else `window_days > 0` → the rolling `[today − days, today]`;
+ *   - else null: a span of 0 days is no window, not `[end, end]` (review S6).
+ *     PR #2073 fell back to the last 12 months here, which read a window the
+ *     metric never described (supercharge 07 §5); the caller now says "not
+ *     traced: no stamped window" instead.
+ *
+ * Rolling generators (window ending today, `window_end` = newest round) do
+ * not go through the stamped fields: the base passes
+ * `rollingWindowEvidence(days)` (`BaseGenerator.rollingWindowDays`).
  */
 export function scopeForEvidence(
   playerId: string,
@@ -817,7 +853,7 @@ export function scopeForEvidence(
   let startStr: string;
   if (isDate(evidence.window_start)) {
     startStr = evidence.window_start.slice(0, 10);
-  } else if (Number.isFinite(days) && (days > 0 || (days === 0 && hasEnd))) {
+  } else if (Number.isFinite(days) && days > 0) {
     const end = new Date(`${endStr}T00:00:00Z`);
     startStr = dateOnly(new Date(end.getTime() - days * 86400_000));
   } else {
@@ -832,6 +868,18 @@ export function scopeForEvidence(
     },
     label: `${startStr} to ${endStr}`,
   };
+}
+
+/** The evidence-window fields of a rolling `days`-day window ending today:
+ *  what `scopeForEvidence` must read for a generator whose aggregate is
+ *  `round_date >= now − days` (its stamped `window_end` is the newest round). */
+export function rollingWindowEvidence(
+  days: number,
+  now: Date = new Date(),
+): Pick<InsightEvidence, 'window_start' | 'window_end' | 'window_days'> {
+  const end = dateOnly(now);
+  const start = dateOnly(new Date(new Date(`${end}T00:00:00Z`).getTime() - days * 86400_000));
+  return { window_start: start, window_end: end, window_days: days };
 }
 
 // ---------------------------------------------------------------------------
@@ -936,10 +984,18 @@ export function observedAction(target: SequenceTarget, pattern: string): string 
       return `Work on the tee shot that starts this path (${first}): target and club choice on those holes`;
     case 'approach':
       return `Practice the shot these misses leave you (${first}) and the recovery that follows`;
-    case 'putt':
-      return /inside 3 ft/.test(pattern)
-        ? `Misses already finish inside 3 ft, so spend the putting block on start line from ${target.universeLabel.replace('first putts from ', '')}`
-        : `Work on pace from ${target.universeLabel.replace('first putts from ', '')}: the misses leave the next putt outside 3 ft`;
+    case 'putt': {
+      // Only lag pace is a sourced lever: from 25+ ft, 3-putts are driven by
+      // speed control, not line (docs/v3-research-golf-domain.md, "Lag
+      // Putting (>25 ft)"). Start line and other stroke mechanics cannot be
+      // inferred from outcome data (same doc, engine constraint 5), so the
+      // shorter bands get a neutral practice line.
+      const range = target.universeLabel.replace('first putts from ', '');
+      const lag = target.puttRange !== undefined && target.puttRange[0] >= 25;
+      return lag
+        ? `Work on lag pace from ${range}: aim to leave the second putt inside 3 ft`
+        : `Practice first putts from ${range}`;
+    }
     case 'sand':
       return `Practice greenside bunker shots to a two-putt-or-better leave (${first})`;
     case 'penalty':
@@ -959,6 +1015,34 @@ export function observedAction(target: SequenceTarget, pattern: string): string 
 export const LIKELY_MIN_ARM_N = 10;
 /** Slice failure rate ÷ rest failure rate a "likely" association needs. */
 export const LIKELY_MIN_LIFT = 1.25;
+/** Family-wise error rate the "likely" interval holds across the slices tried. */
+export const LIKELY_FAMILY_ALPHA = 0.05;
+
+/** Standard normal quantile: Acklam's rational approximation (relative
+ *  error under 1.2e-9). Pure. */
+export function normalQuantile(p: number): number {
+  if (!(p > 0 && p < 1)) throw new RangeError(`normalQuantile: p must be in (0, 1), got ${p}`);
+  const a = [-3.969683028665376e1, 2.209460984245205e2, -2.759285104469687e2, 1.38357751867269e2, -3.066479806614716e1, 2.506628277459239];
+  const b = [-5.447609879822406e1, 1.615858368580409e2, -1.556989798598866e2, 6.680131188771972e1, -1.328068155288572e1];
+  const c = [-7.784894002430293e-3, -3.223964580411365e-1, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [7.784695709041462e-3, 3.224671290700398e-1, 2.445134137142996, 3.754408661907416];
+  const lo = 0.02425;
+  if (p < lo) {
+    const q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]! * q + c[1]!) * q + c[2]!) * q + c[3]!) * q + c[4]!) * q + c[5]!) / ((((d[0]! * q + d[1]!) * q + d[2]!) * q + d[3]!) * q + 1);
+  }
+  if (p > 1 - lo) return -normalQuantile(1 - p);
+  const q = p - 0.5;
+  const r = q * q;
+  return ((((((a[0]! * r + a[1]!) * r + a[2]!) * r + a[3]!) * r + a[4]!) * r + a[5]!) * q) /
+    (((((b[0]! * r + b[1]!) * r + b[2]!) * r + b[3]!) * r + b[4]!) * r + 1);
+}
+
+/** Two-sided z for a Bonferroni-adjusted interval over `looks` comparisons. */
+export function bonferroniZ(looks: number, alpha: number = LIKELY_FAMILY_ALPHA): number {
+  const k = Math.max(1, Math.floor(looks));
+  return normalQuantile(1 - alpha / (2 * k));
+}
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
@@ -976,15 +1060,20 @@ function pctText(x: number): string {
  * The narrowing's chosen par × length slice as a corroborated association,
  * or null when it does not clear the gate (module doc): both arms
  * >= LIKELY_MIN_ARM_N attempts, slice rate >= LIKELY_MIN_LIFT × the rest's,
- * and the Newcombe 95% lower bound of the difference > 0. Only the one slice
- * the narrowing already picked is tested, so this adds a single look per read.
+ * and the Newcombe lower bound of the difference > 0. The narrowing picked
+ * its slice after looking at every par and par × length slice
+ * (`sliceChecks`), so the chosen one is the best of several looks, not one.
+ * The interval is therefore Bonferroni-widened over the slices tried (a
+ * family-wise 95%), which keeps "likely" near its nominal rate under a true
+ * null. Benjamini-Hochberg across reads arrives with Slice 1.
  */
 export function likelyFromTotals(n: Narrowing | null): InsightCauseAlternative | null {
   const sl = n?.slice;
   if (!n || !sl || sl.restRate === null) return null;
   if (sl.attempts < LIKELY_MIN_ARM_N || sl.restAttempts < LIKELY_MIN_ARM_N) return null;
   if (sl.rate < LIKELY_MIN_LIFT * sl.restRate || sl.rate <= sl.restRate) return null;
-  const ci = proportionDiffInterval(sl.failures, sl.attempts, sl.restFailures, sl.restAttempts);
+  const looks = Math.max(1, n.sliceChecks?.length ?? 1);
+  const ci = proportionDiffInterval(sl.failures, sl.attempts, sl.restFailures, sl.restAttempts, bonferroniZ(looks));
   if (!ci || !(ci.low > 0)) return null;
   return {
     label: likelyLabel(n.subject, sl.label),
@@ -1024,8 +1113,17 @@ function likelySentence(n: Narrowing, alt: InsightCauseAlternative, slice: strin
 
 /** Share of failures that must carry an optional field (supercharge 04 §2). */
 export const DATA_GAP_MIN_COVERAGE = 0.6;
-/** Fewest tagged failures a data-gap prompt asks for. */
-export const DATA_GAP_MIN_TARGET = 10;
+
+/**
+ * How many of the NEXT failures must carry the field for coverage to reach
+ * DATA_GAP_MIN_COVERAGE: the smallest x with (have + x) / (of + x) ≥ 0.6.
+ * New failures join the population too, so 60% of today's population is not
+ * enough (5 of 30 tagged + 18 more = 23 of 48, 48%). In integers:
+ * 5(have + x) ≥ 3(of + x) ⇔ x ≥ (3·of − 5·have) / 2. At least 1.
+ */
+export function dataGapTagsNeeded(have: number, of: number): number {
+  return Math.max(1, Math.ceil((3 * of - 5 * have) / 2));
+}
 
 const SHOT_NOUN: Partial<Record<SequenceFamily, string>> = { tee: 'tee shot', approach: 'approach', putt: 'putt' };
 
@@ -1055,9 +1153,9 @@ function shotFilterFor(target: SequenceTarget): Record<string, unknown> {
 
 /**
  * The field recorded on the smallest share of the failures, when that share
- * is below DATA_GAP_MIN_COVERAGE; else null. `target_count` is the tagged
- * failures that would lift the current population past the gate (never fewer
- * than DATA_GAP_MIN_TARGET); `have_count` the ones already tagged.
+ * is below DATA_GAP_MIN_COVERAGE; else null. `target_count` is how many of
+ * the next failures must be tagged to clear the gate (`dataGapTagsNeeded`);
+ * `have_count` the ones already tagged.
  */
 export function dataGapFor(obs: SequenceObservation): InsightDataGap | null {
   const worst = obs.fieldCoverage
@@ -1069,7 +1167,7 @@ export function dataGapFor(obs: SequenceObservation): InsightDataGap | null {
   return {
     field: worst.field,
     shot_filter: shotFilterFor(obs.target),
-    target_count: Math.max(DATA_GAP_MIN_TARGET, Math.ceil(DATA_GAP_MIN_COVERAGE * worst.of)),
+    target_count: dataGapTagsNeeded(worst.have, worst.of),
     have_count: worst.have,
     prompt,
   };
@@ -1234,9 +1332,19 @@ export function notTraced(
     };
   }
   const top = obs.top;
+  if (target.maxState === 'inferred_hypothesis' && obs.observed && top) {
+    const what = target.family === 'tee' ? 'tee-shot' : target.family === 'opening_hole' ? 'opening-hole' : 'shot';
+    return {
+      ...none,
+      reason: 'pattern_only',
+      sentence:
+        `Not traced as a cause: "${top.pattern}" repeats on ${top.count} of ${obs.failures} ${target.populationLabel} ` +
+        `across ${rounds(top.rounds)}, but a repeated ${what} path is a pattern, not a measured cause.`,
+    };
+  }
   const lead =
     `Not traced yet: ${obs.failures} ${target.populationLabel} over ${rounds(obs.failureRounds)} checked, and no single path ` +
-    `accounts for ${MIN_PATTERN_OCCURRENCES} of them and ${Math.round(MIN_PATTERN_SHARE * 100)}%` +
+    `accounts for ${MIN_PATTERN_OCCURRENCES} of them and ${Math.round(MIN_PATTERN_SHARE * 100)}% across ${MIN_PATTERN_ROUNDS} rounds` +
     (top ? ` (most common: "${top.pattern}", ${top.count} of ${obs.failures})` : '');
   const rollupNote = obs.rollupStatus !== 'supported' && obs.shortfalls[0] ? `; ${obs.shortfalls[0]}` : '';
   return { ...none, reason: 'no_leading_path', sentence: `${lead}${rollupNote}.` };
@@ -1331,8 +1439,8 @@ export function diagnoseRootCause(input: {
   const narrowing = ctx ? narrowingFor(target, ctx.facts, ctx.holes) : null;
   const windowLabel = ctx?.windowLabel ?? null;
 
-  // 1. Counted.
-  if (obs && obs.observed && obs.top && ctx) {
+  // 1. Counted. Capped families (`maxState`) never claim it.
+  if (obs && obs.observed && obs.top && ctx && target?.maxState === undefined) {
     const top = obs.top;
     return {
       kind: 'diagnosis',
