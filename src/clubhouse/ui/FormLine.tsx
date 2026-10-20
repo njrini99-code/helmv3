@@ -1,8 +1,11 @@
 import { monotonePath } from '../lib/chart';
+import { deltaTone, halvesChange } from '../lib/stats-signal';
 /**
- * Last-rounds form line: smooth, coloured by outcome (green when scoring
- * falls, amber when it rises, ink when flat), drawn against a dashed mean.
- * Lower scores sit lower, like a scoreboard reads.
+ * Last-rounds form line: smooth, drawn against a dashed mean. Lower scores
+ * sit higher (better is up, the one scoring-axis convention). It is green
+ * or amber only when the newer half of the scores moved from the older half
+ * by more than that change's standard error (`halvesChange`, `deltaTone`:
+ * stats visuals Q4), green when scoring fell; otherwise ink, no clear change.
  */
 export function FormLine({
   data,
@@ -35,8 +38,9 @@ export function FormLine({
   const y = (v: number) => pad + ((v - lo) / (hi - lo)) * (height - pad * 2);
   const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
   const avg = data.reduce((a, b) => a + b, 0) / data.length;
-  const change = data[data.length - 1]! - data[0]!;
-  const tone = change < -0.5 ? 'gain' : change > 0.5 ? 'loss' : 'flat';
+  const half = halvesChange(data);
+  const signal = deltaTone(half?.delta, half?.se, true);
+  const tone = signal === 'is-gain' ? 'gain' : signal === 'is-loss' ? 'loss' : 'flat';
   const line = monotonePath(pts);
   const [ex, ey] = pts[pts.length - 1]!;
   return (

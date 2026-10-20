@@ -8,10 +8,11 @@ import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
-import { hasHoleScores } from './round-scope';
+import { hasHoleScores, recordedPutts } from './round-scope';
 import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
 import { filterFor } from './stats-filter';
-import { weightedMean } from './stats-weight';
+import { weightedMean, windowChangeSe } from './stats-weight';
+import { changeSe } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
@@ -142,6 +143,8 @@ export interface ChTeamForm {
   avg: number;
   /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
+  /** Each change's standard error (stats visuals Q4): a change is green or amber only when it clears it. Absent: neutral. */
+  deltaSe?: number | null;
   /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
@@ -149,8 +152,9 @@ export interface ChTeamForm {
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
   basis: { rounds: number; from: string; to: string; girRounds: number; puttsRounds: number };
   /** Greens in regulation, percent; delta in points. */
-  gir: { pct: number | null; delta: number | null };
-  putts: { avg: number | null; delta: number | null };
+  gir: { pct: number | null; delta: number | null; se?: number | null };
+  /** Per 18 holes, over the rounds with putts recorded (`recordedPutts`: a round written 0 putts has none), as Stats counts them. */
+  putts: { avg: number | null; delta: number | null; se?: number | null };
 }
 
 /** The team's zone and its date when the page was read. */
@@ -396,7 +400,8 @@ export async function latestWithHoles(
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
       gir: r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
-      putts: r.total_putts,
+      // A round written 0 putts has none recorded (recordedPutts), as on Stats.
+      putts: recordedPutts(r.total_putts),
       sg: r.strokes_gained_total,
     };
   });
@@ -724,7 +729,10 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
   };
   const scoreOf = (r: ChRound) => r.total_score;
-  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? r.total_putts : null);
+  // Putts as Stats counts them: per 18, and a round written 0 putts has none recorded (recordedPutts, cachedPutts).
+  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? recordedPutts(r.total_putts) : null);
+  // A round's own green rate, for the standard error of the greens' change.
+  const girRates = (list: ChRound[]) => list.filter(hasGir).map((r) => ((r.total_gir as number) / (r.total_gir_possible as number)) * 100);
   const comparable = prev.length > 0;
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
@@ -746,10 +754,11 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   return {
     avg,
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
+    deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,
     line,
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
-    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null },
-    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null },
+    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
+    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null, se: comparable ? windowChangeSe(lastPaired, prev, puttsOf, null) : null },
   };
 }

@@ -15,7 +15,8 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
+import { formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
 import { CH_DUR, CH_EASE } from '../../lib/motion';
@@ -216,9 +217,12 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   );
 }
 
-/** The class a change takes: green when it moved the good way, amber the other, none when it rounds to zero (D-42, F-54). */
+/**
+ * The class a change takes: green when it moved the good way by more than its standard error, amber the other way, none when it
+ * is no clear change (stats visuals Q4; D-42, F-54).
+ */
 function toneClass(f: ChFigure): string {
-  const t = changeTone(f.delta, f.lowerIsBetter, f.digits);
+  const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
   return t === 'is-gain' ? 'ch-gain' : t === 'is-loss' ? 'ch-loss' : '';
 }
 
@@ -243,7 +247,7 @@ function Hero({ figures }: { figures: readonly ChFigure[] }) {
       <dd className="ch-stm-hero__c" aria-hidden={none ? true : undefined}>
         {!none && (
           <>
-            <b className={'ch-num ' + toneClass(f)}>{formatSigned(f.delta, f.digits)}</b> {f.context}
+            <b className={'ch-num ' + toneClass(f)}>{formatSigned(f.delta, f.digits)}</b> {deltaWords(f.delta, deltaTone(f.delta, f.se, f.lowerIsBetter), f.context || 'vs previous 10')}
           </>
         )}
       </dd>

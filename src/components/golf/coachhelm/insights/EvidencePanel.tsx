@@ -34,6 +34,7 @@ import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
 import { applyTourBasis } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { DiagnosisPanel } from './DiagnosisPanel';
+import { causeStateOf } from '@/lib/coachhelm/reads/cause-state';
 import { formatValue } from './format-value';
 
 /** A real, finite number. `typeof NaN === 'number'`, so the typeof check alone
@@ -585,6 +586,7 @@ export function EvidencePanel({
             diagnosis={evidence.diagnosis}
             confidence={evidence.confidence}
             strokesImpact={Math.abs(safeImpact)}
+            causeState={causeStateOf(evidence)}
           />
         </div>
       ) : null}
