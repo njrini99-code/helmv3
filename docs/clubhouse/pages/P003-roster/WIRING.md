@@ -122,6 +122,7 @@ rebuilt for the role is not offered:
 | `screens/roster/RosterRequests.tsx` | The desktop join requests card | 30610, 31301 |
 | `screens/roster/useJoinRequests.ts` | The requests, optimistic; Approve and Decline; Approve all | 30302, 30602, 30603, 30607, 31301, 31401, 31403 |
 | `screens/roster/RosterPhone.tsx` | The phone list, banner, requests sheet (opened once by the bell's `?tab=requests`) and ⋯ sheet | 30102, 30302, 30401, 30608 to 30610, 31901 |
+| `screens/roster/Roster.tsx`, `RosterRequests.tsx` (`?tab=requests` on desktop) | Desktop: the bell's `?tab=requests` focuses the requests card and the param is dropped | 30102 |
 | `screens/roster/RosterProfile.tsx` | The phone's pushed profile | 30405, 30609, 31203 |
 | `screens/roster/RosterSkeleton.tsx` | Route skeleton | 30201 |
 | `screens/roster/RosterNoTeam.tsx` | No team (`viewer`: a coach's or a player's words) | CH-3306, CH-3308 |

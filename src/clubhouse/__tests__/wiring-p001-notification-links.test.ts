@@ -146,8 +146,9 @@ describe('P001 the query a notification carries is read by its screen', () => {
     expect(readFileSync(join(ROOT, 'src/clubhouse/screens/messages/Messages.tsx'), 'utf8')).toContain("params.get('conversation')");
   });
 
-  it('Roster reads ?tab=requests (the phone opens the requests sheet; desktop draws the requests card at the top)', () => {
+  it('Roster reads ?tab=requests (the phone opens the requests sheet; desktop focuses the requests card)', () => {
     expect(readFileSync(join(ROOT, 'src/clubhouse/screens/roster/RosterPhone.tsx'), 'utf8')).toContain("searchParams.get('tab') === 'requests'");
+    expect(readFileSync(join(ROOT, 'src/clubhouse/screens/roster/Roster.tsx'), 'utf8')).toContain("searchParams.get('tab') !== 'requests'");
     expect(isRebuilt('/golf/dashboard/roster', 'coach')).toBe(true);
   });
 });

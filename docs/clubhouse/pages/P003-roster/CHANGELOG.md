@@ -1,5 +1,30 @@
 # P003 — Roster: changelog
 
+## 2026-10-20 — The bell's join-request link lands on the requests on desktop
+
+```text
+Design package: none (2026-10-17 audit, STATUS.md page readiness: "roster?tab=requests from the join-request notification is ignored")
+PR/commit:      claude/clubhouse-edgecases
+Contract IDs:   30102 (DEEP_LINK_OPENS_PROFILE) text
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Desktop: `?tab=requests` (the bell's join-request notice, `createTeamJoinRequest`) takes focus to the join requests card under the header, scrolling it into view if needed, and the param is dropped so a reload or Back shows the roster as it is (`Roster.tsx`; the card takes a ref and `tabIndex={-1}` in `RosterRequests.tsx`). With no request waiting there is no card and nothing moves. The card is a reading destination: no focus ring is drawn for it (`roster.css`), as for headings.
+- The phone already opened the requests sheet (#2201); the desktop handler reads the media query, not the first render's guess, so it never spends a phone's param.
+
+### Why
+
+- The 2026-10-17 audit listed the link as ignored. The phone was fixed on #2201; desktop still left `?tab=requests` in the address and did nothing with it.
+
+### Verification
+
+- `src/clubhouse/screens/roster/__tests__/roster-requests-link.test.tsx` (new, 4; 3 failed before the change): focus on the card and the param dropped, another param kept, no card and no focus with no request waiting, nothing without the param. `wiring-p003-roster.test.tsx` (the phone sheet) and `roster-context-menu.test.tsx` pass.
+- No before or after screenshots: nothing is drawn differently (focus moves, and no ring is drawn). Not checked in a browser or with VoiceOver.
+
 ## 2026-10-19 — Where the team sits glides again
 
 ```text
