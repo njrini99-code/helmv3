@@ -176,6 +176,16 @@ export interface RecheckTarget {
 }
 
 /**
+ * Only a read that names a weakness can be Cleared: the old point sits on
+ * the wrong side of the benchmark. A strength read (already at or past it)
+ * is never rechecked, or a better stretch would mark it "fixed".
+ */
+export function isWeaknessTarget(target: RecheckTarget, polarity: RecheckRecord['polarity']): boolean {
+  if (!Number.isFinite(target.benchmark) || !Number.isFinite(target.oldValue)) return false;
+  return polarity === 'higher_better' ? target.oldValue < target.benchmark : target.oldValue > target.benchmark;
+}
+
+/**
  * True when the putt is in the band. Mirrors `update_player_putt_make_pct`
  * (the rule the read's own number came from): distance clamped to [0, 120]
  * ft, band `(lo, hi]`.

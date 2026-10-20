@@ -26,6 +26,7 @@ import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-cou
 import {
   PAR_BY_METRIC,
   PUTT_BAND_BY_METRIC,
+  isWeaknessTarget,
   parScoringRecheck,
   puttBandRecheck,
   recheckOnBestWindow,
@@ -302,11 +303,13 @@ async function processPlayer(
       const band = PUTT_BAND_BY_METRIC[metric];
       const par = PAR_BY_METRIC[metric];
       if (read.insight_type === 'putt_distance' && band) {
+        if (!isWeaknessTarget(target, 'higher_better')) continue;
         rechecks.set(
           read.id,
           recheckOnBestWindow(windows, (w, ids) => puttBandRecheck(putts.filter((p) => ids.has(p.round_id)), band, target, w, nowIso)),
         );
       } else if (read.insight_type === 'par_scoring' && par) {
+        if (!isWeaknessTarget(target, 'lower_better')) continue;
         rechecks.set(
           read.id,
           recheckOnBestWindow(windows, (w, ids) => parScoringRecheck(holes.filter((h) => ids.has(h.round_id)), par, target, w, nowIso)),

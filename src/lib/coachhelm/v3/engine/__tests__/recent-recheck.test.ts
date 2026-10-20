@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   isRecheckRetired,
+  isWeaknessTarget,
   meanLowerBound,
   meanUpperBound,
   parScoringRecheck,
@@ -167,5 +168,16 @@ describe('isRecheckRetired', () => {
     expect(isRecheckRetired('archived', meta)).toBe(true);
     expect(isRecheckRetired('detected', meta)).toBe(false);
     expect(isRecheckRetired('archived', { archived_by: 'generator-scope-sweep' })).toBe(false);
+  });
+});
+
+describe('isWeaknessTarget', () => {
+  it('only a read on the wrong side of the benchmark can be rechecked', () => {
+    expect(isWeaknessTarget({ benchmark: 72, oldValue: 62, oldN: 95 }, 'higher_better')).toBe(true);
+    expect(isWeaknessTarget({ benchmark: 72, oldValue: 80, oldN: 95 }, 'higher_better')).toBe(false);
+    expect(isWeaknessTarget({ benchmark: 72, oldValue: 72, oldN: 95 }, 'higher_better')).toBe(false);
+    expect(isWeaknessTarget({ benchmark: 4, oldValue: 4.4, oldN: 40 }, 'lower_better')).toBe(true);
+    expect(isWeaknessTarget({ benchmark: 4, oldValue: 3.9, oldN: 40 }, 'lower_better')).toBe(false);
+    expect(isWeaknessTarget({ benchmark: Number.NaN, oldValue: 3.9, oldN: 40 }, 'lower_better')).toBe(false);
   });
 });
