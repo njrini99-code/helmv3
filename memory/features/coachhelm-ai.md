@@ -75,6 +75,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Support and the claim ladder (Slice 1, 2026-10-20, flag
+  `coachhelm_support_v1`, off): after the generators and composites write a
+  player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
+  benchmark, 95% range, one-sided p, Benjamini-Hochberg q across every
+  candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
+  repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
+  `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
+  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  table is "not available"), and records `rank_factors` on exposures. With the
+  flag on nothing else on the row changes (confidence, copy, priority,
+  lifecycle), and no surface reads the ladder yet. Contract and the back-test
+  numbers: "Support and the claim ladder" in
+  `docs/architecture/coachhelm-evidence-contract.md`.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
