@@ -302,8 +302,8 @@ run, early read and failed read are three different pages. A read from before
 the newest round says so (CH-13903). No sentence says strokes are being lost: a
 gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour
 (the LPGA Tour for a women's team) when the cascade had no team average to
-anchor on, and says which, once, on the Read's What line. A movement is in the stat's own unit (points for a
-share), never a percent of a percentage.
+anchor on, and says which, once, on the Read's What line. A movement is in
+the stat's own unit (points for a share), never a percent of a percentage.
 
 **States.** Skeleton at the page's final height (a view's own, drawn by the
 page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read

@@ -165,6 +165,15 @@ describe('the deep dive as the page draws it', () => {
     expect(by(PREVIEW_DIVE, 'in-brk').diagnosis).toBeNull();
     const blank: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: '  ' } } };
     expect(deep(blank, FULL_INPUTS).diagnosis).toBeNull();
+    // The generators' placeholder ("is off its benchmark, cause inferred from the aggregate") states no cause, so it is no diagnosis either.
+    const placeholder: EvidenceInsight = {
+      ...DIVE_SLOPE,
+      evidence: {
+        ...DIVE_SLOPE.evidence,
+        diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: 'Penalties per Round is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence', confidence_reason: 'sample adequate' },
+      },
+    };
+    expect(deep(placeholder, FULL_INPUTS).diagnosis).toBeNull();
   });
 
   it('what closing the gap is worth comes only from a cascade cause that has a number, and says what it is closed to: the team’s average, or the Tour when there was no team average to anchor on', () => {
