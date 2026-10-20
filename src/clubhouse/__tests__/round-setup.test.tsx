@@ -5,8 +5,12 @@ import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_QUALIFIERS, PREVIEW_SETUP_TEES, PR
 import { RoundSetup } from '../screens/rounds/setup/RoundSetup';
 import { addCourseIssue } from '../screens/rounds/setup/AddCourseSheet';
 import { blankHoles, editedCount, groupCourses, holeIssue, holesForRound, setupBlocker, type ChSetupForm, type ChSetupPorts, type ChSetupQualifier, type ChSetupTee } from '../screens/rounds/setup/shape';
+import { formatDate, localToday } from '../ui/date-time';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const ok = <T,>(data: T) => Promise.resolve({ ok: true as const, data });
 const fail = (error = 'nope') => Promise.resolve({ ok: false as const, error });
@@ -281,7 +285,7 @@ describe('Round setup: details and starting', () => {
     expect(screen.getByText('1 hole edited for this round')).toBeInTheDocument();
     expect(within(screen.getByRole('radiogroup', { name: 'Hole 3 par' })).getByRole('radio', { name: '4' })).toHaveAttribute('aria-checked', 'true');
     expect(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Tournament' })).toHaveAttribute('aria-checked', 'true');
-    expect(screen.getByLabelText('Date')).toHaveValue('2026-10-12');
+    expect(screen.getByLabelText('Date')).toHaveValue(fieldDate('2026-10-12'));
     expect(startBtn()).toBeEnabled();
 
     // Start itself (not only the toast's Retry) sends the form again, unchanged, and the round opens.
