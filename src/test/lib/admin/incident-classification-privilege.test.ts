@@ -74,6 +74,24 @@ describe('classifyIncident — Postgres privilege errors', () => {
     expect(result.klass).toBe('access');
   });
 
+  it('reads a signup password rejection as the system correctly saying no, in both vocabularies (2026-10-20)', () => {
+    // Sentry JAVASCRIPT-NEXTJS-1CT (Supabase Auth's HIBP check, POST
+    // /golf/signup, 2026-10-20 00:55Z) reached the reliability collector as
+    // severity error, and our own copy for the same event (Bridge c5958387,
+    // d1c6c722) only went quiet by the severity ladder, unmatched.
+    const cases = [
+      { title: 'AuthWeakPasswordError: Password is known to be weak and easy to guess, please choose a different one.', severity: 'error', source: 'sentry' },
+      { title: '[signupAction] Please choose a stronger password — this one is too common or has appeared in a data breach', severity: 'info', source: 'server_action' },
+      { title: '[signupAction] Password must contain at least one special character (!@#$%^&*...)', severity: 'info', source: 'server_action' },
+    ];
+    for (const c of cases) {
+      const result = classifyIncident({ title: c.title, message: c.title, severity: c.severity, source: c.source, errorCode: null });
+      expect(result.klass).toBe('access');
+      expect(result.actionable).toBe(false);
+      expect(result.matched).toBe(true);
+    }
+  });
+
   it('still lets the RLS tripwire win — it runs before this rule and stays actionable', () => {
     const result = classifyIncident({
       title: 'permission denied for table golf_rounds',
