@@ -1329,11 +1329,27 @@ describe('CoachHelm loaders', () => {
       vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1), bigNumber(p1)]);
       tables.current = { golf_drills: { data: [{ id: 'dr-ladder', description: 'Start 2 ft below the hole.' }] } };
       const d = await loadPlayerCoachHelm({ playerId: p1 });
-      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30, drawn: expect.any(Function) }); // CH13-21: only drawn cards count as shown
+      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30, drawnLater: expect.any(Function) }); // CH13-21: only drawn cards count as shown
       expect(d.off).toBeNull();
       expect(d.insights.error).toBe(false);
       expect(d.insights.list.map((i) => i.id)).toEqual(['in-slope', 'in-dbl']);
       expect(d.insights.list[0]!.week).toEqual({ title: 'Downhill ladder', text: 'Start 2\u00a0ft below the hole.', meta: '12 min · intermediate' });
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!([])).resolves.toEqual(['in-slope', 'in-dbl']);
+    });
+
+    it('CH13-21 only the reads the Board draws are counted as shown: the focus and two more, not the other nine', async () => {
+      const feed = Array.from({ length: 12 }, (_, n) => ({ ...slope(p1), id: `f${n}` }));
+      vi.mocked(getInsightsForPlayer).mockResolvedValue(feed);
+      const d = await loadPlayerCoachHelm({ playerId: p1 });
+      expect(d.insights.list).toHaveLength(12);
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!(feed)).resolves.toEqual(['f0', 'f1', 'f2']);
+    });
+
+    it('CH13-21 a Board with nothing drawn counts nothing as shown', async () => {
+      vi.mocked(getInsightsForPlayer).mockResolvedValue([]);
+      tables.current = { golf_coach_insights: { data: [] }, golf_insight_player_feedback: { data: [] } };
+      await loadPlayerCoachHelm({ playerId: p1 });
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!([])).resolves.toEqual([]);
     });
 
     it('a failed drill read keeps the drill’s name and length, and is logged', async () => {
@@ -1898,7 +1914,7 @@ describe('CoachHelm route', () => {
     expect(screen.queryByRole('region', { name: 'By player' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
     expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function) });
+    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function) });
   });
 
   it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {

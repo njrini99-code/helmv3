@@ -57,6 +57,11 @@ Held items:     none
 - Looked at on a phone (390 px) with the preview fixtures
   (`?state=many|zero`). The "more reads" button is a small ghost button
   (30 px), so on touch it keeps a 44 px target (`pointer: coarse`).
+- Review fix (CH13-21): the Board counts as shown only the reads it draws
+  (the focus, up to two more and one strength). The player feed takes a
+  `drawnLater` callback: the loader says which ids it drew once it has
+  shaped the rows, and only those are written to `golf_insight_exposure`.
+  Before, every read past the caps was recorded as a Board exposure.
 
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
