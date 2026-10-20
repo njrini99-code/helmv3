@@ -438,6 +438,12 @@ describe('Q-123 Total-only rounds in the scores, not the hole figures: the team 
     expect(figure(d, 'Putts per round').note).toBe('Hole stats from 0 of 2 rounds');
     expect(figure(d, 'Team SG per round').value).toBeNull();
     expect(d.grid[0]).toMatchObject({ rounds: 2, avg: 70.5, total: null });
+    // The ranked dot plot's samples: the two totals count for the scoring average (the pooled spread under five rounds);
+    // strokes gained reads the rounds with their holes, of which there are none.
+    expect(d.grid[0]!.spread!.score.n).toBe(2);
+    expect(d.grid[0]!.spread!.score.se).toBeCloseTo(3.6 / Math.sqrt(2), 10);
+    expect(d.grid[0]!.spread!.sg).toEqual({ n: 0, se: null });
+    expect(d.grid[0]!.spread!.legs).toHaveLength(4);
     expect(d.days.map((x) => x.score)).toEqual([71, 70]);
     expect(d.putting).toBeNull();
     expect(d.cacheError).toBe(false);
