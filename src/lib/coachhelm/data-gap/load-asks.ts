@@ -7,8 +7,9 @@ import 'server-only';
  * nothing and returns `[]`, so the round entry pages do exactly what they did
  * before. With it on, it reads the player's visible v3 reads that carry an
  * `evidence.data_gap` with the caller's own client (RLS: a player reads their
- * own reads and shots only), then counts the matching failures already
- * tagged in rounds after each read's window. Every read error is logged and
+ * own reads and shots only), then counts the matching failures tagged and
+ * left untagged in non-test rounds after each read's window (an untagged one
+ * raises the target, as it does in the engine's coverage). Every read error is logged and
  * answers `[]`: no prompt is better than a wrong counter, and a failed read
  * must never block round entry.
  */
@@ -19,6 +20,7 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { logServerError } from '@/lib/server-error-logger';
 import {
   countTagged,
+  countUntagged,
   openAsks,
   parseDataGapAsk,
   storedGapFacts,
@@ -82,6 +84,10 @@ export async function loadDataGapAsks(
       .from('golf_rounds')
       .select('id, round_date')
       .eq('player_id', playerId)
+      // Test rounds never count, as in the engine's own context load
+      // (load-player-context.ts); in-progress rounds do, since the prompt
+      // collects tags during a round.
+      .eq('is_test', false)
       .gt('round_date', ends[0]!)
       .or('status.is.null,status.neq.abandoned')
       .order('round_date', { ascending: false })
@@ -104,7 +110,7 @@ export async function loadDataGapAsks(
   const asks: DataGapAsk[] = parsed.map((a) => {
     const since =
       a.windowEnd === null ? [] : facts.filter((f) => (roundDate.get(f.round_id) ?? '') > a.windowEnd!);
-    return { ...a, taggedSince: countTagged(since, a) };
+    return { ...a, taggedSince: countTagged(since, a), untaggedSince: countUntagged(since, a) };
   });
   return openAsks(asks);
 }

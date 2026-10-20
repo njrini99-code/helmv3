@@ -82,7 +82,7 @@ describe('loadDataGapAsks', () => {
         data: [
           putt('new', 1, 3, 7, 'short'), // first putt, in band, tagged: counts
           putt('new', 1, 4, 1, null, true),
-          putt('new', 2, 2, 8, null), // in band, untagged: does not count
+          putt('new', 2, 2, 8, null), // in band, untagged: raises the target
           putt('new', 3, 2, 20, 'long'), // out of band
           putt('new', 4, 2, 6, 'low', true), // holed: not a failure
         ],
@@ -91,13 +91,15 @@ describe('loadDataGapAsks', () => {
     });
     const asks = await loadDataGapAsks(client as never, 'p1', { flagEnabled: true });
     expect(asks).toHaveLength(1);
-    expect(asks[0]).toMatchObject({ readId: 'r1', targetCount: 10, haveCount: 4, taggedSince: 1, bandLabel: '5–10 ft' });
+    expect(asks[0]).toMatchObject({ readId: 'r1', targetCount: 10, haveCount: 4, taggedSince: 1, untaggedSince: 1, bandLabel: '5–10 ft' });
 
     const insightCalls = calls.filter((c) => c.table === 'golf_coach_insights');
     expect(insightCalls).toContainEqual({ table: 'golf_coach_insights', method: 'eq', args: ['player_id', 'p1'] });
     // The shared v3 visibility helper (engine, lifecycle, not dismissed).
     expect(insightCalls.some((c) => c.method === 'in' && c.args[0] === 'lifecycle_state')).toBe(true);
     expect(calls).toContainEqual({ table: 'golf_rounds', method: 'gt', args: ['round_date', '2026-10-01'] });
+    // Test rounds never count (as in the engine's context load).
+    expect(calls).toContainEqual({ table: 'golf_rounds', method: 'eq', args: ['is_test', false] });
     expect(calls).toContainEqual({ table: 'golf_shots', method: 'in', args: ['round_id', ['new']] });
   });
 

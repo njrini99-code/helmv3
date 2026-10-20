@@ -19,6 +19,16 @@
 import type { PuttMissTag } from '@/lib/types/golf';
 import { normalizeShotValue } from '@/lib/coachhelm/v3/context/normalize-shot';
 
+/**
+ * The engine's `dataGapTagsNeeded` (`v3/engine/root-cause.ts`): the smallest
+ * x with (have + x) / (of + x) ≥ 60%, at least 1. Restated here, not
+ * imported, so the shot screen's client bundle does not pull in the engine;
+ * `asks.test.ts` pins it to the engine's function.
+ */
+export function tagsNeeded(have: number, of: number): number {
+  return Math.max(1, Math.ceil((3 * of - 5 * have) / 2));
+}
+
 /** The putt miss tags the prompt offers, in the order the read's prompt
  *  names them ("Which side? Short · Long · High · Low"). The same values the
  *  optional miss chips write to `golf_shots.miss_direction`. */
@@ -54,6 +64,10 @@ export interface DataGapAsk {
   /** Matching failures, in rounds after the read's window, that already
    *  carry the field when shot entry opened. */
   taggedSince: number;
+  /** Matching failures, in rounds after the read's window, left without the
+   *  field. Each one joins the engine's coverage population too, so it
+   *  raises the target (`askTarget`). */
+  untaggedSince: number;
   /** "5–10 ft" */
   bandLabel: string;
   /** `evidence.window_end` as `YYYY-MM-DD`; null when the read has none. */
@@ -106,7 +120,7 @@ export function parseDataGapAsk(row: {
   id: string;
   title: string | null;
   evidence: unknown;
-}): Omit<DataGapAsk, 'taggedSince'> | null {
+}): Omit<DataGapAsk, 'taggedSince' | 'untaggedSince'> | null {
   if (!isRecord(row.evidence)) return null;
   const gap = row.evidence.data_gap;
   if (!isRecord(gap) || gap.field !== 'miss_direction') return null;
@@ -232,18 +246,67 @@ export function countTagged(facts: readonly GapShotFacts[], ask: Pick<DataGapAsk
   return facts.filter((f) => f.has_miss_direction && matchesGap(f, ask.filter)).length;
 }
 
+/** Matching failures that do not carry the field. */
+export function countUntagged(facts: readonly GapShotFacts[], ask: Pick<DataGapAsk, 'filter'>): number {
+  return facts.filter((f) => !f.has_miss_direction && matchesGap(f, ask.filter)).length;
+}
+
+/**
+ * The read's population (`of`, its failures when it was written), recovered
+ * from the stored `have_count` and `target_count`. The engine writes
+ * `target = max(1, ceil((3·of − 5·have) / 2))` only when coverage is below
+ * 60%, so `(3·of − 5·have) / 2` is in `(target − 1, target]` and a half
+ * integer: one of `2·target` and `2·target − 1` is `3·of − 5·have`. Null
+ * when neither gives a population that reproduces the stored target.
+ */
+export function impliedPopulation(have: number, target: number): number | null {
+  for (const twice of [2 * target, 2 * target - 1]) {
+    const n = twice + 5 * have;
+    if (twice <= 0 || n % 3 !== 0) continue;
+    const of = n / 3;
+    if (of > 0 && have / of < 0.6 && tagsNeeded(have, of) === target) return of;
+  }
+  return null;
+}
+
+/**
+ * Tags needed, counting the matching failures left untagged since the read
+ * (stored ones plus putts skipped this session): each joins the population
+ * as it does in the engine's coverage, so the target is
+ * `dataGapTagsNeeded(have, of + untagged)`. When the population cannot be
+ * recovered, `target + ceil(1.5 · untagged)`, which is never below the exact
+ * answer (each untagged failure adds 1.5 to the bound).
+ */
+export function askTarget(
+  ask: Pick<DataGapAsk, 'targetCount' | 'haveCount' | 'untaggedSince'>,
+  skipsThisSession = 0,
+): number {
+  const untagged = ask.untaggedSince + Math.max(0, skipsThisSession);
+  if (untagged === 0) return ask.targetCount;
+  const of = impliedPopulation(ask.haveCount, ask.targetCount);
+  return of === null
+    ? ask.targetCount + Math.ceil(1.5 * untagged)
+    : tagsNeeded(ask.haveCount, of + untagged);
+}
+
+type ProgressAsk = Pick<DataGapAsk, 'taggedSince' | 'untaggedSince' | 'targetCount' | 'haveCount'>;
+
 /** Progress toward the target: tagged before entry opened plus taps since. */
 export function askProgress(ask: Pick<DataGapAsk, 'taggedSince'>, tapsThisSession: number): number {
   return ask.taggedSince + Math.max(0, tapsThisSession);
 }
 
-export function isAskOpen(ask: Pick<DataGapAsk, 'taggedSince' | 'targetCount'>, tapsThisSession: number): boolean {
-  return askProgress(ask, tapsThisSession) < ask.targetCount;
+export function isAskOpen(ask: ProgressAsk, tapsThisSession: number, skipsThisSession = 0): boolean {
+  return askProgress(ask, tapsThisSession) < askTarget(ask, skipsThisSession);
 }
 
 /** "4 of 10 for your 5–10 ft putt read" */
-export function counterText(ask: Pick<DataGapAsk, 'taggedSince' | 'targetCount' | 'bandLabel'>, tapsThisSession: number): string {
-  return `${askProgress(ask, tapsThisSession)} of ${ask.targetCount} for your ${ask.bandLabel} putt read`;
+export function counterText(
+  ask: ProgressAsk & Pick<DataGapAsk, 'bandLabel'>,
+  tapsThisSession: number,
+  skipsThisSession = 0,
+): string {
+  return `${askProgress(ask, tapsThisSession)} of ${askTarget(ask, skipsThisSession)} for your ${ask.bandLabel} putt read`;
 }
 
 function filterKey(f: PuttGapFilter): string {
@@ -261,7 +324,7 @@ export function openAsks(asks: readonly DataGapAsk[]): DataGapAsk[] {
     if (!isAskOpen(a, 0)) continue;
     const key = filterKey(a.filter);
     const prev = byFilter.get(key);
-    if (!prev || a.targetCount - a.taggedSince > prev.targetCount - prev.taggedSince) byFilter.set(key, a);
+    if (!prev || askTarget(a) - a.taggedSince > askTarget(prev) - prev.taggedSince) byFilter.set(key, a);
   }
   return [...byFilter.values()];
 }
@@ -271,9 +334,10 @@ export function askForShot(
   asks: readonly DataGapAsk[],
   shot: GapShotFacts,
   tapsByRead: Readonly<Record<string, number>>,
+  skipsByRead: Readonly<Record<string, number>> = {},
 ): DataGapAsk | null {
   for (const a of asks) {
-    if (!isAskOpen(a, tapsByRead[a.readId] ?? 0)) continue;
+    if (!isAskOpen(a, tapsByRead[a.readId] ?? 0, skipsByRead[a.readId] ?? 0)) continue;
     if (needsAsk(shot, a)) return a;
   }
   return null;

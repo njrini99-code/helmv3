@@ -63,7 +63,10 @@ export function useDataGapPrompt({
     tapsByRead: Record<string, number>;
     tagged: Record<string, { readId: string; tag: PuttMissTag }>;
   }>({ tapsByRead: {}, tagged: {} });
-  const [skipped, setSkipped] = useState<Record<string, true>>({});
+  // Putts skipped this session (key → the read it was asked for). A skipped
+  // miss stays untagged, so it joins that read's population and raises its
+  // target exactly as an untagged stored miss does (`askTarget`).
+  const [skipped, setSkipped] = useState<Record<string, string>>({});
 
   const record = useCallback((key: string, readId: string, tag: PuttMissTag) => {
     setSession((prev) => ({
@@ -86,6 +89,8 @@ export function useDataGapPrompt({
   if (skipped[key]) return null;
 
   const { tapsByRead, tagged } = session;
+  const skipsByRead: Record<string, number> = {};
+  for (const readId of Object.values(skipped)) skipsByRead[readId] = (skipsByRead[readId] ?? 0) + 1;
   // A receipt only while the putt still carries the tag (an undo and
   // re-record of the same putt asks again).
   const done = first.has_miss_direction ? tagged[key] : undefined;
@@ -93,21 +98,22 @@ export function useDataGapPrompt({
   // moved) until the read's target is met, when it disappears.
   const ask = done
     ? asks.find((a) => a.readId === done.readId) ?? null
-    : askForShot(asks, first, tapsByRead);
+    : askForShot(asks, first, tapsByRead, skipsByRead);
   if (!ask) return null;
   const taps = tapsByRead[ask.readId] ?? 0;
-  if (done && !isAskOpen(ask, taps)) return null;
+  const skips = skipsByRead[ask.readId] ?? 0;
+  if (done && !isAskOpen(ask, taps, skips)) return null;
 
   return {
     key,
     shotNumber: shot.shotNumber,
     distanceFeet: first.distance_feet === null ? null : Math.round(first.distance_feet),
     ask,
-    counter: counterText(ask, taps),
+    counter: counterText(ask, taps, skips),
     saved: done?.tag ?? null,
     onPick: (tag) => {
       if (onTag(shot.shotNumber, tag)) record(key, ask.readId, tag);
     },
-    onSkip: () => setSkipped((s) => ({ ...s, [key]: true })),
+    onSkip: () => setSkipped((s) => ({ ...s, [key]: ask.readId })),
   };
 }

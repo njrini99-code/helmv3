@@ -63,6 +63,7 @@ const ASKS: DataGapAsk[] = [
     targetCount: 10,
     haveCount: 4,
     taggedSince: 4,
+    untaggedSince: 0,
     bandLabel: '5–10 ft',
     windowEnd: '2026-10-01',
   },

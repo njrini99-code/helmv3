@@ -5,13 +5,14 @@
  * onAutoSave with the hole), it disappears at the target, and with no asks
  * (the flag off) the screen renders exactly what it rendered before.
  */
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import FairwayShotTracking from '@/components/fairway/pages/rounds-tracking/FairwayShotTracking';
 import type { ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
+import { useDataGapPrompt } from '@/components/fairway/pages/rounds-tracking/useDataGapPrompt';
 
 vi.mock('@/app/golf/actions/shot-actions', () => ({
   deleteShot: vi.fn(async () => ({ success: true })),
@@ -66,6 +67,7 @@ function ask(over: Partial<DataGapAsk> = {}): DataGapAsk {
     targetCount: 10,
     haveCount: 4,
     taggedSince: 4,
+    untaggedSince: 0,
     bandLabel: '5–10 ft',
     windowEnd: '2026-10-01',
     ...over,
@@ -188,5 +190,26 @@ describe('FairwayDataGapPrompt', () => {
     cleanup();
     const empty = mount({ asks: [] });
     expect(empty.view.container.innerHTML).toBe(offHtml);
+  });
+
+  it('a skipped miss raises the target on the next hole instead of closing early', () => {
+    // 2 of 4 tagged when the read was written: 1 more would do (3 of 5).
+    const small = ask({ haveCount: 2, targetCount: 1, taggedSince: 0 });
+    const onTag = vi.fn(() => true);
+    const { result, rerender } = renderHook(
+      ({ hole, shots }: { hole: number; shots: ShotRecord[] }) =>
+        useDataGapPrompt({ asks: [small], holeNumber: hole, shotHistory: shots, onTag }),
+      { initialProps: { hole: 3, shots: MISSED_FIRST_PUTT } },
+    );
+    expect(result.current?.counter).toBe('0 of 1 for your 5–10 ft putt read');
+    act(() => result.current!.onSkip());
+    expect(result.current).toBeNull();
+
+    // Next hole, another missed first putt: the skipped one joined the
+    // population (2 of 5), so 3 tags are needed now, not 1.
+    rerender({ hole: 4, shots: MISSED_FIRST_PUTT });
+    expect(result.current?.counter).toBe('0 of 3 for your 5–10 ft putt read');
+    act(() => result.current!.onPick('short'));
+    expect(onTag).toHaveBeenCalledWith(2, 'short');
   });
 });

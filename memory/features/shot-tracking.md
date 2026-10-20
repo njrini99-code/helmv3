@@ -718,11 +718,18 @@ before.
   completed-hole review: "Which side?", Short · Long · High · Low, the
   counter, Skip. Secondary buttons only; the one primary action stays Next
   shot / Complete hole. It disappears at the target.
-- Write: `useShotTracking.handleTagPuttMiss` dispatches `TAG_PUTT_MISS`
-  (sets that putt's `puttMissTags` and `missDirection`, nothing else, so
-  the next shot's input survives) and calls `onAutoSave` with the hole, the
-  same tail an edit uses: device copy first, then the server snapshot, held
-  and retried by the state machine. No second queue, no point update.
+- Write: `useShotTracking.handleTagPuttMiss` (`use-putt-miss-tagger.ts`)
+  dispatches `TAG_PUTT_MISS` (sets that putt's `puttMissTags` and
+  `missDirection`, nothing else, so the next shot's input survives) and
+  calls `onAutoSave` with the hole, the same tail an edit uses: device copy
+  first, then the server snapshot, held and retried by the state machine.
+  No second queue, no point update. It holds the shared Edit/Undo
+  `shotMutationInFlightRef` until that save settles, so an older tagged
+  snapshot cannot overwrite an edit or bring back an undone shot.
+- Target: tags and untagged misses in non-test rounds since the read are
+  counted at load; an untagged miss (stored, or skipped this session) joins
+  the engine's coverage population, so the target is recomputed
+  (`askTarget`) and Skip never closes the ask below 60%.
 - Clubhouse round entry does not show it yet (Clubhouse is off in
   production).
 
