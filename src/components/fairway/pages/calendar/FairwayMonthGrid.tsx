@@ -446,7 +446,7 @@ export function FairwayMonthGrid({
                       onClick={() => onSelectDate(day)}
                       aria-label={`${hidden} more on ${longDay(day)}`}
                       className={cn(
-                        'pointer-events-auto mx-1 flex h-[22px] min-h-0 items-center rounded-fw-sm px-1.5 text-left font-fw-sans text-caption font-semibold text-text-secondary',
+                        'pointer-events-auto mx-1 flex h-[22px] min-h-0 items-center rounded-fw-sm px-1.5 text-left font-fw-sans text-microlabel font-semibold text-text-secondary',
                         'underline-offset-2 hover:text-text-primary hover:underline',
                         COL_START[c],
                         ROW_START[shown],
@@ -457,7 +457,7 @@ export function FairwayMonthGrid({
                   ) : (
                     <span
                       key={`more:${c}`}
-                      className={cn('mx-1 flex items-center px-1.5 font-fw-sans text-caption font-semibold text-text-secondary', COL_START[c], ROW_START[shown])}
+                      className={cn('mx-1 flex items-center px-1.5 font-fw-sans text-microlabel font-semibold text-text-secondary', COL_START[c], ROW_START[shown])}
                     >
                       {label}
                     </span>
