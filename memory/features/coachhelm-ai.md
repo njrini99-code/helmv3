@@ -535,9 +535,16 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `rounds_n`, `newest_round_id`, `source_round_ids` (the rounds counted,
   so it matches `rounds_n`), `comparison.primary`, `detail.gap_input` (the
   Slice 1 `GapInput` shape) and `detail.test` (its z gate) over the newest
-  40 countable rounds. Team benchmarks need 5+ teammates (the `07` §6
-  privacy floor); below that there is no comparison and no read. The
-  three-putt benchmark follows owner rule Q-88: the Tour figure from
+  40 countable rounds. Those three round fields survive the Slice 0b window
+  stamp (`keepComposedRounds` in `engine/source-rounds.ts`), and each angle
+  is stamped and judged under its own family key `angle:<family>`
+  (`AngleGenerator.readFamilyKey`), so no 0b floor keyed by a shared
+  insight type can hold it back; its own floors apply. Slice 1's
+  `support/families.ts` has no angle entry yet, so the support pass treats
+  every angle row as `unknown` (untestable). Team benchmarks need 5+
+  teammates (the `07` §6 privacy floor); below that there is no comparison
+  and no read. The three-putt benchmark follows owner rule Q-88: the Tour
+  figure from
   `golf_pga_standards` (PGA or LPGA by the player's cohort) when one is
   stored, else the teammates' median, else nothing; no GolfHelm-wide pool
   number. Tee-miss cost, fairway exposure and the bad-day floor are
