@@ -13598,6 +13598,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/orchestrator.ts",
+          "anchor": "src/lib/coachhelm/v3/support/run-collector"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/trigger-insights-bridge.ts",
           "anchor": "src/lib/coachhelm/v3/engine/analysis-outcome"
         }
@@ -19713,6 +19718,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/llm/claim-validator.ts",
           "anchor": "src/lib/coachhelm/v2/insights/upsert"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/support/__tests__/run-collector.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/gate-context"
         },
         {
           "kind": "import_graph",
