@@ -363,7 +363,8 @@ still use `getPlayerStatsDashboardBundle`.
 Behind the flag, `/golf/dashboard/stats` renders Clubhouse Stats (`src/clubhouse/routes/stats.tsx`): team stats for
 coaches, `?player=<id>` profiles for coaches (team members only), and the player's own profile for players (`?player`
 ignored). Windows: `?window=last10|season|qualifiers`; Last N counts 5, 10 (default) or 20 rounds (`?last=5|20`, read only with
-`last10`; "vs previous N" compares the N rounds before). Clubhouse putt bands are cut from `lib/golf/putt-make.ts`. Shot-level detail comes from `getDetailedStats` behind its
+`last10`; "vs previous N" compares the N rounds before). Every Last N reads the same rolling year (`lastTenFloor`, Q-122), so Last 20 and its
+previous 20 count only the rounds of the last twelve months: a player with fewer than 23 there has no "vs previous 20". Clubhouse putt bands are cut from `lib/golf/putt-make.ts`. Shot-level detail comes from `getDetailedStats` behind its
 existing access gate; D1 benchmarks from `golf_pga_standards.div1_avg_value` (LPGA for a women's team, PGA fallback).
 Checklists: `docs/clubhouse/screens/stats-team.md`, `stats-player.md`.
 

@@ -2969,8 +2969,9 @@
     display: flex;
     width: 100%;
   }
+  /* Grown from each label's own width (not equal shares), so "Qualifiers" keeps its room beside 5, 10 and 20 at 390px. */
   .ch-stm-controls > :first-child .ch-seg__b {
-    flex: 1;
+    flex: 1 1 auto;
     justify-content: center;
     padding-inline: 8px;
   }

@@ -736,6 +736,13 @@ describe('Rounds tab · bests and comparison', () => {
     expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
   });
 
+  it('the comparison says the cut in force: Last 20 is the latest 20 against the 20 before them, never "10"', async () => {
+    showPlayer(player({ last: 20, filter: filterFor('last10', 20) }));
+    await openTab(/Rounds/);
+    expect(document.body.textContent).toContain('Latest 20 rounds and the 20 before them');
+    expect(document.body.textContent).not.toMatch(/Latest 10 rounds|the 10 before/);
+  });
+
   it('CH-5313 no earlier window to compare: the season and qualifiers say why, and last 10 says what it needs', async () => {
     showPlayer(withExtra({ compare: null }, { window: 'season' }));
     await openTab(/Rounds/);

@@ -70,6 +70,8 @@ export function RoundsExtra({
   const b = x.bests;
   const card = share ? bestCardFields({ ...share, bests: b }) : null;
   const c = x.compare;
+  // The compare is the newest-N cut against the N before it (Last 5, 10 or 20), so its words follow N.
+  const compareNote = `Latest ${filter.last} rounds and the ${filter.last} before them`;
   const at = (v: { course: string; date: string } | null) => (v ? `${v.course} · ${v.date}` : null);
   // Only the newest-N cut has an earlier window; a date range, picked rounds, the season and the qualifiers have none by design.
   const why = hasPrevious(filter)
@@ -142,21 +144,21 @@ export function RoundsExtra({
           n={2}
           alt
           title="Against the one before"
-          def={<>The latest 10 rounds beside the 10 before them. Green is better than before, gold is worse.</>}
+          def={<>The latest {filter.last} rounds beside the {filter.last} before them. Green is better than before, gold is worse.</>}
           read={
             sc && sc.v !== NO_DATA ? (
               <>
                 <Big value={sc.v} tone={sc.tone === 'gain' ? 'good' : sc.tone === 'loss' ? 'bad' : undefined} />
                 <div className="ch-znlines">
                   <span>
-                    <b>Scoring average</b> against the 10 before
+                    <b>Scoring average</b> against the {filter.last} before
                   </span>
                 </div>
               </>
             ) : undefined
           }
         >
-          <Vis id="rx-compare" title="This window against the one before" note="Latest 10 rounds and the 10 before them">
+          <Vis id="rx-compare" title="This window against the one before" note={compareNote}>
             {c ? (
               <>
                 <DataTable
@@ -214,7 +216,7 @@ export function RoundsExtra({
           <BestTiles b={x.bests9} at={at} label="Personal bests, 9 holes" />
         </Card>
       )}
-      <Card id="rx-compare" title="This window against the one before" meta="Latest 10 rounds and the 10 before them" phone={phone}>
+      <Card id="rx-compare" title="This window against the one before" meta={compareNote} phone={phone}>
         {c ? (
           <>
             <DataTable

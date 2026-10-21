@@ -22,6 +22,17 @@ Held items:     none
 - Removed the unused `FigureCards`, `ScoreBoardTrend`, `LegRoute` and `FieldTable` and their styles (`.ch-board`,
   `.ch-route`, `.ch-ft`): the figure tape, the round trend, the strokes gained bars and the ranked dot plot
   replaced them, and nothing imported them.
+  CH-4604 and CH-5604 (a new window's figures crossfade) lived only in `FigureCard`, so the bridge registry now lists them
+  reserved; the tape and the profile's figures change in place.
+- Phone (820px and below): the switch's segments grow from their own label widths (`flex: 1 1 auto`), not equal shares, so
+  "Qualifiers" is no longer clipped beside 5, 10 and 20 at 390px (fixer, PR #2257; screenshots in
+  `stats-visuals/screenshots-2257/`). Preview: `/clubhouse-preview/stats?state=last20`.
+
+### Known limit
+
+- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the 20 before it need forty rounds in the last twelve
+  months; a player with fewer gets a shorter previous stretch, and none under 23 ("Comparing starts at 23 rounds"). The read is
+  not widened for Last 20.
 
 ## 2026-10-20 — Team ranking dot plot (stats visuals 5)
 

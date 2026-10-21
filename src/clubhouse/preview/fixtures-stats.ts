@@ -666,6 +666,15 @@ export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
 
 /** Both lengths: the per-18 note under the count line, and the team's rounds counted in whole rounds (a few are 9 holes). */
+/** The team on Last 20 (`?last=20`): the switch on Last 20, the Window figure and every "vs previous" caption saying 20. */
+export const PREVIEW_TEAM_LAST20: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  last: 20,
+  filter: filterFor('last10', 20),
+  figures: PREVIEW_TEAM_STATS.figures.map((x) => (x.context === 'vs previous 10' ? { ...x, context: 'vs previous 20' } : x)),
+  sgChange: { ...PREVIEW_TEAM_STATS.sgChange, context: 'vs previous 20' },
+};
+
 export const PREVIEW_TEAM_NINES: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), holes: 'all' }, roundsEffective: 60.5 };
 
 /** Jonah's window with a 9-hole round in it (Both): its score drawn per 18 holes, the round row named, and the 9-hole best listed on its own. */
