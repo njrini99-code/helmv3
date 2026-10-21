@@ -110,12 +110,15 @@ import {
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
+import { PREVIEW_TRACK_RECORD, PREVIEW_TRACK_RECORD_EARLY, PREVIEW_TRACK_RECORD_EMPTY, PREVIEW_TRACK_RECORD_UNAVAILABLE, trackLoad } from '@/clubhouse/preview/fixtures-coachhelm-track';
+import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
 import '@/clubhouse/styles/coachhelm-profile.css';
 import '@/clubhouse/styles/coachhelm-standing.css';
 import '@/clubhouse/styles/coachhelm-dive.css';
+import '@/clubhouse/styles/coachhelm-track.css';
 import { ChPhoneHintProvider } from '@/clubhouse/lib/use-phone';
 import { phoneHint } from '@/clubhouse/lib/phone-hint';
 
@@ -151,6 +154,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | failed | off | loading   (the player's Standing)
  *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=young | partsfailed | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
+ *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
@@ -464,6 +468,19 @@ export default async function ClubhousePreview({
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewCoachHelmViews view={view} state={state} insight={q} />,
+    },
+    'coachhelm-track': {
+      path: '/golf/dashboard/coachhelm',
+      node:
+        state === 'loading' ? (
+          <CoachHelmSkeleton view="coach" />
+        ) : state === 'failed' ? (
+          <TrackRecord load={{ status: 'failed' }} />
+        ) : state === 'off' ? (
+          <TrackRecord load={{ status: 'off', reason: 'We are pausing AI insights until after the spring qualifier' }} />
+        ) : (
+          <TrackRecord load={trackLoad({ early: PREVIEW_TRACK_RECORD_EARLY, empty: PREVIEW_TRACK_RECORD_EMPTY, unavailable: PREVIEW_TRACK_RECORD_UNAVAILABLE }[state ?? ''] ?? PREVIEW_TRACK_RECORD)} />
+        ),
     },
   };
   const entry = screens[screen];

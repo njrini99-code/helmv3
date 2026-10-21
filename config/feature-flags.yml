@@ -972,3 +972,35 @@ flags:
       correctness issue) and the audit-view chips ship. Remove the flag and
       the isCorrectionsEnabled branches once corrections have fed ranking
       stably for a month.
+  - feature_id: coachhelm_track_record_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Shows a coach the CoachHelm Track record in Clubhouse (P013,
+      /golf/dashboard/coachhelm?view=track-record, linked from the bottom of
+      the coach board): since the season start, how many reads CoachHelm
+      showed the team, how many held, cleared or were contradicted when
+      rechecked, a five-level strip (Seen repeatedly to Not enough yet) with
+      the back-test target drawn as a thin line, the staff's corrections,
+      and one row per family. Words and counts only; below 10 rechecked
+      reads a row says Not enough yet. Read only: it writes nothing and
+      changes no engine output. Reason: 02-accuracy-standard section 9, the
+      engine grades itself in public. Off: no link, and the address shows
+      the board. Clubhouse itself is off in production, so turning this on
+      reaches coaches only once Clubhouse is on.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on (development, preview, then production) only after the owner
+      applies 20261021090000_golf_coachhelm_shown_reads.sql (HELD.md row;
+      without it the page says not available, never zeros). The counts
+      fill in once coachhelm_support_v1 (ladder), coachhelm_recheck_v1
+      (rechecks) and coachhelm_corrections_v1 (corrections) are on. Remove
+      the flag once the page has served coaches for a season.

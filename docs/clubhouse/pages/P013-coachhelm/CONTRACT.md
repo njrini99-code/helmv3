@@ -223,6 +223,16 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
 | 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
+| 130724 | CH-13960 | `COACH_THE_TRACK_RECORD` | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
+| 130725 | CH-13961 | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | Track record: a level with enough rechecked reads (10 or more) |
+| 130726 | CH-13962 | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | Track record: a level or a family with fewer than 10 rechecked reads |
+| 130727 | CH-13963 | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | Track record: the staff's corrections |
+| 130728 | CH-13964 | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | Track record: one row per family |
+| 130729 | CH-13965 | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | Track record: CoachHelm is off for the team |
+| 130730 | CH-13966 | `TRACK_RECORD_A_READ_IT_IS_MADE` | Track record: a read it is made from failed |
+| 130731 | CH-13967 | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | Track record: the database cannot answer yet (its function is not applied) |
+| 130732 | CH-13968 | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | Track record: nothing shown since the season start |
+| 130733 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
 
 ## 08 — Permission / authorization
 

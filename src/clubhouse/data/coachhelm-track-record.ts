@@ -1,0 +1,138 @@
+import 'server-only';
+import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import type { CorrectionForPrecision } from '@/lib/coachhelm/v3/corrections/precision-counters';
+import { CORRECTIONS_TABLE, isMissingTableError } from '@/lib/coachhelm/v3/corrections/types';
+import { readLifecycleMeta, LIFECYCLE_META_KEY } from '@/lib/coachhelm/v3/lifecycle/types';
+import { buildTrackRecord, type ShownRead } from '@/lib/coachhelm/v3/track-record/track-record';
+import { chLogServer } from '../lib/track-server';
+import { loadCoachHelmGate } from './coachhelm';
+import { toChTrackRecord, type ChTrackRecord } from './coachhelm-track-record-shape';
+import type { ChViewLoad } from './coachhelm-views-shape';
+import { seasonStartDate } from './season';
+
+export type * from './coachhelm-track-record-shape';
+
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+type ReadError = { code?: string | null; message?: string } | null;
+
+/** The function the read needs is not there yet (its migration is held): Postgres 42883, PostgREST PGRST202. */
+export function isMissingFunctionError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = (error as { code?: unknown }).code;
+  return code === '42883' || code === 'PGRST202';
+}
+
+interface ShownReadRow {
+  insight_id: string;
+  last_shown_at: string;
+  shown_ladder: string | null;
+}
+
+/** `golf_coachhelm_shown_reads` is held (20261021090000), so it is not in the generated types until `npm run db:types` after apply. */
+type ShownReadsRpc = (
+  fn: 'golf_coachhelm_shown_reads',
+  args: { p_team_id: string; p_since: string },
+) => PromiseLike<{ data: ShownReadRow[] | null; error: ReadError }>;
+
+async function loadShownReads(supabase: Supabase, teamId: string, since: string) {
+  const rpc = supabase.rpc.bind(supabase) as unknown as ShownReadsRpc;
+  return rpc('golf_coachhelm_shown_reads', { p_team_id: teamId, p_since: `${since}T00:00:00Z` });
+}
+
+interface InsightRow {
+  id: string;
+  insight_type: string | null;
+  ladder: string | null;
+  lifecycle: unknown;
+}
+
+async function loadReads(supabase: Supabase, ids: string[]): Promise<{ rows: InsightRow[]; error: ReadError }> {
+  const rows: InsightRow[] = [];
+  for (const chunk of chunkIds(ids)) {
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select(`id, insight_type, ladder:evidence->>ladder, lifecycle:metadata->${LIFECYCLE_META_KEY}`)
+      .in('id', chunk);
+    if (error) return { rows, error };
+    rows.push(...((data ?? []) as unknown as InsightRow[]));
+  }
+  return { rows, error: null };
+}
+
+async function loadCorrections(supabase: Supabase, ids: string[]): Promise<{ rows: CorrectionForPrecision[]; available: boolean; error: ReadError }> {
+  const rows: CorrectionForPrecision[] = [];
+  for (const chunk of chunkIds(ids)) {
+    const { data, error } = await fetchAllRowsResult<CorrectionForPrecision>((from, to) =>
+      fromUntyped(supabase, CORRECTIONS_TABLE)
+        .select('insight_id, author_user_id, author_role, kind, created_at')
+        .in('insight_id', chunk)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    if (error) {
+      if (isMissingTableError(error)) return { rows: [], available: false, error: null };
+      return { rows, available: false, error };
+    }
+    rows.push(...(data ?? []));
+  }
+  return { rows, available: true, error: null };
+}
+
+/**
+ * The coach's Track record for one team (P013 `?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag).
+ * Read only once CoachHelm is on for this coach, as the board is. Never throws: a read that failed is `failed`, and a function or
+ * table that is not applied yet is "not available" (the counts it feeds are left out, never drawn as zeros).
+ *
+ * Reads: the reads shown to the team's active players since the season start (one row each, from `golf_coachhelm_shown_reads`),
+ * those reads' family, ladder and lifecycle block, and the corrections on them. The counting is `buildTrackRecord`'s (pure).
+ */
+export async function loadCoachTrackRecord(input: { coachId: string; teamId: string; now?: Date }): Promise<ChViewLoad<ChTrackRecord>> {
+  const gate = await loadCoachHelmGate(input.coachId);
+  if (gate.status === 'off') return { status: 'off', reason: gate.off.reason };
+  if (gate.status === 'failed') return { status: 'failed' };
+
+  const supabase = await createClient();
+  const since = seasonStartDate(input.now);
+
+  const shown = await loadShownReads(supabase, input.teamId, since);
+  if (shown.error) {
+    if (isMissingFunctionError(shown.error)) return { status: 'ready', data: { state: 'unavailable' } };
+    chLogServer('coachhelm', 'track_record_shown', shown.error);
+    return { status: 'failed' };
+  }
+  const shownRows = shown.data ?? [];
+  const ids = [...new Set(shownRows.map((r) => r.insight_id))];
+
+  const [reads, corrections] = await Promise.all([loadReads(supabase, ids), loadCorrections(supabase, ids)]);
+  if (reads.error) {
+    chLogServer('coachhelm', 'track_record_reads', reads.error);
+    return { status: 'failed' };
+  }
+  // Not this and Good read counts are in every family row, so a correction read that failed is the view not loading, never zeros.
+  if (corrections.error) {
+    chLogServer('coachhelm', 'track_record_corrections', corrections.error);
+    return { status: 'failed' };
+  }
+
+  const byId = new Map(reads.rows.map((r) => [r.id, r]));
+  const shownReads: ShownRead[] = [];
+  for (const s of shownRows) {
+    const read = byId.get(s.insight_id);
+    // A read the coach can no longer see (its player left the team since) is not on this team's record.
+    if (!read?.insight_type) continue;
+    shownReads.push({
+      insight_id: s.insight_id,
+      family: read.insight_type,
+      last_shown_at: s.last_shown_at,
+      shown_ladder: s.shown_ladder,
+      current_ladder: read.ladder,
+      lifecycle: readLifecycleMeta({ [LIFECYCLE_META_KEY]: read.lifecycle }),
+    });
+  }
+
+  const record = buildTrackRecord({ reads: shownReads, corrections: corrections.rows });
+  return { status: 'ready', data: toChTrackRecord(record, { since, correctionsAvailable: corrections.available }) };
+}

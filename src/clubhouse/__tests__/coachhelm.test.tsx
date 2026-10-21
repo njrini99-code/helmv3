@@ -879,6 +879,17 @@ describe('CoachHelm for the coach, on screen', () => {
   const user = () => userEvent.setup();
   const pick = (u: ReturnType<typeof userEvent.setup>, name: string) => u.click(screen.getByRole('button', { name: new RegExp(name) }));
 
+  it('CH-13969 the Track record link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
+    showCoach();
+    expect(code('CH-13969')).toBeNull();
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(within(code('CH-13969') as HTMLElement).getByRole('link', { name: 'Track record' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=track-record');
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(code('CH-13969')).toBeNull();
+  });
+
   it('CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs, in its own words', () => {
     showCoach();
     expect(screen.getByText('Coach')).toBeTruthy();
