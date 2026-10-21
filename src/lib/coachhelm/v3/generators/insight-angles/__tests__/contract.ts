@@ -1,7 +1,7 @@
 /** Shared assertion: an angle row carries the Slice 5a read contract for its family. */
 import { expect } from 'vitest';
 import { buildCandidate } from '@/lib/coachhelm/v3/support/candidate';
-import { ANGLE_FAMILIES, type AngleFamilyId, type AngleGapInput, type AngleTest } from '../angle-data';
+import { ANGLE_FAMILIES, impactMethodOf, type AngleFamilyId, type AngleGapInput, type AngleTest } from '../angle-data';
 
 export function expectFamilyContract(
   composed: { evidence: unknown },
@@ -23,7 +23,7 @@ export function expectFamilyContract(
   expect(Array.isArray(ev.source_round_ids)).toBe(true);
   expect((ev.source_round_ids as string[]).length).toBe(ev.rounds_n);
   expect((ev.source_round_ids as string[])[0]).toBe(expected.newestRoundId);
-  expect(ev.strokes_impact_method).toBe(def.impact);
+  expect(ev.strokes_impact_method).toBe(impactMethodOf(def.impact));
   expect([def.benchmark, ...(def.benchmark_fallbacks ?? [])]).toContain(ev.comparison.primary.source);
   expect(ev.comparison.lines[0]).toEqual(ev.comparison.primary);
   expect(ev.detail.family).toBe(family);

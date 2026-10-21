@@ -203,6 +203,6 @@ describe('LieApproachGenerator', () => {
     const loaders = stubLoaders(build({ roughFinish: 'green' }), { team: FIVE_PEERS });
     const agg = await new LieApproachGenerator(PLAYER, loaders).aggregate();
     expect(agg!.result.cause).toBe('fairway_exposure');
-    expect(loaders.calls).toEqual({ data: 1, teamRounds: 1, tourThreePutt: 0 });
+    expect(loaders.calls).toEqual({ data: 1, teamRounds: 1, tourThreePutt: 0, teamShots: 0 });
   });
 });

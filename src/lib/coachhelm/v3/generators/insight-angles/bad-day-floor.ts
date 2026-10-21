@@ -75,6 +75,14 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import {
+  FIELD_DAY_LABEL,
+  buildFieldDayContext,
+  summariseFieldSide,
+  type FieldDayContext,
+  type FieldRoundInput,
+} from '@/lib/coachhelm/v3/field-day/field';
+import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 
 export const FLOOR_MIN_ROUNDS = 10;
 export const FLOOR_MIN_EXTRA = 1.5;
@@ -122,6 +130,66 @@ export interface FloorRound {
   sg: Record<FloorArea, number> | null;
 }
 
+/**
+ * The same-day field context of the bad and middle rounds (Slice 7b, `03`
+ * §5.2), present only with `coachhelm_team_pattern_v1` on. A bad round is
+ * "shared with the field" when it sat in a field of 3 or more teammates and
+ * the player scored at or better than the team's mean that day: a hard day
+ * for everyone, not the player's bad day.
+ */
+export interface FloorFieldDay {
+  label: typeof FIELD_DAY_LABEL;
+  bad_rounds_in_field: number;
+  /** Mean score relative to the team on the day over those bad rounds. */
+  bad_mean_relative: number | null;
+  middle_rounds_in_field: number;
+  middle_mean_relative: number | null;
+  /** Bad rounds that sat in a field and were at or better than the team's mean that day. */
+  bad_shared_with_field: number;
+  /** More than half the bad rounds were hard days for the whole field: the read is not the player's (no read). */
+  explained_by_field: boolean;
+}
+
+/** Bad rounds in a field needed before the field can explain the floor away. */
+export const FIELD_EXPLAIN_MIN_ROUNDS = 2;
+
+/** The field summary of the bad and middle rounds. */
+export function floorFieldDay(badIds: readonly string[], middleIds: readonly string[], ctx: FieldDayContext): FloorFieldDay {
+  const bad = summariseFieldSide(badIds, ctx);
+  const middle = summariseFieldSide(middleIds, ctx);
+  const shared = badIds.filter((id) => {
+    const e = ctx.get(id);
+    return e !== undefined && e.relative <= 0;
+  }).length;
+  return {
+    label: FIELD_DAY_LABEL,
+    bad_rounds_in_field: bad.n,
+    bad_mean_relative: bad.mean_relative,
+    middle_rounds_in_field: middle.n,
+    middle_mean_relative: middle.mean_relative,
+    bad_shared_with_field: shared,
+    explained_by_field: shared >= FIELD_EXPLAIN_MIN_ROUNDS && shared * 2 > badIds.length,
+  };
+}
+
+/** The field rounds of one team from its peer rounds (rounds without an id cannot join). */
+export function fieldRoundsOf(peers: readonly PeerRound[], teamId: string): FieldRoundInput[] {
+  const out: FieldRoundInput[] = [];
+  for (const p of peers) {
+    if (!p.round_id) continue;
+    out.push({
+      round_id: p.round_id,
+      player_id: p.player_id,
+      team_id: teamId,
+      date: p.date,
+      course_id: p.course_id ?? null,
+      score_to_par: p.score_to_par,
+      holes: p.holes,
+    });
+  }
+  return out;
+}
+
 export interface FloorResult {
   window: AngleWindow;
   rounds: FloorRound[];
@@ -148,6 +216,8 @@ export interface FloorResult {
   z: number | null;
   excluded: { incomplete_hole_scores: number };
   examples: ReceiptExample[];
+  /** Slice 7b same-day field context; absent with the flag off or no field data. */
+  field_day?: FloorFieldDay;
   qualifies: boolean;
 }
 
@@ -201,8 +271,16 @@ function floorRound(r: AngleRound, holes: readonly AngleHole[]): FloorRound | nu
   };
 }
 
-/** Pure compute. Null with fewer than 2 usable rounds. */
-export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] | null): FloorResult | null {
+/**
+ * Pure compute. Null with fewer than 2 usable rounds. With a field context
+ * (Slice 7b), a floor whose bad rounds were mostly hard days for the whole
+ * field does not qualify.
+ */
+export function computeBadDayFloor(
+  data: AngleData,
+  peers: readonly PeerRound[] | null,
+  field: FieldDayContext | null = null,
+): FloorResult | null {
   const holesByRound = new Map<string, AngleHole[]>();
   for (const h of data.holes) {
     const arr = holesByRound.get(h.round_id) ?? [];
@@ -269,12 +347,21 @@ export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] 
 
   const se = floorGapBootstrapSe(vals);
   const z = peerGap !== null && se !== null && se > 0 ? (floorGap - peerGap) / se : null;
+  const fieldDay =
+    field && field.size > 0
+      ? floorFieldDay(
+          bad.map((r) => r.id),
+          middle.map((r) => r.id),
+          field,
+        )
+      : null;
   const qualifies =
     rows.length >= FLOOR_MIN_ROUNDS &&
     peerGap !== null &&
     extra >= FLOOR_MIN_EXTRA &&
     z !== null &&
-    z >= ANGLE_MIN_Z;
+    z >= ANGLE_MIN_Z &&
+    !(fieldDay?.explained_by_field ?? false);
 
   return {
     window: windowOf(rows),
@@ -309,6 +396,7 @@ export function computeBadDayFloor(data: AngleData, peers: readonly PeerRound[] 
     z: z === null ? null : round2(z),
     excluded: { incomplete_hole_scores: incomplete },
     examples,
+    ...(fieldDay ? { field_day: fieldDay } : {}),
     qualifies,
   };
 }
@@ -433,6 +521,7 @@ export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { cat
       nine_hole_rounds: r.nine_hole_rounds,
       rounds: r.rounds,
       sizing_note: 'Rough estimate: extra gap vs teammates × 0.2 (a P80 round is one round in five), not a measured saving.',
+      ...(r.field_day ? { field_day: r.field_day } : {}),
       area_note: 'The area split is descriptive (as few as 2 bad and 2 middle rounds with SG stored); the row is filed under scoring and its strokes stay out of area totals.',
       receipts,
     },
@@ -488,7 +577,9 @@ export class BadDayFloorGenerator extends AngleGenerator<FloorAggregate> {
     const data = await this.loaders.data();
     const team = primaryTeamId(data.rounds);
     const peers = team ? await this.loaders.teamRounds(team) : null;
-    return toFloorAggregate(computeBadDayFloor(data, peers), data.scoringBaseline);
+    // Slice 7b: the same-day field, from the team rounds already read (no new query).
+    const field = team && peers && teamPatternEnabled() ? buildFieldDayContext(fieldRoundsOf(peers, team)) : null;
+    return toFloorAggregate(computeBadDayFloor(data, peers, field), data.scoringBaseline);
   }
 
   composeContent(agg: FloorAggregate): ComposedContent {

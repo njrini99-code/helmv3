@@ -1,0 +1,5 @@
+{
+  "$comment": "Production source under src/ (tests excluded). May only go DOWN: pay debt down, then run `node scripts/any-ratchet.mjs --update`. Never raise a number to get green.",
+  "fromUntyped": 151,
+  "explicitAny": 619
+}

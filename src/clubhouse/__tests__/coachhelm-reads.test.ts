@@ -170,7 +170,7 @@ describe('the Deep dive reads', () => {
     arrange(waves);
     const { waves: depth } = await waves.run(loadPlayerDeepDive({ playerId: jonah.id }));
     expect(delivery.feed).toHaveBeenCalledTimes(1);
-    expect(delivery.feed).toHaveBeenCalledWith(jonah.id, { limit: 30, drawn: expect.any(Function), includeMore: true });
+    expect(delivery.feed).toHaveBeenCalledWith(jonah.id, { limit: 30, drawnLater: expect.any(Function), includeMore: true });
     const at = (name: string) => depth.findIndex((w) => w.includes(name));
     expect(at('golf_drills')).toBeGreaterThan(at(`feed${FEED_HOPS}`));
   });

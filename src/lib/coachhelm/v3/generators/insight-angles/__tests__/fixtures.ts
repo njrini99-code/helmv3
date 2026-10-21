@@ -1,6 +1,7 @@
 /** Synthetic AngleData builders for the insight-angle tests (no DB). */
 import type { AngleData, AngleHole, AngleRound, AngleShot, PeerRound, TourThreePutt } from '../angle-data';
 import type { AngleLoaders } from '../angle-generator';
+import type { TeamShotData } from '../counted-shots';
 
 export const PLAYER = '11111111-2222-3333-4444-555555555555';
 
@@ -56,6 +57,7 @@ export function mkShot(roundId: string, hole: number, shotNumber: number, over: 
     created_at: null,
     putt_distance_feet: null,
     putt_slope: null,
+    putt_break: null,
     ...over,
   };
 }
@@ -86,9 +88,9 @@ export function mkTeam(count: number, n: number, over: (p: number, i: number) =>
 /** Loaders for the generator tests: fixed data, team rounds and Tour figure; no DB. */
 export function stubLoaders(
   data: AngleData,
-  opts: { team?: PeerRound[]; tour?: TourThreePutt | null } = {},
-): AngleLoaders & { calls: { data: number; teamRounds: number; tourThreePutt: number } } {
-  const calls = { data: 0, teamRounds: 0, tourThreePutt: 0 };
+  opts: { team?: PeerRound[]; tour?: TourThreePutt | null; teamShots?: TeamShotData } = {},
+): AngleLoaders & { calls: { data: number; teamRounds: number; tourThreePutt: number; teamShots: number } } {
+  const calls = { data: 0, teamRounds: 0, tourThreePutt: 0, teamShots: 0 };
   return {
     calls,
     async data() {
@@ -102,6 +104,10 @@ export function stubLoaders(
     async tourThreePutt() {
       calls.tourThreePutt += 1;
       return opts.tour ?? null;
+    },
+    async teamShots() {
+      calls.teamShots += 1;
+      return opts.teamShots ?? { teammates: [] };
     },
   };
 }

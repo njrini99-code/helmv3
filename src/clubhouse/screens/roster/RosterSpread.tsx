@@ -1,21 +1,19 @@
 'use client';
 
 import { useMemo, type CSSProperties } from 'react';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { Avatar } from '../../ui/Avatar';
 import type { ChRosterPlayer } from '../../data/roster';
 
 /**
  * P003: where the team sits. Every ranked player is a coin on one scoring axis (lower is better, so the best score is on the
  * left), the team average a gold line across it. It holds no data of its own: the players and their averages are the roster's,
- * and a player under the early floor is not on it. Coins that would touch take another lane. The first time it is seen the
- * coins glide from the team line to their place.
+ * and a player under the early floor is not on it. Coins that would touch take another lane. It is drawn in place at first paint (Q-139: no
+ * first-paint draw-ins); coins glide only when the data moves them.
  */
 const COIN = 38;
 const LANE = 62;
 
 export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPlayer[]; teamAvg: number | null; onOpen: (id: string) => void }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>(0.4);
   const layout = useMemo(() => {
     const ranked = players.filter((p) => p.avg != null).sort((a, b) => a.avg! - b.avg!);
     if (ranked.length < 2) return null;
@@ -44,7 +42,7 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
         <h2 id="ch-rs-sp-h">Where the team sits</h2>
         <p>Season scoring average, lower is better. Each coin is a player; the gold line is the team average{teamAvg != null ? `, ${teamAvg.toFixed(1)}` : ''}.</p>
       </div>
-      <div ref={ref} className={'ch-rs-sp__plot' + (seen ? ' is-in' : '')} style={{ height: height + 34 }}>
+      <div className="ch-rs-sp__plot" style={{ height: height + 34 }}>
         {team != null && (
           <div className="ch-rs-sp__team" style={{ '--ch-sp-x': team, height: height + 6 } as CSSProperties}>
             <i />
@@ -54,7 +52,7 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
         {/* A pointer shortcut to the faces below, which carry every player for the keyboard and screen readers. */}
         <ul className="ch-rs-sp__coins" aria-hidden="true" style={{ height }}>
           {layout.placed.map(({ p, x, lane }) => (
-            <li key={p.id} style={{ '--ch-sp-x': seen ? x : (team ?? x), top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` } as CSSProperties}>
+            <li key={p.id} style={{ '--ch-sp-x': x, top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` } as CSSProperties}>
               <button type="button" tabIndex={-1} onClick={() => onOpen(p.id)}>
                 <Avatar name={p.name} size={COIN} />
                 <b className="ch-num">{p.avg!.toFixed(1)}</b>

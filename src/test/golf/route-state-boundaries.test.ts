@@ -21,11 +21,9 @@ const GOLF_APP = resolve(ROOT, 'src/app/golf');
 
 /** Pages whose only job is to redirect. */
 const REDIRECT_ONLY = new Set([
-  'src/app/golf/(dashboard)/dashboard/hub',
-  'src/app/golf/(dashboard)/dashboard/patterns',
-  'src/app/golf/(dashboard)/dashboard/my-insights',
-  'src/app/golf/(dashboard)/dashboard/players/[playerId]',
-  'src/app/golf/(dashboard)/dashboard/coachhelm/genome/[playerId]',
+  // (The hub, patterns, alerts, insights, my-*, development, analytics/coachhelm,
+  // players/[playerId] and coachhelm/genome/[playerId] shim pages were deleted
+  // in plan phase 7b; next.config.mjs redirects() serves those URLs now.)
   // Catch-all that only calls notFound() so unknown dashboard URLs get the
   // dashboard's own not-found page (DASH-13); it never renders UI of its own.
   'src/app/golf/(dashboard)/dashboard/[...missing]',

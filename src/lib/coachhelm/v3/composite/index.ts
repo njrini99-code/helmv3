@@ -18,8 +18,7 @@ export type {
   CompositeContext,
   HoleScore,
   ShortGameShot,
-  ApproachShotWithLie,
 } from './types';
 export { loadRecentInsightsForPlayer } from './loader';
-export { loadCompositeContext, loadHoleScores, loadShortGameShots, loadFlyerLieShots } from './hole-sequence-loader';
+export { loadCompositeContext, loadHoleScores, loadShortGameShots } from './hole-sequence-loader';
 export { synthesizeForPlayer } from './synthesis';

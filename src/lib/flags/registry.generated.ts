@@ -19,7 +19,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -36,7 +36,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -53,7 +53,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -70,7 +70,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -87,7 +87,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -168,7 +168,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_insight_angles_v1",
     owner: "golf/coachhelm",
-    purpose: "Runs the five CoachHelm insight-angle generators under src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy, bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss compass) in every analyzePlayer pass. On: each writes at most one golf_coach_insights row per player when its own floors and its one-sided z >= 1.645 gate pass, so coaches and players can see these new reads. Off: the orchestrator call site (insightAngleGenerators) returns no entries, and each angle generator's run() returns before any read, write or sweep, so nothing is read, written or archived.",
+    purpose: "Runs the five CoachHelm insight-angle generators under src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy, bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss compass) and the Slice 5b counted families (par-3 tee shots, strokes gained per approach in three bands, lag leave, breaking-putt low-side misses) in every analyzePlayer pass. On: each writes at most one golf_coach_insights row per player when its own floors and its one-sided z >= 1.645 gate pass, so coaches and players can see these new reads; the approach-miss bands also leave out par-3 tee shots, composites C6 and C8 read the counted rows instead of an estimated 3-putt rate and a 22 ft target, and no composite is written as urgent. Off: the orchestrator call site (insightAngleGenerators) returns no entries, each angle generator's run() returns before any read, write or sweep, and approach-miss and the composites behave as before.",
     type: "release",
     status: "active",
     created_at: "2026-10-20",
@@ -180,7 +180,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
       development: false,
     },
     kill_switch_behavior: null,
-    cleanup_plan: "The owner turns it on (development, preview, then production) after reviewing the production reach numbers in the Slice 5a PR. Turning it off stops new angle rows; rows already written stay until the lifecycle cron archives them (archive them by signature prefix v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:, v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate rollback). If coaches keep the angles through one season, remove the flag and the run() flag check in angle-generator.ts; if rejected, delete the insight-angles directory, its orchestrator call site and its metric aliases, then archive this flag.",
+    cleanup_plan: "The owner turns it on (development, preview, then production) after reviewing the production reach numbers in the Slice 5a PR. Turning it off stops new angle rows; rows already written stay until the lifecycle cron archives them (archive them by signature prefix v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:, v3:tee_miss_cost:, v3:approach_miss_compass:, v3:par3_tee:, v3:approach_sg:, v3:lag_leave:, v3:under_reading: for an immediate rollback). If coaches keep the angles through one season, remove the flag and the run() flag check in angle-generator.ts; if rejected, delete the insight-angles directory, its orchestrator call site and its metric aliases, then archive this flag.",
   },
   {
     feature_id: "coachhelm_learned_personalization",
@@ -189,7 +189,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-22",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -223,7 +223,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -291,7 +291,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -317,6 +317,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
+  },
+  {
+    feature_id: "coachhelm_team_pattern_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates two Slice 7b pieces. (1) Team patterns on the Clubhouse coach CoachHelm board: a cause family (support family, band and miss side) that at least 3 players and at least 30% of the players with 3 or more countable rounds share, each at Likely or above on the support ladder, drawn as up to 4 rows with the players count, the team strokes a round at stake (sum of the shrunk strokes of those players), the common practice block and the list of those players; computed at delivery from the reads the board already loads, coach only. (2) The same-day field context: for rounds where 3 or more teammates played the same course on the same day, each round's score relative to the team's mean that day. The bad-day-floor read records it and does not fire when most of the player's bad rounds were hard days for the whole field; the pressure read records it as audit detail (\"Relative to the team on the day\"). When off, nothing new is read or written and every read is as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off: the coach board draws no Team patterns section, and the next analysis run writes the bad-day-floor and pressure reads without detail.field_day and with the bad-day gate as before.",
+    cleanup_plan: "Turn on after the owner turns on coachhelm_support_v1 (the pattern needs the ladder on rows; without it no pattern can form). Remove the flag checks in v3/team-pattern/flag.ts callers and this entry once coaches have read team patterns for a season without an accuracy complaint; if rejected, turn it off and remove v3/team-pattern/ and v3/field-day/.",
   },
   {
     feature_id: "coachhelm_team_pool_v1",
@@ -359,7 +376,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -368,23 +385,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
-  },
-  {
-    feature_id: "coachhelm_v2_availability",
-    owner: "golf/coachhelm",
-    purpose: "Global product-availability switch for the CoachHelm V2 AI layer. Off disables the whole surface for every coach and player account; the underlying check is a fail-open string comparison (any value except the literal string \"false\" leaves it on).",
-    type: "release",
-    status: "active",
-    created_at: "2026-09-03",
-    expires_at: null,
-    default: true,
-    environment: {
-      production: true,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: null,
-    cleanup_plan: "No planned removal — this has been the live product-availability switch for CoachHelm V2 since its rollout; this registry entry documents it without wiring the call site, which lives outside this PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts through isFlagEnabled('coachhelm_v2_availability') as a small, independent follow-up.",
   },
   {
     feature_id: "coachhelm_verdicts_v1",
@@ -402,23 +402,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
-  },
-  {
-    feature_id: "flight_recorder",
-    owner: "platform (Bridge)",
-    purpose: "Arms per-request golf round mutation tracing (client to server action to RPC to in-transaction checkpoints) so /admin/traces has data to show. An operability lever only — disabling it stops the mutation from being observed, never stops the mutation from running.",
-    type: "operations_kill_switch",
-    status: "active",
-    created_at: "2026-09-03",
-    expires_at: null,
-    default: true,
-    environment: {
-      production: false,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: "Off: no helm_debug_start_trace / helm_debug_record_trace_step / helm_debug_finalize_trace RPCs are called from the golf round action path. The round mutation itself is unaffected — this switch only controls whether it is observed. Changed by setting HELM_FLIGHT_RECORDER_ENABLED at the environment level (deploy-time, not a runtime toggle); auditable via the Vercel environment-variable change log.",
-    cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
   {
     feature_id: "golf_clubhouse_front_door",

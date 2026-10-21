@@ -346,6 +346,17 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   tee_miss_next_shot_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   approach_miss_recovery_cost: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   round_bad_day_floor: { kind: 'intentional-null', reason: 'between-round-dispersion-not-per-round' },
+  // Slice 5b counted families (same flag). Per-shot SG, lag leaves and miss
+  // sides exist only at shot level; the two composite chain ids are C6 / C8's
+  // counted rewrites.
+  par3_tee_sg_per_shot: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_sg_per_shot_50_125: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_sg_per_shot_125_175: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_sg_per_shot_175_plus: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  lag_leave_inside_5ft_pct: { kind: 'intentional-null', reason: 'needs-first-putt-length' },
+  putt_break_low_side_miss_pct: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  three_putt_lag_chain: { kind: 'intentional-null', reason: 'needs-hole-level-sequencing' },
+  short_approach_sg_scramble_chain: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
   tee_fairway_rough_exposure: {
     kind: 'round_stats_cache_ratio',
     numerator: 'fairways_hit',

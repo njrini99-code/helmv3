@@ -20,6 +20,8 @@ import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { BoardPartial, FocusCard, Head, PulseList } from './parts';
+import { TeamPatterns } from './TeamPatterns';
+import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
@@ -198,6 +200,13 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
         </section>
       </SectionBoundary>
 
+      {/* Slice 7b (coachhelm_team_pattern_v1, off): the loader hands rows only with the flag on. */}
+      {data.teamPatterns && (
+        <SectionBoundary surface="coachhelm.patterns" label="Team patterns" code="CH-13204">
+          <TeamPatterns data={data.teamPatterns} />
+        </SectionBoundary>
+      )}
+
       {data.roster.error || data.players.error ? (
         <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
@@ -325,6 +334,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                         )}
                       </div>
                     )}
+                    <ClearedLines lines={cur.cleared} />
                   </>
                 )}
               </SectionBoundary>
