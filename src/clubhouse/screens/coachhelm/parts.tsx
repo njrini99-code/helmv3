@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SerifText } from '../../ui/SerifText';
+import { EngineState, WhyAudit } from './EngineState';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -133,6 +134,8 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
         </p>
       )}
+      {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
+      <EngineState engine={ins.engine} />
       <Evidence ev={ins.evidence} who={who} />
       {ins.week && (
         <div className="ch-hl-drill">
@@ -160,6 +163,7 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           </p>
         </>
       )}
+      <WhyAudit lines={ins.engine?.audit} />
     </article>
   );
 }

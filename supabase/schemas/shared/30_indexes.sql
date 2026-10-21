@@ -274,6 +274,8 @@ CREATE INDEX "idx_users_notification_prefs_email_messages" ON "public"."users" U
 
 CREATE INDEX "idx_users_role" ON "public"."users" USING "btree" ("role");
 
+CREATE INDEX "organizations_created_by_idx" ON "public"."organizations" USING "btree" ("created_by");
+
 CREATE UNIQUE INDEX "organizations_normalized_name_uidx" ON "public"."organizations" USING "btree" ("lower"("btrim"("name"))) WHERE ("name" IS NOT NULL);
 
 COMMENT ON INDEX "public"."organizations_normalized_name_uidx" IS 'One organization per school name, case + whitespace insensitive. Prevents duplicate-school org rows (e.g. the 2026-06 "University of Lynchburg " trailing-space dup). Onboarding catches the resulting 23505 and surfaces a friendly "already exists" error.';

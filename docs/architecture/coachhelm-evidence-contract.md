@@ -2166,6 +2166,138 @@ read nothing extra and shot entry is unchanged.
   voice) is typed and stamped from `ComposedContent.coach`; no generator sets
   it yet.
 
+## Team pool benchmark (supercharge Slice 7a, 2026-10-20)
+
+Behind `coachhelm_team_pool_v1` (OFF). With the flag off, nothing is read
+and nothing new is written: `attachTeamPool` returns the composed evidence
+object itself. With it on, `BaseGenerator.run()` adds
+`evidence.comparison = { primary, lines }` to a read whose value a team pool
+measures, keyed by insight type and metric (`familyForRead` in
+`v3/team-pool/pool.ts`):
+
+| Read (insight type, metric) | Pool value | `n` counts |
+| --- | --- | --- |
+| `putt_distance`, `putts_made_<band>_pct` | made / putts | putts |
+| `approach_miss`, `approach_proximity_<band>` | greens / shots | approaches |
+| `scrambling`, `scrambling_pct_sand` | saves / bunker holes | bunker holes |
+| `par_scoring`, `scoring_par_<N>` | strokes / par-N holes | holes |
+| `course_management`, `penalty_rate_per_round` | penalties / 18 holes | rounds |
+
+The module also pools three-putts per putted hole, GIR and scrambling on
+missed greens, which no single-metric read carries today.
+
+- **Pooled attempts, not a median.** The pool sums the attempts of the
+  teammates in the read's own window (`poolWindowFor`: the stamped bounds, a
+  rolling generator's `rollingWindowDays` window, or the `window_days` days
+  ending on `window_end` with both ends included, as `lifetimeSpanDays`
+  counts them), on the same definitions the player's value
+  uses (putt bands and the made rule of `update_player_putt_make_pct`,
+  approach bands of `bucketApproachDistance`, `approachFoundGreen`).
+- **The player's own round rule, non-test rounds only**, and never the
+  player's own attempts. Approach green-hit and sand save pool every
+  completed round, as `loadApproachShots` and `loadSandShots` do for the
+  player's value; the other families pool countable rounds
+  (`isCountableRound`). `roundRuleFor` in `pool.ts` holds the rule. The
+  roster and teammate floors below always count countable rounds.
+- **Floors.** At least 5 rostered players with a countable round in the
+  window (privacy, `03` §5.2), at least 4 teammates with 3 or more countable
+  rounds (only they contribute), at least 4 of them with attempts in the
+  family, and at least 100 pooled attempts (not for the per-round penalty
+  rate). Below any floor there is no team line; there is no program pool
+  (open owner question, default no).
+- **Shape.** `ComparisonLine = { source, label, value, n, unit, n_unit?,
+  n_noun?, players?, exposure_rounds?, window_start?, window_end?,
+  citation? }`. `primary` is
+  the `team_pool` line ("Team pool"); `lines` is the team line, then the
+  Tour (`source: 'tour'`, the flat comparison) when the flat comparison is a
+  `pga_baseline`. `players` is how many teammates were pooled, never who.
+  `exposure_rounds` (the per-round penalty line only) is scored holes ÷ 18,
+  the denominator the value is scaled by; `n` stays the rounds the line
+  names, so nine-hole rounds make the two differ.
+- **A composed comparison stays.** A read that already wrote its own
+  `comparison` (the Slice 5a insight angles, whose `primary` matches their
+  own gap test) keeps its `primary` and every line; the team line is added
+  as a further line, once. Readers take a `team_pool` primary as a pool only
+  in this shape (`n_unit` and `players` present), so an angle's own
+  `team_pool` median keeps its own words and is never read as pooled counts.
+- **The Tour keeps the arithmetic.** The flat `comparison_*` fields, the
+  standing block, the counterfactual and `strokes_impact` are unchanged
+  (`02` §3: strokes use the Tour baseline; words use the team).
+- **Readers.** `src/lib/coachhelm/reads/team-pool-line.ts` prints
+  "Team pool 72% (240 putts)"; the Clubhouse Deep dive Read says it in place
+  of "Compared with …", and the Fairway `EvidencePanel` says it beside the
+  sample (compact) and in the Comparison row (expanded). A row without the
+  line reads as before.
+- **Loader.** `v3/team-pool/loader.ts`: one batched read per team (roster,
+  test players, completed non-test rounds over 730 days, then the holes and
+  the putting and approach shots of all of them), with the service
+  client the generators already use, `.in()` chunked and paged past the
+  1,000-row cap, memoised for 5 minutes per team. Any read error is logged
+  (`coachhelm.v3.teamPool.load`) and the read keeps its Tour comparison.
+- **Benchmark and shrink prior.** With the flag on, the support pass
+  (`v3/support/run-pass.ts`, `teamPool` option of `evaluatePlayerRun`) takes
+  a read's team pool line as μ (`shrink.prior_source: 'team_pool'`,
+  `prior_value` = the pool value, in the row's own scale). For a one-sample
+  test (a rate against a benchmark, or a count per round) the pool is also
+  the benchmark, with its pooled count as the benchmark's own sample (for
+  the per-round penalty rate, `exposure_rounds`; a line without it is the
+  prior only)
+  (`support.benchmark_basis: 'team_pool'`, `benchmark_variance: true`): the
+  variance is exact, in place of Slice 1b's leave-one-out team mean, which
+  has to assume each teammate's sample is the player's size. A read without
+  the line, or with the flag off, is exactly Slice 1b (leave-one-out team
+  mean, cohort or the row's comparison), and a within-player contrast still
+  shrinks toward no difference.
+
+## Team pattern and same-day field (supercharge Slice 7b, 2026-10-21)
+
+Behind `coachhelm_team_pattern_v1` (OFF). With the flag off nothing new is
+read or written.
+
+- **Team pattern** (`v3/team-pattern/pattern.ts`, pure, computed at
+  delivery, no table). The family key is `support.family` (else
+  `familyFor`), the read's metric (its band) and `detail.worse_side` when
+  the read names one. A member is a player with 3 or more countable rounds
+  whose read is a weakness at `ladder` Likely, Observed or Seen
+  repeatedly. A pattern needs at least 3 members AND at least 30% of those
+  players (`04` Example 8: "5 ≥ 3 and 5/6 ≥ 30%"). Row (`04` §1.6):
+  `team_id`, `family`, `window_end`, `members`, `roster_with_reads`,
+  `roster_total`, `strokes_sum` (sum of the members' `strokes_shrunk`),
+  `common_next` (the `diagnosis.recommended_action` most members share),
+  `computed_at`. At most 4 rows, most strokes first; the rest, and every
+  family with 2 or more members under the threshold, are counted
+  (`below_threshold`). The Clubhouse coach board draws it
+  (`TeamPatterns.tsx`); no player surface reads it.
+- **Same-day field** (`v3/field-day/field.ts`, pure, computed on read).
+  Rounds grouped by (team, `round_date`, `course_id`) with 3 or more
+  distinct players form a field; each round gets its per-18 score to par
+  minus the field mean (`relative`; positive = worse than the team that
+  day). Rounds without a course or score cannot join.
+  - Bad-day floor: `detail.field_day` (`bad_rounds_in_field`,
+    `bad_mean_relative`, `middle_rounds_in_field`, `middle_mean_relative`,
+    `bad_shared_with_field`, `explained_by_field`). When at least 2 bad
+    rounds, and more than half of them, sat in a field at or better than
+    the team's mean, the floor is the field's, not the player's, and the
+    read does not fire. The field comes from the team rounds the read
+    already loads (no new query).
+  - Pressure gap: `detail.field_day` (`practice`, `pressure`: field rounds
+    and mean relative score; `gap`: pressure minus practice, each relative
+    to the team on the day, with 3 or more field rounds a side). Audit
+    detail only; the gap, its noise band and the gate are unchanged. One
+    extra read of the team's rounds over the read's 90 days
+    (`v3/field-day/loader.ts`); a failed read leaves no context.
+  - Both carry `label: 'Relative to the team on the day'` for the audit
+    view (`03` §5.2).
+- **LPGA approach anchors.** Production `golf_pga_standards` (read
+  2026-10-21) has `tour = 'lpga'` rows for `approach_proximity_50_125ft`,
+  `_125_175ft`, `_175_plus_ft`, `gir_pct` and `sg_approach`, each with a
+  source; `TOUR_STANDARDS.lpga.approachProximityFt` mirrors them. There is
+  no LPGA green-hit-by-band figure, which is what the approach read is
+  built on, so `greenHitAnchor(band, 'womens')` stays null: a women's team
+  gets no approach read and its standing omits the Tour marker
+  (`pga_omitted`). No PGA number is ever used for a women's read, and no
+  rows were seeded.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
@@ -2401,3 +2533,55 @@ Slice 4's verdicts now import `KAPPA`, `shrinkToward` and `keptShare` from
 The formula is the same one-sample shrink (`(n·y + κ·μ)/(n + κ)`), so every
 verdict number is unchanged (04 Example 11: 18 of 31 shrinks to 0.635 at
 κ 30).
+
+## Counted families (Slice 5b, 2026-10-21)
+
+Behind `coachhelm_insight_angles_v1` (off). With the flag off nothing
+below runs and the legacy generators and composites are unchanged.
+
+Each family's contract (`ANGLE_FAMILIES`):
+
+- `par3_tee` writes `par3_tee_sg_per_shot`: tee shots, floor 20 over 4+
+  rounds, mean gap, `sg_baseline` impact, team pool, capped at observed.
+- `approach_sg_50_125`, `approach_sg_125_175` and `approach_sg_175_plus`
+  write `approach_sg_per_shot_<band>`: approaches, floor 20 over 4+ rounds,
+  mean gap, `sg_baseline` impact, team pool, capped at seen repeatedly.
+- `lag_leave` writes `lag_leave_inside_5ft_pct`: putts, floor 20 over 3+
+  rounds, proportion gap, `rough_estimate` impact, team pool, capped at
+  likely.
+- `under_reading` writes `putt_break_low_side_miss_pct`: putts, floor 20
+  over 3+ rounds, proportion gap, `unsized` impact, an even split (50%) as
+  the benchmark, capped at observed.
+
+- **Per-attempt SG.** A shot's SG (the `shotSgForRound` port) plus the
+  penalty rows that follow it, and for a par-3 tee shot any re-tee. A
+  par-3 tee shot is the hole's first shot, from the tee, on a par 3. The
+  approach bands drop every `lie_before = 'tee'` row, so the two families
+  never share a shot.
+- **Team pool** (`counted-shots.ts`, `poolTeammates`). Teammates on the
+  player's primary team with 3+ countable rounds, newest 40 rounds each,
+  read once per call (`AngleLoaders.teamShots`). The pool needs 5+
+  teammates and 100+ pooled attempts, never includes the player, and is
+  priced at the player's SG scale. Below the floors there is no comparison
+  and no row; there is no Tour fallback (a Tour line is printed beside the
+  team line where one exists, as context).
+- **Test.** `detail.gap_input` is a `mean` with the Welch SE of the
+  player-minus-pool difference (SG families) or a `proportion` against the
+  pooled rate (lag leave) or 0.5 (under-reading). Rows need one-sided
+  z ≥ 1.645 and, where sized, 0.3+ strokes a round.
+- **Stability.** SG rows write `evidence.stability.split_half` (older and
+  newer half of the rounds, positive = worse) for the support pass.
+- **Lag leave** strokes = gap × lag putts per 18 × the three-putt rate
+  difference between leaves outside and inside 5 ft (the player's own when
+  each side has 10+ putts, else the team's), so it is `estimated: true`.
+  The three-putt chain prints the lag line and stores `detail.lag_leave`.
+- **Under-reading** writes nothing unless side-tagged misses are 60%+ of
+  breaking-putt misses and 20+. `strokes_impact` is 0 with
+  `peer_delta`, which the support pass reads as no estimate.
+- **Composites** (`ctx.counted_families`, flag on): C6 lag-to-3-putt needs
+  a `three_putts_per_18` row above its benchmark and a `lag_leave` row
+  below the team (metric `three_putt_lag_chain`, not estimated); C8 needs
+  the 50-125 yd SG row below the team plus weak scrambling (metric
+  `short_approach_sg_scramble_chain`, `team_avg`, no 22 ft target). No
+  composite is `urgent` (`compositeRulePriority` maps it to `high`). C4
+  flyer lie is deleted in every mode (it never fired); 8 rules remain.

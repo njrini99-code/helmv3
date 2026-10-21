@@ -25,6 +25,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
+import { ClearedLines, EngineState, WhyAudit } from '../EngineState';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
@@ -248,6 +249,7 @@ function Read({ i, tour }: { i: ChDeepInsight; tour: string }) {
   const r = i.read;
   const what = readLines(r, tour).what;
   const n = r.next;
+  const cause = i.base.engine?.cause;
   return (
     <dl className="ch-hd-read">
       <div>
@@ -256,15 +258,23 @@ function Read({ i, tour }: { i: ChDeepInsight; tour: string }) {
       </div>
       <div>
         <dt>Why</dt>
-        <dd className={r.why.level ? undefined : 'is-none'}>
-          {r.why.basis && (
-            <span className={'ch-hd-dx__lvl ch-hd-read__lvl is-' + r.why.level} data-ch-code="CH-13982">
-              {r.why.basis}
-            </span>
-          )}
-          {r.why.basis && ' '}
-          {r.why.text}
-        </dd>
+        {cause ? (
+          // With the root-cause flag on, the cause state the engine stored says the Why: a counted path, or exactly why it is not
+          // traced (a count-down or a data gap). An inferred cause is never the player's (Q3), so theirs reads as not traced.
+          <dd className={cause.state === 'counted' ? undefined : 'is-none'} data-ch-code="CH-13993">
+            {cause.word}: {cause.line}
+          </dd>
+        ) : (
+          <dd className={r.why.level ? undefined : 'is-none'}>
+            {r.why.basis && (
+              <span className={'ch-hd-dx__lvl ch-hd-read__lvl is-' + r.why.level} data-ch-code="CH-13982">
+                {r.why.basis}
+              </span>
+            )}
+            {r.why.basis && ' '}
+            {r.why.text}
+          </dd>
+        )}
       </div>
       <div>
         <dt>Next</dt>
@@ -369,6 +379,10 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
         {/* The four lines are what is read first; the parts below are their evidence. */}
         <Read i={i} tour={d.tour} />
       </header>
+      {/* What the engine now knows, flush under the read (each part only with its flag on; the cause is the Why line above), and
+          "Why do you think so?", the read's audit lines. */}
+      <EngineState engine={i.base.engine && { ...i.base.engine, cause: undefined }} />
+      <WhyAudit lines={i.base.engine?.audit} />
       <PageRefreshNotice parts={failed} />
 
       <Section id={`${b.id}-meas`} title="What was measured">
@@ -564,6 +578,8 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
             ) : undefined
           }
         />
+        {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
+        <ClearedLines lines={d.cleared} />
       </PlayerHelmFrame>
     );
   }
@@ -611,6 +627,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
         <div className="ch-hd">
           <nav className="ch-hd-rail" aria-label="Your insights" data-ch-code="CH-13890">
             {groups}
+            <ClearedLines lines={d.cleared} />
           </nav>
           {!phone && shown && (
             <div className="ch-hd-main" ref={dossier}>

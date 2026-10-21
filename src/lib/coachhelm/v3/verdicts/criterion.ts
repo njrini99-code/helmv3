@@ -37,7 +37,7 @@ export const DEFAULT_CHECK_AFTER_ROUNDS = 3;
 
 export type PriorSource = 'team_pool' | 'band_prior';
 
-export interface Criterion {
+export type Criterion = {
   direction: 'higher' | 'lower';
   /** Proportion (0-1) for `unit: 'pct'`. */
   threshold: number;
@@ -51,21 +51,21 @@ export interface Criterion {
     /** n / (n + κ): the share of the player's own rate kept. */
     kept_share: number;
   };
-}
+};
 
-export interface Horizon {
+export type Horizon = {
   attempts?: number;
   rounds?: number;
-}
+};
 
 /** The new `golf_player_focus_areas` columns this generator fills. */
-export interface PrescriptionFields {
+export type PrescriptionFields = {
   baseline_n: number;
   baseline_shrunk: number;
   criterion: Criterion;
   horizon: Horizon;
   check_after_rounds: number;
-}
+};
 
 export interface CriterionInput {
   def: VerdictMetricDef;

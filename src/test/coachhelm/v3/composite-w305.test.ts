@@ -15,13 +15,11 @@ import closingHoleFatigue from '@/lib/coachhelm/v3/composite/rules/closing-hole-
 import front9Starter from '@/lib/coachhelm/v3/composite/rules/front-9-starter';
 import doublesAfterBogey from '@/lib/coachhelm/v3/composite/rules/doubles-after-bogey';
 import shortSideScrambling from '@/lib/coachhelm/v3/composite/rules/short-side-scrambling-chain';
-import flyerLieOverGreen from '@/lib/coachhelm/v3/composite/rules/flyer-lie-over-the-green';
 import type {
   CompositeContext,
   EvidenceInsight,
   HoleScore,
   ShortGameShot,
-  ApproachShotWithLie,
 } from '@/lib/coachhelm/v3/composite/types';
 
 // ---------------------------------------------------------------------------
@@ -93,7 +91,7 @@ function makeInsight(over: {
 }
 
 function emptyCtx(): CompositeContext {
-  return { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
+  return { hole_scores: [], short_game_shots: [] };
 }
 
 function holeScore(round_id: string, hole_number: number, par: number, score: number): HoleScore {
@@ -107,16 +105,6 @@ function shortGameShot(over: Partial<ShortGameShot> = {}): ShortGameShot {
     lie_before: over.lie_before ?? 'rough',
     distance_to_hole_before: over.distance_to_hole_before ?? 30,
     distance_to_hole_after: over.distance_to_hole_after ?? 18,
-  };
-}
-
-function flyerShot(over: Partial<ApproachShotWithLie> = {}): ApproachShotWithLie {
-  return {
-    round_id: over.round_id ?? 'r1',
-    hole_number: over.hole_number ?? 5,
-    lie_before: over.lie_before ?? 'light_rough',
-    distance_to_hole_before: over.distance_to_hole_before ?? 150,
-    distance_to_hole_after: over.distance_to_hole_after ?? 40,
   };
 }
 
@@ -439,26 +427,3 @@ describe('short_side_scrambling_chain', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// flyer_lie_over_the_green (ctx-driven)
-// ---------------------------------------------------------------------------
-
-describe('flyer_lie_over_the_green (DISABLED — blocked on rough-severity capture)', () => {
-  // The supplemental loader filters lie_before='light_rough', which violates
-  // the golf_shots CHECK (tee|fairway|rough|sand|green|other|penalty) → 0 rows.
-  // The rule is explicitly disabled (RULE_ENABLED=false) so it can't fire on
-  // data that can never exist; firing on the plain 'rough' bucket would
-  // conflate flyer-prone light rough with deep rough. It returns null even
-  // when given an (impossible) qualifying fixture.
-  it('does NOT fire even with qualifying light_rough fixture (explicitly disabled)', () => {
-    const ctx = emptyCtx();
-    for (let i = 0; i < 12; i++) ctx.flyer_lie_shots.push(flyerShot({ distance_to_hole_after: 45 }));
-    expect(flyerLieOverGreen.detect([], ctx)).toBeNull();
-  });
-
-  it('does NOT fire when proximity is acceptable', () => {
-    const ctx = emptyCtx();
-    for (let i = 0; i < 12; i++) ctx.flyer_lie_shots.push(flyerShot({ distance_to_hole_after: 28 }));
-    expect(flyerLieOverGreen.detect([], ctx)).toBeNull();
-  });
-});

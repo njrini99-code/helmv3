@@ -1,5 +1,8 @@
 /**
  * Error Logging Service — routes errors to Sentry + the internal error_logs table.
+ *
+ * @deprecated Superseded by server-error-logger for server code. New code must not import this module (ESLint enforces it;
+ * existing importers are allowlisted in eslint-rules/import-allowlists.mjs). Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -347,6 +350,8 @@ function shouldThrottleClientReport(
 /**
  * Main error logging function
  * Logs errors to console in development and sends to monitoring service in production
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export function logError(
   error: Error,

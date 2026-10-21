@@ -65,7 +65,6 @@ export const FAMILY_FLOORS: Readonly<Record<string, FamilyFloor>> = {
   'composite:front_9_starter': { sample_unit: 'rounds', min_rounds: 12, say_n: 12, clear_n: 24 },
   'composite:doubles_after_bogey': { sample_unit: 'holes', min_rounds: 3, say_n: 12, clear_n: 24 },
   'composite:short_side_scrambling_chain': { sample_unit: 'shots', min_rounds: 4, say_n: 15, clear_n: 30 },
-  'composite:flyer_lie_over_the_green': { sample_unit: 'shots', min_rounds: 3, say_n: 20, clear_n: 40 },
 
   // Insight composites: `sample_n` is the smaller of two source reads, each of
   // which already cleared its own family floor; the composite adds the round
