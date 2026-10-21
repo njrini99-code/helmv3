@@ -318,8 +318,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
@@ -1012,8 +1010,6 @@ them would bury everything above.
 | `src/app/golf/actions/ACTIONS.md` | current | - | - | - | - |
 | `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
