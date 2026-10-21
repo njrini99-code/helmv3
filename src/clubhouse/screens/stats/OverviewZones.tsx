@@ -44,7 +44,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   );
 }
 
-export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode }) {
+export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; ribbon: ReactNode; onOpenLeg?: (label: string) => void }) {
   const w = data.win;
   const s: Stats | null = data.stats && !data.statsError ? data.stats : null;
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
@@ -165,7 +165,7 @@ export function OverviewZones({ data, coach, ribbon }: { data: ChPlayerProfile; 
           <EmptyState compact code="CH-5309" title="No strokes gained in this window." body="Strokes gained by leg appears after three rounds with shots." />
         ) : (
           <Vis title="Where the strokes go" note="The same number split by the shots it counts. Right of the line gains strokes, left loses them.">
-            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} />
+            <LegBars rows={legs} baseline={`Zero is ${baseline.noun}`} teamName={coach ? 'Team' : null} onOpen={onOpenLeg} />
           </Vis>
         )}
         {sg != null && (

@@ -26,7 +26,7 @@ export const Provider = () => null;`);
     assert.deepEqual(catalog.previews.slice(0, 2).map(preview => preview.name), ['home', 'home-player']);
     const token = catalog.styles.find(style => style.file.endsWith('/real.css')).tokens[0];
     assert.match(token.scope, /@media.*820px.*data-ui/);
-    assert.equal(token.line, 1);
+    assert.equal('line' in token, false);
     assert.deepEqual(buildCatalog(root), catalog);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

@@ -1,8 +1,9 @@
 'use client';
 
 import { useId, useState, type ReactNode } from 'react';
-import { CalendarX, ChevronDown, ChevronRight, ChevronUp, ClipboardList, Flag, ListChecks, MailQuestionMark, Target, TrendingDown, TrendingUp, Users, type LucideIcon } from 'lucide-react';
-import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChHelmGauge, type ChInsight, type ChPulseIcon, type ChPulseRow } from '../../data/coachhelm-shape';
+import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChInsight } from '../../data/coachhelm-shape';
+import { NARROWING_PREFIX, type ChPathLine } from '../../data/coachhelm-path';
 import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -11,70 +12,47 @@ import { CorrectionChips, ReadLater } from './Corrections';
 import { EngineState, WhyAudit } from './EngineState';
 
 /**
- * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
- * a card that states no finding reads Note, a read older than the newest round reads Out of date, and a finding already assigned
- * or acknowledged reads so (`stanceOf`), never as a fresh Priority. `assigned`: the focus area made from it, over what the page loaded.
+ * The path line (design call D2): the card's second line, inside the card, in one fixed grammar: what was seen · count of
+ * denominator · rounds · firmness word. Words only: no glyph, no percent of confidence. A narrowing the engine stored is drawn as
+ * its steps ("175+ yd › long par 4s › short-right"), prefixed "Observed, not a cause:"; none is drawn when none was stored.
  */
-export function PriPill({ ins, assigned }: { ins: ChInsight; assigned?: ChHelmAssigned | null }) {
-  const stance = stanceOf(ins, assigned);
-  return <span className={'ch-hl-pri is-' + stance.cls}>{stance.word}</span>;
-}
-
-/** The confidence read: three bars and the word for the level. The bars are decoration; the word says it. */
-export function ReadMeter({ read }: { read: NonNullable<ChHelmEvidence['read']> }) {
+export function PathLine({ path }: { path: ChPathLine | null }) {
+  if (!path) return null;
   return (
-    <span className="ch-hl-conf">
-      <span className="ch-hl-conf__d" aria-hidden="true">
-        {[1, 2, 3].map((n) => (
-          <i key={n} className={read.level >= n ? 'is-on' : undefined} />
-        ))}
-      </span>
-      {read.word}
-    </span>
-  );
-}
-
-/**
- * You against the comparison (and the Tour, when the generator carries one).
- * CH-13802: the track is decoration; the legend says every number in words,
- * and the priority pill beside the title says whether it is a finding or a
- * strength, so colour never carries either.
- */
-function Gauge({ g, who }: { g: ChHelmGauge; who?: string }) {
-  return (
-    <div className={'ch-hl-g' + (g.good ? ' is-good' : '') + (g.fromZero ? ' is-fromzero' : '')}>
-      <div className="ch-hl-g__t" aria-hidden="true">
-        <span className="ch-hl-g__f" style={{ width: `${g.youPct}%` }} />
-        <i className="ch-hl-g__cmp" style={{ left: `${g.cmpPct}%` }} />
-        {g.secPct != null && <i className="ch-hl-g__sec" style={{ left: `${g.secPct}%` }} />}
-        <i className="ch-hl-g__you" style={{ left: `${g.youPct}%` }} />
-      </div>
-      <div className="ch-hl-g__lg">
-        <span>
-          <i className="is-you" aria-hidden="true" />
-          {/* One inline run: as loose flex items the spaces round the dot collapsed ("Eli· 1.1", P013 D12). */}
-          <span>
-            {who ?? 'You'} · <b className="ch-num">{g.you}</b>
+    <div className={'ch-hl-path is-' + path.tier} data-ch-code="CH-13940">
+      <p className="ch-hl-path__l ch-num">
+        {[path.seen, path.count, path.rounds].filter(Boolean).join(' · ')}
+        {' · '}
+        <b>{path.firmness}</b>
+      </p>
+      {path.narrowing && (
+        <p className="ch-hl-path__n">
+          <span>{NARROWING_PREFIX}</span>
+          <span className="ch-hl-path__chips">
+            {path.narrowing.map((step, i) => (
+              <span key={step} className="ch-hl-path__chip">
+                {i > 0 && (
+                  <span className="ch-hl-path__sep" aria-hidden="true">
+                    ›
+                  </span>
+                )}
+                <span className="ch-hl-path__step">{step}</span>
+              </span>
+            ))}
           </span>
-        </span>
-        <span>
-          <i className="is-cmp" aria-hidden="true" />
-          {g.cmp}
-        </span>
-        {g.sec && (
-          <span>
-            <i className="is-sec" aria-hidden="true" />
-            {g.sec}
-          </span>
-        )}
-      </div>
+        </p>
+      )}
     </div>
   );
 }
 
-/** `who`: the first name the gauge's own number is labelled with on a coach's board; the player's own board says You. */
+/**
+ * The evidence ledger (design call D8): the read's number and its comparison as flush rows with tabular figures, then the sample,
+ * the window, the confidence word and the day. `who`: the first name the read's own row is labelled with on a coach's board; the
+ * player's own board says You. The slope read keeps its two make rates, each with one thin bar.
+ */
 export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
-  // A note draws none of the number behind it, so there is nothing to put in a box.
+  // A note draws none of the number behind it, so there is nothing to put in a ledger.
   if (!ev.label && !ev.bars && !ev.gauge && !ev.sample && !ev.window && !ev.read && !ev.asOf) return null;
   return (
     <div className="ch-hl-ev">
@@ -92,13 +70,22 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
           ))}
         </ul>
       ) : (
-        ev.gauge && <Gauge g={ev.gauge} who={who} />
+        ev.gauge && (
+          <ul className="ch-hl-ledger">
+            <li>
+              <span>{who ?? 'You'}</span>
+              <b className="ch-num">{ev.gauge.you}</b>
+            </li>
+            <li className="ch-num">{ev.gauge.cmp}</li>
+            {ev.gauge.sec && <li className="ch-num">{ev.gauge.sec}</li>}
+          </ul>
+        )
       )}
       {(ev.sample || ev.window || ev.read || ev.asOf) && (
         <div className="ch-hl-ev__f">
           {ev.sample && <span className="ch-num">{ev.sample}</span>}
           {ev.window && <span>{ev.window}</span>}
-          {ev.read && <ReadMeter read={ev.read} />}
+          {ev.read && <span className="ch-num">{ev.read.word}</span>}
           {ev.asOf && <span data-ch-code="CH-13905">{ev.asOf}</span>}
         </div>
       )}
@@ -107,10 +94,14 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
 }
 
 /**
- * The one insight the page is about (helm3.jsx `Focus`): category and priority,
- * the claim, its first sentence, the evidence, "This week" and "Why we think
- * this". Re-mounted per insight (key), so each opens with its reasoning closed.
+ * The one insight the page is about (helm3.jsx `Focus`): the category, the
+ * claim, its path line (D2: the card's second line), its first sentence, the
+ * evidence ledger, "This week" flush under it and "Why we think this".
+ * Re-mounted per insight (key), so each opens with its reasoning closed.
  * CH-13804: the reasoning is a disclosure button that names what it controls.
+ * Priority is the By player order, not a badge (D8 cuts the pill): the
+ * eyebrow says where the read stands in a word only when that is news
+ * (`eyebrowStance`).
  */
 export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: ChInsight; who?: string; assigned?: ChHelmAssigned | null; defaultOpen?: boolean }) {
   const [why, setWhy] = useState(defaultOpen);
@@ -123,13 +114,11 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
       {/* The claim. On the phone it is the screen's one green feature card (the Mobile clubhouse pass, 2026-10-08), and
           the evidence, the drill and the reasoning sit flush under it; on desktop the wrapper draws nothing. */}
       <div className="ch-hl-focus__head">
-        <div className="ch-hl-focus__k">
-          <span>{who ? `${who} · ${ins.category}` : ins.category}</span>
-          <PriPill ins={ins} assigned={assigned} />
-        </div>
+        <p className="ch-hl-focus__k">{[who, ins.category, eyebrowStance(ins, assigned)].filter(Boolean).join(' · ')}</p>
         <h2 id={`${id}-t`}>
           <SerifText text={ins.title} />
         </h2>
+        {held == null && <PathLine path={ins.path} />}
         {held == null && ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       </div>
       {held != null ? (
@@ -145,18 +134,19 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
           <EngineState engine={ins.engine} />
           <Evidence ev={ins.evidence} who={who} />
+          {/* This week, flush under the evidence: the second action, not a second card (the drill well is cut). */}
           {ins.week && (
-            <div className="ch-hl-drill">
-              <span className="ch-hl-drill__k">
-                <Icon icon={Target} size={14} />
-                This week
-              </span>
-              {ins.week.title && (
-                <p className="ch-hl-drill__t">
-                  <b>{ins.week.title}</b>
-                  {ins.week.meta && <em> · {ins.week.meta}</em>}
-                </p>
-              )}
+            <div className="ch-hl-week">
+              <p className="ch-hl-week__t">
+                <span className="ch-hl-week__k">This week</span>
+                {ins.week.title && (
+                  <>
+                    {' '}
+                    <b>{ins.week.title}</b>
+                    {ins.week.meta && <em> · {ins.week.meta}</em>}
+                  </>
+                )}
+              </p>
               {ins.week.text && <p>{ins.week.text}</p>}
             </div>
           )}
@@ -178,6 +168,15 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
       {cx && <CorrectionChips c={cx} held={held} onHeld={setHeld} />}
     </article>
   );
+}
+
+/**
+ * The stance in the eyebrow, as a word and never a pill: Priority for a high finding still open, and Working, Note, Out of date,
+ * Assigned or Acknowledged (CH-13806: never colour alone). A medium or low finding says nothing: its place in the order says it.
+ */
+function eyebrowStance(ins: ChInsight, assigned: ChHelmAssigned | null | undefined): string | null {
+  const stance = stanceOf(ins, assigned);
+  return stance.cls === 'medium' || stance.cls === 'low' ? null : stance.word;
 }
 
 /**
@@ -217,35 +216,6 @@ export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void
   );
 }
 
-const PULSE_GLYPH: Record<ChPulseIcon, LucideIcon> = {
-  'calendar-x': CalendarX,
-  'trending-up': TrendingUp,
-  'trending-down': TrendingDown,
-  rsvp: MailQuestionMark,
-  practice: ClipboardList,
-  focus: Target,
-  tasks: ListChecks,
-  roster: Users,
-  flag: Flag,
-};
-
-/** The program pulse's rows: each getProgramPulse's own headline and evidence line. */
-export function PulseList({ rows }: { rows: ChPulseRow[] }) {
-  return (
-    <ol>
-      {rows.map((r) => (
-        <li key={r.id} className={'is-' + r.tone}>
-          <span className="ch-hl-pulse__ic" aria-hidden="true">
-            <Icon icon={PULSE_GLYPH[r.icon]} size={15} />
-          </span>
-          <b>{r.headline}</b>
-          <span>{r.evidence}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
 /**
  * CH-13208: a read beside the cards failed, so they were drawn without it. This says which (the Tour comparison, how current each
  * read is, the drill text, and where the page offers them, which cards already have a focus), so a gap is never read as "none",
@@ -267,7 +237,8 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
 /** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
  *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
 /** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). */
-export function Head({ who, children, aside, phone = false }: { who?: 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
+/** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
+export function Head({ who, children, aside, below, phone = false }: { who?: 'Coach'; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
   const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
@@ -278,6 +249,7 @@ export function Head({ who, children, aside, phone = false }: { who?: 'Coach'; c
       <p>
         {children}
       </p>
+      {below}
       {aside && <div className="ch-hl-h__aside">{aside}</div>}
     </header>
   );
