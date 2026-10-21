@@ -33,8 +33,9 @@
 -- WHO WRITES IT: an authenticated user, as themselves, either a coach on the
 -- staff of a team the player is active on (any kind), or the player on their
 -- own read (only 'not_this' and 'confirm', and team_id null or a team the
--- player is active on). The insight must belong to that player. No UPDATE or DELETE policy: corrections are append-only; the newest
--- correction by one author on one read is the one that counts.
+-- player is active on). The insight must belong to that player. No UPDATE
+-- or DELETE policy: corrections are append-only; the newest correction by
+-- one author on one read is the one that counts.
 --
 -- ROLLBACK: DROP TABLE IF EXISTS public.golf_coachhelm_corrections; the
 -- writer and reader then report "not available" again and ranking is neutral.
@@ -70,11 +71,16 @@ create table if not exists public.golf_coachhelm_corrections (
     check (author_role in ('coach', 'player')),
     kind text not null
     check (
-        kind in ('not_this', 'wrong_cause', 'already_on_it', 'snooze', 'confirm')
+        kind in (
+            'not_this', 'wrong_cause', 'already_on_it', 'snooze', 'confirm'
+        )
     ),
     -- The "Not this" reason chip; null for every other kind.
     reason text
-    check (reason is null or reason in ('wrong', 'not_important', 'already_know')),
+    check (
+        reason is null
+        or reason in ('wrong', 'not_important', 'already_know')
+    ),
     -- "Wrong cause": the cause the coach picked instead.
     alternative_cause_label text
     check (

@@ -13,13 +13,15 @@ BEGIN;
 SELECT plan(17);
 
 SELECT ok(
-  (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.golf_coachhelm_corrections'::regclass),
+  (SELECT relrowsecurity FROM pg_class
+    WHERE oid = 'public.golf_coachhelm_corrections'::regclass),
   'RLS is enabled on golf_coachhelm_corrections'
 );
 
 SELECT ok(
   (SELECT count(*) FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'golf_coachhelm_corrections') = 2,
+    WHERE schemaname = 'public'
+      AND tablename = 'golf_coachhelm_corrections') = 2,
   'exactly two policies (one SELECT, one INSERT)'
 );
 
@@ -61,20 +63,26 @@ SELECT ok(
 );
 
 SELECT ok(
-  NOT has_table_privilege('anon', 'public.golf_coachhelm_corrections', 'SELECT')
-  AND NOT has_table_privilege('anon', 'public.golf_coachhelm_corrections', 'INSERT'),
+  NOT has_table_privilege(
+    'anon', 'public.golf_coachhelm_corrections', 'SELECT')
+  AND NOT has_table_privilege(
+    'anon', 'public.golf_coachhelm_corrections', 'INSERT'),
   'anon cannot SELECT or INSERT'
 );
 
 SELECT ok(
-  NOT has_table_privilege('authenticated', 'public.golf_coachhelm_corrections', 'UPDATE')
-  AND NOT has_table_privilege('authenticated', 'public.golf_coachhelm_corrections', 'DELETE'),
+  NOT has_table_privilege(
+    'authenticated', 'public.golf_coachhelm_corrections', 'UPDATE')
+  AND NOT has_table_privilege(
+    'authenticated', 'public.golf_coachhelm_corrections', 'DELETE'),
   'authenticated cannot UPDATE or DELETE (append-only)'
 );
 
 SELECT ok(
-  has_table_privilege('authenticated', 'public.golf_coachhelm_corrections', 'INSERT')
-  AND has_table_privilege('authenticated', 'public.golf_coachhelm_corrections', 'SELECT'),
+  has_table_privilege(
+    'authenticated', 'public.golf_coachhelm_corrections', 'INSERT')
+  AND has_table_privilege(
+    'authenticated', 'public.golf_coachhelm_corrections', 'SELECT'),
   'authenticated can SELECT and INSERT (rows filtered by the policies)'
 );
 
