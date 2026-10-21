@@ -3,36 +3,45 @@
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text
-Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals log)
+Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals
+                log)
 PR/commit:      claude/project-thread-d87uyy
 Contract IDs:   none (wording: switch label, "vs previous N")
 Actions:        none
-Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands cut at the same edges)
+Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands
+                cut at the same edges)
 Held items:     none
 ```
 
 ### Changed
 
-- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers. Last 10 is still the default and
-  leaves the address as it was; Last 5 and Last 20 add `?last=5` or `?last=20`. Everything that said "previous 10"
-  says "previous N" for the cut in force (the tape, the strokes gained chip, the Window figure on the header).
-  Earlier-rounds wording ("Comparing starts at 13 rounds") follows N.
-- Team putting by distance counts its bands from `lib/golf/putt-make.ts` (the cut Fairway, the calculator and
-  CoachHelm share), not a copy. Band edges and counts are unchanged; a test pins it.
-- Removed the unused `FigureCards`, `ScoreBoardTrend`, `LegRoute` and `FieldTable` and their styles (`.ch-board`,
-  `.ch-route`, `.ch-ft`): the figure tape, the round trend, the strokes gained bars and the ranked dot plot
-  replaced them, and nothing imported them.
-  CH-4604 and CH-5604 (a new window's figures crossfade) lived only in `FigureCard`, so the bridge registry now lists them
-  reserved; the tape and the profile's figures change in place.
-- Phone (820px and below): the switch's segments grow from their own label widths (`flex: 1 1 auto`), not equal shares, so
-  "Qualifiers" is no longer clipped beside 5, 10 and 20 at 390px (fixer, PR #2257; screenshots in
-  `stats-visuals/screenshots-2257/`). Preview: `/clubhouse-preview/stats?state=last20`.
+- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers. Last
+  10 is still the default and leaves the address as it was; Last 5 and Last 20
+  add `?last=5` or `?last=20`. Everything that said "previous 10" says "previous
+  N" for the cut in force (the tape, the strokes gained chip, the Window figure
+  on the header). Earlier-rounds wording ("Comparing starts at 13 rounds")
+  follows N.
+- Team putting by distance counts its bands from `lib/golf/putt-make.ts` (the
+  cut Fairway, the calculator and CoachHelm share), not a copy. Band edges and
+  counts are unchanged; a test pins it.
+- Removed the unused `FigureCards`, `ScoreBoardTrend`, `LegRoute` and
+  `FieldTable` and their styles (`.ch-board`, `.ch-route`, `.ch-ft`): the figure
+  tape, the round trend, the strokes gained bars and the ranked dot plot
+  replaced them, and nothing imported them. CH-4604 and CH-5604 (a new window's
+  figures crossfade) lived only in `FigureCard`, so the bridge registry now
+  lists them reserved; the tape and the profile's figures change in place.
+- Phone (820px and below): the switch's segments grow from their own label
+  widths (`flex: 1 1 auto`), not equal shares, so "Qualifiers" is no longer
+  clipped beside 5, 10 and 20 at 390px (fixer, PR #2257; screenshots in
+  `stats-visuals/screenshots-2257/`). Preview:
+  `/clubhouse-preview/stats?state=last20`.
 
 ### Known limit
 
-- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the 20 before it need forty rounds in the last twelve
-  months; a player with fewer gets a shorter previous stretch, and none under 23 ("Comparing starts at 23 rounds"). The read is
-  not widened for Last 20.
+- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the
+  20 before it need forty rounds in the last twelve months; a player with fewer
+  gets a shorter previous stretch, and none under 23 ("Comparing starts at 23
+  rounds"). The read is not widened for Last 20.
 
 ## 2026-10-20 — Team ranking dot plot (stats visuals 5)
 

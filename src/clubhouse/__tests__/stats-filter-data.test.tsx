@@ -624,7 +624,7 @@ describe('the address', () => {
     const el = (await ClubhouseStatsRoute({
       query: { type: 'tournament,bogus', from: `${y}-09-01`, to: `${y}-09-29`, course: ['Pine Hollow', 'Finley GC'], skip: `${id(1)},not-an-id`, window: 'season' },
     })) as unknown as RouteEl;
-    expect(el.props.data.filter).toEqual({ window: 'season', types: ['tournament'], holes: '18', from: `${y}-09-01`, to: `${y}-09-29`, courses: ['Pine Hollow', 'Finley GC'], pick: { mode: 'skip', ids: [id(1)] } });
+    expect(el.props.data.filter).toEqual({ window: 'season', last: 10, types: ['tournament'], holes: '18', from: `${y}-09-01`, to: `${y}-09-29`, courses: ['Pine Hollow', 'Finley GC'], pick: { mode: 'skip', ids: [id(1)] } });
     const junk = (await ClubhouseStatsRoute({ query: { type: 'bogus', from: `${y}-02-30`, only: "x'; drop table golf_rounds;--", course: '' } })) as unknown as RouteEl;
     expect(junk.props.data.filter).toEqual(filterFor('last10'));
   });
