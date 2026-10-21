@@ -7,7 +7,7 @@ import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
-import { isNote, kindOf } from './coachhelm-classify';
+import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
@@ -90,6 +90,17 @@ const EMPTY = (rounds: number | null, tour: ChDeepDive['tour']): ChDeepDive => (
  */
 export async function loadPlayerDeepDive(input: { playerId: string }): Promise<ChViewLoad<ChDeepDive>> {
   const { playerId } = input;
+  // CH13-21: only the cards this page draws count as shown, and with coachhelm_recheck_v1 on it knows that only once the lifecycle
+  // shaping has dropped the cleared reads, the retired contradictions and a pair's second member. Every return says which ids it drew
+  // (the Board's `drawnLater` pattern); a page that fails draws none.
+  let drew: (ids: readonly string[]) => void = () => {};
+  const drawnIds = new Promise<readonly string[]>((resolve) => {
+    drew = resolve;
+  });
+  const done = (page: ChViewLoad<ChDeepDive>, ids: readonly string[] = []): ChViewLoad<ChDeepDive> => {
+    drew(ids);
+    return page;
+  };
   try {
     const supabase = await createClient();
     // Everything that does not need the feed reads beside it (perf, 2026-10-01): the team (its tour), the plans the insights link to and
@@ -101,23 +112,23 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {
-      // CH13-21: only the cards this page draws count as shown. includeMore: the Deep dive lists every read, the ones past
-      // the Board's 3 + 1 included (coachhelm_reads_v1_copy; no effect with the flag off).
-      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i), includeMore: true });
+      // includeMore: the Deep dive lists every read, the ones past the Board's 3 + 1 included (coachhelm_reads_v1_copy; no effect
+      // with the flag off).
+      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => drawnIds, includeMore: true });
     } catch (err) {
       log('dive.feed', err);
-      return { status: 'failed' };
+      return done({ status: 'failed' });
     }
     const team = await teamRead;
     const tourName: ChDeepDive['tour'] = team.tour?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
-      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return { status: 'failed' };
-      return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
+      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return done({ status: 'failed' });
+      return done({ status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) });
     }
     // A card that states no finding is not drawn on the Board, and is not here.
     const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
-    if (drawn.length === 0) return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
+    if (drawn.length === 0) return done({ status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) });
 
     // The engine's states, each behind its flag (surfaces A): with every flag off `shaped.kept` is `drawn` and nothing is added.
     const flags = readEngineFlags();
@@ -156,12 +167,15 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     }));
     // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
-    return {
-      status: 'ready',
-      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) },
-    };
+    return done(
+      {
+        status: 'ready',
+        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) },
+      },
+      list.map((i) => i.base.id),
+    );
   } catch (err) {
     log('dive', err);
-    return { status: 'failed' };
+    return done({ status: 'failed' });
   }
 }

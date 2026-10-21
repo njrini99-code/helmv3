@@ -92,41 +92,45 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
       ) : data.insights.error ? (
         <RefreshNotice code="CH-13201" title="Your insights didn’t load" body="Nothing is lost. Your CoachHelm reads are still saved; try again in a moment." />
       ) : list.length === 0 ? (
-        data.rounds === 0 ? (
-          <EmptyState
-            size="page"
-            code="CH-13301"
-            shape="rows"
-            title="Post a round to start CoachHelm"
-            body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
-            action={
-              startHref ? (
-                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
-                  {startHref.label}
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <EmptyState
-            size="page"
-            code="CH-13302"
-            shape="rows"
-            title="No insights yet"
-            body={
-              short != null
-                ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
-                : `${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
-            }
-            action={
-              startHref ? (
-                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
-                  {startHref.label}
-                </Button>
-              ) : undefined
-            }
-          />
-        )
+        <>
+          {data.rounds === 0 ? (
+            <EmptyState
+              size="page"
+              code="CH-13301"
+              shape="rows"
+              title="Post a round to start CoachHelm"
+              body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
+              action={
+                startHref ? (
+                  <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+                    {startHref.label}
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <EmptyState
+              size="page"
+              code="CH-13302"
+              shape="rows"
+              title="No insights yet"
+              body={
+                short != null
+                  ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
+                  : `${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
+              }
+              action={
+                startHref ? (
+                  <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+                    {startHref.label}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+          {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
+          <ClearedLines lines={data.cleared} />
+        </>
       ) : (
         <div className="ch-hl-grid">
           <div ref={focusTop} aria-live="polite">

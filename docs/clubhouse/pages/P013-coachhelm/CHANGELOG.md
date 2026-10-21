@@ -38,6 +38,11 @@ Held items:     the verdict columns arrive with the held migration
     test and how sure).
 - The Read's Next line keeps a wrapping drill name as one run of text above
   its description.
+- Review fixes: a `pct_points` range is said as stored (the engine already
+  works in points, so no rescale); the Deep dive counts only the reads it
+  draws after the lifecycle shaping as shown (`drawnLater`, as the Board);
+  the Board and the Deep dive keep the Cleared section when every read has
+  cleared.
 
 ### Verification
 

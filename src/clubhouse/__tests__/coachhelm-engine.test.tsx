@@ -6,6 +6,7 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { projectInsightForPlayer } from '@/lib/coachhelm/delivery/player-projection';
+import { computeGap } from '@/lib/coachhelm/v3/support/gap';
 import {
   auditOf,
   causeOf,
@@ -100,10 +101,20 @@ describe('CH-13990 support (coachhelm_support_v1)', () => {
   });
 
   it('says a range that crosses zero may be no gap, and a strength is better', () => {
-    expect(rangeWords({ range_lo: -0.1, range_hi: 0.39, gap_unit: 'pct_points' })).toBe('Somewhere between 10 points better and 39 points worse, so it may be no gap at all.');
-    expect(rangeWords({ range_lo: -0.05, range_hi: -0.01, gap_unit: 'pct_points' })).toBe('Somewhere between 1 and 5 points better than the comparison.');
+    expect(rangeWords({ range_lo: -10, range_hi: 39, gap_unit: 'pct_points' })).toBe('Somewhere between 10 points better and 39 points worse, so it may be no gap at all.');
+    expect(rangeWords({ range_lo: -5, range_hi: -1, gap_unit: 'pct_points' })).toBe('Somewhere between 1 and 5 points better than the comparison.');
     expect(rangeWords({ range_lo: 0.1, range_hi: 0.9, gap_unit: 'per_round' })).toBe('Somewhere between 0.1 and 0.9 a round worse than the comparison.');
     expect(rangeWords({})).toBeNull();
+  });
+
+  it('says a pct_points range as stored: computeGap already works in percentage points, so it is never rescaled', () => {
+    const g = computeGap({ kind: 'proportion', k: 10, n: 31, benchmark: 0.55, polarity: 'higher_better' })!;
+    expect(g.gap_unit).toBe('pct_points');
+    expect(g.range_hi).toBeGreaterThan(1);
+    const words = rangeWords(g as unknown as Record<string, unknown>)!;
+    expect(words).toBe(`Somewhere between ${Math.round(Math.abs(g.range_lo))} and ${Math.round(Math.abs(g.range_hi))} points worse than the comparison.`);
+    expect(words).not.toMatch(/\d{3,} points/);
+    expect(rangeWords({ range_lo: 3, range_hi: 43, gap_unit: 'pct_points' })).toBe('Somewhere between 3 and 43 points worse than the comparison.');
   });
 
   it('turns Not enough yet into the Watching count-down', () => {

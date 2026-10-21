@@ -23,6 +23,11 @@ vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: goals.activ
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
 /** Whether the screens a link would lead to (a round's review, Stats' Development) are rebuilt for a player. */
+const flags = vi.hoisted(() => ({ recheck: false }));
+vi.mock('@/lib/flags/is-enabled', async (orig) => {
+  const real = await orig<typeof import('@/lib/flags/is-enabled')>();
+  return { ...real, isFlagEnabled: (id: string, ...rest: unknown[]) => (id === 'coachhelm_recheck_v1' && flags.recheck) || (real.isFlagEnabled as (...a: unknown[]) => boolean)(id, ...rest) };
+});
 const nav = vi.hoisted(() => ({ rebuilt: true }));
 vi.mock('../shell/nav', async (orig) => ({ ...(await orig<typeof import('../shell/nav')>()), rebuiltHref: (href: string) => (nav.rebuilt ? href : null) }));
 
@@ -47,6 +52,7 @@ import { speak } from '../data/coachhelm-voice';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { PREVIEW_TOUR, puttBalanced } from '../preview/fixtures-coachhelm';
+import { ENGINE_CLEARED } from '../preview/fixtures-coachhelm-engine';
 import {
   deep,
   DIVE_BIG,
@@ -327,7 +333,7 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
 
   it('ready: the delivery feed, the category reads and both goal reads for the player id it was given, and only that id', async () => {
     const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
-    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function), includeMore: true });
+    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
     expect(delivery.themes).toHaveBeenCalledWith('pl-jonah');
     expect(goals.active).toHaveBeenCalledWith('pl-jonah');
     expect(goals.achieved).toHaveBeenCalledWith('pl-jonah');
@@ -378,6 +384,28 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
     const none = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
     if (none.status !== 'ready') throw new Error('not ready');
     expect(none.data.tour).toBe('Tour');
+  });
+
+  it('CH13-21 only the reads the page draws count as shown: with coachhelm_recheck_v1 on, a Cleared read is not one of them', async () => {
+    flags.recheck = true;
+    try {
+      const cleared = ENGINE_CLEARED('pl-jonah');
+      delivery.insights.mockResolvedValue([DIVE_SLOPE, cleared, puttBalanced('pl-jonah')]);
+      const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+      if (out.status !== 'ready') throw new Error('not ready');
+      expect(out.data.list.map((i) => i.base.id)).toEqual(['in-slope']);
+      expect(out.data.cleared).toHaveLength(1);
+      const later = delivery.insights.mock.calls.at(-1)![1]!.drawnLater as (rows: EvidenceInsight[]) => Promise<readonly string[]>;
+      await expect(later([])).resolves.toEqual(['in-slope']);
+    } finally {
+      flags.recheck = false;
+    }
+  });
+
+  it('CH13-21 a page with nothing drawn, or one that failed, counts nothing as shown', async () => {
+    delivery.insights.mockResolvedValue([puttBalanced('pl-jonah')]);
+    await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+    await expect(delivery.insights.mock.calls.at(-1)![1]!.drawnLater([])).resolves.toEqual([]);
   });
 
   it('a card that states no finding is not drawn, as on the Board', async () => {
@@ -802,6 +830,12 @@ describe('the Deep dive screen', () => {
     show(diveLoad({ ...PREVIEW_DIVE_EMPTY, rounds: null }));
     expect(code('CH-13381')!.textContent).toMatch(/None is yet\. It checks again as you post more\./);
     expect(code('CH-13380')).toBeNull();
+  });
+
+  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', () => {
+    show(diveLoad({ ...PREVIEW_DIVE_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] }));
+    expect(code('CH-13381')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
   });
 
   it('CH-13304 CoachHelm off for them: the board’s own page and no sub-navigation', () => {

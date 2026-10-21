@@ -578,6 +578,8 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
             ) : undefined
           }
         />
+        {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
+        <ClearedLines lines={d.cleared} />
       </PlayerHelmFrame>
     );
   }

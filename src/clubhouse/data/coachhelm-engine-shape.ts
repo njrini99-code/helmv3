@@ -119,9 +119,12 @@ const unitWords = (u: string | null, n: number): string => {
   return SINGULAR[w] ?? w.replace(/s$/, '');
 };
 
-/** "3", "0.21", "1.4": a gap said to the precision it is worth. */
+/**
+ * "3", "0.21", "1.4": a gap said to the precision it is worth. A `pct_points` range is already in percentage points (computeGap
+ * works on the 0 to 100 scale), so it is rounded, never rescaled.
+ */
 function amount(v: number, unit: string): string {
-  if (unit === 'pct_points') return String(Math.round(Math.abs(v) * 100));
+  if (unit === 'pct_points') return String(Math.round(Math.abs(v)));
   const a = Math.abs(v);
   return a >= 10 ? String(Math.round(a)) : a.toFixed(2).replace(/0$/, '');
 }
