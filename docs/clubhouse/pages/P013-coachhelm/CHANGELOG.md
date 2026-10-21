@@ -11,6 +11,7 @@ Actions:        Open (a link to the player on the board); none written
 Data impact:    none written; reads the visible v3 reads, the roster's
                 countable rounds and the Slice 7b team pattern
 Held items:     none
+
 ## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
 
 ```text
@@ -80,34 +81,6 @@ Held items:     20261020121000_golf_coachhelm_corrections.sql
 ```
 
 ### Added
-
-- `?view=monday-brief` for a coach, behind `coachhelm_monday_brief_v1`
-  (production off, preview on): the team line, up to five rows (the team
-  pattern first when one exists, then one read per player at Likely or
-  above, most strokes first), each with the ladder word, raw strokes a round
-  and one Open action, then the counts line (new, cleared, contradicted, out
-  of date). Below: Cleared this week and the out-of-date line.
-- Never in it: strengths, Watching, Working hypothesis, reads two or more
-  rounds behind, Cleared, the retired side of a Contradicted pair, a read
-  Under review. A read missing a field the row needs is left out.
-- The coach board gets a "Monday brief" button under it, only with the flag
-  on and CoachHelm on (CH-13938).
-- States: nothing to raise (CH-13935), CoachHelm off (CH-13936), a read
-  failed (CH-13937).
-- Preview: `/clubhouse-preview/coachhelm-brief` with `?state=empty | failed
-  | off | loading`, and `coachhelm?state=brieflink`, from synthetic reads
-  through `computeMondayBrief`.
-
-### Why
-
-- The design call's Monday moment: who needs a conversation and what the
-  team practises, on one screen, before practice.
-
-### Verification
-
-- `coachhelm-monday-brief.test.tsx` (rows, counts, states) and the pure
-  `monday-brief/__tests__/brief.test.ts`. Phone screenshots at 390 x 844
-  from the preview are in the PR description.
 
 - Under "Why do you think so?" on the coach's card: Not this (with a reason
   picker: It's wrong, Not important, Already known, or No reason), Wrong
@@ -692,18 +665,11 @@ Held items:     none
 
 ### Why
 
-- The same control behaved differently from page to page: a save greyed its
-  button out at 42%, five places drew their own spinner, icon-only buttons had
-  no words on desktop and a scroller gave no sign there was more. They now come
-  from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
 
 ### Verification
 
-- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`;
-  the busy ring was captured at 390 and 1280, light and dark, on
-  `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips
-  and edge fades on the messages, roster and CoachHelm previews. Pages other
-  than the one captured were checked in source only.
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
 
 ## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
 
@@ -718,31 +684,18 @@ Held items:     none
 
 ### Changed
 
-- CoachHelm turned off for a player, or off for everyone for a coach, is the
-  restricted state: a lock and who can change it, with no action that would
-  fail. A coach's own switch-off keeps Open CoachHelm settings.
-- First-run boards, Game profile and Standing draw rows under the sentence; the
-  coach's board draws portrait rows.
-- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan)
-  use the shared compact state; `.ch-hd-none` is gone.
+- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
 ### Why
 
-- Every empty page was one template: a green tile, a headline, a sentence and a
-  button in blank space. The waiting form draws the shape of what will fill the
-  space (rules, rings, a baseline; no bars, no fake text) under one sentence
-  that names what fills it and who does it, and a filter that hides everything
-  is told apart from a first run, a lock and a failed read.
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone
-  unchanged) and this page's tests; captured at 390 and 1280, light and dark,
-  before and after, on `/clubhouse-preview/coachhelm?state=empty` and
-  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted
-  state) was captured after only, phone, light. The Deep dive empties have unit
-  tests but no capture.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
 
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 

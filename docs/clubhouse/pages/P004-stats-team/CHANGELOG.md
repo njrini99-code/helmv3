@@ -16,6 +16,7 @@ The shared stats files (`StatsPlayer.tsx`, `StatsPlayerPhone.tsx`,
 with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
 and verdict. The team page is unchanged. See the P005 entry of the same
 date.
+
 ## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
 
 ```text

@@ -23,6 +23,7 @@ regression line, in the viewer's voice. Got worse reaches the player a day
 after the coach. An area with no prescription, a database without the
 columns and the flag off draw the focus area exactly as before. Preview:
 `/clubhouse-preview/player?state=loops|loops-self`.
+
 ## 2026-10-21 — Leg links open the right Game detail section on the phone
 
 ```text
