@@ -20,9 +20,7 @@ Route:                   /golf/dashboard/roster
 Page:                    src/app/golf/(dashboard)/dashboard/roster/page.tsx (a coach with golf_clubhouse_ui on, or a player
                          with no coach profile and the flag on -> ClubhouseRosterRoute, else Fairway)
 Old link:                roster/[id]/layout.tsx: with Clubhouse on, a coach goes
-                         to roster?player=<id> (the phone opens that player's
-                         profile; desktop ignores ?player=, 30102), a player to
-                         roster (30806)
+                         to stats?player=<id>, a player to roster (30806)
 Clubhouse route adapter: src/clubhouse/routes/roster.tsx (session, then the active team through resolveClubhouseTeam;
                          the resolved role decides, not the coach row: coach -> the coach's screen, 30801; player ->
                          TeamRoster over loadPlayerRoster, 30804; no team -> RosterNoTeam for the dashboard role,
@@ -249,9 +247,8 @@ Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfile HelmPanel and
   fails). Roster does not update it. Not verified: whether it refreshes after an
   approval.
 - `/golf/dashboard/roster/[id]` is Fairway's player page and is not rebuilt:
-  with Clubhouse on its layout sends a coach to `roster?player=<id>`, which
-  opens that player's profile on the phone and drops the param (desktop
-  ignores ?player=, 30102), and a player to the roster (30806).
+  with Clubhouse on its layout sends a coach to `stats?player=<id>` and a
+  player to the roster (30806).
 - The player's view reads through a separate loader on purpose. Adding a field
   to `ChTeammate` is a privacy decision (30805): the test that lists the
   selected columns and the tables asked for fails until it is made on purpose.

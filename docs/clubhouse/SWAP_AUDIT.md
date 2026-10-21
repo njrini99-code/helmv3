@@ -65,8 +65,8 @@ when the flag is on. An alias is `redirectToClubhouse` in a route layout
   sub-pages), and `roster` (built 2026-10-01, Q-130: the coach's screen,
   read-only; see below).
 - **Aliased:** `tasks`, `announcements`, `documents` and `travel` go to Team Hub
-  tabs; `roster/[id]` goes to `roster?player=` (coach, spec D 2026-10-21) or to
-  `roster` (player); `rounds/[id]/review` goes to `rounds/[id]`;
+  tabs; `roster/[id]` goes to `stats?player=` (coach) or to `roster`
+  (player); `rounds/[id]/review` goes to `rounds/[id]`;
   `coachhelm/chat` goes to `coachhelm?view=ask` (coach).
 - **Player roster (built 2026-10-01, Q-130):** `/roster` for a player is the
   coach's roster, read-only. A teammate shows name, class year and handicap

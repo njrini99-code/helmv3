@@ -234,10 +234,10 @@ colour and no new motion.
 - **Phone profile:** a `ch-rsm-panel` after Recent rounds with the same counts
   on the panel's seam and View insights as its 44px `.ch-rsm-panel__link`; the
   legs caption sits under `ch-rsm-figs`.
-- **Old links:** `/roster/[id]` opens this page as `roster?player=<id>`: the
-  phone opens that player's profile; desktop ignores the param and shows the
-  list (30102 unchanged), so a desktop coach then opens the panel themselves
-  (30806).
+- **Old links:** `/roster/[id]` is unchanged: a coach goes to the player's
+  Stats, a player to the roster (30806). Spec D proposed `roster?player=<id>`,
+  but desktop ignores that param (30102), so desktop coaches would have lost
+  the player's page.
 - Contrast: `.ch-num` ink-900 16.5; ink-700 11.2; the link green-700 9.9.
 
 ## Explicit non-goals
