@@ -231,8 +231,7 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       show(d);
       expect(screen.queryByText(/no recorded rounds/i)).toBeNull();
       expect(code('CH-13309')).toBeNull();
-      expect(code('CH-13206')?.textContent).toMatch(/didn’t fully load/);
-      expect(code('CH-13206')?.textContent).toMatch(/Rounds didn’t load/);
+      expect(code('CH-13206')?.textContent).toMatch(/Since you were last here: rounds didn’t load, so what is new was not checked/);
     });
 
     it('CH-13206 a tasks read that failed with nothing else to list: not "nothing is flagged" either', async () => {
@@ -240,7 +239,7 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       const d = await load();
       show(d);
       expect(code('CH-13309')).toBeNull();
-      expect(code('CH-13206')?.textContent).toMatch(/Tasks didn’t load/);
+      expect(code('CH-13206')?.textContent).toMatch(/tasks didn’t load/);
     });
 
     it('CH-13206 items that were found still list, with the notice that the pulse may be incomplete', async () => {
@@ -249,17 +248,19 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       expect(d.pulse.rows.map((r) => r.id)).toEqual(['rsvp-ev1']);
       show(d);
       expect(screen.getByText(/haven’t replied to Hilltop/)).not.toBeNull();
-      expect(code('CH-13206')?.textContent).toMatch(/may be incomplete/);
+      expect(screen.getByRole('button', { name: /Since you were last here.*may be incomplete/ })).toBeTruthy();
+      expect(code('CH-13206')?.textContent).toMatch(/Rounds didn’t load.*was not checked/);
     });
 
-    it('the held space says "Nothing else is flagged" only when every read came in, never over a gap', async () => {
+    it('the line says it may be incomplete only over a gap, never when every read came in', async () => {
       pulseRead.pulse.mockResolvedValue(pulseOf([rsvp, noRounds], { failed: ['rounds'] }));
       show(await load());
-      expect(document.querySelector('.ch-hl-pulse__clear')).toBeNull();
+      expect(screen.getByRole('button', { name: /Since you were last here/ }).textContent).toMatch(/may be incomplete/);
       cleanup();
       pulseRead.pulse.mockResolvedValue(pulseOf([rsvp], {}));
       show(await load());
-      expect(document.querySelector('.ch-hl-pulse__clear')?.textContent).toBe('Nothing else is flagged across the program.');
+      expect(screen.getByRole('button', { name: /Since you were last here/ }).textContent).not.toMatch(/may be incomplete/);
+      expect(code('CH-13206')).toBeNull();
     });
 
     it('CH-13203 a roster read that failed under the pulse: it is the pulse not loading, never "Nothing is flagged" over a roster nobody read', async () => {
@@ -457,7 +458,7 @@ describe('Ask, with a read failed', () => {
     expect(await loadAskCoachHelm()).toEqual({ status: 'noRoster', teamName: 'Finley University' });
   });
 
-  it('CH-13226 a rounds read that failed: not "no recorded round", no coverage line, no flagged coverage item, the openers that assert nothing about rounds, and the notice', async () => {
+  it('CH-13226 a rounds read that failed: not "no recorded round", no coverage line, no flagged coverage item, and the openers that assert nothing about rounds (the findings and their notice are the Board’s header line now, D4)', async () => {
     pulseRead.pulse.mockResolvedValue(pulseOf([noRounds, rsvp], { players_without_rounds: 2, players_with_recent_rounds: 0, failed: ['rounds'] }));
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
@@ -471,16 +472,8 @@ describe('Ask, with a read failed', () => {
     render(wrap(<AskHome data={d} phone={false} heroComposer={null} onAsk={vi.fn()} />));
     expect(code('CH-13322')).toBeNull();
     expect(code('CH-13325')).toBeNull();
-    expect(code('CH-13226')?.textContent).toMatch(/may be incomplete/);
-  });
-
-  it('CH-13226 a failed read with no findings found is "didn’t fully load", never "Nothing is flagged right now"', async () => {
-    pulseRead.pulse.mockResolvedValue(pulseOf([], { failed: ['tasks'] }));
-    const res = await loadAskCoachHelm();
-    if (res.status !== 'ready') throw new Error('not ready');
-    render(wrap(<AskHome data={res.data} phone={false} heroComposer={null} onAsk={vi.fn()} />));
-    expect(code('CH-13325')).toBeNull();
-    expect(code('CH-13226')?.textContent).toMatch(/didn’t fully load/);
+    expect(code('CH-13226')).toBeNull();
+    expect(document.querySelector('.ch-ask-cov')).toBeNull();
   });
 
   it('CH-13322 and CH-13325 with every read landed are as they were: the verified empty states', async () => {
@@ -491,13 +484,12 @@ describe('Ask, with a read failed', () => {
     expect(res.data.pulse?.missing).toBeUndefined();
   });
 
-  it('CH-13223 the phone, which draws no findings, says when the pulse did not load', async () => {
+  it('a pulse that did not load is never "Nothing to report yet" on Ask (what is new is said on the Board, D4)', async () => {
     pulseRead.pulse.mockResolvedValue(null);
     const res = await loadAskCoachHelm();
     if (res.status !== 'ready') throw new Error('not ready');
     expect(res.data.pulse).toBeNull();
     render(wrap(<AskHome data={res.data} phone heroComposer={null} onAsk={vi.fn()} />));
-    expect(code('CH-13223')?.textContent).toMatch(/didn’t load/);
     expect(code('CH-13322')).toBeNull();
   });
 

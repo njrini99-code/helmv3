@@ -1,5 +1,38 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
+
+```text
+Design package: design call D2, D4, Board spec, path line copy tables, §7
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13940, CH-13941 (new); CH-13203, CH-13206, CH-13309,
+                CH-13310, CH-13405 (reworded); CH-13223, CH-13226,
+                CH-13325 (retired)
+Actions:        none changed
+Data impact:    none (reads only what the rows already store)
+Held items:     none
+```
+
+### Changed
+
+- The program pulse block is gone from the coach Board. The header keeps its
+  one sentence and adds a collapsed "Since you were last here" line that
+  opens up to three items, flush (CH-13941). Its loading, failed, gap and
+  empty states are lines in the same place. Nothing sits between the header
+  and By player; Team patterns and the partial notice moved under the board.
+- The card's second line is the path line (CH-13940): what was seen · count
+  of denominator · rounds · firmness word, from the engine's stored cause, or
+  the symptom and "Not yet traced shot by shot". A stored narrowing adds its
+  steps as chips. The placeholder cause is never drawn, on any line.
+- The priority pill, the three-bar meter, the gauge and the drill well are
+  cut from the card. The eyebrow says the stance in words only when it is
+  news (Priority, Working, Assigned, Acknowledged, Out of date, Note); the
+  evidence is a ledger of flush rows; This week is flush under it.
+- A player with no read yet is a By player row, "No reads yet", instead of
+  the footer under the card (CH-13310).
+- Ask's greeting no longer draws the findings block; it keeps the openers
+  and the line saying who the answers cover.
+
 ## 2026-10-21 — useHydrated moved to the shared lib
 
 No visible change. `screens/coachhelm/use-hydrated.ts` re-exports

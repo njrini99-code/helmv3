@@ -110,6 +110,7 @@ import {
   PREVIEW_HELM_PLAYER_WORKING,
 } from '@/clubhouse/preview/fixtures-coachhelm';
 import { PREVIEW_HELM_COACH_PATTERNS } from '@/clubhouse/preview/fixtures-coachhelm-patterns';
+import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_NO_READS, PREVIEW_HELM_COACH_PATH } from '@/clubhouse/preview/fixtures-coachhelm-path';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
@@ -429,7 +430,7 @@ export default async function ClubhousePreview({
         ) : (
           <PreviewCoachHelm
             state={state}
-            data={{ engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF, patterns: PREVIEW_HELM_COACH_PATTERNS }[state ?? ''] ?? PREVIEW_HELM_COACH}
+            data={{ engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF, patterns: PREVIEW_HELM_COACH_PATTERNS, path: PREVIEW_HELM_COACH_PATH, fallback: PREVIEW_HELM_COACH_FALLBACK, narrowing: PREVIEW_HELM_COACH_NARROWING, noreads: PREVIEW_HELM_COACH_NO_READS }[state ?? ''] ?? PREVIEW_HELM_COACH}
           />
         ),
     },

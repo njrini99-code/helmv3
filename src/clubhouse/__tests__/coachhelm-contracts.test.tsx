@@ -420,7 +420,7 @@ describe('131901 at 820px and below CoachHelm is the phone build, not a shrunken
       inFrame(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} />);
       expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
       expect(within(screen.getByTestId('phone-top')).getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
-      expect(screen.getByRole('region', { name: 'By player' }).querySelectorAll('.ch-hl-pl')).toHaveLength(4);
+      expect(screen.getByRole('region', { name: 'By player' }).querySelectorAll('button.ch-hl-pl')).toHaveLength(4);
     } finally {
       restore();
     }
@@ -731,9 +731,9 @@ describe('132301 a failed read or write is reported under the coachhelm feature,
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const surfaceOfCrash = () => track.chReport.mock.calls.map((c) => (c[1] as { surface: string }).surface);
     try {
-      // The pulse: a row whose icon can't be drawn.
-      showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: 'A headline', evidence: 'Some evidence', tone: 'warn', icon: 'nope' as never }], error: false } });
-      await expectCode('CH-13204', /The program pulse couldn’t be shown/);
+      // The pulse's header line: a row that can't be drawn.
+      showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: {} as never, evidence: 'Some evidence', tone: 'warn', icon: 'flag' }], error: false } });
+      await expectCode('CH-13204', /Since you were last here couldn’t be shown/);
       expect(surfaceOfCrash()).toContain('coachhelm.pulse');
       expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
       cleanup();
@@ -743,7 +743,7 @@ describe('132301 a failed read or write is reported under the coachhelm feature,
       showCoach({ ...PREVIEW_HELM_COACH, players: { list, error: false } });
       await expectCode('CH-13204', /Your players couldn’t be shown/);
       expect(surfaceOfCrash()).toContain('coachhelm.players');
-      expect(screen.getByRole('region', { name: 'Program pulse' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Since you were last here/ })).toBeTruthy();
       cleanup();
       track.chReport.mockClear();
       // The player's focus: an insight whose evidence can't be read.
