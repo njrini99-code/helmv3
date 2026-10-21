@@ -137,6 +137,15 @@ describe('CH-1911 when the push ask may show', () => {
     expect(pushAskCalm(document)).toBe(true);
     hiddenDialog.hidden = false;
     expect(pushAskCalm(document)).toBe(false);
+    hiddenDialog.remove();
+    // An open menu or list (the team switcher, a Menu) is a moment the person is busy too.
+    for (const role of ['menu', 'listbox']) {
+      const overlay = document.createElement('div');
+      overlay.setAttribute('role', role);
+      document.body.appendChild(overlay);
+      expect(pushAskCalm(document)).toBe(false);
+      overlay.remove();
+    }
   });
 });
 

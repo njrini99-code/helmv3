@@ -565,6 +565,7 @@ Owner, desktop Safari: every switch waited on the server for the whole page.
   offline, and Next prefetches only in production builds.
 - The 22ms is the owner-session measurement from the commit; nothing was
   re-measured for this entry. Shared pieces: docs/clubhouse/CHANGELOG.md.
+
 ## 2026-10-16 — The app asks for push, once, at a calm moment
 
 Release blocker 12 (finding N2). The push soft ask was mounted only in the

@@ -49,7 +49,7 @@ export function PushAskSheet({ open, role, asking, onTurnOn, onNotNow }: { open:
  * Turn on is iOS's own prompt through the shared `requestPushPermission`, which registers with Apple on a yes. Not now,
  * the close button, Esc or a drag keep the answer: it never asks again. On the web it never shows.
  */
-export function PushAsk({ pathname, role }: { pathname: string; role: 'coach' | 'player' }) {
+export function PushAsk({ pathname, role, screenKey = '' }: { pathname: string; role: 'coach' | 'player'; screenKey?: string }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -72,7 +72,7 @@ export function PushAsk({ pathname, role }: { pathname: string; role: 'coach' | 
       live = false;
       window.clearTimeout(timer);
     };
-  }, [pathname]);
+  }, [pathname, screenKey]);
 
   const turnOn = async () => {
     if (askingRef.current) return;

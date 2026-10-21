@@ -186,7 +186,7 @@ export function ClubhouseFrame({
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
                       {/* The iPhone app's push ask, once, at a calm moment (CH-1911); nothing in a browser. */}
-                      <PushAsk pathname={pathname} role={role} />
+                      <PushAsk pathname={pathname} role={role} screenKey={screenParam(search)} />
                     </DockProvider>
                   </AskSheetProvider>
                 </CrumbProvider>

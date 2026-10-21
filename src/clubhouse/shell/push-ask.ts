@@ -13,11 +13,11 @@ export function pushAskRouteOk(pathname: string): boolean {
   return !QUIET_ROUTES.some((re) => re.test(pathname));
 }
 
-/** Nothing else has the person: the app in front, no sheet or dialog open, the section strip closed, no field focused. */
+/** Nothing else has the person: the app in front, no sheet, dialog, menu or list open, the section strip closed, no field focused. */
 export function pushAskCalm(doc: Document): boolean {
   if (doc.visibilityState !== 'visible') return false;
   if (doc.querySelector('dialog[open]')) return false;
-  const overlay = [...doc.querySelectorAll('[role="dialog"], [role="alertdialog"]')].some((el) => !el.closest('[hidden], [aria-hidden="true"]'));
+  const overlay = [...doc.querySelectorAll('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]')].some((el) => !el.closest('[hidden], [aria-hidden="true"]'));
   if (overlay) return false;
   if (doc.querySelector('[data-strip="open"]')) return false;
   const active = doc.activeElement as HTMLElement | null;

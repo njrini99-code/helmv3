@@ -390,6 +390,7 @@ cases and the held-Back cases fail without the fix; the network-path cases
 behaviour that did not change. Not yet seen in Safari, the Simulator or on an
 iPhone. The Back over the list, the two-move priority order, the double reads
 and the desktop confirms' warning tick were fixed the same day (next entry).
+
 ## 2026-10-16 — Push on this device in the iPhone app
 
 Release blocker 12 (finding N2). Notifications › This device only knew web
