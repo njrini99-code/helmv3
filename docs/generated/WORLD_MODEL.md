@@ -76,7 +76,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 29 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 30 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 3
@@ -276,7 +276,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 4
@@ -398,6 +398,7 @@ Team Operations · active · criticality high · owner product
 | `auth_onboarding_join` | `golf_round_lifecycle` | import_graph (weak) |
 | `auth_onboarding_join` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `roster_team` | import_graph (weak) |
+| `auth_onboarding_join` | `shot_tracking` | import_graph (weak) |
 | `auth_onboarding_join` | `team_communications` | import_graph (weak) |
 | `baseball_core` | `admin_platform` | import_graph (weak) |
 | `baseball_core` | `auth_onboarding_join` | import_graph (weak) |
