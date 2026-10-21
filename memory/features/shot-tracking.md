@@ -750,7 +750,7 @@ recovery.ts` (pure).
   `ShotRecord.lieAfterRecovery` on that tee shot only, then `onAutoSave`
   with the hole under the shared Edit/Undo lock, as the putt tag does.
 - Storage: `golf_shots.lie_after_recovery boolean` (null = not asked), added
-  by the HELD migration `20261021090000_golf_shots_lie_after_recovery.sql`,
+  by the HELD migration `20261021090000_shot_lie_after_recovery.sql`,
   which also patches the shot INSERT of `save_partial_round_atomic` and
   `submit_round_atomic`. The partial and final actions send
   `shots[].lie_after_recovery` only for an answered rough/other tee shot

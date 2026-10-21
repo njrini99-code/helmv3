@@ -796,7 +796,7 @@ flags:
   # CoachHelm supercharge Slice 8b (new data at entry: course nudge and the
   # recovery tap). Created OFF on main; turning it on is the owner's call. The
   # recovery tap only reaches the database once the held migration
-  # 20261021090000_golf_shots_lie_after_recovery.sql is applied.
+  # 20261021090000_shot_lie_after_recovery.sql is applied.
   - feature_id: coachhelm_data_prompts_v2
     owner: golf/coachhelm
     purpose: >-
