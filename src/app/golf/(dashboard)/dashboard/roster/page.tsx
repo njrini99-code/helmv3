@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { redirect } from 'next/navigation';
@@ -182,17 +183,36 @@ export default async function GolfRosterPage() {
 
     // F083: a player's teammate list is active members only — pending invites
     // and removed players must not show up as teammates.
-    const { data: tmData, error: teammatesError } = await supabase
-      .from('golf_team_members')
-      .select(`
-        player:golf_players!inner (
-          id, first_name, last_name, avatar_url, handicap, graduation_year,
-          user:users(last_seen)
-        )
-      `)
-      .eq('team_id', teamMember.team_id)
-      .eq('status', 'active')
-      .neq('player_id', player.id);
+    // A teammate's name, avatar, handicap and year come through
+    // golf_player_profiles, read beside the roster: a player may no longer
+    // read a teammate's golf_players row (security review S4).
+    const [{ data: tmData, error: membersError }, profilesRes] = await Promise.all([
+      supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamMember.team_id)
+        .eq('status', 'active')
+        .neq('player_id', player.id),
+      readGolfPlayerProfiles(supabase, { teamIds: [teamMember.team_id] }),
+    ]);
+    const teammatesError = membersError ?? profilesRes.error ?? null;
+    const activeTeammateIds = new Set((tmData ?? []).map((m) => m.player_id));
+    const teammateProfiles = (profilesRes.data ?? []).filter((p) => activeTeammateIds.has(p.id));
+
+    // Online status. Read on its own now that the profile is not an embed; a
+    // failure costs the dot, not the roster.
+    const teammateUserIds = teammateProfiles.map((p) => p.user_id).filter((id): id is string => !!id);
+    const { data: seenRows, error: seenError } = teammateUserIds.length > 0
+      ? await supabase.from('users').select('id, last_seen').in('id', teammateUserIds)
+      : { data: [], error: null };
+    if (seenError) {
+      void logServerError(
+        `[roster] teammate last-seen read failed; online dots omitted: ${describeError(seenError)}`,
+        { action: 'roster.teammates', featureArea: 'roster', playerId: player.id },
+        'warning',
+      );
+    }
+    const lastSeenByUser = new Map((seenRows ?? []).map((u) => [u.id, u.last_seen]));
 
     // Same trap one step further in: an unread teammate list renders as a team
     // of one. The coach equivalent (playersError, below) is already guarded.
@@ -212,28 +232,16 @@ export default async function GolfRosterPage() {
       );
     }
 
-    const teammates = (tmData || [])
-      .filter(tm => tm.player && !('error' in tm.player))
-      .map(tm => {
-        const p = tm.player as {
-          id: string;
-          first_name: string | null;
-          last_name: string | null;
-          avatar_url: string | null;
-          handicap: number | null;
-          graduation_year: number | null;
-          user?: { last_seen: string | null } | null;
-        };
-        return {
-          id: p.id,
-          first_name: p.first_name,
-          last_name: p.last_name,
-          avatar_url: p.avatar_url,
-          handicap: p.handicap,
-          graduation_year: p.graduation_year,
-          last_seen: p.user?.last_seen || null,
-        };
-      })
+    const teammates = teammateProfiles
+      .map(p => ({
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        avatar_url: p.avatar_url,
+        handicap: p.handicap,
+        graduation_year: p.graduation_year,
+        last_seen: (p.user_id ? lastSeenByUser.get(p.user_id) : null) || null,
+      }))
       .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
 
     return (

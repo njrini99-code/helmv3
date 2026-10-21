@@ -8,6 +8,17 @@ controlled value was applied, so a name typed straight after load was lost
 until hydrated, and look normal meanwhile (`styles/controls.css`,
 `data-ch-hydrating`). `useHydrated` moved to `lib/use-hydrated.ts`.
 
+## 2026-10-21 — Teammates read through the profile function (S4)
+
+No visible change. From the 2026-10-16 security review. A player could read a
+teammate's whole `golf_players` row (email, phone, gpa, school, hometown, state).
+The qualifier leaders, the qualifier form, the player roster and the messages
+now read teammates' names through `readGolfPlayerProfiles`
+(`src/lib/golf/player-profiles.ts`, the `golf_player_profiles` function): display
+columns only. Until the function is applied the read falls back to the table, so
+nothing changes on screen; the policy change that closes the hole stays held
+(`supabase/migrations/HELD.md`).
+
 ## 2026-10-21 — Sign-out drops the offline copies (security review S2)
 
 No visible change. From the 2026-10-16 security review. The service worker kept
