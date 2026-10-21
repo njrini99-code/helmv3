@@ -75,6 +75,75 @@ Held items:     none
   36 of 36 clean in each scheme. Measurements, screenshots and the new jsdom
   test (`preview-entry-layout.test.tsx`) are in VERIFY.md (2026-10-20).
 
+## 2026-10-20 — The number pad has a Done key in the app
+
+```text
+Design package: none (release blocker 19; no owner board; phone draft
+                docs/clubhouse/phone/rounds.md)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   112001 (wording; status unchanged)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Round entry's number fields (the shot screen's distance, setup's yardages,
+  Add a course's rating and slope, the edit-shot sheet's distances) open the iOS
+  number pad, which has no return key, and the app's WebView hides the
+  keyboard's accessory bar, so the pad could only be put away by tapping
+  elsewhere. A focus-time toggle already asked for the bar on numeric fields,
+  but its plugin call races the keyboard and was never seen on a device.
+- Now `NewRound` and `ContinueRound` hold the system's own accessory bar
+  (‹ › Done) up from mount to unmount (`useRoundDoneKey`, through the new
+  `pinKeyboardAccessoryBar` in `src/lib/utils/capacitor.ts`), before any field
+  is focused. It is iOS's bar, so it sits over the sheets too, and the
+  `--keyboard-height` the app publishes includes it. While a round is open,
+  text fields (course search, a course's name) get the bar as well, as they do
+  in Mobile Safari. On the web nothing changes: Mobile Safari draws the bar
+  itself. It uses `Keyboard.setAccessoryBarVisible`, which today's binary has.
+
+### Why
+
+- A player must always be able to put the number pad away mid-round.
+
+### Verification
+
+- `use-done-key.test.tsx` and `capacitor-accessory-bar.test.ts` (pin, release,
+  hand-over without flicker, a pin before the plugin loads). Native UIKit, so
+  the iPad tier (CSS, and the app is iPhone-only) and Dynamic Type
+  (`--ch-type-k`) do not touch it. Not yet seen on a device (VERIFY).
+
+## 2026-10-20 — "No data lost" reaches Exit's Discard and the round engine
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   110702, 111201, 111202 (more tests; still implemented)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tests only, no visible or behaviour change. Exit's Discard is forced offline
+  (`round-entry-wiring.test`); a library discard whose request never lands keeps
+  the device copy (`rounds.test`); and the engine both renderers share is driven
+  through a dropped connection on start, on a hole's save and on discard
+  (`use-new-round-session.preservation.test`).
+
+### Why
+
+- Release review blocker 2. `rounds-contracts.test.tsx` covers the screens;
+  these cover the paths it does not reach.
+
+### Verification
+
+- VERIFY.md "No data lost: Exit's Discard offline, and the engine under a
+  dropped connection": each new test failed against a deliberate break.
+
 ## 2026-10-19 — Discarding another player's round says no
 
 ```text

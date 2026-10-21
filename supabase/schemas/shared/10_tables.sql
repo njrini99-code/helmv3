@@ -783,10 +783,13 @@ CREATE TABLE IF NOT EXISTS "public"."organizations" (
     "primary_color" "text" DEFAULT '#16A34A'::"text",
     "secondary_color" "text" DEFAULT '#FFFFFF'::"text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "created_by" "uuid"
 );
 
 ALTER TABLE "public"."organizations" OWNER TO "postgres";
+
+COMMENT ON COLUMN "public"."organizations"."created_by" IS 'The account that created the organization from the client (stamp_organization_creator); null for rows the server created. Lets a coach attach to, or roll back, only a program they are creating (S1, 2026-10-16).';
 
 CREATE TABLE IF NOT EXISTS "public"."push_subscriptions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,

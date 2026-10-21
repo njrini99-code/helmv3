@@ -305,3 +305,83 @@ describe('Q-120: a stale-device submit that the server refuses as a conflict', (
     expect(hook.result.current.completedRoundId).toBe('round-1');
   });
 });
+
+// Rounds' "no data lost" contracts (docs/clubhouse/pages/P011-rounds/CONTRACT.md, categories 07 and 12), at the
+// engine both round renderers share. The renderer halves are in src/clubhouse/__tests__ (round-setup, round-tracking,
+// rounds).
+describe('111201 111202 110702: a start, a hole or a discard that did not reach the server loses nothing', () => {
+  const holeOne = { holeNumber: 1, par: 4, yardage: 400, score: 5, putts: 2, shots: [TEE] } as unknown as HoleStats;
+
+  it('111201 a start whose request never lands adopts nothing, and the same form starts on the next try', async () => {
+    mocks.savePartialRound.mockRejectedValueOnce(new TypeError('Load failed'));
+    const hook = renderHook(() => useNewRoundSession({ playerId: 'player-1', ports }));
+    let first: unknown;
+    await act(async () => {
+      first = await hook.result.current.start(form);
+    });
+    expect(first).toMatchObject({ ok: false, reason: 'transport' });
+    expect(hook.result.current.savedRoundIdRef.current).toBeNull();
+    expect(hook.result.current.step).not.toBe('tracking');
+    expect(hook.result.current.isStartingRound).toBe(false);
+
+    // Neither the in-flight guard nor the starting flag is left set by the throw: the next tap starts the round.
+    let second: unknown;
+    await act(async () => {
+      second = await hook.result.current.start(form);
+    });
+    expect(second).toEqual({ ok: true, roundId: 'round-1' });
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
+    expect(mocks.savePartialRound.mock.calls[1]![0]).toEqual(mocks.savePartialRound.mock.calls[0]![0]);
+    expect(mocks.savePartialRound.mock.calls[1]![1]).toBeUndefined();
+    expect(hook.result.current.step).toBe('tracking');
+  });
+
+  it('111202 a hole whose save never lands stays on this device with its score and shots; Try again sends it, and only then is the copy cleared', async () => {
+    const hook = await started();
+    // The connection drops: every attempt of the bounded checkpoint loop throws, as Safari's "Load failed" does.
+    mocks.savePartialRound.mockRejectedValue(new TypeError('Load failed'));
+    let saved: boolean | undefined;
+    await act(async () => {
+      saved = await hook.result.current.handleHoleComplete(0, holeOne);
+    });
+    expect(saved).toBe(false);
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(3);
+    expect(hook.result.current.error).toBe('This hole has not saved yet. Keep this screen open and try again.');
+    // The player is held on the hole, and the device copy holds the hole as played.
+    expect(hook.result.current.currentHoleIndex).toBe(0);
+    const kept = loadEmergencySave('round-1', 'player-1');
+    expect(kept?.holes[0]?.score).toBe(5);
+    expect(kept?.completedHoleStats[0]).toMatchObject({ holeNumber: 1, score: 5, putts: 2, shots: [TEE] });
+    expect(wasRoundDiscarded('round-1', 'player-1')).toBe(false);
+
+    // The connection is back: Try again runs the same hole's checkpoint, which carries the hole to the server.
+    mocks.savePartialRound.mockReset();
+    mocks.savePartialRound.mockResolvedValue(created);
+    await act(async () => {
+      saved = await hook.result.current.handleHoleComplete(0, holeOne);
+    });
+    expect(saved).toBe(true);
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+    const [payload, roundId] = mocks.savePartialRound.mock.calls[0]!;
+    expect(roundId).toBe('round-1');
+    expect(payload.holes[0]).toMatchObject({ holeNumber: 1, score: 5, shots: [TEE] });
+    expect(hook.result.current.currentHoleIndex).toBe(1);
+    expect(loadEmergencySave('round-1', 'player-1')).toBeNull();
+  });
+
+  it('110702 a discard that never reaches the server keeps the device copy and the round, and the round keeps saving', async () => {
+    const hook = await started();
+    const before = loadEmergencySave('round-1', 'player-1');
+    expect(before).not.toBeNull();
+    mocks.deleteInProgressRound.mockRejectedValue(new TypeError('Load failed'));
+    await act(async () => {
+      await expect(hook.result.current.handleDeleteRound()).rejects.toThrow('Load failed');
+    });
+    expect(loadEmergencySave('round-1', 'player-1')).toEqual(before);
+    expect(wasRoundDiscarded('round-1', 'player-1')).toBe(false);
+    expect(mocks.deleteOfflineRound).not.toHaveBeenCalled();
+    expect(mocks.router.push).not.toHaveBeenCalled();
+    expect(await autoSave(hook, [TEE])).toBeNull();
+    expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
+  });
+});

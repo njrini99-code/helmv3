@@ -34,6 +34,9 @@ vi.mock('@/app/golf/actions/recruit-documents', () => ({
   completeRecruitDocumentUpload: actions.complete,
 }));
 vi.mock('@/lib/utils/capacitor', () => ({ isNativeApp: () => false, openExternalUrl: vi.fn() }));
+// Film on, as the page is once the held film migration is applied (data/recruiting-film.ts). Film off, the default until
+// then, is recruiting-film-off.test.tsx.
+vi.mock('../data/recruiting-film', () => ({ RECRUIT_FILM_ENABLED: true }));
 
 import { DOC_ACCEPT, MAX_FILM_BYTES, refusedProblem, screenDrop, screenFile, type ChDocument, type ChRecruiting } from '../data/recruiting-shape';
 import { RECRUIT_DOC_MIME_BY_EXT, RECRUIT_FILM_EXTENSIONS, RECRUIT_FILM_MAX_BYTES } from '@/app/golf/actions/recruit-documents-limits';

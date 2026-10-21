@@ -175,6 +175,7 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       course_name: 'New Course',
       round_date: '2026-07-10',
       status: 'in_progress',
+      round_type: 'practice',
       updated_at: '2026-07-10T10:00:00Z',
     });
     fake = createFakeSupabase({
@@ -224,6 +225,7 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       course_name: 'Old Abandoned Course',
       round_date: '2026-01-01',
       status: 'in_progress',
+      round_type: 'practice',
       qualifier_id: null,
       qualifier_round_number: null,
       updated_at: '2026-01-01T10:00:00Z',
@@ -261,6 +263,7 @@ describe('savePartialRound — no-existingRoundId fallback', () => {
       course_name: 'Same Course',
       round_date: '2026-07-10',
       status: 'in_progress',
+      round_type: 'practice',
       qualifier_id: null,
       qualifier_round_number: null,
       updated_at: '2026-07-10T10:00:00Z',
@@ -462,6 +465,7 @@ describe('savePartialRound — child-write failures preserve the round', () => {
       course_name: 'Same Course',
       round_date: '2026-08-22',
       status: 'in_progress',
+      round_type: 'practice',
       qualifier_id: null,
       qualifier_round_number: null,
       updated_at: '2026-08-22T10:00:00Z',
@@ -579,6 +583,7 @@ describe('savePartialRound — single admin_events row per failure (no duplicate
       course_name: 'Same Course',
       round_date: '2026-07-10',
       status: 'in_progress',
+      round_type: 'practice',
       qualifier_id: null,
       qualifier_round_number: null,
       updated_at: '2026-07-10T10:00:00Z',
@@ -655,6 +660,7 @@ describe('savePartialRound — single-flight busy skip', () => {
       course_name: 'Bryan Park Champs',
       round_date: '2026-08-19',
       status: 'in_progress',
+      round_type: 'practice',
       updated_at: '2026-08-19T22:00:00Z',
     });
     fake = createFakeSupabase({
@@ -718,6 +724,7 @@ describe('savePartialRound — transient auth-check failure is not a sign-out', 
       course_name: 'Bryan Park Champs',
       round_date: '2026-08-19',
       status: 'in_progress',
+      round_type: 'practice',
       updated_at: '2026-08-19T22:00:00Z',
     });
     fake = createFakeSupabase({ user: { id: 'u-p1' }, tables });

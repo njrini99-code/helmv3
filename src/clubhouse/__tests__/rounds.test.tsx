@@ -22,7 +22,7 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => (teamOf.current instanceof Error ? Promise.reject(teamOf.current) : Promise.resolve(teamOf.current)) }));
 
 import { deleteInProgressRound } from '@/app/golf/actions/round-partial';
-import { clearEmergencySave } from '@/lib/utils/emergency-save';
+import { clearEmergencySave, markRoundDiscarded } from '@/lib/utils/emergency-save';
 import { loadRoundsLibrary } from '../data/rounds';
 import { seasonFrom, teeColorFor, teeLabel, toLibraryRound, type ChRoundsLibrary } from '../data/rounds-shape';
 import { ClubhouseRoundsRoute } from '../routes/rounds';
@@ -454,6 +454,15 @@ describe('Discarding an unfinished round', () => {
     await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(discard).toHaveBeenCalledTimes(2);
+  });
+
+  it('110702 111301 a live discard whose request never lands keeps the device copy and the queued entry', async () => {
+    vi.mocked(clearEmergencySave).mockClear();
+    vi.mocked(markRoundDiscarded).mockClear();
+    vi.mocked(deleteInProgressRound).mockRejectedValueOnce(new TypeError('Load failed'));
+    await expect(LIVE_ROUNDS_WRITES.discard('u1', 'p1')).rejects.toThrow('Load failed');
+    expect(clearEmergencySave).not.toHaveBeenCalled();
+    expect(markRoundDiscarded).not.toHaveBeenCalled();
   });
 
   it('111301 the live discard is the legacy action, and clears the device copy only when it worked', async () => {

@@ -46,11 +46,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
 | `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 56 | 15 | 2 | 4 |
+| `INCIDENT` | 57 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 333 | 13 | 71 | 92 |
+| `UNKNOWN` | 350 | 13 | 71 | 92 |
 
 ## Files
 
@@ -609,6 +609,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md` | current | - | - | - | - |
 | `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md` | current | - | - | - | - |
@@ -813,6 +814,22 @@ them would bury everything above.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-auth.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-classes.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-coachhelm.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-home.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-hub.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-ios-edge-swipe.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-ios-launch-and-offline.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-messages.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-qualifiers.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-recruiting.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-roster.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-rounds.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-settings.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-shell.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-stats.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
@@ -937,6 +954,7 @@ them would bury everything above.
 | `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
+| `docs/design/taste-memory.md` | current | - | - | - | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | - |
@@ -983,6 +1001,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | - |
+| `docs/operations/PR_PIPELINE.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |

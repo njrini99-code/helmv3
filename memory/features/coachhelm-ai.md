@@ -93,6 +93,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   refused), shared floors with per-arm minimums, a leave-one-out team
   benchmark with its variance, `support.run_at` / `run_id`, and strips the
   ladder keys from the player feed ("Slice 1b fixes" in that section).
+  Slice 1c rates the six insight-angle families (matched by metric, tested
+  from `detail.gap_input`, floors and caps from `ANGLE_FAMILIES`) and moves
+  the Slice 4 verdicts onto `support/shrink.ts` ("Slice 1c" in that
+  section).
   <!-- schema-drift-absent: golf_coachhelm_run_log -->
 - Honest root cause (supercharge Slice 2, 2026-10-20), behind
   `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
@@ -112,8 +116,34 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     coach `DiagnosisPanel` shows it with no chip and no "Likely because".
   - No stamped window (or a zero-day one) means nothing is traced; there is
     no one-year fallback. Rolling generators load their own N-day window.
+- One-tap data-gap prompt (supercharge Slice 8a, 2026-10-20), behind
+  `coachhelm_data_gap_prompt_v1` (OFF): a putt `miss_direction` data gap is
+  asked in Fairway shot entry after a missed first putt from that band, with
+  a counter toward `target_count`; one tap writes the miss tag through the
+  round's autosave. Contract: the evidence contract's Slice 8a section;
+  entry side: `memory/features/shot-tracking.md`.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
+- Team pool benchmark (supercharge Slice 7a, 2026-10-20), behind
+  `coachhelm_team_pool_v1` (OFF; off reads nothing and writes nothing new):
+  - Putt make by band, approach green-hit by band, sand save, par 3/4/5
+    scoring and penalties-per-round reads get `evidence.comparison`, with the
+    teammates' pooled attempts in the read's window as `primary` ("Team pool
+    72% (240 putts)") and the Tour as a further line (`v3/team-pool/`).
+  - The player's own attempts and test rounds never count. Approach and
+    sand pools use every completed round (as the player's value does); the
+    rest use countable rounds; the floors count countable rounds. No line under 5 rostered players with rounds, 4 teammates with 3+
+    rounds and attempts in the family, or 100 pooled attempts. No program
+    pool. Strokes, standing and the flat `comparison_*` fields stay Tour.
+  - The Clubhouse Deep dive Read and the Fairway `EvidencePanel` print the
+    team line (`reads/team-pool-line.ts`). Contract:
+    `docs/architecture/coachhelm-evidence-contract.md`.
+  - The support pass tests a one-sample read against that pool with its
+    pooled count (`benchmark_basis: 'team_pool'`, exact variance) and
+    shrinks toward it (`prior_source: 'team_pool'`); without the line it is
+    exactly Slice 1b (leave-one-out team mean). An angle's own composed
+    `comparison` is kept; the team line is only appended.
+
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -368,6 +398,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `classifyDashboardFailure` now uses too — so a PGRST003/PGRST002 on the
   player dashboard takes the page's one server-side retry and soft state
   instead of the hard error.
+- Learning from corrections (Slice 6a, 2026-10-20, flag
+  `coachhelm_corrections_v1`, off). `recordCoachHelmCorrection`
+  (`src/app/golf/actions/coachhelm-corrections.ts`) writes one append-only
+  `golf_coachhelm_corrections` row (held migration 20261020121000): kind
+  `not_this` (reason `wrong` / `not_important` / `already_know`),
+  `wrong_cause` (optional alternative), `already_on_it`, `snooze`,
+  `confirm`. Author, role, player and team come from the session and the
+  insight, never the client; a player may only say `not_this` or `confirm`
+  on their own read. Flag off or a missing table (42P01 / PGRST205) returns
+  `not_available` and writes nothing. The coach weight W
+  (`v3/corrections/coach-weights.ts`, pure) starts at 1.0 per coach x
+  `insight_type`, moves -0.1 per Not this and +0.05 per Good read, clamps to
+  0.5-1.5 at every step, counts one vote per author per read (the newest),
+  and hands a family off at >= 10 verdicts. W enters ranking through
+  `v3/ranking/score.ts` only: `loadCoachWeightsForPlayer` (per-player feeds)
+  and `loadCoachWeightsForPlayers` (the coach team feed and the roster cards,
+  one batched read per table, applied per player), for each player's primary
+  coach; a calibrated outcome weight still wins for its family. The loader
+  pages a coach's full correction history (`fetchAllRowsResult`), since W is
+  clamped per step and a truncated history would drift. Flag off: no
+  corrections read, weights and ranks unchanged (the batch paths keep `{}`).
+  Players' own surfaces stay neutral because RLS hides a coach's corrections
+  from them. RLS: a coach sees a row only through the player's active teams,
+  never the row's own `team_id`, and a player may only tag `team_id` null or
+  a team they are active on.
+  Precision counters (`v3/corrections/precision-counters.ts`, pure): per
+  family x rung, `shown` (distinct reads, rung of the newest exposure's
+  `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
+  `contradicted` (newest recheck outcome; Slice 3 supplies them),
+  `not_this`. No surface renders the chips, counters or Track record yet.
+  <!-- schema-drift-absent: golf_coachhelm_corrections -->
+  (The table is held, so it is not in `database.ts` until the owner applies
+  20261020121000 and runs `npm run db:types`; then drop the comment above.)
 
 ## UI Contract
 
@@ -378,6 +441,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Mobile views must use the shared app shell, Standard or Action headers, and bottom-nav clearance from `AGENTS.md`.
 - The Ask composer autofocuses only on fine-pointer (desktop) clients (2026-08-26). On touch, no CoachHelm surface may focus a text input on open — iOS answers that focus with a keyboard over an unread page.
 - The phone Ask drawer (`CoachHelmDrawer`) lifts by `--keyboard-height` and the composer drops its home-indicator pad while `body.keyboard-open` (2026-09-02) — the WebView never resizes for the keyboard, so a `bottom-0` drawer put the composer under the keys exactly like the messages screen.
+- A failed Ask request never shows its response body (2026-09-30). `POST /api/coachhelm/v3/chat/stream` refuses with a status and a JSON body, and the AI SDK makes that body `error.message`, so the notice used to print `{"error":"Too many requests. Please slow down."}`. `describeChatError` (`src/lib/coachhelm/v3/chat/error-message.ts`) maps by status, reading the error's `statusCode`/`responseBody` structurally: 429 with a `reason` (the three budget refusals) keeps the server's own sentence and offers no Try again; 429 without one reads "You're asking quickly. Wait a moment, then try again."; 404 with `Conversation not found` reads "That conversation isn't available. Start a new chat." and offers Start a new chat (retrying the same id would 404 forever; a 404 from a missing active team gets the generic sentence); 401 "Your session ended. Sign in again, then retry."; 403 with `CoachHelm is off for your team.` (the CoachHelm gate, CH13-20) "CoachHelm is turned off for your team." and any other 403 "Ask CoachHelm is for coaches.", both with no button; 400, 500 and anything else "Something went wrong while answering. Try again." An error with no `statusCode` is a stream fault (`new Error(chunk.errorText)`) and keeps the server's provider sentence; a browser network failure ("Failed to fetch", "Load failed") reads as the generic sentence. `CoachHelmChat` renders it for both the page and the drawer. Start a new chat under a lost conversation is owned by the host: `AskSurface` (the Ask page and the Intelligence tab) mounts a fresh thread and drops `c` (and `q`) from the address bar with `history.replaceState`, so a reload does not reopen the dead thread; the drawer never writes the URL and resets the hook alone. Tests: `src/test/coachhelm/v3/chat-error-message.test.ts` (real `DefaultChatTransport` against a stub `fetch`), `CoachHelmChat.error.test.tsx` and `AskSurface.lost-conversation.test.tsx`.
+- A retry of a turn that already has an answer gets that answer back as a message stream (2026-09-30). The stream route used to answer the idempotent-replay branch with `{replayed: true, messages}` as JSON with a 200, which the chat client parsed as an empty stream: Try again ended with the question and no answer and no error, while the answer sat in the database until a reload. `storedTurnChunks` (`chat/restore.ts`) turns the stored row into the same chunks a fresh answer sends (prose and `data-*` parts, what a reload shows); tool parts are not replayed, so a replayed action card cannot be confirmed, as after a reload. Only a non-`failed` row replays (`findAssistantTurn`). Tests: `src/test/coachhelm/v3/chat-replay.test.ts` (the real `Chat` and `DefaultChatTransport`) and a case in `route.test.ts`.
+- The grounding audit does not flag a plain calendar year (2026-09-30). `auditNumericClaims` blanks a year, or a season span like "2025-26", out of the text after the date audit and before the number scan (`CALENDAR_YEAR` in `provenance.ts`): 1900-2099 only, an integer that is not the start of a decimal or a signed, prefixed or percent value, and not followed within two words by a unit of measurement (yards, feet, meters, miles, mph, pounds, degrees). "1250 yards", "2050 yards", "2026%" and "2026.5" are still flagged; a dated expression ("Aug 16, 2026") is still audited as a whole. Putts, strokes, shots and rounds are deliberately not on the unit list ("in 2026 putts per round fell", "in 2026 she shot 84" are ordinary years). The typed claim gate (`claim-validator.ts`, flag `coachhelm_chat_claim_gate`, off) has its own uncited-number scan and was not changed. Tests: `chat-provenance.test.ts`, "calendar years".
+- A Confirm card the coach never answers is a Cancel when they ask something else (2026-09-30). The server half of Confirm is proven through the real `streamText` (`src/test/coachhelm/v3/chat-approval-server.test.ts`: an approved thread runs the gated write once, a declined one does not). The browser resends the whole thread with every question, so an unanswered `approval-requested` card followed by a newer user message used to reach the SDK as a tool call with no result, and the request died with "Tool result is missing for tool call …" before the model ran (production 2026-08-26 18:54:06, the only proposal recorded after the July Confirm fix), for every later question in the thread until the card was answered. That was ai 7.0.37; on ai 7.0.128 `convertToModelMessages` strips such a card itself, so the request survives but the proposal silently vanishes from the prompt (the "why the guard exists" case in that test pins this). `denyAbandonedApprovals` (`src/lib/coachhelm/v3/chat/abandoned-approvals.ts`, called in `chat/stream/route.ts` before `convertToModelMessages`) turns any still-pending card that has a newer user message after it into a denial: nothing is created and the model reads that the coach did not confirm it. `ChatThread` draws the same card as "Cancelled. Nothing was created." (it is not drawn as cancelled when a receipt for its idempotency key exists anywhere in the thread, since after a reload the approval state is not replayed and the receipt is the only proof the write ran). The `golf_coachhelm_action_runs` row is not updated: it stays `proposed`.
 - A question started on the Brief tab (`CoachIntelligenceHome` → `?q=` → the Ask page) auto-submits exactly once through `PromptComposer`'s own `submit()` (2026-09-02). Since 2026-09-24 (audit DATA-15) that auto-submit requires a hand-off token: the Brief tab calls `markAskHandoff(question)` just before navigating, and `AskSurface` auto-sends only when `hasAskHandoff(question)` matches (same question, under 60 s old, one use; `src/lib/golf/ask-handoff.ts`, sessionStorage). A bare, pasted, emailed or crawled `?q=` link only pre-fills the composer, so it can no longer spend an LLM call or create a conversation on its own. `AskSurface` strips `q` from the URL the moment the submit is kicked off, before the server has minted a conversation, so a refresh or back-navigation in that window cannot resend it. `PromptComposer` also now restores the just-submitted text into the field on a failed turn (never on success) instead of the previous unconditional clear-on-submit, so a failure does not force retyping. See `src/components/golf/coachhelm/chat/PromptComposer.tsx`, `CoachHelmChat.tsx` (`autoSubmitInitialInput`), and `AskSurface.tsx`.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
@@ -574,9 +641,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   stamp (`keepComposedRounds` in `engine/source-rounds.ts`), and each angle
   is stamped and judged under its own family key `angle:<family>`
   (`AngleGenerator.readFamilyKey`), so no 0b floor keyed by a shared
-  insight type can hold it back; its own floors apply. Slice 1's
-  `support/families.ts` has no angle entry yet, so the support pass treats
-  every angle row as `unknown` (untestable). Team benchmarks need 5+
+  insight type can hold it back; its own floors apply. Slice 1c gave each
+  angle family its own entry in `support/families.ts` (matched by metric),
+  so with `coachhelm_support_v1` on the support pass tests every angle row
+  from its `detail.gap_input`. Team benchmarks need 5+
   teammates (the `07` §6 privacy floor); below that there is no comparison
   and no read. The three-putt benchmark follows owner rule Q-88: the Tour
   figure from

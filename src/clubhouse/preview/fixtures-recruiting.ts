@@ -1,9 +1,11 @@
 import type { ChDocument, ChProspect, ChRecruiting } from '../data/recruiting-shape';
+import { RECRUIT_FILM_ENABLED } from '../data/recruiting-film';
 
 /**
  * Recruiting's sample data: the eight prospects on the owner's boards (design/handoff/recruiting), with Mason Reilly's
- * three documents. "Now" is fixed, at midday UTC, so every relative date reads as the board's does and no test or
- * screenshot drifts with the calendar.
+ * documents (the film among them only while film is on, data/recruiting-film.ts: until then no video can be stored).
+ * "Now" is fixed, at midday UTC, so every relative date reads as the board's does and no test or screenshot drifts with
+ * the calendar.
  */
 export const PREVIEW_RECRUITING_NOW = '2026-09-25T16:00:00.000Z';
 
@@ -54,7 +56,9 @@ export const PREVIEW_DOCUMENTS: Record<string, ChDocument[]> = {
   'p-mason': [
     { id: 'd-1', title: 'Fall tournament schedule.pdf', category: 'schedule', fileName: 'Fall tournament schedule.pdf', fileType: 'application/pdf', size: 184_000, createdAt: '2026-09-02T15:00:00.000Z' },
     { id: 'd-2', title: 'Transcript, junior year.pdf', category: 'transcript', fileName: 'Transcript, junior year.pdf', fileType: 'application/pdf', size: 312_000, createdAt: '2026-08-28T15:00:00.000Z' },
-    { id: 'd-3', title: 'Swing, down the line.mov', category: 'film', fileName: 'Swing, down the line.mov', fileType: 'video/quicktime', size: 9_400_000, createdAt: '2026-08-20T15:00:00.000Z' },
+    ...(RECRUIT_FILM_ENABLED
+      ? [{ id: 'd-3', title: 'Swing, down the line.mov', category: 'film' as const, fileName: 'Swing, down the line.mov', fileType: 'video/quicktime', size: 9_400_000, createdAt: '2026-08-20T15:00:00.000Z' }]
+      : []),
   ],
 };
 

@@ -18,7 +18,7 @@
  *
  * Pure: rows in, plain objects out. The server half is `run-pass.ts`.
  */
-import { buildCandidate, type BenchmarkBasis, type BenchmarkSource, type SupportCandidate } from './candidate';
+import { buildCandidate, type BenchmarkBasis, type BenchmarkSource, type CandidateOptions, type SupportCandidate } from './candidate';
 import { computeGap, rangeExcludesZero, type GapResult } from './gap';
 import { assignLadder, LADDER_RUNGS, type LadderRung } from './ladder';
 import { BH_Q, benjaminiHochberg } from './multiplicity';
@@ -88,6 +88,8 @@ export interface EvaluateOptions {
   refused?: number;
   runAt?: string;
   runId?: string;
+  /** Slice 7a (`coachhelm_team_pool_v1`): test and shrink against a row's team pool line. */
+  teamPool?: boolean;
 }
 
 export interface SupportEvidencePatch {
@@ -168,9 +170,11 @@ function shrinkFor(c: SupportCandidate, g: GapResult): SupportEvidencePatch['shr
       return { kappa, kept_share: round(keptShare(input.rounds, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
     }
     case 'mean': {
-      const value = shrinkToward(input.value, c.n, c.prior.value, kappa);
+      // A two-arm angle contrast shrinks by its arms' harmonic n (`shrinkN`).
+      const nS = c.shrinkN ?? c.n;
+      const value = shrinkToward(input.value, nS, c.prior.value, kappa);
       const gap = input.polarity === 'lower_better' ? value - input.benchmark : input.benchmark - value;
-      return { kappa, kept_share: round(keptShare(c.n, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
+      return { kappa, kept_share: round(keptShare(nS, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
     }
     case 'two_proportion': {
       // The contrast shrinks toward "no difference" by the harmonic n of its
@@ -203,9 +207,10 @@ function gapFor(c: SupportCandidate): GapResult | null {
 }
 
 export function evaluatePlayerRun(rows: readonly SupportRow[], opts: EvaluateOptions = {}): PlayerRunEvaluation {
-  const candidates = rows.map(buildCandidate);
+  const candidateOptions: CandidateOptions = { teamPool: opts.teamPool === true };
+  const candidates = rows.map((r) => buildCandidate(r, candidateOptions));
   const gaps = candidates.map(gapFor);
-  const gatedGaps = (opts.gated ?? []).map((r) => gapFor(buildCandidate(r)));
+  const gatedGaps = (opts.gated ?? []).map((r) => gapFor(buildCandidate(r, candidateOptions)));
   const refused = Math.max(0, Math.floor(opts.refused ?? 0));
   const pValues: Array<number | null> = [
     ...gaps.map((g) => (g ? g.p_bh : null)),

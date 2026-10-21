@@ -12,7 +12,7 @@ import type { InsightFraming } from '@/lib/coachhelm/v3/engine/root-cause';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { Direction, DirectionBasis, GapInput, Polarity } from './gap';
 import { familyFor, type CountUnit, type FamilyDef } from './families';
-import { minRung, type LadderRung, type WhyState } from './ladder';
+import { LADDER_RUNGS, minRung, type LadderRung, type WhyState } from './ladder';
 
 /** Observed-path floors (02 §6: raised from PR #2073's 3 and 25%). */
 export const PATH_MIN_OCCURRENCES = 4;
@@ -33,17 +33,23 @@ export type BenchmarkSource = 'team' | 'cohort' | 'tour' | 'target' | 'self';
  *     `standing.team_avg`, `team_n` and the player's own `standing.player_value`;
  *   - `team_incl_player`: `standing.team_avg` as stored (the player is in it),
  *     used only when the leave-one-out inputs are missing;
+ *   - `team_pool` (Slice 7a, `coachhelm_team_pool_v1` on): the pooled attempts
+ *     of the player's teammates in the read's window (`evidence.comparison.
+ *     primary`, the player excluded), with the pooled count, so the
+ *     benchmark's own variance is exact rather than assumed;
  *   - `cohort`, `row_comparison` (the row's own comparison line), `self` (the
  *     player's other side in a within-player contrast).
  */
-export type BenchmarkBasis = 'team_loo' | 'team_incl_player' | 'cohort' | 'row_comparison' | 'self';
+export type BenchmarkBasis = 'team_loo' | 'team_incl_player' | 'team_pool' | 'cohort' | 'row_comparison' | 'self';
 
 export interface CandidateBenchmark {
   source: BenchmarkSource;
   value: number;
   basis: BenchmarkBasis;
-  /** Teammates behind a leave-one-out team value. */
+  /** Teammates behind a leave-one-out team value or a team pool. */
   pool_n?: number;
+  /** Pooled attempts behind a team pool value (for a per-round rate, its exposure: scored holes ÷ 18). */
+  pooled_n?: number;
 }
 export interface SupportCandidate {
   id: string;
@@ -58,11 +64,12 @@ export interface SupportCandidate {
   strokesRaw: number | null;
   benchmark: CandidateBenchmark | null;
   /**
-   * Shrinkage prior: always the benchmark value, labelled with the benchmark's
-   * own source (so a Tour benchmark is a `tour` prior, never "the team"), or
-   * "no difference" for a within-player contrast.
+   * Shrinkage prior: the benchmark value, labelled with the benchmark's own
+   * source (so a Tour benchmark is a `tour` prior, never "the team"), or "no
+   * difference" for a within-player contrast. With `coachhelm_team_pool_v1`
+   * on and a team pool line on the row, the pool (`team_pool`, 02 §4).
    */
-  prior: { source: BenchmarkSource | 'no_difference'; value: number } | null;
+  prior: { source: BenchmarkSource | 'team_pool' | 'no_difference'; value: number } | null;
   /** The side the row's own words claim; null when the row claims nothing or is untestable. */
   direction: Direction | null;
   /** `data` when the generator picked that side from the same comparison (BH gets the two-sided p). */
@@ -75,6 +82,8 @@ export interface SupportCandidate {
   capReasons: string[];
   splitHalf: { gap_old: number; gap_new: number; n_old: number; n_new: number } | null;
   checkpointsHeld: number;
+  /** The n a mean contrast shrinks by when it is not `n` (the arms' harmonic n). */
+  shrinkN?: number;
 }
 
 type Obj = Record<string, unknown>;
@@ -291,7 +300,83 @@ function readSplitHalf(evidence: Obj): SupportCandidate['splitHalf'] {
   return { gap_old: gapOld, gap_new: gapNew, n_old: nOld, n_new: nNew };
 }
 
-export function buildCandidate(row: { id: string; insight_type: string | null; evidence: unknown }): SupportCandidate {
+/** Harmonic n of two arms, the effective n of a contrast (1b finding 6). */
+function harmonicOf(a: number, b: number): number {
+  return a > 0 && b > 0 ? (2 * a * b) / (a + b) : 0;
+}
+
+function polarityValue(v: unknown): Polarity | null {
+  return v === 'higher_better' || v === 'lower_better' ? v : null;
+}
+
+/**
+ * The test input a Slice 5a angle row wrote (`detail.gap_input`, the
+ * {@link GapInput} shape: `angle-data.ts` `AngleGapInput`), checked field by
+ * field. Null when it is missing, of another kind than the family's, or not
+ * finite.
+ */
+export function angleGapInput(
+  detail: Obj | null,
+  def: FamilyDef,
+): Extract<GapInput, { kind: 'proportion' | 'mean' }> | null {
+  const gi = obj(detail?.gap_input);
+  if (!gi || gi.kind !== def.shape) return null;
+  const polarity = polarityValue(gi.polarity);
+  if (!polarity) return null;
+  if (gi.kind === 'proportion') {
+    const k = num(gi.k);
+    const n = num(gi.n);
+    const b = num(gi.benchmark);
+    if (k === null || n === null || b === null || !(n > 0) || k < 0 || k > n || !(b > 0 && b < 1)) return null;
+    return { kind: 'proportion', k, n, benchmark: b, polarity };
+  }
+  if (gi.kind === 'mean') {
+    const value = num(gi.value);
+    const se = num(gi.se);
+    const df = num(gi.df);
+    const b = num(gi.benchmark);
+    if (value === null || se === null || b === null || !(se > 0)) return null;
+    return { kind: 'mean', value, se, df: df !== null && df >= 1 ? df : Infinity, benchmark: b, polarity };
+  }
+  return null;
+}
+
+/**
+ * The team pool line the row carries (`evidence.comparison.primary`, Slice
+ * 7a), in the row's own scale; null when there is none. The engine writes it
+ * only with `coachhelm_team_pool_v1` on and only above the pool's floors.
+ *
+ * Only the 7a pooled shape counts: it says what `n` counts (`n_unit`) and how
+ * many teammates are in it (`players`). A Slice 5a angle may label its own
+ * primary `team_pool` with a teammates' median and `n` = players; that is not
+ * a pooled count and is never read as one.
+ */
+export function teamPoolLineOf(
+  evidence: Obj,
+): { value: number; n: number; players: number; exposureRounds: number | null } | null {
+  const primary = obj(obj(evidence.comparison)?.primary);
+  if (!primary || primary.source !== 'team_pool' || typeof primary.n_unit !== 'string') return null;
+  const value = num(primary.value);
+  const n = num(primary.n);
+  const players = num(primary.players);
+  if (value === null || n === null || !(n > 0) || players === null || !(players > 0)) return null;
+  const exposure = num(primary.exposure_rounds);
+  return { value, n, players, exposureRounds: exposure !== null && exposure > 0 ? exposure : null };
+}
+
+export interface CandidateOptions {
+  /**
+   * Slice 7a (`coachhelm_team_pool_v1`): a row carrying a team pool line is
+   * tested against the pool with its exact pooled count and shrinks toward
+   * it. Off (the default): exactly the pre-7a behaviour.
+   */
+  teamPool?: boolean;
+}
+
+export function buildCandidate(
+  row: { id: string; insight_type: string | null; evidence: unknown },
+  options: CandidateOptions = {},
+): SupportCandidate {
   const evidence = obj(row.evidence) ?? {};
   const detail = obj(evidence.detail);
   const metric = typeof evidence.metric === 'string' ? evidence.metric : '';
@@ -305,14 +390,40 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   let untestableReason: string | null = def.shape === 'untestable' ? def.untestableReason ?? 'untestable' : null;
   let n = sampleN ?? 0;
   const { benchmark, prior: benchPrior } = benchmarkFor(evidence, def);
-  let prior = benchPrior;
+  let prior: SupportCandidate['prior'] = benchPrior;
   let usedBenchmark = benchmark;
+  // Slice 7a (02 §3, §4): with the flag on and a team pool on the row, μ is the
+  // pool. The pool measures the read's own metric in the read's own scale
+  // (`familyForRead` matches it by type and metric), so for a one-sample test
+  // it is also the benchmark, with its pooled count: the benchmark's variance
+  // is then exact instead of the equal-size assumption below. A within-player
+  // contrast still shrinks toward "no difference" (below).
+  const teamPool = options.teamPool ? teamPoolLineOf(evidence) : null;
+  if (teamPool) {
+    prior = { source: 'team_pool', value: teamPool.value };
+    // A per-round rate's sample is its exposure (scored holes ÷ 18, what the
+    // value is scaled by), not the rounds the line names: nine-hole rounds
+    // would otherwise overstate the pool's events. Without it the pool is the
+    // prior only.
+    const poolSample =
+      def.shape === 'rate_per_round' ? teamPool.exposureRounds : def.shape === 'proportion' ? teamPool.n : null;
+    if (poolSample !== null) {
+      usedBenchmark = {
+        source: 'team',
+        value: teamPool.value,
+        basis: 'team_pool',
+        pool_n: teamPool.players,
+        pooled_n: poolSample,
+      };
+    }
+  }
+  const pooledN = usedBenchmark?.basis === 'team_pool' ? usedBenchmark.pooled_n ?? 0 : 0;
   // A leave-one-out team value is itself an estimate from the teammates'
   // samples. The row does not carry their counts, so each teammate is taken
   // to have a sample the size of this player's (documented default, finding 5).
   const pool = usedBenchmark?.basis === 'team_loo' ? usedBenchmark.pool_n ?? 0 : 0;
 
-  switch (def.shape) {
+  switch (def.angle ? 'angle' : def.shape) {
     case 'proportion': {
       let k: number | null = null;
       let total: number | null;
@@ -339,7 +450,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
         k,
         n: total,
         benchmark: usedBenchmark.value / 100,
-        ...(pool > 0 ? { benchmarkN: total * pool } : {}),
+        ...(pooledN > 0 ? { benchmarkN: pooledN } : pool > 0 ? { benchmarkN: total * pool } : {}),
         polarity: polarityOf(evidence, 'higher_better'),
       };
       if (!(usedBenchmark.value > 0 && usedBenchmark.value < 100)) {
@@ -425,7 +536,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
         events: Math.round(yourValue * rounds),
         rounds,
         benchmark: usedBenchmark.value,
-        ...(pool > 0 ? { benchmarkRounds: rounds * pool } : {}),
+        ...(pooledN > 0 ? { benchmarkRounds: pooledN } : pool > 0 ? { benchmarkRounds: rounds * pool } : {}),
         polarity: polarityOf(evidence, 'lower_better'),
       };
       n = rounds;
@@ -433,6 +544,24 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     }
     case 'untestable':
       break;
+    case 'angle': {
+      // A Slice 5a angle wrote its own test input; read it rather than
+      // re-deriving it. The benchmark is the one that input names, labelled
+      // by the row's comparison source (team median, Tour, or the player's own
+      // other side).
+      const angleInput = angleGapInput(detail, def);
+      gapInput = angleInput;
+      if (!angleInput) {
+        untestableReason = 'no_gap_input';
+      } else {
+        if (sampleN === null && angleInput.kind === 'proportion') n = angleInput.n;
+        const source = mapComparisonSource(evidence.comparison_source);
+        const value = angleInput.kind === 'proportion' ? angleInput.benchmark * 100 : angleInput.benchmark;
+        usedBenchmark = { source, value, basis: source === 'self' ? 'self' : 'row_comparison' };
+        prior = { source, value };
+      }
+      break;
+    }
   }
 
   // A row that claims nothing (a neutral verdict, or a strength row in a
@@ -457,6 +586,21 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     if (lowered !== cap) capReasons.push('tour_benchmark_only');
     cap = lowered;
   }
+  if (def.angle && gapInput) {
+    // 1b / 02 §7: a rough-estimate saving never reads above Likely, and an
+    // angle row's own stamped cap (`detail.ladder_cap`) is never exceeded.
+    if (detail?.impact_kind === 'rough_estimate') {
+      const lowered = minRung(cap, 'likely');
+      if (lowered !== cap) capReasons.push('rough_estimate');
+      cap = lowered;
+    }
+    const stamped = detail?.ladder_cap;
+    if (typeof stamped === 'string' && (LADDER_RUNGS as readonly string[]).includes(stamped)) {
+      const lowered = minRung(cap, stamped as LadderRung);
+      if (lowered !== cap) capReasons.push('row_ladder_cap');
+      cap = lowered;
+    }
+  }
   if (evidence.estimated === true) {
     // 04 §1.1: `estimated` must be false on every read at Observed or above.
     const lowered = minRung(cap, 'likely');
@@ -465,7 +609,17 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   }
 
   const splitHalf = readSplitHalf(evidence);
-  const arms = (def.arms ?? []).map((a) => ({ key: a.key, have: num(detail?.[a.key]), need: a.min }));
+  const arms = (def.arms ?? []).map((a) => ({
+    key: a.key,
+    have: detail ? num(a.read ? a.read(detail) : detail[a.key]) : null,
+    need: a.min,
+  }));
+  // A two-arm mean contrast shrinks toward "no difference" by its arms'
+  // harmonic n, as two-proportion contrasts do (finding 6).
+  const armA = arms[0]?.have ?? null;
+  const armB = arms[1]?.have ?? null;
+  const shrinkN = gapInput && def.shrinkByArms && armA !== null && armB !== null ? harmonicOf(armA, armB) : undefined;
+  if (gapInput && def.nFromArms) n = armA !== null && armB !== null ? armA + armB : 0;
   return {
     id: row.id,
     family: def.family,
@@ -479,12 +633,13 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     benchmark: gapInput ? usedBenchmark : null,
     prior: gapInput ? prior : null,
     direction,
-    directionBasis: direction === null ? null : def.allowStrength ? 'data' : 'declared',
+    directionBasis: direction === null ? null : def.allowStrength || def.sidePickedFromData ? 'data' : 'declared',
     arms,
     why: whyStateOf(evidence),
     cap,
     capReasons,
     splitHalf,
     checkpointsHeld: num(obj(evidence.stability)?.checkpoints_held) ?? 0,
+    ...(shrinkN !== undefined && shrinkN > 0 ? { shrinkN } : {}),
   };
 }
