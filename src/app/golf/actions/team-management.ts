@@ -311,12 +311,19 @@ async function setPlayerAvailabilityImpl(input: {
       return { success: false, error: 'You must be signed in to update player availability' };
     }
 
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (coachError) {
+      await logServerError(`setPlayerAvailability coach read failed: ${coachError.message}`, {
+        action: 'roster.setPlayerAvailability',
+        playerId: input.playerId,
+      });
+      return { success: false, error: 'Failed to update player availability' };
+    }
     if (!coach) {
       return { success: false, error: 'Only coaches can update player availability' };
     }
@@ -330,13 +337,21 @@ async function setPlayerAvailabilityImpl(input: {
       return { success: false, error: 'Choose available, injured or away' };
     }
 
-    const { data: membership } = await supabase
+    const { data: membership, error: membershipError } = await supabase
       .from('golf_team_members')
       .select('id')
       .eq('player_id', input.playerId)
       .eq('team_id', teamId)
       .maybeSingle();
 
+    if (membershipError) {
+      await logServerError(`setPlayerAvailability membership read failed: ${membershipError.message}`, {
+        action: 'roster.setPlayerAvailability',
+        playerId: input.playerId,
+        teamId,
+      });
+      return { success: false, error: 'Failed to update player availability' };
+    }
     if (!membership) {
       return { success: false, error: 'Player is not on your team' };
     }
