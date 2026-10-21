@@ -1,5 +1,32 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Course plan on the coach's board (flag off)
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7c, 04 Example 10)
+PR/commit:      see git log (claude/coachhelm-course-plan)
+Contract IDs:   none
+Actions:        none (read-only server actions)
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/CoursePlan.tsx`: under the chosen player's card, a
+  Course plan button lists the player's courses with three or more
+  rounds; picking one shows at most three plan lines from their own
+  history there, the thin-history line below six rounds, and the
+  player's version to copy. Targets and sides only, never a club.
+- Shown only when `coachhelm_course_plan_v1` is on (off everywhere).
+  Preview: `/clubhouse-preview/coachhelm?state=courseplan`,
+  `courseplannone`, `courseplanfailed`.
+
+### Why
+
+- Supercharge 03 row 8 and 04 Example 10: a course plan from the
+  player's own rounds, on the coach's request (no event carries a course).
+
 ## 2026-10-21 — Coach board: Team patterns
 
 ```text

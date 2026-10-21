@@ -115,6 +115,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020121000_golf_coachhelm_corrections.sql (HELD.md row; the code treats the missing table as not available, so order is not a correctness issue) and the audit-view chips ship. Remove the flag and the isCorrectionsEnabled branches once corrections have fed ranking stably for a month.",
   },
   {
+    feature_id: "coachhelm_course_plan_v1",
+    owner: "golf/coachhelm",
+    purpose: "Slice 7c (supercharge 04 Example 10). Adds a Course plan action to the chosen player on the coach's CoachHelm board in Clubhouse: it lists the courses the player has three or more countable rounds on and, for the one the coach picks, at most three plan lines from the player's own hole and shot history there (tee trouble with a side lean or penalties, par 3s with the short or long miss lean, three-putts here against elsewhere), ranked by strokes at stake, with a mandatory thin-history line below six rounds and the player's version to copy. Targets and sides only, never a club. Read only, on the coach's request (no event source carries a course yet). Turning it on shows the action to coaches in Clubhouse (itself off in production); Fairway is unchanged. Off: the loader does not offer it and both server actions return not available without reading anything.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on in preview first and check plans for a few real players against their rounds. Remove the flag and its checks once Clubhouse is on for coaches and the plan has run stably for a month.",
+  },
+  {
     feature_id: "coachhelm_data_gap_prompt_v1",
     owner: "golf/coachhelm",
     purpose: "Gates the one-tap data-gap prompt in Fairway shot entry (FairwayDataGapPrompt, loaded by lib/coachhelm/data-gap/load-asks.ts from the round entry pages). When on, the New Round and Continue Round pages read the player's visible v3 reads that carry a putt miss_direction evidence.data_gap, and after a missed first putt from that distance band with no miss tag the shot screen shows one row of chips (Short, Long, High, Low) with a counter (\"4 of 10 for your 5-10 ft putt read\"); one tap sets that shot's miss tag exactly as the existing optional miss chips do, and the row disappears at the target. When off, the pages read nothing extra and shot entry is exactly what it was.",

@@ -2,6 +2,7 @@
 
 import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
 import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-feed';
+import { getCoursePlan, listCoursePlanCourses, type CoursePlanCoursesResult, type CoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
 
@@ -48,4 +49,18 @@ export interface ChPlayerWrites {
 export const LIVE_PLAYER_WRITES: ChPlayerWrites = {
   accept: (id) => acceptFocusArea(id),
   decline: (id) => declineFocusArea(id),
+};
+
+/**
+ * The course plan's two reads (Slice 7c, `coachhelm_course_plan_v1`): the player's courses with three or more rounds, and
+ * the plan for one of them. Read only. Preview and tests pass their own.
+ */
+export interface ChCoursePlanReads {
+  courses(playerId: string): Promise<CoursePlanCoursesResult>;
+  plan(playerId: string, courseId: string): Promise<CoursePlanResult>;
+}
+
+export const LIVE_COURSE_PLAN_READS: ChCoursePlanReads = {
+  courses: (playerId) => listCoursePlanCourses(playerId),
+  plan: (playerId, courseId) => getCoursePlan(playerId, courseId),
 };
