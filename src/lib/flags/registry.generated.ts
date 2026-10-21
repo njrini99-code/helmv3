@@ -115,6 +115,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020121000_golf_coachhelm_corrections.sql (HELD.md row; the code treats the missing table as not available, so order is not a correctness issue) and the audit-view chips ship. Remove the flag and the isCorrectionsEnabled branches once corrections have fed ranking stably for a month.",
   },
   {
+    feature_id: "coachhelm_data_gap_prompt_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates the one-tap data-gap prompt in Fairway shot entry (FairwayDataGapPrompt, loaded by lib/coachhelm/data-gap/load-asks.ts from the round entry pages). When on, the New Round and Continue Round pages read the player's visible v3 reads that carry a putt miss_direction evidence.data_gap, and after a missed first putt from that distance band with no miss tag the shot screen shows one row of chips (Short, Long, High, Low) with a counter (\"4 of 10 for your 5-10 ft putt read\"); one tap sets that shot's miss tag exactly as the existing optional miss chips do, and the row disappears at the target. When off, the pages read nothing extra and shot entry is exactly what it was.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove the flag once the prompt has run in production for a season and players are not skipping it more than they tap it; if players find it noisy, turn it off and remove the prompt and its loader.",
+  },
+  {
     feature_id: "coachhelm_focus_area_evidence_revision",
     owner: "golf/coachhelm",
     purpose: "Gates stamping computeEvidenceRevision()'s fingerprint onto golf_player_focus_areas.evidence_revision when a focus area is approved from a source insight (A8 slice 1). Requires migration 20260923090000_golf_focus_area_evidence_revision applied in prod — until then the column does not exist there, and turning this on would make every insight-sourced focus-area create fail outright (the insert would include a key the live table doesn't have). Off by default in every environment for exactly that reason; this is a migration-sequencing gate, not a rollout decision the flag itself makes on the feature's merits.",

@@ -71,7 +71,9 @@ confirms, then advances; failure preserves that post and the existing Retry.
 
 - `src/components/golf/tasks/**`
 - `src/components/golf/documents/**`
-- `src/components/golf/travel/**`
+- `src/components/fairway/pages/travel/**`: FairwayTravel, FairwayNextTrip,
+  FairwayTripCard, FairwayTripDetail; `travel-helpers.tsx` owns trip status
+  and grouping
 - `src/components/golf/player-hub/**`
 - `src/components/fairway/pages/team-hub/**`
 
@@ -116,9 +118,20 @@ Document upload/version
   -> may link to announcements or events
 
 Travel create
-  -> createTravelItinerary()
+  -> createGolfTravelItinerary()
   -> WRITE golf_travel_itineraries
   -> optional event_id link to calendar
+
+Travel read (/golf/dashboard/travel, redesign 2026-09-28)
+  -> trips grouped by getTripStatus on calendar days: past = Completed
+     (after the return day; a trip with no return date ends the day after
+     departure), current = In transit / Departed, else upcoming
+  -> the next (or current) trip leads: a hero on phones, the default
+     selected trip sheet on desktop; past trips collapse
+  -> trip sheet: Depart, Wear, Bring, Stay (tel: + Maps links), Return, Notes,
+     then the linked calendar event
+  -> selecting a trip pushes ?trip=<id> (back gesture returns to the list);
+     inbound ?trip= from Calendar / Team Hub still auto-selects
 
 Player hub
   -> reads travel, tasks, and events
@@ -162,6 +175,22 @@ Player Team Hub
 - Tasks need pending, overdue, completed, reminder, template, upload-required, and empty states.
 - Documents need preview, version history, upload new version, category/visibility, and unsupported-file states.
 - Travel needs itinerary cards, transport/hotel/packing/room assignment details, budget/expense affordances where wired, and player-friendly status.
+- Travel page (`FairwayTravel`, owner 2026-09-28, no green bands): "today"
+  is the team's wall-clock date (`golf_teams.timezone`, computed on the
+  server like the Team Hub), and one calendar-day rule in
+  `travel-helpers.tripPhase` drives the list groups (On the road / Upcoming
+  / Past trips), the countdown, the status pill, the masthead counts and the
+  default trip: upcoming before the departure date, on the road from
+  departure through the return date (the departure day alone without one),
+  past after. The desktop detail panel always shows a trip (on the road,
+  else the next to leave, else the latest past trip), never an empty
+  "Select a trip", and every panel action (edit, delete, expenses, export,
+  the expense form) acts on the trip it shows. Phones keep list → pushed
+  detail with "All trips". Expense reads are per trip with a request token
+  (a late answer for another trip is dropped); a failed read shows a retry,
+  and the delete confirm names an expense count only after that trip's
+  read answered. `is_test` itineraries stay out of the page read. There is
+  no travel roster table; room assignments render when set.
 - Player Hub should not lie about task completion state; it must read the same operational truth as task completion writes.
 - Player Team Hub is player-only and starts on an operations Overview; its
   ordered detail tabs are Tasks, Announcements, Travel, and Class schedule.
