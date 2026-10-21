@@ -21,6 +21,7 @@ import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { lieAfterRecoveryPayload, withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -352,7 +353,9 @@ export interface SavePartialRoundDuplicateCompleted {
   completedRoundId: string;
 }
 export type SavePartialRoundResult =
-  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>
+  // `courseId` (additive): the golf_courses id the round is linked to when the server resolved one (a typed course name
+  // that matches the library), so the client knows the round has a course. Absent when none was resolved.
+  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[]; courseId?: string }>
   | SavePartialRoundHoleInvalid
   | SavePartialRoundInProgressExists
   | SavePartialRoundDuplicateCompleted;
@@ -898,6 +901,7 @@ async function savePartialRoundImpl(
           putt_made: derivePuttMade(shot),
           is_penalty: shot.isPenalty,
           penalty_type: shot.penaltyType ?? null,
+          ...lieAfterRecoveryPayload(shot),
         })),
       })
     );
@@ -1398,7 +1402,7 @@ async function savePartialRoundImpl(
         // calls and produces "An unexpected response was received from the server"
         // errors. Revalidation happens when the round is actually submitted via
         // submitGolfRoundComprehensive.
-        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
+        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
       }
     } else {
       // Recover a session that lost its local roundId (e.g. a backgrounded/
@@ -1775,7 +1779,7 @@ async function savePartialRoundImpl(
               round_id: roundId,
               hole_id: holeId,
               hole_number: group.hole_number,
-              ...shot,
+              ...withoutLieAfterRecovery(shot),
             }));
 
             // Upsert on (round_id, hole_number, shot_number) — see migration
@@ -1959,7 +1963,7 @@ async function savePartialRoundImpl(
     // conflict. Both queries above already `.select()` the full row; see
     // `roundUpdatedAtForResponse`'s declaration for why `round` itself
     // cannot be read here directly.
-    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined } };
+    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
 
   } catch (err) {
     // Single log call per failure (see updateExisting branch above) — keep

@@ -149,6 +149,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Remove the flag once the prompt has run in production for a season and players are not skipping it more than they tap it; if players find it noisy, turn it off and remove the prompt and its loader.",
   },
   {
+    feature_id: "coachhelm_data_prompts_v2",
+    owner: "golf/coachhelm",
+    purpose: "Gates two one-tap prompts in Fairway shot entry. Course nudge: when a round has no linked course (golf_rounds.course_id null, a typed course name), the first hole before its first shot and the finish summary show one row, \"Link this round to a course\", that opens the existing course picker; the pick goes to the server as course_id with the round's next update, like any other round field (the round's pars and yardages are not changed). Skip hides it for the round. Recovery tap: after a tee shot that finished in the rough or an \"other\" lie, one row asks \"Next shot from there?\" with Clear shot / Blocked or punch out; the answer is stored on the tee shot as golf_shots.lie_after_recovery the way a miss chip is (device copy first). When off, the pages read nothing extra, pass nothing down, and shot entry and its round payloads are exactly what they were.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Remove the flag once both prompts have run in production for a season, the held migration is applied and the course-null share of new rounds has fallen; if players find either row noisy, turn it off and remove that prompt.",
+  },
+  {
     feature_id: "coachhelm_focus_area_evidence_revision",
     owner: "golf/coachhelm",
     purpose: "Gates stamping computeEvidenceRevision()'s fingerprint onto golf_player_focus_areas.evidence_revision when a focus area is approved from a source insight (A8 slice 1). Requires migration 20260923090000_golf_focus_area_evidence_revision applied in prod — until then the column does not exist there, and turning this on would make every insight-sourced focus-area create fail outright (the insert would include a key the live table doesn't have). Off by default in every environment for exactly that reason; this is a migration-sequencing gate, not a rollout decision the flag itself makes on the feature's merits.",

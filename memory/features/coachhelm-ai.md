@@ -77,7 +77,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 - One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
   2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
-  `coachhelm_data_gap_prompt_v1`, `coachhelm_corrections_v1`,
+  `coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2` (the Slice 8b
+  shot-entry prompts, `src/lib/golf/data-prompts/flag.ts`),
+  `coachhelm_corrections_v1`,
   `coachhelm_recheck_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
   `coachhelm_verdicts_v1`, `coachhelm_root_cause_diagnosis` and
   `coachhelm_insight_angles_v1` are read through `isCoachHelmFlagEnabled`. Unset, empty or `*`: the global flag

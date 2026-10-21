@@ -733,6 +733,58 @@ before.
 - Clubhouse round entry does not show it yet (Clubhouse is off in
   production).
 
+## Recovery tap and course nudge (CoachHelm Slice 8b, added 2026-10-21)
+
+Behind `coachhelm_data_prompts_v2` (OFF). With it off the New Round and
+Continue Round pages pass `dataPromptsV2={false}`, the screen and the summary
+sheet draw nothing new, and the round payloads are byte-identical (the new
+key is spread only when answered). The pages read the flag with
+`dataPromptsV2ForShotEntry` (`src/lib/golf/data-prompts/flag.ts`), in the
+player's `HELM_COACHHELM_TEAMS` canary scope like the Slice 8a asks, so a
+canary list limits the prompts to its teams. Rules: `src/lib/golf/data-prompts/
+recovery.ts` (pure).
+
+- Recovery tap: after a non-penalty tee shot whose result is `rough` or
+  `other`, while it is the hole's last shot, `useRecoveryPrompt` and
+  `FairwayRecoveryPrompt` draw one row, "Next shot from there?", Clear shot
+  · Blocked / punch out, Skip. The tap goes through
+  `useShotTracking.handleTagRecovery` (`use-recovery-tagger.ts`): the
+  `TAG_LIE_AFTER_RECOVERY` reducer action sets
+  `ShotRecord.lieAfterRecovery` on that tee shot only, then `onAutoSave`
+  with the hole under the shared Edit/Undo lock, as the putt tag does.
+- Storage: `golf_shots.lie_after_recovery boolean` (null = not asked), added
+  by the HELD migration `20261021091000_shot_lie_after_recovery.sql`,
+  which also patches the shot INSERT of `save_partial_round_atomic` and
+  `submit_round_atomic`. The partial and final actions send
+  `shots[].lie_after_recovery` only for an answered rough/other tee shot
+  (`lieAfterRecoveryPayload`; a stale answer on a shot edited to the
+  fairway is never sent). Before the apply the RPCs ignore the key and the
+  answer lives in the device copy only; the direct-table fallbacks strip it
+  (`withoutLieAfterRecovery`). Continue Round reads it back from
+  `select('*')` when the column exists (`lieAfterRecoveryFromRow`).
+  Stored beside the lie, not as a new lie value, so no strokes-gained lookup
+  changes; costing it is a later engine slice.
+- Course nudge: when the round has no course id, `useCourseNudge` (owned by
+  the round client) feeds `FairwayCourseNudge` on the shot screen at the
+  round's start only (`isRoundStartMoment`: first hole in play order, no
+  score, no shot) and in `FairwayRoundSummarySheet`'s `notice` slot at the
+  finish. "Pick the course" opens the existing `FairwayCoursePicker`
+  (loaded on the first tap); the pick links the course id only (pars,
+  yardages and tee stay as entered). New Round sets `resolvedCourseIdRef`,
+  Continue Round `linkedCourseIdRef`; either rides the next partial and
+  final write as `courseId`, which both round RPCs keep with
+  `COALESCE((p_round_data->>'course_id')::uuid, course_id)`. Skip hides it
+  for the round. A typed name the library matches is linked by the server at
+  the start (`resolveCourseId`); `savePartialRound` returns that id as the
+  optional `data.courseId`, New Round keeps it as `startLinkedCourseId`, and
+  the nudge does not show for that round.
+- Production (2026-10-21, last 90 days): 35 of 572 rounds (6.1%) have no
+  course id, every one with a typed course name; 30 of 521 completed. Tee
+  shots ending `rough` 2,242 and `other` 387 (the recovery tap's
+  population).
+- Clubhouse round entry does not show either yet (Clubhouse is off in
+  production).
+
 ## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
 
 - **Held, not saved.** When an autosave or completed-hole checkpoint does not

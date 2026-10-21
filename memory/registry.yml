@@ -707,6 +707,7 @@ features:
         # shot-detail RLS.
         - supabase/migrations/*proximity*.sql
         - supabase/migrations/*putt_make_pct*.sql
+        - supabase/migrations/*lie_after_recovery*.sql
         - supabase/migrations/*putt_band*.sql
         - supabase/migrations/*fairway_denominator*.sql
         - supabase/migrations/*shot_detail*.sql
