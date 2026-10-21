@@ -1,0 +1,21 @@
+-- ROLLBACK CAPTURE for
+-- supabase/migrations/20261021110000_golf_import_player_classes.sql
+--
+-- Forward change (held, not applied): adds public.golf_import_player_classes
+-- (uuid, uuid, text, jsonb), a SECURITY INVOKER function the Clubhouse class
+-- import calls so two imports for one player cannot both insert the same class.
+--
+-- Prior definition: none. Read live from pg_proc on production 2026-10-21
+-- (read-only): 0 functions named golf_import_player_classes. No table, index,
+-- policy or grant on golf_player_classes changes, so rolling back is dropping
+-- the function. The app falls back to its read-then-insert path on PGRST202
+-- (function not found), so no app change is needed with the drop.
+--
+-- Rows the function inserted are ordinary golf_player_classes rows; they stay.
+--
+-- Metadata: forward change carried by the PR that adds this file (record its
+-- merge SHA in the production rollout ledger); capture date 2026-10-21;
+-- approval record: Production rollout ledger row on apply; Sentry watch window:
+-- the apply time plus 24 hours, surface classes.import.
+
+drop function if exists public.golf_import_player_classes(uuid, uuid, text, jsonb);

@@ -109,6 +109,37 @@ export function syncDataOf(c: ChClass, term: string, opts?: { semesterStartDate?
   };
 }
 
+type ImportPayload = Array<{ class_name: string; semester: string } & Record<string, unknown>>;
+type ImportData = { rows: ChClassRow[]; skipped: string[]; known?: ChClassRow[] };
+
+/** The database function is not there (the migration is held): the caller falls back to the browser's own check. */
+const functionMissing = (error: { code?: string } | null) => error?.code === 'PGRST202' || error?.code === '42883';
+
+/**
+ * `golf_import_player_classes`: the read, the skip and the insert in one transaction under a per-player lock, so a second import for the
+ * same player waits and then skips what the first saved. Returns null when the function does not exist yet, so `importRows` uses its own path.
+ * The Supabase types are generated from the live database and do not list the function until it is applied, so the call is cast.
+ */
+async function importAtomically(
+  sb: ReturnType<typeof createClient>,
+  ctx: { playerId: string; teamId: string; term: string },
+  payloads: ImportPayload,
+): Promise<ServerResult<ImportData> | null> {
+  const client = sb as unknown as { rpc: (fn: string, args: object) => PromiseLike<{ data: unknown; error: { message?: string; code?: string } | null }> };
+  const { data, error } = await client.rpc('golf_import_player_classes', {
+    p_player_id: ctx.playerId,
+    p_team_id: ctx.teamId,
+    p_term: ctx.term,
+    // The function sets the player and team itself; it takes the class columns only.
+    p_rows: payloads.map((p) => ({ ...p, player_id: undefined, team_id: undefined })),
+  });
+  if (functionMissing(error)) return null;
+  if (error) return res<ImportData>(error);
+  const out = data as { inserted?: ChClassRow[]; skipped?: string[]; known?: ChClassRow[] } | null;
+  if (!out || !Array.isArray(out.inserted)) return { success: false, error: 'The import did not answer. Try again.' };
+  return { success: true, data: { rows: out.inserted, skipped: out.skipped ?? [], known: out.known ?? [] } };
+}
+
 export function createLiveClassesWrites(ctx: { playerId: string; teamId: string; term: string }): ChClassesWrites {
   const sb = createClient();
   return {
@@ -233,6 +264,10 @@ export function createLiveClassesWrites(ctx: { playerId: string; teamId: string;
       }));
       // `golf_player_classes` has no uniqueness beyond its id, and calendar-sync reconciles per class id, so importing the same
       // schedule twice doubled the calendar. Skip what is already there. A failed read is not evidence that nothing is, so it stops.
+      // Preferred path: one database call that takes a per-player lock, so two imports in flight at once cannot both insert (audit
+      // doc-61). While the function is not applied (held migration 20261021110000) the browser does the same check and insert.
+      const atomic = await importAtomically(sb, ctx, payloads);
+      if (atomic) return atomic;
       const existing = await sb.from('golf_player_classes').select(COLUMNS).eq('player_id', ctx.playerId);
       if (existing.error) return { success: false, error: `Couldn’t check for classes you already have: ${existing.error.message}` };
       // A row saved before the term column was filled is in the current term (the page reads it so); every new row carries a term.

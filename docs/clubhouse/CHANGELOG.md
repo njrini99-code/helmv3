@@ -1,5 +1,26 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Two imports at once save a class once (doc-61)
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-classes-import-race
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none until held 20261021110000 is applied
+Held items:     20261021110000_golf_import_player_classes (HELD.md)
+```
+
+### Changed
+
+- The class import calls `golf_import_player_classes`, which locks the player,
+  skips what is already saved and inserts the rest in one transaction, so two
+  imports in flight at once cannot both insert. While the function is not
+  applied (PGRST202) the import keeps its read before the insert. Any other
+  error is shown, never retried on the old path.
+- Rollback is dropping the function; the app needs no change with it.
+- `docs/clubhouse/STATUS.md` P012 and `VERIFY.md` say so.
+
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until
