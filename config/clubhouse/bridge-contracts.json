@@ -3334,7 +3334,7 @@
     "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
     "chCode": "CH-4604",
     "meaning": "A new window's figures arrive",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -4297,7 +4297,7 @@
     "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
     "chCode": "CH-5604",
     "meaning": "A new window's figures arrive",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {

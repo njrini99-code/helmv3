@@ -8,8 +8,7 @@ import { createContext, useContext, useEffect, useId, useMemo, useState, useTran
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import type { ChWindow } from '../../data/stats-common';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -52,16 +51,16 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
-  return (w: ChWindow) => go(withWindow(filter, w));
+  return (r: ChRange) => go(withScope(filter, r));
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
-export function useShownWindow(): ChWindow {
+export function useShownWindow(): ChRange {
   return useContext(GoFilter).shown;
 }
 
@@ -110,7 +109,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
@@ -131,7 +130,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
-      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${filter.window}${isFiltered(filter) ? '-filtered' : ''}.csv`;
+      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${rangeOf(filter)}${isFiltered(filter) ? '-filtered' : ''}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
       haptic('success');

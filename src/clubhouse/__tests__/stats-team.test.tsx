@@ -972,7 +972,7 @@ describe('Stats team · the page', () => {
   it('42001 the window switch moves with the arrow keys, a leg card takes Enter, and a grid row focuses its player', async () => {
     const user = userEvent.setup();
     wrap(stats({ window: 'last10' }));
-    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    screen.getByRole('radio', { name: 'Last 20' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));

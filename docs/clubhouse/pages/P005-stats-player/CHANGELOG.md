@@ -1,5 +1,41 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
+
+```text
+Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals
+                log)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none (wording: switch label, "vs previous N")
+Actions:        none
+Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands
+                cut at the same edges)
+Held items:     none
+```
+
+### Changed
+
+- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers (also
+  in the filter sheet). Last 10 is the default and leaves the address as it was;
+  Last 5 and Last 20 add `?last=5` or `?last=20`. "vs previous 10" becomes "vs
+  previous N", and the basis line reads "Last 20 rounds" (a short window still
+  says how many rounds qualify).
+- The Rounds tab's "Against the one before" says the cut in force ("Latest 20
+  rounds and the 20 before them", "against the 20 before"), not a fixed 10
+  (fixer, PR #2257).
+- Putting by distance counts its six and nine bands from `lib/golf/putt-make.ts`
+  (the cut the calculator, the leak map and CoachHelm share). Band edges and
+  counts are unchanged.
+- Removed the unused `LegRoute` (strokes gained by leg, the old route drawing)
+  and the other dead chart code listed on the team page entry.
+
+### Known limit
+
+- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the
+  20 before it need forty rounds in the last twelve months; a player with fewer
+  gets a shorter previous stretch, and none under 23 ("Comparing starts at 23
+  rounds"). The read is not widened for Last 20.
+
 ## 2026-10-20 — No visible change (stats visuals 5)
 
 ```text

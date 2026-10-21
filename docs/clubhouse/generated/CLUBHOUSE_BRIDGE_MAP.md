@@ -432,7 +432,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | implemented | Focusing a player on the trend |
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | implemented | Choosing a leg |
 | 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | implemented | Changing the trend's measure |
-| 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
+| 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | reserved | A new window's figures arrive |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
 | 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total) |
@@ -521,7 +521,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | implemented | Changing tabs |
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | implemented | Opening Add focus area |
 | 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | implemented | The tab's panel swaps |
-| 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
+| 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | reserved | A new window's figures arrive |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
 | 51703 | CH-5703 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
