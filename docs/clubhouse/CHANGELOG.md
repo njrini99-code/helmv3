@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-21 — A coach's Team Hub item has a badge
+
+`CH_NAV_COACH`'s Team Hub item is `badge: 'hub'`, and `badgeCount` adds the
+shell's `overdueTasks` (a coach's overdue tasks with open work, read once by
+`loadClubhouseShell`) to the polled counts, which are zero for a coach.
+
 ## 2026-10-21 — Stronger rule token; players get a Tasks tab in Team Hub
 
 `--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both high-contrast

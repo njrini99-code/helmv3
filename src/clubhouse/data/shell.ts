@@ -6,6 +6,7 @@ import { loadAttendanceCounts, loadInvitedCounts, loadOwnRows } from './attendan
 import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calendar/model';
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
+import { todayIsoInZone } from '@/lib/golf/timezone';
 
 export interface ChNextEvent {
   id: string;
@@ -30,6 +31,12 @@ export interface ChShellData {
   nextEvent: ChNextEvent | null;
   /** Null when the read failed: the badge hides rather than claiming zero. */
   pendingJoinRequests: number | null;
+  /**
+   * A coach's Team Hub badge: tasks past their due date (on the team's clock) that a player still has to finish. Coach
+   * only, read once with the shell (one head count, no joins to the client); null when unread or for a player, so the
+   * badge hides rather than claiming zero.
+   */
+  overdueTasks?: number | null;
   /** The team's time zone: where the global light's sun is until the course location is set (P001-A1). */
   timezone?: string;
   /** The team's course location (Settings > Team), the global light's place; null until set or before its migration. */
@@ -57,10 +64,33 @@ export const ROUND_IN_PROGRESS_FRESH_MS = 12 * 60 * 60_000;
  * for a player, the round in progress. All degrade to "hidden" on failure; the
  * shell must never take a page down.
  */
+/**
+ * How many of the team's tasks are overdue with work still open: a task due before `today` (the team's date) with at
+ * least one assignment not completed. One head count: the inner embed makes the database keep only tasks that have an
+ * open assignment, so no rows or ids come back and the 1,000-row cap never applies. RLS scopes it to the coach's team.
+ * Null when the read failed. A task nobody was assigned is not counted: there is no one to chase.
+ */
+export async function countOverdueTasks(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string, today: string): Promise<number | null> {
+  const { count, error } = await supabase
+    .from('golf_tasks')
+    .select('id, golf_task_assignments!inner(id)', { count: 'exact', head: true })
+    .eq('team_id', teamId)
+    .is('parent_task_id', null)
+    .lt('due_date', today)
+    .or('status.is.null,status.neq.completed', { referencedTable: 'golf_task_assignments' });
+  if (error) {
+    chLogServer('shell', 'overdueTasks', error, 'tasks');
+    return null;
+  }
+  return count ?? 0;
+}
+
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
   if (!teamId) return { nextEvent: null, pendingJoinRequests: null };
   const supabase = await createClient();
-  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes] = await Promise.all([
+  // The team's zone is read once and shared: the coach's overdue count needs today's date in it, and runs beside the rest.
+  const zoneRead = Promise.resolve(supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle());
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes, overdueTasks] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp, rsvp_deadline')
@@ -78,7 +108,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
       .select('id', { count: 'exact', head: true })
       .eq('team_id', teamId)
       .eq('status', 'pending'),
-    supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle(),
+    zoneRead,
     // The player's own round in progress (RLS: a player reads their own rounds). Only a fresh one is a round "on the course".
     playerId
       ? supabase
@@ -111,6 +141,15 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     // The coach's own staff row on this team (RLS: a coach on the team reads its staff rows), for the identity line.
     coachId
       ? supabase.from('golf_team_coach_staff').select('role').eq('team_id', teamId).eq('coach_id', coachId).limit(5)
+      : Promise.resolve(null),
+    // A coach's Team Hub badge. A failed zone read falls back to the product default, as below.
+    coachId
+      ? zoneRead
+          .then((zone) => countOverdueTasks(supabase, teamId, todayIsoInZone((!zone.error && zone.data?.timezone) || 'America/New_York')))
+          .catch((err: unknown) => {
+            chLogServer('shell', 'overdueTasks', err, 'tasks');
+            return null;
+          })
       : Promise.resolve(null),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
@@ -174,6 +213,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   return {
     nextEvent: e ? { ...describeEvent(e, timezone), ready, ...(forPlayer ? { mine } : {}) } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
+    ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
     course: courseOf(courseRes),

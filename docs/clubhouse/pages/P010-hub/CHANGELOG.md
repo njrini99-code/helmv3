@@ -32,6 +32,10 @@ Held items:     coach nav badge (audit par-24): new read on every shell load
   row shows "3/6" progress in place of the ring. A player now has a Tasks tab
   (audit par-28); `/tasks` and task notification links land on `?tab=tasks` for
   both roles.
+- A coach's Team Hub item in the sidebar and phone nav now carries a badge:
+  overdue tasks a player still has to finish (audit par-24). One head count read
+  with the shell (`countOverdueTasks`, `data/shell.ts`), no migration and no
+  polling; it hides when the read fails. See the perf note in the PR.
 - QA rows already flagged `is_test` no longer show (the "Safe to delete" post).
   Nothing was deleted.
 

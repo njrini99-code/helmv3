@@ -268,7 +268,7 @@ Status: DEFINED
 
 Nothing refreshes in the background: the page is as fresh as its last read. After a coach's change lands, the page reads again (101501); every date and time is resolved on the server in the team's zone.
 
-Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
+A coach's Team Hub item carries a badge too: the team's overdue tasks that a player still has to finish (due before today on the team's clock, with an assignment not completed), one head count read with the shell and not polled, so it is as fresh as the last page load or refresh; a failed read hides it and is logged. Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
 player's Got it, task tick or untick lands, as production's hub does; a refused write leaves it alone. A player's Travel
 tab, and no other tab or opening of the page, marks travel seen once a visit (`markTravelSeen`, what production's Travel page does on a visit, now that
 `/golf/dashboard/travel` opens that tab), and the badge is read again. Opening an update marks that notification read in
