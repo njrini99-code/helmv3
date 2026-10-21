@@ -6,11 +6,22 @@
 Design package: none (supercharge 04 section 4 and Layout 1; design call
                 "Monday before practice")
 PR/commit:      see git log (claude/coachhelm-monday-brief)
-Contract IDs:   CH-13970 to CH-13977
+Contract IDs:   CH-13932 to CH-13939
 Actions:        Open (a link to the player on the board); none written
 Data impact:    none written; reads the visible v3 reads, the roster's
                 countable rounds and the Slice 7b team pattern
 Held items:     none
+
+## 2026-10-21 — Correction chips under a read's audit (flag off)
+
+```text
+Design package: none (supercharge 03 section 7.2; 04 section 1.4)
+PR/commit:      see git log (claude/coachhelm-correction-chips)
+Contract IDs:   CH-13970 to CH-13972 (new)
+Actions:        recordCoachHelmCorrection (its first UI caller)
+Data impact:    writes golf_coachhelm_corrections through the action; reads
+                the viewer's own rows; both behind coachhelm_corrections_v1
+Held items:     20261020121000_golf_coachhelm_corrections.sql
 ```
 
 ### Added
@@ -25,9 +36,9 @@ Held items:     none
   rounds behind, Cleared, the retired side of a Contradicted pair, a read
   Under review. A read missing a field the row needs is left out.
 - The coach board gets a "Monday brief" button under it, only with the flag
-  on and CoachHelm on (CH-13976).
-- States: nothing to raise (CH-13973), CoachHelm off (CH-13974), a read
-  failed (CH-13975).
+  on and CoachHelm on (CH-13938).
+- States: nothing to raise (CH-13935), CoachHelm off (CH-13936), a read
+  failed (CH-13937).
 - Preview: `/clubhouse-preview/coachhelm-brief` with `?state=empty | failed
   | off | loading`, and `coachhelm?state=brieflink`, from synthetic reads
   through `computeMondayBrief`.
@@ -42,6 +53,31 @@ Held items:     none
 - `coachhelm-monday-brief.test.tsx` (rows, counts, states) and the pure
   `monday-brief/__tests__/brief.test.ts`. Phone screenshots at 390 x 844
   from the preview are in the PR description.
+
+- Under "Why do you think so?" on the coach's card: Not this (with a reason
+  picker: It's wrong, Not important, Already known, or No reason), Wrong
+  cause, Already on it, Show later and Good read (CH-13970). On the player's
+  Board and Deep dive, their own read gets Not this and Good read, the two
+  kinds the action takes from a player.
+- A tap shows the answer at once as one quiet line with Change (CH-13971)
+  and rolls back with an error line if the save fails. The action is
+  append-only, so there is no Undo; Change records a new answer, which is
+  the one that counts.
+- Show later holds the read back at once: its title stays with "Held back
+  for now. It comes back after 2 more rounds are posted." (CH-13972). After
+  a reload the loader counts the rounds posted since the answer.
+- With the flag off nothing is read and nothing is drawn. With the held
+  table missing the loader draws no chips, and a tap answered "not
+  available" takes the chips away without an error.
+- Preview: `coachhelm?state=corrections`, `corrections-notthis`,
+  `corrections-wrongcause`, `corrections-already`, `corrections-later`,
+  `corrections-good`, `corrections-unavailable`, `corrections-failed`;
+  `coachhelm-views?view=deep-dive&state=corrections` and `corrections-good`.
+
+### Verified
+
+- `screens/coachhelm/__tests__/corrections.test.tsx`.
+- Phone screenshots (390 × 844), light and dark, of the preview states.
 
 ## 2026-10-21 — useHydrated moved to the shared lib
 
@@ -536,7 +572,8 @@ Held items:     none
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
-Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch
+                in the page stylesheets)
 PR/commit:      lane W4b commits on agent/clubhouse-complete
 Contract IDs:   none changed
 Actions:        none
@@ -579,7 +616,8 @@ Held items:     none
 ## 2026-10-19 — In-flight actions are busy; one spinner; icon buttons have tooltips; chip and player rows fade a clipped edge
 
 ```text
-Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one
+                way everywhere)
 PR/commit:      lane W4a commits on agent/clubhouse-complete
 Contract IDs:   none changed
 Actions:        none

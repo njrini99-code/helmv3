@@ -10,7 +10,7 @@ import { PREVIEW_MONDAY_BRIEF, PREVIEW_MONDAY_BRIEF_EMPTY } from '../preview/fix
 import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
 
 describe('Monday brief (chs-28)', () => {
-  it('CH-13971 CH-13972 the preview fixture runs the real computation: the pattern first, then one read per player at Likely or above', () => {
+  it('CH-13933 CH-13934 the preview fixture runs the real computation: the pattern first, then one read per player at Likely or above', () => {
     const d = PREVIEW_MONDAY_BRIEF;
     expect(d.rows.map((r) => [r.who, r.title, r.tag])).toEqual([
       ['Team pattern', 'Wedges 50–125 yd · finishing short', '5 of 6 players with enough rounds'],
@@ -26,7 +26,7 @@ describe('Monday brief (chs-28)', () => {
     expect(d.team).toBe('9 players · 6 with enough rounds · 14 countable rounds last week');
   });
 
-  it('CH-13970 CH-13977 draws the rows, each with one Open action, and the counts line last', () => {
+  it('CH-13932 CH-13939 draws the rows, each with one Open action, and the counts line last', () => {
     render(<MondayBrief load={{ status: 'ready', data: PREVIEW_MONDAY_BRIEF }} />);
     expect(screen.getByRole('heading', { level: 1, name: 'Monday brief' })).toBeTruthy();
     const rows = screen.getAllByRole('listitem').filter((li) => li.className.includes('ch-hmb-row'));
@@ -37,13 +37,13 @@ describe('Monday brief (chs-28)', () => {
     expect(document.body.textContent).not.toMatch(/\d%/);
   });
 
-  it('CH-13973 empty: says nothing reached Likely and still prints the counts', () => {
+  it('CH-13935 empty: says nothing reached Likely and still prints the counts', () => {
     render(<MondayBrief load={{ status: 'ready', data: PREVIEW_MONDAY_BRIEF_EMPTY }} />);
     expect(screen.getByText('Nothing to raise this week')).toBeTruthy();
     expect(screen.getByText('0 new · 0 cleared · 0 contradicted · 0 out of date')).toBeTruthy();
   });
 
-  it('CH-13975 CH-13974 failed and off are their own pages, never an empty brief', () => {
+  it('CH-13937 CH-13936 failed and off are their own pages, never an empty brief', () => {
     const { unmount } = render(<MondayBrief load={{ status: 'failed' }} />);
     expect(screen.getByText('The Monday brief didn’t load')).toBeTruthy();
     unmount();

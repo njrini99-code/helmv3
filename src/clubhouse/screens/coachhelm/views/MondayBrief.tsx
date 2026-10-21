@@ -23,7 +23,7 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
   const phone = useChPhone();
   const router = useRouter();
   return (
-    <main className={'ch-hl ch-hmb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hmb-title" data-canopy={phone ? undefined : ''} data-ch-code="CH-13970">
+    <main className={'ch-hl ch-hmb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hmb-title" data-canopy={phone ? undefined : ''} data-ch-code="CH-13932">
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Monday brief" titleId="ch-hmb-title" />}
       <header className="ch-hl-h ch-hmb-h" data-canopy-head="">
         {!phone && (
@@ -50,7 +50,7 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
 /** One row: who, the read, its ladder word (or how many players) and the strokes a round, with one action. */
 function Row({ r }: { r: ChBriefRow }) {
   return (
-    <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13972' : 'CH-13971'}>
+    <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13934' : 'CH-13933'}>
       <div className="ch-hmb-row__main">
         <span className="ch-hmb-row__who">{r.who}</span>
         <b className="ch-hmb-row__t">{r.title}</b>
@@ -80,7 +80,7 @@ function Ready({ d }: { d: ChMondayBrief }) {
         {d.rows.length === 0 ? (
           <EmptyState
             size="section"
-            code="CH-13973"
+            code="CH-13935"
             shape="rows"
             title="Nothing to raise this week"
             body="No read reached Likely or above for any player, and no read is shared by enough players to call a team pattern."
@@ -92,7 +92,7 @@ function Ready({ d }: { d: ChMondayBrief }) {
             ))}
           </ol>
         )}
-        <p className="ch-hmb-counts ch-num" data-ch-code="CH-13977">
+        <p className="ch-hmb-counts ch-num" data-ch-code="CH-13939">
           {d.counts}
         </p>
       </Surface>
@@ -126,7 +126,7 @@ export function MondayBrief({ load }: { load: ChViewLoad<ChMondayBrief> }) {
       <BriefFrame>
         <EmptyState
           size="page"
-          code="CH-13974"
+          code="CH-13936"
           kind="restricted"
           title="CoachHelm is off for your team"
           body={load.reason ? `It was turned off: “${load.reason}”. The Monday brief comes back when CoachHelm does.` : 'The Monday brief comes back when CoachHelm is turned on again.'}
@@ -137,7 +137,7 @@ export function MondayBrief({ load }: { load: ChViewLoad<ChMondayBrief> }) {
   if (load.status === 'failed') {
     return (
       <BriefFrame>
-        <RefreshNotice code="CH-13975" title="The Monday brief didn’t load" body="Nothing is lost. Your players’ reads are not affected; try again in a moment." />
+        <RefreshNotice code="CH-13937" title="The Monday brief didn’t load" body="Nothing is lost. Your players’ reads are not affected; try again in a moment." />
       </BriefFrame>
     );
   }

@@ -386,7 +386,7 @@ export function CoachBoard({
       </Head>
       {body}
       {mondayBriefHref && !data.off && (
-        <p className="ch-hmb-link" data-ch-code="CH-13976">
+        <p className="ch-hmb-link" data-ch-code="CH-13938">
           <Button variant="secondary" href={mondayBriefHref}>
             Monday brief
           </Button>
