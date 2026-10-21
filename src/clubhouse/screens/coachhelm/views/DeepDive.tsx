@@ -26,6 +26,7 @@ import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
 import { ClearedLines, EngineState, WhyAudit } from '../EngineState';
+import { CorrectionChips, ReadLater } from '../Corrections';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
@@ -366,6 +367,25 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
     d.plansFailed && 'your focus areas and goals',
   ].filter((x): x is string => !!x);
   const covered = failed.length > 1;
+  const cx = b.engine?.corrections;
+  // Show later is the coach's, so a player's own read is never held back here; the state is kept for a coach-drawn dossier.
+  const [held, setHeld] = useState<number | null>(cx?.laterRounds ?? null);
+  if (held != null && cx) {
+    return (
+      <article className="ch-hd-dos" aria-labelledby={`${b.id}-t`}>
+        <header className="ch-hd-dos__h">
+          <div className="ch-hl-focus__k">
+            <span>{b.category}</span>
+          </div>
+          <h2 id={`${b.id}-t`}>
+            <SerifText text={b.title} />
+          </h2>
+        </header>
+        <ReadLater rounds={held} />
+        <CorrectionChips c={cx} held={held} onHeld={setHeld} />
+      </article>
+    );
+  }
   return (
     <article className="ch-hd-dos" aria-labelledby={`${b.id}-t`}>
       <header className="ch-hd-dos__h">
@@ -383,6 +403,8 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
           "Why do you think so?", the read's audit lines. */}
       <EngineState engine={i.base.engine && { ...i.base.engine, cause: undefined }} />
       <WhyAudit lines={i.base.engine?.audit} />
+      {/* The correction chips, under the audit (03 §7.2), only when the loader put them on the read. */}
+      {cx && <CorrectionChips c={cx} held={held} onHeld={setHeld} />}
       <PageRefreshNotice parts={failed} />
 
       <Section id={`${b.id}-meas`} title="What was measured">
