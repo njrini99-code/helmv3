@@ -1,5 +1,10 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — useHydrated moved to the shared lib
+
+No visible change. `screens/coachhelm/use-hydrated.ts` re-exports
+`lib/use-hydrated.ts`, which Settings now uses too.
+
 ## 2026-10-21 — Coach: the Track record (flag off)
 
 ```text

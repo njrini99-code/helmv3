@@ -1,5 +1,36 @@
 # P008 — Settings: changelog
 
+## 2026-10-21 — Text typed before the page hydrates is no longer lost
+
+```text
+Design package: none (nightly journeys finding)
+PR/commit:      see git log (claude/clubhouse-webkit-name-save)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `Field` (desktop) and `FieldRow` (phone) are read-only until React has
+  hydrated them (`useHydrated`, now in `lib/use-hydrated.ts`; CoachHelm
+  re-exports it). `controls.css` keeps the box looking like any other while
+  it waits (`data-ch-hydrating`).
+
+### Why
+
+- The nightly journeys failed in WebKit: "a player changes their name" left
+  the first name at its saved value while the last name saved. Text typed
+  into the server markup is wiped when the controlled value is applied at
+  hydration, so the first box lost its text and the second, typed later,
+  kept it. A person or a test now waits for the box instead of losing text.
+
+### Verification
+
+- `field-hydration.test.tsx`: read-only in the server markup, editable after
+  `hydrateRoot`.
+
 ## 2026-10-19 — Settings on an iPad: every section in view
 
 ```text
