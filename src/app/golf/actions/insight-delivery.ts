@@ -38,7 +38,11 @@ import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
-import { loadCoachWeightsForPlayer, type CoachWeights } from '@/lib/coachhelm/v3/ranking/score';
+import {
+  loadCoachWeightsForPlayer,
+  loadCoachWeightsForPlayers,
+  type CoachWeights,
+} from '@/lib/coachhelm/v3/ranking/score';
 import { buildExposureRows } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
 import { isSupportPassEnabled } from '@/lib/coachhelm/v3/support/flag';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
@@ -979,14 +983,24 @@ async function getInsightsForCoachWithMetaImpl(
 
   // Rank by the shared `scoreInsight` composite (rank floor + damping + urgent
   // short-circuit + exemption) and dedupe across categories. Goals/weights are
-  // per-player; on the coach sweep (no player_id) we rank with neutral weights
-  // and no goals — the floor/confidence/damping/coachability terms still order
-  // the feed correctly. When a specific player is requested we load their goals.
+  // per-player; on the coach sweep (no player_id) we rank with no goals — the
+  // floor/confidence/damping/coachability terms still order the feed
+  // correctly. When a specific player is requested we load their goals.
+  // Weights on the sweep: neutral, unless `coachhelm_corrections_v1` is on,
+  // then each player's primary-coach weights from one batched read
+  // (`loadCoachWeightsForPlayers`; flag off it returns an empty map with no
+  // read, so the sweep still ranks with `{}`).
   let goals: Goal[] = [];
-  let weights: CoachWeights = {};
+  let weights: CoachWeights | ((insight: EvidenceInsight) => CoachWeights) = {};
   if (opts.player_id) {
     weights = await loadCoachWeightsForPlayer(supabase, opts.player_id).catch(() => ({}));
     goals = await loadActiveGoals(opts.player_id).catch(() => []);
+  } else {
+    const byPlayer = await loadCoachWeightsForPlayers(
+      supabase,
+      Array.from(new Set(mapped.map((r) => r.player_id))),
+    ).catch(() => new Map<string, CoachWeights>());
+    if (byPlayer.size > 0) weights = (insight) => byPlayer.get(insight.player_id) ?? {};
   }
   // C2: collapse the 3 par_scoring rows into ONE "Scoring by par type" card
   // BEFORE dedupe — same IDENTICAL-application rule as dedupeBySubject itself.
@@ -1049,8 +1063,10 @@ export async function getInsightsForCoachWithMeta(
  * caller is responsible for having scoped `playerIds` to a team it owns (the
  * roster view derives them from active members of the coach's resolved team).
  *
- * Ranking mirrors the team sweep: neutral coach weights and no per-player goals
- * (those are a per-player concern; the roster card only needs the head insight),
+ * Ranking mirrors the team sweep: no per-player goals and neutral coach
+ * weights unless `coachhelm_corrections_v1` is on (then each player's
+ * primary-coach weights, one batched read; the roster card only needs the
+ * head insight),
  * then the SAME `collapseParScoring` → `dedupeBySubject` pipeline every surface
  * applies. Returns `[]` for any player with no visible rows (Map omits absent
  * players → callers use `map.get(pid) ?? []`).
@@ -1143,10 +1159,11 @@ async function getTopInsightsForPlayersImpl(
     .filter((r): r is EvidenceInsight => r !== null);
 
   // Group per player, then apply the SAME rank → collapse → dedupe → slice
-  // pipeline `getInsightsForPlayer` applies — but with NEUTRAL weights/goals
-  // (`{}` / `[]`), the batched-sweep convention: loading each player's real
-  // coach weights and active goals here would mean N extra queries for one
-  // roster card render.
+  // pipeline `getInsightsForPlayer` applies — but with NEUTRAL goals (`[]`)
+  // and neutral weights (`{}`) unless `coachhelm_corrections_v1` is on, the
+  // batched-sweep convention: loading each player's goals here would mean N
+  // extra queries for one roster card render (the corrections weights are one
+  // batched read for the whole roster).
   //
   // A6 top-N audit correction: this does NOT guarantee agreement with the
   // per-player feed's head. `getInsightsForPlayer` ranks with that player's
@@ -1171,15 +1188,22 @@ async function getTopInsightsForPlayersImpl(
   const exposureRows: ReturnType<typeof buildExposureRows> = [];
   const plan = await readsDeliveryPlan(supabase, [...byPlayer.keys()]);
   const supportFactors = isSupportPassEnabled();
+  // Neutral weights unless `coachhelm_corrections_v1` is on: then each
+  // player's primary-coach weights, loaded once for the whole roster (flag
+  // off: an empty map and no read, so every player still ranks with `{}`).
+  const weightsByPlayer = await loadCoachWeightsForPlayers(supabase, [...byPlayer.keys()]).catch(
+    () => new Map<string, CoachWeights>(),
+  );
   for (const [pid, list] of byPlayer) {
-    const rankedScored = await rankEvidenceInsightsScored(list, {}, [], supabase);
+    const rankedScored = await rankEvidenceInsightsScored(list, weightsByPlayer.get(pid) ?? {}, [], supabase);
     const ranked = deliverReads(dedupeBySubject(collapseParScoring(rankedScored.map((r) => r.insight))), plan);
     const sliced = ranked.slice(0, limit);
     out.set(pid, sliced);
     // Each player's surfaced head insight(s) on the roster card — rank_position
     // is per-player, so rows are built per player. coach_id is unknown here
     // (RLS-scoped sweep, not a resolved coach row) so it's left null. The
-    // score is the neutral-weights score this sweep actually ranked on.
+    // score is the one this sweep actually ranked on (neutral weights unless
+    // corrections are on).
     exposureRows.push(
       ...buildExposureRows(sliced, 'roster_card', null, scoreMap(rankedScored), { rankFactors: supportFactors }),
     );

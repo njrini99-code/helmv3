@@ -98,6 +98,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "A9 slice 2 extends metric coverage, adds confounding detection (the enable-blocking prerequisite above), and adds an observability rollup; slice 3 is the explicit, separate decision on whether this signal should ever feed `nextWeight` (requires either a dedicated non-`lift` column or a reviewed ADR relaxing the pure core's \"never named lift\" rule). This flag is promoted or removed based on that decision plus shadow-log evidence on the insufficient-evidence rate, not on a fixed date.",
   },
   {
+    feature_id: "coachhelm_corrections_v1",
+    owner: "golf/coachhelm",
+    purpose: "Lets a coach (or a player, on their own read) record a correction on a CoachHelm read through recordCoachHelmCorrection (Not this with a reason, Wrong cause, Already on it, Show later, Good read) into golf_coachhelm_corrections, and multiplies the learned coach weight W (start 1.0, -0.1 per Not this, +0.05 per Good read, bounds 0.5 to 1.5, one vote per read) into insight ranking through loadCoachWeightsForPlayer, for families with no calibrated outcome weight. Turning it on reorders a coach's feeds for the player's primary coach once that coach has recorded corrections; player surfaces stay neutral (a coach's corrections are not readable by players). No surface draws the chips yet. Off: the action writes nothing and returns not available, and ranking is byte-identical to before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-20",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020121000_golf_coachhelm_corrections.sql (HELD.md row; the code treats the missing table as not available, so order is not a correctness issue) and the audit-view chips ship. Remove the flag and the isCorrectionsEnabled branches once corrections have fed ranking stably for a month.",
+  },
+  {
     feature_id: "coachhelm_data_gap_prompt_v1",
     owner: "golf/coachhelm",
     purpose: "Gates the one-tap data-gap prompt in Fairway shot entry (FairwayDataGapPrompt, loaded by lib/coachhelm/data-gap/load-asks.ts from the round entry pages). When on, the New Round and Continue Round pages read the player's visible v3 reads that carry a putt miss_direction evidence.data_gap, and after a missed first putt from that distance band with no miss tag the shot screen shows one row of chips (Short, Long, High, Low) with a counter (\"4 of 10 for your 5-10 ft putt read\"); one tap sets that shot's miss tag exactly as the existing optional miss chips do, and the row disappears at the target. When off, the pages read nothing extra and shot entry is exactly what it was.",

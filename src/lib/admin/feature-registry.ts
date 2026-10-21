@@ -660,6 +660,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getPlayerPatterns',
         'recordInteraction',
       ],
+      'src/app/golf/actions/coachhelm-corrections.ts': 'ALL',
       'src/app/golf/actions/insights-coachhelm.ts': [
         'getCoachHelmStatus',
         'triggerPlayerInsightsAfterRound',

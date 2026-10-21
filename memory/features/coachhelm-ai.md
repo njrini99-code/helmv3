@@ -374,6 +374,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `classifyDashboardFailure` now uses too — so a PGRST003/PGRST002 on the
   player dashboard takes the page's one server-side retry and soft state
   instead of the hard error.
+- Learning from corrections (Slice 6a, 2026-10-20, flag
+  `coachhelm_corrections_v1`, off). `recordCoachHelmCorrection`
+  (`src/app/golf/actions/coachhelm-corrections.ts`) writes one append-only
+  `golf_coachhelm_corrections` row (held migration 20261020121000): kind
+  `not_this` (reason `wrong` / `not_important` / `already_know`),
+  `wrong_cause` (optional alternative), `already_on_it`, `snooze`,
+  `confirm`. Author, role, player and team come from the session and the
+  insight, never the client; a player may only say `not_this` or `confirm`
+  on their own read. Flag off or a missing table (42P01 / PGRST205) returns
+  `not_available` and writes nothing. The coach weight W
+  (`v3/corrections/coach-weights.ts`, pure) starts at 1.0 per coach x
+  `insight_type`, moves -0.1 per Not this and +0.05 per Good read, clamps to
+  0.5-1.5 at every step, counts one vote per author per read (the newest),
+  and hands a family off at >= 10 verdicts. W enters ranking through
+  `v3/ranking/score.ts` only: `loadCoachWeightsForPlayer` (per-player feeds)
+  and `loadCoachWeightsForPlayers` (the coach team feed and the roster cards,
+  one batched read per table, applied per player), for each player's primary
+  coach; a calibrated outcome weight still wins for its family. The loader
+  pages a coach's full correction history (`fetchAllRowsResult`), since W is
+  clamped per step and a truncated history would drift. Flag off: no
+  corrections read, weights and ranks unchanged (the batch paths keep `{}`).
+  Players' own surfaces stay neutral because RLS hides a coach's corrections
+  from them. RLS: a coach sees a row only through the player's active teams,
+  never the row's own `team_id`, and a player may only tag `team_id` null or
+  a team they are active on.
+  Precision counters (`v3/corrections/precision-counters.ts`, pure): per
+  family x rung, `shown` (distinct reads, rung of the newest exposure's
+  `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
+  `contradicted` (newest recheck outcome; Slice 3 supplies them),
+  `not_this`. No surface renders the chips, counters or Track record yet.
+  <!-- schema-drift-absent: golf_coachhelm_corrections -->
+  (The table is held, so it is not in `database.ts` until the owner applies
+  20261020121000 and runs `npm run db:types`; then drop the comment above.)
 
 ## UI Contract
 
