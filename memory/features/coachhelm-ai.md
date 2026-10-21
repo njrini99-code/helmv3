@@ -93,6 +93,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   refused), shared floors with per-arm minimums, a leave-one-out team
   benchmark with its variance, `support.run_at` / `run_id`, and strips the
   ladder keys from the player feed ("Slice 1b fixes" in that section).
+  Slice 1c rates the six insight-angle families (matched by metric, tested
+  from `detail.gap_input`, floors and caps from `ANGLE_FAMILIES`) and moves
+  the Slice 4 verdicts onto `support/shrink.ts` ("Slice 1c" in that
+  section).
   <!-- schema-drift-absent: golf_coachhelm_run_log -->
 - Honest root cause (supercharge Slice 2, 2026-10-20), behind
   `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
@@ -574,9 +578,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   stamp (`keepComposedRounds` in `engine/source-rounds.ts`), and each angle
   is stamped and judged under its own family key `angle:<family>`
   (`AngleGenerator.readFamilyKey`), so no 0b floor keyed by a shared
-  insight type can hold it back; its own floors apply. Slice 1's
-  `support/families.ts` has no angle entry yet, so the support pass treats
-  every angle row as `unknown` (untestable). Team benchmarks need 5+
+  insight type can hold it back; its own floors apply. Slice 1c gave each
+  angle family its own entry in `support/families.ts` (matched by metric),
+  so with `coachhelm_support_v1` on the support pass tests every angle row
+  from its `detail.gap_input`. Team benchmarks need 5+
   teammates (the `07` §6 privacy floor); below that there is no comparison
   and no read. The three-putt benchmark follows owner rule Q-88: the Tour
   figure from
