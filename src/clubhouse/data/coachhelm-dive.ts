@@ -11,6 +11,7 @@ import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
+import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
@@ -135,7 +136,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const now = new Date().toISOString();
     const viewer = { role: 'player' } as const;
     const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
-    const [drills, assigned, newest, rounds, plans, themes, focus] = await Promise.all([
+    const [drills, assigned, newest, rounds, plans, themes, focus, corrections] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(
         supabase,
@@ -150,6 +151,8 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
         shaped.kept.map((i) => i.id),
         flags.verdicts,
       ),
+      // The player's own Not this / Good read on their reads (coachhelm_corrections_v1; null with it off or the table missing).
+      readCorrections(supabase, { role: 'player', teamIds: team.teamId ? [team.teamId] : [], reads: shaped.kept.map((i) => ({ id: i.id, playerId })) }),
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
     // One viewer for the card, the words and the Read: the signed-in player (a player never sees an inferred cause).
@@ -161,7 +164,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
         tour: team.tour,
         newestRound,
         viewer,
-        engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now },
+        engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now, corrections: corrections?.get(raw.id) ?? null },
       });
       return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
     }));

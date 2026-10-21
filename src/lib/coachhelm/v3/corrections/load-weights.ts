@@ -245,3 +245,33 @@ export function selectCorrectionsForInsights(sb: SupabaseClient<Database>, insig
     .order('id', { ascending: true })
     .range(from, to);
 }
+
+/** The caller's own corrections on these reads, newest first (for the chips' chosen state on reload). */
+export type OwnCorrection = Pick<CorrectionRow, 'insight_id' | 'kind' | 'reason' | 'created_at'>;
+
+/**
+ * The signed-in author's own corrections on a set of reads, newest first, for the Clubhouse correction chips. RLS lets every
+ * author read their own rows. `missing` is true when the HELD table is not there (42P01 / PGRST205): the chips are then not
+ * drawn. Any other failure answers `error` and no rows, so a chip is drawn without a chosen state rather than failing the card.
+ */
+export async function selectOwnCorrections(
+  sb: Sb,
+  authorUserId: string,
+  insightIds: readonly string[],
+): Promise<{ rows: OwnCorrection[]; missing: boolean; error: boolean }> {
+  const rows: OwnCorrection[] = [];
+  for (const chunk of chunkIds([...insightIds])) {
+    const res = (await fromUntyped(sb, CORRECTIONS_TABLE)
+      .select('insight_id, kind, reason, created_at')
+      .eq('author_user_id', authorUserId)
+      .in('insight_id', chunk)
+      .order('created_at', { ascending: false })) as { data: OwnCorrection[] | null; error: ReadError | null };
+    if (res.error) {
+      if (isMissingTableError(res.error)) return { rows: [], missing: true, error: false };
+      return { rows: [], missing: false, error: true };
+    }
+    rows.push(...(res.data ?? []));
+  }
+  rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return { rows, missing: false, error: false };
+}

@@ -2,6 +2,7 @@ import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import { LADDER_RUNGS, type LadderRung } from '@/lib/coachhelm/v3/support/ladder';
 import { shapeLifecycle, shortDate, type LifecycleWord, type ShapeableRead } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import type { LifecycleEvidence } from '@/lib/coachhelm/v3/lifecycle/types';
+import { CORRECTION_KINDS, PLAYER_CORRECTION_KINDS, SNOOZE_CHECKPOINTS, type CorrectionKind, type CorrectionReason } from '@/lib/coachhelm/v3/corrections/types';
 import { coachVerdictLine, playerVerdictLine } from '@/lib/coachhelm/v3/verdicts/verdict-copy';
 import type { FocusAreaVerdict, VerdictWord } from '@/lib/coachhelm/v3/verdicts/verdict';
 import type { ChViewer } from './coachhelm-voice';
@@ -92,6 +93,45 @@ export interface ChReadEngine {
   verdict?: ChEngineVerdict;
   /** "Why do you think so?" (layout 6): the read's audit lines, from the stored evidence. */
   audit?: ChAuditLine[];
+  /** The correction chips under the audit (03 §7.2), only with `coachhelm_corrections_v1` on and the table there. */
+  corrections?: ChCorrections;
+}
+
+/** One answer on a read, as the author recorded it last (the newest correction by one author on one read is the one that counts). */
+export interface ChCorrectionAnswer {
+  kind: CorrectionKind;
+  reason: CorrectionReason | null;
+}
+
+/** What the loader read for one read: the chips are on for this viewer, with their own last answer. */
+export interface ChCorrectionsInput {
+  role: 'coach' | 'player';
+  latest: ChCorrectionAnswer | null;
+  /** Show later still in force: rounds left to post before the read comes back. Null when it is not held back. */
+  laterRounds: number | null;
+}
+
+/** The correction chips a card draws under its audit (03 §7.2; `recordCoachHelmCorrection`). */
+export interface ChCorrections extends ChCorrectionsInput {
+  insightId: string;
+  /** The chips this viewer may use: all five for the player's coach, Not this and Good read for the player on their own read. */
+  kinds: CorrectionKind[];
+}
+
+export function correctionsOf(insightId: string, input: ChCorrectionsInput): ChCorrections {
+  const kinds = input.role === 'coach' ? [...CORRECTION_KINDS] : CORRECTION_KINDS.filter((k) => PLAYER_CORRECTION_KINDS.has(k));
+  // A player cannot hold a read back, so only a coach's answer can leave one hidden.
+  const laterRounds = input.role === 'coach' && input.latest?.kind === 'snooze' ? input.laterRounds : null;
+  return { insightId, role: input.role, kinds, latest: input.latest, laterRounds };
+}
+
+/**
+ * Rounds left before a read held back with Show later comes back: {@link SNOOZE_CHECKPOINTS} rounds newer than the answer, less
+ * the ones posted since. Null once they are in (the read is shown again, and its chips with it).
+ */
+export function laterRoundsLeft(roundsSince: number): number | null {
+  const left = SNOOZE_CHECKPOINTS - Math.max(0, Math.floor(roundsSince));
+  return left > 0 ? left : null;
 }
 
 export const LADDER_WORD: Record<LadderRung, string> = {
