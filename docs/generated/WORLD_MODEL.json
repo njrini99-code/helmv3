@@ -19720,6 +19720,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pattern/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/team-pool/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
         },
@@ -19925,6 +19930,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/shot-source.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/field-day/loader.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
@@ -20577,6 +20587,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/read-window.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/field-day/loader.ts",
           "anchor": "src/lib/golf/round-countable"
         },
         {

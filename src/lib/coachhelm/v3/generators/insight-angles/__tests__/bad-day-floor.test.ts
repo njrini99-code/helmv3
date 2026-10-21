@@ -6,12 +6,14 @@ import {
   BadDayFloorGenerator,
   composeBadDayFloor,
   computeBadDayFloor,
+  fieldRoundsOf,
   peerFloorGaps,
   splitHole,
   toFloorAggregate,
 } from '../bad-day-floor';
 import type { AngleHole, AngleRound } from '../angle-data';
 import { expectFamilyContract } from './contract';
+import { buildFieldDayContext } from '@/lib/coachhelm/v3/field-day/field';
 import { PLAYER, mkData, mkHole, mkPeerRounds, mkRound, stubLoaders } from './fixtures';
 
 /**
@@ -188,5 +190,51 @@ describe('composeBadDayFloor', () => {
     expect(gen.category).toBe('scoring');
     gen.composeContent(toFloorAggregate(computeBadDayFloor(build({ badDoubles: 3, badArea: 'tee' }), peers())!, 74)!);
     expect(gen.category).toBe('scoring');
+  });
+});
+
+describe('same-day field context (Slice 7b)', () => {
+  // Bad rounds in build() are r0, r3, r6, r9, r12 (score to par +9 each).
+  const fieldFor = (roundIds: string[], teammateToPar: number) =>
+    buildFieldDayContext(
+      roundIds.flatMap((id, k) => [
+        { round_id: id, player_id: PLAYER, team_id: 't', date: `2026-03-${10 + k}`, course_id: 'c1', score_to_par: 9, holes: 18 },
+        { round_id: `${id}-a`, player_id: 'mate-a', team_id: 't', date: `2026-03-${10 + k}`, course_id: 'c1', score_to_par: teammateToPar, holes: 18 },
+        { round_id: `${id}-b`, player_id: 'mate-b', team_id: 't', date: `2026-03-${10 + k}`, course_id: 'c1', score_to_par: teammateToPar, holes: 18 },
+      ]),
+    );
+
+  it('without a field the result is unchanged (flag off passes none)', () => {
+    const r = computeBadDayFloor(build({ badDoubles: 3, penalty: true }), peers())!;
+    expect(r.field_day).toBeUndefined();
+    expect(r.qualifies).toBe(true);
+  });
+
+  it('a floor made of hard days for the whole team does not fire', () => {
+    const r = computeBadDayFloor(build({ badDoubles: 3, penalty: true }), peers(), fieldFor(['r0', 'r3', 'r6'], 12))!;
+    expect(r.field_day).toMatchObject({ label: 'Relative to the team on the day', bad_rounds_in_field: 3, bad_shared_with_field: 3, explained_by_field: true });
+    expect(r.field_day!.bad_mean_relative).toBe(-2);
+    expect(r.qualifies).toBe(false);
+  });
+
+  it('a bad day the team did not share keeps the read, with the field context recorded', () => {
+    const r = computeBadDayFloor(build({ badDoubles: 3, penalty: true }), peers(), fieldFor(['r0', 'r3', 'r6'], 0))!;
+    expect(r.field_day).toMatchObject({ bad_rounds_in_field: 3, bad_shared_with_field: 0, explained_by_field: false });
+    expect(r.field_day!.bad_mean_relative).toBe(6);
+    expect(r.qualifies).toBe(true);
+    const agg = toFloorAggregate(r, 74)!;
+    expect((composeBadDayFloor(agg).evidence.detail as Record<string, unknown>).field_day).toEqual(r.field_day);
+  });
+
+  it('two shared bad days out of five is not a majority', () => {
+    const r = computeBadDayFloor(build({ badDoubles: 3, penalty: true }), peers(), fieldFor(['r0', 'r3'], 12))!;
+    expect(r.field_day!.explained_by_field).toBe(false);
+    expect(r.qualifies).toBe(true);
+  });
+
+  it('fieldRoundsOf keeps only peer rounds with an id', () => {
+    const rounds = fieldRoundsOf([{ ...mkPeerRounds('x', 1, () => ({}))[0]!, round_id: 'a', course_id: 'c' }, mkPeerRounds('y', 1, () => ({}))[0]!], 't');
+    expect(rounds).toHaveLength(1);
+    expect(rounds[0]).toMatchObject({ round_id: 'a', team_id: 't', course_id: 'c' });
   });
 });

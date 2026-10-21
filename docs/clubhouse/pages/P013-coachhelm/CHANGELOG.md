@@ -1,5 +1,35 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach board: Team patterns
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7b; 03 §5.1, 04 Layout 4)
+PR/commit:      see git log (claude/coachhelm-team-pattern)
+Contract IDs:   CH-13995 (the Team patterns card)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pattern_v1 is on)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/TeamPatterns.tsx` under the program pulse: up to four
+  rows, each a family shared by at least 3 players and 30% of the players
+  with enough rounds ("Wedges 50–125 yd · finishing short", "3 of 5
+  players with enough rounds · about 1.1 strokes a round across the
+  team"), opening to the practice block and each member's number and
+  ladder word. A counted line says how many more reads are shared by too
+  few players. Coach only; the player board never reads it.
+- `data/coachhelm-team-pattern.ts` maps `computeTeamPatterns`
+  (`lib/coachhelm/v3/team-pattern/pattern.ts`) to the card. The loader
+  reads it only with the flag on; a failed read draws no card.
+- Preview: `/clubhouse-preview/coachhelm?state=patterns`.
+
+### Verified
+
+- `coachhelm-team-pattern.test.tsx` (fixture runs the real computation).
+- Phone screenshot (390 × 844) of the preview state.
+
 ## 2026-10-21 — What the engine knows, on the coach and player surfaces
 
 ```text

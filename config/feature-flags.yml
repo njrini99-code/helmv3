@@ -771,6 +771,47 @@ flags:
       and players are not skipping it more than they tap it; if players
       find it noisy, turn it off and remove the prompt and its loader.
 
+  # CoachHelm supercharge Slice 7b (team pattern, same-day field). Created OFF
+  # on main; turning it on is the owner's call.
+  - feature_id: coachhelm_team_pattern_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates two Slice 7b pieces. (1) Team patterns on the Clubhouse coach
+      CoachHelm board: a cause family (support family, band and miss side)
+      that at least 3 players and at least 30% of the players with 3 or
+      more countable rounds share, each at Likely or above on the support
+      ladder, drawn as up to 4 rows with the players count, the team
+      strokes a round at stake (sum of the shrunk strokes of those players), the
+      common practice block and the list of those players; computed at delivery from
+      the reads the board already loads, coach only. (2) The same-day field
+      context: for rounds where 3 or more teammates played the same course
+      on the same day, each round's score relative to the team's mean that
+      day. The bad-day-floor read records it and does not fire when most of
+      the player's bad rounds were hard days for the whole field; the
+      pressure read records it as audit detail ("Relative to the team on
+      the day"). When off, nothing new is read or written and every read is
+      as before.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off: the coach board draws no Team patterns section, and the next
+      analysis run writes the bad-day-floor and pressure reads without
+      detail.field_day and with the bad-day gate as before.
+    cleanup_plan: >-
+      Turn on after the owner turns on coachhelm_support_v1 (the pattern
+      needs the ladder on rows; without it no pattern can form). Remove the
+      flag checks in v3/team-pattern/flag.ts callers and this entry once
+      coaches have read team patterns for a season without an accuracy
+      complaint; if rejected, turn it off and remove v3/team-pattern/ and
+      v3/field-day/.
+
   # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
   # players (isClubhouseFor). Parallel to Fairway, never layered on it.
   # Status, turn-on and rollback: docs/clubhouse/STATUS.md. Tracker:

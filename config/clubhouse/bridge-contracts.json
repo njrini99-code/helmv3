@@ -15336,6 +15336,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130728,
+    "page": "P013",
+    "category": 7,
+    "item": 28,
+    "name": "COACH_TEAM_PATTERNS",
+    "chCode": "CH-13995",
+    "meaning": "Coach: Team patterns (flag `coachhelm_team_pattern_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
