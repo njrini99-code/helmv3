@@ -137,15 +137,14 @@ filter, so it has no filtered empty state.
 | 130406 | CH-13306 | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | Coach: players on the team, no signal yet |
 | 130407 | CH-13307 | `COACH_NO_PLAYERS_ON_THE_TEAM` | Coach: no players on the team |
 | 130408 | CH-13308 | `COACH_NOT_ON_A_TEAM` | Coach: not on a team |
-| 130409 | CH-13309 | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | Coach: the pulse has nothing flagged, and every read it is made from landed |
-| 130410 | CH-13310 | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | Coach: some players have no insight yet |
+| 130409 | CH-13309 | `COACH_THE_PULSE_HAS_NOTHING_FLAGGED` | Coach: the pulse has nothing new, and every read it is made from landed |
+| 130410 | CH-13310 | `COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET` | Coach: some players have no read yet |
 | 130411 | — | `A_FAILED_READ_IS_NEVER_DRAWN_AS_EMPTY` | The delivery actions answer an empty list or map when a read fails, so the loaders tell a failed read from a first run. An empty feed, or empty top insights, while a drawable visible insight is on file (for a player, one they have not dismissed themselves: the newest feedback row per insight decides) is a failed read (CH-13201, CH-13202), and so is a failed visible-insights, feedback or roster read; only when that check finds nothing is it a first run (CH-13301, CH-13302, CH-13306). A player who dismissed every insight themselves is a first run, not a failure, and a failed roster read is never an empty team (CH-13307). |
 | 130412 | CH-13320 | `ASK_A_CONVERSATION_THAT_IS_GONE_OR` | Ask: A conversation that is gone or not the coach's |
 | 130413 | CH-13321 | `ASK_THE_ROSTER_IS_EMPTY` | Ask: The roster is empty |
 | 130414 | CH-13322 | `ASK_PLAYERS_BUT_NO_RECORDED_ROUND` | Ask: Players but no recorded round (the rounds read landed and found none) |
 | 130415 | CH-13323 | `ASK_NO_CHATS_YET` | Ask: No chats yet |
 | 130416 | CH-13324 | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | Ask: A chat search with no match |
-| 130417 | CH-13325 | `ASK_ROUNDS_RECORDED_NOTHING_FLAGGED` | Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed |
 | 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
 | 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
 | 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Profile: some measures have enough rounds and some do not (an early read) |
@@ -202,7 +201,6 @@ the whole change again, follow-ups included (131401).
 | 130613 | CH-13051 | `ASK_COPY_IS_REFUSED_BY_THE_CLIPBOARD` | Ask: Copy is refused by the clipboard |
 | 130614 | CH-13221 | `ASK_THE_CHAT_CONTEXT_DOES_NOT_LOAD` | Ask: The chat context (the program) does not load, or its roster read fails |
 | 130615 | CH-13222 | `ASK_THE_CHAT_LIST_DOES_NOT_LOAD` | Ask: The chat list does not load |
-| 130616 | CH-13223 | `ASK_THE_PULSE_DOES_NOT_LOAD` | Ask: The pulse does not load |
 | 130617 | CH-13224 | `ASK_A_CONVERSATION_OR_ITS_MESSAGES_DO` | Ask: A conversation or its messages do not load |
 | 130618 | CH-13225 | `ASK_ONE_SECTION_OF_THE_PAGE_CRASHES` | Ask: One section of the page crashes |
 | 130619 | CH-13250 | `ASK_A_READ_TOOL_BEHIND_AN_ANSWER` | Ask: A read tool behind an answer failed |
@@ -221,7 +219,6 @@ the whole change again, follow-ups included (131401).
 | 130632 | CH-13206 | `COACH_A_READ_THE_PROGRAM_PULSE_IS` | Coach: a read the program pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130633 | CH-13207 | `COACH_A_READ_ABOUT_THE_TOP_CARD` | Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current) |
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
-| 130635 | CH-13226 | `ASK_A_READ_THE_PULSE_IS_MADE` | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
 
@@ -279,14 +276,18 @@ its own.
 | 130739 | CH-13970 | `COACH_PLAYER_CORRECTION_CHIPS` | Coach, player: correction chips |
 | 130740 | CH-13971 | `COACH_PLAYER_ANSWER_RECORDED` | Coach, player: answer recorded |
 | 130741 | CH-13972 | `COACH_READ_HELD_BACK` | Coach: read held back |
-| 130742 | CH-13932 | `COACH_THE_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
-| 130743 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
-| 130744 | CH-13934 | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | Monday brief: the team pattern row |
-| 130745 | CH-13935 | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | Monday brief: nothing to raise this week |
+| 130742 | CH-13940 | `COACH_PLAYER_THE_PATH_LINE` | Coach, player: the path line (design call D2) |
+| 130743 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
+| 130744 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
+| 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
 | 130746 | CH-13936 | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | Monday brief: a read it is made from failed |
 | 130748 | CH-13938 | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | Coach board: the link to the Monday brief |
 | 130749 | CH-13939 | `MONDAY_BRIEF_THE_COUNTS_LINE` | Monday brief: the counts line |
+| 130750 | CH-13932 | `COACH_THE_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130751 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
+| 130752 | CH-13934 | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | Monday brief: the team pattern row |
+| 130753 | CH-13935 | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | Monday brief: nothing to raise this week |
 
 ## 08 — Permission / authorization
 

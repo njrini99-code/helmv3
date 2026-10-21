@@ -135,6 +135,8 @@ export interface ChTeamStats {
      * row built elsewhere; the plot then falls back on the pooled spread over `rounds`.
      */
     spread?: ChRankSpread;
+    /** The player's newest scored round (the hover card's "Last round"); null with none. */
+    last?: { score: number; toPar: number | null; label: string } | null;
   }>;
   /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
   legTotals: Array<number | null>;
@@ -360,7 +362,12 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
         legs: LEGS.map((_, i) => sample(mineHoles, (r) => sgLegs(r)[i] ?? null, 'sg')),
         score: sample(mine.filter((r) => r.total_score != null), (r) => r.total_score, 'score'),
       };
-      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread };
+      // Newest scored round in the window, for the hover card (the grid never carried one: the card read "Last round —").
+      const newest = mine.reduce<ChRound | null>((a, r) => (r.total_score != null && (a == null || r.round_date > a.round_date) ? r : a), null);
+      const last = newest
+        ? { score: newest.total_score as number, toPar: newest.score_to_par, label: [newest.course_name, shortDate(newest.round_date)].filter(Boolean).join(' \u00b7 ') }
+        : null;
+      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread, last };
     })
     .filter((g) => g.rounds > 0);
 
