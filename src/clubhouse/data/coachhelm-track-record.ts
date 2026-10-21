@@ -1,10 +1,10 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { selectCorrectionsForInsights } from '@/lib/coachhelm/v3/corrections/load-weights';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import type { CorrectionForPrecision } from '@/lib/coachhelm/v3/corrections/precision-counters';
-import { CORRECTIONS_TABLE, isMissingTableError } from '@/lib/coachhelm/v3/corrections/types';
+import { isMissingTableError } from '@/lib/coachhelm/v3/corrections/types';
 import { readLifecycleMeta, LIFECYCLE_META_KEY } from '@/lib/coachhelm/v3/lifecycle/types';
 import { buildTrackRecord, type ShownRead } from '@/lib/coachhelm/v3/track-record/track-record';
 import { chLogServer } from '../lib/track-server';
@@ -73,11 +73,7 @@ async function loadCorrections(supabase: Supabase, teamId: string, ids: string[]
   const rows: CorrectionForPrecision[] = [];
   for (const chunk of chunkIds(ids)) {
     const { data, error } = await fetchAllRowsResult<CorrectionRow>((from, to) =>
-      fromUntyped(supabase, CORRECTIONS_TABLE)
-        .select('insight_id, author_user_id, author_role, kind, created_at, team_id')
-        .in('insight_id', chunk)
-        .order('id', { ascending: true })
-        .range(from, to),
+      selectCorrectionsForInsights(supabase, chunk, from, to),
     );
     if (error) {
       if (isMissingTableError(error)) return { rows: [], available: false, error: null };
