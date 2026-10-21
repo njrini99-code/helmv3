@@ -232,18 +232,22 @@ export function toChRead(raw: EvidenceInsight, base: ChInsight, inputs: ChReadIn
   };
 }
 
-/** The stroke sentence, with what the gap is closed to named: the team's average, the Tour by name, or the row's own estimate. */
-export function strokesLine(s: ChReadStrokes, tour: string, say: (t: string) => string = (t) => t): string {
+/**
+ * The stroke sentence, with what the gap is closed to named: the team's average, the Tour by name, or the row's own estimate. `role`:
+ * a coach's page names the team's average in no one's voice (spec A); the player's reads "your team’s average" as before.
+ */
+export function strokesLine(s: ChReadStrokes, tour: string, say: (t: string) => string = (t) => t, role: ChViewer['role'] = 'player'): string {
+  if (s.anchor === 'team' && role === 'coach') return `Closing the gap to the team’s average is worth about ${s.value} strokes a round.`;
   if (s.anchor === 'team') return say(`Closing the gap to your team’s average is worth about ${s.value} strokes a round.`);
   if (s.anchor === 'tour') return `Closing the gap to the ${tour} is worth about ${s.value} strokes a round.`;
   return `Worth about ${s.value} strokes a round.`;
 }
 
-/** The four lines as text, in the order they are read. `tour`: the Tour the page names ("Tour", "LPGA Tour"). */
-export function readLines(read: ChRead, tour: string, say: (t: string) => string = (t) => t): { what: string; why: string; next: string; when: string } {
+/** The four lines as text, in the order they are read. `tour`: the Tour the page names ("Tour", "LPGA Tour"). `role`: whose page. */
+export function readLines(read: ChRead, tour: string, say: (t: string) => string = (t) => t, role: ChViewer['role'] = 'player'): { what: string; why: string; next: string; when: string } {
   const w = read.what;
   const head = w.value ? `${w.subject}: ${w.value}` : w.subject;
-  const what = [stop(w.sample ? `${head} (${w.sample})` : head), w.benchmark && stop(w.benchmark), w.strokes && strokesLine(w.strokes, tour, say), w.word && stop(w.word)].filter(Boolean).join(' ');
+  const what = [stop(w.sample ? `${head} (${w.sample})` : head), w.benchmark && stop(w.benchmark), w.strokes && strokesLine(w.strokes, tour, say, role), w.word && stop(w.word)].filter(Boolean).join(' ');
   const why = read.why.basis ? `${read.why.basis}: ${read.why.text}` : read.why.text;
   const n = read.next;
   const next = n.none ?? [n.drill && stop(n.meta ? `${n.drill} · ${n.meta}` : n.drill), n.text && stop(n.text)].filter(Boolean).join(' ');

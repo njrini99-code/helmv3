@@ -1,5 +1,52 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: a player's Deep dive, Standing and Game profile
+
+```text
+Design package: coach-parity/spec-A-coach-player-pages.md (decided)
+PR/commit:      see git log (parity/player-pages)
+Contract IDs:   CH-13209, CH-13311, CH-13313 (130638, 130430, 130431);
+                130807 (new); 130104 (amended)
+Actions:        ACT-P013-ASSIGN-FOCUS, ACT-P013-DISMISS-INSIGHT and
+                ACT-P013-UNDO-DISMISS, now also on a coach's Deep dive
+Data impact:    none written; reads only what the board and the player's
+                views already read, for a player the scope check found on the
+                coach's team
+Held items:     none
+```
+
+### Added
+
+- `?view=deep-dive|standing|profile&player=<id>` for a coach: the player's
+  three views in the coach's words, landing on the Deep dive. The header is
+  the player's (the name, the class and the newest round, "CoachHelm" as the
+  way back to the board open on the player), the strip is Deep dive ·
+  Standing · Game profile, the breadcrumb CoachHelm › name, and the phone's
+  Back goes to the board open on the player.
+- `data/coachhelm-player.ts`: `loadCoachPlayerScope` checks the id against
+  the coach's own team before anything is read and makes a branded scope;
+  the three loaders take only that scope. The Deep dive reads the coach feed
+  (`getInsightsForCoach` with `player_id`), never the player's.
+- The Deep dive's action row under each read: the board's Assign as focus,
+  Dismiss and Undo (`FocusActions` in `parts.tsx`, now shared with the
+  board), then "Message Jonah". Standing's "Open the read" on a stat with an
+  open read; the Game profile's "CoachHelm sees N reads costing strokes".
+- Entry points: "All of Jonah’s reads" on the board's card, the names in
+  "… have no insights yet." (Standing), Roster's View insights (the Deep
+  dive, was the board).
+- States: CH-13311 (not on your team, one page for every id), CH-13209 (the
+  check did not load), CH-13313 (CoachHelm off for the player's team); the
+  three skeletons take the header's shape.
+- Preview: `/clubhouse-preview/coachhelm-coach-player`.
+
+### Changed
+
+- The player's views and their shapers take a `voice`; the player's copy is
+  unchanged. CoachBoard's action row moved into `parts.tsx` with no change to
+  what it draws.
+- DESIGN.md's non-goal "a coach's version of the Game profile, Standing or
+  Deep dive" is superseded.
+
 ## 2026-10-21 — useHydrated moved to the shared lib
 
 No visible change. `screens/coachhelm/use-hydrated.ts` re-exports

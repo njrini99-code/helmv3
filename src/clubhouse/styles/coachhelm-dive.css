@@ -1419,3 +1419,32 @@ main[data-canopy] .ch-hd-it.is-on,
     color: var(--ch-on-green-ink-muted);
   }
 }
+
+/* A coach's Deep dive (spec A): "Message {First}", the quiet text link after Dismiss in the read's action row. */
+.ch-hd-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 6px;
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hd-msg:hover {
+    color: var(--ch-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-hd-msg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .ch-hd-msg {
+    min-height: 44px;
+  }
+}

@@ -14117,10 +14117,11 @@
     "category": 1,
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
-    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
+    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive with no ?player= is their own board; with ?player=<golf_players.id> it is the coach's view of that player (spec A, 2026-10-21, which supersedes Q-76's \"a coach's equivalents are not asked for\"), read only once the id is checked against the coach's team (130807). A player's ?player= means nothing: their views read the session's id.",
     "status": "implemented",
-    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
     "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
       "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
@@ -14617,6 +14618,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130430,
+    "page": "P013",
+    "category": 4,
+    "item": 30,
+    "name": "COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE",
+    "chCode": "CH-13311",
+    "meaning": "Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130431,
+    "page": "P013",
+    "category": 4,
+    "item": 31,
+    "name": "COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE",
+    "chCode": "CH-13313",
+    "meaning": "Coach player page, CoachHelm off for the player: it is off for that player's team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -15033,6 +15056,17 @@
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
     "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130638,
+    "page": "P013",
+    "category": 6,
+    "item": 38,
+    "name": "COACH_PLAYER_PAGE_DID_NOT_LOAD_ON",
+    "chCode": "CH-13209",
+    "meaning": "Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15532,6 +15566,20 @@
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130807,
+    "page": "P013",
+    "category": 8,
+    "item": 7,
+    "name": "A_COACH_READS_ONE_PLAYER_ONLY_THROUGH_THE_SCOPE",
+    "meaning": "A coach's view of one player (?view=deep-dive|standing|profile&player=) reads nothing about the player until loadCoachPlayerScope has found the id an active member of the team the shell resolved (golf_team_members, team_id, player_id and status active, through the session's client): an id that is not a uuid is answered with no query, and any id not on this team, on another team the coach staffs, or no longer active is the one \"That player isn't on your team\" page (CH-13311), so the page never says whether a player exists. The three loaders take only the branded scope that check makes, never an id (a raw id does not compile), because Standing's standing map and the goals read through the service client. A read the check needs that fails is CH-13209, never CH-13311. The Deep dive reads the coach feed (getInsightsForCoach with player_id), never the player's, and every row of anyone else's is dropped.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-player.ts#loadCoachPlayerScope; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
+      "src/clubhouse/data/__tests__/coachhelm-player.test.ts"
     ]
   },
   {
