@@ -13,6 +13,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { BoardPartial, FocusCard, Head, InsightRow } from './parts';
+import { ClearedLines } from './EngineState';
 import { Proposals } from './Proposals';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
@@ -170,6 +171,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                   {moreReadsLine(more)}
                 </Button>
               )}
+              <ClearedLines lines={data.cleared} />
               <p className="ch-hl-note">Reads update as you post rounds. Your coaches see the same insights.</p>
             </SectionBoundary>
           </aside>

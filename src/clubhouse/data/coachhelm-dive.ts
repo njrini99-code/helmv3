@@ -10,6 +10,8 @@ import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestSt
 import { isNote, kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
+import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
 import type { ChViewLoad } from './coachhelm-views-shape';
@@ -117,7 +119,12 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
     if (drawn.length === 0) return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
 
-    const [drills, assigned, newest, rounds, plans, themes] = await Promise.all([
+    // The engine's states, each behind its flag (surfaces A): with every flag off `shaped.kept` is `drawn` and nothing is added.
+    const flags = readEngineFlags();
+    const now = new Date().toISOString();
+    const viewer = { role: 'player' } as const;
+    const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
+    const [drills, assigned, newest, rounds, plans, themes, focus] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(
         supabase,
@@ -127,20 +134,31 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       readRounds(supabase, playerId, drawn.flatMap((i) => roundIdsToRead(i.evidence))),
       plansRead,
       themesRead,
+      readFocusVerdicts(
+        supabase,
+        shaped.kept.map((i) => i.id),
+        flags.verdicts,
+      ),
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
     // One viewer for the card, the words and the Read: the signed-in player (a player never sees an inferred cause).
-    const viewer = { role: 'player' } as const;
     const say = (t: string) => speak(t, viewer);
-    const list = orderDive(drawn.map((raw) => {
-      const base = toChInsight(raw, { drillText: drills.texts.get(raw.id) ?? null, assigned: assigned.byInsight.get(raw.id) ?? null, tour: team.tour, newestRound, viewer });
+    const list = orderDive(shaped.kept.map((raw) => {
+      const base = toChInsight(raw, {
+        drillText: drills.texts.get(raw.id) ?? null,
+        assigned: assigned.byInsight.get(raw.id) ?? null,
+        tour: team.tour,
+        newestRound,
+        viewer,
+        engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now },
+      });
       return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
     }));
     // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
     return {
       status: 'ready',
-      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}) },
+      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) },
     };
   } catch (err) {
     log('dive', err);
