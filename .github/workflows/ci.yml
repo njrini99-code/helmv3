@@ -865,10 +865,13 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         uses: ./.github/actions/setup-node-npm
 
-      # `next build --webpack` keeps its incremental compilation cache in
-      # .next/cache. RESTORE on every run (lockfile-exact prefix first, then
-      # any); SAVE only on push to main, and only when today's key for this
-      # lockfile does not exist yet.
+      # `npm run build` (`next build --turbopack`) keeps its incremental
+      # compilation cache in .next/cache/turbopack (Next 16.3 turns the build
+      # filesystem cache on by default). The key prefix is `next-build-turbopack-`
+      # so a run never restores an old webpack entry it cannot use, and the two
+      # caches do not compete for the 10 GB repository cache. RESTORE on every
+      # run (lockfile-exact prefix first, then any); SAVE only on push to main,
+      # and only when today's key for this lockfile does not exist yet.
       #
       # 2026-09-23: the key was `...-<sha>`, so EVERY merge to main saved a
       # fresh multi-hundred-MB entry into a 10 GB repository cache that sat
@@ -876,7 +879,7 @@ jobs:
       # were routinely the ones PRs were about to restore, and 27% of builds
       # ran over 7 min cold. Keyed by UTC day + lockfile, main writes at most
       # one entry a day (plus one per lockfile change); a day-old cache is
-      # still warm for webpack.
+      # still warm.
       - name: Next cache key
         if: steps.gate.outputs.run == 'true'
         id: nextkey
@@ -912,10 +915,10 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
+          key: next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
           restore-keys: |
-            next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-            next-build-${{ runner.os }}-
+            next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-build-turbopack-${{ runner.os }}-
 
       # 2026-10-21 (owner-approved): about one Next build in three died with
       # "The runner has received a shutdown signal" during Next's in-process
@@ -950,19 +953,26 @@ jobs:
           kill "$sampler" 2>/dev/null || true
           exit "$rc"
 
+      # One line of evidence for the cache entry's size (Turbopack vs the old
+      # webpack entry), so a cache that outgrows its keep is visible in the log.
+      - name: Next cache size
+        if: always() && steps.gate.outputs.run == 'true'
+        continue-on-error: true
+        run: du -sh .next/cache/* 2>/dev/null || true
+
       - name: Save Next build cache (push to main, once a day per lockfile)
         if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
+          key: next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
 
       # Only a push to main uploads it (2026-10-07): the one consumer left is a
       # manual playwright.yml dispatch against a main commit, which falls back
       # to building when there is no artifact. The two jobs that used to read
       # it on every run moved to nightly.yml with their own build, so PRs no
       # longer pay for an upload nobody downloads. `.next/cache` is excluded
-      # (the webpack cache above). `include-hidden-files` and
+      # (the build cache above). `include-hidden-files` and
       # `if-no-files-found` are BOTH load-bearing: `.next` is dot-prefixed and
       # upload-artifact skips hidden paths by default, which once uploaded
       # nothing and still succeeded.
