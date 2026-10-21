@@ -50,9 +50,12 @@ Held items:     coach nav badge (audit par-24): new read on every shell load
   and 390, light and dark, every tab. WebKit is the nightly's. Contrast
   measured: ivory on the green 11.0:1, muted on-green 6.2:1, amber on the
   workspace 5.2:1.
-- The loading head holds 164px (the player's loaded head); a coach's head is
-  188px at 1440 and 240px at 1100, so a coach's page moves down by that much on
-  load.
+- The loading skeleton draws the loaded head's own parts (chip, title, team
+  line, the strip's row, a coach's action). Measured loaded against skeleton at
+  1440, 1100 and 390 for both roles: the head and the tabs' position agree
+  within 1px, so nothing moves on load. To make that hold, the strip is one
+  line that scrolls sideways (the clipped edge fades) and is its own row of the
+  head, so its height never depends on what it says.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 

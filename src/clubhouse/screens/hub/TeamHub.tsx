@@ -501,13 +501,13 @@ export function TeamHub({
             Team Hub
           </h1>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
-          <HubStrip items={strip} onOpen={pick} />
         </div>
         {primary && (
           <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
             {primary.label}
           </Button>
         )}
+        <HubStrip items={strip} onOpen={pick} />
       </header>
 
       <PageRefreshNotice parts={failedParts} />

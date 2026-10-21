@@ -1,5 +1,5 @@
 import { Skeleton, SkelLine, SkelRows } from '../../ui/States';
-import { HubSkeletonChip, HubSkeletonTop } from './HubSkeletonTop';
+import { HubSkeletonAction, HubSkeletonChip, HubSkeletonStrip, HubSkeletonTop } from './HubSkeletonTop';
 import '../../styles/hub.css';
 
 /**
@@ -17,6 +17,8 @@ export function HubSkeleton() {
           <div style={{ height: 12 }} />
           <Skeleton width={150} height={13} />
         </div>
+        <HubSkeletonAction />
+        <HubSkeletonStrip />
       </header>
       <div className="ch-hb-tabs" aria-hidden="true">
         {[64, 118, 62, 96].map((w, i) => (

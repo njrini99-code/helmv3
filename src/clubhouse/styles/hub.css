@@ -1218,6 +1218,10 @@
   .ch-hb-skelm .ch-hb-h > div {
     height: 24px;
   }
+  /* A player's opening has no role chip: the team line alone, as the loaded page draws it. */
+  .ch-hb-skelm .ch-hb-h > div.is-player {
+    height: 16px;
+  }
   .ch-hb-skelm__tab {
     display: flex;
     align-items: center;
@@ -1809,14 +1813,10 @@
   padding: 18px;
 }
 
-/* Loading in the framed page head (desktop): the Team Hub head holds the shortest loaded head's measured height (Chromium 1440
-   and 1100, 2026-10-21, with the strip: player 164px; a coach's is 188px at 1440 and 240px at 1100 where the action wraps), so
-   the page never moves up on load and moves down only by what a coach's strip and action add. */
-@media (min-width: 821px) {
-  .ch-hb[aria-busy='true'][data-canopy] .ch-hb-h {
-    box-sizing: border-box;
-    min-height: 164px;
-  }
+/* Loading in the framed page head (desktop): the skeleton draws the loaded head's own parts (chip, title, team line, the
+   strip's row, a coach's action), so the tabs land where they stood. The strip's row is held at one line of its own type. */
+.ch-hb-strip--skel {
+  min-height: calc(13.5 * var(--ch-type-k) * 1.4 + 8px);
 }
 
 /* The Ledger on desktop Team Hub (owner, 2026-10-07: "flush, not so card heavy"). RSVPs, updates, tasks and folders
@@ -2412,17 +2412,27 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 /* The strip: figures that open the tab they count. */
 .ch-hb-strip {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 0 100%;
   align-items: center;
-  width: 100%;
-  margin: 12px 0 0;
-  padding: 0;
+  /* One line, whatever it says: a row that outgrows the page scrolls (ui.css .ch-hscroll fades the clipped edge), with
+     room inside for a focus ring taken back by the margins, as the tabs do. */
+  box-sizing: border-box;
+  max-width: calc(100% + 8px);
+  margin: -4px -4px -4px;
+  padding: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
   list-style: none;
   font: 400 calc(13.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
+.ch-hb-strip::-webkit-scrollbar {
+  display: none;
+}
 .ch-hb-strip li {
   display: inline-flex;
+  flex: none;
   align-items: center;
 }
 .ch-hb-strip li + li::before {
@@ -2870,9 +2880,14 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 
 /* Phone: the text floor holds for what this block adds, and the strip's figures reach a 44px touch height. */
 @media (max-width: 820px) {
-  /* The strip wraps on a phone, and a rule between items would start a line: the figures stand apart on a wider gap. */
-  .ch-hb-strip {
-    gap: 6px 18px;
+  /* On a phone the strip sits between the team line and a coach's action, and a rule between items gives way to a gap. */
+  .ch-hb-h > .ch-hb-strip {
+    order: 1;
+    gap: 18px;
+  }
+  .ch-hb-h > button,
+  .ch-hb-h > a {
+    order: 2;
   }
   .ch-hb-strip li + li::before {
     display: none;

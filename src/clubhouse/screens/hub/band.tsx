@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 import type { ChHubTrip } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 import { Button } from '../../ui/Button';
+import { useHScroll } from '../../ui/use-hscroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import type { Band, BandFact, StripItem, TaskFigures } from './hub-summary';
 
@@ -14,11 +15,16 @@ import type { Band, BandFact, StripItem, TaskFigures } from './hub-summary';
  * on the page's one dark surface) and the coach's task board (how far the team's tasks have got).
  */
 
-/** The strip: figures that open the tab they count. A figure with no tab is plain text. */
+/**
+ * The strip: figures that open the tab they count. A figure with no tab is plain text. It is one line that scrolls
+ * sideways when the figures outgrow it (the clipped edge fades), so its height never depends on what it says and the
+ * loading skeleton can hold it.
+ */
 export function HubStrip({ items, onOpen }: { items: StripItem[]; onOpen: (tab: ChHubTab) => void }) {
+  const edges = useHScroll<HTMLUListElement>();
   if (!items.length) return null;
   return (
-    <ul className="ch-hb-strip" aria-label="Team at a glance">
+    <ul ref={edges} className="ch-hscroll ch-hb-strip" aria-label="Team at a glance">
       {items.map((s) => {
         const tab = s.tab;
         const body = (
