@@ -34,7 +34,7 @@ SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
 - Deploy from `main`'s tip when you can, so what is live is what is merged.
 - Worktrees from `scripts/new-worktree.sh` hold symlinks to the canonical
   checkout's env and tool files (`scripts/lib/shared-workspace-runtime.mjs`:
-  `.env*`, `.codex/config.toml`, `.claude/settings.local.json`, ...). Vercel
+  `.env*`, `.codex/config.toml` and similar local files). Vercel
   rejects absolute symlinks at extraction (seen 2026-10-21: ".codex/config.toml
   is not a valid symlink"). Deploy from the canonical checkout, or from a
   symlink-free export. The export has no `.git` and no `node_modules`, so
