@@ -57,10 +57,10 @@ A player now sees only their own row, or a 404 in place of a 403:
 
 ## Rollout notes
 
-- Order: deploy the app, apply 004000, then apply 005000.
-- Confirm `golf_player_profiles` exists in production before 005000. The
-  helper falls back to table reads when the function is missing, and
-  after 005000 that fallback is limited to the caller's own row.
+- Order: 004000 is applied in production (2026-10-21). Deploy the app
+  that carries the two fixed reads, then apply 005000.
+- After 005000 the helper's table fallback is limited to the caller's
+  own row, so the function must stay in place.
 - pgTAP: `supabase/tests/rls/golf_player_profiles_teammate_scope.sql`
   covers both migrations. CI builds the database from every migration.
 - `calendar-events.ts` `getPlayerAvailabilityImpl` has a UI gate and a

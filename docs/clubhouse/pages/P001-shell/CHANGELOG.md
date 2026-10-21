@@ -1,5 +1,21 @@
 # P001 — Shell: changelog
 
+## 2026-10-21 — The shell marks `.ch-root` hydrated for the a11y scan
+
+```text
+Design package: none (test tooling; no visible change)
+PR/commit:      uncommitted (claude/project-thread-qv3gtg)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`.ch-root` carries an empty `data-hydrated` attribute from the frame's
+existing mount effect. The accessibility scan (`scripts/clubhouse/a11y.mjs`)
+waits for it before it taps a page's opener, so a tap made before hydration
+no longer shows up as "could not tap". No styles read it.
+
 ## 2026-10-19 — The phone shell feels native: edge swipe back, pushes that keep the dock, no late bars, idle prefetch
 
 ```text

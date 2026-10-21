@@ -2,6 +2,7 @@
 
 import { Circle, CircleCheck, Eye, EyeOff } from 'lucide-react';
 import type { InputHTMLAttributes, ReactNode, Ref } from 'react';
+import { useHydrationGuard } from '../../lib/use-hydration-guard';
 import { Icon } from '../../ui/Icon';
 import { Spinner } from '../../ui/Spinner';
 import { Tooltip } from '../../ui/Tooltip';
@@ -27,13 +28,14 @@ export function GateInput({
   /** Sits inside the box, after the text (the password eye). */
   trailing?: ReactNode;
 }) {
+  const guard = useHydrationGuard(input.readOnly);
   return (
     <div className="ch-au-field">
       <label className="ch-au-label" htmlFor={id}>
         {label}
       </label>
       <div className="ch-au-input" data-invalid={invalid ? 'true' : undefined}>
-        <input ref={inputRef} id={id} aria-invalid={invalid || undefined} {...input} />
+        <input ref={inputRef} id={id} aria-invalid={invalid || undefined} {...input} {...guard} />
         {trailing}
       </div>
     </div>

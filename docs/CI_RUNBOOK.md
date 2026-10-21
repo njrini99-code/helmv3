@@ -314,6 +314,14 @@ fast-forwards the canonical checkout, and runs
 `node scripts/worktree-lifecycle.mjs --retire`. Refuses a non-`agent/*`
 branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 
+It also refuses unless one CI run of the head ran the whole unit suite: every
+`Unit tests (n)` job's `Unit tests (shard n/5)` step must have concluded
+`success` on all five shards. A follow-up push runs only the related tests on
+shard 1 and skips shards 2-5, so the required contexts can be green without the
+suite having run (it let a broken test onto `main` on 2026-10-21). On a
+refusal, flip the PR to draft and back to ready to get a full run. A PR with no
+code-relevant change (the path gate skips the scope step) passes without one.
+
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
 | `CI aggregate` | `ci.yml` | aggregate: `Static checks` (schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles, generated artifacts — named steps of one job since 2026-09-02; DB-types drift moved to `types-regen.yml` 2026-09-23), `TypeScript` (tsgo on PRs, plus tsc on push to `main`) and `Lint` (ESLint + ratchets), parallel jobs since 2026-10-07 (one job from 2026-09-23 to then) — these three ALWAYS run — plus `Unit tests` ×5, `Next build`, and **`Supabase lint + RLS tests`**, which finish green with every step skipped (an in-job path gate since 2026-09-23; they SKIPPED as jobs before) when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs run in parallel with everything else, with no `needs:` (2026-09-23) (2026-09-22; the 2026-09-06 `needs: [typecheck, lint]` ordering added ~4 min per PR to save runner minutes that are free on a public repo). `main` branch protection no longer requires branches to be up to date (2026-09-22): each merge used to force every open PR to rerun CI, and a merge queue is unavailable on a user-owned repo; push-to-main CI still runs the full set. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
