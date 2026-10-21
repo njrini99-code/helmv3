@@ -71,7 +71,9 @@ the identity of any signed-in user acting outside their own team.
 - **High:** authenticated privilege escalation (player to coach, coach to
   admin), webhook or cron forgery with a side effect, stored XSS.
 - **Medium:** exposure limited to non-sensitive fields, or exploitable only
-  with a precondition such as a known record ID.
+  with a precondition such as a known record ID. This applies only when no
+  Critical or High criterion above is met: needing a known record ID does not
+  lower a cross-tenant read or write below Critical.
 - **Low:** defense-in-depth gaps with no demonstrated path.
 
 ## Reports
