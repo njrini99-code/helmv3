@@ -28,6 +28,7 @@ const state = vi.hoisted(() => ({
   staffTeams: [] as string[],
   memberTeams: ['team-1'] as string[],
   playerRow: null as { id: string } | null,
+  membersError: null as { code: string } | null,
   insertResult: { data: { id: 'corr-1' }, error: null } as {
     data: { id: string } | null;
     error: { code?: string; message?: string } | null;
@@ -54,7 +55,9 @@ function respond(calls: Calls): { data: unknown; error: unknown } {
     case 'golf_team_coach_staff':
       return { data: state.staffTeams.map((team_id) => ({ team_id })), error: null };
     case 'golf_team_members':
-      return { data: state.memberTeams.map((team_id) => ({ team_id })), error: null };
+      return state.membersError
+        ? { data: null, error: state.membersError }
+        : { data: state.memberTeams.map((team_id) => ({ team_id })), error: null };
     case 'golf_players':
       return { data: state.playerRow, error: null };
     case 'golf_rounds':
@@ -115,6 +118,7 @@ beforeEach(() => {
   state.staffTeams = [];
   state.memberTeams = [TEAM];
   state.playerRow = null;
+  state.membersError = null;
   state.insertResult = { data: { id: 'corr-1' }, error: null };
   state.inserts = [];
   state.tablesTouched = [];
@@ -238,6 +242,23 @@ describe('recordCoachHelmCorrection: who may correct', () => {
     const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'confirm' });
     expect(result.status).toBe('recorded');
     expect(state.inserts[0]?.payload).toMatchObject({ author_role: 'player', team_id: TEAM });
+  });
+
+  it('the player on a read tagged with a team they left: team_id null (RLS binds it)', async () => {
+    state.playerRow = { id: PLAYER };
+    state.memberTeams = ['team-9'];
+    const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'not_this' });
+    expect(result.status).toBe('recorded');
+    expect(state.inserts[0]?.payload).toMatchObject({ author_role: 'player', team_id: null });
+  });
+
+  it('a team lookup error: failed and logged, nothing written', async () => {
+    state.playerRow = { id: PLAYER };
+    state.membersError = { code: '57014' };
+    const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'not_this' });
+    expect(result.status).toBe('failed');
+    expect(state.logServerError).toHaveBeenCalledTimes(1);
+    expect(state.inserts).toEqual([]);
   });
 
   it.each(['wrong_cause', 'already_on_it', 'snooze'] as const)(

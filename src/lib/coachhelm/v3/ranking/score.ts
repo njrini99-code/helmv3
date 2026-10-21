@@ -476,7 +476,9 @@ export async function loadCoachWeightsForPlayers(
     [...new Set([...corrections.values()].map((c) => c.coachId))],
   );
   for (const [playerId, c] of corrections) {
-    const merged = mergeCoachWeights(c.weights, outcomeByCoach.get(c.coachId) ?? {});
+    // No outcome weights when that read failed: W alone (the batch paths
+    // ranked fully neutral before Slice 6a).
+    const merged = mergeCoachWeights(c.weights, outcomeByCoach?.get(c.coachId) ?? {});
     if (Object.keys(merged).length > 0) out.set(playerId, merged);
   }
   return out;
@@ -485,12 +487,13 @@ export async function loadCoachWeightsForPlayers(
 /**
  * Calibrated outcome weights for many coaches (batched twin of
  * `loadOutcomeCoachWeights`). Off unless `coachhelm_learned_personalization`
- * is on; a read error yields no outcome weights (W alone), never a throw.
+ * is on (empty map). A read error returns null, never a throw; the caller
+ * then ranks with W alone.
  */
 async function loadOutcomeWeightsForCoaches(
   sb: Sb,
   coachIds: readonly string[],
-): Promise<Map<string, CoachWeights>> {
+): Promise<Map<string, CoachWeights> | null> {
   const out = new Map<string, CoachWeights>();
   if (!isFlagEnabled('coachhelm_learned_personalization') || coachIds.length === 0) return out;
   try {
@@ -506,7 +509,7 @@ async function loadOutcomeWeightsForCoaches(
           .order('insight_type', { ascending: true })
           .range(from, to),
       );
-      if (error) return new Map();
+      if (error) return null;
       for (const r of data ?? []) {
         const w = out.get(r.coach_id) ?? {};
         w[r.insight_type] = Number(r.weight);
@@ -515,7 +518,7 @@ async function loadOutcomeWeightsForCoaches(
     }
     return out;
   } catch {
-    return new Map();
+    return null;
   }
 }
 

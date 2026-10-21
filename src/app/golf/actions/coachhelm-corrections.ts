@@ -41,40 +41,56 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 
 const ACTION = 'recordCoachHelmCorrection';
 
+/** Who the caller is to this player, from three RLS-scoped reads. */
+interface CallerTeams {
+  /** Teams the caller coaches that the player is active on (sorted). */
+  coachTeams: string[];
+  /** Teams the player is active on (sorted). */
+  playerTeams: string[];
+}
+
 /**
- * The teams on which the caller coaches this player: the caller's staff
- * teams intersected with the player's active teams. Sorted, so the choice of
- * team is deterministic when there are several.
+ * The player's active teams and, of those, the ones the caller coaches.
+ * Sorted, so the choice of team is deterministic when there are several.
+ * Returns null when a read fails, so the action reports a failure instead of
+ * treating the caller as a stranger.
  */
-async function coachTeamsForPlayer(
+async function callerTeamsForPlayer(
   supabase: ServerClient,
   userId: string,
   playerId: string,
-): Promise<string[]> {
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (!coach?.id) return [];
-
-  const [{ data: staff }, { data: memberships }] = await Promise.all([
-    supabase.from('golf_team_coach_staff').select('team_id').eq('coach_id', coach.id),
+): Promise<CallerTeams | null> {
+  const [coachRes, membershipRes] = await Promise.all([
+    supabase.from('golf_coaches').select('id').eq('user_id', userId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', playerId)
       .eq('status', 'active'),
   ]);
-  const staffTeams = new Set((staff ?? []).map((s) => s.team_id).filter(Boolean));
-  return [...new Set((memberships ?? []).map((m) => m.team_id))]
-    .filter((t): t is string => Boolean(t) && staffTeams.has(t))
+  if (coachRes.error || membershipRes.error) return null;
+  const playerTeams = [...new Set((membershipRes.data ?? []).map((m) => m.team_id))]
+    .filter((t): t is string => Boolean(t))
     .sort();
+  const coachId = coachRes.data?.id;
+  if (!coachId) return { coachTeams: [], playerTeams };
+
+  const { data: staff, error: staffErr } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
+  if (staffErr) return null;
+  const staffTeams = new Set((staff ?? []).map((s) => s.team_id).filter(Boolean));
+  return { coachTeams: playerTeams.filter((t) => staffTeams.has(t)), playerTeams };
 }
 
-/** The player's newest completed, non-test round: the checkpoint anchor. */
+/**
+ * The player's newest completed, non-test round: the checkpoint anchor. The
+ * anchor is optional on the row, so a failed read records no anchor rather
+ * than failing the correction.
+ */
 async function newestRoundId(supabase: ServerClient, playerId: string): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('golf_rounds')
     .select('id')
     .eq('player_id', playerId)
@@ -84,7 +100,17 @@ async function newestRoundId(supabase: ServerClient, playerId: string): Promise<
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) return null;
   return data?.id ?? null;
+}
+
+async function failedLookup(userId: string, what: string): Promise<CorrectionResult> {
+  await logServerError(
+    `${ACTION}: ${what}`,
+    { action: ACTION, feature: 'coachhelm_ai_engine', featureArea: 'coachhelm_corrections', userId },
+    'warning',
+  );
+  return { status: 'failed', error: 'Could not record this correction.' };
 }
 
 async function recordCoachHelmCorrectionImpl(input: CorrectionInput): Promise<CorrectionResult> {
@@ -126,19 +152,23 @@ async function recordCoachHelmCorrectionImpl(input: CorrectionInput): Promise<Co
   let authorRole: CorrectionAuthorRole | null = null;
   let teamId: string | null = null;
 
-  const coachTeams = await coachTeamsForPlayer(supabase, user.id, playerId);
+  const teams = await callerTeamsForPlayer(supabase, user.id, playerId);
+  if (!teams) return failedLookup(user.id, 'team lookup failed');
+  const { coachTeams, playerTeams } = teams;
   if (coachTeams.length > 0) {
     authorRole = 'coach';
     teamId = insight.team_id && coachTeams.includes(insight.team_id) ? insight.team_id : (coachTeams[0] ?? null);
   } else {
-    const { data: player } = await supabase
+    const { data: player, error: playerErr } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle();
+    if (playerErr) return failedLookup(user.id, 'player lookup failed');
     if (player?.id === playerId) {
       authorRole = 'player';
-      teamId = insight.team_id ?? null;
+      // RLS only accepts a team the player is active on (or none).
+      teamId = insight.team_id && playerTeams.includes(insight.team_id) ? insight.team_id : null;
     }
   }
 
