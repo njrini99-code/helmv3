@@ -11,7 +11,6 @@ import {
   VISIBLE_LIFECYCLE_STATES,
 } from '@/lib/coachhelm/v3/insight-visibility';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import type { EvidenceInsight } from './types';
 
 const DEFAULT_WINDOW_DAYS = 30;
@@ -27,17 +26,17 @@ export async function loadRecentInsightsForPlayer(
   // composing composites from tentative, retracted (archived), dismissed, or
   // retired-v2 rows would launder invisible claims back into a visible card.
   // Same contract as the delivery read paths (insight-visibility module).
-  const { data, error } = await fromUntyped(supabase, 'golf_coach_insights')
+  const { data, error } = await supabase
+    .from('golf_coach_insights')
     .select('id, insight_type, category, signature, player_id, evidence, engine_version, created_at')
     .eq('player_id', playerId)
     .gte('created_at', cutoff)
     .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
-    .order('created_at', { ascending: false }) as {
-      data: EvidenceInsight[] | null;
-      error: { message: string } | null;
-    };
+    .order('created_at', { ascending: false })
+    // `evidence` is jsonb (Json); the v3 writers store the EvidenceInsight shape.
+    .overrideTypes<EvidenceInsight[], { merge: false }>();
 
   if (error) throw new Error(`loadRecentInsightsForPlayer failed: ${error.message}`);
   if (!data) return [];

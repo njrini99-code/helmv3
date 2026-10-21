@@ -3,6 +3,9 @@
  * 
  * Use this to log events from server actions, API routes, and server components.
  * Events are stored in admin_events table and streamed via Supabase Realtime.
+ *
+ * @deprecated Superseded by server-error-logger and observed-action. New code must not import this module (ESLint enforces it;
+ * existing importers are allowlisted in eslint-rules/import-allowlists.mjs). Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 
 import * as Sentry from '@sentry/nextjs';
@@ -234,6 +237,8 @@ let hasWarnedAdminEventsMissing = false;
 
 /**
  * Log a user signup event
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logSignup(
   userId: string,
@@ -257,6 +262,8 @@ export async function logSignup(
 
 /**
  * Log a user login event
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logLogin(
   userId: string,
@@ -280,6 +287,8 @@ export async function logLogin(
  * Log a round submission. Golf-only caller (submitGolfRoundComprehensive), so
  * the sport and feature are fixed here rather than left NULL — an untagged row
  * is counted against no feature and filtered out of every sport-scoped view.
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logRoundSubmitted(
   userId: string,
@@ -307,6 +316,8 @@ function aiGenerationFeature(generationType: string): FeatureKey {
 
 /**
  * Log AI generation event. Every caller is a golf CoachHelm surface.
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logAIGeneration(
   userId: string,
@@ -336,6 +347,8 @@ export async function logAIGeneration(
  * `.eq('user_id', userId)` filter (`admin_events.user_id`). Optional and
  * additive: every pre-existing 2-3 arg call site (password resets, etc.)
  * still logs exactly as before, just without a user-scoped attribution.
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logSecurityEvent(
   title: string,
@@ -357,6 +370,8 @@ export async function logSecurityEvent(
  * Log one suppressed-customer-email event (src/lib/email/outbound-gate.ts).
  * No address fields — kind/source/recipientCount only, so this table never
  * accumulates recipient PII while the outbound gate is closed.
+ *
+ * @deprecated Use logServerError / logServerEvent from '@/lib/server-error-logger', or withAdminObserved from '@/lib/admin/observed-action'.
  */
 export async function logEmailSuppressed(params: {
   kind: string;

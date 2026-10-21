@@ -190,6 +190,15 @@ const METRIC_DIRECTION_ALIASES: Record<string, MetricDirection> = {
   round_bad_day_floor: 'lower_better',
   tee_miss_next_shot_cost: 'lower_better',
   approach_miss_recovery_cost: 'lower_better',
+  // Slice 5b counted families and the C6 / C8 counted rewrites.
+  par3_tee_sg_per_shot: 'higher_better',
+  approach_sg_per_shot_50_125: 'higher_better',
+  approach_sg_per_shot_125_175: 'higher_better',
+  approach_sg_per_shot_175_plus: 'higher_better',
+  lag_leave_inside_5ft_pct: 'higher_better',
+  putt_break_low_side_miss_pct: 'lower_better',
+  three_putt_lag_chain: 'lower_better',
+  short_approach_sg_scramble_chain: 'higher_better',
 };
 
 /**

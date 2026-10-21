@@ -85,6 +85,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { computeLagLeave, lagLinkLine, lagLinkOf, type LagLink } from './lag-leave';
 
 export type PuttBand = 'lt10' | '10_20' | '20_35' | '35_plus';
 export const PUTT_BANDS: readonly PuttBand[] = ['lt10', '10_20', '20_35', '35_plus'];
@@ -510,13 +511,27 @@ export interface ThreePuttAggregate extends GeneratorAggregate {
   baseline: number | null;
   /** The rounds behind `sampleN` (Slice 0b stamps the window from these once it lands). */
   windowRoundIds: readonly string[];
+  /**
+   * Slice 5b: the counted lag leave from 30+ ft (`lag-leave.ts`), the
+   * three-putt's counted path and NEXT line (`04` example 1); null when the
+   * player has no lag putt with a known leave.
+   */
+  lag?: LagLink | null;
 }
 
-export function toThreePuttAggregate(result: ThreePuttResult | null, baseline: number | null): ThreePuttAggregate | null {
+/** Lag putts with a known leave before the three-putt row prints the lag line. */
+export const LAG_LINK_MIN_PUTTS = 10;
+
+export function toThreePuttAggregate(
+  result: ThreePuttResult | null,
+  baseline: number | null,
+  lag: LagLink | null = null,
+): ThreePuttAggregate | null {
   if (!result || !result.qualifies) return null;
   return {
     result,
     baseline,
+    lag,
     sampleN: result.holes_putted,
     playerValue: result.three_putts_per_18,
     windowRoundIds: result.round_ids,
@@ -601,6 +616,8 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
   const exposureLine = worstExposure
     ? ` From ${worstExposure.label}, ${worstExposure.six_plus_pct}% of your second putts were ${POOR_LEAVE_FT}+ ft (${worstExposure.buckets['6_10'] + worstExposure.buckets['10_plus']} of ${worstExposure.leave_recorded} recorded${worstExposure.leave_missing ? `; ${worstExposure.leave_missing} not recorded` : ''}).`
     : '';
+  const lagLink = agg.lag && agg.lag.n >= LAG_LINK_MIN_PUTTS ? agg.lag : null;
+  const lagNote = lagLink ? ` ${lagLinkLine(lagLink)}` : '';
   const slopeNote = r.slope.qualifies
     ? ` Slope on lag putts (recorded on ${r.slope.fill_pct}% of them; "level" may be a default): ${r.slope.rows
         .filter((s) => s.holes >= SLOPE_MIN_PER_SLOPE)
@@ -678,6 +695,8 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
       gir_holes: r.gir_holes,
       z: r.z,
       slope: r.slope,
+      // Slice 5b: the counted lag leave, linked to its own family.
+      lag_leave: agg.lag ?? null,
       benchmark_source: bench.citation,
       rounds: r.rounds,
       receipts,
@@ -702,7 +721,7 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
         r.cause === 'long_approach_leave'
           ? `${majority ? 'Most 3-putts start' : 'The most common 3-putt starts'} from ${LONG_LEAVE_FT}+ ft: work on approach proximity as well as lag speed.`
           : r.cause === 'poor_first_putt_leave'
-            ? `Lag drill from ${worstExposure?.label ?? '20–35 ft'}: score each putt on whether the second putt is inside ${POOR_LEAVE_FT} ft.`
+            ? `Lag drill from ${worstExposure?.label ?? '20–35 ft'}: score each putt on whether the second putt is inside ${POOR_LEAVE_FT} ft.${lagLink ? ` ${lagLinkLine(lagLink)}` : ''}`
             : r.cause === 'short_followup_miss'
               ? `Short-putt reps from 3–${POOR_LEAVE_FT} ft: the second putt is where these holes slip.`
               : r.pathway_tie && r.classified >= CHAIN_MIN_THREE_PUTTS
@@ -725,7 +744,7 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
           : `Short second putts are turning into 3-putts`,
     content:
       `You 3-putt ${r.three_putts_per_18.toFixed(1)} times a round (${r.three_putts} of ${r.holes_putted} holes) vs ${benchPer18.toFixed(1)} for ${benchName}.` +
-      `${pathwayLine}${exposureLine}${slopeNote}`,
+      `${pathwayLine}${exposureLine}${lagNote}${slopeNote}`,
     priority: r.three_putts_per_18 - benchPer18 >= 0.5 ? 'medium' : 'low',
     signature: 'three_putt_chain:all',
     evidence,
@@ -754,7 +773,12 @@ export class ThreePuttChainGenerator extends AngleGenerator<ThreePuttAggregate> 
     const team = tour ? null : primaryTeamId(data.rounds);
     const peers = team ? await this.loaders.teamRounds(team) : null;
     const benchmark = resolveThreePuttBenchmark(tour, peers, data.playerId);
-    return toThreePuttAggregate(computeThreePuttChain(data, benchmark), data.scoringBaseline);
+    const result = computeThreePuttChain(data, benchmark);
+    if (!result || !result.qualifies) return null;
+    // Slice 5b: the counted lag leave (its team line from the teammates' pooled putts).
+    const lagTeam = primaryTeamId(data.rounds);
+    const teamShots = lagTeam ? await this.loaders.teamShots(lagTeam) : null;
+    return toThreePuttAggregate(result, data.scoringBaseline, lagLinkOf(computeLagLeave(data, teamShots)));
   }
 
   composeContent(agg: ThreePuttAggregate): ComposedContent {

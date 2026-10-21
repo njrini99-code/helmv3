@@ -70,6 +70,36 @@ function expected(lie: string, yards: number, scale: number): number {
   return lie === 'green' ? getExpectedStrokes('green', yards, yards * 3, scale) : getExpectedStrokes(lie, yards, undefined, scale);
 }
 
+/**
+ * Where a non-holed shot ends.
+ *
+ * - `own_finish` (default): its own recorded finish, else the next eligible
+ *   shot's start: the live `calculate_round_strokes_gained` body.
+ * - `next_shot_start`: the start of the next NON-PENALTY shot on the hole
+ *   (shot_number after it, positive start distance, a lie or a putt), else its
+ *   own recorded finish: the endpoint rule of
+ *   `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql` (its `nx`
+ *   lateral), so each hole telescopes. Only the counted families
+ *   (`counted-shots.ts`) use it.
+ */
+export type ShotEndpoint = 'own_finish' | 'next_shot_start';
+
+export interface ShotSgOptions {
+  endpoint?: ShotEndpoint;
+}
+
+/** The migration's `nx`: the next non-penalty shot on the hole with a start. */
+function nextShotStart(holeShots: readonly RawShotRow[], s: RawShotRow): RawShotRow | null {
+  let best: RawShotRow | null = null;
+  for (const n of holeShots) {
+    if (n.shot_number <= s.shot_number || n.is_penalty === true) continue;
+    if (n.distance_to_hole_before === null || !(Number(n.distance_to_hole_before) > 0)) continue;
+    if (n.lie_before === null && n.shot_type !== 'putting') continue;
+    if (!best || n.shot_number < best.shot_number || (n.shot_number === best.shot_number && n.id < best.id)) best = n;
+  }
+  return best;
+}
+
 export interface ShotSg {
   shotId: string;
   category: 'off_tee' | 'approach' | 'around_green' | 'putting';
@@ -86,7 +116,18 @@ export function shotSgForRound(
   shots: readonly RawShotRow[],
   parByHoleId: ReadonlyMap<string, number>,
   scale: number,
+  opts: ShotSgOptions = {},
 ): ShotSg[] {
+  const nextStart = opts.endpoint === 'next_shot_start';
+  const allByHole = new Map<string, RawShotRow[]>();
+  if (nextStart) {
+    for (const s of shots) {
+      if (!s.hole_id) continue;
+      const arr = allByHole.get(s.hole_id) ?? [];
+      arr.push(s);
+      allByHole.set(s.hole_id, arr);
+    }
+  }
   const eligible = shots.filter((s) => {
     if (!s.hole_id || !parByHoleId.has(s.hole_id) || !s.shot_type) return false;
     const d = yardsOf(s.distance_to_hole_before, s.distance_unit_before);
@@ -109,10 +150,22 @@ export function shotSgForRound(
       const db = yardsOf(s.distance_to_hole_before, s.distance_unit_before)!;
       const holed = s.putt_made === true || s.result === 'holed' || s.result === 'hole';
       let da: number;
-      if (holed) da = 0;
-      else if (s.distance_to_hole_after !== null) da = yardsOf(s.distance_to_hole_after, s.distance_unit_after) ?? 0;
-      else da = next ? (yardsOf(next.distance_to_hole_before, next.distance_unit_before) ?? 0) : 0;
-      const la = holed ? 'green' : s.lie_after !== null ? sgNormalizeLie(s.lie_after) : sgNormalizeLie(next?.lie_before ?? null);
+      let la: string;
+      const nx = nextStart && !holed ? nextShotStart(allByHole.get(holeId) ?? [], s) : null;
+      if (holed) {
+        da = 0;
+        la = 'green';
+      } else if (nx) {
+        da = yardsOf(nx.distance_to_hole_before, nx.distance_unit_before) ?? 0;
+        la = nx.shot_type === 'putting' ? 'green' : sgNormalizeLie(nx.lie_before);
+      } else if (nextStart) {
+        da = s.distance_to_hole_after !== null ? (yardsOf(s.distance_to_hole_after, s.distance_unit_after) ?? 0) : 0;
+        la = sgNormalizeLie(s.lie_after);
+      } else {
+        if (s.distance_to_hole_after !== null) da = yardsOf(s.distance_to_hole_after, s.distance_unit_after) ?? 0;
+        else da = next ? (yardsOf(next.distance_to_hole_before, next.distance_unit_before) ?? 0) : 0;
+        la = s.lie_after !== null ? sgNormalizeLie(s.lie_after) : sgNormalizeLie(next?.lie_before ?? null);
+      }
 
       let category: ShotSg['category'];
       if (pen) {

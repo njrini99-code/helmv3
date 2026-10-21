@@ -37,7 +37,7 @@ import {
 } from '@/lib/coachhelm/v3/engine/generator-base';
 import type { ComposedContent, GeneratorAggregate, InsightCategory, MetricId } from '@/lib/coachhelm/v3/engine/types';
 import type { Diagnosis, InsightInput } from '@/lib/coachhelm/v2/insights/types';
-import { establishedRosterComplete } from './fixtures/shadow-eval-snapshots';
+import { establishedRosterComplete } from '@/test/coachhelm/v3/fixtures/shadow-eval-snapshots';
 
 interface Agg extends GeneratorAggregate {
   sampleN: number;

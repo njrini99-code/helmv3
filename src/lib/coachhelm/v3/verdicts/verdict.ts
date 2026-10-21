@@ -35,7 +35,7 @@ export interface PostWindow {
 }
 
 /** The `golf_player_focus_areas.verdict` value (04 §1.3). */
-export interface FocusAreaVerdict {
+export type FocusAreaVerdict = {
   word: VerdictWord;
   post: { value: number | null; made: number; n: number; window_start: string; window_end: string | null };
   lower_bound_90: number | null;
@@ -45,7 +45,7 @@ export interface FocusAreaVerdict {
   threshold: number;
   horizon: Horizon;
   computed_at: string;
-}
+};
 
 export interface VerdictInput {
   criterion: Pick<Criterion, 'direction' | 'threshold' | 'unit'>;

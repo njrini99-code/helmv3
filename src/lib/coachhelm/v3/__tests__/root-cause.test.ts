@@ -34,7 +34,7 @@ import type { ShadowSnapshot } from '@/lib/coachhelm/v3/eval/shadow-harness';
 import {
   establishedRosterComplete,
   newRosterComplete,
-} from './fixtures/shadow-eval-snapshots';
+} from '@/test/coachhelm/v3/fixtures/shadow-eval-snapshots';
 
 const TEMPLATE = /off its benchmark|inferred from the aggregate/;
 
