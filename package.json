@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "analyze": "ANALYZE=true npm run build",
+    "analyze": "ANALYZE=true npm run build:webpack",
     "audit:fail-open": "node scripts/fail-open-audit.mjs",
     "audit:paginated-reads": "node scripts/paginated-read-audit.mjs",
     "audit:supabase-chunks": "node scripts/supabase-chunk-audit.mjs",
