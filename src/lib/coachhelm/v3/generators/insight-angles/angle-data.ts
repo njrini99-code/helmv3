@@ -74,6 +74,8 @@ export interface AngleHole {
 export interface AngleShot extends RawShotRow {
   putt_distance_feet: number | null;
   putt_slope: string | null;
+  /** `left_to_right` / `right_to_left` / `straight` / `multiple`; null when not recorded (Slice 5b under-reading). */
+  putt_break: string | null;
 }
 
 export interface AngleData {
@@ -465,7 +467,18 @@ export type AngleSampleUnit = 'putts' | 'approaches' | 'tee_shots' | 'shots' | '
  * differ, or a Tour penalty stands in for the player's own) and must never
  * print as a measured saving.
  */
-export type AngleImpactKind = 'sg_baseline' | 'peer_delta' | 'rough_estimate';
+export type AngleImpactKind = 'sg_baseline' | 'peer_delta' | 'rough_estimate' | 'unsized';
+
+/**
+ * The `InsightEvidence.strokes_impact_method` a family writes. An `unsized`
+ * family (Slice 5b under-reading: the record counts the misses, not what
+ * they cost) writes `strokes_impact: 0` under `peer_delta`, which the Slice 1
+ * support pass reads as "never estimated" (`no_strokes_estimate`), so the
+ * read stops with the coach.
+ */
+export function impactMethodOf(kind: AngleImpactKind): 'sg_baseline' | 'peer_delta' | 'rough_estimate' {
+  return kind === 'unsized' ? 'peer_delta' : kind;
+}
 
 /** Benchmark line sources (`04` §1.1 `ComparisonLine.source`). */
 export type ComparisonLineSource =
@@ -495,7 +508,14 @@ export type AngleFamilyId =
   | 'lie_rough_execution'
   | 'lie_fairway_exposure'
   | 'tee_miss_cost'
-  | 'approach_miss_compass';
+  | 'approach_miss_compass'
+  // Slice 5b (`07` §4 Slice 5): counted families.
+  | 'par3_tee'
+  | 'approach_sg_50_125'
+  | 'approach_sg_125_175'
+  | 'approach_sg_175_plus'
+  | 'lag_leave'
+  | 'under_reading';
 
 export interface AngleFamily {
   family: AngleFamilyId;
@@ -643,7 +663,100 @@ export const ANGLE_FAMILIES: Readonly<Record<AngleFamilyId, AngleFamily>> = {
     kappa: { value: 20, unit: 'shots' },
     citations: [SG_CITATION],
   },
+  // -------------------------------------------------------------------------
+  // Slice 5b. Measured on the player's own shots and compared with the POOLED
+  // shots of their teammates (`02` §3: the team line separates players; Q-88:
+  // the Tour is the only external benchmark, and it stays the SG arithmetic).
+  // No team pool (fewer than PEER_MIN_PLAYERS teammates, or fewer than
+  // TEAM_POOL_MIN_ATTEMPTS pooled attempts) = no comparison and no read.
+  // -------------------------------------------------------------------------
+  par3_tee: {
+    family: 'par3_tee',
+    metric: 'par3_tee_sg_per_shot',
+    insight_type: 'approach',
+    sample_unit: 'tee_shots',
+    // 04 §2: approaches 20 per band (Clear 40), ≥ 4 rounds (02 §7 #16-18).
+    floor: 20,
+    per_side_floor: null,
+    round_floor: 4,
+    gap_kind: 'mean',
+    impact: 'sg_baseline',
+    benchmark: 'team_pool',
+    cap: 'observed',
+    kappa: { value: 20, unit: 'shots' },
+    citations: [
+      SG_CITATION,
+      `${RESEARCH_DOC} §The Four Categories: par-3 tee shots count as approach in SG`,
+      `${RESEARCH_DOC} §Par-3 Length Tiers (GIR targets by length)`,
+    ],
+  },
+  approach_sg_50_125: approachSgFamily('approach_sg_50_125', 'approach_sg_per_shot_50_125'),
+  approach_sg_125_175: approachSgFamily('approach_sg_125_175', 'approach_sg_per_shot_125_175'),
+  approach_sg_175_plus: approachSgFamily('approach_sg_175_plus', 'approach_sg_per_shot_175_plus'),
+  lag_leave: {
+    family: 'lag_leave',
+    metric: 'lag_leave_inside_5ft_pct',
+    insight_type: 'putting',
+    sample_unit: 'putts',
+    // 04 §2: putts 20 per band (Clear 40).
+    floor: 20,
+    per_side_floor: null,
+    round_floor: 3,
+    gap_kind: 'proportion',
+    // The leave is counted; what a better leave saves is not (it assumes the
+    // player's own 3-putt rate after a short leave would apply).
+    impact: 'rough_estimate',
+    benchmark: 'team_pool',
+    cap: 'likely',
+    kappa: { value: 30, unit: 'putts' },
+    citations: [
+      `${RESEARCH_DOC} §Lag Putting (>25 ft) → 3-Putt Avoidance: second-putt distance is the proxy`,
+      `${RESEARCH_DOC} causal claims allowed: lag distance drives 3-putt rate`,
+    ],
+  },
+  under_reading: {
+    family: 'under_reading',
+    metric: 'putt_break_low_side_miss_pct',
+    insight_type: 'putting',
+    sample_unit: 'putts',
+    // 02 §7 #6: ≥ 20 side-tagged misses and tag coverage ≥ 60%.
+    floor: 20,
+    per_side_floor: null,
+    round_floor: 3,
+    gap_kind: 'proportion',
+    // The tags count the side of the miss, not what it cost.
+    impact: 'unsized',
+    // Low vs high on the player's own breaking-putt misses, against an even
+    // split (02 §7 #6: binomial vs 50% for high/low).
+    benchmark: 'self_other',
+    cap: 'observed',
+    kappa: { value: 30, unit: 'putts' },
+    citations: [`${RESEARCH_DOC} §Green Characteristics (slope and break)`],
+  },
 };
+
+/** One band of SG per approach (`02` §7 #16-18: the WHAT for the approach bands). */
+function approachSgFamily(family: AngleFamilyId, metric: string): AngleFamily {
+  return {
+    family,
+    metric,
+    insight_type: 'approach',
+    sample_unit: 'approaches',
+    floor: 20,
+    per_side_floor: null,
+    round_floor: 4,
+    gap_kind: 'mean',
+    impact: 'sg_baseline',
+    benchmark: 'team_pool',
+    // 02 §7 #16-18: Seen repeatedly (split-half stamped on the row).
+    cap: 'seen_repeatedly',
+    kappa: { value: 20, unit: 'shots' },
+    citations: [
+      SG_CITATION,
+      `${RESEARCH_DOC} §Proximity Benchmarks and §Wedge Play (75-125 yd): proximity is a driver, not the WHAT`,
+    ],
+  };
+}
 
 /** Window rule every angle reads (`02` §4: newest 40 countable rounds). */
 export const ANGLE_WINDOW_RULE = `newest_${ANGLE_ROUND_LIMIT}_countable_rounds`;
@@ -661,6 +774,19 @@ export interface AngleReadFields {
   /** The rounds counted (newest first); the base keeps it, so it matches `rounds_n`. */
   source_round_ids: string[];
   comparison: { primary: ComparisonLine; lines: ComparisonLine[] };
+  /**
+   * Split-half input for the Slice 1 support pass (`02` §2 stability): the gap
+   * in the older and newer halves of the window, in the support pass's own
+   * gap unit and sign (positive = worse; percentage points for a proportion).
+   */
+  stability?: { split_half: SplitHalfInput };
+}
+
+export interface SplitHalfInput {
+  gap_old: number;
+  gap_new: number;
+  n_old: number;
+  n_new: number;
 }
 
 /** Round ids newest first (by date, then id), whatever order the caller holds them in. */
