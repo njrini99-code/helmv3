@@ -79,6 +79,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
 import { runFocusAreaVerdicts } from '@/lib/coachhelm/v3/verdicts/verdict-job';
 import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
+import { loadCanaryPlayerTeams, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { runCheckpointLifecycle } from '@/lib/coachhelm/v3/lifecycle/job';
 
 export const runtime = 'nodejs';
@@ -177,7 +178,15 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   const staleBeforeIso = new Date(now - STALE_EVALUATION_MS).toISOString();
   let cursor = parseCursor(req.nextUrl.searchParams.get('cursor'));
   // Slice 3: with the flag on, v3 reads leave the age rules (2, 3).
-  const roundBasedArchive = isRecheckEnabled();
+  // HELM_COACHHELM_TEAMS canary: only for players on a canary team (one
+  // roster read per run when the variable is set, none when unset).
+  const canaryTeams = await loadCanaryPlayerTeams(supabase);
+  const globalRoundBasedArchive = canaryTeams ? false : isRecheckEnabled();
+  const roundBasedArchiveFor = (playerId: string | null): boolean => {
+    if (!canaryTeams) return globalRoundBasedArchive;
+    const teams = playerId ? canaryTeams.get(playerId) : undefined;
+    return teams !== undefined && runWithCoachHelmTeams(teams, isRecheckEnabled);
+  };
 
   type EvaluatedRow = {
     id: string;
@@ -256,7 +265,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     const evaluated: EvaluatedRow[] = [];
     for (const row of page) {
       try {
-        const patch = evaluateRow(row, now, nowIso, roundBasedArchive);
+        const patch = evaluateRow(row, now, nowIso, roundBasedArchiveFor(row.player_id));
         if (!patch) continue;
         evaluated.push({
           id: row.id,

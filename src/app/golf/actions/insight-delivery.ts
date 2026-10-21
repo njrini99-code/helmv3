@@ -54,7 +54,14 @@ import {
 } from './insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG, type FoldedRead, type ReadsDeliveryPlan } from './insight-delivery-reads';
 import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import {
+  coachhelmTeamAllowlist,
+  isCoachHelmFlagEnabled,
+  loadCanaryTeamsForPlayers,
+  runWithCoachHelmTeams,
+  withPlayerCoachHelmTeams,
+} from '@/lib/coachhelm/canary';
+import { isFlagEnabled } from '@/lib/flags';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -382,12 +389,39 @@ async function readsDeliveryPlan(
   playerIds: readonly string[],
   includeMore = false,
 ): Promise<ReadsDeliveryPlan> {
-  if (!isFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
+  const allow = coachhelmTeamAllowlist();
+  if (allow) return canaryReadsDeliveryPlan(supabase, playerIds, includeMore, allow);
+  if (!isCoachHelmFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
   // null: the focus-area read failed (logged by the loader). Fold without
   // pins rather than not at all; a read behind a focus could then fold, as it
   // did before the pin rule, and nothing else changes.
   const pinned = await loadPinnedReadIds(supabase, playerIds);
   return { fold: true, cap: !includeMore, pinned: pinned ?? undefined };
+}
+
+/**
+ * HELM_COACHHELM_TEAMS canary: the plan is decided per player, each in that
+ * player's canary teams' scope (one batched team read), so a coach's mixed
+ * feed folds and caps the listed players' reads and leaves the rest as they
+ * were. A failed team read leaves every player out (fail closed).
+ */
+async function canaryReadsDeliveryPlan(
+  supabase: SupabaseClient,
+  playerIds: readonly string[],
+  includeMore: boolean,
+  allow: ReadonlySet<string>,
+): Promise<ReadsDeliveryPlan> {
+  if (!isFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
+  // null: the team read failed (logged); no player gets the plan.
+  const teamsByPlayer = await loadCanaryTeamsForPlayers(supabase, playerIds, allow);
+  const players = new Set(
+    playerIds.filter((id) =>
+      runWithCoachHelmTeams(teamsByPlayer?.get(id) ?? [], () => isCoachHelmFlagEnabled(READS_V1_FLAG)),
+    ),
+  );
+  if (players.size === 0) return { fold: false, cap: false };
+  const pinned = await loadPinnedReadIds(supabase, [...players]);
+  return { fold: true, cap: !includeMore, pinned: pinned ?? undefined, players };
 }
 
 /** insight id → rank score, for `recordExposureForReturned`. Not exported:
@@ -594,7 +628,10 @@ export async function getTopInsightForPlayer(
   playerId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight | null> {
-  return observedGetTopInsightForPlayer(playerId, supabaseOverride);
+  // HELM_COACHHELM_TEAMS canary: the player's team scope (no read when unset).
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetTopInsightForPlayer(playerId, supabaseOverride),
+  );
 }
 
 /**
@@ -801,7 +838,9 @@ export async function getInsightsForPlayer(
   opts: GetInsightsForPlayerOptions = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight[]> {
-  return observedGetInsightsForPlayer(playerId, opts, supabaseOverride);
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetInsightsForPlayer(playerId, opts, supabaseOverride),
+  );
 }
 
 /**
@@ -1359,7 +1398,9 @@ export async function getRoundTakeawayInsight(
   roundId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight | null> {
-  return observedGetRoundTakeawayInsight(playerId, roundId, supabaseOverride);
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetRoundTakeawayInsight(playerId, roundId, supabaseOverride),
+  );
 }
 
 // ---------------------------------------------------------------------------

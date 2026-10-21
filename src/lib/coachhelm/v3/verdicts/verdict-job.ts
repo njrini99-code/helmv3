@@ -28,7 +28,9 @@ import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordInAppNotification } from '@/lib/notifications/in-app';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
-import { isVerdictsEnabled } from './flag';
+import { isFlagEnabled } from '@/lib/flags';
+import { loadCanaryPlayerTeams, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { VERDICTS_FLAG, isVerdictsEnabled } from './flag';
 import type { Criterion, Horizon } from './criterion';
 import { verdictMetricFor, type VerdictMetricDef, type RoundCacheCountColumn } from './metrics';
 import { countCacheByRound, countPuttsByRound, type PuttShotRow, type RoundCacheRow, type RoundCounts } from './post-counts';
@@ -77,7 +79,17 @@ const emptySummary = (): VerdictJobSummary => ({
 });
 
 export async function runFocusAreaVerdicts(supabase: Client, now: Date = new Date()): Promise<VerdictJobSummary> {
-  if (!isVerdictsEnabled()) return { ...emptySummary(), ran: false, reason: 'flag_off' };
+  // HELM_COACHHELM_TEAMS canary: with a team list the job runs only for the
+  // players on a listed team, each read in its teams' scope (one roster read).
+  // Unset: null, no read, and the flag alone decides as before.
+  if (!isFlagEnabled(VERDICTS_FLAG)) return { ...emptySummary(), ran: false, reason: 'flag_off' };
+  const canaryTeams = await loadCanaryPlayerTeams(supabase);
+  const inCanary = (playerId: string): boolean => {
+    const teams = canaryTeams?.get(playerId);
+    return teams !== undefined && runWithCoachHelmTeams(teams, isVerdictsEnabled);
+  };
+  const enabled = canaryTeams ? [...canaryTeams.keys()].some(inCanary) : isVerdictsEnabled();
+  if (!enabled) return { ...emptySummary(), ran: false, reason: 'flag_off' };
   const summary = emptySummary();
 
   const { data: areaRows, error: areaError } = await fetchAllRowsResult<CandidateArea>((from, to) =>
@@ -106,6 +118,7 @@ export async function runFocusAreaVerdicts(supabase: Client, now: Date = new Dat
   // Keep only areas whose stored prescription is complete and whose metric has a count source.
   const work: Array<{ area: CandidateArea; def: VerdictMetricDef; horizonAttempts: number; start: string }> = [];
   for (const area of areaRows ?? []) {
+    if (canaryTeams && !inCanary(area.player_id)) continue;
     summary.candidates += 1;
     const def = verdictMetricFor(resolveFocusTargetMetric(area.target_metric) ?? area.target_metric);
     const horizonAttempts = area.horizon?.attempts;

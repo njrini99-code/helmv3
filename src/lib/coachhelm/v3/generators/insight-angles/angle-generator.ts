@@ -18,7 +18,7 @@
  */
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import type { ComposedContent, GeneratorAggregate, RunResult } from '@/lib/coachhelm/v3/engine/types';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { INSIGHT_ANGLES_FLAG, type AngleData, type PeerRound, type TourThreePutt } from './angle-data';
 import type { TeamShotData } from './counted-shots';
 
@@ -55,7 +55,7 @@ export abstract class AngleGenerator<A extends GeneratorAggregate> extends BaseG
   }
 
   override async run(): Promise<RunResult> {
-    if (!isFlagEnabled(INSIGHT_ANGLES_FLAG)) return { id: null, gated: true, status: 'gated', retracted: 0 };
+    if (!isCoachHelmFlagEnabled(INSIGHT_ANGLES_FLAG)) return { id: null, gated: true, status: 'gated', retracted: 0 };
     return super.run();
   }
 }

@@ -123,6 +123,7 @@ jobs:
         id: should-scan
         env:
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
           IS_DRAFT: ${{ github.event.pull_request.draft == true }}
           CHANGES_RESULT: ${{ needs.detect-changes.result }}
           LANGUAGE_CHANGED: >-
@@ -135,6 +136,9 @@ jobs:
           elif [ "$IS_DRAFT" = "true" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
             echo "reason=draft PR (owner decision, PR throughput) — nothing is required until ready_for_review" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_ACTION" = "synchronize" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "reason=follow-up push to a PR (owner decision 2026-10-21, CI throughput): the PR was scanned when it opened or became ready, and main is scanned on every merge" >> "$GITHUB_OUTPUT"
           elif [ "$CHANGES_RESULT" != "success" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "reason=path filter did not succeed (result: $CHANGES_RESULT) — failing open to a real scan" >> "$GITHUB_OUTPUT"

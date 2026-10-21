@@ -3,7 +3,7 @@
  * input validation, who may correct what, and the row that is written.
  * Synthetic ids only.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const INSIGHT = '3f2b8c1e-5a6d-4e7f-9a0b-1c2d3e4f5a6b';
 const USER = 'user-1';
@@ -152,6 +152,38 @@ describe('recordCoachHelmCorrection: flag and table', () => {
     const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'confirm' });
     expect(result).toEqual({ status: 'failed', error: 'Could not save the correction.' });
     expect(state.logServerError).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('recordCoachHelmCorrection: HELM_COACHHELM_TEAMS canary', () => {
+  afterEach(() => {
+    delete process.env.HELM_COACHHELM_TEAMS;
+  });
+
+  it('a coach of a listed team: recorded (the flag is read in the player’s team scope)', async () => {
+    process.env.HELM_COACHHELM_TEAMS = TEAM;
+    asCoach();
+    const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'not_this' });
+    expect(result).toEqual({ status: 'recorded', id: 'corr-1' });
+  });
+
+  it('a player on no listed team: flag off, nothing written', async () => {
+    process.env.HELM_COACHHELM_TEAMS = OTHER_TEAM;
+    asCoach();
+    const result = await recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'not_this' });
+    expect(result).toEqual({ status: 'not_available', reason: 'flag_off' });
+    expect(state.inserts).toEqual([]);
+  });
+
+  it('the global flag off: flag off before any read', async () => {
+    process.env.HELM_COACHHELM_TEAMS = TEAM;
+    state.flagOn = false;
+    asCoach();
+    await expect(recordCoachHelmCorrection({ insightId: INSIGHT, kind: 'not_this' })).resolves.toEqual({
+      status: 'not_available',
+      reason: 'flag_off',
+    });
+    expect(state.tablesTouched).toEqual([]);
   });
 });
 

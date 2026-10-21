@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeSupabase, type FakeCall, type FakeResponse } from './fake-supabase';
 
 const flag = vi.hoisted(() => ({ on: false }));
@@ -174,6 +174,35 @@ describe('runFocusAreaVerdicts', () => {
     const summary = await runFocusAreaVerdicts(client, NOW);
     expect(summary.written).toEqual({});
     expect(recordInAppNotification).not.toHaveBeenCalled();
+  });
+
+  describe('HELM_COACHHELM_TEAMS canary', () => {
+    afterEach(() => {
+      delete process.env.HELM_COACHHELM_TEAMS;
+    });
+
+    it('judges only the areas of players on a listed team', async () => {
+      flag.on = true;
+      process.env.HELM_COACHHELM_TEAMS = 't1';
+      const { client, calls } = world({
+        'golf_team_members:select': () => ({ data: [{ player_id: 'p1', team_id: 't1' }], error: null }),
+      });
+      const summary = await runFocusAreaVerdicts(client, NOW);
+      // p2's two areas are left out; p1's is judged as before.
+      expect(summary).toMatchObject({ ran: true, candidates: 1, written: { got_worse: 1 } });
+      expect(calls.find((c) => c.table === 'golf_team_members')!.steps).toContainEqual(['in', ['team_id', ['t1']]]);
+    });
+
+    it('no player on a listed team: flag off, no focus-area read', async () => {
+      flag.on = true;
+      process.env.HELM_COACHHELM_TEAMS = 't1';
+      const { client, calls } = world({
+        'golf_team_members:select': () => ({ data: [], error: null }),
+      });
+      const summary = await runFocusAreaVerdicts(client, NOW);
+      expect(summary).toMatchObject({ ran: false, reason: 'flag_off' });
+      expect(calls.map((c) => c.table)).toEqual(['golf_team_members']);
+    });
   });
 
   it('a failed count load stops the run without writing a verdict on partial data', async () => {
