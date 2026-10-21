@@ -352,9 +352,13 @@ SELECT throws_ok(
   '42501', NULL, 'an invite cannot be moved to an organization the inviter may not invite to');
 
 -- A head coach whose staff row was soft-removed keeps the flags but is out.
+-- The baseball bridge also grants every coach in the organization a Lift Lab
+-- editor viewer row, which opens the invite policy on its own; drop it so the
+-- case isolates the staff-status predicate.
 RESET ROLE;
 UPDATE public.baseball_team_coach_staff SET status = 'removed'
 WHERE coach_id = '00000000-0000-0000-0000-0000000c1c05';
+DELETE FROM public.helm_lifting_org_viewers WHERE user_id = '00000000-0000-0000-0000-0000000c1a05';
 SET LOCAL ROLE authenticated;
 SELECT pg_temp.as_user('00000000-0000-0000-0000-0000000c1a05');
 SELECT throws_ok(
