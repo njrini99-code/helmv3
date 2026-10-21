@@ -13,9 +13,14 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Status: approved. The owner's v2 phone board is the spec (D-22): `design/handoff/Coach - Home - Mobile.html`, `m-home.jsx`, `m-home.css`, on the v2 shell (`m-shell.jsx`, `gh-nav.js`). It replaces the earlier draft in this file. Built 2026-09-30 as `src/clubhouse/screens/home/HomePhone.tsx` (the iPhone pass is open).
+Status: approved. The owner's v2 phone board is the spec (D-22):
+`design/handoff/Coach - Home - Mobile.html`, `m-home.jsx`, `m-home.css`, on the
+v2 shell (`m-shell.jsx`, `gh-nav.js`). It replaces the earlier draft in this
+file. Built 2026-09-30 as `src/clubhouse/screens/home/HomePhone.tsx` (the iPhone
+pass is open).
 
-The boards: practice day, competition day, quiet day, no events, and a round's scorecard, then the loading and empty phones (`GHBoards`).
+The boards: practice day, competition day, quiet day, no events, and a round's
+scorecard, then the loading and empty phones (`GHBoards`).
 
 ## Layout, top to bottom
 
@@ -36,24 +41,42 @@ The boards: practice day, competition day, quiet day, no events, and a round's s
 ## Differences from the board (Q-66)
 
 - **No leaderboard on the phone.** The board has none; desktop keeps it.
-- **"Needs you" rail.** `m-home.jsx` defines it but `HomeM` never draws it, so it isn't built.
-- **Team chevron.** The board's team button has a chevron (a team switcher). The hero bar's team stays a label, not a dead control: a head coach on two or more teams switches from the More sheet's Team list (CH-1814).
-- **Workout chip.** There is no workout event type; the fourth quick type is Meeting.
-- **Round recap.** No single-round review is rebuilt; the sheet's primary is Player stats.
-- **"First tee 8:42" for competitions.** The card shows the event's own time range for every type.
-- **Waiting on you and The team's game (drafts, spec B).** Not on the board: the coach's parity with Player Home (owner, 2026-10-21). Drafted to the board's own rows (the hero's text, the sheet's hairline rows), no cards, no new colour; to confirm with the next board pass (Q-66).
-- **Round recap → CoachHelm.** The round sheet adds CoachHelm (the player's deep dive) after Player stats, as the player peek does (spec B §3).
+- **"Needs you" rail.** `m-home.jsx` defines it but `HomeM` never draws it, so
+  it isn't built.
+- **Team chevron.** The board's team button has a chevron (a team switcher). The
+  hero bar's team stays a label, not a dead control: a head coach on two or more
+  teams switches from the More sheet's Team list (CH-1814).
+- **Workout chip.** There is no workout event type; the fourth quick type is
+  Meeting.
+- **Round recap.** No single-round review is rebuilt; the sheet's primary is
+  Player stats.
+- **"First tee 8:42" for competitions.** The card shows the event's own time
+  range for every type.
+- **Waiting on you and The team's game (drafts, spec B).** Not on the board: the
+  coach's parity with Player Home (owner, 2026-10-21). Drafted to the board's
+  own rows (the hero's text, the sheet's hairline rows), no cards, no new
+  colour; to confirm with the next board pass (Q-66).
+- **Round recap → CoachHelm.** The round sheet adds CoachHelm (the player's deep
+  dive) after Player stats, as the player peek does (spec B §3).
 
 ## States
 
 - Loading: the Home skeleton (CH-2401).
-- A failed read shows its notice in place: the week (CH-2201, in the hero), rounds (CH-2202), team scoring (CH-2211). Never an empty state.
-- Each section crashes on its own (CH-2212 to CH-2214, CH-2205, CH-2206, CH-2221 for the team's game).
-- The team's game: up-and-down (CH-2218) and Tour marks (CH-2219) that didn't load say so above the rows; no hole-by-hole rounds (CH-2314); nobody ranked yet (CH-2315).
-- Waiting on you: a part that didn't load is left out and the line ends "· some items didn't load" (CH-2220).
-- First run (no players, events or rounds): the v2 page empty state, on desktop and phone (CH-2308).
+- A failed read shows its notice in place: the week (CH-2201, in the hero),
+  rounds (CH-2202), team scoring (CH-2211). Never an empty state.
+- Each section crashes on its own (CH-2212 to CH-2214, CH-2205, CH-2206, CH-2221
+  for the team's game).
+- The team's game: up-and-down (CH-2218) and Tour marks (CH-2219) that didn't
+  load say so above the rows; no hole-by-hole rounds (CH-2314); nobody ranked
+  yet (CH-2315).
+- Waiting on you: a part that didn't load is left out and the line ends "· some
+  items didn't load" (CH-2220).
+- First run (no players, events or rounds): the v2 page empty state, on desktop
+  and phone (CH-2308).
 - No team: CH-2307.
 
 ## Gestures and haptics
 
-Selection when a round's sheet opens; a light tap on Add event; nothing else. The sheet drags shut (the shell's CH-1611). Reduced motion turns off the press and reveal.
+Selection when a round's sheet opens; a light tap on Add event; nothing else.
+The sheet drags shut (the shell's CH-1611). Reduced motion turns off the press
+and reveal.

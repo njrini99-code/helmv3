@@ -138,12 +138,13 @@ Home calls no server action. The loaders are the services.
 
 ```text
 Tables:   golf_team_settings (timezone), golf_team_members joined to golf_players (the roster), golf_conversations
-          (the team chat), golf_events and golf_event_attendance (the week), golf_rounds (the season), golf_holes;
-          the four parts: golf_teams (gender: the tour), golf_round_stats_cache (the Last 10's hole rounds),
-          golf_pga_standards (the Tour's marks); Waiting on you: golf_team_join_requests (pending, count only),
-          golf_events and golf_event_attendance (this week's events that take replies), golf_tasks and
-          golf_task_assignments, golf_announcements (getAnnouncementsWithMeta) with golf_announcement_recipients and
-          golf_announcement_acknowledgements
+          (the team chat), golf_events and golf_event_attendance (the week),
+          golf_rounds (the season), golf_holes; the four parts: golf_teams
+          (gender: the tour), golf_round_stats_cache, golf_pga_standards;
+          Waiting on you: golf_team_join_requests (count only), golf_events
+          and golf_event_attendance (this week's replies), golf_tasks and
+          golf_task_assignments, golf_announcements with their recipients
+          and acknowledgements
 RPCs:     none
 Storage:  none
 Realtime: none

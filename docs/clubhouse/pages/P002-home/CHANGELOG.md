@@ -1,14 +1,21 @@
 # P002 — Home: changelog
 
-
 ## 2026-10-21 — Coach Home parity: the team's game, Waiting on you, CoachHelm, Nudge
 
 ```text
-Design package: /mnt/project-files/coach-parity/spec-B-coach-home.md (spec B, decided)
+Design package: coach-parity spec B (spec-B-coach-home.md, decided)
 PR/commit:      parity/coach-home (local)
-Contract IDs:   20104, 20105 (new); 20103, 22301 (meanings extended); 20414, 20415, 20619 to 20622 (minted for CH-2314, CH-2315, CH-2218 to CH-2221)
-Actions:        ACT-P002-QUEUE-JOINS, -QUEUE-REPLIES, -QUEUE-TASKS, -QUEUE-POSTS, ACT-P002-NUDGE-NEXT, ACT-P002-OPEN-LEG-PLAYER, ACT-P002-OPEN-COACHHELM-PLAYER
-Data impact:    reads only; Coach Home also reads golf_teams, golf_round_stats_cache, golf_pga_standards, golf_team_join_requests, golf_tasks, golf_task_assignments and the announcements with their recipients and acknowledgements. No migration.
+Contract IDs:   20104, 20105 new; 20103, 22301 extended;
+                20414, 20415, 20619-20622 minted (CH-2314, CH-2315,
+                CH-2218 to CH-2221)
+Actions:        ACT-P002-QUEUE-JOINS, -REPLIES, -TASKS, -POSTS,
+                ACT-P002-NUDGE-NEXT, ACT-P002-OPEN-LEG-PLAYER,
+                ACT-P002-OPEN-COACHHELM-PLAYER
+Data impact:    reads only, no migration: golf_teams,
+                golf_round_stats_cache, golf_pga_standards,
+                golf_team_join_requests, golf_tasks,
+                golf_task_assignments, the announcements with their
+                recipients and acknowledgements
 Held items:     none
 ```
 

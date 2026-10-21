@@ -1,10 +1,9 @@
 # P010 — Team Hub: changelog
 
-
 ## 2026-10-21 — Team Hub's counts shared with Coach Home
 
 ```text
-Design package: none (Coach Home spec B §2: "Waiting on you" counts as Team Hub counts)
+Design package: none (Coach Home spec B §2, counts as the Hub)
 PR/commit:      parity/coach-home (local)
 Contract IDs:   none changed
 Actions:        none

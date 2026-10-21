@@ -1,6 +1,5 @@
 # Clubhouse changelog
 
-
 ## 2026-10-21 — The player peek opens CoachHelm
 
 The player peek (CH-1832, `ui/PlayerPeek.tsx`) adds a fourth action,
