@@ -77,6 +77,12 @@ still use `getPlayerStatsDashboardBundle`.
 
 ## Business Rules
 
+- Player Stats rounds Fairways, GIR, Scrambling and Sand saves once, from their
+  hit and attempt counts (`withExactHeadlineRates`; 61.46% shows 61%, not 62%)
+  (2026-10-17). Per-par splits, putt bands, 30-day deltas and the
+  cached stat tiles still round twice. Team strokes gained averages each
+  round's SG, so a 9-hole round counts as a full round (open; recommended: per
+  18 holes, changed in TS and the `sg_*_per_round` function together).
 - Round and shot data remain the source of truth; cached stats are derived.
 - Test data (OD-03, 2026-09-27): rounds with `golf_rounds.is_test = true` are
   QA/demo rows. Every player- and coach-facing stats read in `stats-data.ts`,
@@ -356,7 +362,9 @@ still use `getPlayerStatsDashboardBundle`.
 
 Behind the flag, `/golf/dashboard/stats` renders Clubhouse Stats (`src/clubhouse/routes/stats.tsx`): team stats for
 coaches, `?player=<id>` profiles for coaches (team members only), and the player's own profile for players (`?player`
-ignored). Windows: `?window=last10|season|qualifiers`. Shot-level detail comes from `getDetailedStats` behind its
+ignored). Windows: `?window=last10|season|qualifiers`; Last N counts 5, 10 (default) or 20 rounds (`?last=5|20`, read only with
+`last10`; "vs previous N" compares the N rounds before). Every Last N reads the same rolling year (`lastTenFloor`, Q-122), so Last 20 and its
+previous 20 count only the rounds of the last twelve months: a player with fewer than 23 there has no "vs previous 20". Clubhouse putt bands are cut from `lib/golf/putt-make.ts`. Shot-level detail comes from `getDetailedStats` behind its
 existing access gate; D1 benchmarks from `golf_pga_standards.div1_avg_value` (LPGA for a women's team, PGA fallback).
 Checklists: `docs/clubhouse/screens/stats-team.md`, `stats-player.md`.
 

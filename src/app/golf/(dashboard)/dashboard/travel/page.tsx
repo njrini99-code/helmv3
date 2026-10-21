@@ -11,6 +11,8 @@ import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTravel } from '@/components/fairway/pages/travel';
 import { ViewHeader, Surface, EmptyState, Button } from '@/components/fairway';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { todayIsoInZone } from '@/lib/golf/timezone';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 
 export const metadata: Metadata = {
   title: 'Travel',
@@ -102,15 +104,27 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
   // cap so every trip is available to the client; the secondary `.order('id')`
   // is a STABLE tiebreaker that keeps page boundaries deterministic without
   // changing the primary departure_date-ascending order both forks expect.
-  const { data: itinerariesRaw, error: itinerariesError } = await fetchAllRowsResult((from, to) =>
-    supabase
-      .from('golf_travel_itineraries')
-      .select('*')
-      .eq('team_id', teamId)
-      .order('departure_date', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, to),
-  );
+  // QA itineraries (is_test, OD-03) stay out of the list, like the other golf
+  // list reads. The team's timezone is read beside it: trips are grouped and
+  // counted down by calendar day, and "today" is the team's wall-clock date
+  // (as on the Team Hub), not the deployment's UTC date, which runs a day
+  // ahead of a US team every evening.
+  const [{ data: itinerariesRaw, error: itinerariesError }, teamZoneResult] = await Promise.all([
+    fetchAllRowsResult((from, to) =>
+      supabase
+        .from('golf_travel_itineraries')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('is_test', false)
+        .order('departure_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to),
+    ),
+    supabase.from('golf_teams').select('timezone').eq('id', teamId).maybeSingle(),
+  ]);
+  // Display-only: an unreadable zone falls back to the Team Hub's default
+  // rather than failing the page.
+  const todayInTeamZone = todayIsoInZone(teamZoneResult.data?.timezone || 'America/New_York');
 
   // The `error` is READ — the same defect the baseball travel page had (#1404).
   // fetchAllRowsResult returns { data, error } and only `data` was taken, so a
@@ -126,7 +140,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
   }
 
   // Resolve titles for any linked golf_events so the Fairway detail panel can
-  // surface "Linked to: <event>" without a second client-side fetch. event_id is
+  // name the linked event ("On the calendar") without a second client fetch. event_id is
   // round-tripped below so the create/edit picker prefills on re-edit (it was
   // previously dropped from the mapped object → the picker silently un-linked).
   const linkedEventIds = Array.from(
@@ -134,11 +148,19 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
   );
   const eventTitleById = new Map<string, string>();
   if (linkedEventIds.length > 0) {
-    const { data: linkedEvents } = await supabase
+    const { data: linkedRows } = await supabase
       .from('golf_events')
-      .select('id, title')
+      .select('id, title, event_type')
       .in('id', linkedEventIds);
-    for (const ev of linkedEvents || []) {
+    // A trip linked to a meeting the player is not invited to shows no
+    // "Linked to" title (meeting-visibility.ts). Coaches are unchanged.
+    const linkedEvents = isCoach
+      ? linkedRows ?? []
+      : await filterMeetingsForPlayer(supabase, linkedRows ?? [], player?.id, {
+          action: 'golf.travelPage.meetingInvites',
+          featureArea: 'travel',
+        });
+    for (const ev of linkedEvents) {
       if (ev.id) eventTitleById.set(ev.id, ev.title || '');
     }
   }
@@ -166,6 +188,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
     room_assignments: typeof item.room_assignments === 'string' ? item.room_assignments : (item.room_assignments && typeof item.room_assignments === 'object' && !Array.isArray(item.room_assignments) && 'text' in item.room_assignments ? String(item.room_assignments.text) : (item.room_assignments ? JSON.stringify(item.room_assignments) : null)),
     uniform_requirements: item.uniform_requirements,
     gear_list: Array.isArray(item.gear_list) ? item.gear_list.join(', ') : (item.gear_list as string | null),
+    gear_items: Array.isArray(item.gear_list) ? item.gear_list.filter((g) => g.trim().length > 0) : null,
     notes: item.notes,
     created_at: item.created_at,
   }));
@@ -179,7 +202,7 @@ export default async function GolfTravelPage({ searchParams }: GolfTravelPagePro
         coachId={coach?.id || ''}
         teamId={teamId}
         isCoach={isCoach}
-        nowISO={new Date().toISOString().slice(0, 10)}
+        nowISO={todayInTeamZone}
         initialTripId={initialTripId}
       />
     </div>

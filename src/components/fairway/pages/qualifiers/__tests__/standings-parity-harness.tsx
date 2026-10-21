@@ -47,25 +47,28 @@ export async function runFairway(fx: ParityFixture): Promise<Standing[]> {
         if (!/Selected|Not selected/.test(container.querySelector('table')!.textContent ?? '')) throw new Error('selections');
       });
     }
-    const drawn = [...container.querySelectorAll('table tbody tr')].filter((tr) => tr.children.length === 6);
+    // A player's row is the one with the player link (cut lines and opened detail panels are one-cell rows).
+    // Cells: position, player (avatar, link, lineup chip), rounds ("played/of"), avg, total, to par, details.
+    const drawn = [...container.querySelectorAll('table tbody tr')].filter((tr) => tr.querySelector('a[href*="player="]'));
     const out: Standing[] = [];
     let order = 0;
     for (const tr of drawn) {
       const td = [...tr.children].map((c) => (c.textContent ?? '').trim());
       const link = tr.querySelector('a[href*="player="]')!;
       const playerId = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('player')!;
-      const badge = td[1]!.slice((link.textContent ?? '').length).trim();
+      // The chip sits beside the link, after the avatar's initials.
+      const badge = (link.parentElement!.textContent ?? '').slice((link.textContent ?? '').length).trim();
       const scored = td[0] !== '—';
       out.push({
         playerId,
         scored,
         label: scored ? td[0]! : null,
         order: scored ? order++ : null,
-        played: num(td[2]!) ?? 0,
+        played: num(td[2]!.split('/')[0]!) ?? 0,
         total: num(td[4]!),
         toPar: toParOf(td[5]!),
         avg: td[3] === '—' ? null : td[3]!,
-        cut: !scored ? null : badge === 'In lineup' || badge === 'Selected' ? 'in' : badge === 'Bubble' ? 'bubble' : 'out',
+        cut: !scored ? null : badge === 'In lineup' || badge === 'Selected' ? 'in' : badge === 'Bubble' ? 'bubble' : badge === 'Tie at cut' ? 'tie' : 'out',
       });
     }
     // With nobody scored Fairway draws no table, only "Awaiting first round": every entrant is unscored.

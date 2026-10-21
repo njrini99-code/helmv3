@@ -86,7 +86,7 @@ the rail version stays until this page's v2 pass.
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 70401 | CH-7301 | `NO_CONVERSATIONS_YET` | No conversations yet |
-| 70402 | CH-7302 | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | A rail search or the Unread filter has nothing |
+| 70402 | CH-7302 | `A_RAIL_SEARCH_OR_THE_UNREAD_FILTER` | A rail search or a filter has nothing |
 | 70403 | CH-7303 | `NO_MESSAGE_MENTIONS_THE_SEARCH` | No message mentions the search |
 | 70404 | CH-7304 | `A_THREAD_WITH_NO_MESSAGES` | A thread with no messages |
 | 70405 | CH-7305 | `NOTHING_OPEN` | Nothing open |
@@ -111,6 +111,7 @@ the whole team. Message fields stop at 5,000 characters, the server's limit.
 | 70503 | CH-7103 | `AN_ANNOUNCEMENT_WITH_NO_BODY` | An announcement with no body |
 | 70504 | CH-7104 | `A_GROUP_WITH_NO_NAME` | A group with no name |
 | 70505 | CH-7105 | `NOBODY_CHOSEN` | Nobody chosen, or a coach's group with no player |
+| 70506 | CH-7106 | `MORE_THAN_TEN_FILES_PICKED_FOR_ONE` | More than ten files picked for one message (desktop or phone composer, phone New message) |
 
 ## 06 — Server / system error
 
@@ -158,6 +159,7 @@ do; every section that fails to load has its own notice with Try again (70617 to
 | 70634 | CH-7023 | `ATTACHMENT_SEND_CANNOT_BE_CONFIRMED` | Attachment send cannot be confirmed |
 | 70635 | CH-7217 | `PENDING_ATTACHMENT_RECOVERY_CANNOT_BE_CHECKED` | Pending attachment recovery cannot be checked |
 | 70636 | CH-7024 | `REMOVING_SOMEONE_FROM_A_GROUP_FAILS` | Removing someone from a group fails (the group's creator, desktop or phone Details › Remove) |
+| 70637 | CH-7025 | `DELETING_A_CONVERSATION_FROM_YOUR_INBOX_FAILS` | Deleting a conversation from your inbox fails |
 
 ## 07 — Network / offline
 
@@ -173,7 +175,8 @@ CH-1905.
 | --- | --- | --- | --- |
 | 70701 | CH-7005 | `THE_NETWORK_DROPS_MID_SEND` | The network drops mid-send (Safari's "Load failed", Chrome's "Failed to fetch", Firefox's "NetworkError…": the same test the bubble's CH-7017 uses, so the toast and the bubble agree; the browser's text is never shown) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -307,7 +310,11 @@ rise. Reduced motion and Animations off make every swap instant.
 | 71605 | CH-7605 | `OPENING_ANOTHER_CONVERSATION_OR_ANNOUNCEMENT` | Opening another conversation or announcement (desktop) |
 | 71606 | CH-7606 | `CHANGING_THE_INBOX_FILTER_ON_THE_PHONE` | Changing the inbox filter on the phone (All, Unread, Groups) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -325,7 +332,9 @@ CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707.
 | 71703 | CH-7703 | `PICKING_A_REACTION_A_FILTER_OR_A` | Picking a reaction, a filter or a conversation |
 | 71704 | CH-7704 | `A_LONG_PRESS_ON_A_MESSAGE_2` | A long press on a message (phone) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -352,7 +361,12 @@ CH-1842, 11825 CH-1816.
 | 71803 | CH-7803 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 | 71804 | CH-7804 | `PHONE_A_MESSAGES_ACTIONS_HAVE_A_PATH` | Phone: a message's actions have a path besides the long press (a "Message actions" button VoiceOver and keyboards reach, or a right click); each pushed screen is named by its title, and its back link names where it goes ("Back to Messages", "Back to Chat"). New message opens on its title; a hardware keyboard's Esc is Cancel, and focus returns to New message |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { ChevronRight, Compass, Flag, Play, Target } from 'lucide-react';
+import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
+import { meaningfulReason, readLines, writeUpFor } from '../../../data/coachhelm-read-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChSessionState } from '../../../lib/session-state';
@@ -24,12 +25,13 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
+import { ClearedLines, EngineState, WhyAudit } from '../EngineState';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
 
 /**
- * The write-up without the drill, when "This week" draws it (P013 D6): a sentence that opens with the drill's first three words is
+ * The write-up without the drill, when the read's Next line draws it (P013 D6): a sentence that opens with the drill's first three words is
  * the drill again. Nothing else is touched; with no drill, or no such sentence, the write-up is as written.
  */
 export function withoutDrill(why: string, drill: string | null | undefined): string | null {
@@ -128,9 +130,12 @@ function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; 
         </ul>
       ) : (
         !themesFailed && (
-          <p className="ch-hd-none" data-ch-code="CH-13383">
-            No trend yet. A read needs a few more rounds behind it before it can say which way it is moving, and this one will show it when it can.
-          </p>
+          <EmptyState
+            compact
+            code="CH-13383"
+            title="No trend yet"
+            body="A read needs a few more rounds behind it before it can say which way it is moving, and this one will show it when it can."
+          />
         )
       )}
     </Section>
@@ -151,11 +156,16 @@ function Rounds({ i, failed, covered = false }: { i: ChDeepInsight; failed: bool
           ))}
         </ol>
       ) : (
-        <p className="ch-hd-none" data-ch-code="CH-13382">
-          {total > 0
-            ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. They may be rounds you have since removed.`
-            : 'This read does not name the rounds it was made from. It uses your stats over the window above, so there is no list to show.'}
-        </p>
+        <EmptyState
+          compact
+          code="CH-13382"
+          title={total > 0 ? 'None of the rounds can be listed' : 'No rounds are named'}
+          body={
+            total > 0
+              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. They may be rounds you have since removed.`
+              : 'This read does not name the rounds it was made from. It uses your stats over the window above, so there is no list to show.'
+          }
+        />
       )}
     </Section>
   );
@@ -189,21 +199,23 @@ function RoundRow({ r }: { r: ChDiveRound }) {
 }
 
 function Why({ i }: { i: ChDeepInsight }) {
-  const d = i.diagnosis;
-  const why = i.base.why ? withoutDrill(i.base.why, i.base.week?.text) : null;
-  if (!d && !why) return null;
+  // The cause and its basis are the read's Why line, above (an inferred one is never the player's). Here: what it counted, why the
+  // read is as sure as it is (not the generators' stock "sample adequate"), and the generator's own words in full (its first
+  // sentence too, which the read's What line now says in numbers).
+  const drivers = i.diagnosis?.drivers ?? [];
+  const reason = meaningfulReason(i.diagnosis?.reason);
+  // A cause this viewer is not shown is not said here either: its sentences leave the write-up with it.
+  const told = writeUpFor([i.base.lede, i.base.why].filter(Boolean).join(' '), i.read.why.level !== null);
+  const why = told ? withoutDrill(told, i.base.week?.text) : null;
+  const box = drivers.length > 0 || !!reason;
+  if (!box && !why) return null;
   return (
     <Section id={`${i.base.id}-why`} title="Why CoachHelm thinks so">
-      {d && (
+      {box && (
         <div className="ch-hd-dx">
-          {/* A hypothesis is inferred from where you stand against others, never a thing CoachHelm saw: it is marked so it is not read as fact. */}
-          <span className={'ch-hd-dx__lvl is-' + d.level} data-ch-code="CH-13982">
-            {d.level === 'observed' ? 'Measured in your shots' : 'Likely, not measured'}
-          </span>
-          <p className="ch-hd-dx__c">{sentence(d.cause)}</p>
-          {d.drivers.length > 0 && (
+          {drivers.length > 0 && (
             <dl className="ch-hd-dx__d">
-              {d.drivers.map((x) => (
+              {drivers.map((x) => (
                 <div key={x.label}>
                   <dt>{x.label}</dt>
                   <dd className="ch-num">
@@ -214,16 +226,83 @@ function Why({ i }: { i: ChDeepInsight }) {
               ))}
             </dl>
           )}
-          {d.reason && <p className="ch-hd-dx__r">{sentence(d.reason)}</p>}
+          {reason && <p className="ch-hd-dx__r">{sentence(reason)}</p>}
         </div>
       )}
       {why && (
         <div className="ch-hd-full">
-          {d && <span className="ch-hd-full__k">The full write-up</span>}
+          {box && <span className="ch-hd-full__k">The full write-up</span>}
           <p className="ch-hd-why">{why}</p>
         </div>
       )}
     </Section>
+  );
+}
+
+/**
+ * The read in four lines (P013, the Read): What (the number, its sample, the comparison by name, strokes a round only when the
+ * row estimates them, the confidence word), Why (the cause with its basis and counts, or not traced yet), Next (the drill or the
+ * row's own action, never the generator's placeholder) and When (the newest round in it, and Out of date when a newer one is not).
+ * A hypothesis is marked so it is never read as fact (CH-13982); a read from before the newest round says so (CH-13903).
+ */
+function Read({ i, tour }: { i: ChDeepInsight; tour: string }) {
+  const r = i.read;
+  const what = readLines(r, tour).what;
+  const n = r.next;
+  const cause = i.base.engine?.cause;
+  return (
+    <dl className="ch-hd-read">
+      <div>
+        <dt>What</dt>
+        <dd className="ch-num">{what}</dd>
+      </div>
+      <div>
+        <dt>Why</dt>
+        {cause ? (
+          // With the root-cause flag on, the cause state the engine stored says the Why: a counted path, or exactly why it is not
+          // traced (a count-down or a data gap). An inferred cause is never the player's (Q3), so theirs reads as not traced.
+          <dd className={cause.state === 'counted' ? undefined : 'is-none'} data-ch-code="CH-13993">
+            {cause.word}: {cause.line}
+          </dd>
+        ) : (
+          <dd className={r.why.level ? undefined : 'is-none'}>
+            {r.why.basis && (
+              <span className={'ch-hd-dx__lvl ch-hd-read__lvl is-' + r.why.level} data-ch-code="CH-13982">
+                {r.why.basis}
+              </span>
+            )}
+            {r.why.basis && ' '}
+            {r.why.text}
+          </dd>
+        )}
+      </div>
+      <div>
+        <dt>Next</dt>
+        <dd className={n.none ? 'is-none' : undefined}>
+          {n.drill && (
+            <span className="ch-hd-read__drill">
+              <Icon icon={Target} size={14} />
+              <b>{n.drill}</b>
+              {n.meta && <em className="ch-num"> · {n.meta}</em>}
+            </span>
+          )}
+          {n.drill && n.text && ' '}
+          {n.text ? sentence(n.text) : n.none}
+        </dd>
+      </div>
+      <div>
+        <dt>When</dt>
+        <dd className="ch-num">
+          {r.when.through ? sentence(r.when.through) : !r.when.stale && '—'}
+          {r.when.through && r.when.stale && ' '}
+          {r.when.stale && (
+            <span className="ch-hd-read__stale" role="note" data-ch-code="CH-13903">
+              {r.when.stale}
+            </span>
+          )}
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -257,14 +336,19 @@ function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolea
           {goal && row('goal', Flag, goal.fromThis ? 'Goal made from this' : 'Goal on the same stat', goal.title, goal.word, goal.line, goal.word === 'Active')}
         </ul>
       ) : (
-        <div className="ch-hd-none" data-ch-code="CH-13384">
-          <p>This read is not part of a focus area or a goal yet. Development is where you turn one into a plan.</p>
-          {href && (
-            <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
-              Open Development
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          compact
+          code="CH-13384"
+          title="No plan yet"
+          body="This read is not part of a focus area or a goal yet. Development is where you turn one into a plan."
+          action={
+            href ? (
+              <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
+                Open Development
+              </Button>
+            ) : undefined
+          }
+        />
       )}
     </Section>
   );
@@ -292,14 +376,13 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
         <h2 id={`${b.id}-t`}>
           <SerifText text={b.title} />
         </h2>
-        {b.lede && <p className="ch-hl-lede">{b.lede}</p>}
-        {/* A read from before the newest round is never drawn as current (CH-13903). */}
-        {b.stale && (
-          <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
-            A round played {b.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
-          </p>
-        )}
+        {/* The four lines are what is read first; the parts below are their evidence. */}
+        <Read i={i} tour={d.tour} />
       </header>
+      {/* What the engine now knows, flush under the read (each part only with its flag on; the cause is the Why line above), and
+          "Why do you think so?", the read's audit lines. */}
+      <EngineState engine={i.base.engine && { ...i.base.engine, cause: undefined }} />
+      <WhyAudit lines={i.base.engine?.audit} />
       <PageRefreshNotice parts={failed} />
 
       <Section id={`${b.id}-meas`} title="What was measured">
@@ -309,11 +392,6 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
             <span>{i.measured.label}</span>
           </div>
           {i.measured.span && <p className="ch-hd-meas__s ch-num">{i.measured.span}</p>}
-          {i.closes && (
-            <p className="ch-hd-meas__w">
-              Closing the gap to {i.closes.anchor === 'team' ? 'your team’s average' : `the ${d.tour}`} is worth about <b className="ch-num">{i.closes.strokes} strokes</b> a round.
-            </p>
-          )}
         </div>
         <Evidence ev={{ ...b.evidence, label: '' }} />
       </Section>
@@ -321,22 +399,6 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
       <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} covered={covered} />
       <Rounds i={i} failed={d.roundsFailed} covered={covered} />
       <Why i={i} />
-
-      {b.week && (
-        <div className="ch-hl-drill">
-          <span className="ch-hl-drill__k">
-            <Icon icon={Target} size={14} />
-            This week
-          </span>
-          {b.week.title && (
-            <p className="ch-hl-drill__t">
-              <b>{b.week.title}</b>
-              {b.week.meta && <em> · {b.week.meta}</em>}
-            </p>
-          )}
-          {b.week.text && <p>{b.week.text}</p>}
-        </div>
-      )}
 
       <Plan i={i} failed={d.plansFailed} covered={covered} />
     </article>
@@ -364,7 +426,15 @@ function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => 
           </em>
           <b>{i.base.title}</b>
         </span>
-        <span className="ch-hd-it__v ch-num">{i.base.value}</span>
+        <span className="ch-hd-it__v ch-num">
+          {i.base.value}
+          {i.base.value && i.base.valueUnit && (
+            <>
+              {' '}
+              <small>{i.base.valueUnit}</small>
+            </>
+          )}
+        </span>
         <Icon icon={ChevronRight} size={15} />
       </button>
     </li>
@@ -402,11 +472,11 @@ function Hero({ d }: { d: ChDeepDive }) {
       </div>
       <dl className="ch-hd-hero__f">
         <div className="is-needs">
-          <dt>Need work</dt>
+          <dt>Needs work</dt>
           <dd className="ch-num">{needs}</dd>
         </div>
         <div className="is-working">
-          <dt>Working</dt>
+          <dt>What’s working</dt>
           <dd className="ch-num">{working}</dd>
         </div>
         <div className="is-plan">
@@ -502,12 +572,14 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
           }
           action={
             startHref ? (
-              <Button variant="primary" leftIcon={Play} href={startHref.href}>
+              <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                 {startHref.label}
               </Button>
             ) : undefined
           }
         />
+        {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
+        <ClearedLines lines={d.cleared} />
       </PlayerHelmFrame>
     );
   }
@@ -517,7 +589,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   const groups = (
     <>
       <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, in the order it ranks them." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
-      <Group id="ch-hd-working" title="Working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
+      <Group id="ch-hd-working" title="What’s working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
     </>
   );
 
@@ -555,6 +627,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
         <div className="ch-hd">
           <nav className="ch-hd-rail" aria-label="Your insights" data-ch-code="CH-13890">
             {groups}
+            <ClearedLines lines={d.cleared} />
           </nav>
           {!phone && shown && (
             <div className="ch-hd-main" ref={dossier}>

@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        allowBackup="false": no Auto Backup and no restore. This is a remote-URL
+        WebView shell; the only on-device state worth keeping is the Supabase
+        session, which must never be restored onto another device, and there is
+        no app data a user would lose (everything lives on the server). The two
+        extraction-rule files below stay as a second layer in case this flag is
+        ever flipped back; they must be kept in sync with each other.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/full_backup_content"
         android:icon="@mipmap/ic_launcher"

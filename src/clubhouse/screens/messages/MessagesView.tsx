@@ -1,13 +1,13 @@
 "use client";
 
 import {
+  ArrowDown,
   ArrowUp,
   CalendarPlus,
   ChevronLeft,
   Download,
   Ellipsis,
   FileText,
-  Frown,
   Heart,
   Info,
   Laugh,
@@ -15,6 +15,7 @@ import {
   Paperclip,
   PartyPopper,
   Pencil,
+  Reply,
   RotateCw,
   SmilePlus,
   SquarePen,
@@ -31,9 +32,11 @@ import {
   Plus,
   UserMinus,
   UserPlus,
+  createLucideIcon,
   type LucideIcon,
 } from "lucide-react";
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -44,11 +47,13 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
 import { chTween } from "../../lib/motion";
 import { useThreadAnchor } from "./use-thread-anchor";
+import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
 import { useChReducedMotion } from "../../lib/reduced-motion";
 import { Avatar } from "../../ui/Avatar";
@@ -56,6 +61,7 @@ import { Badge } from "../../ui/Badge";
 import { Button, IconButton } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
 import { Menu } from "../../ui/Menu";
+import { useContextMenu, type ContextMenuBind } from "../../ui/ContextMenu";
 import { Modal } from "../../ui/Modal";
 import { InlineNotice } from "../../ui/Notices";
 import { SearchField } from "../../ui/SearchField";
@@ -64,20 +70,26 @@ import { Segmented } from "../../ui/Segmented";
 import { Swap } from "../../ui/Swap";
 import { PlayerPeek } from "../../ui/PlayerPeek";
 import { EmptyState, Skeleton } from "../../ui/States";
+import { RailEmpty } from "./RailEmpty";
+import { useToast } from "../../ui/Toast";
 import { haptic } from "../../lib/haptics";
+import { isNativeApp, openExternalUrl } from "@/lib/utils/capacitor";
 import { usePanelSmoothScroll } from "../../lib/smooth-scroll";
 import { chReport, chTrail } from "../../lib/track";
 import { rebuiltHref } from "../../shell/nav";
 import {
   clock,
-  dayLabel,
   filterConvs,
   firstName,
+  firstUnreadId,
   groupLacksPlayer,
+  linkParts,
   MESSAGE_MAX,
   railTime,
+  searchSnippet,
   sectionOf,
   threadItems,
+  untilLabel,
   type ChAttachment,
   type ChConv,
   type ChConvFilter,
@@ -98,16 +110,25 @@ import { fileMeta, fileSize, useConversationFiles } from "./files";
 export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
+import { Tooltip } from '../../ui/Tooltip';
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
+
+/** Surprised (the 😮 reaction) in Lucide's face set: Lucide has no open-mouthed face, and Frown read as sad. */
+const Surprised = createLucideIcon("face-surprised", [
+  ["circle", { cx: "12", cy: "12", r: "10", key: "face" }],
+  ["path", { d: "M9 10V9", key: "eye-l" }],
+  ["path", { d: "M15 10V9", key: "eye-r" }],
+  ["circle", { cx: "12", cy: "15.5", r: "2", key: "mouth" }],
+]);
 
 export const REACTIONS: Array<{ key: ChReactionKey; icon: LucideIcon }> = [
   { key: "Like", icon: ThumbsUp },
   { key: "Love", icon: Heart },
   { key: "Laugh", icon: Laugh },
   { key: "Celebrate", icon: PartyPopper },
-  { key: "Surprised", icon: Frown },
+  { key: "Surprised", icon: Surprised },
   { key: "Thanks", icon: HandHeart },
 ];
 const REACTION_ICON = Object.fromEntries(
@@ -300,12 +321,13 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
           </div>
         </div>
       ) : !hits.length ? (
-        <div className="ch-ms-empty" data-ch-code="CH-7303">
-          No messages mention “{term}”.
-        </div>
+        <EmptyState compact kind="filtered" code="CH-7303" title={`No messages mention “${term}”`} />
       ) : (
         <div className="ch-ms-sec__card">
-          {hits.slice(0, 20).map((h) => (
+          {hits.slice(0, 20).map((h) => {
+            // The row is one line: it opens just before the match, which is marked (wave 5 #11).
+            const cut = searchSnippet(h.text, term);
+            return (
             <button
               key={h.messageId}
               type="button"
@@ -330,12 +352,15 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
                 <span className="ch-ms-row__bot">
                   <span>
                     <em>{h.senderName}: </em>
-                    {h.text}
+                    {cut.before}
+                    {cut.match && <mark className="ch-ms-hit">{cut.match}</mark>}
+                    {cut.after}
                   </span>
                 </span>
               </span>
             </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </section>
@@ -344,6 +369,26 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
 
 /** One conversation in the list: the desktop rail and the phone inbox. */
 export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: ChConv; avatarSize?: number }) {
+  const open = () => {
+    haptic("select");
+    chTrail("messages open conversation");
+    api.select(c.id);
+  };
+  // Right-click (desktop): the row's one action, as a tap does it. Mute, Leave and Delete act on the open conversation
+  // only, so they are not offered on a row that may not be it (ui/ContextMenu.tsx).
+  const ctx = useContextMenu<ChConv>({
+    label: (row) => `Actions for ${row.title}`,
+    items: () => [{ label: "Open conversation", icon: MessageSquare, onSelect: open }],
+  });
+  return (
+    <>
+      <ConvRowButton api={api} c={c} avatarSize={avatarSize} onOpen={open} bind={ctx.bind(c)} />
+      {ctx.menu}
+    </>
+  );
+}
+
+function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind }) {
   return (
     <button
       type="button"
@@ -355,11 +400,8 @@ export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: Ch
       aria-current={
         api.selectedId === c.id ? "true" : undefined
       }
-      onClick={() => {
-        haptic("select");
-        chTrail("messages open conversation");
-        api.select(c.id);
-      }}
+      onClick={onOpen}
+      {...bind}
     >
       {c.group ? (
         <span className="ch-ms-grp">
@@ -429,15 +471,16 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
       <div className="ch-ms-rail__head">
         <div className="ch-ms-rail__title">
           <h1>Messages</h1>
-          <button
-            type="button"
-            className="ch-btn ch-btn--secondary ch-iconbtn"
-            aria-label="New message"
-            title="New message"
-            onClick={onNew}
-          >
-            <Icon icon={SquarePen} size={16} />
-          </button>
+          <Tooltip>
+            <button
+              type="button"
+              className="ch-btn ch-btn--secondary ch-iconbtn"
+              aria-label="New message"
+              onClick={onNew}
+            >
+              <Icon icon={SquarePen} size={16} />
+            </button>
+          </Tooltip>
         </div>
         <SearchField
           value={q}
@@ -515,13 +558,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 </section>
               );
             })}
-            {!list.length && (
-              <div className="ch-ms-empty" data-ch-code="CH-7302">
-                {q.trim()
-                  ? `No conversation matches “${q.trim()}”.`
-                  : "Nothing unread. You’re caught up."}
-              </div>
-            )}
+            {!list.length && <RailEmpty filter={filter} q={q} onClearSearch={() => setQ("")} onShowAll={() => setFilter("all")} />}
             {/* Messages first; the team's announcements fold under them (owner, 2026-10-16). */}
             {filter !== "groups" && <AnnouncementsSection api={api} q={q} />}
             <MessageHits api={api} q={q} />
@@ -936,7 +973,11 @@ export function Bubble({
         <div className="ch-ms-msg__line">
           <div className="ch-ms-msg__stack" {...press} {...rightClick}>
             {m.replyToId && <ReplyQuote api={api} replyToId={m.replyToId} />}
-            {m.text && <div className="ch-ms-bub">{m.text}</div>}
+            {m.text && (
+              <div className="ch-ms-bub">
+                <MessageText text={m.text} />
+              </div>
+            )}
             {m.hasAttachments && (
               <Attachments load={api.attachments} id={m.id} mine={m.mine} />
             )}
@@ -953,23 +994,33 @@ export function Bubble({
           )}
           {!m.failed && !onActions && (
             <div className="ch-ms-msg__tools">
-              <button
-                ref={reactBtn}
-                type="button"
-                className="ch-ms-tool"
-                aria-label="React"
-                aria-haspopup="menu"
-                aria-expanded={picking}
-                onClick={() => setPicking(!picking)}
-              >
-                <Icon icon={SmilePlus} size={15} />
-              </button>
+              <Tooltip>
+                <button
+                  ref={reactBtn}
+                  type="button"
+                  className="ch-ms-tool"
+                  aria-label="React"
+                  aria-haspopup="menu"
+                  aria-expanded={picking}
+                  onClick={() => setPicking(!picking)}
+                >
+                  <Icon icon={SmilePlus} size={15} />
+                </button>
+              </Tooltip>
+              {onReply && (
+                <Tooltip>
+                  <button type="button" className="ch-ms-tool" aria-label="Reply" onClick={onReply}>
+                    <Icon icon={Reply} size={15} />
+                  </button>
+                </Tooltip>
+              )}
               {m.mine && (
                 <Menu
                   label="Message actions"
                   align={m.mine ? "end" : "start"}
                   items={[
-                    { label: "Edit", icon: Pencil, onSelect: onEdit },
+                    // An attachment-only message has no text to edit (as the phone's sheet: wave 5 #8).
+                    ...(m.text ? [{ label: "Edit", icon: Pencil, onSelect: onEdit }] : []),
                     {
                       label: "Delete",
                       icon: Trash2,
@@ -978,14 +1029,16 @@ export function Bubble({
                     },
                   ]}
                   trigger={(p) => (
-                    <button
-                      type="button"
-                      className="ch-ms-tool"
-                      aria-label="More message actions"
-                      {...p}
-                    >
-                      <Icon icon={Ellipsis} size={15} />
-                    </button>
+                    <Tooltip>
+                      <button
+                        type="button"
+                        className="ch-ms-tool"
+                        aria-label="More message actions"
+                        {...p}
+                      >
+                        <Icon icon={Ellipsis} size={15} />
+                      </button>
+                    </Tooltip>
                   )}
                 />
               )}
@@ -1010,22 +1063,23 @@ export function Bubble({
                 {REACTIONS.map((r, i) => {
                   const on = reacts.some((x) => x.key === r.key && x.mine);
                   return (
-                    <button
-                      key={r.key}
-                      type="button"
-                      role="menuitem"
-                      tabIndex={i === 0 ? 0 : -1}
-                      className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
-                      aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
-                      onClick={() => {
-                        haptic("select");
-                        api.react(m.id, r.key, !on);
-                        // Focus goes back to React, not to <body> as the bar leaves.
-                        closeBar(true);
-                      }}
-                    >
-                      <Icon icon={r.icon} size={16} />
-                    </button>
+                    <Tooltip key={r.key}>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        tabIndex={i === 0 ? 0 : -1}
+                        className={"ch-ms-reactbar__b" + (on ? " is-on" : "")}
+                        aria-label={`${on ? "Remove" : "React"} ${r.key.toLowerCase()}`}
+                        onClick={() => {
+                          haptic("select");
+                          api.react(m.id, r.key, !on);
+                          // Focus goes back to React, not to <body> as the bar leaves.
+                          closeBar(true);
+                        }}
+                      >
+                        <Icon icon={r.icon} size={16} />
+                      </button>
+                    </Tooltip>
                   );
                 })}
               </M.div>
@@ -1072,6 +1126,37 @@ export function Bubble({
   );
 }
 
+/**
+ * A message's text with its web links as links (wave 5 #13): React nodes, never HTML, and only http(s) (linkParts). In
+ * the iOS app a link opens in the in-app browser (openExternalUrl), not inside the app's own web view.
+ */
+function MessageText({ text }: { text: string }) {
+  return (
+    <>
+      {linkParts(text).map((p, i) =>
+        typeof p === "string" ? (
+          p
+        ) : (
+          <a
+            key={i}
+            className="ch-ms-link"
+            href={p.href}
+            target="_blank"
+            rel="noreferrer noopener"
+            onClick={(e) => {
+              if (!isNativeApp()) return;
+              e.preventDefault();
+              void openExternalUrl(p.href);
+            }}
+          >
+            {p.text}
+          </a>
+        ),
+      )}
+    </>
+  );
+}
+
 /** A parent outside the loaded history remains an honest unavailable reference. */
 export function ReplyQuote({ api, replyToId }: { api: ChMessagesApi; replyToId: string }) {
   const reduced = useChReducedMotion();
@@ -1094,6 +1179,28 @@ const MAX_ATTACHMENTS = 10;
 export const addAttachments = (cur: File[], picked: File[]) =>
   [...cur, ...picked].slice(0, MAX_ATTACHMENTS);
 
+/** Adds picked files up to the limit, and says so when some don't fit rather than dropping them silently (CH-7106). */
+export function useAddAttachments() {
+  const toast = useToast();
+  return useCallback(
+    (cur: File[], picked: File[]) => {
+      const next = addAttachments(cur, picked);
+      const dropped = cur.length + picked.length - next.length;
+      if (dropped > 0) {
+        haptic("warning");
+        toast({
+          tone: "error",
+          title: `Up to ${MAX_ATTACHMENTS} files per message`,
+          body: `${dropped === 1 ? "1 file wasn’t" : `${dropped} files weren’t`} added. Send these, then attach the rest.`,
+          code: "CH-7106",
+        });
+      }
+      return next;
+    },
+    [toast],
+  );
+}
+
 /** The picked files as removable chips above a composer. */
 export function AttachChips({
   files,
@@ -1108,17 +1215,19 @@ export function AttachChips({
   return (
     <div className="ch-ms-to">
       {files.map((f, i) => (
-        <span key={`${f.name}${i}`} className="ch-ms-to__c">
+        <span key={`${f.name}${i}`} className="ch-ms-to__c" title={f.name}>
           <Icon icon={FileText} size={13} />
-          {f.name}
-          <button
-            type="button"
-            aria-label={`Remove ${f.name}`}
-            disabled={disabled}
-            onClick={() => onRemove(i)}
-          >
-            <Icon icon={X} size={12} />
-          </button>
+          <span className="ch-ms-to__n">{f.name}</span>
+          <Tooltip>
+            <button
+              type="button"
+              aria-label={`Remove ${f.name}`}
+              disabled={disabled}
+              onClick={() => onRemove(i)}
+            >
+              <Icon icon={X} size={12} />
+            </button>
+          </Tooltip>
         </span>
       ))}
     </div>
@@ -1166,6 +1275,37 @@ export function AttachButton({
   );
 }
 
+/** A composer's textarea grows with what is written, up to its CSS max-height (132px when it has none). */
+export function useAutosize(ta: RefObject<HTMLTextAreaElement | null>, value: string) {
+  useLayoutEffect(() => {
+    const t = ta.current;
+    if (!t) return;
+    t.style.height = "auto";
+    const style = getComputedStyle(t);
+    const cap = Number.parseFloat(style.maxHeight) || 132;
+    const border = style.boxSizing === "border-box"
+      ? (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0)
+      : 0;
+    t.style.height = `${Math.min(t.scrollHeight + border, cap)}px`;
+  }, [ta, value]);
+}
+
+/** Within this of MESSAGE_MAX a composer counts down, so the limit never stops typing (or cuts a paste) unannounced. */
+const COUNT_FROM = 300;
+
+/** "N left" near the limit (wave 5 #21); nothing before it. Only the limit itself is announced, not each keystroke. */
+export function CharsLeft({ text }: { text: string }) {
+  const left = MESSAGE_MAX - text.length;
+  if (left > COUNT_FROM) return null;
+  return left <= 0 ? (
+    <span className="ch-ms-comp__left is-out" role="status">
+      No characters left
+    </span>
+  ) : (
+    <span className="ch-ms-comp__left ch-num">{left} left</span>
+  );
+}
+
 export function Composer({
   api,
   conv,
@@ -1176,6 +1316,7 @@ export function Composer({
   replyToId,
   onClearReply,
   onSendingChange,
+  unavailable = false,
 }: {
   api: ChMessagesApi;
   conv: ChConv;
@@ -1190,6 +1331,8 @@ export function Composer({
   replyToId?: string | null;
   onClearReply?: () => void;
   onSendingChange?: (sending: boolean) => void;
+  /** The conversation did not load (CH-7202): there is nothing to reply into, so the composer says so and stays off. */
+  unavailable?: boolean;
 }) {
   const recovery = api.attachmentRecovery?.get(conv.id);
   const [unconfirmed, setUnconfirmed] = useState(!!recovery);
@@ -1213,20 +1356,13 @@ export function Composer({
   const [sending, setSending] = useState(false);
   const sendingRef = useRef(false);
   const ta = useRef<HTMLTextAreaElement | null>(null);
+  const footer = useRef<HTMLElement | null>(null);
   const typingTimer = useRef<number | null>(null);
-  const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed;
-
-  useLayoutEffect(() => {
-    const t = ta.current;
-    if (!t) return;
-    t.style.height = "auto";
-    const style = getComputedStyle(t);
-    const cap = Number.parseFloat(style.maxHeight) || 132;
-    const border = style.boxSizing === "border-box"
-      ? (Number.parseFloat(style.borderTopWidth) || 0) + (Number.parseFloat(style.borderBottomWidth) || 0)
-      : 0;
-    t.style.height = `${Math.min(t.scrollHeight + border, cap)}px`;
-  }, [draft]);
+  const ready = (draft.trim() || files.length || resumed) && !sending && !checking && !checkFailed && !unavailable;
+  const addFiles = useAddAttachments();
+  useAutosize(ta, draft);
+  // Toasts sit above this composer, however tall it grows (wave 5 #1).
+  useComposerInset(footer);
 
   useEffect(() => {
     if (!api.loadPendingAttachmentSend) return;
@@ -1351,36 +1487,36 @@ export function Composer({
   };
   const label = conv.group ? conv.title : firstName(conv.title);
   return (
-    <footer className="ch-ms-comp" aria-busy={checking || sending || undefined}>
+    <footer ref={footer} className="ch-ms-comp" aria-busy={checking || sending || undefined}>
       {checkFailed && <InlineNotice code="CH-7217" title="Couldn’t check a pending send" body="Try again before sending another message." onRetry={() => setCheckAttempt((n) => n + 1)} />}
       {unconfirmed && <InlineNotice code="CH-7023" title="Couldn’t confirm this send" body="This send is unconfirmed. Retry send checks the original request; editing stays locked until its outcome is known." />}
       {effectiveParent && (
         <div className="ch-ms-comp__reply">
           <ReplyQuote api={api} replyToId={effectiveParent} />
-          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
+          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed || unavailable} />
         </div>
       )}
       {resumed && !files.length && <div className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
-      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></span>)}</div>}
+      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       <AttachChips
-        disabled={unconfirmed || checking || checkFailed}
+        disabled={unconfirmed || checking || checkFailed || unavailable}
         files={files}
         onRemove={(i) => setFiles((s) => s.filter((_, j) => j !== i))}
       />
       <div className="ch-ms-comp__field">
         <AttachButton
           phone={phone}
-          disabled={unconfirmed || checking || checkFailed}
-          onPick={(picked) => { setFiles((s) => addAttachments(s, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
+          disabled={unconfirmed || checking || checkFailed || unavailable}
+          onPick={(picked) => { setFiles(addFiles(filesRef.current, picked)); setMissingFiles((names) => names.filter((name) => !picked.some((file) => file.name === name))); }}
         />
         <textarea
           ref={ta}
           rows={1}
           // CH-7802: desktop Enter sends; phone Return adds a line and the Send button sends.
           aria-label={`Message ${label}`}
-          placeholder={`Message ${label}`}
+          placeholder={unavailable ? "Replies are off until this loads" : `Message ${label}`}
           value={draft}
-          readOnly={unconfirmed || checking || checkFailed}
+          readOnly={unconfirmed || checking || checkFailed || unavailable}
           onChange={(e) => {
             setDraft(e.target.value);
             api.onTyping(true);
@@ -1394,22 +1530,72 @@ export function Composer({
           maxLength={MESSAGE_MAX}
           enterKeyHint={phone ? "enter" : "send"}
         />
-        <button
-          type="button"
-          className={"ch-ms-send" + (ready ? " is-ready" : "")}
-          onClick={() => void send()}
-          disabled={!ready}
-          aria-label={unconfirmed ? "Retry send" : "Send"}
-        >
-          <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
-        </button>
+        <Tooltip>
+          <button
+            type="button"
+            className={"ch-ms-send" + (ready ? " is-ready" : "")}
+            onClick={() => void send()}
+            disabled={!ready}
+            aria-label={unconfirmed ? "Retry send" : "Send"}
+          >
+            <Icon icon={unconfirmed ? RotateCw : ArrowUp} size={17} />
+          </button>
+        </Tooltip>
       </div>
-      {!phone && (
+      {unavailable ? (
+        <span className="ch-ms-comp__hint">
+          This conversation didn’t load, so you can’t send yet. Try again above.
+        </span>
+      ) : !phone ? (
         <span className="ch-ms-comp__hint">
           Enter to send · Shift + Enter for a new line
+          <CharsLeft text={draft} />
         </span>
+      ) : (
+        <CharsLeft text={draft} />
       )}
     </footer>
+  );
+}
+
+/**
+ * The "New" divider (wave 5 #17): placed once as a thread opens, before the first message that was unread then, so it
+ * stays put as more arrive and as the open marks them read. The unread count is the one the conversation had on opening.
+ */
+export function useNewDivider(api: ChMessagesApi, conv: ChConv): string | null {
+  const [mark, setMark] = useState<{ convId: string; unread: number; id?: string | null }>({ convId: conv.id, unread: conv.unread });
+  if (mark.convId !== conv.id) setMark({ convId: conv.id, unread: conv.unread });
+  else if (mark.id === undefined && !api.msgsLoading && api.msgs.length) setMark({ ...mark, id: firstUnreadId(api.msgs, mark.unread) });
+  return mark.convId === conv.id ? (mark.id ?? null) : null;
+}
+
+/** Where the divider sits, before its message. */
+export function NewDivider() {
+  return (
+    <div className="ch-ms-day is-new" role="separator" aria-label="New messages">
+      <span>New</span>
+    </div>
+  );
+}
+
+/**
+ * Under the thread, over its end: "N new messages" when some arrived while reading up (audit T25), else Jump to latest
+ * once the reader is away from the end with nothing new (wave 5 #17). Either takes them down.
+ */
+export function ThreadBelow({ anchor }: { anchor: { unseen: number; atEnd: boolean; toEnd: () => void } }) {
+  if (anchor.unseen > 0) {
+    return (
+      <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
+        {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+      </button>
+    );
+  }
+  if (anchor.atEnd) return null;
+  return (
+    <button type="button" className="ch-ms-below is-jump" onClick={anchor.toEnd}>
+      <Icon icon={ArrowDown} size={15} />
+      Jump to latest
+    </button>
   );
 }
 
@@ -1429,6 +1615,21 @@ function Thread({
   const [picking, setPicking] = useState<string | null>(null);
   const [editing, setEditing] = useState<ChMsg | null>(null);
   const [deleting, setDeleting] = useState<ChMsg | null>(null);
+  // Reply, as the phone's (wave 5 #10): the quote rides on the composer until the send lands or it is cancelled. It
+  // belongs to the conversation it was picked in, so switching threads leaves it behind.
+  const [replying, setReplying] = useState<{ convId: string; id: string } | null>(null);
+  const replyToId = replying?.convId === conv.id ? replying.id : null;
+  const sendingRef = useRef(false);
+  const section = useRef<HTMLElement | null>(null);
+  const reply = (m: ChMsg) => {
+    if (sendingRef.current) return;
+    haptic("select");
+    setReplying({ convId: conv.id, id: m.id });
+  };
+  useEffect(() => {
+    if (replyToId) section.current?.querySelector<HTMLTextAreaElement>(".ch-ms-comp textarea")?.focus();
+  }, [replyToId]);
+  const newId = useNewDivider(api, conv);
   const scroller = useRef<HTMLDivElement | null>(null);
   const items = useMemo(
     () => threadItems(api.msgs, api.now, api.timeZone),
@@ -1482,6 +1683,7 @@ function Thread({
 
   return (
     <section
+      ref={section}
       className="ch-ms-thread"
       aria-label={`Conversation with ${conv.title}`}
     >
@@ -1508,31 +1710,33 @@ function Thread({
         </div>
         <div className="ch-ms-th__act">
           {calendarHref && api.viewer.role === "coach" && (
-            <a
-              className="ch-btn ch-btn--ghost ch-iconbtn"
-              href={calendarHref}
-              aria-label="Schedule"
-              title="Schedule"
-            >
-              <Icon icon={CalendarPlus} size={16} />
-            </a>
+            <Tooltip>
+              <a
+                className="ch-btn ch-btn--ghost ch-iconbtn"
+                href={calendarHref}
+                aria-label="Schedule"
+              >
+                <Icon icon={CalendarPlus} size={16} />
+              </a>
+            </Tooltip>
           )}
-          <button
-            type="button"
-            className={
-              "ch-btn ch-iconbtn " +
-              (detailsOpen ? "ch-btn--secondary" : "ch-btn--ghost")
-            }
-            aria-label="Details"
-            aria-pressed={detailsOpen}
-            title="Details"
-            onClick={() => {
-              haptic("select");
-              setDetails(!detailsOpen);
-            }}
-          >
-            <Icon icon={conv.group ? Users : Info} size={16} />
-          </button>
+          <Tooltip>
+            <button
+              type="button"
+              className={
+                "ch-btn ch-iconbtn " +
+                (detailsOpen ? "ch-btn--secondary" : "ch-btn--ghost")
+              }
+              aria-label="Details"
+              aria-pressed={detailsOpen}
+              onClick={() => {
+                haptic("select");
+                setDetails(!detailsOpen);
+              }}
+            >
+              <Icon icon={conv.group ? Users : Info} size={16} />
+            </button>
+          </Tooltip>
         </div>
       </header>
       <div
@@ -1571,10 +1775,7 @@ function Thread({
               <Skeleton width="38%" height={40} radius={18} />
             </div>
           ) : !api.msgs.length ? (
-            <div className="ch-ms-empty" data-ch-code="CH-7304">
-              No messages yet. Say hello to{" "}
-              {conv.group ? "the group" : firstName(conv.title)}.
-            </div>
+            <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
           ) : (
             items.map((it) =>
               it.kind === "day" ? (
@@ -1582,18 +1783,21 @@ function Thread({
                   <span>{it.label}</span>
                 </div>
               ) : (
-                <Bubble
-                  key={it.key}
-                  api={api}
-                  m={it.m}
-                  first={it.first}
-                  last={it.last}
-                  group={conv.group}
-                  picking={picking === it.m.id}
-                  setPicking={(v) => setPicking(v ? it.m.id : null)}
-                  onEdit={() => setEditing(it.m)}
-                  onDelete={() => setDeleting(it.m)}
-                />
+                <Fragment key={it.key}>
+                  {it.m.id === newId && <NewDivider />}
+                  <Bubble
+                    api={api}
+                    m={it.m}
+                    first={it.first}
+                    last={it.last}
+                    group={conv.group}
+                    picking={picking === it.m.id}
+                    setPicking={(v) => setPicking(v ? it.m.id : null)}
+                    onEdit={() => setEditing(it.m)}
+                    onDelete={() => setDeleting(it.m)}
+                    onReply={() => reply(it.m)}
+                  />
+                </Fragment>
               ),
             )
           )}
@@ -1617,12 +1821,18 @@ function Thread({
           )}
         </div>
       </div>
-      {anchor.unseen > 0 && (
-        <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
-          {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
-        </button>
-      )}
-      <Composer key={conv.id} api={api} conv={conv} />
+      <ThreadBelow anchor={anchor} />
+      <Composer
+        key={conv.id}
+        api={api}
+        conv={conv}
+        unavailable={api.msgsError}
+        replyToId={replyToId}
+        onClearReply={() => setReplying(null)}
+        onSendingChange={(sending) => {
+          sendingRef.current = sending;
+        }}
+      />
 
       <EditMessageModal api={api} message={editing} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
@@ -1637,12 +1847,15 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
   useEffect(() => {
     if (message) setText(message.text);
   }, [message]);
+  // Nothing changed is nothing to save: Save would only mark it Edited (wave 5 #9).
+  const same = !!message && text.trim() === message.text.trim();
   return (
     <Modal
       open={message != null}
       onClose={onClose}
       icon={Pencil}
       title="Edit message"
+      initialFocus=".ch-modal__body textarea"
       description="Everyone in the conversation sees it marked as edited."
       footer={
         <>
@@ -1651,9 +1864,10 @@ export function EditMessageModal({ api, message, onClose }: { api: ChMessagesApi
           </Button>
           <Button
             variant="primary"
-            disabled={busy || !text.trim()}
+            busy={busy}
+            disabled={!text.trim() || same}
             onClick={async () => {
-              if (!message) return;
+              if (!message || same) return;
               setBusy(true);
               const ok = await api.edit(message.id, text.trim());
               setBusy(false);
@@ -1696,7 +1910,7 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               if (!message) return;
               setBusy(true);
@@ -1709,7 +1923,14 @@ export function DeleteMessageModal({ api, message, onClose }: { api: ChMessagesA
           </Button>
         </>
       }
-    />
+    >
+      {/* Which message, quoted and clamped to three lines (wave 5 #14). */}
+      {message && (
+        <blockquote className="ch-ms-delq">
+          {message.text || (message.hasAttachments ? "Attachment" : "Message")}
+        </blockquote>
+      )}
+    </Modal>
   );
 }
 
@@ -1732,7 +1953,7 @@ export function LeaveGroupModal({ api, conv, open, onClose, onLeft }: { api: ChM
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = await api.leave();
@@ -1765,12 +1986,12 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Keep
+            Keep conversation
           </Button>
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy}
+            busy={busy}
             onClick={async () => {
               setBusy(true);
               const ok = (await api.deleteConversation?.()) ?? false;
@@ -1796,6 +2017,8 @@ export function DeleteConversationModal({ api, conv, open, onClose, onDeleted }:
 export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessagesApi; conv: ChConv; member: ChMember | null; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const first = firstName(member?.name ?? "them");
+  // The safe choice names who stays (wave 5 #19).
+  const keep = member ? `Keep ${first}` : "Keep them";
   return (
     <Modal
       code="CH-7504"
@@ -1807,12 +2030,13 @@ export function RemoveMemberModal({ api, conv, member, onClose }: { api: ChMessa
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Keep
+            {keep}
           </Button>
           <Button
             variant="danger"
             feel="warning"
-            disabled={busy || !api.removeMember}
+            busy={busy}
+            disabled={!api.removeMember}
             onClick={async () => {
               if (!member || !api.removeMember) return;
               setBusy(true);
@@ -2080,7 +2304,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
         <InlineNotice
           code="CH-7214"
           title="Files didn’t load"
-          body="Your messages are fine. Try again; the error has been reported."
+          body="Your messages are safe. Try again; the error has been reported."
           onRetry={retry}
         />
       ) : !files ? (
@@ -2113,6 +2337,10 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
   );
 }
 
+/** "Muted until tomorrow · 2:40 PM", or until turned back on (wave 5 #2: a week from now read "today"). */
+export const muteLabel = (m: ChMute, api: Pick<ChMessagesApi, "now" | "timeZone">) =>
+  m.until ? `Muted until ${untilLabel(m.until, api.now, api.timeZone)} · ${clock(m.until, api.timeZone)}` : "Muted until you turn it back on";
+
 function MuteControl({ api }: { api: ChMessagesApi }) {
   const [busy, setBusy] = useState(false);
   const m = api.mute;
@@ -2141,13 +2369,11 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
         <div className="ch-ms-mute">
           <span>
             <Icon icon={BellOff} size={15} />
-            {m.until
-              ? `Muted until ${dayLabel(m.until, api.now, api.timeZone).replace("Today", "today")} · ${clock(m.until, api.timeZone)}`
-              : "Muted until you turn it back on"}
+            {muteLabel(m, api)}
           </span>
           <Button
             size="sm"
-            disabled={busy}
+            busy={busy}
             onClick={() => void set(false, null)}
           >
             Unmute
@@ -2203,6 +2429,9 @@ function NewMessage({
   const [to, setTo] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [title, setTitle] = useState("");
+  // The announcement's own title: its draft (with the message and the two switches) outlives Cancel, Esc and the
+  // backdrop until a post lands, as Team Hub's compose does (wave 5 #7). A group's name is the prefill's or empty.
+  const [annTitle, setAnnTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [touched, setTouched] = useState(false);
   const prefill = api.prefill ?? null;
@@ -2215,9 +2444,6 @@ function NewMessage({
     setTo(prefill ? (group ? prefill.to : prefill.to.slice(0, 1)) : []);
     setQ("");
     setTitle(prefill?.title ?? "");
-    setBody("");
-    setUrgent(false);
-    setAck(true);
     setTouched(false);
   }, [open, prefill, api.viewer.role]);
   const coachGroup = mode === "group" && api.viewer.role === "coach";
@@ -2236,7 +2462,7 @@ function NewMessage({
     );
   };
   const announce = mode === "announce";
-  const needsTitle = (coachGroup || announce) && !title.trim();
+  const needsTitle = coachGroup ? !title.trim() : announce && !annTitle.trim();
   const needsBody = announce && !body.trim();
   // A coach's group is a team broadcast: with no player in it, it would reach the whole team (groupLacksPlayer).
   const needsPlayer = mode === "group" && groupLacksPlayer(api.viewer.role, to, api.directory);
@@ -2254,7 +2480,7 @@ function NewMessage({
     setBusy(true);
     const ok = announce
       ? await api.createAnnouncement({
-          title: title.trim(),
+          title: annTitle.trim(),
           body: body.trim(),
           urgent,
           ack,
@@ -2263,6 +2489,12 @@ function NewMessage({
         ? await api.startDirect(to[0]!)
         : await api.createGroup(to, title.trim());
     setBusy(false);
+    if (ok && announce) {
+      setAnnTitle("");
+      setBody("");
+      setUrgent(false);
+      setAck(true);
+    }
     if (ok) onClose();
   };
   return (
@@ -2282,7 +2514,7 @@ function NewMessage({
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={busy} onClick={() => void go()}>
+          <Button variant="primary" busy={busy} onClick={() => void go()}>
             {busy
               ? announce
                 ? "Posting…"
@@ -2320,8 +2552,8 @@ function NewMessage({
               <input
                 className="ch-input"
                 placeholder="Bus time moved to 6:00"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                value={annTitle}
+                onChange={(e) => setAnnTitle(e.target.value)}
                 maxLength={200}
                 aria-invalid={touched && needsTitle}
               />
@@ -2412,13 +2644,15 @@ function NewMessage({
                     <span key={id} className="ch-ms-to__c">
                       <Avatar name={p?.name ?? "Member"} size={20} />
                       {firstName(p?.name ?? "Member")}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${p?.name ?? "member"}`}
-                        onClick={() => toggle(id)}
-                      >
-                        <Icon icon={X} size={12} />
-                      </button>
+                      <Tooltip>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${p?.name ?? "member"}`}
+                          onClick={() => toggle(id)}
+                        >
+                          <Icon icon={X} size={12} />
+                        </button>
+                      </Tooltip>
                     </span>
                   );
                 })}

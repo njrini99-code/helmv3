@@ -1,5 +1,362 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (hub.css)
+
+- The task ring's numeral and the date tile keep their size; the remaining announcement headings and the pass figure follow the iPhone's text size.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The phone "5 of 6 acknowledged" count and the attached-document chip reach 44px; on a pointer the chip, the count, the waiver box and the updates rows have a hover state.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; the tabs fade a clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Post, Save changes, Publish, Assign and Delete (and Edit trip) are busy while they run instead of disabled; Back and Cancel stay disabled.
+- Each More button shows its name on hover and focus.
+- The section tabs fade only the clipped edge when they scroll.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Empty Team Hub tabs draw their rows
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-10304, CH-10305, CH-10306, CH-10307, CH-10308
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The Team Hub's empty page, and its Announcements, Travel and Documents tabs when they are wholly empty, draw ruled rows under the sentence. Sections inside the Home tab keep their one-line empties.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/hub?state=empty` and `hub-player?state=empty`. `hub-player?state=empty&tab=ann` was captured after only, phone, light.
+
+## 2026-10-18 — Pickers and controls: due date, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. A task's Due (optional, with Clear; from today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+
+## 2026-10-18 — Wave 8: press states and the featured coin
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Dark: the author's coin on the featured (green) announcement keeps the
+  day's neutral, so it no longer sinks into the night green.
+- Presses answer: a tab takes the primary ink, and the coach's read count
+  takes the row press tint (a white wash on the featured card).
+
+## 2026-10-18 — Wave 7: player Team Hub
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, player Team Hub)
+
+- Tasks are listed open first, then soonest due, the undated last, for
+  coach and player (`taskOrder`); a done task no longer sits above an open
+  one. The coach's capped read still keeps the latest due.
+- A player's phone Home shows Your tasks before Updates.
+- A player sees no role chip ("Player view" is gone); the coach keeps
+  "Coach view". The skeletons draw the chip for a coach only.
+
+## 2026-10-18 — Wave 6: coach forms, who hasn't acknowledged
+
+```text
+Design package: none (wave-6 coach workflows review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none (one new coach read in loadTeamHub)
+Data impact:    read-only: golf_announcement_recipients and
+                golf_announcement_acknowledgements, coach only
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- A refused save in New announcement, Assign a task, Plan a trip and Edit
+  trip reads its errors out (`role="alert"`) and moves focus to the first
+  field; Plan a trip goes back to Logistics first.
+- Enter assigns a task, and is Next on Plan a trip's steps (Publish only on
+  the last). New announcement and Assign a task open on their first field on
+  desktop; the phone keeps the heading first.
+- Trip dates and times read Departs, Departure time, Returns, Return time;
+  the return date can't be picked before the departure, and a task's due date
+  starts at today. Date and time stay side by side on the phone.
+- A trip with no calendar event skips Travelers both ways, and the strip
+  marks it skipped. On the phone the sheet says "Step 3 of 4 · Logistics".
+- Optional fields carry the shared Optional tag instead of "(optional)".
+- Assign a task and an event's travelers have Clear all / Select all.
+- Several files dropped at once land with one toast ("3 files shared with
+  the team"); a failure still has its own, with Retry.
+- Trip departure reads "Mon · 12:00 PM", like the return. The big pass no
+  longer counts the travelers it names.
+- Coach: "5 of 6 acknowledged" opens who hasn't acknowledged yet. A failed
+  read leaves the count alone.
+
+### Verification (2026-10-18, wave 6)
+
+- `hub.test`, `hub-trip-manage.test`, `hub-focus-task.test`,
+  `wiring-p010-hub.test`, `hub-paged-reads.test`.
+- WebKit 320 and 1280 (Playwright, dev preview): focus on open and on a
+  refused save, Enter on Assign and on Logistics, the skipped step, the
+  phone's step line, date and time two-up at 320 with no overflow, and the
+  acknowledgement list.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Posting…" (CH-10402), "Saving…" (CH-10403, CH-10406),
+  "Assigning…" (CH-10404), and "Saving…" / "Deleting…" in the
+  trip editor and its delete question.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `hub.css`: the phone's text (head, tabs, RSVPs, announcements, passes,
+  itinerary, updates, tasks, documents, pickers) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone tabs' gap widens with the text once the row scrolls (4px at
+  the default size); the itinerary's label columns grow with it; a post's
+  footer wraps instead of squeezing "5 of 6 acknowledged".
+- Left fixed on purpose: the RSVP date tile, the task ring's numeral and the
+  file-type label in a document's icon. At the default size every value is
+  the same pixel.
+- Phone Tasks (coach): the title's 15px rule matched the completion ring's
+  numeral too (both are `<b>`), so "3/5" was drawn at 15px on a 24px face
+  and spilled past it. The rule now targets the title only, and the ring's
+  numeral is a fixed 10px on the phone, like the bell's count.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 57 to 11 on `hub`, 70 to 10 on `hub-player`; travel 42 to 4, docs
+  30 to 10, tasks 25 to 4 (the rest are the shell, buttons and the kept
+  tiles). Scale-1 screenshots are pixel identical to before; no horizontal
+  overflow at XXL.
+- The ring is the one scale-1 change: "3/5" now sits inside its face at
+  every text size.
+
+## 2026-10-18 — Wave 3 accessibility: tabs point only at the shown panel
+
+```text
+Design package: none (wave-3 accessibility review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The Hub's tabs set `aria-controls` only on the tab whose panel is drawn; the
+  others pointed at panels that were not in the page.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `hub.test.tsx` and `wiring-p010-hub.test.tsx`.
+
+## 2026-10-18 — Wave 3: the head on the shared line, a 44px phone action
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs.
+- Phone: the head's full-width action (New announcement, Plan a trip, Assign a
+  task) is 44px tall, as Create qualifier is, where it was 36px; the loading
+  shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `hub.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Polish: tab rings and hover
+
+```text
+Design package: none (wave-2 interaction review rows 4, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- The tabs' scroller carries 4px of room (taken back by its margins, so the
+  row does not move), so a focused tab's ring is no longer clipped. The
+  desktop skeleton's strip grows to 42px to match. On the phone, where the
+  full-height tabs leave no room, the ring is drawn inside the tab.
+- An unselected tab darkens to primary ink on hover (desktop).
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: Travel scrolls to the trip a link names; no-team way out
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- `?tab=travel&trip=<id>` (Calendar's View itinerary) scrolls that trip's
+  pass into view once, as `?task=` does for a task; the page passes `trip`
+  through `ClubhouseHubRoute`. A trip not in the rows is left alone.
+- No team (CH-10309): the page empty offers "Open team settings"; a coach
+  goes to Team, a player to Golf profile (CH-8302).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
+## 2026-10-17 — Polish: straight RSVP seams on the phone
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone RSVPs: rows are square, so the seam between two rows runs straight to
+  both ends; the desktop's 12px hover radius bent it up at each end
+  (`hub.css`).
+- Tabular figures come back on 20 rules in `hub.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Wiring checked against production, and fixed
 
 ```text

@@ -4,8 +4,10 @@ import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coac
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
+import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
+import { anyEngineFlag, auditOf, causeOf, isEmptyEngine, supportOf, verdictOf, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
 
 /**
  * Generator output to what the CoachHelm screens draw (Clubhouse P013). Pure:
@@ -67,6 +69,15 @@ export function splitContent(content: string | null | undefined): { lede: string
  * (a cold-start "top college teams stay under 0.5") are the shared generators' to reword, not this page's.
  */
 const COLLEGE_AVERAGE = /^College players in our data average\b/;
+
+/**
+ * The slope read's "(n=31 downhill / 44 level)" aside, in rows stored before putt-slope-bias.ts stopped writing it: the sample the
+ * evidence line already states. Only that read's: another generator's aside (putt-bias's per-side counts) says what nothing else does.
+ */
+export function withoutSampleAside(content: string | null | undefined, metric: string | null | undefined): string {
+  const text = content ?? '';
+  return metric === SLOPE_METRIC ? text.replace(/\s*\(n=[^)]*\)/g, '') : text;
+}
 export function withoutCollegeAverage(content: string | null | undefined): string {
   const text = (content ?? '').replace(/\s+/g, ' ').trim();
   return text
@@ -253,6 +264,22 @@ function weekFor(ins: EvidenceInsight, unit: ReturnType<typeof buildInsightUnit>
   return action && !GENERIC_ACTION.test(action) ? { title: null, text: say(action), meta: null } : null;
 }
 
+/** The no-break spaces `speak` sets, back to plain ones, for text that is saved rather than drawn. */
+const plain = (text: string) => text.replace(/\u00a0/g, ' ');
+
+/**
+ * What a list row's bare number counts, from the evidence's own unit and metric: a points gap ("23 pts") is a gap, a rate ("36%") a
+ * rate, and "1.1" alone is said to be a round's. A number that already carries its unit, or a metric this cannot name, adds nothing.
+ */
+export function valueUnitFor(ev: InsightEvidence): string | null {
+  const shown = ev.your_value_display?.trim() ?? '';
+  if (/\bpts?$/.test(shown)) return 'gap';
+  if (ev.unit === 'count' && /per_round$/.test(ev.metric ?? '')) return 'a round';
+  if (ev.unit === 'percent' && ev.metric === 'big_number_rate') return 'of holes';
+  if (ev.unit === 'percent' && /\bmake\b/i.test(ev.metric_label ?? '')) return 'made';
+  return null;
+}
+
 const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'resolved'];
 
 /**
@@ -267,7 +294,7 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  */
 export function toChInsight(
   ins: EvidenceInsight,
-  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer } = {},
+  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer; engine?: ChEngineInputs } = {},
 ): ChInsight {
   const ev = ins.evidence;
   const unit = buildInsightUnit(ins);
@@ -278,8 +305,11 @@ export function toChInsight(
   const kind = kindOf(ins, tour);
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
-  const { lede, why } = splitContent(withoutCollegeAverage(ins.content));
+  // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
+  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutZeroImpact(ins.content, ev), ev.metric)));
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
+  const evidence = evidenceFor(ins, kind, tour, say);
+  const engine = kind === 'note' ? null : engineFor(ins, evidence, extra.engine, extra.engine?.viewer ?? extra.viewer);
   return {
     id: ins.id,
     playerId: ins.player_id,
@@ -290,12 +320,14 @@ export function toChInsight(
     stale,
     acknowledged: ins.status === 'acknowledged',
     title: say(ins.title),
-    assignAs: { title: ins.title, description: speak(claim, { role: 'player' }) || ins.title },
+    // Typeset as the player reads it, with ordinary spaces: the focus area is saved, and Fairway draws it too.
+    assignAs: { title: plain(speak(ins.title, { role: 'player' })), description: plain(speak(claim, { role: 'player' }) || ins.title) },
     lede: say(claim),
     why: why ? say(why) : null,
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
     value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
-    evidence: evidenceFor(ins, kind, tour, say),
+    valueUnit: kind === 'note' ? null : valueUnitFor(ev),
+    evidence,
     week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
@@ -303,5 +335,48 @@ export function toChInsight(
     areaType: areaTypeFor(ins.category),
     assigned: extra.assigned ?? null,
     declined: !extra.assigned && (extra.declined ?? false),
+    // Set only when true, so every other card is the shape it was.
+    ...(isMeasuredZero(ev) ? { measuredZero: true } : {}),
+    // Absent unless an engine flag is on and the row carries what it draws (coachhelm-engine-shape.ts).
+    ...(engine ? { engine } : {}),
   };
+}
+
+/** What the loader read beside a row for the engine's states: the flags (server-side), its lifecycle item and its focus area. */
+export interface ChEngineInputs {
+  flags: ChEngineFlags;
+  lifecycle?: ChEngineLifecycle | null;
+  /** The focus area made from this read, with its prescription and verdict columns (read only with the verdicts flag on). */
+  focus?: ChVerdictRow | null;
+  /** ISO now, for the coach-first day; the loader's clock. */
+  now: string;
+  /** Whose surface it is, when the text's voice is not told (a coach's card for a player with no name on file). */
+  viewer?: ChViewer;
+}
+
+/** The card's engine states, each behind its flag; null when none applies (the card is then exactly what it was). */
+function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEngineInputs | undefined, viewer: ChViewer | undefined): ChReadEngine | null {
+  if (!inputs || !anyEngineFlag(inputs.flags)) return null;
+  const { flags } = inputs;
+  const ev = ins.evidence;
+  const out: ChReadEngine = {};
+  const cause = flags.cause ? causeOf(ev, viewer) : null;
+  if (flags.support) {
+    const s = supportOf(ev, viewer);
+    if (s) out.support = s;
+  }
+  if (cause) out.cause = cause;
+  if (flags.recheck && inputs.lifecycle) out.lifecycle = inputs.lifecycle;
+  if (flags.verdicts) {
+    const label = evidence.label || ev.metric_label || ins.title;
+    const noun = (ev.sample_unit ?? 'attempts').replace(/_/g, ' ');
+    const v = verdictOf(inputs.focus, label, noun, viewer, inputs.now);
+    if (v) out.verdict = v;
+  }
+  if (flags.support) {
+    const comparison = evidence.gauge?.cmp ?? (ev.comparison_label?.trim() || null);
+    const audit = auditOf(ev, viewer, { sample: evidence.sample || null, comparison, cause });
+    if (audit.length > 0) out.audit = audit;
+  }
+  return isEmptyEngine(out) ? null : out;
 }

@@ -83,7 +83,7 @@ and SG sort are local state and have no action record.
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with the profile) | 40201 |
 | `screens/stats/WindowSwitch.tsx` | The switch (with a Custom pill while a date range is on), the words for each window and `changeWords` | 40701, 40702 |
 | `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the per-18 note, the sheet (with Holes), `FilterEmpty`, `EarlyRead`, `NineHint` (shared with the profile) | CH-4101, CH-4313 to CH-4319 |
-| `screens/stats/charts.tsx` | `FigureCards`, `YardagePage`, `PuttingRings` (shared with the profile) | 41803 |
+| `screens/stats/charts.tsx` | `YardagePage`, `PuttingRings`, `FigureGauge`, `SgChangeChip` (shared with the profile; `FigureCards` was removed 2026-10-21, the tape replaced it) | 41803 |
 | `screens/stats/links.ts`, `legs.ts`, `notes.ts` | The player link, the leg order for client code, the putting note | none |
 | `routes/stats.tsx` | `ClubhouseStatsRoute`, `StatsNoTeam`, `NotOnTeam` | 40409, 40801, 40802 |
 
@@ -114,7 +114,7 @@ No server action is called from this page.
 ### DATA-TEAM-STATS
 
 ```text
-Tables:   golf_teams (name, gender), golf_team_members (status active, joined to golf_players),
+Tables:   golf_teams (name, gender, season), golf_team_members (status active, joined to golf_players),
           golf_players (id, first_name, last_name), golf_rounds (completed, not test, countable, this
           season), golf_round_stats_cache (birdies: holes one under par, eagles apart; total_putts 0 is
           none recorded), golf_shots (putt_distance_feet, putt_made), golf_pga_standards

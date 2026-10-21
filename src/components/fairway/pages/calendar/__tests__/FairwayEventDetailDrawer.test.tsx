@@ -684,6 +684,23 @@ describe('FairwayEventDetailDrawer — People section', () => {
     renderDrawer({ isCoach: false });
     expect(await screen.findByText('Braeden Grant')).toBeInTheDocument();
     expect(screen.getByText('People · 6')).toBeInTheDocument();
+    expect(screen.getByText('6 invited · replies are visible to coaches')).toBeInTheDocument();
+    expect(screen.queryByText('No one invited yet.')).not.toBeInTheDocument();
+  });
+
+  it('says how many are invited, not "No one invited yet", to a player who is not on the event', async () => {
+    getEventRSVP.mockResolvedValueOnce({
+      success: true,
+      data: {
+        summary: { total: 6, accepted: 3, declined: 1, tentative: 1, pending: 1, attendees: [] },
+        acceptanceRate: 50,
+        responseRate: 83,
+      },
+    });
+    renderDrawer({ isCoach: false });
+    expect(await screen.findByText('6 invited')).toBeInTheDocument();
+    expect(screen.getByText('People · 6')).toBeInTheDocument();
+    expect(screen.queryByText('No one invited yet.')).not.toBeInTheDocument();
   });
 
   it('shows an empty message when no one is invited yet', async () => {

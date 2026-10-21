@@ -2,12 +2,45 @@
 
 Updated 2026-10-17 from a full read-only audit (all 15 pages, routes, role
 checks, held migrations and features, release state, Sentry, tooling, iOS,
-tests). Read this page first. If another Clubhouse doc disagrees with it on
-current state, rollout, rollback or what is left, this page wins; the stale
-ones found by this audit are listed at the end. `PROGRESS.md` keeps the full
-history (gates, decisions, questions, data gaps, verification log).
+tests), and on 2026-10-19 for the completion pass (#2210 into #2202; see "Since
+the 2026-10-17 audit" below). Read this page first. If another Clubhouse doc
+disagrees with it on current state, rollout, rollback or what is left, this page
+wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
+keeps the full history (gates, decisions, questions, data gaps, verification
+log).
 
-## Where it stands
+## Since the 2026-10-17 audit (2026-10-19)
+
+- **Production** serves `1e8a9fad8` (#2201, checked with `npm run
+  release:status` on 2026-10-19), flag off. `main` is at `b37f647fd`, three
+  commits ahead and not deployed: #2204 (password reset email and page),
+  #2205 (players see only meetings they are invited to; held
+  `20261018120000`), #2209 (qualifier reason written separately so held
+  `20260929200000` can be applied).
+- **Open release work:** PR #2202 (`agent/fairway-fixes-polish`): Fairway
+  live-bug fixes plus the Clubhouse completion pass (#2210, merged into it
+  2026-10-19): designed empty states (D-72), the live motion set pinned (D-73),
+  the folding sidebar spring kept (D-74), desktop keyboard layer with Cmd+K,
+  G-then-letter, `?` and right-click menus (D-75), Clubhouse date and time
+  fields (D-76), every way in has a Clubhouse screen (D-77), native launch
+  colour (D-78), the round as a scorecard to keep, with share and print (D-79),
+  plus the iPad tier (821 to 1180px), Dynamic Type, 44px touch and the iOS
+  offline cold-start fix. Not deployed.
+- **Contracts:** P011 Rounds has 1 reserved contract (was 11: only 111809, the
+  axe scan, is left); P013 CoachHelm has 8 (was 17). 110804 (Discard refuses a
+  teammate's round) is implemented on #2202.
+- **Verified locally on #2210's head:** typecheck, lint, `clubhouse:check`,
+  `clubhouse:css`, full vitest; `clubhouse:a11y` 303 of 305 states (the two
+  left are the preview harness); the premium sweep, 383 cases with no overflow
+  (Chromium and WebKit, 390 and 1280); all 18 journeys on a production build
+  against a local Supabase (Chromium and WebKit, with #2208 and #2209).
+- **Still open:** the round E2E runs in no CI workflow until draft #2208
+  lands (owner's call: runner minutes); `clubhouse:perf` needs a production
+  build; no real-iPhone, VoiceOver or real-account write pass; the front door
+  stays off (P015 checklist unticked); every held migration below is still
+  unapplied, `20261016220000` included (ledger checked 2026-10-19).
+
+## Where it stands (2026-10-17)
 
 - **Production: off.** `golf_clubhouse_ui` is `production: false` in
   `config/feature-flags.yml` and the front door (`golf_clubhouse_front_door`)
@@ -64,7 +97,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 | --- | --- | --- |
 | P001 Shell | Ready with caveats | No device or VoiceOver pass for the frame every page sits in; the 10-16 brand and team-heading work is on #2201 |
 | P002 Home | Ready with caveats | `golf_event_attendance` RLS lets a player read every teammate's replies through the API (Home shows counts only; decision 5); day labels and the midnight rollover fixed 2026-10-17 |
-| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability stays read-only (held `20260929120000`); `roster?tab=requests` from the join-request notification is ignored. Fixed 2026-10-17: a `?player=` link on the phone could open the list instead of the profile |
+| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability stays read-only (held `20260929120000`). Fixed 2026-10-17: a `?player=` link on the phone could open the list instead of the profile. Fixed since: `roster?tab=requests` from the join-request notification opens the phone's requests sheet (#2201) and, 2026-10-20, focuses the desktop requests card |
 | P004 Stats (team) | Ready with caveats | No phone browser capture. Fixed 2026-10-17: whoever the dashboard draws as a player now goes to their Stats instead of "not rebuilt" |
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
 | P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
@@ -72,11 +105,11 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3). Fixed 2026-10-17: a refused save says why; Back over any edit sheet with edits asks first and keeps Settings; the priority order after a failed save; one read per table; warning ticks on destructive confirms |
 | P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); held `20260929200000` (coach reasoning coach-only, D-35; the app already reads it coach-only). Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
 | P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
-| P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 11 contracts without a test, including writes refused offline; the round E2E runs only against a local stack, never in CI |
-| P012 Classes | Ready with caveats | Import and calendar writes never run live; a retried import after a lost answer syncs nothing, duplicate rows from one import both insert (no fix recorded) |
-| P013 CoachHelm | Ready with caveats | Q-124 (the stats cache counts test rounds; fix is the held stats chain); 17 contracts without a test; Player Ask decision open |
-| P014 Recruiting | Ready with caveats | Film uploads refused until held `20260930140000` (the dialog says so); after a lost reply, Add can create the prospect twice |
-| P015 Auth (front door) | Not ready, stays off | No Clubhouse version of reset-password, demo, coach onboarding, `coach/pending`, `join`, `join/[code]`, `staff/join/[token]`; crash containment, route error, not-found and error tracking unticked in `catalog/screens/auth.md`. Off at turn-on (step 5) |
+| P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 1 contract without a test (111809, was 11 on 10-17); the round E2E runs only against a local stack, in CI only once draft #2208 lands |
+| P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once could still both insert (a read before the insert, not a constraint) |
+| P013 CoachHelm | Ready with caveats | Q-124 (the stats cache counts test rounds; fix is the held stats chain); 8 contracts without a test (was 17 on 10-17); Player Ask decision open |
+| P014 Recruiting | Ready with caveats | Film uploads refused until held `20260930140000` (the dialog says so). Fixed 2026-10-20: after a lost reply, an Add with a corrected field (not the name) created the prospect twice; Retry and a repeated Save were already safe (CH-14915) |
+| P015 Auth (front door) | Not ready, stays off | Since #2210 (D-77) reset-password, demo, coach onboarding, `coach/pending`, `join`, `join/[code]` and `staff/join/[token]` have Clubhouse screens; crash containment, route error, not-found, error tracking and the device checks are still unticked in `screens/auth.md`. Off at turn-on (step 5) |
 
 ### Cross-cutting findings
 
@@ -119,11 +152,12 @@ VoiceOver, dark-mode scan or real-account write pass.
   Stats and Home from 2026-10-01; CoachHelm and any re-measure since #2189 are
   missing (it needs a production build). `clubhouse-quality` is not a required
   check and runs only on some paths.
-- **iOS (native, owner's call):** the offline cold-start reload loop is not
-  addressed (`GolfBridgeViewController.swift:158-164` treats `offline.html` as
-  leaving `/golf/`, and `SceneDelegate.swift:21-29` reloads the online login,
-  which fails again; inferred from code). The launch colour is still `#F2E6D2`
-  against the page's `#ebe7dc`.
+- **iOS (native, owner's call):** the offline cold-start reload loop is fixed
+  on #2202 (`GolfBridgeViewController.isBundledPage`: the bundled
+  `offline.html` no longer counts as leaving `/golf/`). Not run in the
+  Simulator yet (2026-10-19: the local CoreSimulator service hung on every
+  `simctl` call). It reaches users only with a new native build. The launch
+  colour stays Fairway's canvas while the app serves Fairway (D-78).
 
 ## Owner decisions before turn-on
 
@@ -154,16 +188,16 @@ VoiceOver, dark-mode scan or real-account write pass.
 
 ## Shortest path to turn-on, in order
 
-1. Land #2201 (ready; required checks pass) and apply `20261016220000` with
-   the owner's OK.
-2. Agent fix pass: done 2026-10-17 (the three route dead ends, busy-time
-   retry, Settings' refused-save message and Back with edits, Team Hub's
+1. Done: #2201 landed and is in production (`1e8a9fad8`). Apply
+   `20261016220000` with the owner's OK (still held, 2026-10-19).
+2. Agent fix passes: done 2026-10-17 (route dead ends, busy-time retry,
+   Settings' refused-save message and Back with edits, Team Hub's
    failed-roster notice, Home's midnight rollover, the Roster `?player=` link,
-   the dark-mode scan, the stale docs). Left: a CI job for the round E2E
-   against a local stack (it adds runner minutes to every push; owner's
-   call).
-3. Deploy `main` (the six undeployed commits, then #2201) with the flag still
-   off, and confirm with `npm run release:status -- --strict`.
+   the dark-mode scan, the stale docs) and 2026-10-19 (the completion pass,
+   #2210 in #2202). Left: CI for the round E2E against a local stack (draft
+   #2208; it adds runner minutes, owner's call).
+3. Land #2202, then deploy `main` with the flag still off (owner's word), and
+   confirm with `npm run release:status -- --strict`.
 4. Owner decisions 1 and 2 above.
 5. Owner real-iPhone pass: coach 20 minutes; player 30 minutes including
    airplane mode mid-round, killing the app and Recover; VoiceOver, large text
@@ -203,8 +237,8 @@ a new production deploy.
 4. Merge, deploy with the command in AGENTS.md "Production", and confirm with
    `npm run release:status -- --strict`.
 5. Leave `golf_clubhouse_front_door` off. It is global (a signed-out visitor
-   has no team), and coach onboarding, `coach/pending`, `join/[code]`,
-   `staff/join` and the demo have no Clubhouse versions.
+   has no team). Its screens exist since #2210 (D-77), but the P015 checklist
+   (`screens/auth.md`) is not ticked and no owner review has happened.
 6. Watch the canary for a full weekday (criteria below), then widen the
    allowlist and deploy again.
 
@@ -230,16 +264,69 @@ a new production deploy.
 
 ## Turn-on criteria
 
-- [ ] `main` with #2201 builds (`npm run build`) and a browser check of it is
-      clean. #2201 built once on `8cb03d5a3` (2026-10-17, before the owner's
-      no-build call); nothing since.
+- [ ] `main` with #2202 builds and a browser check of it is clean. #2210's
+      head built with `next build` on 2026-10-19 (local, `VERCEL_ENV=preview`)
+      and passed all 18 journeys; `main` after #2202 has not been built.
 - [ ] Owner decisions 1 and 2 are made (held features, Q-120).
 - [ ] The owner's real-iPhone pass is clean.
 - [ ] The rollback deployment is named above.
 - [ ] After the canary deploy: no new Sentry issue families on Clubhouse
-      routes for a full weekday.
+      routes for a full weekday (the `ui:clubhouse` search in Monitoring,
+      against its baseline).
 - [ ] After the canary deploy: zero rounds completed with zero holes
-      (read-only SQL; zero in the seven days to 2026-10-17 with the flag off).
+      (the read-only SQL in Monitoring; zero in the seven days to 2026-10-17
+      with the flag off).
+
+## Monitoring
+
+Every Clubhouse error is tagged `ui:clubhouse`: the browser tags the session
+when the shell mounts (`chTagSession`, `src/clubhouse/lib/track.ts`), and the
+server tags the request's isolation scope when `isClubhouseFor` decides
+Clubhouse (`src/clubhouse/gate.ts`, tested in
+`src/clubhouse/__tests__/gate-sentry-tag.test.ts`). Fairway events carry no `ui`
+tag. The server tag reaches production only with the deploy that carries it, so
+take the canary from a build that includes it.
+
+**The search to save** (Sentry org `helm-xs`, project `javascript-nextjs`):
+
+    environment:production ui:clubhouse
+
+It was not saved through the tools (the Sentry tools here can create alerts and
+metric monitors, not saved searches, and an alert notifies people, so it waits
+for the owner). Steps, before the canary deploy:
+
+1. Sentry → Issues, project `javascript-nextjs`, environment `production`.
+2. Search `ui:clubhouse is:unresolved`, then Save search as
+   "Clubhouse canary (production)", visible to the organization.
+3. Optional alert: Alerts → Create alert → Issues, project
+   `javascript-nextjs`, environment `production`, when "A new issue is created"
+   and the filter "The event's tags match `ui` equals `clubhouse`", notify the
+   owner. Leave it active for the canary weekday.
+4. Discover query for counts, to compare with the baseline below:
+   dataset Errors, `environment:production ui:clubhouse`, fields `count()`,
+   `count_unique(user)`, `count_unique(issue)`, period 14d.
+
+**Baseline, recorded 2026-10-16 (read only).**
+
+- Sentry, production, the 14 days to about 2026-10-16 21:35 UTC, error events
+  whose transaction is under `/golf/dashboard` (`transaction:*golf/dashboard*`
+  or `*golf/(dashboard)*`, which covers server GET and POST, browser routes and
+  server components): **386 events, 28 issues, 26 users**. The largest:
+  JAVASCRIPT-NEXTJS-Z0 statement timeout (86 events), -XP worst-hole read
+  timeouts (79 events, 15 users), -YX AbortError (78), -196 the held-migration
+  trace probe (73; its noise is dropped by #2197, not yet deployed) and -15A the
+  round recap style trace (32 events, 17 users). `ui:clubhouse` in the same 14
+  days: 0 events.
+- Production database, `golf_rounds` with `status = 'completed'` and no
+  `golf_holes` row: **18 of 774 completed rounds** (14 not `is_test`), the
+  newest created 2026-09-28; **0 of the 64 completed in the last 14 days**.
+  The turn-on criterion is that this stays 0 for rounds completed after the
+  canary deploy. `golf_rounds` has no completion time, so `updated_at` (which
+  the submit sets) stands in, a superset:
+
+      SELECT count(*) FROM golf_rounds r
+      WHERE r.status = 'completed' AND r.updated_at >= '<canary deploy time>'
+        AND NOT EXISTS (SELECT 1 FROM golf_holes h WHERE h.round_id = r.id);
 
 ## Stale docs found by the 2026-10-17 audit
 
@@ -273,8 +360,8 @@ already marked RELEASED:
 
 | What | Where |
 | --- | --- |
-| Open release work | draft PR [#2201](https://github.com/njrini99-code/helmv3/pull/2201) (`agent/course-picker-premium-pr`) |
-| The last merge train | #2189 (`agent/clubhouse-release`), merged 2026-10-14 |
+| Open release work | PR [#2202](https://github.com/njrini99-code/helmv3/pull/2202) (`agent/fairway-fixes-polish`, with #2210); draft [#2208](https://github.com/njrini99-code/helmv3/pull/2208) (round E2E in CI) |
+| The last merge train | #2201, merged and in production (`1e8a9fad8`) |
 | Held migrations, reasons and apply order | `supabase/migrations/HELD.md`; the Clubhouse order is in [PROGRESS.md](PROGRESS.md) "Release with the Clubhouse deploy" |
 | Held features (D-61) | `docs/clubhouse/held/features/` |
 | Gates, decisions (D-n), questions (Q-n), data gaps | [PROGRESS.md](PROGRESS.md) |

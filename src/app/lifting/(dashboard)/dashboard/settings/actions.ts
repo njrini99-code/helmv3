@@ -10,7 +10,8 @@
 // =============================================================================
 
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 import type { HelmLiftingSport } from '@/lib/types/helm-lifting';
 
 export interface OrgTeamOption {
@@ -36,16 +37,22 @@ export async function getOrgTeamsForLifting(orgId: string): Promise<OrgTeamOptio
   if (!user) return [];
 
   // Verify the caller is an active lifting coach for this org.
-  const { data: coachRow } = await fromUntyped(supabase, 'helm_lifting_coaches')
+  const { data: coachRow, error: coachError } = await supabase
+    .from('helm_lifting_coaches')
     .select('id')
     .eq('user_id', user.id)
     .eq('organization_id', orgId)
     .eq('status', 'active')
-    .maybeSingle() as { data: { id: string } | null };
+    .maybeSingle();
 
-  if (!coachRow) return [];
-
+  if (coachError) {
+    await logServerError(`Lifting org team options: coach lookup failed: ${describeError(coachError)}`, {
+      action: 'lifting.settings.getOrgTeamsForLifting',
+    });
+  }
+  // A failed membership read shows no teams (the closed answer for a permission check); the failure is logged above.
   const teams: OrgTeamOption[] = [];
+  if (coachError || !coachRow) return teams;
 
   // Baseball teams for the org
   const { data: baseballTeams } = await supabase

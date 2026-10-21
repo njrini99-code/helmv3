@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, Flag, Pencil } from 'lucide-react';
+import { Check, ChevronDown, Flag, Pencil } from 'lucide-react';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { frontierIndex, playedBefore } from '@/lib/golf/round-session/play-order';
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
@@ -11,7 +11,8 @@ import { useChReducedMotion } from '../../../lib/reduced-motion';
 import { Icon } from '../../../ui/Icon';
 import { ScoreMark } from '../../../ui/ScoreMark';
 import { centerLine, holeShape, plotShots, pointAlong, ringRadius, type ChHoleFrame } from './hole-geometry';
-import { distanceText, RESULT_LABEL, roundSoFar, shotLine, shotTitle } from './labels';
+import { distanceText, roundSoFar, shotFinish, shotLine, shotTitle } from './labels';
+import { useHScroll } from '../../../ui/use-hscroll';
 
 /** A one-of-several choice (radiogroup, CH-11806: named for what it chooses). A `rare` option is drawn quieter; `note` is its small second line. */
 export function Seg<T extends string>({
@@ -86,6 +87,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
   const soFar = roundSoFar(holes);
   const reduced = useChReducedMotion();
   const stripRef = useRef<HTMLDivElement>(null);
+  const stripEdges = useHScroll<HTMLDivElement>(stripRef);
   const placedRef = useRef(false);
   // A strip wider than the screen (18 holes, a round resumed on the back nine) brings the current hole to the middle:
   // placed before the first paint (a layout effect, so a round resumed on the back nine never flashes hole 1), eased
@@ -101,7 +103,7 @@ export function TrackStrip({ holes, current, onJump, startHole = 1 }: { holes: R
     else strip.scrollLeft = left;
   }, [current, reduced]);
   return (
-    <div ref={stripRef} className="ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
+    <div ref={stripEdges} className="ch-hscroll ch-rt-strip" style={{ ['--ch-rt-holes' as string]: holes.length }}>
       {holes.map((h, i) => {
         const score = h.score;
         const cls = 'ch-rt-strip__h' + (i === current ? ' is-cur' : '') + (score != null ? ' is-done' : '') + (score != null && score < h.par ? ' is-under' : '');
@@ -289,6 +291,7 @@ export function ShotLog({
   pref,
   onEdit,
   editDisabled = false,
+  saved = null,
 }: {
   shots: ShotRecord[];
   pref: DistancePreference;
@@ -299,11 +302,18 @@ export function ShotLog({
   onEdit?: (shot: ShotRecord) => void;
   /** While an undo or the hole's save runs, the rows can't be opened. */
   editDisabled?: boolean;
+  /** The hole before this one has just saved ("Hole 4 saved · Birdie"): said here, in place of "No shots yet", for a few seconds. */
+  saved?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const bodyId = useId();
   if (!shots.length)
-    return (
+    return saved ? (
+      <div className="ch-rt-log is-empty is-saved" role="status">
+        <Icon icon={Check} size={14} />
+        {saved}
+      </div>
+    ) : (
       <div className="ch-rt-log is-empty" data-ch-code="CH-11308">
         <Icon icon={Flag} size={14} />
         No shots yet on this hole
@@ -311,9 +321,7 @@ export function ShotLog({
     );
   const last = shots[shots.length - 1]!;
   const penalties = shots.filter((s) => s.isPenalty).length;
-  const lastText = last.isPenalty
-    ? shotTitle(last)
-    : `${shotTitle(last)} → ${RESULT_LABEL[last.result]}${last.result !== 'hole' ? `, ${distanceText(last.distanceToHoleAfter, last.distanceUnitAfter, pref)}` : ''}`;
+  const lastText = last.isPenalty ? shotTitle(last) : `${shotTitle(last)} → ${shotFinish(last, pref)}`;
   return (
     <div className={'ch-rt-log' + (open ? ' is-open' : '')}>
       <button type="button" className="ch-rt-log__h" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen(!open)}>

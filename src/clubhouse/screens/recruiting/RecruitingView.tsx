@@ -9,7 +9,6 @@ import {
   fullName,
   isSort,
   isStage,
-  newRequestId,
   nextStepSummary,
   prospectFrom,
   sharesOf,
@@ -30,6 +29,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
 import { useToast } from '../../ui/Toast';
+import { addRequestFor, type ChAddAttempt } from './add-request';
 import type { RecCtx, RecInitialUpload } from './ctx';
 import { ProspectForm, type RecFormState } from './ProspectForm';
 import { RecruitingDesktop } from './RecruitingDesktop';
@@ -187,17 +187,13 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
   };
 
   // ── Add a prospect (CH-14001) ──────────────────────────────────────────────
-  // One request id per Add: the same form with the same contents sends the same id, whether Retry replays it or Save is pressed again, so a
-  // reply that was lost after the server stored the prospect cannot add them a second time (CH-14915). Changing the contents is a
-  // different prospect and gets a new id.
-  const attempt = useRef<{ nonce: number; sig: string; id: string } | null>(null);
+  // One request id per prospect being added: the same form for the same name sends the same id, whether Retry replays it, Save is pressed
+  // again, or a field was corrected first, so a reply that was lost after the server stored the prospect cannot add them a second time; the
+  // server brings the stored row up to what was sent (CH-14915). Another name is a different prospect and gets a new id (./add-request.ts).
+  const attempt = useRef<ChAddAttempt | null>(null);
   const requestIdFor = (f: RecFormState, input: ChRecruitInput) => {
-    const sig = JSON.stringify(input);
-    const last = attempt.current;
-    if (last && last.nonce === f.nonce && last.sig === sig) return last.id;
-    const id = newRequestId();
-    attempt.current = { nonce: f.nonce, sig, id };
-    return id;
+    attempt.current = addRequestFor(attempt.current, f.nonce, input);
+    return attempt.current.id;
   };
   const addAction = async (input: ChRecruitInput, requestId: string) => {
     const res = await writes.create(input, requestId);
@@ -381,7 +377,7 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
           code="CH-14501"
           title={asking ? `Delete ${asking.name}?` : 'Delete prospect?'}
           message="This removes them from your list, with their notes and documents. This can’t be undone."
-          actionLabel={del.pending ? 'Deleting' : 'Delete prospect'}
+          actionLabel={del.pending ? 'Deleting…' : 'Delete prospect'}
           busy={del.pending}
           onAction={() => asking && void del.run(asking)}
         />
@@ -399,8 +395,8 @@ export function RecruitingView({ data, writes, initial }: { data: ChRecruiting; 
               <Button variant="ghost" disabled={del.pending} onClick={() => setAsking(null)}>
                 Keep them
               </Button>
-              <Button variant="danger" disabled={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
-                {del.pending ? <span data-ch-code="CH-14406">Deleting</span> : 'Delete prospect'}
+              <Button variant="danger" busy={del.pending} feel="warning" onClick={() => asking && void del.run(asking)}>
+                {del.pending ? <span data-ch-code="CH-14406">Deleting…</span> : 'Delete prospect'}
               </Button>
             </>
           }

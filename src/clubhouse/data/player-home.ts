@@ -4,7 +4,11 @@ import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
 import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
-import { holeRounds } from './round-scope';
+import { holeRounds, recordedPutts } from './round-scope';
+import { replyClosedAt } from '../screens/calendar/model';
+import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
+import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 
 /**
@@ -84,7 +88,23 @@ export interface ChPlayerHome {
   handicap: number | null;
   /** Null when the rounds didn't load. `cacheError`: scrambling and three-putts didn't load. */
   legs: { rows: ChPlayerLeg[]; cacheError: boolean; benchError: boolean } | null;
+  /** What the coach is waiting on, as Team Hub lists it (`loadPlayerAsks`); null when any of it didn't load (the row hides). */
+  asks?: ChPlayerAsks | null;
 }
+
+/**
+ * What the coach is waiting on (Home's "From your coach" row), counted as Team Hub lists it for the player: replies still
+ * to give (their own invitation, unanswered, that the server would still take), posts asking for an acknowledgement they
+ * haven't given, and their open tasks due within a week or overdue.
+ */
+export interface ChPlayerAsks {
+  rsvps: number;
+  acks: number;
+  tasksDue: number;
+}
+
+/** A task counts as due when it is due within this many days (or is overdue). */
+export const ASK_TASK_DAYS = 7;
 
 function log(read: string, error: unknown) {
   chLogServer('home', read, error);
@@ -109,7 +129,10 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const clockRead = homeClock(supabase, input.teamId, now);
   // No names: a player's Home never lists who else is invited.
   // A player's week reads reply counts, never teammates' rows (migration 20261017102000).
-  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map(), viewer: 'player' });
+  // Their own replies decide which meetings are theirs to see (Decision B) and carry "You're going" / "Reply needed".
+  const weekRead = loadHomeWeek(supabase, { teamId: input.teamId, tz: clockRead.then((c) => c.tz), now, names: new Map(), viewer: 'player', playerId: input.playerId });
+  // Its reads start now; only the tasks' "due this week" waits for the team's day.
+  const asksRead = loadPlayerAsks(supabase, { teamId: input.teamId, playerId: input.playerId, now, today: clockRead.then((c) => c.day) });
   // The scoring card's Last 5 / 10 / 20, the leg figures and the brief are the player's newest rounds in any season, as Stats' Last 10 is (Q-122); the season's own figures are cut below.
   const roundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'home', since: lastTenFloor() });
   const playerRead = Promise.resolve(supabase.from('golf_players').select('handicap_index, handicap').eq('id', input.playerId).maybeSingle());
@@ -125,7 +148,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   // Without the team's row its tour is unknown, so no benchmark is claimed (as on Stats, CH-4210).
   const benchRead = teamRead.then((team) => (team.data ? loadTourBenchmarks(supabase, tourForGender(team.data.gender), 'home') : null));
   const coachRead = teamRead.then((team) => coachFor(supabase, team.data ?? null));
-  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId] = await Promise.all([
+  const [{ greeting, todayLabel, tz, day }, wk, roundsRes, playerRes, teamRes, latest, cache, bench, coachUserId, asks] = await Promise.all([
     clockRead,
     weekRead,
     roundsRead,
@@ -135,6 +158,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     cacheRead,
     benchRead,
     coachRead,
+    asksRead,
   ]);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
@@ -164,8 +188,9 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     coachUserId,
     week: wk.week,
     // Who hasn't replied, and the invitees' ids, are the coach's (Nudge and Message); a player's page never carries them.
-    next: wk.next && !coachPrivate(wk.next) ? coachOnlyOut(wk.next) : null,
-    today: wk.todayEvents.filter((e) => !coachPrivate(e)).map(coachOnlyOut),
+    // Which meetings are theirs at all (Decision B, D2-8 when their own replies fail) is decided in loadHomeWeek.
+    next: wk.next ? coachOnlyOut(wk.next) : null,
+    today: wk.todayEvents.map(coachOnlyOut),
     weekNote: wk.weekNote,
     latest: { rounds: latest.rounds, error: roundsRes.error, holesError: latest.holesError },
     scoring: { points, error: roundsRes.error },
@@ -173,11 +198,10 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
     handicap: playerRes.data?.handicap_index ?? playerRes.data?.handicap ?? null,
     legs,
+    asks,
   };
 }
 
-/** D2-8: a meeting with no invitees is the coach's own; a failed invite read (a null count) never hides one. */
-const coachPrivate = (e: ChHomeEvent) => e.type === 'meeting' && (e.invitedCount ?? e.inviteeIds?.length ?? null) === 0;
 const coachOnlyOut = ({ awaiting: _a, inviteeIds: _i, ...e }: ChHomeEvent): ChHomeEvent => e;
 
 /**
@@ -236,7 +260,8 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
   const tee = rateOf(fairways);
   const gir = rateOf(greens);
   const scr = rateOf(scrambles);
-  const putts = window.map((r) => r.total_putts).filter((v): v is number => v != null);
+  // Putts as Stats counts them: a round written 0 putts has none recorded (recordedPutts, the cache's `cachedPutts` rule).
+  const putts = window.map((r) => recordedPutts(r.total_putts)).filter((v): v is number => v != null);
   const threes = window.map((r) => cache.get(r.id)?.three_putts).filter((v): v is number => typeof v === 'number');
   const sand = window.reduce(
     (a, r) => {
@@ -282,7 +307,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
       sg.putting,
       bench?.get('putts_per_round') ?? null,
       window
-        .map((r) => r.total_putts)
+        .map((r) => recordedPutts(r.total_putts))
         .filter((v): v is number => v != null)
         .reverse()
         .slice(-LEG_TREND),
@@ -305,4 +330,59 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
   return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
+}
+
+type Client = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * The counts behind "From your coach" (ChPlayerAsks), from Team Hub's own player reads: the hub's events
+ * (get_player_hub_events, the same window) with the reply rules respondToEvent enforces (replyClosedAt, as the hub's replyIsClosed), the hub's
+ * announcements (get_player_hub_announcements), and the player's task assignments. Any read failing returns null
+ * (logged): the row hides rather than undercounting.
+ */
+export async function loadPlayerAsks(supabase: Client, input: { teamId: string; playerId: string; now: Date; today: string | Promise<string> }): Promise<ChPlayerAsks | null> {
+  const since = new Date(input.now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const [eventsRes, annRes, assignRes] = await Promise.all([
+    supabase.rpc('get_player_hub_events', { p_team_id: input.teamId, p_player_id: input.playerId, p_since: since }),
+    getPlayerHubAnnouncements(input.teamId, input.playerId).catch((err: unknown) => ({ success: false as const, error: err instanceof Error ? err.message : 'failed' })),
+    supabase.from('golf_task_assignments').select('task_id, status').eq('player_id', input.playerId).limit(1000),
+  ]);
+  const parsed = eventsRes.error ? null : parsePlayerHubEvents(eventsRes.data);
+  if (!parsed?.ok) {
+    log('asksEvents', eventsRes.error ?? (parsed && !parsed.ok ? parsed.reason : 'no events'));
+    return null;
+  }
+  if (!annRes.success) {
+    log('asksAnnouncements', 'error' in annRes ? annRes.error : 'failed');
+    return null;
+  }
+  if (assignRes.error) {
+    log('asksTasks', assignRes.error);
+    return null;
+  }
+  // Only their own invitations, still unanswered (null: not invited, nothing to reply to).
+  const waiting = [...new Set(parsed.rows.filter((e) => e.event_type !== 'class' && e.rsvp_status === 'pending').map((e) => e.event_id))];
+  const openTasks = [...new Set((assignRes.data ?? []).filter((a) => a.status !== 'completed').map((a) => a.task_id))];
+  const [rules, tasks] = await Promise.all([
+    Promise.all(chunkIds(waiting).map((ids) => supabase.from('golf_events').select('id, status, cancelled_at, all_day, start_time, rsvp_deadline, requires_rsvp').in('id', ids))),
+    Promise.all(chunkIds(openTasks).map((ids) => supabase.from('golf_tasks').select('id, due_date').in('id', ids).eq('team_id', input.teamId))),
+  ]);
+  const ruleErr = rules.find((r) => r.error)?.error;
+  const taskErr = tasks.find((r) => r.error)?.error;
+  if (ruleErr || taskErr) {
+    log(ruleErr ? 'asksReplyRules' : 'asksTaskDates', ruleErr ?? taskErr);
+    return null;
+  }
+  const nowMs = input.now.getTime();
+  const rsvps = rules.flatMap((r) => r.data ?? []).filter((e) => !replyClosedAt(e, nowMs)).length;
+  const acks = (annRes.data ?? []).filter((a) => a.requires_acknowledgement && !a.has_player_acknowledged).length;
+  const horizon = addDaysYmd(await input.today, ASK_TASK_DAYS);
+  const tasksDue = tasks.flatMap((r) => r.data ?? []).filter((t) => !!t.due_date && t.due_date.slice(0, 10) <= horizon).length;
+  return { rsvps, acks, tasksDue };
+}
+
+function addDaysYmd(ymd: string, n: number): string {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }

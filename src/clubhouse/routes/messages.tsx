@@ -2,6 +2,7 @@ import 'server-only';
 import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { canHideGolfConversations } from '@/app/golf/actions/conversation-hide';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { loadMessagesDirectory } from '../data/messages';
 import { Messages } from '../screens/messages/Messages';
 import { toChAnnouncement } from '../screens/messages/model';
@@ -22,7 +23,7 @@ export async function ClubhouseMessagesRoute() {
   if (!session) return null;
   const team = await resolveClubhouseTeam(session);
   if (!team) {
-    return <MessagesNoTeam />;
+    return <MessagesNoTeam coach={pickGolfDashboardRole(session) === 'coach'} />;
   }
   const viewerName = session.coach?.full_name ?? ([session.player?.first_name, session.player?.last_name].filter(Boolean).join(' ') || 'You');
   const viewerPlayerId = team.role === 'player' ? team.playerId : null;

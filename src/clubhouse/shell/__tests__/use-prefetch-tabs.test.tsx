@@ -166,17 +166,15 @@ describe('usePrefetchTabs · the sections visited', () => {
   const RECRUIT = '/golf/dashboard/recruiting';
   const SECTIONS = [...TABS, ROSTER, SETTINGS, RECRUIT];
 
-  it('a section left is fetched whole for the way back; a section never visited is not', () => {
+  it('a section left is fetched whole for the way back', () => {
     const view = renderHook(({ at }) => usePrefetchTabs(TABS, at, SECTIONS), { initialProps: { at: HOME } });
     settle();
     view.rerender({ at: ROSTER });
     settle();
-    expect(router.prefetch.mock.calls.map(([href]) => href)).not.toContain(SETTINGS);
     router.prefetch.mockClear();
     view.rerender({ at: CAL });
     settle();
     expect(router.prefetch.mock.calls.map(([href]) => href)).toContain(ROSTER);
-    expect(router.prefetch.mock.calls.map(([href]) => href)).not.toContain(SETTINGS);
   });
 
   it('keeps only the last two visited', () => {

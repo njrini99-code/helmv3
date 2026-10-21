@@ -6,7 +6,7 @@
   gap: 18px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 44px 36px 80px;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }
 .ch-rs-head {
   display: flex;
@@ -24,7 +24,7 @@
   gap: 10px;
 }
 .ch-rs-head h1 {
-  font: 400 52px/1.02 var(--ch-font-serif);
+  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
   font-variation-settings: normal;
 }
@@ -49,9 +49,13 @@
 /* Join requests */
 .ch-rs-req {
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
+}
+/* A reading destination (the bell's `?tab=requests` link focuses it): announced, never drawn as a control. */
+.ch-root .ch-rs-req:focus {
+  outline: none;
 }
 .ch-rs-req__head {
   display: flex;
@@ -64,10 +68,14 @@
 }
 .ch-rs-req__head b {
   font: 600 14px/1.3 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-forest-800);
 }
 .ch-rs-req__head > span:last-child {
   font: var(--ch-type-body-s);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rs-req__ic {
@@ -178,8 +186,11 @@
 .ch-rs-body.has-peek {
   grid-template-columns: minmax(0, 1fr) 340px;
 }
-.ch-rs-empty {
-  padding: 8px;
+/* The player's roster of one (CH-3309): one quiet line under their own row. */
+.ch-rs-solo {
+  margin: 14px 2px 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
 }
 
 /* Layout toggle (handoff .rs-vt) */
@@ -197,7 +208,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: transparent;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -300,8 +311,17 @@
   font-size: 24px;
 }
 .ch-rs-face__name {
+  display: -webkit-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
   font: 600 16px/1.2 var(--ch-font-sans);
   letter-spacing: -0.01em;
+  /* A long name wraps to a second line and ends in an ellipsis; it never pushes the card wider (the row's label carries the full name). */
+  overflow-wrap: anywhere;
+  text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .ch-rs-face__meta {
   font: var(--ch-type-caption);
@@ -320,7 +340,7 @@
   align-self: stretch;
   margin-top: 4px;
   padding: 10px 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -337,6 +357,7 @@
 }
 .ch-rs-face__figs b {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rs-face__figs b.is-gain,
@@ -375,6 +396,7 @@
 .ch-rs-fig > b {
   grid-area: v;
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
@@ -464,7 +486,7 @@
   min-width: 820px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--ch-border-hairline);
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rs-row:last-child {
@@ -530,13 +552,16 @@
 }
 .ch-rs-num {
   font: 500 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rs-num2 {
   font: 500 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-rs-sg {
   font: 500 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-rs-status {
@@ -579,7 +604,7 @@
   gap: 18px;
   padding: 0 0 20px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -635,7 +660,7 @@
   margin-top: 0;
   margin-bottom: 0;
   padding: 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
@@ -682,6 +707,7 @@
 .ch-rs-peek__figs dd {
   margin: 0;
   font: 500 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-rs-peek__sec {
@@ -695,7 +721,7 @@
   gap: 2px;
 }
 .ch-rs-peek__l b {
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-rs-peek__l span {
   font: var(--ch-type-caption);
@@ -723,10 +749,12 @@
 }
 .ch-rs-peek__rd > span:nth-child(2) {
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 .ch-rs-topar {
-  font: 500 13px/1 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: right;
   color: var(--ch-text-secondary);
 }
@@ -742,6 +770,7 @@
 .ch-rs-peek__dev b {
   margin-right: 3px;
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rs-peek__memo {
@@ -783,6 +812,7 @@
 .ch-rs-inv__code b {
   grid-row: 2;
   font: 500 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: var(--ch-forest-800);
 }
@@ -794,9 +824,16 @@
   display: flex;
   gap: 8px;
 }
+/* A long link clips at its start, not its end, so the team code stays in view (wave 10). The link is one
+   left-to-right run, so it still reads in order. */
+.ch-rs-inv__link .ch-input {
+  direction: rtl;
+  text-align: left;
+  text-overflow: ellipsis;
+}
 .ch-rs-remove {
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   font: var(--ch-type-body-s);
@@ -817,7 +854,7 @@
     padding: 28px 16px 60px;
   }
   .ch-rs-head h1 {
-    font-size: 32px;
+    font-size: calc(32 * var(--ch-type-k));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -840,7 +877,7 @@
 .ch-rs-none {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 44px 36px 80px;
+  padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }
 @media (max-width: 820px) {
   /* The server renders desktop. On a phone it stays hidden until the phone view takes over at hydration. */
@@ -881,13 +918,13 @@
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
-    font: 500 12px/1.2 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: 0;
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-title {
     margin: 0;
-    font: 600 31px/1.08 var(--ch-font-sans);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -899,7 +936,7 @@
     gap: 12px;
   }
   .ch-rsm-sort > span {
-    font: 500 13px/1.2 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   /* Drawn at 26px; the hit area reaches 44. */
@@ -932,7 +969,7 @@
     margin: 14px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -965,8 +1002,13 @@
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
+  /* Inset by the ring's 3px, so the ring (not the coin) meets the column's 20px edge; the skeleton's coin sits there too. */
   .ch-rsm-row .ch-avatar {
+    margin-inline-start: 3px;
     box-shadow: 0 0 0 2px var(--ch-workspace), 0 0 0 3px var(--ch-champagne-rule);
+  }
+  .ch-rsm-row > .ch-skel:first-child {
+    margin-inline-start: 3px;
   }
   .ch-rsm-row__b {
     display: flex;
@@ -977,7 +1019,7 @@
   }
   .ch-rsm-row__b b {
     overflow: hidden;
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
     white-space: nowrap;
@@ -989,10 +1031,10 @@
     color: var(--ch-text-tertiary);
     overflow-wrap: anywhere;
   }
-  .ch-rsm-row__b > span.is-warning {
+  .ch-rsm-row__b > span > .is-warning {
     color: var(--ch-chart-loss);
   }
-  .ch-rsm-row__b > span.is-positive {
+  .ch-rsm-row__b > span > .is-positive {
     color: var(--ch-chart-gain);
   }
   .ch-rsm-row__spark {
@@ -1006,14 +1048,20 @@
     align-items: flex-end;
     gap: 4px;
   }
+  /* The `font` shorthand resets .ch-num's tabular figures, so they are set again after it. The caption holds the
+     widest one ("+0.8 hcp", "10.2 hcp") so the spark column stays put from row to row. */
   .ch-rsm-row__v b {
     font: 600 17px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     color: var(--ch-text-primary);
   }
-  .ch-rsm-row__v span {
-    font: 500 12px/1 var(--ch-font-sans);
+  .ch-rsm-row__v > span {
+    min-width: 6ch;
+    font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
+    text-align: right;
     white-space: nowrap;
   }
   /* The figure as text for the page's first frame (RosterPhone's RollFigure), laid out as Number Flow lays out the same
@@ -1064,18 +1112,18 @@
   }
   .ch-rsm-prof .ch-rsm-hero h2 {
     margin: 8px 0 2px;
-    font: 600 28px/1.1 var(--ch-font-sans);
+    font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.035em;
     color: var(--ch-ledger-ink);
     font-variation-settings: 'wdth' 88;
     text-wrap: balance;
   }
   .ch-rsm-hero__id {
-    font: 500 14px/1.3 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-green-700);
   }
   .ch-rsm-hero__m {
-    font: 400 13px/1.3 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-hero__act {
@@ -1115,12 +1163,13 @@
     box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-figs dt {
-    font: 500 12px/1.2 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-figs dd {
     margin: 0;
     font: 600 22px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
   }
@@ -1140,13 +1189,14 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-panel__h b {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-rsm-panel__h > span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   /* Over the first row, so its 44px reach is not cut by the row drawn after it. */
@@ -1159,7 +1209,8 @@
     margin: -13px -8px -13px 0;
     padding: 0 8px;
     border-radius: var(--ch-radius-md);
-    font: 500 13px/1 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-green-700);
     text-decoration: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
@@ -1220,7 +1271,7 @@
   }
   .ch-rsm-rd__b b {
     overflow: hidden;
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
     white-space: nowrap;
@@ -1238,6 +1289,7 @@
   }
   .ch-rsm-rd__v b {
     font: 600 17px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
     color: var(--ch-text-primary);
   }
@@ -1247,7 +1299,7 @@
   .ch-rsm-about > b {
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1269,12 +1321,12 @@
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
   .ch-rsm-facts dt {
-    font: 400 14px/1.2 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-rsm-facts dd {
     margin: 0;
-    font: 500 14px/1.2 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
     text-align: right;
   }
@@ -1283,7 +1335,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-note .ch-rs-peek__l b {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1370,7 +1422,7 @@
     min-width: 0;
   }
   .ch-rsm-banner__b b {
-    font: 600 16px/1.25 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
   }
@@ -1412,13 +1464,13 @@
   }
   .ch-rsm-rq__id b {
     overflow: hidden;
-    font: 600 16px/1.2 var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.01em;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
   .ch-rsm-rq__id span {
-    font: 400 13px/1.2 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   /* The handicap is a figure at the row's end, not a well. */
@@ -1432,10 +1484,11 @@
   }
   .ch-rsm-rq__h b {
     font: 500 18px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-rsm-rq__h span {
-    font: 500 10.5px/1 var(--ch-font-sans);
+    font: 500 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-rq__meta {
@@ -1474,12 +1527,13 @@
     gap: 4px;
   }
   .ch-rsm-code > span > span {
-    font: 500 11.5px/1 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   /* Instrument Sans, as on desktop: the design's tracked mono isn't in the doctrine. */
   .ch-rsm-code b {
-    font: 600 20px/1 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
     color: var(--ch-forest-800);
   }
@@ -1529,7 +1583,7 @@
     background: var(--ch-ledger-row-press);
   }
   .ch-rsm-act b {
-    font: 500 15px/1.2 var(--ch-font-sans);
+    font: 500 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   }
   .ch-rsm-act__ic {
     display: grid;
@@ -1593,7 +1647,7 @@
   .ch-rs-peek__figs dt,
   .ch-rsm-rq__h span,
   .ch-rsm-code > span > span {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -1638,11 +1692,15 @@
   }
   .ch-rs[data-canopy] .ch-rs-req__head b {
     font: 600 19px/1.2 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.022em;
     color: var(--ch-ledger-ink);
   }
   .ch-rs[data-canopy] .ch-rs-req__head > span:last-child {
     font: var(--ch-type-caption);
+
+    font-variant-numeric: tabular-nums;
   }
   .ch-rs[data-canopy] .ch-rs-req__row {
     padding: 14px 0;
@@ -1666,9 +1724,6 @@
   .ch-rs[data-canopy] .ch-rs-body,
   .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
     margin-top: -18px;
-  }
-  .ch-rs[data-canopy] .ch-rs-empty {
-    padding: 28px 0 8px;
   }
 
   /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and
@@ -1741,9 +1796,9 @@
   .ch-rs[data-canopy] .ch-rs-face,
   .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
     padding: 24px 20px 24px;
-    border-radius: 22px;
-    background: linear-gradient(180deg, #fff 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
-    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 #fff, inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
+    border-radius: var(--ch-radius-xl);
+    background: linear-gradient(180deg, var(--ch-ivory-0) 0%, var(--ch-bg-surface) 42%, var(--ch-ivory-50) 100%);
+    box-shadow: 0 0 0 1px rgb(176 149 96 / 0.55), inset 0 1px 0 var(--ch-light-rim), inset 0 -3px 0 rgb(28 25 18 / 0.05), var(--ch-elevation-face);
     transition:
       box-shadow var(--ch-dur-base) var(--ch-ease),
       transform var(--ch-dur-base) var(--ch-ease),
@@ -1769,7 +1824,7 @@
     position: absolute;
     inset: 7px;
     border: 1px solid rgb(176 149 96 / 0.6);
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.06);
     content: '';
     pointer-events: none;
@@ -2017,18 +2072,19 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   gap: 14px;
   margin: 8px 0 22px;
   padding: 22px 24px 8px;
-  border-radius: 18px;
+  overflow-x: clip;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 3px 0 var(--ch-champagne-500), 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
 }
 .ch-rs-sp__h h2 {
   margin: 0 0 4px;
-  font: 600 19px/1.2 var(--ch-font-sans);
+  font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-forest-800);
 }
 .ch-rs-sp__h p {
   margin: 0;
-  font: 400 13.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-sp__plot {
@@ -2036,7 +2092,10 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   margin: 0 22px;
 }
 /* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
-   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor and nothing overflows the plot. */
+   `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor. WebKit kept a translated
+   coin's old position in the canvas's scrollable overflow when the window shrank (an iPad turned to portrait scrolled the
+   page sideways until reload), so the panel clips sideways overflow (.ch-rs-sp, overflow-x: clip): its padding and the
+   plot's margin leave room for a coin at either end. */
 .ch-rs-sp__team {
   position: absolute;
   top: 0;
@@ -2068,6 +2127,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
   color: #141412;
   font: 700 12px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ch-rs-sp__coins {
@@ -2115,6 +2175,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 .ch-rs-sp__coins b {
   font: 700 14px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
 }
 .ch-rs-sp__coins em {
@@ -2133,10 +2194,118 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   top: 5px;
   transform: translateX(-50%);
   font: 500 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-rs-sp__coins button {
     transition-delay: 0s;
+  }
+}
+
+/* Print (the roster): one clean sheet of the list, in ink on white whatever the theme. A letter sheet is narrower than the phone
+   breakpoint, so the page prints in its phone layout (.ch-rsm; useChPhone reads the print width); .ch-rs is the desktop one. The shell
+   hides its chrome; here the sort, the join banner and the invite action go too, "GolfHelm" joins the head, the ledger rules are kept
+   (print-color-adjust: exact) and a row never splits across pages. The app-wide print sheet hides every button, and the rows are
+   buttons, so they are put back here. */
+@media print {
+  .ch-rsm,
+  .ch-rs {
+    --ch-text-primary: black;
+    --ch-text-secondary: dimgray;
+    --ch-text-tertiary: dimgray;
+    --ch-ledger-ink: black;
+    --ch-ledger-rule: gray;
+    --ch-ledger-rule-soft: silver;
+    --ch-ledger-rule-double: 3px double gray;
+    --ch-ledger-eyebrow: dimgray;
+    --ch-ink-950: black;
+    --ch-ink-900: black;
+    --ch-ink-700: dimgray;
+    --ch-ink-600: dimgray;
+    --ch-ink-500: dimgray;
+    --ch-score-under: firebrick;
+    --ch-chart-gain: darkgreen;
+    --ch-chart-loss: sienna;
+    --ch-green-700: darkgreen;
+    background: white;
+    color: black;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-root:has(.ch-rsm),
+  .ch-app:has(.ch-rsm),
+  .ch-canvas:has(.ch-rsm),
+  .ch-root:has(.ch-rs),
+  .ch-app:has(.ch-rs),
+  .ch-canvas:has(.ch-rs) {
+    background: white !important;
+  }
+  .ch-rsm .ch-rsm-sort,
+  .ch-rsm .ch-rsm-banner,
+  .ch-rsm .ch-avatar,
+  .ch-rs .ch-rs-head__act,
+  .ch-rs .ch-rs-req,
+  .ch-rs .ch-rs-attn,
+  .ch-rs .ch-rs-sp,
+  .ch-rs .ch-rs-bar,
+  .ch-rs .ch-rs-peek {
+    display: none !important;
+  }
+  .ch-rsm .ch-rsm-row,
+  .ch-rs .ch-rs-who__cell button {
+    display: flex !important;
+  }
+  .ch-rsm .ch-rsm-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 16pt;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+  }
+  .ch-rsm .ch-rsm-head > * {
+    grid-column: 1;
+  }
+  .ch-rsm .ch-rsm-head::after {
+    content: 'GolfHelm';
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font: 700 16pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-rsm .ch-rsm-list {
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-list > li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-top: 0.5pt solid silver;
+    box-shadow: none;
+  }
+  .ch-rsm .ch-rsm-row {
+    min-height: 0;
+    padding-block: 6pt;
+    background: none;
+  }
+  .ch-rs .ch-rs-row {
+    min-width: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border-bottom: 0.5pt solid silver;
+    background: none;
+  }
+}
+
+/* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
+   Where the team sits is laid out in lanes by the share of the axis between two coins (6.5%). On a plot of 494px (an
+   iPad portrait with the sidebar open) that is 32px, under the 38px coin, so neighbours overlapped. The coins shrink a
+   sixth there (the label under each keeps its size); the lane rule itself is in RosterSpread.tsx. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 560px) {
+    .ch-rs-sp__coins .ch-avatar {
+      scale: 0.84;
+    }
   }
 }

@@ -63,6 +63,8 @@ const wrap = (data: ChTeamStats) => render(tree(data));
 const stats = (over: Partial<ChTeamStats> = {}): ChTeamStats => ({ ...PREVIEW_TEAM_STATS, ...(over.window ? { filter: filterFor(over.window) } : {}), ...over });
 // A team with no round at all: nothing loaded for the filter's sheet either (a loaded 9-hole round would be CH-4301 with the CH-4319 hint, not the first run).
 const empty = (over: Partial<ChTeamStats> = {}) => stats({ roundCount: 0, grid: [], players: [], putting: null, bests: [], filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 0, courses: [] }, ...over });
+// A team that has posted rounds, none of them in this window: the window's empty (CH-4301), not the first run.
+const emptyWindow = (over: Partial<ChTeamStats> = {}) => empty({ filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 4, courses: [] }, ...over });
 
 /** One active player with one countable round from yesterday, so every read downstream runs. */
 function seasonTables(): import('./supabase-fake').ChFakeTables {
@@ -132,7 +134,7 @@ describe('Stats team · reads that fail', () => {
     await expectCode('CH-4201', /Team rounds didn’t load/);
     expect(code('CH-4301')).toBeNull();
     // A roster that did not load is not "0 active players".
-    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Varsity · countable rounds only');
+    expect(document.querySelector('.ch-hero .ch-hero__line')!.textContent).toBe('Countable rounds only');
     expect(document.querySelector('.ch-hero')!.textContent).not.toMatch(/\b0 active/);
   });
 
@@ -277,7 +279,7 @@ describe('Stats team · reads that fail', () => {
 describe('Stats team · empty', () => {
   it('CH-4301 no rounds in the window: offers the season', async () => {
     const user = userEvent.setup();
-    wrap(empty({ window: 'last10' }));
+    wrap(emptyWindow({ window: 'last10' }));
     await expectCode('CH-4301', /No 18-hole rounds in this window yet/);
     // The whole body is empty, so it is the page's empty state (states audit, 2026-10-08), not a section's.
     expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
@@ -290,6 +292,28 @@ describe('Stats team · empty', () => {
     expect(code('CH-4310')!.textContent).toMatch(/No stats yet/);
     expect(code('CH-4301')).toBeNull();
     expect(screen.getByRole('link', { name: /View roster/ })).toHaveAttribute('href', '/golf/dashboard/roster');
+  });
+
+  it('CH-4310 a team that has never posted a round gets the first run in the default window too', () => {
+    wrap(empty({ window: 'last10' }));
+    expect(code('CH-4310')!.textContent).toMatch(/No stats yet/);
+    expect(code('CH-4301')).toBeNull();
+  });
+
+  it('CH-4310 the server StatsTeam renders the first run through a client file: its icon never crosses as a prop', () => {
+    // StatsTeam is a server component (routes/stats.tsx), and vitest has no RSC renderer. The crash was CH-4310 passing
+    // leftIcon (a function) to the client Button from a file without 'use client', so the file's first statement is
+    // checked, then the server path is rendered with no rounds (here as a client tree, which is what the boundary makes it).
+    const src = readFileSync('src/clubhouse/screens/stats/StatsTeamFirstRun.tsx', 'utf8');
+    expect(src.trimStart().startsWith("'use client';")).toBe(true);
+    wrap(empty({ window: 'season' }));
+    expect(code('CH-4310')).not.toBeNull();
+  });
+
+  it('CH-4310 nobody on the roster yet: the step is Invite players (Roster’s invite sheet), as on Home', () => {
+    wrap(empty({ window: 'season', activeCount: 0 }));
+    expect(screen.getByRole('link', { name: 'Invite players' })).toHaveAttribute('href', '/golf/dashboard/roster?invite=1');
+    expect(screen.queryByRole('link', { name: /View roster/ })).toBeNull();
   });
 
   it('CH-4302 no qualifier rounds', () => {
@@ -515,6 +539,17 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     window.matchMedia = real;
   });
 
+  it('CH-4310 on the phone the first run has nothing to switch, so the window switch steps aside; older rounds keep it', () => {
+    const { unmount } = wrap(empty({ window: 'season' }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(document.querySelector('.ch-stm-controls')).toBeNull();
+    unmount();
+    // Rounds in other seasons: the season's first run keeps the switch, so Last 10 can show them.
+    wrap(empty({ window: 'season', filterOptions: { ...PREVIEW_TEAM_STATS.filterOptions, rounds: [], total: 4, courses: [] } }));
+    expect(code('CH-4310')).not.toBeNull();
+    expect(document.querySelector('.ch-stm-controls')).not.toBeNull();
+  });
+
   it('41901 CH-4805 the phone view replaces desktop: one hero figure, its trend with a written reading, the round, legs, players and putting', () => {
     wrap(stats());
     expect(document.querySelector('.ch-st-desk')).toBeNull();
@@ -526,12 +561,14 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
     // Drawn against par, as the stat line's gauge drew it (no bare numbers).
     expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
-    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs. previous 10');
-    // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
+    // A change is green or amber only when it clears its standard error (stats visuals Q4): scoring down 0.9 against 0.76 is
+    // better (green), greens up 3 against 2.4 too; putts up 0.3 against 0.42 and scrambling up 4 against 5.6 are no clear change.
+    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 Better than previous 10');
     expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
     const rows = [...document.querySelectorAll('.ch-stm-figrow')];
     expect(rows.map((r) => r.querySelector('dt > span')!.textContent)).toEqual(['Greens in regulation', 'Putts per round', 'Scrambling']);
-    expect(rows[1]!.querySelector('.ch-stm-figrow__d')!.className).toMatch(/ch-loss/);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.className.match(/ch-(gain|loss)/)?.[0] ?? null)).toEqual(['ch-gain', null, null]);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.textContent)).toEqual(['+3', '+0.3', '+4']);
     // No bare numbers: each figure says what it is read against where the data has a reference (the Tour's greens, 36 putts).
     expect(rows.map((r) => r.querySelector('.ch-stm-figrow__ref')?.textContent ?? null)).toEqual(['Tour average 66%', 'Two putts a green is 36', null]);
     for (const h of ['Scoring trend', 'The round', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
@@ -541,7 +578,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
     // Sentence case, never tracked: the context line is the team, its active players and its sample.
-    expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active · countable rounds');
+    expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');
   });
 
   it('CH-4703 CH-4805 players sort by scoring average, or by strokes gained; a row opens the player and reads as one link', async () => {
@@ -655,7 +692,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-4301 no rounds in the window: offers the season', () => {
-    wrap(empty());
+    wrap(emptyWindow());
     expect(code('CH-4301')).not.toBeNull();
     expect(screen.getByRole('button', { name: /season/i })).toBeTruthy();
   });
@@ -681,7 +718,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
 
   it('CH-4301 on the phone the empty window is the page’s empty state, with Show the season as its one action', () => {
-    wrap(empty());
+    wrap(emptyWindow());
     expect(code('CH-4301')!.classList.contains('ch-empty-page')).toBe(true);
     expect(screen.getByRole('button', { name: 'Show the season' }).className).toMatch(/ch-btn--primary/);
   });
@@ -935,7 +972,7 @@ describe('Stats team · the page', () => {
   it('42001 the window switch moves with the arrow keys, a leg card takes Enter, and a grid row focuses its player', async () => {
     const user = userEvent.setup();
     wrap(stats({ window: 'last10' }));
-    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    screen.getByRole('radio', { name: 'Last 20' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));
@@ -1086,7 +1123,7 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBe(30.5);
   });
 
-  // Q-112 (owner, 2026-10-01): "vs. previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
+  // Q-112 (owner, 2026-10-01): "vs previous 10" compares the same players. Theo shot 72 in both windows; Jonah's three 80s
   // have no previous ten, so they raise the window's average but not the change.
   it('Q-112 the change compares only players with a previous ten', async () => {
     const theo = Array.from({ length: 13 }, (_, i) => round(`t${i}`, 'p1', i + 1, 72, 0));

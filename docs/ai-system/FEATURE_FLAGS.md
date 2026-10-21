@@ -22,12 +22,11 @@ Before this, every ops toggle in this repo was a bare `process.env.FOO`
 read, scattered across call sites with no registry, no owner, no expiry, and
 no record of what it was for once whoever added it moved on. Two real
 examples — `HELM_FLIGHT_RECORDER_ENABLED`
-(`src/app/golf/actions/golf.ts:1207-1209`,
-`src/lib/observability/helm-flight-recorder.ts:194`) and
+(`src/app/golf/actions/golf-action-shared.ts`,
+`src/lib/observability/helm-flight-recorder.ts`) and
 `NEXT_PUBLIC_COACHHELM_ENABLED` (`src/lib/coachhelm/v2/gate.ts`) — are still
-read directly by their owning files; `config/feature-flags.yml` describes
-both without changing either's runtime behavior (see "What is, and isn't,
-wired" below).
+bare env reads and are not in the registry (see "What is, and isn't, wired"
+below).
 
 ## The pieces
 
@@ -196,34 +195,23 @@ API with no caller-side change.
 
 ## What is, and isn't, wired
 
-Two seed flags describe **real, existing** env-driven toggles without
-changing their behavior:
+Nothing in the registry describes an env toggle without a call site. Two
+seed entries once did (`flight_recorder` for `HELM_FLIGHT_RECORDER_ENABLED`,
+`coachhelm_v2_availability` for `NEXT_PUBLIC_COACHHELM_ENABLED`); plan phase 7b
+removed them because no code called `isFlagEnabled()` for either. Both toggles
+still work, as bare env reads:
 
-- **`flight_recorder`** describes `HELM_FLIGHT_RECORDER_ENABLED`
-  (`src/app/golf/actions/golf.ts:1207-1209`,
-  `src/lib/observability/helm-flight-recorder.ts:194` — both files owned by
-  the parallel Sentry session, outside this PR's edit scope). Those call
-  sites still read `process.env` directly.
-- **`coachhelm_v2_availability`** describes `NEXT_PUBLIC_COACHHELM_ENABLED`
-  (`src/lib/coachhelm/v2/gate.ts`). That call site still reads
-  `process.env` directly too.
+- `HELM_FLIGHT_RECORDER_ENABLED`: `shouldEmitHelmTraceContext()` in
+  `src/app/golf/actions/golf-action-shared.ts` and
+  `src/lib/observability/helm-flight-recorder.ts`. Production off, preview and
+  development on.
+- `NEXT_PUBLIC_COACHHELM_ENABLED`: `src/lib/coachhelm/v2/gate.ts`. Any value
+  except the literal string `false` leaves CoachHelm on.
 
-Neither is wired through `isFlagEnabled()` by this PR. What this PR proves
-instead — `src/lib/flags/__tests__/is-enabled.test.ts`'s
-`flight_recorder` parity suite — is that the registry's seeded per-
-environment defaults match exactly what
-`shouldEmitHelmTraceContext()` (`golf.ts:1207`) evaluates today, for every
-`VERCEL_ENV`, with `HELM_FLIGHT_RECORDER_ENABLED` at its **documented
-default** (unset). That is a real but limited claim: `FLAG_REGISTRY` is a
-build-time snapshot (`registry.generated.ts`'s own header — "reading the
-flag registry at request time never touches the filesystem or parses
-YAML"), not a live mirror of the env var. If someone manually overrides
-`HELM_FLIGHT_RECORDER_ENABLED` in an environment without updating
-`config/feature-flags.yml` and regenerating, the flag and the raw read
-diverge — the parity test names this gap explicitly rather than hiding it.
-Wiring the real call site through `isFlagEnabled('flight_recorder')` closes
-that gap (the env var stops being read at all, and the registry becomes the
-single live authority) and is left to the session that owns those files.
+Add a registry entry back only together with an `isFlagEnabled()` call site.
+A static per-environment boolean cannot mirror an env var that is changed
+without touching `config/feature-flags.yml`, so a descriptive-only entry would
+drift from the real toggle.
 
 ## How to add a flag
 

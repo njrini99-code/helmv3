@@ -1,5 +1,311 @@
 # P008 — Settings: changelog
 
+## 2026-10-19 — Settings on an iPad: every section in view
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end block of `settings.css`): on a canvas under 861px the section strip wraps onto a second line instead of scrolling sideways with "Preferences" cut in half.
+
+### Why
+
+- The strip's scrollbar is hidden, so nothing said there was more; a tablet has the height.
+
+### Verification
+
+- WebKit, touch, 834 and 1024: the strip's scrollWidth equals its clientWidth at 834; one row at 1024; the side rail at 1180 is unchanged.
+
+## 2026-10-19 — Settings saves one way, reads at a measure, and ends with its danger zone
+
+```text
+Design package: none (complete-and-elevate plan, lane L7: Settings that feel like the rest of the app)
+PR/commit:      lane L7 commits on agent/clubhouse-complete
+Contract IDs:   80303, 80901, 80902, CH-8405
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Desktop layout: the section navigator (208px, 10px radius, tighter rows, still sticky and `?section=` addressed) and a 640px column sit together at the centre of the canvas under the page head, instead of a 1000px column that put every switch far from its label.
+- Saving, one pattern. A card that needs an explicit save (profile, email change, password, team details, scoring, reminders, golf details, asking to join) shows its save bar only while there is something to save: "Unsaved changes" with Discard and Save changes; the button is busy while the save is out; a landed save gives the success haptic and the bar says Saved for 1.8 seconds at the same height, then goes. The bar sits at the foot of the view while its card is taller than the view. Cmd or Ctrl+S saves the card; Enter still saves only the email change and the join request (82001). The disabled grey button is gone.
+- Autosaving settings (every switch, segment and slider on Notifications and CoachHelm, quiet mode, the weekly email) say Saved in their own row for 1.8 seconds, inside the label's line so nothing moves. Sliders and the priority list say it in their card's head. The line "Changes save as you make them" over the CoachHelm title is gone on desktop (the phone keeps its line under the title). A failed save still puts the control back and toasts.
+- The team code is one style: 28px tabular Instrument Sans, set in an inset well with Copy code, Copy link and Share beside it; Copy says Copied for 1.8 seconds. The phone's code card, the staff invite code and the desktop card share the same rule (the old tracked JetBrains Mono code is gone). The phone card gains Copy code.
+- Hit areas: the priority reorder arrows (30px) and the setting segments (26px, such as alert sensitivity) now reach 44px, and the arrows sit 14px apart so their reaches do not overlap.
+- Phone Account: the Profile group's one row is now "Name and photo" with the group's caption under it, so it no longer repeats its own heading or leaves an empty gap before Sign in.
+- Danger zone: Account ends with Session (Sign out, plain) and then a Danger zone card holding Delete account alone, in red; a player's Team card is plain and Leave team sits in its own Danger zone card after it. The confirmations are unchanged.
+
+### Why
+
+- A coach edits a form here once or twice a season, so the page has to say plainly whether something is saved; the old pattern showed a disabled button, a status line far from what changed, and three code styles.
+
+### Verification
+
+- `settings-save-bar.test.tsx` (9 tests: the bar appears only when dirty, Discard, busy then Saved, invalid, Cmd+S, Enter, password, Danger zone last, row Saved, Copy code); `settings.test.tsx`, `settings-staff.test.tsx`, `settings-server.test.tsx`, `wiring-p008-settings.test.tsx` updated where they asserted the disabled button or the status line.
+- WebKit captures, 1280 and 390, light and dark, of every section and a dirty form, before and after, in the lane scratch folder; looked at.
+
+## 2026-10-19 — Sign out is not drawn red
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   81901
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- On the phone Settings list, Sign out uses the standard row ink. Red is kept for destructive actions, and signing out is not one.
+
+### Why
+
+- Red means under par, the pin or a destructive action; signing out ends a session and loses nothing.
+
+### Verification
+
+- `settings.test.tsx` (the button keeps no danger class); captured after only on `/clubhouse-preview/settings?state=player`, phone, light (the row reads in the standard ink); no before capture.
+
+## 2026-10-18 — Wave 10: team code and what joining does
+
+```text
+Design package: none (wave-10 first-run review, row 5; A)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-8012, CH-8013, CH-8206, CH-8302, CH-8502, CH-8503, CH-8705
+Actions:        none
+Data impact:    none
+Held items:     whether code and link joins should need approval (owner)
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- "Invite code" is now "team code" on Team (desktop and phone), the toasts,
+  the replace confirm and the player's Join a team field; "join link" is
+  "invite link".
+- Team's Invite players card no longer tells the coach they approve every
+  player (decision A, copy only): "Players who sign up with your team code or
+  open your invite link join right away. You can remove anyone from Roster."
+  The phone card's line says the same in one sentence. Join a team (the
+  Settings path, which does send a request) keeps its approval wording.
+- Leave team: "To come back, you’ll need the team code or an invite link
+  from your coach."
+
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 12, 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- A profile photo that doesn't load falls back to the initials (desktop
+  Account, phone Account sheet and the phone Settings row); Replace and Remove
+  still apply to the saved URL.
+- Phone: the profile row's ringed coin is inset by its 4px ring, so the ring
+  meets the column's 20px edge.
+
+## 2026-10-18 — Wave 7: player Settings
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Golf profile)
+
+- Golf details say "Your coaches and teammates see your handicap and class
+  on the roster."
+- The phone's identity line shows the handicap the roster shows: the index
+  when set, else the handicap.
+
+## 2026-10-18 — Wave 6: Team settings
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Desktop Team opens on Invite players, then Team details.
+- Phone Team: the timezone sentence moves from Scoring and format to Team
+  details, where the timezone row is.
+- Desktop Team details: a problem names its field (`ChProblem.field`), so
+  Team name, School name and State are marked invalid with the problem as
+  their help; the save bar keeps its line.
+
+### Added (2026-10-18, wave 6)
+
+- Declining an assistant coach request asks first (CH-8511): a dialog on
+  desktop, an action sheet on the phone, with Keep request and Decline.
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview, 1280): Team opens Invite players, Team
+  details, Coaching staff; a cleared Team name is `aria-invalid` with "The team
+  needs a name." under it and in the save bar; Decline asks "Decline Avery
+  Lee?".
+
+## 2026-10-18 — Wave 3 accessibility: card titles under the page title
+
+```text
+Design package: none (wave-3 accessibility review, items 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Desktop: each settings card's title is an `h2` under the page's `h1`; it was
+  an `h3`, a skipped level. Its look keys on `.ch-surface__title` and is
+  unchanged.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on the settings tests (5 files).
+- WebKit (Playwright, dev preview, axe-core, 1280, light and dark): Settings
+  and Preferences heading-order findings 4 to 0.
+
+## 2026-10-18 — Wave 3: the section rail's focus ring reads at night
+
+```text
+Design package: none (wave-3 accessibility review, items 1)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: rail ring)
+
+- The section rail's focus ring is solid `--ch-border-focus`; its night
+  override to the 45% green rule is gone: dark 2.57:1 to 7.8:1 (light already
+  drew the global ring, 7.23:1). The Preferences switches take the shared
+  solid ring (P001).
+
+### Verification (2026-10-18, accessibility: rail ring)
+
+- WebKit (Playwright, dev preview): rail row and Preferences switch rings
+  measured light and dark, close-ups checked.
+
+## 2026-10-18 — Wave 3: Head coach, list-style hints, the shared line
+
+```text
+Design package: none (wave-3 design review, items 2, 5, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, identity and page-head line)
+
+- Desktop: the line under the title says "Head coach · Varsity" for a head
+  coach, as the phone list and the sidebar do, where it said "Coach"
+  (`viewerRoleLabel`, `model.ts`).
+- The section rail's hints are lists: "Email, push", "Priorities, alerts",
+  "Handicap, team", "Motion, haptics, units".
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The head has no eyebrow, so the top adds its
+  24px.
+
+### Verification (2026-10-18, identity and page-head line)
+
+- `npm run test:file` on `settings.test.tsx` (the line now expects "Head coach")
+  and `wiring-p008-settings.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Polish: the phone list says when nothing loaded
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-8214
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Phone: when every read fails, the list opens with "Settings didn’t load"
+  and Try again above the identity row (CH-8214, `everyReadFailed`), where it
+  stood silent over sections that each held only a notice. One or some
+  failures leave the list as it is; each section says so in its place.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 390px): `?state=failed` shows CH-8214
+  with Try again above the identity row; `?state=partial` does not.
+
+## 2026-10-17 — Polish: notification summaries in sentence case
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone: the Notifications row and each kind's summary read in sentence
+  case, "Email, push" and "In app, push (some)", where the second channel was
+  capitalized mid-list (`SettingsPhone.tsx`, `NotificationsPhone.tsx`).
+- Tabular figures restored (review row 18): 8 rules in `settings.css` that set
+  `font` on a figure (counts, codes, ranks, row values, the slider value) now
+  set `font-variant-numeric: tabular-nums` after it.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Wiring checked against production: reminders off out of order, the request after Ask to join
 
 ```text
@@ -84,6 +390,19 @@ cases and the held-Back cases fail without the fix; the network-path cases
 behaviour that did not change. Not yet seen in Safari, the Simulator or on an
 iPhone. The Back over the list, the two-move priority order, the double reads
 and the desktop confirms' warning tick were fixed the same day (next entry).
+
+## 2026-10-16 — Push on this device in the iPhone app
+
+Release blocker 12 (finding N2). Notifications › This device only knew web
+push, which the app's WebView does not have, so in the app the row was hidden
+and push could not be turned on. In the app it is now the app's own push
+(`useNativePush`; docs/clubhouse/phone/push-opt-in.md): before iOS has asked, a
+switch that shows iOS's prompt (CH-8902); after, what iOS says, On or Off, with
+how to change it and Open iOS Settings, which opens GolfHelm's page in the
+Settings app (CH-8903). Coming back from Settings reads iOS again, and push
+turned on there registers with Apple at once. Send a test stays web only (its
+route sends web push). The wide layout gets the same row. The browser's row is
+unchanged. Not yet seen on a device (VERIFY).
 
 ## 2026-10-14 — Sign out ends in one request
 

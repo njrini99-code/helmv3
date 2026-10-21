@@ -383,10 +383,10 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     const worst = movers.filter((m) => m.delta > 0).sort((a, b) => b.delta - a.delta);
     items.push({
       id: 'movement-decline',
-      headline: `${declined} players are scoring higher than their previous three rounds`,
+      headline: `${declined} players are scoring worse over their last three rounds`,
       evidence: worst
         .slice(0, 3)
-        .map((m) => `${m.name} +${m.delta.toFixed(1)}`)
+        .map((m) => `${m.name} +${m.delta.toFixed(1)} strokes`)
         .join(' · '),
       tone: 'attention',
       weight: 80,
@@ -396,10 +396,10 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     const best = movers.filter((m) => m.delta < 0).sort((a, b) => a.delta - b.delta);
     items.push({
       id: 'movement-improve',
-      headline: `${improved} players are scoring lower than their previous three rounds`,
+      headline: `${improved} players are scoring better over their last three rounds`,
       evidence: best
         .slice(0, 3)
-        .map((m) => `${m.name} ${m.delta.toFixed(1)}`)
+        .map((m) => `${m.name} −${Math.abs(m.delta).toFixed(1)} strokes`)
         .join(' · '),
       tone: 'positive',
       weight: 40,
@@ -418,8 +418,8 @@ export async function getProgramPulse(sb: Sb, ctx: CoachChatContext): Promise<Pr
     if (pending.length === 0) continue;
     items.push({
       id: `rsvp-${event.id}`,
-      headline: `${pending.length} player${pending.length === 1 ? ' has' : 's have'} not responded for ${event.title}`,
-      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} responded`,
+      headline: `${pending.length} player${pending.length === 1 ? ' hasn’t' : 's haven’t'} replied to ${event.title}`,
+      evidence: `${formatDateTime(event.start_time, ctx.timezone)} · ${forEvent.length - pending.length} of ${forEvent.length} replied`,
       tone: 'attention',
       weight: 85,
       action: { label: 'Open calendar', href: '/golf/dashboard/calendar' },

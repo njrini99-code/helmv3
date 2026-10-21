@@ -8,12 +8,14 @@ import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
-import { hasHoleScores } from './round-scope';
+import { hasHoleScores, recordedPutts } from './round-scope';
 import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
 import { filterFor } from './stats-filter';
-import { weightedMean } from './stats-weight';
+import { weightedMean, windowChangeSe } from './stats-weight';
+import { changeSe } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
-import { loadAttendanceCounts, type ChAttendanceCounts } from './attendance-counts';
+import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
+import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
 export { classYearLabel, formStatus } from './season';
@@ -36,6 +38,8 @@ export interface ChHomeDay {
   /** Team events that day, excluding personal class blocks. */
   eventCount: number;
   hasCompetition: boolean;
+  /** The day's competition, for its mark (calendar TYPE_ICON): a tournament outranks a qualifier on the same day. */
+  competitionType: 'tournament' | 'qualifier' | null;
 }
 
 export interface ChAgendaRow {
@@ -121,6 +125,12 @@ export interface ChHomeEvent {
    * player's Home has this without `inviteeIds` (it reads counts, never teammates' rows).
    */
   invitedCount?: number | null;
+  /**
+   * A player's Home only: their own reply on an event that asks for one. `going` when they said yes; `needed` when it is
+   * still theirs to answer (invited, or open to the whole team, and not started or past its deadline). Null otherwise,
+   * and when their own reply didn't load.
+   */
+  mine?: 'going' | 'needed' | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
 }
@@ -133,6 +143,8 @@ export interface ChTeamForm {
   avg: number;
   /** Against each player's previous ten; null when no player has three rounds before their newest ten. */
   delta: number | null;
+  /** Each change's standard error (stats visuals Q4): a change is green or amber only when it clears it. Absent: neutral. */
+  deltaSe?: number | null;
   /** The team's average on each of its last ten round days (the rounds the average rests on), oldest to newest, for the line. */
   line: number[];
   /** Countable rounds of either length in the team-local Monday-to-Sunday week: a count on its own basis, not the figures'. */
@@ -140,8 +152,9 @@ export interface ChTeamForm {
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
   basis: { rounds: number; from: string; to: string; girRounds: number; puttsRounds: number };
   /** Greens in regulation, percent; delta in points. */
-  gir: { pct: number | null; delta: number | null };
-  putts: { avg: number | null; delta: number | null };
+  gir: { pct: number | null; delta: number | null; se?: number | null };
+  /** Per 18 holes, over the rounds with putts recorded (`recordedPutts`: a round written 0 putts has none), as Stats counts them. */
+  putts: { avg: number | null; delta: number | null; se?: number | null };
 }
 
 /** The team's zone and its date when the page was read. */
@@ -387,7 +400,8 @@ export async function latestWithHoles(
       toPar: r.score_to_par,
       holes: holes && holes.length === 18 ? holes : null,
       gir: r.total_gir != null && r.total_gir_possible ? `${r.total_gir}/${r.total_gir_possible}` : null,
-      putts: r.total_putts,
+      // A round written 0 putts has none recorded (recordedPutts), as on Stats.
+      putts: recordedPutts(r.total_putts),
       sg: r.strokes_gained_total,
     };
   });
@@ -416,6 +430,9 @@ export interface ChHomeWeek {
  * `viewer: 'player'` reads the reply counts through golf_event_attendance_counts
  * (migration 20261017102000) instead of the rows, so no teammate's id or reply
  * reaches the page; until that function exists it reads the rows as before.
+ * With `playerId` it also reads the player's own replies, beside the events:
+ * a meeting they aren't invited to is not on their week at all (Decision B),
+ * and each event carries their own reply (`mine`).
  */
 export async function loadHomeWeek(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -425,6 +442,8 @@ export async function loadHomeWeek(
     now: Date;
     names: Map<string, string> | Promise<Map<string, string>>;
     viewer?: 'coach' | 'player';
+    /** The player whose Home this is (with `viewer: 'player'`): their own replies decide which meetings they see. */
+    playerId?: string | null;
   },
 ): Promise<ChHomeWeek> {
   const { now } = input;
@@ -435,7 +454,7 @@ export async function loadHomeWeek(
   const eventsRead = fetchAllRowsResult((from, to) =>
     supabase
       .from('golf_events')
-      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp')
+      .select('id, title, event_type, start_time, end_time, all_day, location, requires_rsvp, rsvp_deadline')
       .eq('team_id', input.teamId)
       .neq('event_type', CLASS_EVENT_TYPE)
       .is('cancelled_at', null)
@@ -446,7 +465,27 @@ export async function loadHomeWeek(
       .order('id', { ascending: true })
       .range(from, to),
   );
-  const [tz, wideRes] = await Promise.all([input.tz, eventsRead]);
+  // The player's own replies in the same window, read beside the events: a player reads their own rows before and after
+  // migration 20261017102000. `player_id` is checked again below, so a teammate's row can never count as theirs.
+  const playerId = input.viewer === 'player' ? (input.playerId ?? null) : null;
+  const ownRead = playerId
+    ? fetchAllRowsResult((from, to) =>
+        supabase
+          .from('golf_event_attendance')
+          .select('id, event_id, player_id, status, golf_events!inner(id)')
+          .eq('player_id', playerId)
+          .eq('golf_events.team_id', input.teamId)
+          .lt('golf_events.start_time', wide.to)
+          .or(`start_time.gte.${wide.from},end_time.gte.${wide.from}`, { referencedTable: 'golf_events' })
+          .order('id', { ascending: true })
+          .range(from, to),
+      )
+    : null;
+  const [tz, wideRes, ownRes] = await Promise.all([input.tz, eventsRead, ownRead]);
+  /** The player's own reply by event; null when it didn't load (then no meeting is dropped here, and no reply is claimed). */
+  let own: Map<string, ChRsvp> | null = null;
+  if (ownRes?.error) log('ownReplies', ownRes.error);
+  else if (ownRes) own = new Map((ownRes.data ?? []).filter((a) => a.player_id === playerId).map((a) => [a.event_id, rsvpOf(a.status)]));
   const today = ymd(now, tz);
   const { weekStart, weekEnd, from, to } = weekWindow(today);
   const eventsRes = wideRes.error ? wideRes : {
@@ -458,6 +497,11 @@ export async function loadHomeWeek(
     }),
   };
 
+  // When the player's own replies didn't load, D2-8 decides which meetings they see (a meeting nobody is invited to is
+  // the coach's own), from the counts or the invite rows; when that fails too, none (playerSeesMeeting fails closed).
+  const fallbackMeetings = playerId && !own && !eventsRes.error ? (eventsRes.data ?? []).filter((e) => e.event_type === 'meeting').map((e) => e.id) : [];
+  const invitedFallback = fallbackMeetings.length ? await loadInvitedCounts(supabase, fallbackMeetings, (err) => log('meetingInvites', err)) : null;
+
   // ── Week ──
   if (eventsRes.error) log('events', eventsRes.error);
   // The shared calendar contract preserves UTC-midnight all-day dates and
@@ -465,6 +509,9 @@ export async function loadHomeWeek(
   const calendarDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const events = (eventsRes.error ? [] : (eventsRes.data ?? [])).flatMap((e) => {
     const span = eventDaySpan(e, tz);
+    // Decision B (owner, wave 7): a meeting the player isn't invited to is not on their week: not a day's count, not the
+    // agenda, not Up next (which moves on to the next event they can see).
+    if (playerId && e.event_type === 'meeting' && !playerSeesMeeting(own ? own.has(e.id) : null, invitedFallback?.get(e.id) ?? null)) return [];
     return span ? [{ ...e, localDate: calendarDate(span.first), lastDate: calendarDate(span.last) }] : [];
   });
   const runsOn = (e: (typeof events)[number], date: string) => e.localDate <= date && e.lastDate >= date;
@@ -479,6 +526,11 @@ export async function loadHomeWeek(
       isToday: date === today,
       eventCount: dayEvents.length,
       hasCompetition: dayEvents.some((e) => COMPETITION_TYPES.has(e.event_type)),
+      competitionType: dayEvents.some((e) => e.event_type === 'tournament')
+        ? 'tournament'
+        : dayEvents.some((e) => e.event_type === 'qualifier')
+          ? 'qualifier'
+          : null,
     };
   });
 
@@ -495,6 +547,8 @@ export async function loadHomeWeek(
   const invited = new Map<string, string[]>();
   const accepted = new Map<string, number>();
   const unanswered = new Map<string, string[]>();
+  /** Rows the coach's invitation wrote (`notified_at`): none means the event is open to the whole team. */
+  const coachInvited = new Map<string, number>();
   let attendanceError = false;
   const weekIds = [...new Set([...todays, ...later, ...(upcoming ? [upcoming] : [])].map((e) => e.id))];
   // A player's Home: counts only (migration 20261017102000). `missing` (not applied yet) falls through to the rows.
@@ -509,7 +563,7 @@ export async function loadHomeWeek(
     const attendance = await Promise.all(
       chunkIds(weekIds).map((ids) =>
         fetchAllRowsResult((from, to) =>
-          supabase.from('golf_event_attendance').select('id, event_id, player_id, status').in('event_id', ids).order('id', { ascending: true }).range(from, to),
+          supabase.from('golf_event_attendance').select('id, event_id, player_id, status, notified_at').in('event_id', ids).order('id', { ascending: true }).range(from, to),
         ),
       ),
     );
@@ -524,6 +578,7 @@ export async function loadHomeWeek(
         invited.set(a.event_id, [...(invited.get(a.event_id) ?? []), a.player_id]);
         if (rsvpOf(a.status) === 'accepted') accepted.set(a.event_id, (accepted.get(a.event_id) ?? 0) + 1);
         if (rsvpOf(a.status) === 'pending') unanswered.set(a.event_id, [...(unanswered.get(a.event_id) ?? []), a.player_id]);
+        if (a.notified_at) coachInvited.set(a.event_id, (coachInvited.get(a.event_id) ?? 0) + 1);
       }
     }
   }
@@ -549,7 +604,7 @@ export async function loadHomeWeek(
       timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
       title: e.title,
       detail:
-        // "5 of 6 confirmed" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
+        // "5 of 6 going" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.
         [e.all_day ? null : `First tee ${clock(e.start_time)}`, (e.requires_rsvp === true ? confirmedLine(invitedOf(e.id), accepted.get(e.id) ?? 0) : null) ?? e.location].filter(Boolean).join(' · ') ||
         null,
       isNext: false,
@@ -580,6 +635,16 @@ export async function loadHomeWeek(
     rangeLabel: e.all_day ? 'All day' : e.end_time ? `${clock(e.start_time)} – ${clockAmPm(e.end_time)}` : clockAmPm(e.start_time),
     location: e.location,
   });
+  /**
+   * The player's own reply (`mine`), by the rule the sidebar's card uses too (playerMine): only on an event that asks for
+   * one, while the server would take it (`replyClosedAt`), and, with no row of theirs, when the coach invited no one so
+   * the whole team may reply. Unknown (a failed read) claims nothing.
+   */
+  const mineOf = (e: (typeof events)[number]): ChHomeEvent['mine'] => {
+    if (!own || e.requires_rsvp !== true) return null;
+    const open = attendanceError ? null : countsByEvent ? (countsByEvent.get(e.id)?.coachInvited ?? 0) === 0 : (coachInvited.get(e.id) ?? 0) === 0;
+    return playerMine(own.get(e.id), replyClosedAt(e, now.getTime()), open);
+  };
   const toPhone = (e: (typeof events)[number]): ChHomeEvent => {
     const ids = inviteesOf(e.id);
     const invitees = ids ? ids.map((id) => names.get(id)).filter((n): n is string => !!n) : null;
@@ -597,6 +662,7 @@ export async function loadHomeWeek(
         awaiting: asks ? [] : null,
         inviteeIds: null,
         invitedCount,
+        ...(playerId ? { mine: mineOf(e) } : {}),
         conflict: runsOn(e, today) && overlaps(e),
       };
     }
@@ -609,6 +675,7 @@ export async function loadHomeWeek(
       awaiting: asks && ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
       inviteeIds: ids,
       invitedCount,
+      ...(playerId ? { mine: mineOf(e) } : {}),
       conflict: runsOn(e, today) && overlaps(e),
     };
   };
@@ -662,7 +729,10 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     return possible ? (withGir.reduce((a, r) => a + (r.total_gir as number), 0) / possible) * 100 : null;
   };
   const scoreOf = (r: ChRound) => r.total_score;
-  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? r.total_putts : null);
+  // Putts as Stats counts them: per 18, and a round written 0 putts has none recorded (recordedPutts, cachedPutts).
+  const puttsOf = (r: ChRound) => (hasHoleScores(r) ? recordedPutts(r.total_putts) : null);
+  // A round's own green rate, for the standard error of the greens' change.
+  const girRates = (list: ChRound[]) => list.filter(hasGir).map((r) => ((r.total_gir as number) / (r.total_gir_possible as number)) * 100);
   const comparable = prev.length > 0;
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
@@ -684,10 +754,11 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   return {
     avg,
     delta: prevAvg != null && pairedAvg != null ? pairedAvg - prevAvg : null,
+    deltaSe: comparable ? windowChangeSe(lastPaired, prev, scoreOf, 'score') : null,
     line,
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
-    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null },
-    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null },
+    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
+    putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null, se: comparable ? windowChangeSe(lastPaired, prev, puttsOf, null) : null },
   };
 }

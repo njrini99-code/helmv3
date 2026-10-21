@@ -64,6 +64,39 @@ describe('DiagnosisPanel', () => {
     expect(screen.queryByText(/Caused by/)).toBeNull();
   });
 
+  it('a not-traced cause is never introduced as "Likely because" or a practice focus (#2221 review)', () => {
+    render(
+      <DiagnosisPanel
+        diagnosis={makeDiagnosis({
+          root_cause: 'Not traced yet. Needs 10 missed first putts from 5–10 ft over 3 rounds; 6 so far over 2.',
+        })}
+        causeState="not_traced"
+      />,
+    );
+    expect(screen.getByText(/^Not traced yet\. Needs 10 missed first putts/)).toBeTruthy();
+    expect(screen.queryByText(/Likely because/)).toBeNull();
+    // No causality chip at all: neither "Hypothesis" nor "Measured".
+    expect(screen.queryByText('Hypothesis')).toBeNull();
+    expect(screen.queryByText('Measured')).toBeNull();
+    expect(screen.queryByText('Practice focus')).toBeNull();
+    expect(screen.getByText('Next step')).toBeTruthy();
+  });
+
+  it('a likely-from-totals cause reads as a hypothesis without a doubled "Likely"', () => {
+    render(
+      <DiagnosisPanel
+        diagnosis={makeDiagnosis({
+          root_cause:
+            'Likely from the totals: on long par 4s, 12 of 12 approaches from 175+ yd missed the green (100%) against 4 of 16 elsewhere (25%); difference 40–92 points. Not yet a counted sequence.',
+        })}
+        causeState="inferred_hypothesis"
+      />,
+    );
+    expect(screen.getByText('Hypothesis')).toBeTruthy();
+    expect(screen.queryByText(/Likely because/)).toBeNull();
+    expect(screen.getByText(/^Likely from the totals: on long par 4s/)).toBeTruthy();
+  });
+
   it('truncates drivers to maxDrivers with an honest count, no dangling "full breakdown" claim', () => {
     render(<DiagnosisPanel diagnosis={makeDiagnosis()} maxDrivers={1} />);
     expect(screen.getByText('+1 more driver')).toBeTruthy();

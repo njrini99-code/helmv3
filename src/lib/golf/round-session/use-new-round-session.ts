@@ -888,6 +888,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   // FK to golf_courses (resolved from saved course or server-side fallback)
   const resolvedCourseIdRef = useRef<string | null>(null);
+  // The course the server linked the round to at the start (a typed name the library matched; `savePartialRound`'s
+  // `courseId`). Read only by the course nudge (CoachHelm Slice 8b), so it is kept apart from `resolvedCourseIdRef`: that
+  // ref also gates the library contributions after a start, which must run exactly as before.
+  const [startLinkedCourseId, setStartLinkedCourseId] = useState<string | null>(null);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -1540,6 +1544,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
       if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+      setStartLinkedCourseId(result.data.courseId ?? null);
       // The round now exists server-side; Continue Round owns it from here.
       clearPendingTeePick(playerId);
       setHoles(initialHoles);
@@ -1640,7 +1645,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       yardage: h.yardage,
       score: null,
     }));
-    const persisted = await persistRoundStart(initialHoles, configs);
+    // The start write numbers its hole setup as the engine does (a back nine is
+    // 1..9, not the course's 10..18); the catalog contribution below keeps the
+    // course's own numbers.
+    const persisted = await persistRoundStart(initialHoles, configs.map((h, idx) => ({ ...h, holeNumber: idx + 1 })));
     if (!persisted.ok) {
       setIsStartingRound(false);
       return;
@@ -3211,6 +3219,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     selectedCourseId,
     setSelectedCourseId,
     resolvedCourseIdRef,
+    startLinkedCourseId,
     selectedTeeIdRef,
     inProgressConflict,
     setInProgressConflict,

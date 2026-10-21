@@ -9,7 +9,7 @@ import {
   basisWords,
   candidates,
   clearFilters,
-  cutsToLast10,
+  cutsToLastN,
   dayLabel,
   earlierCount,
   effectiveWindow,
@@ -19,11 +19,14 @@ import {
   hasPrevious,
   isFiltered,
   isoDay,
+  isWindowChange,
   matchesFilter,
   parseFilter,
   parseHoles,
   per18,
   previousRounds,
+  previousWords,
+  rangeOf,
   rangeLabel,
   roundKind,
   sameFilter,
@@ -33,6 +36,7 @@ import {
   withHoles,
   withPick,
   withRange,
+  withScope,
   withTypes,
   withWindow,
   wholeRounds,
@@ -104,6 +108,7 @@ describe('stats filter · the address', () => {
   it('round-trips through the address, course names with commas included', () => {
     const f: ChFilter = {
       window: 'season',
+      last: 10,
       types: ['tournament', 'qualifier'],
       holes: 'all',
       from: '2026-09-01',
@@ -202,9 +207,9 @@ describe('stats filter · which rounds', () => {
   it('a custom range is the time: the newest-ten cut does not apply', () => {
     const xs = rows(25, ['tournament']);
     expect(pick(withRange(filterFor('last10'), '2026-09-01', '2026-09-29'), xs)).toHaveLength(25);
-    expect(cutsToLast10(withRange(filterFor('last10'), '2026-09-01', null))).toBe(false);
-    expect(cutsToLast10(filterFor('last10'))).toBe(true);
-    expect(cutsToLast10(filterFor('season'))).toBe(false);
+    expect(cutsToLastN(withRange(filterFor('last10'), '2026-09-01', null))).toBe(false);
+    expect(cutsToLastN(filterFor('last10'))).toBe(true);
+    expect(cutsToLastN(filterFor('season'))).toBe(false);
   });
 
   it('the Qualifiers window is the qualifying rounds; a contradicting kind in the address leaves nothing', () => {
@@ -323,6 +328,7 @@ describe('stats filter · the words', () => {
   it('has one removable chip for each filter, and removing one takes off only that one', () => {
     const f: ChFilter = {
       window: 'season',
+      last: 10,
       types: ['tournament', 'practice'],
       holes: '9',
       from: '2026-09-01',
@@ -452,5 +458,54 @@ describe('stats filter · holes', () => {
     const chips = filterChips(withHoles(filterFor('season'), 'all'), 2026);
     expect(chips.map((c) => [c.key, c.label])).toEqual([['holes', '18 and 9 holes']]);
     expect(chips[0]!.next).toEqual(filterFor('season'));
+  });
+});
+
+describe('range in rounds: Last 5, Last 10, Last 20', () => {
+  const xs = rows(60);
+  const at = (n: 5 | 10 | 20) => withScope(filterFor('season'), `last${n}` as 'last5');
+
+  it('cuts to the newest N, compares with the N before them, and counts what is earlier', () => {
+    for (const n of [5, 10, 20] as const) {
+      const f = at(n);
+      expect(f.window).toBe('last10');
+      expect(ids(pick(f, xs))).toEqual(ids(xs.slice(0, n)));
+      expect(ids(previousRounds(xs, f, SEASON, (r) => r)!)).toEqual(ids(xs.slice(n, n * 2)));
+      expect(earlierCount(xs, f, SEASON, (r) => r)).toBe(60 - n);
+      expect(previousWords(f.last)).toBe(`vs previous ${n}`);
+    }
+  });
+
+  it('needs three whole rounds before the newest N, so Last 20 starts comparing at 23', () => {
+    expect(previousRounds(rows(22), at(20), SEASON, (r) => r)).toBeNull();
+    expect(previousRounds(rows(23), at(20), SEASON, (r) => r)).toHaveLength(3);
+    expect(previousRounds(rows(8), at(5), SEASON, (r) => r)).toHaveLength(3);
+  });
+
+  it('keeps Last 10 the default and out of the address; 5 and 20 ride in ?last=', () => {
+    expect(statsHref('/stats', filterFor('last10'))).toBe('/stats');
+    expect(statsHref('/stats', at(5))).toBe('/stats?last=5');
+    expect(statsHref('/stats', at(20))).toBe('/stats?last=20');
+    expect(parseFilter({ last: '20' }).last).toBe(20);
+    expect(parseFilter({ last: '7' }).last).toBe(10);
+    expect(parseFilter({ window: 'season', last: '20' }).window).toBe('season');
+    // The cut is read only with Last N: a season address carries no `last`.
+    expect(statsHref('/stats', { ...filterFor('season'), last: 20 })).toBe('/stats?window=season');
+  });
+
+  it('names the range the switch shows, and a change of range is a window change', () => {
+    expect(rangeOf(at(5))).toBe('last5');
+    expect(rangeOf(filterFor('last10'))).toBe('last10');
+    expect(rangeOf(filterFor('qualifiers'))).toBe('qualifiers');
+    expect(isWindowChange(filterFor('last10'), at(20))).toBe(true);
+    expect(isWindowChange(at(5), withTypes(at(20), ['practice']))).toBe(false);
+    expect(withScope(at(20), 'season').window).toBe('season');
+  });
+
+  it('says N in the words and keeps it when filters clear', () => {
+    expect(basisWords(at(20))).toBe('Last 20 rounds');
+    expect(basisWords(filterFor('last10'))).toBe('Last 10 rounds');
+    expect(filterSummary(withTypes(at(5), ['practice']), 5)).toContain('last 5');
+    expect(clearFilters(withTypes(at(20), ['practice'])).last).toBe(20);
   });
 });

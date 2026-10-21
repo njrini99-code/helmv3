@@ -21,6 +21,7 @@ import {
   computeCounterfactual,
   formatCounterfactualLine,
 } from '@/lib/coachhelm/v3/counterfactual/compute';
+import { capByParentSg, parentSgMetric, sgBehindTour } from '@/lib/coachhelm/v3/counterfactual/parent-cap';
 
 const CATEGORY_ORDER: ReadonlyArray<{ category: string; label: string; description: string }> = [
   { category: 'sg', label: 'Strokes Gained', description: 'Strokes gained or lost per round against the field.' },
@@ -87,16 +88,23 @@ export function StandingDrill({ standingByMetric, playerBaseline }: PlayerStandi
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   {rows.map(({ id, standing, cfg }) => {
+                    // No attempts-per-round here, so a part of the game is capped at what its
+                    // strokes-gained category is behind (parent-cap.ts): 3–5 ft can't claim
+                    // more strokes than all of putting.
+                    const parent = parentSgMetric(id);
                     const counterfactualText = standing.pga_omitted
                       ? ''
                       : formatCounterfactualLine(
-                          computeCounterfactual({
-                            metric_id: id,
-                            direction: cfg.direction,
-                            player_value: standing.player_value,
-                            pga_value: standing.pga_value,
-                            player_30d_scoring_avg: playerBaseline,
-                          }),
+                          capByParentSg(
+                            computeCounterfactual({
+                              metric_id: id,
+                              direction: cfg.direction,
+                              player_value: standing.player_value,
+                              pga_value: standing.pga_value,
+                              player_30d_scoring_avg: playerBaseline,
+                            }),
+                            parent ? sgBehindTour(standingByMetric[parent]) : null,
+                          ),
                         );
                     return (
                       <div key={id} className="flex flex-col">

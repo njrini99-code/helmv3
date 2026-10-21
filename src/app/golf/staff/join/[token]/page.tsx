@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { ClubhouseStaffInviteRoute } from '@/clubhouse/routes/auth';
 import { previewStaffInvite } from '@/app/golf/actions/teams';
 import { StaffJoinClient } from './staff-join-client';
 
@@ -38,5 +40,7 @@ export default async function StaffJoinPage({
   const { token } = await params;
   const preview = await previewStaffInvite(token);
 
+  // golf_clubhouse_front_door chooses the page that is drawn; the same preview, and the same accept and sign-up calls.
+  if (isClubhouseFrontDoor()) return <ClubhouseStaffInviteRoute token={token} preview={preview} />;
   return <StaffJoinClient token={token} preview={preview} />;
 }

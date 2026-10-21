@@ -21,7 +21,6 @@ describe('ink that holds at night', () => {
     expect(left.sort()).toEqual(
       [
         'rounds-track.css .ch-rtcv__n',
-        "rounds-track.css .ch-rt-quick button[aria-pressed='true']",
         'rounds.css .ch-rd-pill.is-tournament',
         "stats.css html[data-fw-theme='dark'] .ch-st .ch-sgt",
         "ui.css html[data-fw-theme='dark'] .ch-score--double",

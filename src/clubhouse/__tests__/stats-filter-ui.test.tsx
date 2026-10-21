@@ -25,6 +25,7 @@ import { StatsTeam } from '../screens/stats/StatsTeam';
 import { CrumbProvider } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
+import { formatDate, localToday } from '../ui/date-time';
 import './dialog-polyfill';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_PLAYER_NOMATCH, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 
@@ -471,7 +472,7 @@ describe('Team stats · the filter sheet', () => {
     await user.click(screen.getByRole('button', { name: /^Filter/ }));
     const d = inDialog();
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('true');
-    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(RANGE.from);
+    expect((d.getByLabelText('From') as HTMLInputElement).value).toBe(formatDate(RANGE.from, { omitYear: RANGE.from.slice(0, 4) === localToday().slice(0, 4) }));
     expect((within(d.getByRole('group', { name: 'Course' })).getByRole('checkbox', { name: /Finley GC/ }) as HTMLInputElement).checked).toBe(true);
     await user.click(d.getByRole('button', { name: 'Done' }));
     expect(router.push).not.toHaveBeenCalled();
@@ -496,7 +497,7 @@ describe('the filter, for assistive technology', () => {
     expect(d.getByRole('button', { name: 'Practice' }).getAttribute('aria-pressed')).toBe('false');
     expect(d.getByRole('radiogroup', { name: 'Window' })).toBeTruthy();
     expect(within(d.getByRole('group', { name: 'Course' })).getAllByRole('checkbox').length).toBeGreaterThan(1);
-    expect(d.getByLabelText('From').getAttribute('type')).toBe('date');
+    expect(d.getByLabelText('From').getAttribute('aria-haspopup')).toBe('dialog');
     // A range error is the dates' description, not just text beside them.
     fireEvent.change(d.getByLabelText('From'), { target: { value: RANGE.to } });
     fireEvent.change(d.getByLabelText('To'), { target: { value: RANGE.from } });
@@ -676,7 +677,7 @@ describe('Stats player · the Rounds tab says why there is no earlier window', (
     cleanup();
     expect(await why(filt({ types: ['tournament'] }))).toBe('Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.');
     cleanup();
-    expect(await why(filt())).toMatch(/^Needs 3 earlier 18-hole rounds: this window has fewer than 13 in the last 12 months/);
+    expect(await why(filt())).toBe('Comparing starts at 13 rounds: the newest 10 against at least 3 before them.');
     cleanup();
     expect(await why(filterFor('season'))).toBe('The season has no earlier window to compare with.');
     cleanup();
@@ -1053,7 +1054,7 @@ describe('Stats · holes · phone', () => {
     expect(code('CH-5323')!.textContent).toMatch(/per 18 holes/);
     expect(document.body.textContent).toMatch(/9-hole scores doubled/);
     // The line is drawn per 18: the newest round, a 38, ends it as a 76.
-    expect(document.querySelector('svg[aria-label^="Scores over the last"]')!.getAttribute('aria-label')).toMatch(/to 76,/);
+    expect(document.querySelector('[role="group"][aria-label^="Scores over the last"]')!.getAttribute('aria-label')).toMatch(/to 76,/);
     // The round's own row says it was nine holes (the chip above says so too, so look at the rows).
     expect([...document.querySelectorAll('.ch-num')].some((el) => / · 9 holes/.test(el.textContent ?? ''))).toBe(true);
     await user.click(screen.getByRole('button', { name: /^Filter/ }));

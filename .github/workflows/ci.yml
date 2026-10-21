@@ -664,6 +664,20 @@ jobs:
         continue-on-error: true
         run: npm run lint:duplicate-exports
 
+      # Escape-hatch counts that may only go down (plan phase 7b): `fromUntyped`
+      # imports and explicit `any`, and test files under src/test/** (new tests
+      # go in __tests__/ next to the code). Both read the working tree; no ESLint
+      # run, so they cost seconds.
+      - name: Type escape hatches (ratchet)
+        id: ratchet_any
+        continue-on-error: true
+        run: npm run lint:any-ratchet
+
+      - name: Test location (ratchet)
+        id: ratchet_test_location
+        continue-on-error: true
+        run: npm run lint:test-location
+
       # scripts/ is covered by the shared scan and the ratchet above. This is
       # the rest of what `npm run lint` covers locally (plan 4.10).
       - name: ESLint (e2e, hooks, edge functions)
@@ -695,6 +709,17 @@ jobs:
     # are. Three shards cut wall clock from ~15.5 min to ~6, but by 2026-09-23
     # a shard took ~9 min median and the unit job paced 66% of runs; five
     # shards (~5.5 min each) put it back under `Next build`.
+    #
+    # 2026-10-21 (owner: CI must take 10 minutes max on the free runner pool,
+    # 20 concurrent jobs shared by every open PR): a FOLLOW-UP push to a PR
+    # (`synchronize`) runs one job with only the tests related to the diff
+    # (`vitest --changed`, import-graph based). Everything else keeps the five
+    # shards: the run when a PR is opened or marked ready, a reopen, a manual
+    # dispatch, and every push to main (so main always gets the full suite).
+    # That frees about 30 job-minutes per follow-up push: shard 1 runs the
+    # related tests and shards 2-5 skip every step after the checkout (a few
+    # seconds each). If the diff touches the runner, the dependency set or this
+    # workflow (see "Decide test scope"), all five shards run normally.
     strategy:
       fail-fast: false
       matrix:
@@ -704,6 +729,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+          # On pull_request this is the merge ref: HEAD^1 is the base tip, so
+          # HEAD^1..HEAD is exactly the PR's own diff (no merged-in main files).
+          fetch-depth: 2
 
       # PATH GATE, IN-JOB (2026-09-23): this job decides for itself whether
       # the PR touched anything in `code` (.github/path-filters.yml, the same
@@ -734,13 +762,50 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup Node and install dependencies
+      # Decide test scope. full = this shard runs its slice of the suite.
+      # scoped = follow-up push, shard 1 runs only the tests related to the
+      # diff. skip = follow-up push, shards 2-5 have nothing to do. A follow-up
+      # push whose diff touches the test runner, the dependency set or this
+      # workflow can alter any test, so it falls back to full on every shard
+      # (never one serial job: that hit the 30-minute timeout).
+      - name: Decide test scope
+        id: scope
         if: steps.gate.outputs.run == 'true'
+        env:
+          SCOPED: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          set -eu
+          mode=full
+          if [ "$SCOPED" = "true" ]; then
+            RISKY=$(git diff --name-only HEAD^1 HEAD | grep -E '^(package\.json|package-lock\.json|vitest\.|tsconfig|scripts/serialize\.mjs|\.github/workflows/ci\.yml)' || true)
+            if [ -n "$RISKY" ]; then
+              echo "::notice::runner/dependency/workflow files changed, running the full suite on all five shards: $RISKY"
+            elif [ "$SHARD" = "1" ]; then
+              mode=scoped
+            else
+              mode=skip
+              echo "::notice::follow-up push: the related tests run on shard 1, nothing for this shard"
+            fi
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node and install dependencies
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode != 'skip'
         uses: ./.github/actions/setup-node-npm
 
       - name: Unit tests (shard ${{ matrix.shard }}/5)
-        if: steps.gate.outputs.run == 'true'
-        run: npm run test:run -- --shard=${{ matrix.shard }}/5
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode != 'skip'
+        env:
+          MODE: ${{ steps.scope.outputs.mode }}
+        run: |
+          set -eu
+          if [ "$MODE" = "full" ]; then
+            exec npm run test:run -- --shard=${{ matrix.shard }}/5
+          fi
+          # Follow-up push: only the tests related to this PR's diff.
+          echo "::notice::follow-up push: running the tests related to the diff (the full suite runs when the PR is opened or ready, and on main)"
+          exec npm run test:run -- --changed HEAD^1 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -749,7 +814,7 @@ jobs:
       # coach-onboarding-staff-row and player-access-action-gate — the auth and
       # access-control tests — running at all.
       - name: Integration tests
-        if: steps.gate.outputs.run == 'true' && (matrix.shard == 1)
+        if: steps.gate.outputs.run == 'true' && matrix.shard == 1
         run: npm run test:integration
 
   next-build:
@@ -852,9 +917,38 @@ jobs:
             next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
             next-build-${{ runner.os }}-
 
+      # 2026-10-21 (owner-approved): about one Next build in three died with
+      # "The runner has received a shutdown signal" during Next's in-process
+      # "Running TypeScript" step, right after "Compiled successfully". That is
+      # the hosted runner running out of memory, not a code failure: main's own
+      # builds pass while large PRs get killed. 10 GiB of swap gives the TypeScript
+      # step headroom, and the sampler below prints memory and swap use every
+      # 15s so the next death shows how close the build came. Swap is best
+      # effort: if the runner will not give it, the build still runs as before.
+      - name: Add swap
+        if: steps.gate.outputs.run == 'true'
+        continue-on-error: true
+        run: |
+          nproc
+          free -m
+          sudo fallocate -l 10G /mnt/helm-swap
+          sudo chmod 600 /mnt/helm-swap
+          sudo mkswap /mnt/helm-swap
+          sudo swapon /mnt/helm-swap
+          free -m
+
       - name: Build
         if: steps.gate.outputs.run == 'true'
-        run: npm run build
+        env:
+          # The 8 GB workflow-level cap ran out of heap on a 16 GB runner (PR #2246, #2239).
+          NODE_OPTIONS: --max-old-space-size=12288
+        run: |
+          (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
+          sampler=$!
+          rc=0
+          npm run build || rc=$?
+          kill "$sampler" 2>/dev/null || true
+          exit "$rc"
 
       - name: Save Next build cache (push to main, once a day per lockfile)
         if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')

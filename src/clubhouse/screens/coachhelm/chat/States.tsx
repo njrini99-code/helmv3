@@ -1,14 +1,14 @@
 'use client';
 
-import { MessageSquareOff, Users } from 'lucide-react';
+import { MessageSquareOff, UserPlus, Users } from 'lucide-react';
 import { rebuiltHref } from '../../../shell/nav';
 import { Button } from '../../../ui/Button';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { EmptyState } from '../../../ui/States';
 
-/** Where Open roster goes, only when that screen is rebuilt (nav.rebuiltHref); never a dead button. */
+/** Where Invite players goes (Roster with its invite sheet open), only when that screen is rebuilt (nav.rebuiltHref); never a dead button. */
 export const askLinks = {
-  roster: () => rebuiltHref('/golf/dashboard/roster', 'coach'),
+  roster: () => rebuiltHref('/golf/dashboard/roster?invite=1', 'coach'),
 };
 
 /** First run: no players on the roster, so there is nothing to ask against (mockup NoRoster). */
@@ -23,8 +23,8 @@ export function AskNoRoster() {
       body="CoachHelm answers from your players’ rounds, stats and schedule. Once your roster is in, ask about anyone on it."
       action={
         roster ? (
-          <Button variant="primary" leftIcon={Users} href={roster}>
-            Open roster
+          <Button variant="primary" leftIcon={UserPlus} href={roster}>
+            Invite players
           </Button>
         ) : undefined
       }

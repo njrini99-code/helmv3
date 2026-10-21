@@ -119,9 +119,11 @@ describe('the scoring average change', () => {
   it('colours the figure, not its caption (the board: "−0.8 vs previous 10" stays grey)', () => {
     show();
     const avg = [...document.querySelectorAll('.ch-ph-figs dd')].find((d) => d.textContent === '70.1')!;
+    // The fixture's change (−1.9 on ten rounds against ten) clears its standard error (pooled 3.6 a round: about 1.6), so it is
+    // green and says so; a smaller one would read "No clear change" in plain ink (stats visuals Q4).
     expect(avg.className).toContain('is-gain');
     expect(avg.nextElementSibling!.className).not.toMatch(/is-gain|is-loss/);
-    expect(avg.nextElementSibling!.textContent).toMatch(/vs previous 10$/);
+    expect(avg.nextElementSibling!.textContent).toMatch(/^−\d\.\d · Better than previous 10$/);
   });
 });
 
@@ -202,10 +204,11 @@ describe('Today, on the phone', () => {
     expect(document.querySelectorAll('.ch-hm-tl.is-player > li.is-past')).toHaveLength(2);
   });
 
-  it('says "Up next · Qualifier" on the hero card, and draws a flag on the competition day', () => {
+  it('says "Up next · Qualifier" on the hero card, and marks the competition day with the calendar’s qualifier icon', () => {
     show();
     expect(screen.getByRole('link', { name: /Up next · Qualifier/ })).toBeTruthy();
-    expect(document.querySelector('.ch-hm-week .is-major svg')!.getAttribute('class')).toMatch(/lucide-flag/);
+    // One icon per event type everywhere (calendar/type-icon.ts): the flag is Practice's.
+    expect(document.querySelector('.ch-hm-week .is-major svg')!.getAttribute('class')).toMatch(/lucide-target/);
   });
 });
 
@@ -224,5 +227,23 @@ describe('spacing the base reset can’t take away', () => {
   it('keeps the window picker’s own labels out of the caption rule', () => {
     expect(css).toMatch(/\.ch-ph-game__h > div > span\s*{/);
     expect(css).not.toMatch(/\.ch-ph-game__h span\s*{/);
+  });
+});
+
+describe('the hero on the phone (wave 7)', () => {
+  it('Start a round, the player’s own reply on Up next, and From your coach under the keys', () => {
+    show();
+    expect(screen.getByRole('link', { name: 'Start a round' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
+    const next = screen.getByRole('link', { name: /Up next · Qualifier/ });
+    expect(within(next).getByText('You’re going')).toBeTruthy();
+    expect(screen.getByRole('link', { name: /^From your coach/ }).getAttribute('href')).toBe('/golf/dashboard/team-hub');
+    expect(screen.getByRole('heading', { level: 2, name: 'Your latest round' })).toBeTruthy();
+  });
+
+  it('Reply needed in the warning tone when the player still owes one', () => {
+    show({ next: { ...PREVIEW_PLAYER_HOME.next!, mine: 'needed' } });
+    const badge = within(screen.getByRole('link', { name: /Up next · Qualifier/ })).getByText('Reply needed');
+    expect(badge.classList.contains('ch-badge--warning')).toBe(true);
   });
 });

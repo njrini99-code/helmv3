@@ -4,6 +4,9 @@ import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
+import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
+import { lieAfterRecoveryFromRow } from '@/lib/golf/data-prompts/recovery';
+import { dataPromptsV2ForShotEntry } from '@/lib/golf/data-prompts/flag';
 import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -162,6 +165,8 @@ function mapShotToRecord(
     approachMissDirection: approachMissDir,
     approachMissLieType: approachMissLie,
     distanceFromGreenYards,
+    // Slice 8b recovery tap: absent until the held migration adds the column.
+    ...(lieAfterRecoveryFromRow(shot) !== undefined ? { lieAfterRecovery: lieAfterRecoveryFromRow(shot) } : {}),
   };
 }
 
@@ -676,7 +681,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
     // Which slots this player's OTHER rounds already hold. Excludes THIS round
     // so a round already sitting in a slot does not read its own as taken.
-    const { data: takenRows } = entered.length
+    const { data: takenRows, error: takenError } = entered.length
       ? await supabase
           .from('golf_rounds')
           .select('qualifier_id, qualifier_round_number')
@@ -684,9 +689,21 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           .in('qualifier_id', entered.map((q) => q.id))
           .neq('status', 'abandoned')
           .neq('id', id)
-      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }> };
+      : { data: [] as Array<{ qualifier_id: string | null; qualifier_round_number: number | null }>, error: null };
 
-    liveQualifierOptions = entered.map((q) => ({
+    // An unread slot list is not "every slot free": offering slots then would
+    // default the picker to one this player may already hold. Offer no
+    // qualifier and say the read failed (the editor's reload dead end).
+    if (takenError) {
+      liveQualifierReadFailed = true;
+      void logServerError(
+        `[continue round] taken qualifier slots read failed for round ${id}; the type editor will offer no qualifier: ${takenError.message}`,
+        { action: 'continueRound.takenSlots', featureArea: 'rounds', roundId: id },
+        'warning',
+      );
+    }
+
+    liveQualifierOptions = takenError ? [] : entered.map((q) => ({
       id: q.id,
       name: q.name ?? 'Qualifier',
       numRounds: q.num_rounds ?? 1,
@@ -697,6 +714,13 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
       isCompleted: q.status === 'completed',
     }));
   }
+
+  // CoachHelm Slice 8a: the one-tap data-gap asks (undefined with
+  // coachhelm_data_gap_prompt_v1 off, so nothing is read or passed).
+  const dataGapAsks = await dataGapAsksForShotEntry(player.id);
+  // CoachHelm Slice 8b: course nudge and recovery tap, in the player's
+  // HELM_COACHHELM_TEAMS canary scope (false with the flag off).
+  const dataPromptsV2 = await dataPromptsV2ForShotEntry(player.id);
 
   return (
     <AnimatedPage>
@@ -724,6 +748,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         serverDataTimestamp={round.updated_at ?? undefined}
         qualifierRoundNumberOptions={qualifierRoundNumberOptions}
         qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
+        dataGapAsks={dataGapAsks}
+        dataPromptsV2={dataPromptsV2}
       />
     </AnimatedPage>
   );

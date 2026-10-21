@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Skeleton } from '../../ui/States';
+import { SkeletonDeskHead } from './SkeletonDeskHead';
 import { SkeletonHeroBar } from './SkeletonHeroBar';
 import { SkeletonPhoneHero } from './SkeletonPhoneHero';
 import '../../styles/home.css';
@@ -32,24 +33,8 @@ export function HomeSkeleton() {
           ))}
         </div>
       </div>
-      {/* Desktop head, line for line as loaded (perf 2026-10-01, measured with `npm run clubhouse:perf`): the date, the greeting, a two-line sentence and the two actions. */}
-      <header className="ch-h-head" data-canopy-head="">
-        <Line height={14}>
-          <Skeleton width={140} height={13} />
-        </Line>
-        {/* The sans greeting's line in the framed head (44px type, 47.5px line; WebKit 1440, 2026-10-07). */}
-        <Line height={47.5}>
-          <Skeleton width={400} height={38} radius={10} />
-        </Line>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 49.6 }}>
-          <Skeleton width="90%" height={14} />
-          <Skeleton width="60%" height={14} />
-        </div>
-        <div className="ch-h-head__actions">
-          <Skeleton width={150} height={36} radius={10} />
-          <Skeleton width={130} height={36} radius={10} />
-        </div>
-      </header>
+      {/* Desktop head in the reader's shape: the coach's brief and scoring form, or the player's plain head. */}
+      <SkeletonDeskHead />
       <div className="ch-h-sheet ch-sheet">
         {[0, 1].map((k) => (
           <div key={k} className="ch-h-pane" style={{ minHeight: 623 }}>

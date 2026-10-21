@@ -1,9 +1,8 @@
 'use client';
 
-import { useId, useState, type CSSProperties } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
 
@@ -48,7 +47,6 @@ export function ScoreFlow({
   const [hover, setHover] = useState<number | null>(null);
   // The card keeps the last hole it read while it fades out, so it never empties before it is gone.
   const [last, setLast] = useState<number | null>(null);
-  const [stageRef, seen] = useInViewOnce<HTMLDivElement>();
   const pts = flow(holes);
   if (pts.length < 2) return <p className="ch-znmiss">The running score needs two holes with scores.</p>;
   const n = Math.max(...holes.map((h) => h.n));
@@ -68,6 +66,9 @@ export function ScoreFlow({
   const stepBy = hi - lo > 8 ? 2 : 1;
   const ticks: number[] = [];
   for (let v = Math.ceil(lo / stepBy) * stepBy; v <= hi; v += stepBy) ticks.push(v);
+  // On a phone the words are drawn larger (rounds.css, `chrz`), so where they would touch every other tick and hole
+  // number gives way (`ch-rzsvg__alt`); par and the odd holes always stay.
+  const tickAlt = (v: number) => (H / (hi - lo)) * stepBy < 36 && (v / stepBy) % 2 !== 0;
   const worst = costliest(holes, 1)[0];
   const colBase = TOP + H + 44;
   const height = colBase + 52;
@@ -82,7 +83,7 @@ export function ScoreFlow({
     return pts.reduce((a, b) => (Math.abs(x(b.n) - vx) < Math.abs(x(a.n) - vx) ? b : a)).n;
   };
   return (
-    <div ref={stageRef} className={'ch-rzstage' + (seen ? ' is-in' : '')}>
+    <div className="ch-rzstage">
       <svg
         className="ch-rzsvg"
         viewBox={`0 0 ${W} ${height}`}
@@ -122,7 +123,7 @@ export function ScoreFlow({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-stage-ink-soft)' : 'var(--ch-stage-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
+            <text className={tickAlt(v) ? 'ch-rzsvg__alt' : undefined} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
               {label(v)}
             </text>
           </g>
@@ -158,11 +159,7 @@ export function ScoreFlow({
             </g>
           ))}
         </g>
-        {worst && !cur && (
-          <text x={x(worst.n)} y={y(worst.cum) + 30} textAnchor="middle" fontSize={12} fontWeight={700} fill="var(--ch-stage-gold)">
-            Hole {worst.n}: {formatSigned(worst.delta, 0)}
-          </text>
-        )}
+        {worst && !cur && <WorstLabel at={x(worst.n)} dotY={y(worst.cum)} n={worst.n} delta={worst.delta} x0={X0} x1={X1} foot={TOP + H + 10} />}
         <line x1={X0 - 8} y1={colBase} x2={X1 + 10} y2={colBase} stroke="var(--ch-stage-rule)" />
         {pts.map((p) => (
           <rect
@@ -178,7 +175,7 @@ export function ScoreFlow({
         ))}
         <g fontSize={12} textAnchor="middle">
           {pts.map((p) => (
-            <text key={p.n} x={x(p.n)} y={colBase + 36} fontWeight={cur?.n === p.n || worst?.n === p.n ? 700 : 500} fill={cur?.n === p.n ? 'var(--ch-stage-ink)' : 'var(--ch-stage-ink-soft)'}>
+            <text key={p.n} className={n > 9 && p.n % 2 === 0 ? 'ch-rzsvg__alt' : undefined} x={x(p.n)} y={colBase + 36} fontWeight={cur?.n === p.n || worst?.n === p.n ? 700 : 500} fill={cur?.n === p.n ? 'var(--ch-stage-ink)' : 'var(--ch-stage-ink-soft)'}>
               {p.n}
             </text>
           ))}
@@ -188,7 +185,7 @@ export function ScoreFlow({
         <div className="ch-rzstage__tipx" style={{ '--ch-rz-x': (x(shown.n) / W) * 100 } as CSSProperties} role="presentation" aria-hidden={cur ? undefined : true}>
           <div className={'ch-rzstage__tip' + (cur ? ' is-on' : '')}>
             <b>
-              Hole {shown.n} · par {shown.par}
+              Hole {shown.n} · Par {shown.par}
             </b>
             <span>
               <i style={{ background: COLOR[shown.result] }} />
@@ -201,6 +198,21 @@ export function ScoreFlow({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * The costliest hole's label, under its dot: centred on it, or set from it inward near either end so it never runs into
+ * the score labels on the left or off the stage on the right; over the dot when the dot is at the foot of the plot.
+ */
+function WorstLabel({ at, dotY, n, delta, x0, x1, foot }: { at: number; dotY: number; n: number; delta: number; x0: number; x1: number; foot: number }) {
+  const anchor = at < x0 + 60 ? 'start' : at > x1 - 60 ? 'end' : 'middle';
+  const lx = anchor === 'start' ? Math.max(x0 + 6, at - 10) : anchor === 'end' ? Math.min(x1 + 6, at + 10) : at;
+  const ly = dotY + 30 > foot ? dotY - 16 : dotY + 30;
+  return (
+    <text x={lx} y={ly} textAnchor={anchor} fontSize={12} fontWeight={700} fill="var(--ch-stage-gold)">
+      Hole {n}: {formatSigned(delta, 0)}
+    </text>
   );
 }
 
@@ -294,18 +306,61 @@ const LIE_COLOR: Record<string, string> = {
   tee: 'var(--ch-stage-line)',
 };
 
-/** The selected hole's full shots as arcs along its length, tee to pin, each coloured by where it finished; putts counted at the pin. */
+/** The label size the stylesheet gives the picture's words now (larger in a narrow `chrz`, the picture's own width), in its own units. */
+function useLabelSize(fallback: number) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [size, setSize] = useState(fallback);
+  useLayoutEffect(() => {
+    const svg = ref.current;
+    if (!svg) return;
+    const read = () => {
+      const text = svg.querySelector('text[data-ch-label]');
+      const fs = text ? parseFloat(getComputedStyle(text).fontSize) : NaN;
+      setSize(Number.isFinite(fs) && fs > 0 ? fs : fallback);
+    };
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(read);
+    ro.observe(svg);
+    return () => ro.disconnect();
+  }, [fallback]);
+  return [ref, size] as const;
+}
+
+/**
+ * The selected hole's full shots as arcs along its length, tee to pin, each coloured by where it finished; putts counted at the pin.
+ * The words under the line never print over each other: the tee's runs from the tee, the putts' ends at the stage's edge,
+ * and a shot's "out" label that would touch the one before it or the putts' is left out (the list under it has every shot).
+ */
 export function ShotTrail({ hole }: { hole: ChReviewHole }) {
+  const [svgRef, fs] = useLabelSize(11.5);
   const t = trail(hole);
   if (!t) return null;
   const X0 = 30;
   const X1 = 600;
+  const RIGHT = 736;
   const base = 104;
   const x = (p: number) => X0 + pos(p, 0, 1) * (X1 - X0);
+  // A label's width, estimated from its length at the size the stylesheet draws it (this face averages ~0.43em a character).
+  const width = (text: string) => text.length * fs * 0.46;
+  const GAP = fs * 0.6;
+  const teeText = hole.yards ? `Tee · ${hole.yards} yds` : 'Tee';
+  const puttText = t.putts > 0 ? `${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
+  const puttLeft = puttText ? RIGHT - width(puttText) : Infinity;
+  let edge = X0 - 8 + width(teeText);
+  const shown = new Set<number>();
+  for (const st of t.steps) {
+    if (st.penalty || !st.left) continue;
+    const w = width(`${st.left} out`);
+    const b = x(st.to);
+    if (b - w / 2 < edge + GAP || b + w / 2 > puttLeft - GAP || b + w / 2 > RIGHT) continue;
+    shown.add(st.n);
+    edge = b + w / 2;
+  }
   const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}` : ''}`;
   return (
     <div className="ch-rzplate">
-      <svg className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>
+      <svg ref={svgRef} className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>
         <line x1={X0} y1={base} x2={X1} y2={base} stroke="var(--ch-stage-rule)" strokeWidth={8} strokeLinecap="round" />
         <line x1={X0} y1={base} x2={X1} y2={base} stroke="var(--ch-stage-ink-soft)" strokeWidth={2} strokeLinecap="round" strokeDasharray="1 7" />
         {t.steps.map((s) => {
@@ -315,7 +370,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
             return (
               <g key={s.n}>
                 <circle cx={a} cy={base - 20} r={10} fill="var(--ch-stage-red)" />
-                <text x={a} y={base - 16} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--ch-green-900)">+1</text>
+                <text className="ch-rzsvg__in" x={a} y={base - 16} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--ch-green-900)">+1</text>
               </g>
             );
           }
@@ -327,27 +382,26 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
             <g key={s.n} className="ch-rzshot" style={{ '--ch-i': i } as CSSProperties}>
               <path className="ch-rzshot__arc" pathLength={1} d={`M ${a} ${base} Q ${mid} ${base - rise * 2} ${b} ${base}`} fill="none" stroke={color} strokeWidth={3.5} strokeLinecap="round" opacity={0.95} />
               <circle className="ch-rzshot__dot" cx={b} cy={base} r={9} fill={color} stroke="var(--ch-green-900)" strokeWidth={2.5} />
-              <text x={b} y={base + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--ch-green-900)">{s.n}</text>
-              {s.left && (
+              <text className="ch-rzsvg__in" x={b} y={base + 3.5} textAnchor="middle" fontSize={10} fontWeight={700} fill="var(--ch-green-900)">{s.n}</text>
+              {s.left && shown.has(s.n) && (
                 <text x={b} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">{s.left} out</text>
               )}
             </g>
           );
         })}
         <circle cx={X0} cy={base} r={6} fill="var(--ch-stage-ink)" />
-        <text x={X0} y={base + 30} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
-          {hole.yards ? `Tee · ${hole.yards} yds` : 'Tee'}
+        <text data-ch-label="" x={X0 - 8} y={base + 30} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+          {teeText}
         </text>
         <line x1={X1 + 16} y1={base} x2={X1 + 16} y2={base - 36} stroke="var(--ch-stage-ink)" strokeWidth={2} />
         <path d={`M ${X1 + 16} ${base - 36} l 20 7 l -20 7 z`} fill="var(--ch-stage-red)" />
-        {t.putts > 0 && (
+        {puttText && (
           <g>
             {Array.from({ length: Math.min(t.putts, 5) }, (_, i) => (
               <circle key={i} cx={X1 + 54 + i * 14} cy={base} r={4.5} fill={t.putts >= 3 ? 'var(--ch-stage-gold)' : 'var(--ch-stage-line)'} />
             ))}
-            <text x={X1 + 54} y={base + 30} fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
-              {t.putts} {t.putts === 1 ? 'putt' : 'putts'}
-              {t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}
+            <text x={RIGHT} y={base + 30} textAnchor="end" fontSize={11.5} fontWeight={600} fill="var(--ch-stage-ink-soft)">
+              {puttText}
             </text>
           </g>
         )}

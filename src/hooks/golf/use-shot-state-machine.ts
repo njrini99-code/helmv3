@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useRef } from 'react';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import { lieFromShotResult, computeShotFingerprint, type LieType } from '@/lib/utils/shot-helpers';
+import { setLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { logError } from '@/lib/error-logging';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 
@@ -105,6 +106,14 @@ export type ShotAction =
   // Core shot recording
   | { type: 'RECORD_SHOT'; payload: { shot: ShotRecord; isHoleComplete: boolean } }
   | { type: 'UPDATE_AFTER_SHOT'; payload: { distanceAfter: number; unitAfter: 'yards' | 'feet'; newLie: LieType } }
+  // The one-tap data-gap prompt (CoachHelm Slice 8a): set the miss tags of a
+  // putt already in this hole's history, exactly as the optional miss chips
+  // would have, and touch nothing else (the next shot's input stays).
+  | { type: 'TAG_PUTT_MISS'; payload: { shotNumber: number; tags: PuttMissTag[] } }
+  // The recovery tap (CoachHelm Slice 8b): set whether the next shot after a
+  // rough/'other' tee shot was a recovery, on that tee shot, and touch nothing
+  // else.
+  | { type: 'TAG_LIE_AFTER_RECOVERY'; payload: { shotNumber: number; recovery: boolean } }
   // Shot input setters
   | { type: 'SET_RESULT'; payload: ShotRecord['result'] | null }
   | { type: 'SET_DRIVER'; payload: boolean | null }
@@ -222,6 +231,20 @@ const CLEAR_INPUT: Pick<ShotTrackingState, 'usedDriver' | 'resultOfShot' | 'miss
   distanceAfterShot: '',
 };
 
+/**
+ * The history with one recorded putt's miss tags set the way `handleNextShot`
+ * writes them (`puttMissTags`, and `missDirection` as the tags joined with
+ * `_`). Returns the same array when there is no such putt, so a stale tap
+ * (the shot was undone) changes nothing.
+ */
+export function tagPuttMiss(history: ShotRecord[], shotNumber: number, tags: PuttMissTag[]): ShotRecord[] {
+  const idx = history.findIndex((s) => s.shotNumber === shotNumber && s.shotType === 'putting' && !s.isPenalty);
+  if (idx === -1 || tags.length === 0) return history;
+  const next = [...history];
+  next[idx] = { ...history[idx]!, puttMissTags: [...tags], missDirection: tags.join('_') };
+  return next;
+}
+
 // ============================================================================
 // REDUCER
 // ============================================================================
@@ -287,6 +310,18 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         ...CLEAR_INPUT,
         distanceAfterUnit: newLie === 'green' ? 'feet' : 'yards',
       };
+    }
+
+    case 'TAG_PUTT_MISS': {
+      const { shotNumber, tags } = action.payload;
+      const shotHistory = tagPuttMiss(state.shotHistory, shotNumber, tags);
+      return shotHistory === state.shotHistory ? state : { ...state, shotHistory };
+    }
+
+    case 'TAG_LIE_AFTER_RECOVERY': {
+      const { shotNumber, recovery } = action.payload;
+      const shotHistory = setLieAfterRecovery(state.shotHistory, shotNumber, recovery);
+      return shotHistory === state.shotHistory ? state : { ...state, shotHistory };
     }
 
     case 'SET_RESULT':

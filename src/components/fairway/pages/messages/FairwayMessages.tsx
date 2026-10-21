@@ -44,6 +44,7 @@ import {
 } from './GroupDetailsSheet';
 import { TopBarRouteAction } from '@/components/fairway/app-shell/TopBarRouteAction';
 import { MessageComposer } from './MessageComposer';
+import { useConversationDeepLink, useOncePerLink } from './use-conversation-deep-link';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 
 export function FairwayMessages() {
@@ -289,71 +290,73 @@ export function FairwayMessages() {
   // Thread-count meta — HONEST: count only, NO unread chip in the masthead.
 
   // ── ?player= deep-link: find-or-create, then select (PRESERVED verbatim) ─────
-  const [handledPlayerParam, setHandledPlayerParam] = React.useState(false);
-  React.useEffect(() => {
-    if (handledPlayerParam || conversationsLoading || !playerIdFromUrl) return;
+  // Once per link (useOncePerLink), so a second ?player= link while Messages
+  // is open is taken too, and the find-or-create isn't started twice while it
+  // awaits.
+  const handlePlayerParam = React.useCallback(async (playerId: string) => {
+    const playerUserId = await getPlayerUserId(playerId);
 
-    const handlePlayerParam = async () => {
-      const playerUserId = await getPlayerUserId(playerIdFromUrl);
+    if (!playerUserId) {
+      fairwayToast.danger('Could not find player');
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      return;
+    }
 
-      if (!playerUserId) {
-        fairwayToast.danger('Could not find player');
-        setHandledPlayerParam(true);
-        router.replace('/golf/dashboard/messages', { scroll: false });
-        return;
-      }
+    const existingConversation = conversations.find(conv => {
+      return !isGroupConversation(conv) && conv.other_participant?.id === playerUserId;
+    });
 
-      const existingConversation = conversations.find(conv => {
-        return !isGroupConversation(conv) && conv.other_participant?.id === playerUserId;
-      });
-
-      if (existingConversation) {
-        setSelectedConversationId(existingConversation.id);
-        setMobileShowChat(true);
-        setHandledPlayerParam(true);
-        router.replace('/golf/dashboard/messages', { scroll: false });
-      } else {
-        try {
-          const result = await createGolfConversation([playerUserId], teamId || undefined);
-          if (result.conversationId) {
-            await refetch();
-            setSelectedConversationId(result.conversationId);
-            setMobileShowChat(true);
-            fairwayToast.success('Conversation started');
-          }
-        } catch (err) {
-          fairwayToast.danger('Failed to start conversation');
-          logError(
-            err instanceof Error ? err : new Error('Failed to start conversation'),
-            { component: 'FairwayMessages', action: 'handlePlayerParam', sport: 'shared' },
-            'high'
-          );
+    if (existingConversation) {
+      setAutoOpenedId(null);
+      setSelectedConversationId(existingConversation.id);
+      setMobileShowChat(true);
+      router.replace('/golf/dashboard/messages', { scroll: false });
+    } else {
+      try {
+        const result = await createGolfConversation([playerUserId], teamId || undefined);
+        if (result.conversationId) {
+          await refetch();
+          setAutoOpenedId(null);
+          setSelectedConversationId(result.conversationId);
+          setMobileShowChat(true);
+          fairwayToast.success('Conversation started');
         }
-        setHandledPlayerParam(true);
-        router.replace('/golf/dashboard/messages', { scroll: false });
+      } catch (err) {
+        fairwayToast.danger('Failed to start conversation');
+        logError(
+          err instanceof Error ? err : new Error('Failed to start conversation'),
+          { component: 'FairwayMessages', action: 'handlePlayerParam', sport: 'shared' },
+          'high'
+        );
       }
-    };
-
-    handlePlayerParam();
-  }, [conversations, conversationsLoading, playerIdFromUrl, handledPlayerParam, router, refetch, teamId]);
+      router.replace('/golf/dashboard/messages', { scroll: false });
+    }
+  }, [conversations, router, refetch, teamId]);
+  useOncePerLink(playerIdFromUrl, !conversationsLoading, handlePlayerParam);
 
   // ── ?conversation= deep-link: pre-select the thread that fired a notification ─
-  // P260. Runs once per param value: select the conversation if the user is a
-  // participant, otherwise fall through to auto-select. The param is stripped so
-  // a later auto-select isn't blocked and the link isn't re-applied on refetch.
-  const [handledConversationParam, setHandledConversationParam] = React.useState(false);
-  React.useEffect(() => {
-    if (handledConversationParam || conversationsLoading || !conversationIdFromUrl) return;
-
-    const target = conversations.find(c => c.id === conversationIdFromUrl);
-    if (target) {
-      setSelectedConversationId(target.id);
-      setMobileShowChat(true);
-    }
-    // Either way, consume the param so the rest of the page behaves normally.
-    setHandledConversationParam(true);
+  // P260. Applied once per link, including a second link while Messages is
+  // open: select the conversation if the user is a participant, otherwise fall
+  // through to auto-select. The param is stripped so a later auto-select isn't
+  // blocked and the link isn't re-applied on refetch.
+  const openLinkedConversation = React.useCallback((id: string) => {
+    // Opening a thread from a notification is engagement, like picking it in the rail.
+    setMobileActionsId(null);
+    setShowGroupDetails(false);
+    setAutoOpenedId(null);
+    setSelectedConversationId(id);
+    setMobileShowChat(true);
+  }, []);
+  const consumeConversationParam = React.useCallback(() => {
     router.replace('/golf/dashboard/messages', { scroll: false });
-  }, [conversations, conversationsLoading, conversationIdFromUrl, handledConversationParam, router]);
+  }, [router]);
+  useConversationDeepLink({
+    conversationId: conversationIdFromUrl,
+    conversations,
+    loading: conversationsLoading,
+    onOpen: openLinkedConversation,
+    onHandled: consumeConversationParam,
+  });
 
   // Desktop shows a thread beside the rail; a phone must not read a hidden thread.
   React.useEffect(() => {
@@ -620,12 +623,12 @@ export function FairwayMessages() {
       data-fw-keyboard-aware
       className={fairwayScope(
         mobileShowChat
-          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:-mb-52 md:h-dvh md:pt-0'
           : // DASH-18: the list sits under the shared top bar on mobile (its height +
             // the top safe area, which the bar itself pads), so it no longer
             // pads the safe area or draws its own title row there. A coach also
             // keeps the Team hub tab row under the bar (0px for players).
-            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset)-var(--fw-hub-subnav-offset,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset)-var(--fw-hub-subnav-offset,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:-mb-52 md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -650,7 +653,7 @@ export function FairwayMessages() {
               <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
               <div className="flex items-center gap-1">{composeActions}</div>
             </div>
-            <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
+            <PullToRefresh onRefresh={handleConversationsRefresh} className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail
                 conversations={conversations}
                 selectedId={selectedConversationId}

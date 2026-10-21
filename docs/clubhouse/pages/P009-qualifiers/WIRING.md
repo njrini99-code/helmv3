@@ -189,16 +189,16 @@ closes.
 
 Against production
 (`src/components/fairway/pages/qualifiers/__tests__/standings-parity.test.tsx`
-runs all three):
+runs all three; Fairway's live leaderboard follows the rule since 2026-10-17):
 
 | Behaviour | Selection workspace (confirm) | Fairway live leaderboard | Clubhouse |
 | --- | --- | --- | --- |
-| Rounds counted | completed, not test, total and to-par | completed, any `is_test`, a null total as 0 strokes | as the workspace |
-| No completed round | unscored | the stored entry aggregate | unscored |
-| Same slot twice / no number | first by id / counts | both / counts | as the workspace |
-| Order | to par, strokes, rounds, name | to par, strokes, stored position | as the workspace |
-| Tie label | none (rank 1..n) | 1, T2; T on to par alone | T2, T2 on to par and strokes |
-| Level at the cut | tie, the coach gives the place | first by stored order is in | tie |
+| Rounds counted | completed, not test, total and to-par | as the workspace | as the workspace |
+| No completed round | unscored | unscored | unscored |
+| Same slot twice / no number | first by id / counts | as the workspace | as the workspace |
+| Order | to par, strokes, rounds, name | to par, strokes, rounds, name | as the workspace |
+| Tie label | none (rank 1..n) | T2, T2 on to par and strokes | T2, T2 on to par and strokes |
+| Level at the cut | tie, the coach gives the place | tie | tie |
 | Bubble | none | below the line, inside the squad | below the line, inside the squad, ⌈rounds ÷ 2⌉ rounds in |
 | Average | none | every round | 18-hole rounds only |
 | A pick saved before confirm | the pick leaves the places on score; the next player takes one | not read until confirm | not read until confirm (a player cannot read selections before it) |

@@ -5,9 +5,11 @@ import { ArrowRight, Check, ChevronLeft, ImagePlus, Info } from 'lucide-react';
 import { ALLOWED_COURSE_IMAGE_MIME, MAX_COURSE_IMAGE_BYTES } from '@/lib/golf/course-library';
 import type { ChTeeColor } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
+import { roving } from '../../../ui/use-roving';
 import { Icon } from '../../../ui/Icon';
 import { Checkbox } from '../../../ui/Checkbox';
 import { Modal } from '../../../ui/Modal';
+import { Segmented } from '../../../ui/Segmented';
 import { HoleConfig } from './HoleConfig';
 import { blankHoles, holeIssue, parOf, yardsOf, type ChSetupHole, type ChSetupPick } from './shape';
 
@@ -175,13 +177,16 @@ export function AddCourseSheet({
               </div>
               <div className="ch-rsu-field">
                 <span>Holes</span>
-                <div className="ch-rsu-seg" role="radiogroup" aria-label="Holes">
-                  {([18, 9] as const).map((n) => (
-                    <button key={n} type="button" role="radio" aria-checked={count === n} onClick={() => setCountAndCard(n)}>
-                      {n} holes
-                    </button>
-                  ))}
-                </div>
+                <Segmented<'18' | '9'>
+                  block
+                  label="Holes"
+                  value={`${count}` as '18' | '9'}
+                  options={[
+                    { value: '18', label: '18 holes' },
+                    { value: '9', label: '9 holes' },
+                  ]}
+                  onChange={(n) => setCountAndCard(Number(n) as 9 | 18)}
+                />
               </div>
             </div>
           )}
@@ -189,7 +194,7 @@ export function AddCourseSheet({
             <div className="ch-rsu-form">
               <div className="ch-rsu-field">
                 <span>Tee colour</span>
-                <div className="ch-rsu-sw" role="radiogroup" aria-label="Tee colour">
+                <div className="ch-rsu-sw" role="radiogroup" aria-label="Tee colour" {...roving}>
                   {COLORS.map(([c, n]) => (
                     <button
                       key={c}

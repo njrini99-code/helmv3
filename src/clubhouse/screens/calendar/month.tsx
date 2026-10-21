@@ -103,7 +103,7 @@ function MonthDay({ day, modifiers, className, children, ...rest }: DayButtonPro
       day={day}
       modifiers={modifiers}
       className={cls}
-      aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${n ? `${n} ${n === 1 ? 'event' : 'events'}${marks?.major ? ', competition' : ''}` : 'no events'}`}
+      aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}${modifiers.today ? ', today' : ''}: ${n ? `${n} ${n === 1 ? 'event' : 'events'}${marks?.major ? ', competition' : ''}` : 'no events'}`}
     >
       <b className="ch-num">{children}</b>
       {marks?.major ? <i className="is-major" /> : n ? <i /> : null}

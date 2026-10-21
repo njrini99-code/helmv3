@@ -85,6 +85,29 @@ describe('postRoundTrigger', () => {
     expect(data?.[0]?.['coachhelm_failure_reason']).toBeNull();
   });
 
+  it('labels the engine run for the CoachHelm run log by trigger reason', async () => {
+    mockTrigger.mockResolvedValue({ success: true, insights_created: 1 });
+    const cases = [
+      [undefined, 'round'],
+      ['round_submitted', 'round'],
+      ['safety_net', 'safety_net'],
+      ['manual_refresh', 'manual'],
+      ['cron', 'sweep'],
+    ] as const;
+    for (const [triggerReason, runTrigger] of cases) {
+      mockTrigger.mockClear();
+      const admin = createPostRoundFake([
+        { id: 'r1', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
+      ]);
+      await postRoundTrigger(admin as never, {
+        playerId: 'p1',
+        roundId: 'r1',
+        ...(triggerReason ? { triggerReason } : {}),
+      });
+      expect(mockTrigger).toHaveBeenCalledWith('p1', { runTrigger });
+    }
+  });
+
   it('an uncoded success:false is a permanent failure — nothing is read off the text', async () => {
     const admin = createPostRoundFake([
       { id: 'r2', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },

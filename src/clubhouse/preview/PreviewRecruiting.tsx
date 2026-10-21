@@ -13,7 +13,8 @@ const later = <T,>(value: T, ms = 250) => new Promise<T>((resolve) => setTimeout
  * Recruiting's writes for the preview: an in-memory list that never reaches Supabase, so the page can be used and
  * its outcomes seen. `failwrites` refuses every write, `failstage` only a stage change, `docsfailed` the documents'
  * read, `slow` answers after five seconds (the "still saving" notice). An upload reports progress on its way. The upload dialog
- * can open on a file: `upload` (a 64 MB film), `toolarge` (a 140 MB film, refused before sending), `refusedtype` and
+ * can open on a file: `upload` (a 64 MB film; refused as a type while film is off, data/recruiting-film.ts), `uploaddoc`
+ * (a 2 MB PDF), `toolarge` (a 140 MB film, refused before sending), `refusedtype` and
  * `refusedsize` (Storage's own refusal of a file the page let through, CH-14107 and CH-14108).
  * The premium pass adds `nextstep` (the next-step columns exist, a Division I men's team; on the phone Mason's detail),
  * `nextlist` (the same, on the list), `division` (the team names no division, so the coach picks it) and `divisionpicked`
@@ -55,6 +56,7 @@ function previewWrites(state: string | undefined): ChRecruitingWrites {
 const MB = 1024 * 1024;
 const UPLOAD_STATES: Record<string, RecInitial> = {
   upload: { openId: 'p-mason', detail: true, upload: { name: 'Swing, down the line.mov', size: 64 * MB } },
+  uploaddoc: { openId: 'p-mason', detail: true, upload: { name: 'Spring transcript.pdf', size: 2 * MB } },
   toolarge: { openId: 'p-mason', detail: true, upload: { name: 'Whole summer.mov', size: 140 * MB } },
   refusedtype: { openId: 'p-mason', detail: true, upload: { name: 'Swing, down the line.mov', size: 64 * MB, refused: 'type' } },
   refusedsize: { openId: 'p-mason', detail: true, upload: { name: 'Swing, down the line.mov', size: 64 * MB, refused: 'size' } },

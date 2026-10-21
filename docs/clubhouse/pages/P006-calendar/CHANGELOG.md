@@ -1,5 +1,420 @@
 # P006 — Calendar: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (calendar.css)
+
+- The week grid, rail, month and lane cells keep a fixed 12px (their phone block says so); the remaining fixed label moves to the text size.
+- Radii on the 5, 7, 10, 14, 20 scale (pills and circles stay).
+- The busy block and the next-event bar take the hover the other events have; the title year, the kicker and the day headers use tabular numerals.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; attendance marks use the shared segmented control
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Save event, Attach, Save attendance and a feed link's confirm are busy while they run instead of disabled.
+- More, More actions and Remove file show their name on hover and focus.
+- A player's attendance marks (Present, Late, No-show) are the shared `Segmented`: the same markup and tones, now with the sliding chip and arrow keys.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-18 — Pickers and controls: dates, times, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. The event editor, the blocked-time sheet and Until shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- Publish, Remove and Cancel event in the event editor stays lit while it works (Button's `busy`: aria-busy and no second press) instead of going unlit like a button that is unavailable.
+
+## 2026-10-18 — Wave 10: one verb for a new event
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-6309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The first run's action (CH-6309) is "New event", the verb Home, the editor
+  and the top bar use, not "Create event".
+
+## 2026-10-18 — Wave 7: a player's meetings, replies and clashes
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (the attendance read is unchanged)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B: a player's Calendar holds a meeting only when they are on its
+  invite list (their own attendance row), so a teammate's 1:1 or a captains'
+  meeting no longer shows its title or room to everyone. When the attendance
+  read fails, D2-8 decides from the counts; when that fails too, no meeting
+  is shown (fail closed). The preview player calendar is
+  built the same way (no Parent call, no teammate's reply).
+
+### Changed (2026-10-18, player Calendar)
+
+- Phone Day: an event still waiting on the player's reply has a Reply badge,
+  "needs your reply" in its label, and an amber dot on its day in the strip
+  (`playerReplyNeeded`, the same rule as Needs your reply).
+- A player sees their own clashes: the day's panel lists them ("Overlaps
+  your ECON 101 class 1:00–2:15 PM") and the event says so with Message
+  coach. Moving or keeping it stays the coach's Overlap panel. A class that
+  starts after the team event it clashes with is now found too (for coaches
+  as well); it was missed before.
+- A player's own class is titled "ECON 101", not "Jonah · ECON 101".
+
+## 2026-10-18 — Wave 5: the empty phone day has New event
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, empty day)
+
+- Phone Day, a coach's empty day (CH-6308): "Plan something for the team."
+  with a New event button, and no "0 events" over it.
+
+## 2026-10-18 — Wave 5: a move is written when its Undo goes
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, move Undo)
+
+- A dragged or Alt+arrow move (CH-6015) is written by its toast's
+  `onExpire`, not by a separate 4-second timer: the write happens exactly
+  when Undo stops being offered. Hovering, focusing or holding the toast
+  pauses both, so Undo can no longer silently do nothing. Leaving the page
+  still writes a waiting move at once; an Undo pressed after a move was
+  written says "Already saved. Drag it back to undo."
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `calendar.css`: the phone's text (day head, events, agenda, now pill,
+  event sheet, editor, busy sheet rows, people picker) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone agenda's time column grows with it (62px at the default
+  size), so "10:15 AM" holds one line. The phone text floor follows from 12px
+  for labels.
+- Left fixed on purpose: the week strip and month grid cells, the RSVP
+  count figures, the busy lanes chart and the desktop week, month and
+  mini-month grids. At the default size every value is the same pixel.
+
+- An event's peek card (the hover card) sets its kind label ("Tournament")
+  in `--ch-type-label-s`. It read `font: var(--ch-type-k)`, a bare length,
+  so the label fell back to the inherited 14px/21px, larger than the line
+  under it.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 67 to 21 on `calendar`, 54 to 20 on `calendar-player`, 89 to 10 in
+  the list, 127 to 66 in the editor (the rest are shared controls and the
+  kept grids). Scale-1 screenshots are pixel identical to before; no
+  horizontal overflow at XXL.
+- WebKit 1280: the peek label is 12.5px/1.3 weight 500 (was 14px/21px
+  weight 400).
+
+## 2026-10-18 — Wave 3 accessibility: readable ended events, today
+
+```text
+Design package: none (wave-3 accessibility review, items 10, 15)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- An ended event no longer fades as a whole (0.56, with its time at 0.82 on
+  top, measured 2.4–3.3:1). It keeps the desaturated fill; a tinted block's
+  words go to `--ch-ink-500`, and a filled competition keeps its ivory on the
+  green mixed a quarter toward the page (half at night). Hover, focus and
+  selection still bring an ended event back. The month's ended chips follow
+  the same rule instead of fading to 0.6.
+- Phone month: a day's label says "today" (for example "Wed 14 October,
+  today: 4 events").
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `calendar.test.tsx`.
+- WebKit (Playwright, dev preview, 1280): the weakest ended-event text is
+  4.95:1 light and 6.02:1 dark in the week (was 2.4 and 2.62), 4.95:1 and
+  7.0:1 in the month (was 3.39 and 3.39). Week and month screenshots, light
+  and dark, read the ended events as past.
+
+## 2026-10-18 — Wave 3: the week's day keys take a solid focus ring
+
+```text
+Design package: none (wave-3 accessibility review, items 1)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, accessibility: day ring)
+
+- A week day key's focus ring is solid `--ch-border-focus` where it was 45%
+  green, and its night override is gone: light 2.15:1 to 7.23:1, dark 2.57:1
+  to 7.8:1.
+
+### Verification (2026-10-18, accessibility: day ring)
+
+- WebKit (Playwright, dev preview, 1280 week and 390 month): ring contrast light
+  and dark, close-ups checked.
+
+## 2026-10-18 — Wave 3: the title on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The week's title has no eyebrow over it, so
+  the top adds its 24px; the gutter is 40px where it was 32px.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: a block's time is never cut
+
+```text
+Design package: none (wave-3 design review, items 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, block times)
+
+- Week and day grids: a block's time is set in whole parts ("8:00", " AM",
+  " – 9:30 AM", " · location") on one line, and a part that doesn't fit
+  drops with the parts after it, so a block shows the longest start of its
+  time that fits: the range, then "8:00 AM", then "8:00". Shared blocks
+  showed a bare "8:00" and narrow ones a cut "9:00 – 10:0…" (`views.tsx`,
+  `calendar.css`).
+- The start always carries AM or PM, so a range reads "8:00 AM – 9:30 AM";
+  the button's name, the peek and the inspector keep "8:00 – 9:30 AM". A
+  location shows whole or not at all, never as "· Le…".
+- A short block's time keeps its width and its title ellipsizes ("Travel
+  bri… 1:30 PM"); the meridiem drops only when the title would be left under
+  24px.
+
+### Verification (2026-10-18, block times)
+
+- WebKit at 1280 and 1440, every block in the preview week: no time part
+  ends past its block. At 1280 every full-width block shows its range, a
+  64px lane "3:30 PM", short blocks "5:30 PM"; at 1440 (95px columns)
+  blocks show "8:00 AM", 49px lanes the bare start, short blocks "5:30 PM".
+- `npm run test:file` on the eight calendar test files: 201 passed.
+
+## 2026-10-18 — Polish: week bars lift on hover; inbox rows keep their ring
+
+```text
+Design package: none (wave-2 interaction review rows 6, 13)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Desktop week: tournament, qualifier and travel blocks and the all-day bars
+  lift on hover like practice and meeting blocks.
+- Needs your reply rows draw their focus ring inside the row, where the
+  inbox scroller no longer clips it.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the phone skeleton's eyebrow line
+
+```text
+Design package: none (wave-2 states review row 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Phone skeleton (CH-6401): the eyebrow's bar sits in its loaded 15.6px line
+  (13px type), so the title row lands where it loads (`CalendarSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 390: the title row at
+  119 vs 119 (was 116).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: no-team way out, the itinerary lands on the trip
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-6307): the page empty offers "Open team settings"; a coach goes
+  to Team, a player to Golf profile (CH-8302).
+- View itinerary links to `/golf/dashboard/team-hub?tab=travel&trip=<id>`.
+  It went to `/travel?trip=`, whose Clubhouse redirect (a layout, which can't
+  read search params) dropped the trip.
+- Phone, events failed (CH-6201): Day keeps its week strip, without event
+  counts, and the week arrows, so the page still moves; the notice stands
+  where the day's list goes, where the whole view was blank under it.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview, 390px): `?state=failed` keeps the 7-day
+  strip and both week arrows over CH-6201; Next week moves the day 7 on.
+
+## 2026-10-17 — Polish: editor times on the phone, class lines
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- New event on the phone: the date takes its own line and the two times share
+  the one under it; three across left each time 99px and clipped "07:00 AM"
+  to "07:00 AV" (`calendar.css`).
+- Phone agenda: a class row's second line names only its room; the code was
+  already in its title ("Priya · STAT 201", then "STAT 201 · Hanes Hall 120")
+  (`CalendarPhone.tsx`).
+- Tabular figures come back on 10 rules in `calendar.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Production's event actions, live updates, linked trips, team replies, the whole window
 
 ```text

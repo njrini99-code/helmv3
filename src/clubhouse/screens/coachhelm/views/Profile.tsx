@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Dna, Lock, Play } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, Plus } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
 import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
@@ -109,7 +109,7 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
   if (!live.length) return null;
   const groups = [
     { key: 'warn', title: 'Costing you', rows: live.filter((i) => !i.strength).slice(0, 4) },
-    { key: 'good', title: 'Working', rows: live.filter((i) => i.strength).slice(0, 4) },
+    { key: 'good', title: 'What’s working', rows: live.filter((i) => i.strength).slice(0, 4) },
   ].filter((g) => g.rows.length > 0);
   const top = live[0]!;
   const meta = [top.evidence.sample, top.evidence.window, top.evidence.asOf].filter(Boolean).join(' · ');
@@ -148,16 +148,18 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
 }
 
 function Hero({ p }: { p: ChProfile }) {
-  const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed}` : null].filter(Boolean);
+  const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const none = p.strengths.length === 0 && p.watchouts.length === 0;
   return (
     // The shape of the game on the team board's green (owner, 2026-10-16: "more green"), with how much of it is read so far.
     <section className={'ch-hg-hero' + (p.sees?.list.some((i) => !i.stale) ? ' is-second' : ' ch-scoreboard')} aria-labelledby="ch-hg-hero-t">
       <div className="ch-hg-hero__k">
         <span>The shape of your game</span>
-        <span className="ch-num">{meta.join(' · ')}</span>
+        {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+        <span className="ch-num">{meta.join('\u00a0· ')}</span>
       </div>
-      <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
+      {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+      <h2 id="ch-hg-hero-t">{p.courseProfile?.replaceAll(' · ', '\u00a0· ') ?? 'What your rounds say so far'}</h2>
       {none ? (
         <p className="ch-hg-hero__none">Nothing stands out yet. A strength or a watch-out shows once a measure is clearly high or low, with enough rounds behind it.</p>
       ) : (
@@ -238,12 +240,12 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
         <>
           <EmptyState
             code="CH-13360"
-            icon={Dna}
+            shape="rows"
             title="Your game profile starts with a few rounds"
             body="CoachHelm reads how you play from the rounds you post. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then."
             action={
               startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
+                <Button variant="primary" leftIcon={Plus} href={startHref.href}>
                   {startHref.label}
                 </Button>
               ) : undefined
@@ -251,7 +253,8 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
           />
           <section className="ch-hg-sec" aria-labelledby="ch-hg-all">
             <h2 id="ch-hg-all">What it will read</h2>
-            <ol className="ch-hg-grid">
+            {/* Every measure is still locked: the compact tiles the loaded view uses for "Still filling in", not seven full cards. */}
+            <ol className="ch-hg-grid is-locked">
               {p.measures.map((m) => (
                 <Measure key={m.id} m={m} />
               ))}
@@ -271,9 +274,13 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
                 measures as full cards, the locked ones as compact tiles that say what each still needs. */}
             {ready.length > 0 && (
               <>
-                <h3 className="ch-hg-grp">
-                  With a read <span className="ch-num">{ready.length}</span>
-                </h3>
+                {/* The split is only news when both halves are there: with nothing still filling in, a lone "With a read"
+                    under "Every measure" read as a tab with nothing beside it (2026-10-19). */}
+                {locked.length > 0 && (
+                  <h3 className="ch-hg-grp">
+                    With a read <span className="ch-num">{ready.length}</span>
+                  </h3>
+                )}
                 <ol className="ch-hg-grid">
                   {ready.map((m) => (
                     <Measure key={m.id} m={m} />

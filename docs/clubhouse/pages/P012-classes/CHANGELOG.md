@@ -1,5 +1,350 @@
 # P012 — Classes: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (classes.css)
+
+- The term and over-credit figures follow the iPhone's text size; the day tab and the toolbar bar labels keep their size (fixed tiles).
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The import row's remove key reaches 44px on the phone; the toolbar and card credit figures use tabular numerals.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight actions are busy; one spinner; remove buttons have tooltips
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Remove class, Delete all classes, Import and Retry sync are busy while they run instead of disabled.
+- The calendar sync note draws the shared `Spinner`.
+- A parsed row's remove button shows its name on hover and focus.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Empty Classes draws the week
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-12301, CH-12305
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The empty schedule and the no-team page draw seven day columns under the sentence, so the page reads as a timetable waiting for classes.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/classes?state=empty`.
+
+## 2026-10-18 — Pickers and controls: class times, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. A class's Starts and Ends (a time already off the quarter hour still shows as chosen) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- Add class and Save changes stays lit while it works (Button's `busy`: aria-busy and no second press) instead of going unlit like a button that is unavailable.
+
+## 2026-10-18 — Wave 8: Delete all classes on the column edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: "Delete all classes" ends on the column's edge
+  (`.ch-btn--flush-end`); the phone's full-width row is unchanged.
+
+## 2026-10-18 — Wave 7: only the meetings the player is on
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (the player's own attendance rows)
+Held items:     works before and after 20261017102000 (HELD.md)
+```
+
+### Fixed (2026-10-18, meeting privacy)
+
+- Decision B, as the player's Calendar has it: the week's team events hold a
+  meeting only when the player is on its invite list, so no class is said to
+  meet over a teammate's 1:1 and its title is never on the page. When their
+  own rows don't load, D2-8 decides from the counts; when that fails too,
+  every meeting is left out (`classes.ownInvites`, `classes.meetingInvites`).
+
+## 2026-10-18 — Wave 6: class form and import
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Class form samples start "e.g." (course code, credits, name, instructor,
+  building, room), so a refused save never sits under what looks like a
+  value. Credits, Instructor, Building, Room and Notes carry the shared
+  Optional tag (`.ch-field__opt`).
+- Add a class opens on the course code on desktop; Edit and the phone keep
+  the heading first.
+
+### Added (2026-10-18, wave 6)
+
+- Import review: Start over asks first (CH-12504) once the review holds three
+  or more classes or one came off.
+- Import result: a class that can't be on the calendar yet is a chip button
+  that opens its form (`onEdit` from `ClassesView`).
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview; 320, 390, 1280): Add a class focuses the
+  course code at 1280 and the heading on the phone; five Optional tags; a
+  three-class review asks "Start over?" before it lets go.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Saving…" / "Adding…" in the class form, "Removing…"
+  (CH-12501), "Deleting…" (CH-12503), "Importing…" and
+  "Syncing…" while those run.
+
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `classes.css` (term bar, Today, the class cards, overlaps,
+  the class, form and import sheets) moves from fixed px to
+  `calc(N * var(--ch-type-k))`, px line heights included. The import review's
+  day tabs (a fixed 52 by 46 tile), its summary figures and the timetable
+  header's event chip stay fixed.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Classes preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 80 to 7 on `classes` (the event chip, and shared
+  buttons and the section title); no overflow or overlaps.
+
+## 2026-10-18 — Wave 3: the head on the shared line, 44px phone actions
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The term line is 2px shorter than the eyebrow,
+  so the top adds 2px.
+- Phone: Import schedule and Add class are 44px tall where they were 36px; the
+  loading shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `classes.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: whole words in the week strip, one-line times
+
+```text
+Design package: none (wave-3 design review, items 10, 11)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, week chips and Today times)
+
+- A team event's chip in the week strip wraps between words only, where it
+  cut "Pinehurst" to "Pinehur / st". On the phone the chip's side inset is
+  3px and its face a narrower cut (wdth 92) at the same 11px, so the word
+  fits (`classes.css`).
+- Today's time column is 112px (was 104px), so "10:10–11:25 AM" keeps one
+  line where "10:10–" wrapped alone. A range across noon still wraps
+  (`classes.css`).
+
+### Verification (2026-10-18, week chips and Today times)
+
+- WebKit at 390: "Pinehurst" 50.5px at 11px set in a 49px box before the
+  narrower cut; the chip now reads "Pinehurst / qualifier". Today's time is
+  108px wide at 600 14px tabular. The 1280 chip is unchanged (147px, one
+  line). With the narrower title column "Intermediate Macroeconomics"
+  (229.5px) wraps in the 226px column, as a longer title does.
+- `npm run test:file` on `classes.test.tsx` and `classes-parity.test.ts`.
+
+## 2026-10-18 — Polish: the desktop skeleton draws Your classes' head
+
+```text
+Design package: none (wave-2 states review row 21)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Desktop skeleton (CH-12401): Your classes' heading and the week's days
+  once over the rows, on the loaded page's classes; the rows are the loaded
+  rows' 94.4px on their seams (no gap), and the term overview's block is its
+  loaded 146px (`ClassesSkeleton.tsx`, the skeleton rules in `classes.css`).
+- A team event's name under its day is drawn only when it loads, so a week
+  with one moves the rows down by its line (about 23px) when it lands.
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 1280, skeleton vs
+  loaded: the heading 444 vs 444, the days' row 485 vs 485, the first row 515
+  vs 538 (was about 456; the preview's week has a team event).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: no team opens Golf profile
+
+```text
+Design package: none (wave-2 states review; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- No team (CH-12305): Open team settings goes to `?section=golf`, where a
+  player joins a team (CH-8302). `?section=team` has no player section, so
+  it fell back to Account.
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on classes.test, `clubhouse:check`, `typecheck:fast`
+  and eslint pass.
+
+## 2026-10-17 — Polish: aligned Today titles and overlap codes
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Today: the time column is a fixed width with tabular figures, so every
+  row's title starts at the same x (it was `auto`, 82 to 96px)
+  (`classes.css`).
+- Overlaps: a class's department key holds a four-letter width and its time
+  draws tabular figures, so the code beside it lines up row to row
+  (`classes.css`).
+- Tabular figures come back on 9 rules in `classes.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
 ## 2026-10-17 — Parity with production: large photos, coach-only meetings
 
 ```text

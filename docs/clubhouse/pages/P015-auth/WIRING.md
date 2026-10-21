@@ -132,3 +132,65 @@ Hand-off:                src/clubhouse/lib/handoff.ts: the fold's last frame is 
                          by ClubhouseFrame when the dashboard has mounted (also used by the welcome)
 Preview:                 /clubhouse-preview/onboard (every server call faked; there is one database, production)
 ```
+
+## The front door's other ways in (2026-10-19)
+
+```text
+Routes:     /golf/reset-password, /golf/join, /golf/join/[code], /golf/staff/join/[token], /golf/coach, /golf/coach/pending, /golf/demo
+Manifest:   config/clubhouse/pages/P015-auth.json lists /golf/reset-password, /golf/coach, /golf/coach/pending and /golf/demo; /golf/join,
+            /golf/join/[code] and /golf/staff/join/[token] are not listed because the manifest check only resolves routes under
+            the (auth) and (onboarding) groups, and these three sit directly under src/app/golf.
+Flag:       isClubhouseFrontDoor() (golf_clubhouse_front_door), off in production. It chooses what is drawn and nothing else.
+Switches:   a route with nothing under it replaces `children` in its layout:
+              (auth)/reset-password/layout.tsx -> ClubhouseResetPasswordRoute
+              (auth)/demo/layout.tsx           -> ClubhouseDemoRoute
+            a client page with routes under it gets the flag from its layout (FrontDoorProvider, routes/front-door.tsx)
+            and draws its own screen: join/layout.tsx + join/page.tsx (JoinCode); (onboarding)/coach/layout.tsx +
+            coach/page.tsx (CoachOnboard). The layout cannot replace `children` there: /golf/join/[code] and
+            /golf/coach/pending are children of those segments.
+            an async page keeps every read, redirect and fail-closed throw and swaps only what it returns:
+              join/[code]/page.tsx -> ClubhouseJoinTeamRoute / ClubhouseJoinInvalidRoute
+              staff/join/[token]/page.tsx -> ClubhouseStaffInviteRoute
+              (onboarding)/coach/pending/page.tsx -> ClubhouseCoachPendingRoute
+            their loading.tsx files draw GateLoading in the sign-in room when the flag is on.
+Routes:     src/clubhouse/routes/auth.tsx (the adapters), routes/front-door.tsx (the flag for client pages)
+Screens:    screens/auth/ GateFrame (the sign-in room for these screens), ResetPassword, JoinCode (CodeField), JoinTeam
+            (JoinInvalid), StaffInvite, CoachPending, DemoEntry, GateLoading; screens/onboard/ CoachSteps (CProgram,
+            CProfile, CDone), CoachOnboard, coach-guard, steps-map
+Preview:    /clubhouse-preview/auth ?screen=reset|join|joinconfirm|staff|pending|demo (&state=, &sim=, &fail=, &previous=1),
+            /clubhouse-preview/onboard ?step=cprogram|cprofile|cdone (&who=filled|nocode, &sim=)
+```
+
+```text
+Reset password
+UI (ResetPassword): checking -> form | expired -> sent; form -> saved
+Calls (reset-writes.ts, today's page's): supabase.auth.verifyOtp({ type: 'recovery', token_hash }) once, even when someone
+  is signed in; auth.updateUser({ password }); auth.signOut({ scope: 'others' }); requestPasswordResetAction(email)
+Rules: reset-state.ts (describeResetFailure is today's reset-errors.ts; auth-reset.test holds them together)
+Destination: Continue -> /golf/dashboard
+
+Join a team
+/golf/join: JoinCode -> router.push(/golf/join/<code>)             (today's page does the same)
+/golf/join/[code] (page, unchanged reads): no user -> /golf/signup?returnTo=; coach -> resolveGolfCoachEntry path; RPC
+  golf_team_by_join_code; no player or not onboarded -> /golf/player?joinCode=; no team -> JoinInvalid; else JoinTeam
+JoinTeam: processGolfTeamInvitation(code, playerId) -> success | alreadyMember -> /golf/dashboard; "Not you?" -> chEndSession
+  then /golf/login?returnTo=/golf/join/<code>
+
+Staff invitation
+page: previewStaffInvite(token) -> StaffInvite
+StaffInvite: browser session (signed in: redeemStaffInvite(token)); signed out: signupWithStaffInviteAction(token, email,
+  password, name) then redeemStaffInvite(token, name) -> router.refresh(), /golf/dashboard
+
+New coach
+CoachOnboard -> coach-guard (today's checks: getUser with five tries, getGolfCoachEntry, golf_coaches and golf_players rows)
+  -> Onboard start=cprogram -> CProgram -> CProfile -> completeCoachOnboarding(...) -> CDone (code) -> /golf/dashboard/roster | /golf/dashboard
+  draft: sessionStorage ch.onboard.coach.v1 (never sign up's ch.onboard.v1)
+
+Waiting for approval
+page (unchanged reads: auth, golf_coaches, golf_team_coach_staff -> redirect when approved, organizations) -> CoachPending
+CoachPending: router.refresh() (the page's read again) on Check again, once a minute, and when the tab returns; chSignOut
+
+Demo
+DemoEntry: probeSignedIn(browser client) -> enterDemo({ name, email, school, destination? }) (redirects on success)
+  ?ref= fills the email, ?destination=coachhelm lands on CoachHelm, ?message=demo_session_expired explains itself
+```

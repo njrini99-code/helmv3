@@ -8,6 +8,7 @@ import { isUuid } from '@/lib/utils/uuid';
  * functions the sheet uses to list what can be picked. The state lives in the URL:
  *
  *   window=last10|season|qualifiers   the existing switch (last10 is the default and is left out)
+ *   last=5|20                         how many rounds Last N counts (10 is the default and is left out; read only with last10)
  *   type=tournament,qualifier,practice
  *   holes=9|all                        nine-hole rounds only, or both lengths (eighteen is the default and left out)
  *   from=YYYY-MM-DD&to=YYYY-MM-DD      a custom range; it replaces the window's time
@@ -15,7 +16,7 @@ import { isUuid } from '@/lib/utils/uuid';
  *   only=<id,id>  or  skip=<id,id>     "Only these" / "Exclude these" rounds
  *
  * Order of selection: type, holes, course and time first, then the picks, then the last-10 cut. So "Last 10"
- * is the ten newest MATCHING rounds (per player on the team page), "Only these" is exactly the picked
+ * is the N newest MATCHING rounds (N is 5, 10 or 20; per player on the team page), "Only these" is exactly the picked
  * rounds among the matching ones (no cut), and "Exclude these" removes them before the cut.
  *
  * Time: Season and Qualifiers are this season (from `seasonStart`); Last 10 is not bounded by the season (Q-122, the legacy
@@ -23,6 +24,19 @@ import { isUuid } from '@/lib/utils/uuid';
  */
 
 export type ChWindow = 'last10' | 'season' | 'qualifiers';
+
+/** How many of the newest matching rounds "Last N" counts (decision Q5: the range is counted in rounds). */
+export const LAST_CHOICES = [5, 10, 20] as const;
+export type ChLast = (typeof LAST_CHOICES)[number];
+export const DEFAULT_LAST: ChLast = 10;
+
+export function parseLast(v: string | undefined): ChLast {
+  const n = Number(v);
+  return LAST_CHOICES.find((c) => c === n) ?? DEFAULT_LAST;
+}
+
+/** The range switch's choices: the three Last N cuts (all `window: 'last10'`), the season and qualifier rounds. */
+export type ChRange = 'last5' | 'last10' | 'last20' | 'season' | 'qualifiers';
 
 export function parseWindow(v: string | undefined): ChWindow {
   return v === 'season' || v === 'qualifiers' ? v : 'last10';
@@ -62,6 +76,8 @@ export interface ChPick {
 
 export interface ChFilter {
   window: ChWindow;
+  /** The cut Last N makes (5, 10 or 20); read only while the window is `last10`. */
+  last: ChLast;
   /** Empty is all kinds. Never all three (that is the same as none). */
   types: ChRoundKind[];
   holes: ChHoles;
@@ -75,8 +91,8 @@ export const PICK_MAX = 100;
 export const COURSES_MAX = 20;
 const COURSE_NAME_MAX = 120;
 
-export function filterFor(window: ChWindow = 'last10'): ChFilter {
-  return { window, types: [], holes: '18', from: null, to: null, courses: [], pick: null };
+export function filterFor(window: ChWindow = 'last10', last: ChLast = DEFAULT_LAST): ChFilter {
+  return { window, last, types: [], holes: '18', from: null, to: null, courses: [], pick: null };
 }
 
 /** True when a filter beyond the window's own three choices is on (the chips row, the count line and the empty state read this). */
@@ -86,7 +102,7 @@ export function isFiltered(f: ChFilter): boolean {
 
 /** Filters cleared; the window stays. */
 export function clearFilters(f: ChFilter): ChFilter {
-  return filterFor(f.window);
+  return filterFor(f.window, f.last);
 }
 
 /** A YYYY-MM-DD that is a real calendar day, or null. */
@@ -135,6 +151,7 @@ export function parseFilter(q: ChFilterQuery): ChFilter {
   const skip = uniq(list(q.skip).filter(isUuid)).slice(0, PICK_MAX);
   return {
     window: parseWindow(one(q.window)),
+    last: parseLast(one(q.last)),
     types: normalizeTypes(list(q.type)),
     holes: parseHoles(one(q.holes)),
     from,
@@ -150,6 +167,7 @@ export function statsHref(base: string, f: ChFilter, extra: { player?: string | 
   if (extra.player) q.set('player', extra.player);
   if (extra.tab) q.set('tab', extra.tab);
   if (f.window !== 'last10') q.set('window', f.window);
+  else if (f.last !== DEFAULT_LAST) q.set('last', String(f.last));
   if (f.types.length) q.set('type', f.types.join(','));
   if (f.holes !== '18') q.set('holes', f.holes);
   if (f.from) q.set('from', f.from);
@@ -163,6 +181,17 @@ export function statsHref(base: string, f: ChFilter, extra: { player?: string | 
 /** Choosing a window: its time replaces any custom range, and Qualifiers is itself a kind, so it clears the kinds. */
 export function withWindow(f: ChFilter, window: ChWindow): ChFilter {
   return { ...f, window, from: null, to: null, types: window === 'qualifiers' ? [] : f.types };
+}
+
+/** The switch's choice for a filter: Last 5, 10 or 20 while the window is the newest-rounds cut, else the window. */
+export function rangeOf(f: ChFilter): ChRange {
+  return f.window === 'last10' ? (`last${f.last}` as ChRange) : f.window;
+}
+
+/** Choosing a range: a Last N sets the cut and the window together; Season and Qualifiers are `withWindow`. */
+export function withScope(f: ChFilter, range: ChRange): ChFilter {
+  if (range === 'season' || range === 'qualifiers') return withWindow(f, range);
+  return { ...withWindow(f, 'last10'), last: Number(range.slice(4)) as ChLast };
 }
 
 /** Choosing kinds while on Qualifiers moves to Season (the window and the kind would otherwise contradict). */
@@ -197,7 +226,7 @@ export function sameFilter(a: ChFilter, b: ChFilter): boolean {
 
 /** The change is the window switch alone (a filter change says so differently while loading or offline). */
 export function isWindowChange(from: ChFilter, to: ChFilter): boolean {
-  return to.window !== from.window && sameFilter(withWindow(from, to.window), to);
+  return rangeOf(to) !== rangeOf(from) && sameFilter(withScope(from, rangeOf(to)), to);
 }
 
 /** A custom range is on: it is the time, and the window's own cut does not apply. */
@@ -205,17 +234,17 @@ export function hasRange(f: ChFilter): boolean {
   return f.from != null || f.to != null;
 }
 
-/** The window's "newest ten" cut applies (no custom range replacing it). */
-export function cutsToLast10(f: ChFilter): boolean {
+/** The window's "newest N" cut applies (no custom range replacing it). */
+export function cutsToLastN(f: ChFilter): boolean {
   return f.window === 'last10' && !hasRange(f);
 }
 
-/** There is an earlier ten to set this one against: only the newest-ten cut has one, and "Only these" has none. */
+/** There is an earlier N to set this one against: only the newest-N cut has one, and "Only these" has none. */
 export function hasPrevious(f: ChFilter): boolean {
-  return cutsToLast10(f) && f.pick?.mode !== 'only';
+  return cutsToLastN(f) && f.pick?.mode !== 'only';
 }
 
-/** What the change-against-previous logic should treat the filter as: last10 only when a previous ten exists. */
+/** What the change-against-previous logic should treat the filter as: last10 only when a previous N exists. */
 export function effectiveWindow(f: ChFilter): ChWindow {
   return hasPrevious(f) ? 'last10' : f.window === 'last10' ? 'season' : f.window;
 }
@@ -247,14 +276,14 @@ export function candidates<T>(rows: T[], f: ChFilter, seasonStart: string, toRow
   });
 }
 
-/** The filter's rounds, newest first in and out: type, course and time, the picks, then the newest-ten cut. */
+/** The filter's rounds, newest first in and out: type, course and time, the picks, then the newest-N cut. */
 export function selectRounds<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): T[] {
   const list = candidates(rows, f, seasonStart, toRow);
   if (f.pick?.mode === 'only') {
     const ids = new Set(f.pick.ids);
     return list.filter((t) => ids.has(toRow(t).id));
   }
-  return cutsToLast10(f) ? list.slice(0, 10) : list;
+  return cutsToLastN(f) ? list.slice(0, f.last) : list;
 }
 
 /** The rounds in whole rounds: a nine-hole round is half (the floors count these, not the rows). */
@@ -270,16 +299,16 @@ export function nineRoundsInWindow(f: ChFilter, options: { rounds: ChFilterRow[]
   return candidates(options.rounds, withHoles(f, 'all'), options.seasonStart, (r) => r).some((r) => r.holes === 9);
 }
 
-/** The ten matching rounds before the newest ten, for "vs. previous 10" (across seasons, as the newest ten are); null with no previous window or fewer than three whole rounds. */
+/** The N matching rounds before the newest N, for "vs previous N" (across seasons, as the newest N are); null with no previous window or fewer than three whole rounds. */
 export function previousRounds<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): T[] | null {
   if (!hasPrevious(f)) return null;
-  const prev = candidates(rows, f, seasonStart, toRow).slice(10, 20);
+  const prev = candidates(rows, f, seasonStart, toRow).slice(f.last, f.last * 2);
   return wholeRounds(prev, toRow) >= 3 ? prev : null;
 }
 
-/** How many matching rounds come before the newest ten (the "no earlier rounds" wording). */
+/** How many matching rounds come before the newest N (the "no earlier rounds" wording). */
 export function earlierCount<T>(rows: T[], f: ChFilter, seasonStart: string, toRow: (t: T) => ChFilterRow): number {
-  return hasPrevious(f) ? Math.max(0, candidates(rows, f, seasonStart, toRow).length - 10) : 0;
+  return hasPrevious(f) ? Math.max(0, candidates(rows, f, seasonStart, toRow).length - f.last) : 0;
 }
 
 // ---- words: the chips and the count line ----
@@ -301,7 +330,7 @@ export function rangeLabel(from: string | null, to: string | null, year: number)
   return `through ${dayLabel(to as string, withYear)}`;
 }
 
-const WINDOW_PART: Record<ChWindow, string> = { last10: 'last 10', season: 'this season', qualifiers: 'qualifying, this season' };
+const windowPart = (f: ChFilter) => (f.window === 'last10' ? `last ${f.last}` : f.window === 'season' ? 'this season' : 'qualifying, this season');
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -317,7 +346,7 @@ function filterParts(f: ChFilter, year: number): string[] {
   if (f.types.length) parts.push(f.types.map((k) => KIND_WORDS[k]).join(' and '));
   if (f.holes !== '18') parts.push(HOLES_WORDS[f.holes]);
   if (f.courses.length) parts.push(f.courses.length === 1 ? `at ${f.courses[0]}` : `at ${f.courses.length} courses`);
-  parts.push(hasRange(f) ? rangeLabel(f.from, f.to, year) : WINDOW_PART[f.window]);
+  parts.push(hasRange(f) ? rangeLabel(f.from, f.to, year) : windowPart(f));
   if (f.pick?.mode === 'skip') parts.push(`without ${plural(f.pick.ids.length, 'round', 'rounds')}`);
   return parts;
 }
@@ -328,11 +357,15 @@ export function filterSummary(f: ChFilter, count: number, year = new Date().getU
   return `${plural(count, 'round', 'rounds')}: ${filterParts(f, year).join(', ')}`;
 }
 
-const BASIS: Record<ChWindow, string> = { last10: 'Last 10 rounds', season: 'This season', qualifiers: 'Qualifier rounds' };
+/** The window's own label under a figure ("Last 20 rounds"). */
+export const windowBasis = (f: Pick<ChFilter, 'window' | 'last'>): string => (f.window === 'last10' ? `Last ${f.last} rounds` : f.window === 'season' ? 'This season' : 'Qualifier rounds');
+
+/** What a change is against: "vs previous 10" (5 or 20 on those cuts). */
+export const previousWords = (last: number): string => `vs previous ${last}`;
 
 /** The noun phrase under a figure that says which rounds it counts: the window's own label, or what the filter selects ("Tournaments, Sep 1 to Sep 29"). */
 export function basisWords(f: ChFilter, year = new Date().getUTCFullYear()): string {
-  if (!isFiltered(f)) return BASIS[f.window];
+  if (!isFiltered(f)) return windowBasis(f);
   if (f.pick?.mode === 'only') return 'Picked rounds';
   const s = filterParts(f, year).join(', ');
   return s.charAt(0).toUpperCase() + s.slice(1);

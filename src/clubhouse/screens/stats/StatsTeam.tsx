@@ -1,7 +1,7 @@
 import { ChartColumn, Medal } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
-import { isFiltered, type ChFilter } from '../../data/stats-filter';
+import { isFiltered, previousWords, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
@@ -12,6 +12,7 @@ import { PageHero } from '../../ui/PageHero';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { formatSigned, NO_DATA } from '../../lib/format';
 import { PuttingRings, YardagePage } from './charts';
+import { PrintHead } from './PrintHead';
 import { TeamTape } from './TeamTape';
 import { teamPlayerHref } from './links';
 import { puttingNote } from './notes';
@@ -31,6 +32,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
   const filtered = isFiltered(data.filter);
   // Nothing to filter before a round exists (the first-run page); a filter already on always shows, so it can be cleared.
   const showFilter = !data.roundsError && (data.filterOptions.total > 0 || filtered);
+  // The first-run page (CH-4310): no round of either length in the season, or none at all in the default window.
+  const firstRun = noRounds && !filtered && (data.window === 'season' || (data.window !== 'qualifiers' && data.filterOptions.total === 0)) && !nineOnly;
   // Two or more parts that didn't load are told once, under the head, with one Try again; each keeps its title (CH-1209).
   const failed: string[] = [];
   if (!data.roundsError && !noRounds) {
@@ -44,8 +47,9 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
     // One group per rendered tree (the phone view groups its own): sections that crash together are told once (CH-1210).
     <StatsTeamFrame filter={data.filter} phone={<StatsTeamPhone data={data} />}>
       <SectionGroup>
+        <PrintHead subject={[data.teamName, data.season, 'Team stats'].filter(Boolean).join(' · ')} />
         <PageHero
-          eyebrow="Team / Performance"
+          eyebrow={[data.teamName, data.season].filter(Boolean).join(' · ')}
           title="Team stats"
           figures={
             data.roundsError
@@ -53,7 +57,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
               : [
                   { label: 'Rounds', value: data.roundCount },
                   { label: 'Players', value: data.activeCount },
-                  { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : 'Last 10' },
+                  { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : `Last ${data.last}` },
                 ]
           }
           actions={
@@ -61,15 +65,14 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             <TeamHeadActions filter={data.filter} teamName={data.teamName} grid={data.roundsError ? null : data.grid} />
           }
         >
-          {data.teamName}
-          {/* A roster that did not load is not "0 active players". */}
-          {!data.roundsError && (
+          {/* The team is the eyebrow. A roster that did not load is not "0 active players". */}
+          {data.roundsError ? (
+            'Countable rounds only'
+          ) : (
             <>
-              {' '}
-              &middot; <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'}
+              <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
             </>
-          )}{' '}
-          &middot; countable rounds only
+          )}
         </PageHero>
 
         {showFilter && <TeamFilter filter={data.filter} options={data.filterOptions} count={data.roundCount} />}
@@ -92,8 +95,8 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
 
         {noRounds && filtered ? (
           <TeamFilterEmpty />
-        ) : noRounds && data.window === 'season' && !nineOnly ? (
-          <StatsTeamFirstRun />
+        ) : firstRun ? (
+          <StatsTeamFirstRun invite={data.activeCount === 0} />
         ) : noRounds ? (
           // The whole page body is empty, so it is the page's empty state, not a section's (states audit, 2026-10-08).
           <EmptyState
@@ -110,7 +113,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
+                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} against={previousWords(data.last)} />
                   </SectionBoundary>
                 }
                 data={{
@@ -149,7 +152,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  * contains everything it computes: a crash in one never reaches the page.
  */
 
-function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean }) {
+function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean; against: string }) {
   // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
   const counts = new Map<string, number>();
   for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
@@ -166,11 +169,13 @@ function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['f
       )}
       {/* Strokes gained is the trend's headline above; the tape holds the other five, each with its own weekly line. */}
       <TeamTape
+        against={against}
         items={figures.filter((x) => x.key !== 'sg').map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),
           unit: x.unit,
           delta: x.delta,
+          se: x.se ?? null,
           deltaDigits: x.digits,
           lowerIsBetter: x.lowerIsBetter,
           context: x.context,

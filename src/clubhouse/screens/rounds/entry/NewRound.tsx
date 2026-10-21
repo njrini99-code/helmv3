@@ -8,12 +8,14 @@ import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
 import { haptic } from '../../../lib/haptics';
 import { useToast } from '../../../ui/Toast';
 import { RoundEntrySkeleton } from '../RoundsSkeleton';
+import { clearSetupDraft, useSetupDraftKey } from '../setup/draft';
 import { RoundSetup } from '../setup/RoundSetup';
 import type { ChSetupPorts, ChSetupQualifier } from '../setup/shape';
 import { reasonText } from './labels';
 import { InProgressConflictDialog } from './InProgressConflictDialog';
 import { useRoundPorts } from './ports';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 import { afterSavedCourseStart, loadSetupQualifiers, QUALIFIER_READ_MS, SETUP_READ_PORTS, startRefusal, toStartForm } from './setup-reads';
@@ -38,6 +40,8 @@ export function NewRound({ playerId }: { playerId: string }) {
   const params = useSearchParams();
   const { ports, capture } = useRoundPorts();
   const engine = useNewRoundSession({ playerId, ports, routes: ENGINE_ROUTES, logSource: LOG_SOURCE });
+  // A Done key over the number pad for the whole round, setup to submit, sheets included (use-done-key.ts).
+  useRoundDoneKey();
   // A toast's Retry, and the setup screen's ports, are made once and outlive the render that made them, so what they
   // call is the latest engine (its `start` reads the state it was rendered with) and never the first one.
   const latest = useRef(engine);
@@ -123,6 +127,12 @@ export function NewRound({ playerId }: { playerId: string }) {
   }, [conflictAttempt, engine.step]);
 
   const tracking = engine.step === 'tracking' || engine.step === 'submitting';
+  // The setup kept for this tab is spent once a round is under way (however it started: setup, or the in-progress
+  // dialog's Start a new round), and again once it posts.
+  const draftKey = useSetupDraftKey(playerId);
+  useEffect(() => {
+    if (tracking || engine.completedRoundId) clearSetupDraft(draftKey);
+  }, [tracking, engine.completedRoundId, draftKey]);
   // The setup and the round are different screens on one address: the new one opens at its top.
   useEffect(() => {
     canvasScrollNow(0);
@@ -188,6 +198,7 @@ export function NewRound({ playerId }: { playerId: string }) {
           onStarted={() => undefined}
           preselectQualifierId={params.get('qualifier')}
           isOffline={offline}
+          viewerId={playerId}
         />
       )}
       <RecoveryHost

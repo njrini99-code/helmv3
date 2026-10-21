@@ -10,6 +10,7 @@ import {
   recruitDocMaxBytes,
 } from '@/app/golf/actions/recruit-documents-limits';
 import type { ChDivision, ChProgramGender } from './recruiting-calendar';
+import { RECRUIT_FILM_ENABLED } from './recruiting-film';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -148,15 +149,18 @@ export function matchesQuery(p: ChProspect, query: string): boolean {
   return [p.name, p.hometown, p.state, p.email, p.notes].some((v) => (v ?? '').toLowerCase().includes(q));
 }
 
+const nextSortKey = (p: ChProspect) => p.nextStepDate ?? (p.nextStepLabel?.trim() ? '9999-12-30' : '9999-12-31');
+
 export function sortProspects(list: readonly ChProspect[], sort: ChSort): ChProspect[] {
   return [...list].sort((a, b) => {
     if (sort === 'name') return a.name.localeCompare(b.name);
     // A prospect with no class year goes last.
     if (sort === 'class') return (a.classYear ?? 9999) - (b.classYear ?? 9999);
-    // The soonest next step first; a prospect with none goes last, then most recently updated.
+    // The soonest next step first; a step with a label and no day after every dated one; a prospect with none goes
+    // last; then most recently updated.
     if (sort === 'next') {
-      const x = a.nextStepDate ?? '9999-12-31';
-      const y = b.nextStepDate ?? '9999-12-31';
+      const x = nextSortKey(a);
+      const y = nextSortKey(b);
       if (x !== y) return x < y ? -1 : 1;
     }
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
@@ -347,9 +351,15 @@ export function isNextStepDue(p: Pick<ChProspect, 'nextStepDate'>, now: Date, tz
   return !!p.nextStepDate && p.nextStepDate <= addDays(todayKey(now, tz), NEXT_STEP_DUE_DAYS);
 }
 
+/** A step is late (overdue) when its day is before today; today's step is due, not late. */
+export function isNextStepLate(p: Pick<ChProspect, 'nextStepDate'>, now: Date, tz?: string): boolean {
+  return !!p.nextStepDate && p.nextStepDate < todayKey(now, tz);
+}
+
 /**
  * The pipeline head's count: visits dated this calendar month, and decisions due (dated by the end of this month,
- * including any already past). Null when there is nothing to count, so the head says nothing rather than "0 visits".
+ * including any already past) for a prospect not yet committed: a committed prospect has decided. Null when there is
+ * nothing to count, so the head says nothing rather than "0 visits".
  */
 export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: string): string | null {
   const today = todayKey(now, tz);
@@ -360,7 +370,7 @@ export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: str
     if (!p.nextStepDate) continue;
     const kind = nextStepKind(p.nextStepLabel);
     if (kind === 'visit' && p.nextStepDate.slice(0, 7) === month) visits += 1;
-    if (kind === 'decision' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
+    if (kind === 'decision' && p.stage !== 'committed' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
   }
   const parts = [
     visits ? `${visits} ${visits === 1 ? 'visit' : 'visits'} this month` : null,
@@ -398,6 +408,9 @@ export type ChDocCategory = (typeof CH_DOC_CATEGORIES)[number]['value'];
 
 export const categoryLabel = (c: string) => CH_DOC_CATEGORIES.find((x) => x.value === c)?.label ?? 'Other';
 
+/** The categories the upload dialog offers: Film only while film is on (./recruiting-film.ts); a row already filed as Film keeps its label. */
+export const CH_DOC_PICK_CATEGORIES = CH_DOC_CATEGORIES.filter((c) => RECRUIT_FILM_ENABLED || c.value !== 'film');
+
 export interface ChDocument {
   id: string;
   title: string;
@@ -416,12 +429,12 @@ export function toDocument(r: RecruitDocument): ChDocument {
 /**
  * The bucket's own ceilings and the extensions its allowlist takes (src/app/golf/actions/recruit-documents-limits.ts,
  * set on the bucket by supabase/migrations/20260930140000_recruit_documents_film.sql): 25 MB for a document or an
- * image, 100 MB for film (MP4, MOV, M4V).
+ * image, 100 MB for film (MP4, MOV, M4V). While film is off (./recruiting-film.ts) the page takes no film extension.
  */
 export const MAX_FILE_BYTES = RECRUIT_DOC_MAX_BYTES;
 export const MAX_FILM_BYTES = RECRUIT_FILM_MAX_BYTES;
-export const DOC_EXTENSIONS = Object.keys(RECRUIT_DOC_MIME_BY_EXT);
-export const FILM_EXTENSIONS: readonly string[] = RECRUIT_FILM_EXTENSIONS;
+export const FILM_EXTENSIONS: readonly string[] = RECRUIT_FILM_ENABLED ? RECRUIT_FILM_EXTENSIONS : [];
+export const DOC_EXTENSIONS = Object.keys(RECRUIT_DOC_MIME_BY_EXT).filter((e) => RECRUIT_FILM_ENABLED || !isRecruitFilmExtension(e));
 /** Extensions, and the three film types too: on an iPhone a video type is what makes the picker offer the Photo Library. */
 export const DOC_ACCEPT = [...DOC_EXTENSIONS.map((e) => `.${e}`), ...new Set(FILM_EXTENSIONS.map((e) => RECRUIT_DOC_MIME_BY_EXT[e]!))].join(',');
 
@@ -437,7 +450,13 @@ const mb = (bytes: number) => `${Math.round(bytes / (1024 * 1024))} MB`;
 export function screenFile(file: { name: string; size: number }): ChFileProblem | null {
   const ext = recruitDocExtension(file.name);
   if (!DOC_EXTENSIONS.includes(ext)) {
-    return { code: 'CH-14106', title: "We can't take that file type", body: 'Use a PDF, an image, a text or spreadsheet file, a Word or PowerPoint document, or film as MP4, MOV or M4V.' };
+    return {
+      code: 'CH-14106',
+      title: "We can't take that file type",
+      body: RECRUIT_FILM_ENABLED
+        ? 'Use a PDF, an image, a text or spreadsheet file, a Word or PowerPoint document, or film as MP4, MOV or M4V.'
+        : 'Use a PDF, an image, a text or spreadsheet file, or a Word or PowerPoint document.',
+    };
   }
   const max = recruitDocMaxBytes(ext);
   if (file.size > max) {

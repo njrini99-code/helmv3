@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useClubhouseFrontDoor } from '@/clubhouse/routes/front-door';
+import { JoinCode } from '@/clubhouse/screens/auth/JoinCode';
 import {
   AuthCanvas,
   AuthFieldError,
@@ -24,6 +26,7 @@ export default function JoinTeamPage() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const clubhouse = useClubhouseFrontDoor();
 
   const trimmed = code.trim();
 
@@ -48,6 +51,9 @@ export default function JoinTeamPage() {
     setCode(e.target.value.toUpperCase());
     if (error) setError(null);
   };
+
+  // golf_clubhouse_front_door chooses the page that is drawn (join/layout.tsx): the same code goes to the same route.
+  if (clubhouse) return <JoinCode />;
 
   return (
     <AuthCanvas

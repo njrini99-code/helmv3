@@ -16,7 +16,7 @@ export const NO_QUALIFIER_ROUND = 'No unused qualifier round is available right 
  * scorecard. Without this, such a round could be played to the end and never submitted.
  *
  * It is drawn in the exit sheet's pieces: the option rows, one per unused round (the chosen one is the primary),
- * then Back (to the finish sheet) and Submit round, which waits for a choice. CH-11519: when no round is left to
+ * then Back (to the finish sheet) and Post round, which waits for a choice. CH-11519: when no round is left to
  * choose, the server's reason takes the rows' place and only Back remains; the scorecard stays saved.
  */
 export function QualifierRoundSheet({
@@ -46,7 +46,7 @@ export function QualifierRoundSheet({
       open={open}
       onClose={onBack}
       title="Which qualifier round is this?"
-      description="This saved scorecard needs its qualifier round number before it can be submitted. Your shots and completed holes stay saved."
+      description="This saved scorecard needs its qualifier round number before it can be posted. Your shots and completed holes stay saved."
       icon={Medal}
       width={480}
       code="CH-11518"
@@ -57,7 +57,7 @@ export function QualifierRoundSheet({
           </Button>
           {options.length > 0 && (
             <Button variant="primary" size="lg" disabled={!canSubmit} onClick={onSubmit}>
-              Submit round
+              Post round
             </Button>
           )}
         </>
@@ -71,7 +71,7 @@ export function QualifierRoundSheet({
               icon={Medal}
               tone={selected === n ? 'primary' : undefined}
               label={`Qualifier round ${n}`}
-              hint={selected === n ? 'Chosen. Submit to post it as this round.' : 'Post it as this round.'}
+              hint={selected === n ? 'Chosen. Post round posts it as this round.' : 'Post it as this round.'}
               onClick={() => {
                 haptic('select');
                 onSelect(n);

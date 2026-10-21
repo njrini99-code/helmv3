@@ -473,6 +473,27 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     expect(mocks.router.push).not.toHaveBeenCalled();
   });
 
+  it('110702 CH-1903 Discard from Exit offline sends nothing, stays on the round, and keeps its device copy', async () => {
+    const user = await playing();
+    // Hole 1 is played but its save is refused: the hole exists only on this device.
+    mocks.savePartialRound.mockResolvedValue({ success: false, error: 'Failed to save hole data. Please try again.' });
+    await act(async () => {
+      await tracking().onHoleComplete(0, stats(0));
+    });
+    const copy = loadLatestEmergencySave('player-1');
+    expect(copy?.roundId).toBe('round-1');
+    expect(copy?.completedHoleStats[0]).toMatchObject({ holeNumber: 1, score: 4 });
+    await openExit(user);
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    mocks.connection.isConnected = false;
+    await user.click(within(code('CH-11506')!).getByRole('button', { name: /^Discard round/ }));
+    await user.click(within(code('CH-11507')!).getByRole('button', { name: 'Discard round' }));
+    await waitFor(() => expect(code('CH-1903')).toHaveTextContent('offline'));
+    expect(mocks.deleteInProgressRound).not.toHaveBeenCalled();
+    expect(mocks.router.push).not.toHaveBeenCalled();
+    expect(loadLatestEmergencySave('player-1')).toEqual(copy);
+  });
+
   it('CH-11006 a Discard that fails stays in the Exit sheet’s question with the reason, and can be tried again', async () => {
     const user = await playing();
     await openExit(user);
@@ -525,7 +546,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
   async function submitClosed(user: ReturnType<typeof userEvent.setup>) {
     mocks.submitGolfRoundComprehensive.mockResolvedValue({ success: false, error: closed });
     await finishRound();
-    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Submit round/ }));
+    await user.click(within(code('CH-11508')!).getByRole('button', { name: /Post round/ }));
     await waitFor(() => expect(code('CH-11516')).toHaveAttribute('open'));
   }
 
@@ -533,7 +554,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
     const user = await playing();
     await submitClosed(user);
     expect(code('CH-11516')).toHaveTextContent(closed);
-    expect(screen.queryByText('The round didn’t submit')).toBeNull();
+    expect(screen.queryByText('The round didn’t post')).toBeNull();
     expect(code('CH-11005')).toBeNull();
   });
 

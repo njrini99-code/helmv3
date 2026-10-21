@@ -12,6 +12,7 @@ import {
   expandBusyDates,
   hhmmToHour,
   monthCells,
+  playerSeesMeeting,
   type ChCalEvent,
   type ChCalPerson,
   type ChCalType,
@@ -236,10 +237,10 @@ export async function loadCalendar(input: {
   const coachInvited = new Map<string, number>();
   let rsvpError = false;
   const shown = new Set(ids);
-  // A player's attendance read returns only their own rows once migration 20261017102000 is applied, so whether a
-  // meeting invites anyone at all (D2-8, below) comes from the counts, read beside the rows. Until that function exists
-  // (`missing`) the rows still answer it, as before. The same count tells a player that an event asking for replies
-  // invites no one, so the whole team may reply (production allows it: golf_event_attendance_insert_self).
+  // A player's attendance read returns only their own rows once migration 20261017102000 is applied, so the counts are
+  // read beside the rows: they tell a player that an event asking for replies invites no one, so the whole team may reply
+  // (production allows it: golf_event_attendance_insert_self), and, only when the rows failed, whether a meeting invites
+  // anyone at all (D2-8, below). Until that function exists (`missing`) the rows answer both, as before.
   const meetingIds = input.role === 'player' ? rows.filter((r) => !isClassEvent(r) && (r.event_type === 'meeting' || r.requires_rsvp === true)).map((r) => r.id) : [];
   // Paged (fetchAllRowsResult): 200 events x a full roster passes PostgREST's 1,000-row cap.
   const [{ data: attendance, error: attendanceError }, meetingCounts] = await Promise.all([
@@ -306,9 +307,11 @@ export async function loadCalendar(input: {
     const invitees = invited.get(r.id) ?? [];
     const replies = rsvp.get(r.id) ?? {};
     const me = input.role === 'player' ? input.viewerPlayerId : null;
-    // D2-8 (owner, 2026-10-08): a meeting with no invitees is the coach's own (a parent call, a staff meeting); players
-    // never see it. Only once the invite list has loaded: a failed read must not hide the team's meetings.
-    if (input.role === 'player' && r.event_type === 'meeting' && invitedCount(r.id) === 0) continue;
+    // Decision B (owner, wave 7): a player sees a meeting only when they are on its invite list, their own row in the
+    // attendance read (which returns it before and after migration 20261017102000), so a 1:1 or a captains' meeting
+    // never shows its title or room to the rest of the team. Only when that read failed does D2-8 decide (a meeting
+    // nobody is invited to is the coach's own); when the count failed too, no meeting is shown (fail closed).
+    if (input.role === 'player' && r.event_type === 'meeting' && !playerSeesMeeting(rsvpError ? null : !!me && invitees.includes(me), invitedCount(r.id))) continue;
     const base = {
       id: r.id,
       type,

@@ -89,7 +89,7 @@ search or filter, so it has no filtered empty state.
 | 100411 | CH-10310 | `A_TEAM_WITH_NOBODY_ON_THE_ROSTER` | A team with nobody on the roster |
 | 100412 | CH-10311 | `A_TEAM_WITH_NO_DOCUMENTS` | A team with no documents |
 | 100413 | CH-10312 | `PLAN_A_TRIP_NO_UPCOMING_EVENTS_IN` | Plan a trip: no upcoming events in the next four months |
-| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step with no calendar event |
+| 100414 | CH-10313 | `PLAN_A_TRIP_THE_TRAVELERS_STEP_WITH` | Plan a trip: the Travelers step when its event has left the list while the sheet was open (a trip with no event skips the step) |
 | 100415 | CH-10314 | `NEW_ANNOUNCEMENT_FILES_THAT_PLAYERS_CANT_OPEN` | New announcement: files that players can't open are left out of the attach list |
 | 100416 | CH-10315 | `PLAN_A_TRIP_NOBODY_CHOSEN_HAS_A` | Plan a trip: nobody chosen has a class during the trip |
 
@@ -169,7 +169,8 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | --- | --- | --- | --- |
 | 100701 | — | `WRITES_REFUSE_OFFLINE` | Every write on the page (a reply, Got it, checking off a task, opening a file, posting an announcement, saving a trip, assigning a task, uploading a file, deleting a post, task or file) is refused while the browser is offline: nothing is sent, the shell's toast names what did not happen (CH-1903), the error haptic fires and nothing moves on; opening a file opens no blank tab. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -184,7 +185,8 @@ Who may open the page: a coach or a player with `golf_clubhouse_ui` on for that 
 | 100803 | — | `REPLY_ONLY_WHERE_IT_IS_OPEN` | A player is offered Going, Maybe and Can't only on an event they are invited to that still takes a reply: an event they have no place on the invite list of (the aggregate gives it no reply status, and a reply would add them to the list), one that has started (an all-day event, a day after its stored start), one that was cancelled and one past its RSVP deadline are left off the list, by the rules respondToEvent enforces; a rules read that fails leaves the rows in place for the server to decide. |
 | 100804 | — | `SERVER_ACTIONS_ARE_THE_GATE` | Every write is checked again by its server action, whatever the screen shows: createEnrichedAnnouncement, createGolfTravelItinerary, createTask, createGolfDocument, deleteAnnouncement and deleteTask refuse a caller who is not a coach of the team, and respondToEvent, acknowledgeAnnouncement and completeTask refuse a caller with no player profile or team membership; every document write (upload, create, edit, delete, version delete, restore) is coach-only since Q-74. Forced refusals so far: documents (src/app/golf/actions/__tests__/documents-coach-only.test.ts), travel (travel.test.ts: another team's coach), tasks (src/test/golf/actions/task-authz-failure-vs-refusal.test.ts), posting an announcement (src/test/golf/actions/announcement-attachments.test.ts). Not yet forced: deleteAnnouncement, respondToEvent, acknowledgeAnnouncement and completeTask. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -292,7 +294,11 @@ skeleton fade is the shell's (D-64); there is no first-paint rise.
 | 101601 | CH-10602 | `CHANGING_TABS` | Changing tabs |
 | 101602 | CH-10603 | `THE_TABS_PANEL_SWAPS` | The tab's panel swaps |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -305,7 +311,9 @@ Team Hub's own (CH-10701, CH-10702) on the v2 grammar (D-70): a tick for a tab, 
 | 101701 | CH-10701 | `A_TAB_AN_RSVP_REPLY_AN_AUDIENCE` | A tab, an RSVP reply, an audience or transport choice, a player chip, a file to attach or take off |
 | 101702 | CH-10702 | `DELETE_A_FORM_SENT_WITH_A_MISTAKE` | Delete (before the question), a form sent with a mistake |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -324,7 +332,12 @@ CH-1842, 11825 CH-1816.
 | 101801 | CH-10801 | `THE_SECTIONS_ARE_REAL_TABS_AN_RSVP` | The sections are real tabs (selected state, each controls its panel); an RSVP is a radio group named for its event; a task's box names the task and says when it's done |
 | 101802 | CH-10802 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, 1280px and 390px |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

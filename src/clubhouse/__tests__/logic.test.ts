@@ -41,11 +41,15 @@ describe('home logic', () => {
     expect(classYearLabel(2032, oct)).toBe('Class of 2032');
     expect(classYearLabel(null, oct)).toBeNull();
   });
-  it('reads form from the newer half against the older half', () => {
+  it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
-    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('improving');
-    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('slipping');
+    // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes.
+    expect(formStatus([78, 78, 77, 73, 72, 72])).toBe('improving');
+    expect(formStatus([72, 72, 72, 74, 76, 76, 77])).toBe('slipping');
     expect(formStatus([72, 72, 71, 72, 71, 71, 72])).toBe('steady');
+    // Down 2.3 a round was "improving" on the old half-stroke threshold; inside its standard error it is no clear change.
+    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('steady');
+    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('steady');
   });
 });
 
@@ -203,6 +207,12 @@ describe('calendar model', async () => {
     expect(found[0]).toMatchObject({ eventId: 'prep', withId: 'lab', who: 'eli', from: 15.5, to: 16.25 });
   });
 
+  it('finds a class that starts after the team event too, still on the team event (wave 7: a 3:30 practice over a 4:00 class)', () => {
+    const found = M.findOverlaps([ev('prep', 15.5, 17.5, { people: ['jonah'] }), ev('econ', 16, 17, { type: 'class', owner: 'jonah' })]);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatchObject({ eventId: 'prep', withId: 'econ', who: 'jonah', from: 16, to: 17 });
+  });
+
   it('offers open times that avoid everyone’s busy blocks', () => {
     const events = [ev('lab', 7, 16.25, { type: 'class', owner: 'eli' })];
     const open = M.openTimes(events, ['eli'], '2026-10-14', 1, undefined, 15.5);
@@ -290,7 +300,7 @@ describe('home model', () => {
     // A failed attendance read passes null: location only.
     expect(H.inviteDetail({ location: null, title: 'Film', invitees: null, names })).toBeNull();
     expect(H.confirmedLine(null, 0)).toBeNull();
-    expect(H.confirmedLine(['a', 'b'], 1)).toBe('1 of 2 confirmed');
+    expect(H.confirmedLine(['a', 'b'], 1)).toBe('1 of 2 going');
   });
   it('writes the subline from real status, and nothing when rounds failed', () => {
     const rows: H.ChSublineRow[] = [

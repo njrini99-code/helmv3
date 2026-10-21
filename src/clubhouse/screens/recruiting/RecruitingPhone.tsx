@@ -1,10 +1,11 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { Check, ChevronDown, ChevronRight, GraduationCap, Mail, Phone, Plus } from 'lucide-react';
-import { useCallback, useState, type KeyboardEvent } from 'react';
+import { Check, ChevronDown, ChevronRight, Mail, Phone, Plus } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { CH_STAGES, mailHref, rowLineOf, subtitleOf, telHref, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
+import { roving } from '../../ui/use-roving';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
 import { Button } from '../../ui/Button';
@@ -58,7 +59,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
           <EmptyState
             size="page"
             code="CH-14301"
-            icon={GraduationCap}
+            shape="rows"
             title="Your prospect list starts here"
             body="Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed."
             action={
@@ -69,7 +70,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
           />
         ) : (
           <>
-            <SearchField className="ch-recm-search" value={c.query} onChange={c.setQuery} placeholder="Search" label="Search prospects" />
+            <SearchField className="ch-recm-search" value={c.query} onChange={c.setQuery} placeholder="Search prospects" label="Search prospects" />
             <SectionBoundary surface="recruiting.pipeline" label="The pipeline" code="CH-14203">
               <Pipeline compact counts={c.counts} total={c.total} stage={c.stage} onPick={c.setStage} />
             </SectionBoundary>
@@ -102,7 +103,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
                             <span className="ch-recm-row__b">
                               <b>{p.name}</b>
                               <span>{rowLineOf(p) || 'No class or hometown yet'}</span>
-                              {c.nextStep && <NextStepPlate p={p} now={c.now} tz={c.tz} />}
+                              {c.nextStep && <NextStepPlate p={p} now={c.now} tz={c.tz} always={c.sort === 'next'} />}
                             </span>
                             <StageChip stage={p.stage} />
                           </button>
@@ -167,22 +168,28 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
           {p.email && (
             <a className="ch-recm-tile" href={mailHref(p.email)}>
               <Icon icon={Mail} size={18} />
-              Email
+              <span className="ch-recm-tile__t">
+                Email{' '}
+                <span className="ch-recm-tile__v">{p.email}</span>
+              </span>
             </a>
           )}
           {p.phone && (
             <a className="ch-recm-tile" href={telHref(p.phone)}>
               <Icon icon={Phone} size={18} />
-              Call
+              <span className="ch-recm-tile__t">
+                Call{' '}
+                <span className="ch-recm-tile__v ch-num">{p.phone}</span>
+              </span>
             </a>
           )}
         </div>
       )}
       {hasContact && <ContactHint hint={c.contactHint(p)} />}
-      {!hasContact && <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} />}
-      {c.nextStep && <NextStepSection p={p} now={c.now} tz={c.tz} onEdit={c.nextStepEditable ? () => c.startEdit(p, 'nextLabel') : undefined} />}
-      <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} />
-      <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} />
+      {!hasContact && <ContactSection p={p} onAdd={() => c.startEdit(p, 'email')} level={2} />}
+      {c.nextStep && <NextStepSection p={p} now={c.now} tz={c.tz} onEdit={c.nextStepEditable ? () => c.startEdit(p, 'nextLabel') : undefined} level={2} />}
+      <NotesSection p={p} onAdd={() => c.startEdit(p, 'notes')} level={2} />
+      <Documents prospect={p} writes={c.writes} initialUpload={c.initialUpload} level={2} />
       <MetaLine p={p} now={c.now} tz={c.tz} />
     </div>
   );
@@ -190,20 +197,10 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
 
 /** The stage picker (PhoneStage board): four rows, the current one ticked, each saved as it is picked; Done closes. */
 function StageSheet({ p, onClose, onPick }: { p: ChProspect | null; onClose: () => void; onPick: (p: ChProspect, to: ChStage) => void }) {
-  const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const d = e.key === 'ArrowDown' || e.key === 'ArrowRight' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowLeft' ? -1 : 0;
-    if (!d || !p) return;
-    e.preventDefault();
-    const i = CH_STAGES.findIndex((s) => s.value === p.stage);
-    const next = CH_STAGES[(i + d + CH_STAGES.length) % CH_STAGES.length]!;
-    onPick(p, next.value);
-    e.currentTarget.querySelector<HTMLElement>(`[data-stage="${next.value}"]`)?.focus();
-  };
   return (
     <RecPickSheet open={!!p} onClose={onClose} title="Stage" note="Saves as soon as you pick. Players never see this.">
       {p && (
-        // eslint-disable-next-line jsx-a11y/interactive-supports-focus -- the radios inside are the tab stops; the group only routes arrow keys
-        <div className="ch-recm-stages" role="radiogroup" aria-label={`Stage for ${p.name}`} onKeyDown={onKey}>
+        <div className="ch-recm-stages" role="radiogroup" aria-label={`Stage for ${p.name}`} {...roving}>
           {CH_STAGES.map((s) => {
             const on = p.stage === s.value;
             return (
@@ -212,8 +209,6 @@ function StageSheet({ p, onClose, onPick }: { p: ChProspect | null; onClose: () 
                 type="button"
                 role="radio"
                 aria-checked={on}
-                tabIndex={on ? 0 : -1}
-                data-stage={s.value}
                 className="ch-recm-stages__row"
                 onClick={() => {
                   if (!on) haptic('select');

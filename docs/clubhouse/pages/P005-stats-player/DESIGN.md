@@ -166,7 +166,8 @@ Only data the app has (the fidelity notes in PROGRESS.md, Q-68):
 - The scoring chart has no Season best marker and no par meta; both wait for season-best and course-par
   data per window.
 - Strokes gained by leg is the design system's StrokesGainedRoute, and the Rounds count is its tab pill.
-- On the phone, the board's trend phrase ("Down 1.2") is the signed change, labelled "Newer rounds".
+- On the phone, the board's trend phrase ("Down 1.2") is the change in words ("1.2 lower"), over the halves it
+  compares ("Newest 5 vs first 5"; wave 7).
 
 ### Strokes gained (2026-09-30)
 
@@ -200,17 +201,24 @@ Clubhouse shows it, or why it does not). The shape:
   read, rather than a date preset that counted a different set. The owner's "make it 9 or 18" (2026-09-30) replaces Q-90's
   and Q-94's 18-hole-only rule: nine-hole rounds count when chosen, per 18 holes (PARITY.md, "Nine- and eighteen-hole rounds": per-round figures per 18 holes, a nine-hole round counting as half, rates pooling the holes, floors in whole rounds), and the rule is said under each
   section. A window shows the newest 100 at most, and says so (CH-5319).
-- **Proximity against the Tour is the Tour's basis**: every approach, hit or missed, lay-ups left out, a range
-  needs 10 shots (production's `aggregateApproachBuckets`). The seven-band ladder counts hit greens only, which
-  is not that basis, so it carries no Tour tick and says "when the green is hit". This corrects the earlier
-  comparison, which set the green-hit finish against the Tour's every-approach average.
-- **The nine putting bands** are cut as the calculator cuts them, (3, 5] and so on, from the window's putts with
-  exact counts; the Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one,
-  and 0 to 3 feet has none. A band needs 10 putts to be graded.
-- **The standing table** (Overview) is the production standing board in the window: rows under Strokes gained,
-  Scoring, Driving, Approach, Short game, Putting, Course management and Pressure, each with the Tour's value
-  where `golf_pga_standards` has one, a coach's team figure where the window's round cache has the column, and a
-  player never sees a team figure (Q-91). A row under its floor says what it needs (CH-5318).
+- **Proximity against the Tour is the Tour's basis**: every approach, hit or
+  missed, lay-ups left out, a range needs 10 shots (production's
+  `aggregateApproachBuckets`). The seven-band ladder counts hit greens only,
+  which is not that basis, so it carries no Tour tick and says "when the green
+  is hit". This corrects the earlier comparison, which set the green-hit finish
+  against the Tour's every-approach average.
+- **The nine putting bands** are cut as the calculator cuts them, (3, 5] and so
+  on, from the window's putts with exact counts; the Tour publishes five
+  averages, so 15 to 25 feet share one and 25 feet and beyond share one, and 0
+  to 3 feet has none. The table lists all nine. The chart (`PuttBands`,
+  2026-10-20) merges them into the six Tour bands, shows a band from 10 putts,
+  draws 10 to 29 as a hollow early read and grades from 30.
+- **The standing table** (Overview) is the production standing board in the
+  window: rows under Strokes gained, Scoring, Driving, Approach, Short game,
+  Putting, Course management and Pressure, each with the Tour's value where
+  `golf_pga_standards` has one, a coach's team figure where the window's round
+  cache has the column, and a player never sees a team figure (Q-91). A row
+  under its floor says what it needs (CH-5318).
 - **The Rounds tab** gains the score of every round in the window on a line, the personal bests with their
   course and date, and this window against the one before it (the latest 10 against the 10 before, Last 10 only;
   production compares the last N days with the N before, independent of any window). Each round names its type.
@@ -268,7 +276,7 @@ selected in, the dimensions and what was left out with the counts.
   they are (CH-5324).
 - **Last 10 across seasons (owner, 2026-09-30; Q-122).** "Last 10" is the
   player's ten newest countable rounds in any season (the legacy app's rule)
-  and "vs. previous 10" the ten before them, read from a rolling 12 months
+  and "vs previous 10" the ten before them, read from a rolling 12 months
   back. Season and Qualifiers are this season. "Rounds this season" in the
   hero stays this season whatever the window.
 - **Rounds posted as a total only (owner, 2026-09-30; Q-123).** A round with

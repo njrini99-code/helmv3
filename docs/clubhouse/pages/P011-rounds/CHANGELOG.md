@@ -1,5 +1,772 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — Season bars and the round review are drawn at once
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The season ribbon's bars no longer rise from the par line with a stagger,
+their scores no longer wait 0.6 x the reveal, and the round review's scoring
+line, fill, dots and shot arcs are shown at first paint (`parts.tsx`,
+`RoundZones.tsx`, `rounds.css`; Q-153). A bar still moves if its round
+changes. Motion report 2026-10-20-rounds.md box 3.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 7)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (display basis only; no query or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The season ribbon reads better as up: under-par bars rise from the par
+  line, over-par bars hang below it, and the ticks keep their real values
+  (−2, −1, Par, +1 ...). The stage's note starts "↑ Lower is better".
+- The month sparks follow: the lowest month is the tallest bar.
+- Putts use one basis: a round's putts count only when recorded (more than
+  zero), the same rounds the cached putts average reads, and a totals-only
+  round no longer counts in the season's putts average.
+
+## 2026-10-20 — Round-entry preview: banners in the shot screen
+
+```text
+Design package: none (dev preview only; nothing a player sees changes)
+PR/commit:      see git log (claude/clubhouse-a11y-rounds, b8920a4)
+Contract IDs:   111809 (the axe scan)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `/clubhouse-preview/entry` draws its Reload and error banners through
+  RoundTracking's `statusSlot`, inside the shot screen above the hole strip,
+  where RoundRuntime draws them on a real round. Its row of preview switches
+  follows the shot screen instead of leading it. `PreviewTracking` takes a
+  `statusSlot` and passes it on.
+
+### Why
+
+- The banners and switches above the shot screen pushed its full-height phone
+  layout 265px down at 390x844, so the entry card started below the fold and
+  the sticky action bar, which can rise only to the top of its panel, sat over
+  the card's first row of Shot result choices. axe's target-size failed it
+  (Fairway, "partially obscured, 108.7px by 13px") on `?state=reload` and
+  `?state=error`, light and dark. It surfaced after #2202 moved the bar's hint
+  into its button: the shorter bar no longer covered the row whole, which axe
+  does not report.
+
+### Verification
+
+- `clubhouse:a11y -- rounds`, Chromium, reduced motion, 1280 and 390: before,
+  exit 1 with those two pages failing in light and in dark; after, exit 0,
+  36 of 36 clean in each scheme. Measurements, screenshots and the new jsdom
+  test (`preview-entry-layout.test.tsx`) are in VERIFY.md (2026-10-20).
+
+## 2026-10-20 — The number pad has a Done key in the app
+
+```text
+Design package: none (release blocker 19; no owner board; phone draft
+                docs/clubhouse/phone/rounds.md)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   112001 (wording; status unchanged)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Round entry's number fields (the shot screen's distance, setup's yardages,
+  Add a course's rating and slope, the edit-shot sheet's distances) open the iOS
+  number pad, which has no return key, and the app's WebView hides the
+  keyboard's accessory bar, so the pad could only be put away by tapping
+  elsewhere. A focus-time toggle already asked for the bar on numeric fields,
+  but its plugin call races the keyboard and was never seen on a device.
+- Now `NewRound` and `ContinueRound` hold the system's own accessory bar
+  (‹ › Done) up from mount to unmount (`useRoundDoneKey`, through the new
+  `pinKeyboardAccessoryBar` in `src/lib/utils/capacitor.ts`), before any field
+  is focused. It is iOS's bar, so it sits over the sheets too, and the
+  `--keyboard-height` the app publishes includes it. While a round is open,
+  text fields (course search, a course's name) get the bar as well, as they do
+  in Mobile Safari. On the web nothing changes: Mobile Safari draws the bar
+  itself. It uses `Keyboard.setAccessoryBarVisible`, which today's binary has.
+
+### Why
+
+- A player must always be able to put the number pad away mid-round.
+
+### Verification
+
+- `use-done-key.test.tsx` and `capacitor-accessory-bar.test.ts` (pin, release,
+  hand-over without flicker, a pin before the plugin loads). Native UIKit, so
+  the iPad tier (CSS, and the app is iPhone-only) and Dynamic Type
+  (`--ch-type-k`) do not touch it. Not yet seen on a device (VERIFY).
+
+## 2026-10-20 — "No data lost" reaches Exit's Discard and the round engine
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   110702, 111201, 111202 (more tests; still implemented)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tests only, no visible or behaviour change. Exit's Discard is forced offline
+  (`round-entry-wiring.test`); a library discard whose request never lands keeps
+  the device copy (`rounds.test`); and the engine both renderers share is driven
+  through a dropped connection on start, on a hole's save and on discard
+  (`use-new-round-session.preservation.test`).
+
+### Why
+
+- Release review blocker 2. `rounds-contracts.test.tsx` covers the screens;
+  these cover the paths it does not reach.
+
+### Verification
+
+- VERIFY.md "No data lost: Exit's Discard offline, and the engine under a
+  dropped connection": each new test failed against a deliberate break.
+
+## 2026-10-19 — Discarding another player's round says no
+
+```text
+Design package: none
+PR/commit:      see git log (agent/fairway-fixes-polish, #2202)
+Contract IDs:   110804 (reserved to implemented)
+Actions:        deleteInProgressRound (src/app/golf/actions/round-partial.ts)
+Data impact:    none (it never deleted another player's round; only the answer changes)
+Held items:     none
+```
+
+### Changed
+
+- When a discard deletes nothing and the caller's own round is not there, the
+  action now looks the round up by id alone. A round the caller can still see
+  under another player is refused with "Only the player who started this round
+  can discard it." instead of the "already removed" success. Production's
+  `golf_rounds_select` lets a player read every round on their team, so a
+  teammate's round is refused. A round on another team is hidden by RLS, cannot
+  be told from a gone one and stays the idempotent success. Nothing is deleted
+  in either case. The new outcome is recorded as `not_owner`.
+
+### Why
+
+- 110804 says the action refuses a round that is not the caller's; it answered
+  success. The legacy library and the Clubhouse library both keep the device
+  copy when the action refuses.
+
+### Verification
+
+- `rounds-actions-contracts.test.ts` now expects the refusal; the discard
+  observability, integrity, discard-race and recover-port tests pass (7 files,
+  72 tests).
+
+## 2026-10-19 — Rounds on an iPad: a round card that fits, and a photo you can see is replaceable
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (821 to 1180px, end blocks of `rounds.css` and `rounds-setup.css`): on a canvas under 761px the round card's wide table takes the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px card without the circled and squared scores overlapping; the review's nine-hole tables drop their 560px minimum width (at any canvas in the tier) instead of scrolling by a few pixels (they scrolled by 52px at 1180px).
+- Setup: the photo's "Change" label is shown wherever there is no hover (it showed on hover or focus only).
+
+### Why
+
+- An iPad portrait with the sidebar open leaves 17px a hole in the card; a touch screen has no hover to reveal the label.
+
+### Verification
+
+- WebKit, touch, 834 and 1024 before and after looked at; the rules sit in a `screen and (821px to 1180px)` media query, and the label rule in `(hover: none)`, so a mouse desktop at 1181px and wider is unchanged.
+
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (rounds.css, rounds-setup.css, rounds-track.css, rounds-recover.css)
+
+- The season figure, the review's hero and figure values, the setup and shot screen's headline numerals, the unfinished-round line and the share card's labels follow the iPhone's text size. The scorecards (review nine, shot card, share card table), the season ribbon, the score strip cells and the zone drawings' SVG text keep their fixed sizes.
+- Radii on the 5, 7, 10, 14, 20 scale (pills, circles and bars stay; sheet corners of 24 to 28px are left).
+- The library's Continue link and Discard key reach 44px on the phone; the par keys, quick distances and setup segments reach 44px down the page; the review nine, season, spark, figure and shot-count numerals use tabular numerals (the font shorthand had dropped them).
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight actions are busy; one spinner; round setup choices use the shared segmented control
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Restore round, Discard, Change round type, Reload and the conflict banner's Discard are busy while they run instead of disabled.
+- The posting, saving and sync rings are the shared `Spinner` (one duration, still under reduced motion and Animations off).
+- Round type, Holes (setup and Add a course) and Which nine are the shared `Segmented`, with the unavailable 18-hole option skipped by the arrow keys. `.ch-rsu-seg` in `rounds-setup.css` is no longer used.
+- Previous and next hole, the discard buttons and the course view's controls show their name on hover and focus. The hole strip and the review scorecard fade a clipped edge.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — The library reaches the card; the round's labels are callable from the server
+
+```text
+Design package: none (complete-and-elevate plan, lead wiring for lane L4)
+PR/commit:      agent/clubhouse-complete
+Contract IDs:   CH-11920 (link target)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift+F10) on a posted round in the library offers Open round and Scorecard; Scorecard opens the review
+  at the card (#ch-rcard). Shift+right-click keeps the browser's own menu, so open-in-new-tab is still there. Both note
+  the round as opened from the library, so the review's Back is a step back (a link item in ui/Menu now runs its
+  onSelect as it opens).
+- dateOf and TYPE_LABEL moved to rounds/labels.ts (a plain module); parts.tsx re-exports them. The card's model imported
+  them from a 'use client' module, which the client-boundary test refuses.
+
+## 2026-10-19 — The round card: a scorecard to keep, share and print
+
+```text
+Design package: none (complete-and-elevate plan, lane L4); no owner board, phone draft in docs/clubhouse/phone/round-card.md
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   CH-11920 to CH-11924
+Actions:        none (no server action, endpoint or save path touched)
+Data impact:    none (the card is drawn from the review the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- A round's review has a scorecard under the hero: Out, In and Total, par, the score in scorecard notation (circle birdie,
+  double circle eagle or better, square bogey, double square double bogey or worse; red for under par only), putts,
+  fairways and greens where tracked, the course, tees, rating and slope, the date, holes played, and the strokes gained by
+  leg. Phone: two bands of nine. Desktop: one wide table. A nine-hole round has one band; a round with holes missing says
+  "Thru 14 of 18 holes" and shows no short subtotal. No card for a round posted as a total.
+- Arriving from Post round (`?just=submitted`, added to the engine's own navigation and its link in `RoundRuntime`), the
+  card settles in once on the smooth spring, with one quiet line from figures the page shows: "Best on hole 5, a birdie.
+  35 putts, 1.9 a hole." Reduced motion: no movement. No haptic (the submit path fired it). A reload does not replay it.
+- Share card: a sheet with the picture, drawn on the device with the Canvas 2D API at 1200px wide after the fonts load,
+  and two switches (Strokes gained; Putts, fairways and greens) that redraw it. Share on a device that can share files,
+  Save image otherwise, named for the course, date and score. Nothing leaves the device. The picture names the player
+  before the date and has a quiet foot inside the frame: GolfHelm in the brand green and the team name when known.
+- Print (desktop): the page prints only the card, on one page, ledger rules kept, in ink on white in either theme.
+
+### Why
+
+- The round is the product's heart and its last screen was a report. A player and a coach want the card itself, the way
+  it would come off a scorecard, to keep.
+
+### Verification
+
+- `screens/rounds/card/__tests__/` (card-model, share-card, draw-card, round-card): mark mapping, 9, 18 and partial rounds,
+  Out and In against the page's own figures, the share and download branches, the 1200px canvas. The existing review and
+  round-entry tests pass with the new card (two assertions scoped to the review's own scorecard; the engine's post
+  navigation now carries `?just=submitted`).
+- WebKit captures (headless, 390 and 1280, light and dark), the exported PNG, print emulation, and a Chromium PDF (one page).
+  Not tried: a physical iPhone, the native share sheet, a physical printer.
+
+## 2026-10-19 — Right-click on an unfinished round
+
+```text
+Design package: none (complete-and-elevate plan, lane L1, desktop command layer)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no new read: the palette lists what the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Right-click (or Shift F10) on the round in progress, or a row under "more unfinished rounds", offers Continue (Post round when
+  every hole is scored) and Discard round, the same links and the same confirmation as the row's own buttons. A posted round has
+  one action, a link, and keeps the browser's menu (open in a new tab). Desktop only.
+
+### Why
+
+- Discarding was a small bin icon; the menu is the keyboard-reachable form of it.
+
+### Verification
+
+- `screens/rounds/__tests__/rounds-context-menu.test.tsx`.
+
+## 2026-10-18 — Pickers and controls: round date, radio groups, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. The new round's Date (no day after today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- Round type, Holes, Qualifier, Which nine, a hole's par, tee colour, penalty choices and the miss-direction grid is one tab stop with the arrow keys, Home and End moving and choosing, as a native radio group does (`ui/use-roving.ts`); a disabled option is skipped.
+
+## 2026-10-18 — Wave 10: one Start a round in the library
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11302 CH-11304
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 library)
+
+- The head's New round shows only with a round in progress, or when the check
+  for one failed: otherwise the idle card's Start a round is the one primary
+  (it was two for one action). A full library with nothing in progress loses
+  the head button too.
+- CH-11302's headline keeps "18‑hole" together (a non-breaking hyphen).
+
+## 2026-10-18 — Wave 10: the setup scorecard before a course
+
+```text
+Design package: none (wave-10 first-run review, decision D)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11309
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 setup)
+
+- Before a course is picked (CH-11309) the placeholder keeps the hole numbers
+  and drops the grey bars beside them, which read as loading: a row of
+  numbers on desktop, the ledger's numbered rows on the phone.
+
+## 2026-10-18 — Wave 9: on the course
+
+```text
+Design package: none (wave-9 on-course review, rows 1-8, 9 part, 10-16; E, A)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-11910 (copy), CH-11502, CH-11507, CH-11509, CH-11901
+Actions:        none
+Data impact:    none
+Held items:     owner decisions B, C, D, F not taken
+```
+
+### Changed (2026-10-18, wave-9 on course)
+
+- Undo and Discard confirms: the button labels keep their own ink (the
+  question's grey no longer reaches them), and Keep it and the danger button
+  sit together on their own row under the question, at the right, at 36px.
+- Save line (CH-11901): one line with its icon beside the words; when the
+  readout leaves no room it drops under it at the right.
+- A missed putt's leave has its own quick picks: 2, 3, 4, 6, 8, 12 ft
+  (0.5 to 4 m). Its "What happened" chips are 44px tall.
+- Every hole in (CH-11910): "All holes are in. Review the round, then post
+  it." with Review and post, and the same action is the shot review's footer
+  button, in the thumb zone. The preview can finish again after Back to
+  hole 18.
+- The shot screen's distances keep number and unit together (no-break
+  space). The posted overlay keeps the coach's name on one line.
+- Scorecard sheet subtitle says where the player stands: "thru 3 · +1".
+- Setup dock: each "·" travels with the segment after it, so a wrapped line
+  starts "· Par 72".
+- Short phones (height 700px or less): a smaller hole numeral, readout and
+  drawn hole, so a putt's Putt result is on the first screen at 375 x 667.
+  On a phone the page's scroll padding clears the action bar, so Tap in or a
+  focused box brought into view lands above it.
+- The screen stays on while the shot screen is up (Screen Wake Lock, asked
+  again when the page comes back; nothing happens where it isn't supported).
+
+### Changed (2026-10-18, wave-9 round review)
+
+- Fairway and Green in regulation marks: each row is its own size container,
+  and where eighteen 22px marks in a line would touch (any phone), the holes
+  fold into nines, Out above In, so marks and hole numbers never collide. A
+  desktop row keeps one line.
+- Dark scorecard: a hit FIR or GIR dot is the lighter green, 5.2:1 on its
+  cell (the deep fill was 2.5:1). Scoped to the review; the token is unchanged.
+- The hole's step header reads "Hole 2 · Par 5", as its title does.
+- Where the strokes were lost: each row names the score ("Bogey", "Double
+  bogey") instead of repeating the shot count beside it.
+- In words: the player reads "what you wrote"; a coach "what the player
+  wrote".
+- The round: "... falls when strokes go back. A lower score is better." The
+  chart's orientation is unchanged (owner decision C).
+
+## 2026-10-18 — Wave 8: premium details
+
+```text
+Design package: none (wave-7 premium review, items 2, 5, 12)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-7 premium)
+
+- Round review charts: each picture's stage or plate is its own size
+  container (`chrz`), so its words are sized by the drawing's width, not the
+  review's. At 1280 the running score and shot trail read at about 11.5px
+  (were 7 to 8.5px); 1024 and 1440 hold about 11.5 to 12.5px; the phone keeps
+  31 units. The trail's dot numerals keep their size.
+- Rounds ribbon (desktop): ticks, values and dates at 13.75 to 14 units, about
+  11px at 1280 (were 9.7 to 10px); the average chip's words at 13.
+- Season hero figure (phone 48px, desktop 58px): tracking eased to −0.035em
+  and the decimal point in its own span (`withPointSpan`), so it no longer
+  touches the 3.
+- Setup course picker: a course photo that doesn't load falls back to the
+  quiet flag tile.
+
+## 2026-10-18 — Wave 5: the round flow, setup to posted
+
+```text
+Design package: none (wave-5 first-use and round-flow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, round flow)
+
+- Track: Undo's "Undo shot 2?" scrolls itself into view clear of the action
+  bar (CH-11502). A birdie or bogey in the holed-out hero keeps its own ink
+  on its pale mark. The strip's "Thru 3 +1" stays pinned at the right edge
+  while the holes scroll. The scorecard (CH-11509, CH-11508) has even hole
+  columns, with its label and Tot columns pinned and a fade at Tot on a
+  phone. The picked quick distance is green, as on desktop.
+- Track: after a hole saves and play moves on, the new hole says "Hole 4
+  saved · Birdie" in place of "No shots yet" for four seconds or until its
+  first shot; a move the player makes on the strip says nothing.
+- One shot-line form everywhere: "→ fairway · 140 yds left" (shot log, hole
+  review, round review). The slope choice reads "Downhill".
+- Round complete: Post round (was Submit round), "Posting round",
+  "The round didn’t post", and "Your 74 (+2) at Finley GC is posted."
+  The same word everywhere a finished round is sent: the library card
+  ("Ready to post", Post round; Post in the more-unfinished list), the
+  qualifier round sheet (CH-11518) and Recover's finished round.
+- Recovery (CH-11512): "Pick up where you left off" / "Your shots are on
+  this device from when the app closed."
+- Setup: "Front 9" never wraps; a tee with no yardage shows "—" without
+  "yds"; the picker's head says "Add" on a phone (still named "Add a
+  course"); 18 holes off on a 9-hole tee says why; the dock names the nine
+  ("Back nine"). Setup is kept for the tab (keyed by page, team and
+  player) so Back and return keeps the course, tees and pars; cleared once
+  a round starts or posts.
+- Review: the phone charts' words are about 12px (31 units), every other
+  hole number and score tick gives way, the trail's labels never overprint
+  and the putts line ends inside the stage (its dots drop their numbers on
+  a phone), and "Hole 2: +1" no longer touches the score labels. Note:
+  "Pick a hole to read it and see its shots."
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Discarding…" (CH-11501, library and Recover) and "Restoring…"
+  on Recover; "Trying again…" on the library's Try again (CH-11213).
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `rounds.css`, `rounds-setup.css`, `rounds-track.css`, `rounds-recover.css`:
+  the phone's text (heads, labels, row titles and subtitles, captions, pills,
+  buttons, the setup fields and sheets, the shot screen's labels, segments,
+  tags, sheets and bar) is set in `calc(N * var(--ch-type-k))`, so it follows
+  the iPhone's Text Size up to XXL. Line-heights in px move with it, except
+  where they centre text in a fixed-height control. The phone text floors
+  (12px) are split: the text members scale, the numerals stay 12px.
+- Left fixed on purpose: scorecards (the review's nines, the list's grid, the
+  shot screen's card), chart and map labels (the season ribbon, the range
+  ends, the zone plots, the hole map), and display numerals (scores, figures,
+  the hole number, the distance and its input, the quick distances, the
+  setup's par and yardage cells). The shot screen's controls keep their
+  heights and stay at least 44px; its hero result word stays fixed with the
+  hero.
+- At XXL (390 wide) the unscaled text drops from 150 to 87 (Rounds), 374 to
+  302 (a round), 36 to 10 (Setup), 50 to 24 (Track), 63 to 27 (a putt), 156
+  to 130 (the summary). What remains is the shared shell and primitives
+  (`ch-strip`, `ch-btn`, `ch-seg`, `ch-score--sm`, the zone sections in
+  `ui.css`) and the numerals above. At the default size every value is the
+  same pixel (WebKit screenshots identical).
+- The course picker's rows, phone: past the default size the name keeps a
+  readable width (`min-width` from `--ch-type-k`, none at the default) and the
+  date, par and tees wrap under it; at XXL they had squeezed "Finley GC" to
+  "Finley ...".
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): scale 1 screenshots of Rounds, a
+  round (player and coach), Setup and Track (bare, card, summary, putt, holed,
+  submit failed, exit) are pixel-identical to before; at
+  `--ch-type-scale: 1.353` no horizontal overflow, no new clipped text or
+  spilled controls; the shot screen's controls under 44px are unchanged from
+  before (summary and submit failed 13, holed 1). Also checked at XXL: the
+  course picker (identical at scale 1 with and without the wrap), the course
+  view and the change-shot sheet.
+- The setup fields stay 16px on the phone: `globals.css`'s iOS zoom floor
+  (`input:not(...)`, `font-size: 16px` under 768px) outranks them.
+- `npm run clubhouse:check`, `npm run clubhouse:css` (no findings in these
+  sheets), `npm run typecheck:fast`.
+
+## 2026-10-18 — Wave 3 accessibility: landmarks, headings, rings
+
+```text
+Design package: none (wave-3 accessibility review, items 2, 11, 12, 14, 19)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- Setup and Track are each a `main` landmark; they had none.
+- Headings no longer skip a level: the library's month or course groups, and
+  Setup's Round details and Scorecard cards, are `h2` under the page's `h1`.
+- The on-green focus rings in Setup's band and Track's top bar, strip and hero
+  carry `.ch-root`, so the shared green ring no longer wins over them (Track's
+  Exit pill measured 1.86:1 on the green; now champagne 9.71:1).
+- Setup's upcoming step labels take `--ch-on-green-ink-muted` (4.0:1 to
+  6.19:1).
+- Round review: the off-fairway shot disc is `#75653f` in both themes, so its
+  ivory number reads 5.08:1 (was 3.68 in light).
+- Track, dark: the `.ch-rt-subm__bad` amber on its ivory disc follows the
+  darker light warning ink, `#8a5a0c` (5.11:1, was `#94600e` at 4.60). The
+  token itself would give the pale night amber there.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on the rounds, round setup, entry, tracking and review
+  tests (the library's group heading test now asks for level 2).
+- WebKit (Playwright, dev preview, axe-core, 390 and 1280, light and dark):
+  Setup and Track have one `main` each; on the library, Setup and Track the
+  findings go from 98 to 0 (heading-order 8, landmark-one-main 8, region 78,
+  now none). Group and card headings keep their font, margin and colour.
+- Focus rings measured by keyboard focus: Setup's back link mint 8.39:1 light
+  (was the green ring at 1.55), Track's Exit pill champagne 9.71:1 at 390
+  light (was 1.86); the strip's hole keys draw their champagne ring.
+
+## 2026-10-18 — Wave 3: the head on the shared line, a 44px New round
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The round review takes the same gutter and
+  top; its title sits under the back link.
+- Phone: New round is 44px tall where it was 36px; the loading shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `rounds.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: Best's course name holds together
+
+```text
+Design package: none (wave-3 design review, items 17)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Best caption)
+
+- The season's Best caption keeps the course name on one line ("Carolina
+  GC", which broke to "Carolina / GC"); the separator ends that line and the
+  date takes the next. A long name ends in the column's ellipsis
+  (`parts.tsx`, `rounds.css`).
+
+### Verification (2026-10-18, Best caption)
+
+- WebKit at 390 and 1280: "Carolina GC ·" over "Aug 18"; an injected
+  "Pinehurst Resort No. 2 Championship Course" reads "Pinehurst Resort …".
+- `npm run test:file` on `rounds.test.tsx`.
+
+## 2026-10-18 — Polish: setup focus, hover, dock wrap and shotgun start
+
+```text
+Design package: none (wave-2 interaction review rows 7, 9, 10, 14, 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- Setup: the Date field draws its ring on `:focus` (WebKit never matches
+  `:focus-visible` on a date input), light and dark.
+- Setup: Round type and Holes segments darken on hover (desktop).
+- Setup dock: "N holes", "Par N" and "hole N" keep a no-break space, so the
+  phone dock never breaks "Par / 72".
+- Setup: Starting hole is always shown. Before a course is picked it is
+  disabled under "Shotgun start? Pick a course, then choose your first
+  hole."; once the card's holes load it behaves as before.
+- Round entry dialogs: option rows take the ledger row tint on hover; the
+  primary and danger rows also step their ring.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the skeleton holds the season chart's height
+
+```text
+Design package: none (wave-2 states review row 3)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Desktop skeleton (CH-11401): the season pane draws its head and then the
+  vs-par stage at the chart's proportion, so the hero is the loaded one's
+  height at any width; the first month is drawn under its heading
+  (`RoundsSkeleton.tsx`, skeleton-scoped rules in `rounds.css`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures), the tools row's top
+  skeleton vs loaded: 1280 778 vs 782 (was 548 vs 782); 1100 1193 vs 1202;
+  1440 812 vs 802. The first month's rounds 878 vs 887 at 1280.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-17 — Polish: setup segments reach 44px
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Round lifecycle parity: Fairway's back-nine start now numbers its hole setup
+  1 to 9 as Clubhouse's does (shared engine fix), so the parity test asserts
+  the two starts send identical hole configs.
+- Phone setup: Round type and Holes segments are drawn 38px inside the
+  well; their hit area now reaches 44px without moving them
+  (`rounds-setup.css`).
+- Tabular figures restored (review row 18): 29 rules across `rounds.css`,
+  `rounds-setup.css`, `rounds-track.css` and `rounds-recover.css` that set
+  `font` on a figure (scorecard nines, figures, season cards, the match card)
+  now set `font-variant-numeric: tabular-nums` after it. The 84px and
+  46px hero numerals keep proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
 ## 2026-10-17 — Add a course draws the chosen photo itself
 
 The photo chosen in Add a course is drawn on a canvas from the file's own

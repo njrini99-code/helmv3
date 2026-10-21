@@ -316,6 +316,8 @@ ALTER TABLE "public"."golf_coachhelm_llm_budget" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_coachhelm_llm_calls" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."golf_coachhelm_player_state" ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE "public"."golf_coachhelm_settings" ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE "public"."golf_confidence_calibration" ENABLE ROW LEVEL SECURITY;

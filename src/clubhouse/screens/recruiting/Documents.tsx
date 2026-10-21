@@ -3,7 +3,7 @@
 import { FileText, Trash2, Upload } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import {
-  CH_DOC_CATEGORIES,
+  CH_DOC_PICK_CATEGORIES,
   DOC_ACCEPT,
   FILM_EXTENSIONS,
   categoryLabel,
@@ -18,6 +18,7 @@ import {
   type ChFileProblem,
   type ChProspect,
 } from '../../data/recruiting-shape';
+import { RECRUIT_FILM_ENABLED } from '../../data/recruiting-film';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { friendlyReason, normalise, useAction } from '../../lib/use-action';
@@ -29,7 +30,8 @@ import { InlineNotice } from '../../ui/Notices';
 import { PillGroup } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { EmptyRow } from './parts';
+import { Tooltip } from '../../ui/Tooltip';
+import { EmptyRow, SecHeading, type RecSecLevel } from './parts';
 import type { RecInitialUpload } from './ctx';
 import type { ChRecruitingWrites } from './writes';
 
@@ -51,7 +53,7 @@ const extensionOf = (name: string) => (name.includes('.') ? (name.split('.').pop
 const stagedFrom = (file: File): Staged => ({
   file,
   title: stripExtension(file.name),
-  // Film is what a video is for; the coach can still pick another category.
+  // Film is what a video is for; the coach can still pick another category. With film off no extension is film's.
   category: FILM_EXTENSIONS.includes(extensionOf(file.name)) ? 'film' : 'note',
   problem: screenFile(file),
   uploadId: newRequestId(),
@@ -72,7 +74,7 @@ function stagedForPreview(u: RecInitialUpload): Staged {
  * of the panel still works. Every write goes through `useAction`, and what follows a write (the list, the open dialog)
  * happens inside the action, so a toast's Retry finishes the job as well.
  */
-export function Documents({ prospect, writes, initialUpload }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload }) {
+export function Documents({ prospect, writes, initialUpload, level }: { prospect: ChProspect; writes: ChRecruitingWrites; initialUpload?: RecInitialUpload; level?: RecSecLevel }) {
   const toast = useToast();
   const phone = useChPhone();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -250,7 +252,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
   return (
     <section className={`ch-rec-sec${over ? ' is-drop' : ''}`} aria-label="Documents" data-ch-code={over ? 'CH-14917' : undefined} {...dropProps}>
       <div className="ch-rec-sec__head">
-        <h3>Documents</h3>
+        <SecHeading level={level}>Documents</SecHeading>
         {state.kind !== 'failed' && !(state.kind === 'ready' && docs.length === 0) && (
           <button type="button" className="ch-rec-link" onClick={choose}>
             <Icon icon={Upload} size={15} />
@@ -273,7 +275,7 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
       ) : state.kind === 'failed' ? (
         <InlineNotice code="CH-14202" title="Documents didn’t load" body="Nothing is lost. Try again in a moment." onRetry={tryAgain} />
       ) : docs.length === 0 ? (
-        <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body="Schedules, transcripts and film, private to your staff." actionLabel="Upload" onAction={choose} />
+        <EmptyRow code="CH-14305" icon={FileText} title="No documents yet" body={RECRUIT_FILM_ENABLED ? 'Schedules, transcripts and film, private to your staff.' : 'Schedules, transcripts and notes, private to your staff.'} actionLabel="Upload" onAction={choose} />
       ) : (
         <>
           <ul className="ch-rec-docs">
@@ -283,24 +285,26 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
                   <span className="ch-rec-doc__t">{d.title}</span>
                   <span className="ch-rec-tag">{categoryLabel(d.category)}</span>
                 </button>
-                <button
-                  type="button"
-                  className="ch-rec-doc__x"
-                  aria-label={`Remove ${d.title}`}
-                  onClick={() => {
-                    haptic('warning');
-                    setAsking(d);
-                  }}
-                >
-                  <Icon icon={Trash2} size={15} />
-                </button>
+                <Tooltip>
+                  <button
+                    type="button"
+                    className="ch-rec-doc__x"
+                    aria-label={`Remove ${d.title}`}
+                    onClick={() => {
+                      haptic('warning');
+                      setAsking(d);
+                    }}
+                  >
+                    <Icon icon={Trash2} size={15} />
+                  </button>
+                </Tooltip>
               </li>
             ))}
           </ul>
           <span className="ch-rec-note">Private to your staff. Files open through a link that expires.</span>
         </>
       )}
-      {!phone && state.kind === 'ready' && <span className="ch-rec-note ch-rec-drophint">Drop a file here to add it. Film can be an MP4, MOV or M4V.</span>}
+      {!phone && state.kind === 'ready' && <span className="ch-rec-note ch-rec-drophint">{RECRUIT_FILM_ENABLED ? 'Drop a file here to add it. Film can be an MP4, MOV or M4V.' : 'Drop a file here to add it.'}</span>}
       {over && (
         <div className="ch-rec-drop" aria-hidden="true">
           <Icon icon={Upload} size={18} />
@@ -333,13 +337,13 @@ export function Documents({ prospect, writes, initialUpload }: { prospect: ChPro
             </Button>
             <Button
               variant="danger"
-              disabled={remove.pending}
+              busy={remove.pending}
               feel="warning"
               onClick={() => {
                 if (asking) void remove.run(asking);
               }}
             >
-              {remove.pending ? <span data-ch-code="CH-14405">Removing</span> : 'Remove document'}
+              {remove.pending ? <span data-ch-code="CH-14405">Removing…</span> : 'Remove document'}
             </Button>
           </>
         }
@@ -393,8 +397,8 @@ function UploadDialog({
             <Button variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={busy || !staged} onClick={() => staged && onUpload(staged)}>
-              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading' : `Uploading ${progress}%`}</span> : 'Upload'}
+            <Button variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
+              {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>
         )
@@ -419,7 +423,7 @@ function UploadDialog({
             <PillGroup<ChDocCategory>
               label="Category"
               value={staged.category}
-              options={CH_DOC_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+              options={CH_DOC_PICK_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
               onChange={(category) => onChange({ ...staged, category })}
             />
           </div>

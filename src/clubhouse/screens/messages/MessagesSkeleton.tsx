@@ -36,11 +36,11 @@ export function MessagesSkeleton() {
       </section>
       <div className="ch-msp-skel" aria-hidden="true">
         <div className="ch-msp-skel__tools">
-          <Skeleton width="100%" height={44} radius={14} />
+          <Skeleton width="100%" height={36} radius={10} />
           <span className="ch-msp-skel__chips">
-            <Skeleton width={46} height={34} radius={17} />
-            <Skeleton width={92} height={34} radius={17} />
-            <Skeleton width={72} height={34} radius={17} />
+            <Skeleton width={46} height={36} radius={18} />
+            <Skeleton width={92} height={36} radius={18} />
+            <Skeleton width={72} height={36} radius={18} />
           </span>
         </div>
         <div className="ch-msp-skel__sec">

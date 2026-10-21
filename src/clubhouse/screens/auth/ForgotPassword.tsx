@@ -17,6 +17,16 @@ const ERROR_ID = 'golf-forgot-error';
 /** A plain click, which the panel answers in place; a modified one (a new tab) is left to the link's own href. */
 export const isPlainClick = (e: MouseEvent) => e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
 
+export interface ResetWords {
+  aria: string;
+  title: string;
+  sub: string;
+  idle: string;
+  working: string;
+}
+
+const RESET_WORDS: ResetWords = { aria: 'Reset your password', title: 'Reset password', sub: 'Enter your email and we’ll send you a link.', idle: 'Send reset link', working: 'Sending reset link…' };
+
 interface ResetProblem {
   message: string;
   code: string;
@@ -37,6 +47,7 @@ export function ResetForm({
   onSent,
   onBack,
   requestReset = requestPasswordResetAction,
+  words = RESET_WORDS,
 }: {
   initialEmail: string;
   /** Opened by the person (not first paint): focus goes to the field, as today's page does. */
@@ -46,6 +57,8 @@ export function ResetForm({
   onBack: (email: string) => void;
   /** The server action by default; the preview and the tests hand in their own. */
   requestReset?: typeof requestPasswordResetAction;
+  /** The same form under another heading: the reset link page asks for a new link with it when the one it was opened with is spent. */
+  words?: ResetWords;
 }) {
   const [email, setEmail] = useState(initialEmail);
   const [problem, setProblem] = useState<ResetProblem | null>(null);
@@ -133,9 +146,9 @@ export function ResetForm({
   const invalid = !!problem?.field;
 
   return (
-    <form ref={formRef} className="ch-au-form" onSubmit={handleSubmit} noValidate aria-label="Reset your password">
-      <h1>Reset password</h1>
-      <p className="ch-au-sub">Enter your email and we’ll send you a link.</p>
+    <form ref={formRef} className="ch-au-form" onSubmit={handleSubmit} noValidate aria-label={words.aria}>
+      <h1>{words.title}</h1>
+      <p className="ch-au-sub">{words.sub}</p>
       <div className="ch-au-fields" data-invalid={invalid ? '' : undefined} data-shake={shake} data-ch-code={shake ? 'CH-15609' : undefined}>
         <div className="ch-au-field">
           <label className="ch-au-label" htmlFor="golf-forgot-email">
@@ -183,7 +196,7 @@ export function ResetForm({
       <div className="ch-au-submit" ref={keyRowRef}>
         {/* Stays on when the field is empty: Send says what is missing (today's page). CH-15420: in flight. */}
         <button type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15420' : undefined}>
-          <AuthKeyLabel busy={busy} idle="Send reset link" working="Sending reset link…" />
+          <AuthKeyLabel busy={busy} idle={words.idle} working={words.working} />
         </button>
       </div>
       <p className="ch-au-alt" ref={altRef}>

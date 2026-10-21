@@ -4,7 +4,7 @@ import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
-import { classYearLabel, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
+import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -27,8 +27,8 @@ import {
   type ChWindow,
 } from './stats-common';
 import { holeRounds } from './round-scope';
-import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions } from './stats-filter';
-import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, type ChWindowSeason } from './stats-weight';
+import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
+import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
@@ -36,6 +36,7 @@ import {
   personalBests,
   pressureGap,
   toughestHoles,
+  triplePlusCount,
   windowCompare,
   type ChBests,
   type ChCompare,
@@ -138,11 +139,15 @@ export interface ChProfileExtra {
    * say so ("Hole stats from 3 of 5 rounds"). Absent: every round has its holes.
    */
   holeRounds?: number;
+  /** Holes at triple bogey or worse in the detail read's rounds (a part of double or worse); null when the hole read failed. Absent: not read. */
+  triplePlus?: number | null;
 }
 
 export interface ChPlayerProfile {
   viewer: ChViewer;
   window: ChWindow;
+  /** How many rounds Last N counts (read with `window: 'last10'`). */
+  last: ChLast;
   /** The round filter in force (the address's), and what its sheet can list: this player's loaded rounds only. */
   filter: ChFilter;
   filterOptions: ChFilterOptions;
@@ -374,7 +379,10 @@ export async function loadPlayerProfile(input: {
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f);
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f));
+  // The change is painted only when it clears its standard error, from both windows' per-18 rounds with strokes gained (Q4).
+  const sgOf = (r: ChRound) => r.strokes_gained_total;
+  const sgSe = prevList ? windowChangeSe(holeWin, holeRounds(prevList), sgOf, 'sg') : null;
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe, f.last);
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
@@ -484,6 +492,7 @@ export async function loadPlayerProfile(input: {
     attestingCoach,
     viewer: input.viewer,
     window: f.window,
+    last: f.last,
     filter: f,
     filterOptions: filterOptions(mine),
     id: p.id,
@@ -493,7 +502,7 @@ export async function loadPlayerProfile(input: {
     gradYear: p.graduation_year,
     hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
     status: memberRes.data.status === 'inactive' ? 'inactive' : 'active',
-    handicap: p.handicap_index ?? p.handicap,
+    handicap: displayHandicap(p),
     season,
     win,
     teamAvg,
@@ -519,6 +528,7 @@ export async function loadPlayerProfile(input: {
       puttsError: putts.error,
       truncated: holeWin.length > DETAIL_MAX_ROUNDS,
       holeRounds: holeWin.length,
+      triplePlus: holes.error ? null : triplePlusCount(holes.rows),
     },
     rounds: winRounds.map((r) => {
       const c = cache.byRound.get(r.id);

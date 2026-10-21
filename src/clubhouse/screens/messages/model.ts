@@ -103,6 +103,18 @@ export function dayLabel(iso: string, now: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(new Date(iso));
 }
 
+/**
+ * A future day, for "Muted until …": "today", "tomorrow", "Friday" within the week, then "Oct 25". A week from now is a
+ * date, never a weekday: that weekday is also today's.
+ */
+export function untilLabel(iso: string, now: string, timeZone: string): string {
+  const d = dayDiff(parts(iso, timeZone), parts(now, timeZone));
+  if (d <= 0) return 'today';
+  if (d === 1) return 'tomorrow';
+  if (d < 7) return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'long' }).format(new Date(iso));
+  return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(new Date(iso));
+}
+
 export function sectionOf(iso: string | null, now: string, timeZone: string): 'today' | 'week' | 'earlier' {
   if (!iso) return 'earlier';
   const d = dayDiff(parts(now, timeZone), parts(iso, timeZone));
@@ -137,6 +149,68 @@ export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): C
 }
 
 export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+
+/**
+ * Where the "New" divider goes when a thread opens: the earliest of the last `unread` messages someone else sent. Null
+ * with nothing unread.
+ */
+export function firstUnreadId(msgs: readonly ChMsg[], unread: number): string | null {
+  if (unread <= 0) return null;
+  let left = unread;
+  let id: string | null = null;
+  for (let i = msgs.length - 1; i >= 0 && left > 0; i--) {
+    const m = msgs[i]!;
+    if (m.mine) continue;
+    id = m.id;
+    left--;
+  }
+  return id;
+}
+
+/** A search hit's text cut to show its match: a little before it, the match itself, and the rest. */
+export function searchSnippet(text: string, term: string, lead = 24): { before: string; match: string; after: string } {
+  const at = term ? text.toLowerCase().indexOf(term.toLowerCase()) : -1;
+  if (at < 0) return { before: text, match: '', after: '' };
+  const from = Math.max(0, at - lead);
+  // Start on a word where one is near, so the cut doesn't open mid-word.
+  const space = from > 0 ? text.indexOf(' ', from) : -1;
+  const start = from > 0 && space >= 0 && space < at ? space + 1 : from;
+  return { before: (start > 0 ? '…' : '') + text.slice(start, at), match: text.slice(at, at + term.length), after: text.slice(at + term.length) };
+}
+
+const URL_RE = /\bhttps?:\/\/[^\s<>"']+/gi;
+
+/**
+ * A message's text split into plain runs and web links. Only http and https are links; trailing punctuation stays text
+ * ("see https://x.org." links https://x.org), and so does a closing bracket the link didn't open.
+ */
+export function linkParts(text: string): Array<string | { href: string; text: string }> {
+  const out: Array<string | { href: string; text: string }> = [];
+  let last = 0;
+  for (const found of text.matchAll(URL_RE)) {
+    let raw = found[0];
+    for (;;) {
+      const end = raw.at(-1);
+      if (end && '.,;:!?\'"'.includes(end)) raw = raw.slice(0, -1);
+      else if (end && ')]}'.includes(end) && raw.split(end).length > raw.split({ ')': '(', ']': '[', '}': '{' }[end]!).length) raw = raw.slice(0, -1);
+      else break;
+    }
+    let href: string | null = null;
+    try {
+      const u = new URL(raw);
+      if (u.protocol === 'http:' || u.protocol === 'https:') href = u.href;
+    } catch {
+      href = null;
+    }
+    if (!href) continue;
+    const at = found.index ?? 0;
+    if (at > last) out.push(text.slice(last, at));
+    out.push({ href, text: raw });
+    last = at + raw.length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
 
 export interface ChSearchHit {
   messageId: string;

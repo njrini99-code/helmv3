@@ -524,7 +524,7 @@ describe('getPlayerFingerprint', () => {
     const sb = makeSupabaseMock({ userId: 'u-1' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await getPlayerFingerprint('p-1', sb as any);
-    expect(getInsightsForCoachMock).toHaveBeenCalledWith('coach-row-1', { player_id: 'p-1', limit: 40 }, sb);
+    expect(getInsightsForCoachMock).toHaveBeenCalledWith('coach-row-1', { player_id: 'p-1', limit: 40, includeMore: true }, sb);
   });
 
   it('penalizes active severe patterns in the composite (mirrors the Scouting Report tab)', async () => {

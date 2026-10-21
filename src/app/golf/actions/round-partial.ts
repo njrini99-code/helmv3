@@ -21,6 +21,7 @@ import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { lieAfterRecoveryPayload, withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -352,7 +353,9 @@ export interface SavePartialRoundDuplicateCompleted {
   completedRoundId: string;
 }
 export type SavePartialRoundResult =
-  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>
+  // `courseId` (additive): the golf_courses id the round is linked to when the server resolved one (a typed course name
+  // that matches the library), so the client knows the round has a course. Absent when none was resolved.
+  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[]; courseId?: string }>
   | SavePartialRoundHoleInvalid
   | SavePartialRoundInProgressExists
   | SavePartialRoundDuplicateCompleted;
@@ -898,6 +901,7 @@ async function savePartialRoundImpl(
           putt_made: derivePuttMade(shot),
           is_penalty: shot.isPenalty,
           penalty_type: shot.penaltyType ?? null,
+          ...lieAfterRecoveryPayload(shot),
         })),
       })
     );
@@ -1398,7 +1402,7 @@ async function savePartialRoundImpl(
         // calls and produces "An unexpected response was received from the server"
         // errors. Revalidation happens when the round is actually submitted via
         // submitGolfRoundComprehensive.
-        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
+        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
       }
     } else {
       // Recover a session that lost its local roundId (e.g. a backgrounded/
@@ -1422,7 +1426,7 @@ async function savePartialRoundImpl(
       } else if (resolvedCourseId) {
         let existingRoundQuery = supabase
           .from('golf_rounds')
-          .select('id, updated_at')
+          .select('id, updated_at, round_type')
           .eq('player_id', player.id)
           .eq('status', 'in_progress')
           .eq('course_id', resolvedCourseId)
@@ -1476,7 +1480,17 @@ async function savePartialRoundImpl(
         // lost-id-on-a-fresh-round case) or the caller explicitly passed
         // recovery/reuse intent — set by the restore flows in New Round and
         // FairwayRecoverRound, never by persistRoundStart.
-        if (candidateRound && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
+        //
+        // c449552f (2026-10-20): a match of a DIFFERENT round_type is never a
+        // reuse target, empty or not. The lifecycle trigger refuses a direct
+        // round_type change on an unfinished round (55000), so reusing an
+        // empty tournament shell for a practice start failed the start with
+        // "Failed to save round"; and keeping the shell's type instead would
+        // silently turn the player's practice round into a tournament one.
+        // With startIntent the mismatch falls to the conflict prompt below;
+        // without it, this save inserts its own round.
+        const candidateSameType = candidateRound?.round_type === data.roundType;
+        if (candidateRound && candidateSameType && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
           existingRound = candidateRound;
         } else if (candidateRound && options?.startIntent && !options?.confirmSeparateRound) {
           // R8: `persistRoundStart` — a brand-new "start a round" action —
@@ -1765,7 +1779,7 @@ async function savePartialRoundImpl(
               round_id: roundId,
               hole_id: holeId,
               hole_number: group.hole_number,
-              ...shot,
+              ...withoutLieAfterRecovery(shot),
             }));
 
             // Upsert on (round_id, hole_number, shot_number) — see migration
@@ -1949,7 +1963,7 @@ async function savePartialRoundImpl(
     // conflict. Both queries above already `.select()` the full row; see
     // `roundUpdatedAtForResponse`'s declaration for why `round` itself
     // cannot be read here directly.
-    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined } };
+    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
 
   } catch (err) {
     // Single log call per failure (see updateExisting branch above) — keep
@@ -2127,6 +2141,20 @@ async function deleteInProgressRoundImpl(roundId: string): Promise<ActionResult<
         .eq('player_id', player.id)
         .maybeSingle();
       if (!probeError && !remaining) {
+        // The probe above is scoped to this player, so another player's round
+        // also reads as gone. Look it up by id alone before answering success:
+        // a round this caller can still see under another player is refused.
+        // One that RLS hides cannot be told from a gone round, and nothing was
+        // deleted either way (P011 110804).
+        const { data: othersRound, error: othersError } = await supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('id', roundId)
+          .maybeSingle();
+        if (!othersError && othersRound) {
+          recordDiscardRoundOutcome('not_owner');
+          return { success: false, error: 'Only the player who started this round can discard it.' };
+        }
         // Nothing changed here, so nothing to revalidate.
         recordDiscardRoundOutcome('already_removed');
         return { success: true, data: undefined };

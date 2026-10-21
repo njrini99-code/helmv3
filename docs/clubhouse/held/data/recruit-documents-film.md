@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-recruit-documents-film
-Status: HELD
+Status: RELEASED
 Pages: Recruiting (P014): a prospect's Documents (the upload dialog and the file drop)
 Feature: recruiting (memory/registry.yml)
 Migration: supabase/migrations/20260930140000_recruit_documents_film.sql
@@ -93,10 +93,18 @@ Film already stored stays readable; new film uploads are refused again.
 
 ## UI behavior while held
 
-The page is built for film and is shown as if it worked: the picker and the drop accept MP4, MOV and M4V up to 100 MB and
-the page hint says so. Until the migration is applied Storage refuses a film, and the upload dialog says so honestly:
-"Storage won't take that file type" (CH-14107) or "a file this large" (CH-14108), with nothing added and no Retry. Documents
-and images up to 25 MB work throughout.
+Film is hidden while the migration is held (owner default, 2026-10-16):
+`RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` is false, so
+the upload dialog offers no Film category, the picker and the drop take no video
+(a video is refused before sending as "We can't take that file type", CH-14106),
+and the copy names no film. A document already filed as Film keeps its tag.
+Documents and images up to 25 MB work throughout.
+
+After the apply, set `RECRUIT_FILM_ENABLED` to true; that one change turns film
+on (Film category, MP4, MOV and M4V up to 100 MB, the hint). Built for film, the
+page still says honestly what Storage refuses: "Storage won't take that file
+type" (CH-14107) or "a file this large" (CH-14108), with nothing added and no
+Retry.
 
 ## SQL preparation status
 
@@ -128,3 +136,9 @@ was told to leave HELD.md alone.
 - [ ] RLS verified
 - [ ] a real film uploaded, opened and removed on a test prospect
 - [ ] held status discharged
+
+## Released
+
+Applied to production on 2026-10-21 by the production rollout: `supabase_migrations.schema_migrations`
+holds version `20260930140000` (production rollout ledger). The status above moved from HELD to
+RELEASED to match.

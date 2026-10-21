@@ -220,7 +220,7 @@ describe('the coach’s board, with a read beside the top card failed', () => {
 
   describe('the pulse', () => {
     const noRounds = { id: 'coverage-no-rounds', headline: '2 players have no recorded rounds', evidence: 'Jonah, Eli', tone: 'attention', weight: 55 };
-    const rsvp = { id: 'rsvp-ev1', headline: '2 players have not responded for Hilltop', evidence: 'Sat 8:00 AM', tone: 'attention', weight: 85 };
+    const rsvp = { id: 'rsvp-ev1', headline: '2 players haven’t replied to Hilltop', evidence: 'Sat 8:00 AM', tone: 'attention', weight: 85 };
 
     it('CH-13206 a rounds read that failed: "N players have no recorded rounds" is not said, and the board is not "nothing is flagged"', async () => {
       // What a rounds read that errored leaves: no rounds at all, so every player reads as one without.
@@ -248,7 +248,7 @@ describe('the coach’s board, with a read beside the top card failed', () => {
       const d = await load();
       expect(d.pulse.rows.map((r) => r.id)).toEqual(['rsvp-ev1']);
       show(d);
-      expect(screen.getByText(/have not responded for Hilltop/)).not.toBeNull();
+      expect(screen.getByText(/haven’t replied to Hilltop/)).not.toBeNull();
       expect(code('CH-13206')?.textContent).toMatch(/may be incomplete/);
     });
 
@@ -438,7 +438,7 @@ describe('Ask, with a read failed', () => {
     { id: 'p2', name: 'Eli Brandt', first_name: 'Eli', last_name: 'Brandt', graduation_year: 2028 },
   ];
   const ctx = (over: Record<string, unknown> = {}) => ({ coach_id: 'c1', user_id: 'u1', team_id: 't1', team_name: 'Finley University', timezone: 'America/New_York', roster: ROSTER, ...over });
-  const rsvp = { id: 'rsvp-1', headline: '2 players have not responded for Hilltop', evidence: 'Sat 8:00 AM · 6 of 8 responded', tone: 'attention', weight: 85, ask: 'Send an RSVP reminder for Hilltop' };
+  const rsvp = { id: 'rsvp-1', headline: '2 players haven’t replied to Hilltop', evidence: 'Sat 8:00 AM · 6 of 8 replied', tone: 'attention', weight: 85, ask: 'Send an RSVP reminder for Hilltop' };
   const noRounds = { id: 'coverage-no-rounds', headline: '2 players have no recorded rounds', evidence: 'Jonah, Eli', tone: 'attention', weight: 55 };
   beforeEach(() => {
     pulseRead.context.mockResolvedValue(ctx());

@@ -1,7 +1,11 @@
-import { Skeleton } from '../../ui/States';
+import { SkelLine, Skeleton } from '../../ui/States';
 import '../../styles/roster.css';
 
-/** Route loading for Roster: header, toolbar and six face cards in their final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). */
+/**
+ * Route loading for Roster: header with its two actions, where the team sits, the toolbar and six face cards in their
+ * final slots; on a phone, the list's rows (switched in CSS, since this renders on the server). Join requests and Needs a
+ * look are drawn only when there are some, so the skeleton leaves them out and they push the grid down when they come.
+ */
 export function RosterSkeleton() {
   return (
     <main className="ch-rs" data-canopy="" aria-busy="true" aria-label="Loading roster" data-ch-code="CH-3401">
@@ -12,7 +16,22 @@ export function RosterSkeleton() {
             <Skeleton width={280} height={40} radius={10} />
             <Skeleton width={340} height={15} />
           </div>
+          {/* Export and Invite players, at their loaded widths. */}
+          <div className="ch-rs-head__act">
+            <Skeleton width={92} height={36} radius={10} />
+            <Skeleton width={130} height={36} radius={10} />
+          </div>
         </header>
+        {/* Where the team sits (RosterSpread) in its own frame: the heading's two lines and a one-lane plot with its axis. */}
+        <section className="ch-rs-sp" aria-hidden="true">
+          <div className="ch-rs-sp__h">
+            <SkelLine line={22.8} bar={17} width={190} />
+            <SkelLine line={19.6} bar={12} width={460} />
+          </div>
+          <div className="ch-rs-sp__plot" style={{ display: 'flex', alignItems: 'flex-end', height: 104 }}>
+            <Skeleton width="100%" height={12} />
+          </div>
+        </section>
         <div className="ch-rs-bar">
           <Skeleton width={320} height={36} radius={10} />
           <Skeleton width={360} height={34} radius={12} />

@@ -11,14 +11,18 @@ import type { ChHoles } from '../../data/stats-filter';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
+import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
-import { NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
+import { formatPct, NO_DATA } from '../../lib/format';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
+import { PuttBands } from './PuttBands';
+import type { PuttBandInput } from './putt-bands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 
 type Tone = 'gain' | 'loss' | undefined;
-const pct = (v: number | null | undefined, d = 0) => (v == null ? NO_DATA : `${v.toFixed(d)}%`);
+const pct = formatPct;
 const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
@@ -106,7 +110,7 @@ function Sec({
               <div key={l}>
                 <dt>{l}</dt>
                 <dd className={reason ? 'ch-gm__none' : `ch-num${t ? ` ch-${t}` : ''}`}>{reason ?? v}</dd>
-                {n && <dd className="ch-gm__sub">{n}</dd>}
+                {n && v !== NO_DATA && <dd className="ch-gm__sub">{n}</dd>}
               </div>
             );
           })}
@@ -250,22 +254,24 @@ export function GameDetail({
   const benchScrRough = bench.scrambling_pct_rough ?? null;
   const benchSand = bench.scrambling_pct_sand ?? null;
 
-  // Putting: the curve is the calculator's nine bands from the window's own putts (exact counts past 20 feet); without the putt read it stops at 20 feet.
-  const nine = x.puttBandsNine;
-  const curve = nine
-    ? nine.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : [
-        { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
-        { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
-        { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
-        { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-        // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
-        { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
-      ];
+  // Putting: the make-rate chart reads the window's own putts in the six bands the Tour grades (0–3 to 25+ ft, exact made and
+  // tried); without the putt read it falls back to the calculator's own rates, which stop at 20 feet.
+  const cacheBands = [
+    { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
+    { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
+    { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
+    { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
+    // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
+    { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
+  ];
+  // The calculator keeps a rate and a count, not the putts made: the band carries the rate as kept and says its count.
+  const curve: PuttBandInput[] = shotBands
+    ? shotBands.map((b) => ({ label: b.label, made: b.made, attempts: b.attempts, bench: b.bench }))
+    : cacheBands.map((b) => ({ label: `${b.band} ft`, made: null, rate: b.value, attempts: b.n, bench: b.bench }));
   // The lead names the band furthest under the Tour, from the six bands the Tour publishes (not the nine, which reuse a standard across bands).
   const leadBands = shotBands
     ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : curve;
+    : cacheBands;
   const worstPutt = leadBands
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
@@ -290,15 +296,15 @@ export function GameDetail({
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
   const coverage = holeCoverage(holeCount, rounds);
   const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
-  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read.
-  const fewer = win === 'last10' && (basis ?? RULE_WINDOW[win]) === 'Last 10 rounds' && rounds < 10;
+  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read (likewise Last 5 and Last 20).
+  const lastN = Number(/^Last (\d+) rounds$/.exec(basis ?? RULE_WINDOW[win])?.[1]);
+  const fewer = win === 'last10' && lastN > 0 && rounds < lastN;
   const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
   const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
   /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
   const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
   /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
   const noteOf = (long: string, short: string) => (phone ? { note: short, how: long } : { note: long });
-  const open = !phone;
 
   return (
     <div className={'ch-gd' + (phone ? ' is-phone' : '')}>
@@ -337,18 +343,18 @@ export function GameDetail({
           [
             'Doubles or worse',
             num(s.doublePlusPerRound),
-            doublePct == null ? null : `${doublePct.toFixed(1)}% of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
+            doublePct == null ? null : `${formatPct(doublePct)} of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
             doublePct != null && bench.big_number_rate != null ? (doublePct <= bench.big_number_rate ? 'gain' : 'loss') : undefined,
           ],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ScoringMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMix d={dist} totals={totals} />
+        <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
           <ParTiles rows={pars} />
@@ -376,7 +382,7 @@ export function GameDetail({
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <TeeMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -385,7 +391,7 @@ export function GameDetail({
           {s.fairwayOpportunities > 0 ? (
             <FairwayStrip opportunities={s.fairwayOpportunities} hit={s.fairwaysHit} left={s.missLeftCount} right={s.missRightCount} />
           ) : (
-            <p className="ch-gm-p__empty">No drive results logged.</p>
+            <EmptyState compact code="CH-5317" title="No drive results logged." />
           )}
         </Panel>
         <Panel title="Distance by club">
@@ -422,7 +428,7 @@ export function GameDetail({
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ApproachMore s={s} x={x} onRetry={onRetry} />
           </More>
         }
@@ -445,12 +451,15 @@ export function GameDetail({
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
               {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
               {!phone && tourProx.some((b) => b.value == null) && (
-                <p className="ch-gm-p__empty" data-ch-code="CH-5316">
-                  {tourProx
+                <EmptyState
+                  compact
+                  code="CH-5316"
+                  title="Some distances need more shots."
+                  body={tourProx
                     .filter((b) => b.value == null)
                     .map((b) => `${b.band} yards: ${b.n ? `${b.n} ${b.n === 1 ? 'shot' : 'shots'}, under ${b.floor}` : 'no shots'}`)
                     .join(' · ')}
-                </p>
+                />
               )}
             </>
           ) : (
@@ -479,7 +488,7 @@ export function GameDetail({
               }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-green directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-green directions logged." />
           )}
         </Panel>
         <Panel title="Greens hit by lie" note="Counts are approaches from each lie.">
@@ -516,7 +525,7 @@ export function GameDetail({
           ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
         more={
-          <More open={open}>
+          <More>
             <ShortMore s={s} />
           </More>
         }
@@ -567,7 +576,7 @@ export function GameDetail({
           ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
         ]}
         more={
-          <More open={open}>
+          <More>
             <PuttingMore s={s} x={x} sixBands={shotBands} />
           </More>
         }
@@ -576,12 +585,12 @@ export function GameDetail({
           title="Make rate by distance"
           wide
           {...noteOf(
-            `${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`,
-            'Bars are the make rate; the tick is the Tour. Amber is below it.',
+            `Green dots are at or above the Tour, amber below it. A band shows from 10 putts and is graded against the Tour from 30.${shotBands ? ' Counts are putts logged with a distance. The Tour publishes five averages, one for each band past 3 feet.' : ''}`,
+            'Amber dots are below the Tour. A band grades from 30 putts.',
           )}
         >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
-          {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
+          <PuttBands bands={curve} compact={phone} />
         </Panel>
         <Panel title="How putts miss" wide>
           {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}
@@ -590,21 +599,21 @@ export function GameDetail({
               m={{ left: s.puttMissLeftPct, right: s.puttMissRightPct, short: s.puttMissShortPct, long: s.puttMissLongPct, low: s.puttMissLowPct, high: s.puttMissHighPct }}
             />
           ) : (
-            <p className="ch-gm-p__empty">No missed-putt directions logged.</p>
+            <EmptyState compact code="CH-5317" title="No missed-putt directions logged." />
           )}
         </Panel>
         <Panel title="Lag leave">
           {lag.length ? (
             <Compare unit=" ft" max={8} rows={lag.map(([b, v]) => ({ label: `From ${b.replace('_plus', '+').replace('_', '–')} ft`, value: v, sub: 'Left for the next putt' }))} />
           ) : (
-            <p className="ch-gm-p__empty">No long first putts logged.</p>
+            <EmptyState compact code="CH-5317" title="No long first putts logged." />
           )}
         </Panel>
         <Panel title="Make rate by break" note={brk.some((r) => r.value != null) ? 'Putts inside 10 feet.' : undefined}>
           {brk.some((r) => r.value != null) ? (
             <Compare unit="%" max={100} rows={brk} />
           ) : (
-            <p className="ch-gm-p__empty">No putts inside 10 feet have a break logged yet.</p>
+            <EmptyState compact code="CH-5317" title="No putts inside 10 feet have a break logged yet." />
           )}
         </Panel>
       </Sec>

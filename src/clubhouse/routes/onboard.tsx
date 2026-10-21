@@ -10,7 +10,7 @@ export function ClubhouseSignupRoute() {
 
 /**
  * /golf/player in Clubhouse: a new player's questions after the account
- * ("Your game", the photo, the member card). The join code rides in on
+ * ("Your game", the photo, the member card). The team code rides in on
  * ?joinCode=, as it does today, and the screens read it in the browser.
  */
 export async function ClubhousePlayerOnboardRoute() {

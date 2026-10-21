@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SerifText } from '../../ui/SerifText';
+import { EngineState, WhyAudit } from './EngineState';
 
 /**
  * The stance pill: amber for a Priority, and a word, so priority never rests on colour alone (CH-13806). A strength reads Working,
@@ -133,6 +134,8 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
         </p>
       )}
+      {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
+      <EngineState engine={ins.engine} />
       <Evidence ev={ins.evidence} who={who} />
       {ins.week && (
         <div className="ch-hl-drill">
@@ -160,12 +163,13 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
           </p>
         </>
       )}
+      <WhyAudit lines={ins.engine?.audit} />
     </article>
   );
 }
 
 /**
- * One row of "Also worth knowing" or "Working" (helm3.jsx `Row`). Choosing it
+ * One row of "Also worth knowing" or "What’s working" (helm3.jsx `Row`). Choosing it
  * puts it in the focus card (CH-13701: a selection tap). CH-13803: one button
  * named for its category, title, value and priority. CH-13602: on desktop it
  * takes the Ledger row tint on hover (quick) and a deeper tint on press.
@@ -187,7 +191,15 @@ export function InsightRow({ ins, onPick }: { ins: ChInsight; onPick: () => void
         <b>{ins.title}</b>
         <span className="ch-sr-only">{stance.word}</span>
       </span>
-      <span className="ch-hl-row__v ch-num">{ins.value}</span>
+      <span className="ch-hl-row__v ch-num">
+        {ins.value}
+        {ins.value && ins.valueUnit && (
+          <>
+            {' '}
+            <small>{ins.valueUnit}</small>
+          </>
+        )}
+      </span>
       <Icon icon={ChevronRight} size={15} />
     </button>
   );
@@ -242,11 +254,12 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  structure instead of a title block over a separate strip. */
 /** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
  *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
-export function Head({ who, children, aside, phone = false }: { who: 'Player' | 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
+/** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). */
+export function Head({ who, children, aside, phone = false }: { who?: 'Coach'; children: ReactNode; aside?: ReactNode; phone?: boolean }) {
   const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
-      <span className="ch-hl-role">{who}</span>
+      {who && <span className="ch-hl-role">{who}</span>}
       <Title id="ch-hl-title" className="ch-hl-h__t">
         CoachHelm
       </Title>

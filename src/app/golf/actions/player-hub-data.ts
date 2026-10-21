@@ -29,6 +29,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isGolfTaskOverdueInZone } from '@/lib/golf/task-overdue';
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 
 /** Matches `dashboard-data.ts:292` — the team zone used when none is stored. */
 const DEFAULT_TEAM_TIME_ZONE = 'America/New_York';
@@ -87,7 +88,8 @@ async function getPlayerHubSummaryDataImpl(
     throw new Error('Unauthorized: no golf session');
   }
 
-  let authorized = session.player?.id === playerId;
+  const viewerIsPlayer = session.player?.id === playerId;
+  let authorized = viewerIsPlayer;
 
   if (!authorized && session.coach) {
     authorized = await validateCoachTeamAccess(
@@ -115,7 +117,7 @@ async function getPlayerHubSummaryDataImpl(
     supabase
       .from('golf_travel_itineraries')
       .select(
-        'id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
+        'id, event_id, event_name, destination, transportation_type, departure_date, departure_time, departure_location, return_date, return_time, hotel_name, hotel_address, hotel_phone, hotel_confirmation, uniform_requirements, gear_list, room_assignments, notes, flight_info',
       )
       .eq('team_id', teamId)
       .gte('departure_date', tripsSince)
@@ -190,6 +192,7 @@ async function getPlayerHubSummaryDataImpl(
 
   const trips: TripData[] = (tripsResult.data || []).map((item) => ({
     id: item.id,
+    event_id: item.event_id,
     event_name: item.event_name || '',
     destination: item.destination || '',
     transportation_type: (item.transportation_type as TripData['transportation_type']) || 'bus',
@@ -266,7 +269,20 @@ async function getPlayerHubSummaryDataImpl(
     });
   }
 
-  const events: EventInvite[] = (parsedEvents?.ok ? parsedEvents.rows : []).map((e) => ({
+  // get_player_hub_events is SECURITY DEFINER and lists every team event,
+  // meetings included, until the held migration 20261018120000 re-creates it.
+  // A player sees a meeting only when they are invited to it (their own
+  // attendance row; meeting-visibility.ts); a failed invite read hides every
+  // meeting. A coach's call is unchanged.
+  const hubRows = parsedEvents?.ok ? parsedEvents.rows : [];
+  const visibleRows = viewerIsPlayer
+    ? await filterMeetingsForPlayer(supabase, hubRows, playerId, {
+        action: 'playerHub.summary.meetingInvites',
+        featureArea: 'player_hub',
+      })
+    : hubRows;
+
+  const events: EventInvite[] = visibleRows.map((e) => ({
     id: e.id,
     event_id: e.event_id,
     title: e.title,

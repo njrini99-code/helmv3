@@ -1,3 +1,5 @@
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
 import { GenericPageSkeleton } from '@/components/ui/skeleton';
 
 /**
@@ -15,5 +17,7 @@ import { GenericPageSkeleton } from '@/components/ui/skeleton';
  * boundary hands off to the page's own loading branch with no repaint.
  */
 export default function Loading() {
+  // golf_clubhouse_front_door: the same loading boundary, drawn in the sign-in room (as the Clubhouse page draws it while it checks).
+  if (isClubhouseFrontDoor()) return <GateLoading label="Setting up your program" title="Set up your program" line="Checking your account…" />;
   return <GenericPageSkeleton />;
 }

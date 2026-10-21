@@ -203,7 +203,7 @@ describe('P009-B2 an honest Live state', () => {
     unmount();
     wrap(<QualifiersList data={previewList('coach', 'all')} />);
     expect(document.querySelector('.ch-qf-hero .ch-qf-status')!.textContent).toBe('Live');
-    expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22, 2026 – Oct 1, 2026/);
+    expect(document.querySelector('.ch-qf-hero .ch-qf-meta')!.textContent).toMatch(/Sep 22 – Oct 1, 2026/);
   });
 });
 

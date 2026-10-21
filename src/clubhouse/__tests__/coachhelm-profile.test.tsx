@@ -64,7 +64,7 @@ describe('the genome as the profile draws it', () => {
     expect(by.miss_side_bias).toMatchObject({ headline: 'Left bias', figure: '71% left', figureNote: 'of the misses that name a side (29% right)' });
     expect(by.pressure_delta).toMatchObject({ headline: 'Tightens up', figure: '+0.82', figureNote: 'strokes per 18 holes, tournaments against practice' });
     expect(by.scrambling_rate).toMatchObject({ headline: 'Reliable', figure: '35%' });
-    expect(by.par3_proficiency).toMatchObject({ figure: '−0.38', figureNote: 'strokes to par per par 3' });
+    expect(by.par3_proficiency).toMatchObject({ figure: '−0.84', figureNote: 'strokes to par per par 3' });
     expect(by.scoring_trend).toMatchObject({ headline: 'Improving', figure: '−0.64' });
     expect(by.driver_usage).toMatchObject({ headline: 'Mixed', figure: '62%' });
   });
@@ -75,15 +75,17 @@ describe('the genome as the profile draws it', () => {
   });
 
   it('the persona’s strengths and watch-outs are its own (derivePersona), and mark the measures they name', () => {
-    expect(PREVIEW_PROFILE.strengths.map((s) => s.id)).toEqual(['driver_usage']);
+    expect(PREVIEW_PROFILE.strengths.map((s) => s.id)).toEqual(['par3_proficiency']);
     expect(PREVIEW_PROFILE.watchouts).toEqual([]);
-    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'driver_usage')!.stance).toBe('strength');
-    expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · holds steady on par-3 holes · tendency to miss left.');
+    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'par3_proficiency')!.stance).toBe('strength');
+    // Driver usage is a profile, not a grade: never a strength, whatever its value.
+    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'driver_usage')!.stance).toBeNull();
+    expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · thrives on par-3 holes · tendency to miss left.');
   });
 
   it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias and a profile are plain', () => {
     const tone = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m.tone]));
-    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'good' });
+    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'plain' });
   });
 
   it('every word the tone list names is a word a dimension can give (the dimension files are read, so a rename cannot drop one silently)', () => {
@@ -181,7 +183,7 @@ describe('the Game profile screen', () => {
     expect(within(board).getByText('What CoachHelm sees')).toBeTruthy();
     expect(within(board).getByText('83 putts · 132 days · As of Oct 1')).toBeTruthy();
     expect(within(within(board).getByRole('region', { name: 'Costing you' })).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&insight=a');
-    expect(within(board).getByRole('region', { name: 'Working' }).textContent).toContain('125-175 yd approach: 84%');
+    expect(within(board).getByRole('region', { name: 'What’s working' }).textContent).toContain('125-175 yd approach: 84%');
     // An out-of-date read is not drawn as current.
     expect(within(board).queryByText('Old read')).toBeNull();
   });
@@ -190,9 +192,10 @@ describe('the Game profile screen', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('CoachHelm');
-    expect(screen.getByRole('region', { name: 'Mixed off the tee · holds steady on par-3 holes · tendency to miss left.' })).toBeTruthy();
+    // The headline holds a no-break space before each dot (a wrapped line never starts with one); it reads as a space.
+    expect(screen.getByRole('region', { name: (n) => n.replace(/\u00a0/g, ' ') === 'Mixed off the tee · thrives on par-3 holes · tendency to miss left.' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Every measure' })).toBeTruthy();
-    expect(screen.getByText('Last 90 days · 14 rounds · Refreshed yesterday')).toBeTruthy();
+    expect(screen.getByText('Last 90 days · 14 rounds · Refreshed yesterday').textContent).toBe('Last 90 days\u00a0· 14 rounds\u00a0· Refreshed yesterday');
   });
 
   it('each measure: its word, its value with what it counts, what it means, how sure the read is, and how it is measured', () => {
@@ -218,8 +221,9 @@ describe('the Game profile screen', () => {
 
   it('the persona’s call is a word as well as a colour: Strength on the measure it names, and Strong in the shape of the game', () => {
     show();
-    expect(within(card('Driver usage')).getByText('Strength')).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'Strong' })).getByText('Driver usage')).toBeTruthy();
+    expect(within(card('Par-3 proficiency')).getByText('Strength')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Strong' })).getByText('Par-3 proficiency')).toBeTruthy();
+    expect(within(card('Driver usage')).queryByText('Strength')).toBeNull();
     expect(within(card('Scrambling rate')).queryByText('Strength')).toBeNull();
   });
 

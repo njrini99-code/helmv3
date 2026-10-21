@@ -159,6 +159,13 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP after the v2 reveal are open (CH-1954)
 ```
 
+## L6b checks — 2026-10-19
+
+- `npx vitest run` on `qualifiers.test.tsx`, `qualifiers-premium.test.tsx` and `qualifiers-hydration.test.tsx`: 210 tests pass (the eyebrow on a failed read and on a loaded list, the step strip's done / now / ahead states and its label spans).
+- Headless WebKit, 1280 and 390, light and dark (`data-fw-theme` set as well as `colorScheme`), reduced motion: the list, my qualifiers, a live qualifier, Manage selections. The sticky leaderboard head was checked scrolled, at 1280x700, light and dark.
+- Print: real print layout through Chromium `page.pdf` (WebKit has no PDF), Letter, light and dark, of a live qualifier and the roster: one page each, white, no app chrome, ledger rules kept, rows whole. A letter sheet is under the 820px phone breakpoint, so both pages print in their phone layout.
+- Not run: Safari's own print preview, a printer, a multi-page leaderboard (the fixture has eight rows).
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never

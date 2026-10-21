@@ -50,6 +50,19 @@ function occurrenceTz(date: string, time: string, timeZone: string | undefined, 
   }
   return fallbackOffset !== undefined ? formatTimezoneOffset(fallbackOffset) : '';
 }
+/**
+ * The series' RSVP deadline as one instant, shared by every occurrence. The editor sends datetime-local wall time
+ * ("YYYY-MM-DDTHH:MM"), which used to be stored with no offset, so Postgres read it as UTC (an ET coach's 6 PM became
+ * 2 PM). It takes the zone's offset on the deadline's own date, as occurrences do; a string with an offset passes.
+ */
+function seriesRsvpDeadline(deadline: string | undefined, timeZone: string | undefined, fallbackOffset: number | undefined): string | null {
+  if (!deadline) return null;
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(deadline)) return deadline;
+  const [date, rawTime] = deadline.split('T');
+  if (!date) return null;
+  const time = rawTime || '00:00';
+  return `${date}T${time}${occurrenceTz(date, time, timeZone, fallbackOffset)}`;
+}
 import { type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { format, parseISO } from 'date-fns';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
@@ -735,6 +748,7 @@ async function createRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
 
     const rootDate = occurrenceDates[0]!;
+    const rsvpDeadline = seriesRsvpDeadline(input.rsvpDeadline, input.timeZone, input.timezoneOffset);
 
     // Same invariant the edit path guards (see END_BEFORE_START_ERROR): every
     // occurrence gets its start and end from the same date, so an end earlier
@@ -763,7 +777,7 @@ async function createRecurringEventImpl(
       team_id: teamId,
       status: 'confirmed',
       requires_rsvp: input.requiresRsvp || false,
-      rsvp_deadline: input.rsvpDeadline || null,
+      rsvp_deadline: rsvpDeadline,
       max_attendees: input.maxAttendees || null,
       all_day: input.allDay ?? false,
       recurrence_rule: input.recurrenceRule,
@@ -824,7 +838,7 @@ async function createRecurringEventImpl(
         team_id: teamId,
         status: 'confirmed',
         requires_rsvp: input.requiresRsvp || false,
-        rsvp_deadline: input.rsvpDeadline || null,
+        rsvp_deadline: rsvpDeadline,
         max_attendees: input.maxAttendees || null,
         all_day: input.allDay ?? false,
         recurrence_rule: null,
@@ -1173,8 +1187,9 @@ async function editRecurringEventImpl(
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
     const literalUpdates: Record<string, unknown> = {};
     if (input.updates.title) literalUpdates.title = input.updates.title;
-    if (input.updates.description !== undefined) literalUpdates.description = input.updates.description;
-    if (input.updates.location !== undefined) literalUpdates.location = input.updates.location;
+    // '' clears the field (stored as null), as on updateGolfEvent.
+    if (input.updates.description !== undefined) literalUpdates.description = input.updates.description || null;
+    if (input.updates.location !== undefined) literalUpdates.location = input.updates.location || null;
     if (input.updates.requiresRsvp !== undefined) literalUpdates.requires_rsvp = input.updates.requiresRsvp === true;
 
     const targetDate = (targetEvent.start_time ?? '').slice(0, 10);

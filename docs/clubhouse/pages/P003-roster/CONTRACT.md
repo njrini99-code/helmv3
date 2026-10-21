@@ -38,7 +38,8 @@ the join requests and Needs a look above them, all from the server's first
 render (30101). On the phone it is the list screen. A ?player= link opens that
 profile on the phone only, and does nothing on desktop (30102). The bell's
 join-request notice (?tab=requests) opens the phone's requests sheet once when
-a request is waiting (desktop shows the card at the top already), and a
+a request is waiting; on desktop it takes focus to the requests card under the
+header (with none waiting nothing moves), and a
 ?invite=1 link (Home's first-run Invite players) opens the invite sheet once on
 desktop and the phone; each param is dropped, closing the sheet spends it, and
 only the coach's roster reads them (a player's roster and the no-team page
@@ -53,7 +54,8 @@ phone is unchanged: a row pushes its own profile.
 | 30101 | — | `ROSTER_READY` | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 | — | `DEEP_LINK_OPENS_PROFILE` | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. The bell's join-request link (?tab=requests) opens the phone's requests sheet once when a request is waiting, and ?invite=1 (Home's first-run Invite players) opens the invite sheet once on desktop and the phone; each param is dropped, closing the sheet spends it, and only the coach's roster reads them. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
+10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -91,11 +93,12 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 | 30401 | CH-3301 | `NO_PLAYERS_YET` | No players yet |
 | 30402 | CH-3302 | `A_SEARCH_MATCHES_NOBODY` | A search matches nobody |
 | 30403 | CH-3303 | `A_STATUS_FILTER_HAS_NOBODY` | A status filter has nobody |
-| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no join code |
+| 30404 | CH-3304 | `THE_TEAM_HAS_NO_JOIN_CODE` | The team has no team code |
 | 30405 | CH-3305 | `A_PLAYER_HAS_NO_18_HOLE_ROUNDS` | A player has no 18-hole rounds |
 | 30406 | CH-3306 | `A_COACH_SIGNED_IN_WITH_NO_ACTIVE` | A coach signed in with no active team |
 | 30407 | CH-3307 | `A_PLAYERS_TEAM_HAS_NOBODY_ON_IT` | A player's team has nobody on it |
 | 30408 | CH-3308 | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | A player signed in with no active team |
+| 30409 | CH-3309 | `A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER` | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) |
 
 ## 05 — Validation
 
@@ -121,7 +124,7 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30603 | CH-3003 | `DECLINING_A_JOIN_REQUEST_FAILS` | Declining a join request fails |
 | 30604 | CH-3004 | `THE_COACHS_NOTE_DOESNT_SAVE` | The coach's note doesn't save (on leaving the field) |
 | 30605 | CH-3005 | `THE_BROWSER_BLOCKS_THE_CSV_DOWNLOAD` | The browser blocks the CSV download |
-| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the join code or link fails |
+| 30606 | CH-3006 | `COPYING_THE_JOIN_CODE_OR_LINK_FAILS` | Copying the team code or invite link fails |
 | 30607 | CH-3007 | `APPROVE_ALL_LEAVES_SOME_REQUESTS_UNAPPROVED` | Approve all (phone requests sheet, D-55) leaves some requests unapproved |
 | 30608 | CH-3201 | `THE_ROSTER_DOESNT_LOAD` | The roster doesn't load |
 | 30609 | CH-3202 | `SEASON_ROUNDS_DONT_LOAD` | Season rounds don't load |
@@ -136,7 +139,10 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 | 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
+10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
+10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210,
+10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -148,7 +154,8 @@ Roster's writes all go through useAction, so offline every one is refused before
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -165,7 +172,8 @@ The coach's roster is a coach's page. The page takes the Clubhouse branch for a 
 | 30805 | — | `PLAYER_ROSTER_READS_NO_COACH_DATA` | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
 | 30806 | — | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -268,7 +276,11 @@ press on keys, sheets and pushes (D-64); there is no first-paint rise.
 | 31603 | CH-3603 | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | Switching between Team view and List view |
 | 31604 | CH-3604 | `PHONE_CHOOSING_AVG_SG_OR_NAME` | Phone: choosing Avg, SG or Name |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -283,7 +295,9 @@ Roster's own haptics (31701 to 31703) and the warning as Remove player is presse
 | 31703 | CH-3703 | `THE_CODE_OR_LINK_IS_COPIED` | The code or link is copied |
 | 31704 | — | `REMOVE_PLAYER_WARNS` | Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -306,8 +320,14 @@ CH-1842, 11825 CH-1816.
 | 31805 | CH-3805 | `NO_AXE_VIOLATIONS_IN_ANY_PREVIEW_STATE` | No axe violations in any preview state, both layouts, 1280px and 390px |
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
+| 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

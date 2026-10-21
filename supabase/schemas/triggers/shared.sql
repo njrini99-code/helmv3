@@ -41,3 +41,7 @@ CREATE OR REPLACE TRIGGER "update_demo_requests_updated_at" BEFORE UPDATE ON "pu
 CREATE OR REPLACE TRIGGER "update_login_attempts_updated_at" BEFORE UPDATE ON "public"."login_attempts" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 CREATE OR REPLACE TRIGGER "validate_notification_preferences_trigger" BEFORE INSERT OR UPDATE ON "public"."users" FOR EACH ROW EXECUTE FUNCTION "public"."validate_notification_preferences"();
+
+CREATE OR REPLACE TRIGGER "helm_lifting_coaches_guard_self_update" BEFORE UPDATE OF "organization_id", "status" ON "public"."helm_lifting_coaches" FOR EACH ROW EXECUTE FUNCTION "public"."guard_lifting_coach_self_update"();
+
+CREATE OR REPLACE TRIGGER "organizations_stamp_creator" BEFORE INSERT OR UPDATE ON "public"."organizations" FOR EACH ROW EXECUTE FUNCTION "public"."stamp_organization_creator"();

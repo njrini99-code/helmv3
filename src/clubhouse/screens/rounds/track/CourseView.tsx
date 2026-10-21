@@ -7,6 +7,7 @@ import type { RoundHole, ShotRecord } from '@/lib/types/golf';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
+import { Tooltip } from '../../../ui/Tooltip';
 import { distanceText, RESULT_LABEL, shotKind, shotTitle } from './labels';
 import { HoleMap } from './parts';
 
@@ -105,14 +106,16 @@ export function CourseView({
               ball={live ? farText : null}
             />
             <header className="ch-rtcv__top">
-              <button
-                type="button"
-                className="ch-rtcv__glass ch-rtcv__back"
-                aria-label={pending ? `Back to shot ${pending.shot}` : 'Back to the hole'}
-                onClick={onClose}
-              >
-                <Icon icon={ChevronDown} size={18} />
-              </button>
+              <Tooltip>
+                <button
+                  type="button"
+                  className="ch-rtcv__glass ch-rtcv__back"
+                  aria-label={pending ? `Back to shot ${pending.shot}` : 'Back to the hole'}
+                  onClick={onClose}
+                >
+                  <Icon icon={ChevronDown} size={18} />
+                </button>
+              </Tooltip>
               <h2 className="ch-rtcv__glass ch-rtcv__t">
                 <b>Hole {hole.number}</b>
                 <span>
@@ -121,22 +124,26 @@ export function CourseView({
                 </span>
               </h2>
               <div className="ch-rtcv__glass ch-rtcv__nav" role="group" aria-label="Look at another hole">
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  aria-label={index > 0 ? `Hole ${holes[index - 1]!.number}` : 'No earlier hole'}
-                  onClick={() => go(index - 1)}
-                >
-                  <Icon icon={ChevronLeft} size={17} />
-                </button>
-                <button
-                  type="button"
-                  disabled={index === holes.length - 1}
-                  aria-label={index < holes.length - 1 ? `Hole ${holes[index + 1]!.number}` : 'No later hole'}
-                  onClick={() => go(index + 1)}
-                >
-                  <Icon icon={ChevronRight} size={17} />
-                </button>
+                <Tooltip>
+                  <button
+                    type="button"
+                    disabled={index === 0}
+                    aria-label={index > 0 ? `Hole ${holes[index - 1]!.number}` : 'No earlier hole'}
+                    onClick={() => go(index - 1)}
+                  >
+                    <Icon icon={ChevronLeft} size={17} />
+                  </button>
+                </Tooltip>
+                <Tooltip>
+                  <button
+                    type="button"
+                    disabled={index === holes.length - 1}
+                    aria-label={index < holes.length - 1 ? `Hole ${holes[index + 1]!.number}` : 'No later hole'}
+                    onClick={() => go(index + 1)}
+                  >
+                    <Icon icon={ChevronRight} size={17} />
+                  </button>
+                </Tooltip>
               </div>
             </header>
             <section className="ch-rtcv__sheet" aria-labelledby="ch-rtcv-h">

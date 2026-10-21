@@ -19,6 +19,7 @@ import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { AccountSheet } from './AccountSheet';
+import { CommandLayer } from './command/CommandLayer';
 import { SectionStrip } from './SectionStrip';
 import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
@@ -29,6 +30,7 @@ import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
+import { PushAsk } from './PushAsk';
 import { AskSheetProvider } from './AskSheet';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -37,6 +39,7 @@ import '../styles/base.css';
 import '../styles/ui.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
+import '../styles/command.css';
 import { useCanvasSmoothScroll, useSmoothWheelEverywhere } from '../lib/smooth-scroll';
 
 /** Set under ChMotionFeatures, so a frame rendered inside it doesn't render a second one. */
@@ -177,9 +180,13 @@ export function ClubhouseFrame({
                       </div>
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
-                      <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null }} teamSwitch={teamSwitch} />
+                      {/* Desktop only: Cmd K's palette, G-then-letter jumps, / and ? (shell/command). */}
+                      <CommandLayer role={role} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} />
+                      <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null, headCoach: shell.viewerIsHeadCoach ?? false }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
+                      {/* The iPhone app's push ask, once, at a calm moment (CH-1911); nothing in a browser. */}
+                      <PushAsk pathname={pathname} role={role} screenKey={screenParam(search)} />
                     </DockProvider>
                   </AskSheetProvider>
                 </CrumbProvider>
@@ -205,6 +212,14 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
   const hero = pageHero || (!hydrated && phone && homeRoot);
   usePhoneEdges(hero);
   useChDynamicType();
+  // Animations off on <html> too: ThemeScript sets it before hydration from the stored setting (the first render here has
+  // the default, so it never clears it), and it comes off when the setting turns on or the frame goes.
+  useEffect(() => {
+    if (!motionOff) return;
+    const html = document.documentElement;
+    html.setAttribute('data-motion', 'off');
+    return () => html.removeAttribute('data-motion');
+  }, [motionOff]);
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => (rootRef.current ? chKeepFocusThroughDisable(rootRef.current) : undefined), []);
   return (
@@ -227,23 +242,26 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
 
 
 /**
- * The phone's top and bottom edges carry the app's colour (F-49): green under the status bar on the
- * hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the html background
- * is what newer Safari samples and what the rubber band shows. Both are put back on unmount.
+ * The phone's top and bottom edges carry the app's colour (F-49): the hero bar's green under the
+ * status bar on the hero Home, the phone ivory elsewhere. theme-color tints the browser chrome; the
+ * html background is what newer Safari samples and what the rubber band shows. Both are put back on
+ * unmount.
  */
 /** The two edge colours, read once per theme. */
 let edgeCache: { theme: string; page: string; green: string } | null = null;
 
 /**
- * The page and green tokens, as the theme has them. They change only with the theme, so they are read once per theme:
- * read on every hero change, getComputedStyle re-styled the page that had just arrived inside the section switch (25ms
- * of a switch to My stats' 125ms of script at 4x CPU, Chromium, production build, 2026-10-15).
+ * The page and green tokens, as the theme has them. The green is the hero bar's own (shell.css): green-800 by day, the
+ * frame at night, so the edge never meets the bar a shade off. They change only with the theme, so they are read once
+ * per theme: read on every hero change, getComputedStyle re-styled the page that had just arrived inside the section
+ * switch (25ms of a switch to My stats' 125ms of script at 4x CPU, Chromium, production build, 2026-10-15).
  */
 function edgeTokens(root: Element): { page: string; green: string } {
   const theme = `${document.documentElement.getAttribute('data-fw-theme') ?? ''}|${window.matchMedia('(prefers-color-scheme: dark)').matches}`;
   if (edgeCache?.theme !== theme) {
     const css = getComputedStyle(root);
-    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue('--ch-green-800').trim() };
+    const bar = document.documentElement.getAttribute('data-fw-theme') === 'dark' ? '--ch-frame' : '--ch-green-800';
+    edgeCache = { theme, page: css.getPropertyValue('--ch-bg-page').trim(), green: css.getPropertyValue(bar).trim() };
   }
   return edgeCache;
 }

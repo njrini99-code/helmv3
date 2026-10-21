@@ -45,6 +45,9 @@ vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: () => flag.on }));
 vi.mock('@/components/fairway', () => ({ Button: () => null, EmptyState: () => null }));
 vi.mock('@/components/fairway/pages/recruiting', () => ({ FairwayRecruitingPage: () => <p>The current recruiting page</p> }));
 vi.mock('@/lib/redesign/flag', () => ({ fairwayScope: (c: string) => c }));
+// The page with film on, as it is once the held film migration is applied (data/recruiting-film.ts); film off, the default
+// until then, is recruiting-film-off.test.tsx.
+vi.mock('../data/recruiting-film', () => ({ RECRUIT_FILM_ENABLED: true }));
 
 import RecruitingPage from '@/app/golf/(dashboard)/dashboard/recruiting/page';
 import RecruitingLoading from '@/app/golf/(dashboard)/dashboard/recruiting/loading';
@@ -61,6 +64,7 @@ import {
   sharesOf,
   sortProspects,
   isNextStepDue,
+  isNextStepLate,
   nextStepKind,
   nextStepSummary,
   telHref,
@@ -718,13 +722,13 @@ describe('Recruiting · desktop', () => {
     await user.click(within(dlg()).getByRole('button', { name: 'Keep them' }));
     expect(w.remove).not.toHaveBeenCalled();
     expect(rowNames()).toHaveLength(8);
-    // Delete, answered slowly: "Deleting" and nothing can be double-tapped.
+    // Delete, answered slowly: "Deleting…" and nothing can be double-tapped.
     const slow = deferred<{ success: boolean }>();
     w.remove.mockReturnValue(slow.promise);
     await askDelete(user, 'Mason Reilly');
     await user.click(within(dlg()).getByRole('button', { name: 'Delete prospect' }));
-    expect(code('CH-14406')?.textContent).toBe('Deleting');
-    expect((within(dlg()).getByRole('button', { name: 'Deleting' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14406')?.textContent).toBe('Deleting…');
+    expect((within(dlg()).getByRole('button', { name: 'Deleting…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(rowNames()).toHaveLength(7));
     expect(w.remove).toHaveBeenCalledTimes(1);
@@ -835,8 +839,8 @@ describe('Recruiting · desktop', () => {
     await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
     await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
-    expect(code('CH-14403')?.textContent).toBe('Saving');
-    expect((within(dlg()).getByRole('button', { name: 'Saving' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(code('CH-14403')?.textContent).toBe('Saving…');
+    expect((within(dlg()).getByRole('button', { name: 'Saving…' }) as HTMLButtonElement).disabled).toBe(true);
     await act(async () => answer.resolve({ success: false, error: 'Failed to add recruit' }));
     await expectCode('CH-14001', /Couldn’t add Ellie.*Failed to add recruit\./);
     expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
@@ -847,6 +851,31 @@ describe('Recruiting · desktop', () => {
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
     expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
+  });
+
+  it('CH-14910 CH-14915 Cancel keeps what was typed for the next Add, under the same request id; a landed Add starts the next one empty (wave 5 #7)', async () => {
+    const user = userEvent.setup();
+    const w = fakeWrites();
+    w.create.mockImplementationOnce(() => Promise.resolve({ success: false, error: 'Failed to add recruit' }) as never);
+    wrap(PREVIEW_RECRUITING, w);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    await user.type(within(dlg()).getByRole('textbox', { name: 'First name' }), 'Ellie');
+    await user.type(within(dlg()).getByRole('textbox', { name: 'Hometown' }), 'Wilmington');
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await expectCode('CH-14001');
+    await user.click(within(dlg()).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('Ellie');
+    expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
+    w.create.mockImplementation(() => ok({ id: 'new-2' }));
+    await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
+    await waitFor(() => expect(dlg()).toBeNull());
+    expect(w.create).toHaveBeenCalledTimes(2);
+    const ids = w.create.mock.calls.map((c) => (c as unknown as [unknown, string])[1]);
+    expect(ids[1]).toBe(ids[0]);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect((within(dlg()).getByRole('textbox', { name: 'First name' }) as HTMLInputElement).value).toBe('');
   });
 
   it('CH-14906 Edit opens the form on the prospect as they are; Save sends everything, updates the row, the panel and the list, and says so', async () => {
@@ -981,7 +1010,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean }>();
     w.documents.remove.mockReturnValueOnce(slow.promise as never);
     await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Retry' }));
-    expect(code('CH-14405')?.textContent).toBe('Removing');
+    expect(code('CH-14405')?.textContent).toBe('Removing…');
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(screen.queryByText('Fall tournament schedule.pdf')).toBeNull());
     expect(document.querySelector('dialog[open]')).toBeNull();
@@ -1008,7 +1037,7 @@ describe('Recruiting · desktop', () => {
     const slow = deferred<{ success: boolean; data: { id: string } }>();
     w.documents.upload.mockReturnValue(slow.promise as never);
     await user.click(d.getByRole('button', { name: 'Upload' }));
-    expect(code('CH-14404')?.textContent).toBe('Uploading');
+    expect(code('CH-14404')?.textContent).toBe('Uploading…');
     w.documents.list.mockImplementation(() => ok([{ ...PREVIEW_DOCUMENTS['p-mason']![0]!, id: 'd-new', title: 'Spring transcript, junior', category: 'transcript' }, ...PREVIEW_DOCUMENTS['p-mason']!.map((x) => ({ ...x }))]));
     await act(async () => slow.resolve({ success: true, data: { id: 'd-new' } }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
@@ -1142,8 +1171,9 @@ describe('Recruiting · phone', () => {
     expect(d.getAllByText('Mason Reilly').length).toBeGreaterThanOrEqual(1);
     expect(d.getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     expect(d.getByRole('button', { name: /Offered/ })).toBeTruthy();
-    expect(d.getByRole('link', { name: 'Email' }).getAttribute('href')).toBe('mailto:mason.reilly@example.com');
-    expect(d.getByRole('link', { name: 'Call' }).getAttribute('href')).toBe('tel:5550104418');
+    // Each key shows the address or number it uses.
+    expect(d.getByRole('link', { name: 'Email mason.reilly@example.com' }).getAttribute('href')).toBe('mailto:mason.reilly@example.com');
+    expect(d.getByRole('link', { name: 'Call (555) 010-4418' }).getAttribute('href')).toBe('tel:5550104418');
     expect(d.getByText(/Saw Mason at the Carolinas Junior/)).toBeTruthy();
     expect(await d.findByRole('button', { name: /^Fall tournament schedule\.pdf/ })).toBeTruthy();
     expect(d.getByText('Added Aug 12 · Updated 2 days ago')).toBeTruthy();
@@ -1158,7 +1188,7 @@ describe('Recruiting · phone', () => {
     await user.click(within(screen.getByRole('list')).getByRole('button', { name: /^Owen Park/ }));
     const d = within(detail()!);
     expect(d.getByRole('button', { name: /Stage\s*Watched/ })).toBeTruthy();
-    expect(d.queryByRole('link', { name: 'Email' })).toBeNull();
+    expect(d.queryByRole('link', { name: /^Email/ })).toBeNull();
     expect(d.getByText('No contact details yet')).toBeTruthy();
     expect(d.getByText('Add an email or phone number to reach Owen or their family from here.')).toBeTruthy();
     expect(d.getByText('No notes yet')).toBeTruthy();
@@ -1278,6 +1308,19 @@ describe('Recruiting · phone', () => {
     await user.click(screen.getByRole('button', { name: 'Try again' }));
     expect(router.refresh).toHaveBeenCalled();
   });
+
+  it('CH-14802 sorted by next step every step shows its plate, an undated one after the dated; a past step is overdue', async () => {
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w, { sort: 'next' });
+    const plate = (name: string) => within(screen.getByRole('list')).getByRole('button', { name: new RegExp(`^${name}`) }).querySelector('.ch-rec-plate');
+    expect(names().slice(0, 5)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Owen Park', 'Hannah Duarte']);
+    expect(plate('Lila Brennan')?.className).toContain('is-late');
+    expect(plate('Lila Brennan')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    // Beyond the two-week plate, and a label with no day: both shown while sorted by the step.
+    expect(plate('Caleb Nguyen')?.textContent).toBe('Next step: Call · Oct 28');
+    expect(plate('Owen Park')?.textContent).toBe('Next step: Unofficial visit');
+    expect(plate('Hannah Duarte')).toBeNull();
+  });
 });
 
 // ── The premium pass (P014 B1, C1, C2) ───────────────────────────────────────
@@ -1347,11 +1390,18 @@ describe('Recruiting · next step (C1)', () => {
     expect(screen.getByRole('columnheader', { name: 'Next step' })).toBeTruthy();
     const masonRow = within(screen.getByRole('table')).getByRole('button', { name: /^Mason Reilly/ }).closest('tr')!;
     expect(within(masonRow).getByText('Official visit · Sep 30')).toBeTruthy();
-    expect(screen.getByText(/1 visit this month · 1 decision due/)).toBeTruthy();
+    // Lila's decision is past, but she has committed: the head counts no decision for her.
+    expect(screen.getByText(/1 visit this month$/)).toBeTruthy();
+    expect(screen.queryByText(/decisions? due/)).toBeNull();
     expect(within(panel('Mason Reilly')).getByRole('region', { name: 'Next step' }).textContent).toContain('Official visit · Sep 30');
-    // Sorted by the soonest step: Lila (past), Mason, Caleb, then everyone without a dated step by recency.
+    // Sorted by the soonest step: Lila (past), Mason, Caleb, then Owen (a step with no day), then everyone without a
+    // step by recency. Each row carries its step for a list too narrow for the column; Lila's is overdue.
     await user.click(screen.getByRole('radio', { name: 'Next step due' }));
-    expect(rowNames().slice(0, 4)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Hannah Duarte']);
+    expect(rowNames().slice(0, 5)).toEqual(['Lila Brennan', 'Mason Reilly', 'Caleb Nguyen', 'Owen Park', 'Hannah Duarte']);
+    const lilaRow = within(screen.getByRole('table')).getByRole('button', { name: /^Lila Brennan/ });
+    expect(lilaRow.querySelector('.ch-rec-plate.is-late')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    expect(lilaRow.closest('tr')!.querySelector('td.is-next.is-late')?.textContent).toBe('Overdue: Decision due · Sep 20');
+    expect(within(screen.getByRole('table')).getByRole('button', { name: /^Caleb Nguyen/ }).querySelector('.ch-rec-plate:not(.is-late)')?.textContent).toBe('Next step: Call · Oct 28');
     // A prospect with no step offers to add one, straight into the form's field.
     await user.click(within(screen.getByRole('table')).getByRole('button', { name: /^Hannah Duarte/ }));
     await user.click(within(code('CH-14307') as HTMLElement).getByRole('button', { name: 'Add' }));
@@ -1373,7 +1423,14 @@ describe('Recruiting · next step (C1)', () => {
     expect(isNextStepDue({ nextStepDate: '2026-10-09' }, now, 'UTC')).toBe(true);
     expect(isNextStepDue({ nextStepDate: '2026-10-10' }, now, 'UTC')).toBe(false);
     expect(isNextStepDue({ nextStepDate: null }, now, 'UTC')).toBe(false);
-    expect(nextStepSummary(PREVIEW_RECRUITING_NEXT.prospects, now, 'UTC')).toBe('1 visit this month · 1 decision due');
+    // A committed prospect has decided: Lila's past decision is not counted; the same step on an offer is.
+    expect(nextStepSummary(PREVIEW_RECRUITING_NEXT.prospects, now, 'UTC')).toBe('1 visit this month');
+    const lilaOffered = PREVIEW_RECRUITING_NEXT.prospects.map((x) => (x.id === 'p-lila' ? { ...x, stage: 'offered' as const } : x));
+    expect(nextStepSummary(lilaOffered, now, 'UTC')).toBe('1 visit this month · 1 decision due');
+    // Late is before today; today's step is due, not late.
+    expect(isNextStepLate({ nextStepDate: '2026-09-24' }, now, 'UTC')).toBe(true);
+    expect(isNextStepLate({ nextStepDate: '2026-09-25' }, now, 'UTC')).toBe(false);
+    expect(isNextStepLate({ nextStepDate: null }, now, 'UTC')).toBe(false);
     expect(nextStepSummary(PREVIEW_PROSPECTS, now, 'UTC')).toBeNull();
     expect(checkDraft({ ...draftOf(null), first: 'A', nextDate: '2026-02-30' })).toEqual([expect.objectContaining({ field: 'nextDate', code: 'CH-14111' })]);
     expect(inputFromDraft({ ...draftOf(null), first: 'A', nextLabel: ' Call ', nextDate: '' }, { nextStep: true })).toMatchObject({ next_step_label: 'Call', next_step_date: null });
@@ -1468,7 +1525,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
     const d = document.querySelector('section.ch-recm-screen') as HTMLElement;
     // P014 finding #8: Stage is the full-width row; Email and Call are the two actions under it.
     expect(within(d).getByRole('button', { name: /Stage\s*Offered/ })).toBeTruthy();
-    expect(within(d).getByRole('link', { name: 'Email' })).toBeTruthy();
+    expect(within(d).getByRole('link', { name: /^Email/ })).toBeTruthy();
     await user.click(within(d).getByRole('button', { name: /Stage\s*Offered/ }));
     await user.click(within(dlg()).getByRole('radio', { name: /Committed/ }));
     await waitFor(() => expect(w.update).toHaveBeenCalledWith('p-mason', { status: 'committed' }));
@@ -1489,7 +1546,7 @@ describe('Recruiting · Committed is a moment, once (B1)', () => {
 describe('Recruiting · the recruiting calendar (C2)', () => {
   it('CH-14808 the team’s division and gender give the quiet line; nothing to pick', () => {
     wrap(PREVIEW_RECRUITING_NEXT);
-    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period · in-person contact allowed from Aug 1 before junior year, through Nov 8');
+    expect(code('CH-14808')?.textContent).toBe('Division I · Contact period through Nov 8 · in-person contact for prospects from Aug 1 before their junior year');
     expect(screen.queryByRole('button', { name: /Choose your division/ })).toBeNull();
   });
 
@@ -1518,7 +1575,7 @@ describe('Recruiting · findings (P014 #1, #6, #7)', () => {
   it('the Add form’s short fields carry hints, not plausible values; the search names state; the privacy line moved to first run', async () => {
     const user = userEvent.setup();
     wrap();
-    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search');
+    expect(screen.getByRole('searchbox', { name: 'Search prospects' }).getAttribute('placeholder')).toBe('Search prospects');
     // The search covers state too, and the no-match line says so (P014 finding #7).
     await user.type(screen.getByRole('searchbox', { name: 'Search prospects' }), 'zz');
     expect(code('CH-14302')?.textContent).toContain('names, hometowns, states, email and notes');
@@ -1528,5 +1585,14 @@ describe('Recruiting · findings (P014 #1, #6, #7)', () => {
     const form = within(dlg());
     expect(form.getByRole('textbox', { name: 'State' }).getAttribute('placeholder')).toBeNull();
     expect(form.getByRole('textbox', { name: 'Class of' }).getAttribute('placeholder')).toBe('e.g. 2028');
+    expect(form.getByRole('textbox', { name: 'Notes' }).getAttribute('placeholder')).toBe('Where you saw them, what stood out, next steps');
+  });
+
+  it('with a Next step field in the form, the Notes placeholder no longer asks for next steps', async () => {
+    const user = userEvent.setup();
+    const w = { ...fakeWrites(), nextStepWrites: true };
+    wrap(PREVIEW_RECRUITING_NEXT, w);
+    await user.click(screen.getByRole('button', { name: 'Add prospect' }));
+    expect(within(dlg()).getByRole('textbox', { name: 'Notes' }).getAttribute('placeholder')).toBe('Where you saw them, what stood out');
   });
 });

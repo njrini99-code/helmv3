@@ -281,16 +281,17 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   const createGroup = useCallback(
     async (userIds: string[], title: string): Promise<boolean> => {
-      // A broadcast given no players adds the whole team (createGolfTeamBroadcast): never send one for coaches alone.
-      // New message says so before it gets here (CH-7105); this holds the line for any other caller.
-      if (groupLacksPlayer(data.role, userIds, data.directory)) {
+      // A coach's group is a broadcast to the players chosen, so it needs at least one (createGolfTeamBroadcast refuses
+      // none). New message says so before it gets here (CH-7105); this holds the line for any other caller, and for a
+      // group whose chosen players have no player id here.
+      const playerIds = userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x);
+      if (groupLacksPlayer(data.role, userIds, data.directory) || (data.role === 'coach' && playerIds.length === 0)) {
         haptic('warning');
         toast({ tone: 'error', title: "Couldn’t create the group", body: 'Choose at least one player. Coaches join the group once it exists.', code: 'CH-7105' });
         return false;
       }
       return attempt('createGroup', { failed: "Couldn’t create the group", hint: 'Try again in a moment.', code: 'CH-7003' }, async () => {
         chTrail('messages create group');
-        const playerIds = userIds.map((u) => people.get(u)?.playerId).filter((x): x is string => !!x);
         const res =
           data.role === 'coach'
             ? await createGolfTeamBroadcast({ teamId: data.teamId, title, selectedPlayerIds: playerIds })
@@ -700,7 +701,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     deleteConversation: canHide
       ? async () => {
           if (!selectedId) return false;
-          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7011' }, async () => {
+          return attempt('deleteConversation', { failed: "Couldn’t delete the conversation", hint: 'Try again in a moment.', code: 'CH-7025' }, async () => {
             const res = await hideGolfConversation(selectedId);
             if (!res.success) throw new Error(res.error);
             haptic('success');
@@ -779,7 +780,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
         if (!r.success) throw new Error(r.error);
         setMuteState(r.data);
         haptic('success');
-        toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+        // One mute toast at a time: a quick mute, unmute, mute leaves only the last (CH-1910).
+        toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
       });
     },
 

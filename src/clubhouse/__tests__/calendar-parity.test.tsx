@@ -56,6 +56,10 @@ import { Calendar } from '../screens/calendar/Calendar';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_CALENDAR } from '../preview/fixtures-calendar';
 import './dialog-polyfill';
+import { formatDate, localToday } from '../ui/date-time';
+
+/** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
+const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
 
 const freezeClock = () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -208,9 +212,9 @@ describe('Calendar parity · a timed event over several days is on every day it 
     wrap(cal([TOUR[2]!]), 'inv');
     await user.click(await screen.findByRole('button', { name: 'Edit event' }));
     const box = await screen.findByRole('textbox', { name: 'Event title' });
-    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2026-10-16');
-    expect((screen.getByLabelText('Start time') as HTMLInputElement).value).toBe('07:00');
-    expect((screen.getByLabelText('End time') as HTMLInputElement).value).toBe('16:30');
+    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe(fieldDate('2026-10-16'));
+    expect((screen.getByLabelText('Start time') as HTMLInputElement).value).toBe('7:00 AM');
+    expect((screen.getByLabelText('End time') as HTMLInputElement).value).toBe('4:30 PM');
     expect(screen.getByText('Ends Sun 18 Oct')).toBeTruthy();
     // Not "This event ran past midnight. Pick an end time": the run's end is known.
     expect(screen.queryByText(/Pick an end time/)).toBeNull();
@@ -241,7 +245,7 @@ describe('Calendar parity · a timed event over several days is on every day it 
     const start = await screen.findByLabelText('Start time');
     await user.clear(start);
     await user.type(start, '08:00');
-    expect((screen.getByLabelText('End time') as HTMLInputElement).value).toBe('16:30');
+    expect((screen.getByLabelText('End time') as HTMLInputElement).value).toBe('4:30 PM');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await waitFor(() => expect(a.updateGolfEvent).toHaveBeenCalledTimes(1));
     // The server builds the end with the start's offset (240, daylight time): 17:30 at that offset is 4:30 PM standard time.
@@ -313,9 +317,12 @@ describe('Calendar parity · a player’s reply locks when the server locks it (
     const open = ev({ id: 'op', title: 'Team dinner', date: '2026-10-16', startIso: '2026-10-16T23:00:00Z', people: ['sofia'] });
     const late = ev({ id: 'lt', title: 'Film session', date: '2026-10-16', startIso: '2026-10-16T21:00:00Z', people: ['sofia'], rsvpDeadline: '2026-10-14T16:00:00Z' });
     wrap(cal([open, late], player));
-    const sec = (await screen.findByText('Needs your reply')).closest('.ch-in__sec') as HTMLElement;
-    expect(within(sec).getByText(/Team dinner/)).toBeTruthy();
-    expect(within(sec).queryByText(/Film session/)).toBeNull();
+    // The two overlap for her (wave 7: a player is shown her own clash), so the section is her attention, not only
+    // replies; the clash row ("Team dinner · Overlaps Film session …") is not a reply row.
+    const sec = (await screen.findByText('Needs your attention')).closest('.ch-in__sec') as HTMLElement;
+    const rows = within(sec).getAllByRole('button').map((b) => b.textContent ?? '');
+    expect(rows.filter((t) => !t.includes('Overlaps'))).toEqual([expect.stringMatching(/^Team dinnerFri 16 · /)]);
+    expect(rows.some((t) => t.startsWith('Film session'))).toBe(false);
   });
 
   it('before the deadline the reply is open', async () => {
@@ -366,12 +373,12 @@ describe('Calendar parity · realtime: the page follows the team’s events (Fai
 });
 
 describe('Calendar parity · the trip linked to an event (Fairway’s "View itinerary")', () => {
-  it('an event with a linked trip links to Travel with that trip open, for coach and player', async () => {
+  it('an event with a linked trip links to Team Hub’s Travel with that trip named, for coach and player', async () => {
     freezeClock();
     trip.get.mockResolvedValue({ success: true, data: { id: 'trip-1', event_name: 'Fall Invitational', destination: 'Pinehurst' } });
     const view = wrap(cal(TOUR), 'inv');
     const link = await screen.findByRole('link', { name: /View itinerary · Pinehurst/ });
-    expect(link.getAttribute('href')).toBe('/golf/dashboard/travel?trip=trip-1');
+    expect(link.getAttribute('href')).toBe('/golf/dashboard/team-hub?tab=travel&trip=trip-1');
     expect(trip.get).toHaveBeenCalledWith('inv');
     view.unmount();
     wrap(cal(TOUR, { role: 'player', viewerPlayerId: 'sofia' }), 'inv');

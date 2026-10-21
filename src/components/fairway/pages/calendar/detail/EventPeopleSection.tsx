@@ -109,38 +109,48 @@ export function EventPeopleSection({ eventId, active, showReplies = true }: Even
             Retry
           </Button>
         </div>
-      ) : attendees.length === 0 ? (
+      ) : state.total === 0 ? (
         <p className="font-fw-sans text-body-sm text-text-tertiary">No one invited yet.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {attendees.map((a) => {
-            const meta = showReplies ? (STATUS_META[a.status] ?? STATUS_META.pending) : STATUS_META.pending;
-            return (
-              <li
-                key={a.playerId}
-                className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
-              >
-                <span className="flex min-w-0 items-center gap-2.5">
-                  <span
-                    aria-hidden
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold"
-                    style={{ color: meta.tint, backgroundColor: meta.tintBg }}
+        <>
+          {attendees.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {attendees.map((a) => {
+                const meta = showReplies ? (STATUS_META[a.status] ?? STATUS_META.pending) : STATUS_META.pending;
+                return (
+                  <li
+                    key={a.playerId}
+                    className={cn('flex min-h-12 items-center justify-between gap-3 rounded-fw-md py-2 pl-4 pr-3', 'border border-border-subtle bg-surface [box-shadow:var(--fw-shadow-card)]')}
                   >
-                    {initials(a.playerName)}
-                  </span>
-                  <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
-                    {a.playerName}
-                  </span>
-                </span>
-                {showReplies ? (
-                  <StatusPill tone={meta.tone} size="sm" dot={false}>
-                    {meta.label}
-                  </StatusPill>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        aria-hidden
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full font-fw-sans text-microbadge font-semibold"
+                        style={{ color: meta.tint, backgroundColor: meta.tintBg }}
+                      >
+                        {initials(a.playerName)}
+                      </span>
+                      <span className="min-w-0 truncate font-fw-sans text-body-sm font-medium text-text-primary">
+                        {a.playerName}
+                      </span>
+                    </span>
+                    {showReplies ? (
+                      <StatusPill tone={meta.tone} size="sm" dot={false}>
+                        {meta.label}
+                      </StatusPill>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+          {/* A player is sent only their own row; the rest of the roster is the coaches' to see. */}
+          {attendees.length < state.total ? (
+            <p className="font-fw-sans text-body-sm text-text-tertiary">
+              {state.total} invited{attendees.length > 0 ? ' · replies are visible to coaches' : ''}
+            </p>
+          ) : null}
+        </>
       )}
     </div>
   );
