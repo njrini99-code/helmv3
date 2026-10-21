@@ -17,6 +17,7 @@ import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { describeError } from '@/lib/utils/describe-error';
+import { rpcAttendanceCounts } from '@/lib/golf/attendance-counts-rpc';
 import { dateString, getCoachTeamId } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -2198,7 +2199,7 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
     // the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams. Before the
     // migration the function is missing (PGRST202 / 42883) and the row totals stand; for a coach both agree.
     const row = await Promise.resolve()
-      .then(() => supabase.rpc('golf_event_attendance_counts', { p_event_ids: [eventId] }))
+      .then(() => rpcAttendanceCounts(supabase, [eventId]))
       .then(({ data, error }) => (error ? undefined : data?.[0]))
       .catch(() => undefined);
     if (row && row.invited > stats.summary.total) {
