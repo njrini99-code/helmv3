@@ -266,7 +266,7 @@ export default tseslint.config(
         "error",
         {
           selector:
-            "CallExpression:matches([callee.name=/^set[A-Z]/], [callee.property.name=/^set[A-Z]/]) > :matches(ArrowFunctionExpression, FunctionExpression) MemberExpression[property.name=/^(target|currentTarget)$/]",
+            "CallExpression:matches([callee.name=/^set[A-Z]/], [callee.property.name=/^set[A-Z]/]):not(:matches([callee.name=/^set(Timeout|Interval|Immediate)$/], [callee.property.name=/^set(Timeout|Interval|Immediate)$/])) > :matches(ArrowFunctionExpression, FunctionExpression) MemberExpression[property.name=/^(target|currentTarget)$/][object.name=/^(e|ev|evt|event)$/]",
           message:
             "Do not read e.target / e.currentTarget inside a state updater: it runs later and can see a stale value. Read the value in the handler first (const value = e.target.value) and use that.",
         },

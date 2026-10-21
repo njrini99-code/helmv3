@@ -27,6 +27,8 @@ describe('Clubhouse bans reading the event inside a state updater', () => {
   it.each([
     ['reading first, then setting', `<input onChange={(e) => { const value = e.target.value; f.setDraft((d: any) => ({ ...d, firstName: value })); }} />`],
     ['passing the value directly', `<input onChange={(e) => setV(e.target.value)} />`],
+    ['a data field that happens to be called target', `<button onClick={() => setV((g: any) => ({ ...g, current: g.target }))} />`],
+    ['a timer callback', `<button onClick={(e) => window.setTimeout(() => e.target, 0)} />`],
     ['an updater that does not touch the event', `<button onClick={() => setV((n: number) => n + 1)} />`],
   ])('allows %s', async (_name, jsx) => {
     expect(await lint(wrap(jsx))).toEqual([]);
