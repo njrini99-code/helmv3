@@ -258,12 +258,12 @@ describe('Slice 0b read floors (angles read under their own family key)', () => 
 });
 
 describe('Slice 1 support registry (support/families.ts on main)', () => {
-  it('has no entry for any angle family yet, so each is cleanly untestable, never matched to a wrong family', () => {
+  it('has one entry per angle family (Slice 1c), matched by metric, never to a wrong family', () => {
     for (const id of Object.keys(ANGLE_FAMILIES) as AngleFamilyId[]) {
       const f = familyFor(ANGLE_FAMILIES[id].insight_type, ANGLE_FAMILIES[id].metric);
-      expect(f.family, id).toBe('unknown');
-      expect(f.shape).toBe('untestable');
-      expect(f.untestableReason).toBe('unknown_family');
+      expect(f.family, id).toBe(id);
+      expect(f.shape).toBe(ANGLE_FAMILIES[id].gap_kind);
+      expect(f.untestableReason).toBeUndefined();
     }
   });
 });
