@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-roster-availability
-Status: HELD
+Status: RELEASED
 Pages: Roster (P003): the player card and drawer status pill; later Home and Calendar
 Feature: roster_team (memory/registry.yml)
 Migration: supabase/migrations/20260929120000_golf_team_members_availability.sql
@@ -105,3 +105,9 @@ added 2026-09-29. The file was committed in 816c8c1a1 without a row or header; b
 - [ ] RLS verified
 - [ ] page wiring activated
 - [ ] held status discharged
+
+## Released
+
+Applied to production on 2026-10-21 by the production rollout: `supabase_migrations.schema_migrations`
+holds version `20260929120000` (production rollout ledger). The status above moved from HELD to
+RELEASED to match.
