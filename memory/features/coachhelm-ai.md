@@ -75,6 +75,34 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
+  2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
+  `coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2` (the Slice 8b
+  shot-entry prompts, `src/lib/golf/data-prompts/flag.ts`),
+  `coachhelm_corrections_v1`,
+  `coachhelm_recheck_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
+  `coachhelm_verdicts_v1`, `coachhelm_root_cause_diagnosis` and
+  `coachhelm_insight_angles_v1` are read through `isCoachHelmFlagEnabled`. Unset, empty or `*`: the global flag
+  decides, exactly as before, and no team is read. To run a wave on one team,
+  set `HELM_COACHHELM_TEAMS=<golf_teams id>` in Vercel production, redeploy,
+  then turn the wave's flag on: it is on only inside a team scope that holds
+  that team. Scopes are set by `analyzePlayer` (generators, support pass,
+  upserts), the player feed reads in `insight-delivery.ts`
+  (`getInsightsForPlayer`, `getTopInsightForPlayer`,
+  `getRoundTakeawayInsight`), the coach chat read tools (the chat's team), the
+  shot-entry ask loader, the lifecycle cron (checkpoint job per player, the
+  scan's round-based archive rule, and the verdict job, which judges only
+  listed players' focus areas), the roster sweep (each player's freshness
+  decision in their teams' scope, from the roster it already loads), the
+  corrections action (after the read and the player's teams load), the
+  prescription stamp on every focus-area create path (the player's teams;
+  `createFocusArea` also reads the flag in the focus area's team), and the
+  coach feeds (`getInsightsForCoach`, `getInsightsForCoachWithMeta`,
+  `getTopInsightsForPlayers`), whose fold and 3 + 1 cap are decided per player
+  from one batched team read, so a mixed feed folds only the listed players.
+  Anything else outside a scope reads the flag as off during a canary, which
+  is today's production state. A team read that fails also reads as off. To widen, add ids; to finish, unset the
+  variable. Never used for auth, RLS or the Clubhouse release flag.
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
   player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
@@ -82,7 +110,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
   repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
   `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
-  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  `golf_coachhelm_run_log` row (migration 20261020114500, applied; a missing
   table is "not available"), and records `rank_factors` on exposures. With the
   flag on nothing else on the row changes (confidence, copy, priority,
   lifecycle), and no surface reads the ladder yet. Contract and the back-test
@@ -143,6 +171,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     shrinks toward it (`prior_source: 'team_pool'`); without the line it is
     exactly Slice 1b (leave-one-out team mean). An angle's own composed
     `comparison` is kept; the team line is only appended.
+
+- Team pattern and same-day field (supercharge Slice 7b, 2026-10-21),
+  behind `coachhelm_team_pattern_v1` (OFF; off reads nothing new):
+  - `v3/team-pattern/pattern.ts` (pure): a cause family (support family,
+    metric band, miss side) shared by at least 3 players AND at least 30%
+    of the players with 3+ countable rounds, each at Likely or above on
+    `evidence.ladder`. Up to 4 rows, most team strokes (summed
+    `strokes_shrunk`) first; families under the threshold are counted only.
+    Computed at delivery from the reads the Clubhouse coach board already
+    loads; coach only. Needs `coachhelm_support_v1` writing the ladder.
+  - `v3/field-day/field.ts` (pure): rounds where 3+ teammates played one
+    course on one day get a score relative to the team's mean that day. The
+    bad-day-floor read does not fire when most bad rounds were hard days
+    for the whole field; the pressure read records both sides as audit
+    detail (`detail.field_day`, "Relative to the team on the day").
+  - LPGA approach: production has LPGA proximity rows for the three bands;
+    green-hit by band has no LPGA figure, so a women's approach read stays
+    absent and a women's standing omits the marker. Never PGA numbers.
 
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
@@ -401,7 +447,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Learning from corrections (Slice 6a, 2026-10-20, flag
   `coachhelm_corrections_v1`, off). `recordCoachHelmCorrection`
   (`src/app/golf/actions/coachhelm-corrections.ts`) writes one append-only
-  `golf_coachhelm_corrections` row (held migration 20261020121000): kind
+  `golf_coachhelm_corrections` row (migration 20261020121000, applied): kind
   `not_this` (reason `wrong` / `not_important` / `already_know`),
   `wrong_cause` (optional alternative), `already_on_it`, `snooze`,
   `confirm`. Author, role, player and team come from the session and the
@@ -427,10 +473,39 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   family x rung, `shown` (distinct reads, rung of the newest exposure's
   `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
   `contradicted` (newest recheck outcome; Slice 3 supplies them),
-  `not_this`. No surface renders the chips, counters or Track record yet.
+  `not_this`, and `confirm` (Good read, added by Slice 6b). No surface
+  renders the chips yet.
+- Track record (Slice 6b, 2026-10-21, flag `coachhelm_track_record_v1`,
+  off; 02 §9, 03 §7.3). Clubhouse coach view
+  `/golf/dashboard/coachhelm?view=track-record`, linked from the coach
+  board only with the flag on. Computed on read, no rollup table:
+  `golf_coachhelm_shown_reads(team, since)` (migration
+  20261021090000, applied, SECURITY DEFINER, coaches of the team only) returns one
+  row per read shown since the season start (newest exposure, its
+  `rank_factors.ladder`); `src/clubhouse/data/coachhelm-track-record.ts`
+  adds each read's family, `evidence.ladder` and lifecycle block, plus the
+  corrections, and `v3/track-record/track-record.ts` (pure) counts them.
+  Rules: a read's level is its exposure's ladder, else its current
+  `evidence.ladder`, else unrated (program line only); the outcome comes
+  from `metadata.coachhelm_lifecycle` (`v3/track-record/outcome.ts`:
+  contradicted when retired on an opposing direction, else the newest
+  recheck's cleared / holds, else history); "held" is of rechecked, never
+  of shown; below 10 rechecked a level or family says "Not enough yet";
+  targets are 02 §8's bars (8, 7, 6 in 10; Not enough yet under 5, over 6
+  means the floors are too strict; Working hypothesis none). No percent is
+  printed. A missing function (42883 / PGRST202) is "not available"; a
+  missing corrections table leaves the corrections line out; any other
+  failed read is the view failing, never zeros. The view is off (CH-13965)
+  when CoachHelm is off for the selected team, even if another team the
+  coach staffs is on; a coach's correction counts only when its `team_id`
+  is this team (a player's own corrections always count).
+  <!-- schema-drift-absent: golf_coachhelm_shown_reads -->
+  (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
+  (PR #2203), so the loader reads it through the untyped `rpc` cast. After the
+  regen, drop the cast and this comment.)
   <!-- schema-drift-absent: golf_coachhelm_corrections -->
-  (The table is held, so it is not in `database.ts` until the owner applies
-  20261020121000 and runs `npm run db:types`; then drop the comment above.)
+  (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
+  (PR #2203). After the regen, drop this comment.)
 
 ## UI Contract
 

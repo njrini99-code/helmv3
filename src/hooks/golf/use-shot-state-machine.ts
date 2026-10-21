@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useRef } from 'react';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import { lieFromShotResult, computeShotFingerprint, type LieType } from '@/lib/utils/shot-helpers';
+import { setLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { logError } from '@/lib/error-logging';
 import { recordHelmBreadcrumb } from '@/lib/observability/client-breadcrumbs';
 
@@ -109,6 +110,10 @@ export type ShotAction =
   // putt already in this hole's history, exactly as the optional miss chips
   // would have, and touch nothing else (the next shot's input stays).
   | { type: 'TAG_PUTT_MISS'; payload: { shotNumber: number; tags: PuttMissTag[] } }
+  // The recovery tap (CoachHelm Slice 8b): set whether the next shot after a
+  // rough/'other' tee shot was a recovery, on that tee shot, and touch nothing
+  // else.
+  | { type: 'TAG_LIE_AFTER_RECOVERY'; payload: { shotNumber: number; recovery: boolean } }
   // Shot input setters
   | { type: 'SET_RESULT'; payload: ShotRecord['result'] | null }
   | { type: 'SET_DRIVER'; payload: boolean | null }
@@ -310,6 +315,12 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
     case 'TAG_PUTT_MISS': {
       const { shotNumber, tags } = action.payload;
       const shotHistory = tagPuttMiss(state.shotHistory, shotNumber, tags);
+      return shotHistory === state.shotHistory ? state : { ...state, shotHistory };
+    }
+
+    case 'TAG_LIE_AFTER_RECOVERY': {
+      const { shotNumber, recovery } = action.payload;
+      const shotHistory = setLieAfterRecovery(state.shotHistory, shotNumber, recovery);
       return shotHistory === state.shotHistory ? state : { ...state, shotHistory };
     }
 

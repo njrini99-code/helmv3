@@ -47,6 +47,7 @@ import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
 import { logError } from '@/lib/error-logging';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
+import { clearPrivateServiceWorkerCaches } from '@/lib/offline/private-caches';
 import { regenerateJoinCode } from '@/app/golf/actions/teams';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
@@ -589,6 +590,7 @@ export function FairwaySettingsGeneral() {
     // (Settings), so this must run BEFORE signOut, same as the shell's
     // useGolfSignOut.
     clearAllCachedResources();
+    await clearPrivateServiceWorkerCaches();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   };

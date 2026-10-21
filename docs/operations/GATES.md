@@ -11,9 +11,15 @@ is slowing them down.
   several GB of memory on a cold cache. One process.
 - **test, test:run, test:all, test:\***: `node scripts/serialize.mjs -- vitest …`.
   One worker per fork; capped at 3 forks in `vitest.config.ts`.
-- **build**: `node scripts/serialize.mjs -- next build --webpack`. Webpack
-  workers plus its persistent cache; capped at 3 workers by
-  `experimental.cpus` in `next.config.mjs`.
+- **build**: `node scripts/serialize.mjs -- next build --turbopack`. Turbopack
+  is what Vercel runs (`vercel.json` `buildCommand: npm run build`); its build
+  cache lives in `.next/cache/turbopack`. Static generation is capped at 3
+  workers by `experimental.cpus` in `next.config.mjs`.
+- **build:webpack**: the previous webpack build (`next build --webpack`, with
+  the same prebuild/postbuild steps), kept as the fallback. Use it in a
+  worktree whose `node_modules` is a symlink to the main checkout's if
+  Turbopack refuses to resolve outside `turbopack.root` (see
+  docs/operations/WORKSPACES.md); it is not what production ships.
 
 `scripts/serialize.mjs` keeps a lock directory at `~/.helm-gates/`. At most two
 wrapped commands run at once across every worktree on the machine; the rest

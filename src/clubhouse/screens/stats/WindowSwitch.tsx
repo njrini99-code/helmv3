@@ -1,23 +1,20 @@
 'use client';
 
-import type { ChWindow } from '../../data/stats-common';
-import { isFiltered, isWindowChange, type ChFilter } from '../../data/stats-filter';
+import { isFiltered, isWindowChange, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Segmented } from '../../ui/Segmented';
 
 /** Each window in a sentence ("the figures shown are still the last 10 rounds"). */
-export const WINDOW_WORDS: Record<ChWindow, string> = {
-  last10: 'the last 10 rounds',
-  season: 'the season',
-  qualifiers: 'qualifier rounds',
-};
+export function windowWords(f: ChFilter): string {
+  return f.window === 'last10' ? `the last ${f.last} rounds` : f.window === 'season' ? 'the season' : 'qualifier rounds';
+}
 
-type Shown = ChWindow | 'custom';
+type Shown = ChRange | 'custom';
 
 /**
- * The three windows. While a custom date range is on it is the time, so no window is chosen: a fourth,
- * already-selected "Custom" stands for it (choosing a window clears the range).
+ * The range, counted in rounds (decision Q5): Last 5, 10 and 20, then the season and qualifier rounds. While a custom date range is
+ * on it is the time, so no range is chosen: another, already-selected "Custom" stands for it (choosing a range clears the dates).
  */
-export function WindowSwitch({ value, onChange, custom = false }: { value: ChWindow; onChange: (v: ChWindow) => void; custom?: boolean }) {
+export function WindowSwitch({ value, onChange, custom = false }: { value: ChRange; onChange: (v: ChRange) => void; custom?: boolean }) {
   return (
     <Segmented<Shown>
       size="sm"
@@ -25,7 +22,17 @@ export function WindowSwitch({ value, onChange, custom = false }: { value: ChWin
       value={custom ? 'custom' : value}
       onChange={(v) => v !== 'custom' && onChange(v)}
       options={[
-        { value: 'last10', label: 'Last 10' },
+        ...([5, 10, 20] as const).map((n) => ({
+          value: `last${n}` as const,
+          // The phone drops "Last" (`.ch-sw-last`) so five choices and the filter fit one row; the name stays whole for a screen reader.
+          label: (
+            <>
+              <span className="ch-sw-last">Last </span>
+              {n}
+            </>
+          ),
+          aria: `Last ${n}`,
+        })),
         { value: 'season', label: 'Season' },
         { value: 'qualifiers', label: 'Qualifiers' },
         ...(custom ? [{ value: 'custom' as const, label: 'Custom' }] : []),
@@ -39,17 +46,17 @@ export function WindowSwitch({ value, onChange, custom = false }: { value: ChWin
  * a plain window change keeps its own words, anything else talks about the filter.
  */
 export function changeWords(from: ChFilter, to: ChFilter): { slow: string; offline: string; still: string } {
-  const still = isFiltered(from) ? 'The figures shown are still the rounds you had.' : `The figures shown are still ${WINDOW_WORDS[from.window]}.`;
+  const still = isFiltered(from) ? 'The figures shown are still the rounds you had.' : `The figures shown are still ${windowWords(from)}.`;
   if (isWindowChange(from, to)) {
-    return { slow: `Still loading ${WINDOW_WORDS[to.window]}…`, offline: `Couldn’t open ${WINDOW_WORDS[to.window]}: you’re offline`, still };
+    return { slow: `Still loading ${windowWords(to)}…`, offline: `Couldn’t open ${windowWords(to)}: you’re offline`, still };
   }
   return { slow: 'Still loading the filtered rounds…', offline: 'Couldn’t apply the filter: you’re offline', still };
 }
 
 /** What a change in flight says it is showing and loading ("Showing the season, loading the last 10 rounds"). */
 export function updatingWords(from: ChFilter, to: ChFilter): string {
-  const showing = isFiltered(from) ? 'the rounds you had' : WINDOW_WORDS[from.window];
-  return isWindowChange(from, to) ? `Showing ${showing}, loading ${WINDOW_WORDS[to.window]}` : `Showing ${showing}, applying the filter`;
+  const showing = isFiltered(from) ? 'the rounds you had' : windowWords(from);
+  return isWindowChange(from, to) ? `Showing ${showing}, loading ${windowWords(to)}` : `Showing ${showing}, applying the filter`;
 }
 
 /**

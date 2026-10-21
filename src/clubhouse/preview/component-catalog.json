@@ -340,6 +340,7 @@
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
+        "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css"
       ],
@@ -1270,6 +1271,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1292,6 +1294,24 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/CoursePlan.tsx",
+      "group": "screens",
+      "exports": [
+        "CoursePlan"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1337,6 +1357,24 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/TeamPatterns.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamPatterns"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-patterns.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1700,6 +1738,27 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/views/TrackRecord.tsx",
+      "group": "screens",
+      "exports": [
+        "TrackRecord"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm-track.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4603,7 +4662,6 @@
       "group": "screens",
       "exports": [
         "UpdatingNote",
-        "WINDOW_WORDS",
         "WindowSwitch"
       ],
       "styles": [
@@ -4620,15 +4678,11 @@
         "Compare",
         "CupMiss",
         "FairwayStrip",
-        "FieldTable",
-        "FigureCards",
         "FigureGauge",
         "GreenMiss",
         "Ladder",
-        "LegRoute",
         "ParTiles",
         "PuttingRings",
-        "ScoreBoardTrend",
         "SgChangeChip",
         "YardagePage"
       ],
@@ -8061,6 +8115,20 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/coachhelm-patterns.css",
+      "classes": [
+        "ch-hl-tp",
+        "ch-hl-tp__below",
+        "ch-hl-tp__ic",
+        "ch-hl-tp__next",
+        "ch-hl-tp__none",
+        "ch-hl-tp__reach",
+        "ch-hl-tp__row",
+        "ch-hl-tp__t"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/coachhelm-profile.css",
       "classes": [
         "ch-hg-early",
@@ -8367,6 +8435,31 @@
       "tokens": []
     },
     {
+      "file": "src/clubhouse/styles/coachhelm-track.css",
+      "classes": [
+        "ch-htr-back",
+        "ch-htr-bar",
+        "ch-htr-bar__fill",
+        "ch-htr-bar__target",
+        "ch-htr-body",
+        "ch-htr-corr",
+        "ch-htr-fam",
+        "ch-htr-fam__l",
+        "ch-htr-fam__n",
+        "ch-htr-fam__s",
+        "ch-htr-fams",
+        "ch-htr-link",
+        "ch-htr-note",
+        "ch-htr-prog",
+        "ch-htr-rung",
+        "ch-htr-rung__l",
+        "ch-htr-rung__s",
+        "ch-htr-rung__w",
+        "ch-htr-rungs"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/coachhelm-views.css",
       "classes": [
         "ch-btn",
@@ -8430,6 +8523,15 @@
         "ch-hl-note",
         "ch-hl-pl",
         "ch-hl-pl__c",
+        "ch-hl-plan",
+        "ch-hl-plan__c",
+        "ch-hl-plan__courses",
+        "ch-hl-plan__h",
+        "ch-hl-plan__lines",
+        "ch-hl-plan__player",
+        "ch-hl-plan__pt",
+        "ch-hl-plan__start",
+        "ch-hl-plan__thin",
         "ch-hl-plist",
         "ch-hl-pri",
         "ch-hl-prop",
@@ -12473,10 +12575,6 @@
         "ch-bestcard",
         "ch-bestcard__act",
         "ch-bestcard__hold",
-        "ch-board",
-        "ch-board__c",
-        "ch-board__d",
-        "ch-board__n",
         "ch-brow",
         "ch-brow__bar",
         "ch-brow__v",
@@ -12534,10 +12632,6 @@
         "ch-fm__read",
         "ch-fm__score",
         "ch-fm__tp",
-        "ch-ft",
-        "ch-ft__floor",
-        "ch-ft__g",
-        "ch-ft__you",
         "ch-fws",
         "ch-fws__cap",
         "ch-fws__strip",
@@ -12643,9 +12737,6 @@
         "ch-pg-ring",
         "ch-pill",
         "ch-root",
-        "ch-route",
-        "ch-route__k",
-        "ch-route__v",
         "ch-seg",
         "ch-seg__b",
         "ch-select",
@@ -12842,6 +12933,7 @@
         "ch-sv-tr__v",
         "ch-sv-tr__who",
         "ch-sv-whisk",
+        "ch-sw-last",
         "ch-tab-t",
         "ch-tab-t__bar",
         "ch-tab-t__n",
@@ -12901,511 +12993,511 @@
           "name": "--ch-fg-h",
           "value": "200px",
           "scope": ".ch-fg",
-          "line": 177
+          "line": 176
         },
         {
           "name": "--ch-fg-h",
           "value": "248px",
           "scope": ".ch-fg.ch-fg--lead",
-          "line": 183
+          "line": 182
         },
         {
           "name": "--ch-fg-h",
           "value": "217px",
           "scope": "@container (min-width: 901px) and (max-width: 1116px) → .ch-fg",
-          "line": 187
+          "line": 186
         },
         {
           "name": "--ch-fg-h",
           "value": "169px",
           "scope": ".ch-fg.ch-fg--profile",
-          "line": 194
+          "line": 193
         },
         {
           "name": "--ch-fg-h",
           "value": "194px",
           "scope": "@container (min-width: 901px) and (max-width: 1116px) → .ch-fg.ch-fg--profile",
-          "line": 201
+          "line": 200
         },
         {
           "name": "--ch-fg-h",
           "value": "169px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--profile",
-          "line": 206
+          "line": 205
         },
         {
           "name": "--ch-fg-h",
           "value": "233px",
           "scope": "@container (min-width: 901px) and (max-width: 940px) → .ch-fg",
-          "line": 212
+          "line": 211
         },
         {
           "name": "--ch-fg-h",
           "value": "159px",
           "scope": "@container (max-width: 900px) → .ch-fg",
-          "line": 217
+          "line": 216
         },
         {
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1897
+          "line": 1800
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(28 25 18 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3961
+          "line": 3855
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "#fbf8ef",
           "scope": "[data-ui='clubhouse']",
-          "line": 3962
+          "line": 3856
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "rgb(154 101 18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3963
+          "line": 3857
         },
         {
           "name": "--ch-st-team-line",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3964
+          "line": 3858
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3965
+          "line": 3859
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(237 231 216 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3968
+          "line": 3862
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "var(--ch-chart-paper)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3969
+          "line": 3863
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "var(--ch-warning-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3970
+          "line": 3864
         },
         {
           "name": "--ch-st-team-line",
           "value": "#b4dfc4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3972
+          "line": 3866
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3973
+          "line": 3867
         },
         {
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
-          "line": 4533
+          "line": 4415
         },
         {
           "name": "--ch-ivory-0",
           "value": "#ffffff",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4812
+          "line": 4694
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fdfcf8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4813
+          "line": 4695
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4814
+          "line": 4696
         },
         {
           "name": "--ch-ivory-100",
           "value": "#f4f2ea",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4815
+          "line": 4697
         },
         {
           "name": "--ch-ivory-150",
           "value": "#eeebe2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4816
+          "line": 4698
         },
         {
           "name": "--ch-ivory-200",
           "value": "#e7e3d8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4817
+          "line": 4699
         },
         {
           "name": "--ch-ivory-300",
           "value": "#dcd6c8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4818
+          "line": 4700
         },
         {
           "name": "--ch-ivory-400",
           "value": "#c9c2b1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4819
+          "line": 4701
         },
         {
           "name": "--ch-ink-950",
           "value": "#141412",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4820
+          "line": 4702
         },
         {
           "name": "--ch-ink-900",
           "value": "#1c1b18",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4821
+          "line": 4703
         },
         {
           "name": "--ch-ink-700",
           "value": "#3a3833",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4822
+          "line": 4704
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4823
+          "line": 4705
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4824
+          "line": 4706
         },
         {
           "name": "--ch-ink-400",
           "value": "#8f8b81",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4825
+          "line": 4707
         },
         {
           "name": "--ch-ink-300",
           "value": "#b3afa5",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4826
+          "line": 4708
         },
         {
           "name": "--ch-green-25",
           "value": "#f5f9f6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4827
+          "line": 4709
         },
         {
           "name": "--ch-green-50",
           "value": "#eef5f0",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4828
+          "line": 4710
         },
         {
           "name": "--ch-green-100",
           "value": "#ddebe1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4829
+          "line": 4711
         },
         {
           "name": "--ch-green-200",
           "value": "#bcd6c4",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4830
+          "line": 4712
         },
         {
           "name": "--ch-green-400",
           "value": "#4f8a64",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4831
+          "line": 4713
         },
         {
           "name": "--ch-green-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4832
+          "line": 4714
         },
         {
           "name": "--ch-green-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4833
+          "line": 4715
         },
         {
           "name": "--ch-green-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4834
+          "line": 4716
         },
         {
           "name": "--ch-green-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4835
+          "line": 4717
         },
         {
           "name": "--ch-green-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4836
+          "line": 4718
         },
         {
           "name": "--ch-forest-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4837
+          "line": 4719
         },
         {
           "name": "--ch-forest-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4838
+          "line": 4720
         },
         {
           "name": "--ch-green-fill-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4839
+          "line": 4721
         },
         {
           "name": "--ch-green-fill-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4840
+          "line": 4722
         },
         {
           "name": "--ch-green-fill-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4841
+          "line": 4723
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4842
+          "line": 4724
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4843
+          "line": 4725
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4844
+          "line": 4726
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4846
+          "line": 4728
         },
         {
           "name": "--ch-control-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4847
+          "line": 4729
         },
         {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5317
+          "line": 5199
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5318
+          "line": 5200
         },
         {
           "name": "--ch-pb-h",
           "value": "208px",
           "scope": ".ch-sv-pb",
-          "line": 6513
+          "line": 6394
         },
         {
           "name": "--ch-pb-pad",
           "value": "10px",
           "scope": ".ch-sv-pb",
-          "line": 6514
+          "line": 6395
         },
         {
           "name": "--ch-pb-y",
           "value": "44px",
           "scope": ".ch-sv-pb",
-          "line": 6515
+          "line": 6396
         },
         {
           "name": "--ch-pb-h",
           "value": "172px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6519
+          "line": 6400
         },
         {
           "name": "--ch-pb-y",
           "value": "40px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6520
+          "line": 6401
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-eagle-fill)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6765
+          "line": 6646
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6766
+          "line": 6647
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-chart-flag)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6769
+          "line": 6650
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6770
+          "line": 6651
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ivory-300)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6773
+          "line": 6654
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-ink-900)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6774
+          "line": 6655
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6777
+          "line": 6658
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6778
+          "line": 6659
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-double)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6781
+          "line": 6662
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6782
+          "line": 6663
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-bg-page)",
           "scope": "html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-bogey,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-double",
-          "line": 6789
+          "line": 6670
         },
         {
           "name": "--ch-tr-rank",
           "value": "40px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6986
+          "line": 6867
         },
         {
           "name": "--ch-tr-who",
           "value": "184px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6987
+          "line": 6868
         },
         {
           "name": "--ch-tr-v",
           "value": "64px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6988
+          "line": 6869
         },
         {
           "name": "--ch-tr-row",
           "value": "30px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6989
+          "line": 6870
         },
         {
           "name": "--ch-tr-cap",
           "value": "22px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6990
+          "line": 6871
         },
         {
           "name": "--ch-tr-axis",
           "value": "24px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6991
+          "line": 6872
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "0px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6992
+          "line": 6873
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "6px",
           "scope": ".ch-sv-tr__body:has(.ch-sv-tr__r.is-none)",
-          "line": 7056
+          "line": 6937
         },
         {
           "name": "--ch-tr-rank",
           "value": "30px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7214
+          "line": 7095
         },
         {
           "name": "--ch-tr-who",
           "value": "78px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7215
+          "line": 7096
         },
         {
           "name": "--ch-tr-v",
           "value": "46px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7216
+          "line": 7097
         },
         {
           "name": "--ch-tr-row",
           "value": "44px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7217
+          "line": 7098
         }
       ]
     },
@@ -17336,6 +17428,10 @@
     {
       "name": "coachhelm-views",
       "href": "/clubhouse-preview/coachhelm-views"
+    },
+    {
+      "name": "coachhelm-track",
+      "href": "/clubhouse-preview/coachhelm-track"
     },
     {
       "name": "auth",

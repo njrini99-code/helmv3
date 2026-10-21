@@ -1,7 +1,7 @@
 import { ChartColumn, Medal } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
-import { isFiltered, type ChFilter } from '../../data/stats-filter';
+import { isFiltered, previousWords, type ChFilter } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { EmptyState } from '../../ui/States';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
@@ -57,7 +57,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
               : [
                   { label: 'Rounds', value: data.roundCount },
                   { label: 'Players', value: data.activeCount },
-                  { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : 'Last 10' },
+                  { label: 'Window', value: data.window === 'season' ? 'Season' : data.window === 'qualifiers' ? 'Qualifiers' : `Last ${data.last}` },
                 ]
           }
           actions={
@@ -113,7 +113,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
-                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} />
+                    <TeamFigures figures={data.figures} cacheError={data.cacheError} covered={covered} against={previousWords(data.last)} />
                   </SectionBoundary>
                 }
                 data={{
@@ -152,7 +152,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
  * contains everything it computes: a crash in one never reaches the page.
  */
 
-function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean }) {
+function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTeamStats['figures']; cacheError: boolean; covered: boolean; against: string }) {
   // A note repeated under two or more cards is said once under the row; a card's own note stays on the card.
   const counts = new Map<string, number>();
   for (const x of figures) if (x.note) counts.set(x.note, (counts.get(x.note) ?? 0) + 1);
@@ -169,6 +169,7 @@ function TeamFigures({ figures, cacheError, covered }: { figures: ChTeamStats['f
       )}
       {/* Strokes gained is the trend's headline above; the tape holds the other five, each with its own weekly line. */}
       <TeamTape
+        against={against}
         items={figures.filter((x) => x.key !== 'sg').map((x) => ({
           label: x.label,
           value: x.value == null ? NO_DATA : x.signed ? formatSigned(x.value, x.digits) : x.value.toFixed(x.digits),

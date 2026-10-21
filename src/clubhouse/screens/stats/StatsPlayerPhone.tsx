@@ -4,8 +4,7 @@ import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import type { ChWindow } from '../../data/stats-common';
-import { basisWords, clearFilters, hasRange, isFiltered, per18, type ChFilter } from '../../data/stats-filter';
+import { basisWords, clearFilters, hasRange, isFiltered, per18, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -68,8 +67,8 @@ export function StatsPlayerPhone({
   playerHref: string;
   messageHref: string | null;
   /** The window the switch shows: the one being loaded once tapped (F-55). */
-  windowShown?: ChWindow;
-  onWindow: (w: ChWindow) => void;
+  windowShown?: ChRange;
+  onWindow: (r: ChRange) => void;
   /** Any change of the round filter: the page's offline refusal, slow notice, then the new address. */
   onFilter: (next: ChFilter) => void;
   onBackToTeam: () => void;
@@ -185,7 +184,7 @@ export function StatsPlayerPhone({
       </header>
 
       <div className="ch-stm-controls">
-        <WindowSwitch value={windowShown ?? data.window} onChange={onWindow} custom={hasRange(data.filter)} />
+        <WindowSwitch value={windowShown ?? rangeOf(data.filter)} onChange={onWindow} custom={hasRange(data.filter)} />
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={onFilter} codes={{ empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' }} phone />}
       </div>
 

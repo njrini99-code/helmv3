@@ -40,6 +40,7 @@ import { assertHolesPlayedMatchesPayload } from '@/lib/golf/holes-played-assert'
 import { validateRoundEntry, validateHolesPlayed } from '@/lib/golf/round-entry-validation';
 import { recordRescuedStepOutcome } from '@/lib/observability/helm-flight-recorder';
 import { describeError } from '@/lib/utils/describe-error';
+import { lieAfterRecoveryPayload } from '@/lib/golf/data-prompts/recovery';
 import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult, CompletedRoundUpdatePayload, RoundApproachDetailPayload, RoundHolePayload, RoundPuttDetailPayload, RoundShotGroupPayload, RoundSubmissionBackupPayload } from './golf-action-shared';
 
@@ -916,6 +917,7 @@ async function submitGolfRoundComprehensiveImpl(
         putt_made: derivePuttMade(shot),
         is_penalty: shot.isPenalty,
         penalty_type: shot.penaltyType || null,
+        ...lieAfterRecoveryPayload(shot),
       })),
     }));
 

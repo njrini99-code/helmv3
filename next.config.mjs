@@ -55,6 +55,11 @@ const nextConfig = {
   // A phone on the same network can load the dev server for real-device checks (Safari on iPhone) when the host is
   // named explicitly: HELM_DEV_LAN_ORIGIN=192.168.x.y npm run dev. Dev only; production ignores allowedDevOrigins.
   allowedDevOrigins: ['127.0.0.1', ...(process.env.HELM_DEV_LAN_ORIGIN ? [process.env.HELM_DEV_LAN_ORIGIN] : [])],
+  // Browser suites that drive `next dev` (playwright.clubhouse*.config.ts and their workflows) set HELM_DEV_KEEP_ROUTES=1 so a
+  // compiled route stays compiled for the whole run. By default a route idle for 60s is disposed and compiled again on its next
+  // request, and each of those builds sends a hot update that can reload a page still open in the browser, under a test's
+  // click (clubhouse-quality.yml, 2026-10-15: "Clicking the checkbox did not change its state"). Dev only.
+  ...(process.env.HELM_DEV_KEEP_ROUTES === '1' ? { onDemandEntries: { maxInactiveAge: 24 * 60 * 60 * 1000, pagesBufferLength: 1000 } } : {}),
   reactStrictMode: true, // Enable to catch potential issues
   // Don't advertise the framework in an X-Powered-By header.
   poweredByHeader: false,
@@ -172,6 +177,11 @@ const nextConfig = {
   // .next/cache/webpack that kept entries for sixty days. Seven days and one
   // in-memory generation means nothing is deleted by hand; the cache stops
   // hoarding. See docs/operations/GATES.md.
+  // `npm run build` uses Turbopack (`next build --turbopack`), which ignores
+  // this hook and `experimental.webpackMemoryOptimizations`; both stay for the
+  // `npm run build:webpack` fallback. Turbopack keeps its own build cache in
+  // .next/cache/turbopack (experimental.turbopackFileSystemCacheForBuild,
+  // on by default in Next 16.3).
   webpack(config) {
     if (config.cache && config.cache.type === 'filesystem') {
       config.cache.maxAge = 7 * 24 * 60 * 60 * 1000;
@@ -615,10 +625,10 @@ export default isDev
         },
         // Identifies first-party bundles for `thirdPartyErrorFilterIntegration`
         // (src/instrumentation-client.ts): at build time this key gets
-        // forwarded to @sentry/webpack-plugin's `moduleMetadata` /
-        // `applicationKey` option (webpack, which this repo builds with:
-        // `next build --webpack`) or injected via a Turbopack loader if the
-        // build ever moves to Turbopack, tagging every first-party module with
+        // injected by the SDK's Turbopack loader (`npm run build`, which runs
+        // `next build --turbopack`) or forwarded to @sentry/webpack-plugin's
+        // `moduleMetadata` / `applicationKey` option (`npm run build:webpack`),
+        // tagging every first-party module with
         // `_sentryModuleMetadata`.
         // MUST match the `filterKeys` array passed to
         // thirdPartyErrorFilterIntegration exactly — pinned together by

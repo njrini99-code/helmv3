@@ -117,7 +117,9 @@ export function buildSentryBuildOptions({ org, project, authToken, release, appl
     // intent survives a future default change).
     sourcemaps: { deleteSourcemapsAfterUpload: true },
 
-    // Tree-shake Sentry logger statements
+    // Tree-shake Sentry logger statements. Webpack only: the SDK maps this to
+    // `webpack.treeshake.removeDebugLogging`, which a Turbopack build (the
+    // default `npm run build`) ignores. Kept for `npm run build:webpack`.
     disableLogger: true,
 
     // Deliberately false — src/lib/observability/cron-monitors.ts is the
@@ -125,8 +127,16 @@ export function buildSentryBuildOptions({ org, project, authToken, release, appl
     // docs/observability/SENTRY_CRON_MONITORS.md §2 for why.
     automaticVercelMonitors: false,
 
-    // React component annotations make stack traces show JSX component names
+    // React component annotations make stack traces show JSX component names.
+    // `reactComponentAnnotation` is read by the webpack path only; a Turbopack
+    // build reads `_experimental.turbopackReactComponentAnnotation` instead
+    // (node_modules/@sentry/nextjs/build/cjs/config/turbopack/constructTurbopackConfig.js).
+    // Both are set so `npm run build` (Turbopack) and `npm run build:webpack`
+    // annotate the same way.
     reactComponentAnnotation: { enabled: true },
+    _experimental: {
+      turbopackReactComponentAnnotation: { enabled: true },
+    },
 
     // Identifies this app's own bundle to `thirdPartyErrorFilterIntegration`
     // (client-side, instrumentation-client.ts) so it can tell "this repo's

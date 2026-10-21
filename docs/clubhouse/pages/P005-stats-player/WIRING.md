@@ -90,7 +90,7 @@ record.
 | `screens/stats/detail.tsx` | `Panel`, `Empty`, `Rule`, `More` (a native disclosure), `Tiles`, `DataTable`, `RoundLine`, `SectorGrid` | CH-5317 |
 | `screens/stats/RoundsExtra.tsx` | The Rounds tab's score by round, personal bests and this window against the one before (a card on the desktop, a panel on the phone) | CH-5313, CH-5314 |
 | `screens/stats/StatsPlayerPhone.tsx` | The phone profile: header, three figures, chips, scoring line, rounds, development, Share | 50610, 51901, 51807 |
-| `screens/stats/charts.tsx` | `FigureCards`, `FieldTable`, `LegRoute`, `ScoreBoardTrend`, `YardagePage`, the ladders and compares (shared with Team stats) | 51803 |
+| `screens/stats/charts.tsx` | `YardagePage`, `FigureGauge`, `SgChangeChip`, the ladders and compares (shared with Team stats; `FigureCards`, `FieldTable`, `LegRoute` and `ScoreBoardTrend` were removed 2026-10-21) | 51803 |
 | `screens/stats/StatsFilter.tsx` | The round filter: Filter button, chips, count line, the sheet (`FilterSheet`), `FilterEmpty` and `EarlyRead` (shared with Team stats; each page gives it its own codes), the per-18 note and `NineHint` | CH-5102, CH-5320 to CH-5324 |
 | `screens/stats/StatsSkeleton.tsx` | The route skeleton (shared with Team stats) | CH-4401 |
 | `routes/stats.tsx` | `ClubhouseStatsRoute`, `NotOnTeam`, `StatsNoTeam` | 50801, 50802, 50803, 50804, CH-4309 |

@@ -66,6 +66,8 @@ export const LAST_TEN_MONTHS = 12;
 /**
  * Where a Last 10 read starts: twelve months back from `now`, a bound so the team page never loads whole histories. The ten newest
  * rounds and the ten before them are found inside it unless a player has fewer than twenty in the year (then they are all the player has had).
+ * Last 5 and Last 20 read the same year: Last 20 and its previous 20 need forty rounds in it, so a thinner player gets a shorter
+ * previous stretch, or none under 23 (a known limit, PR #2257; the read is not widened per cut).
  */
 export function lastTenFloor(now = new Date()): string {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - LAST_TEN_MONTHS, now.getUTCDate()));

@@ -62,11 +62,18 @@ export interface FeedRowProps {
 
 export function FeedRow({ label, description, feed, busy, disabled, error, onCreate, onRegenerate, onRemove }: FeedRowProps) {
   const [copied, setCopied] = React.useState(false);
-  const [confirm, setConfirm] = React.useState<'regenerate' | 'remove' | null>(null);
+  // The confirm belongs to one feed. It is keyed by the feed id and derived,
+  // not reset in an effect: a mount-time `setConfirm(null)` effect runs after
+  // paint and, when a click on Remove/Regenerate landed in the first frames
+  // after the loaded row mounted (a loaded CI shard, a fast tap), cleared the
+  // confirm that click had just opened (2026-10-21). A different feed id (the
+  // feed was removed or replaced) still closes it.
+  const [confirmState, setConfirmState] = React.useState<{ feedId: string | undefined; kind: 'regenerate' | 'remove' } | null>(null);
+  const confirm = confirmState && confirmState.feedId === feed?.id ? confirmState.kind : null;
+  const setConfirm = (kind: 'regenerate' | 'remove' | null) => setConfirmState(kind ? { feedId: feed?.id, kind } : null);
   const copyTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => () => { if (copyTimeout.current) clearTimeout(copyTimeout.current); }, []);
-  React.useEffect(() => { setConfirm(null); }, [feed?.id]);
 
   const Icon = feed ? TYPE_ICON[feed.type] : (label.toLowerCase().includes('team') ? Users : Calendar);
 

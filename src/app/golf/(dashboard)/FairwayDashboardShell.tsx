@@ -71,6 +71,7 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 import { usePresence } from '@/hooks/use-presence';
 import { useGolfSurfacePrewarm } from '@/hooks/golf/use-surface-prewarm';
 import { clearAllCachedResources } from '@/lib/golf/client-resource-cache';
+import { clearPrivateServiceWorkerCaches } from '@/lib/offline/private-caches';
 import { createClient } from '@/lib/supabase/client';
 import { clearActiveTeam } from '@/app/golf/actions/team-switcher';
 
@@ -290,6 +291,8 @@ function useGolfSignOut() {
     // session); re-grep `auth.signOut()` before assuming this list is still
     // complete.
     clearAllCachedResources();
+    // The service worker's cached dashboard pages are per-viewer too.
+    await clearPrivateServiceWorkerCaches();
     await supabase.auth.signOut();
     router.push('/golf/login');
   }, [router, isSigningOut]);

@@ -6,8 +6,6 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 31 features, 93 routes, 75 components, 27 apis, 107 actions, 122 services, 90 tests, 137 tables, 179 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1128 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -78,7 +76,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 29 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 30 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 3
@@ -100,7 +98,7 @@ Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** none
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
@@ -110,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** `golf_coachhelm_shown_reads`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
@@ -170,7 +168,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
-- **RPCs:** `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
+- **RPCs:** `golf_event_attendance_counts`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
@@ -278,7 +276,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 4
@@ -400,6 +398,7 @@ Team Operations · active · criticality high · owner product
 | `auth_onboarding_join` | `golf_round_lifecycle` | import_graph (weak) |
 | `auth_onboarding_join` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `roster_team` | import_graph (weak) |
+| `auth_onboarding_join` | `shot_tracking` | import_graph (weak) |
 | `auth_onboarding_join` | `team_communications` | import_graph (weak) |
 | `baseball_core` | `admin_platform` | import_graph (weak) |
 | `baseball_core` | `auth_onboarding_join` | import_graph (weak) |

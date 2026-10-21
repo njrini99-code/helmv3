@@ -3334,7 +3334,7 @@
     "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
     "chCode": "CH-4604",
     "meaning": "A new window's figures arrive",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-team.md"
   },
   {
@@ -4297,7 +4297,7 @@
     "name": "A_NEW_WINDOWS_FIGURES_ARRIVE",
     "chCode": "CH-5604",
     "meaning": "A new window's figures arrive",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
@@ -15332,6 +15332,127 @@
     "name": "DEEP_DIVE_THE_READS_WHY_LINE_FROM",
     "chCode": "CH-13993",
     "meaning": "Deep dive: the Read's Why line from the cause state",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130728,
+    "page": "P013",
+    "category": 7,
+    "item": 28,
+    "name": "COACH_TEAM_PATTERNS",
+    "chCode": "CH-13995",
+    "meaning": "Coach: Team patterns (flag `coachhelm_team_pattern_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130729,
+    "page": "P013",
+    "category": 7,
+    "item": 29,
+    "name": "COACH_THE_TRACK_RECORD",
+    "chCode": "CH-13960",
+    "meaning": "Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130730,
+    "page": "P013",
+    "category": 7,
+    "item": 30,
+    "name": "TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED",
+    "chCode": "CH-13961",
+    "meaning": "Track record: a level with enough rechecked reads (10 or more)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130731,
+    "page": "P013",
+    "category": 7,
+    "item": 31,
+    "name": "TRACK_RECORD_A_LEVEL_OR_A_FAMILY",
+    "chCode": "CH-13962",
+    "meaning": "Track record: a level or a family with fewer than 10 rechecked reads",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130732,
+    "page": "P013",
+    "category": 7,
+    "item": 32,
+    "name": "TRACK_RECORD_THE_STAFFS_CORRECTIONS",
+    "chCode": "CH-13963",
+    "meaning": "Track record: the staff's corrections",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130733,
+    "page": "P013",
+    "category": 7,
+    "item": 33,
+    "name": "TRACK_RECORD_ONE_ROW_PER_FAMILY",
+    "chCode": "CH-13964",
+    "meaning": "Track record: one row per family",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130734,
+    "page": "P013",
+    "category": 7,
+    "item": 34,
+    "name": "TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE",
+    "chCode": "CH-13965",
+    "meaning": "Track record: CoachHelm is off for the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130735,
+    "page": "P013",
+    "category": 7,
+    "item": 35,
+    "name": "TRACK_RECORD_A_READ_IT_IS_MADE",
+    "chCode": "CH-13966",
+    "meaning": "Track record: a read it is made from failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130736,
+    "page": "P013",
+    "category": 7,
+    "item": 36,
+    "name": "TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET",
+    "chCode": "CH-13967",
+    "meaning": "Track record: the database cannot answer yet (its function is not applied)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130737,
+    "page": "P013",
+    "category": 7,
+    "item": 37,
+    "name": "TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON",
+    "chCode": "CH-13968",
+    "meaning": "Track record: nothing shown since the season start",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130738,
+    "page": "P013",
+    "category": 7,
+    "item": 38,
+    "name": "COACH_BOARD_THE_LINK_TO_THE_TRACK",
+    "chCode": "CH-13969",
+    "meaning": "Coach board: the link to the Track record",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

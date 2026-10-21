@@ -1,5 +1,103 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: the Track record (flag off)
+
+```text
+Design package: none (supercharge 02 section 9, 03 section 7.3; design call)
+PR/commit:      see git log (claude/coachhelm-track-record)
+Contract IDs:   CH-13960 to CH-13969
+Actions:        none (read only)
+Data impact:    none written; reads golf_insight_exposure through the held
+                function golf_coachhelm_shown_reads (20261021090000)
+Held items:     20261021090000_golf_coachhelm_shown_reads.sql
+```
+
+### Added
+
+- `?view=track-record` for a coach, behind `coachhelm_track_record_v1`
+  (off): since Aug 1, how many reads CoachHelm showed the team and how many
+  held, cleared on their own or were contradicted when rechecked; By level
+  (the five claim levels, "Seen repeatedly · 12 of 14 held", a bar of the
+  same count with the target as a thin line); Your corrections; By family.
+  Below 10 rechecked reads a level or family says "Not enough yet" with its
+  count. Words and counts only, never a percent.
+- The coach board gets a "Track record" button under it, only with the flag
+  on and CoachHelm on (CH-13969).
+- States: CoachHelm off (CH-13965), a read failed (CH-13966), the function
+  not applied yet (CH-13967), nothing shown since Aug 1 (CH-13968).
+- Preview: `/clubhouse-preview/coachhelm-track` with `?state=early | empty |
+  unavailable | failed | off | loading`, built from synthetic reads through
+  the page's own counting.
+
+### Why
+
+- The engine grades itself in public (02 section 9): a coach sees how often
+  each level of claim held on the next rounds before trusting it.
+
+### Verification
+
+- `coachhelm-track-record.test.tsx` (words, states, loader) and
+  `coachhelm.test.tsx` (CH-13969). Phone screenshots at 390 x 844 from the
+  preview are in the PR description. No owner board exists for this view;
+  the phone draft is in `docs/clubhouse/phone/coachhelm.md`.
+
+## 2026-10-21 — Course plan on the coach's board (flag off)
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7c, 04 Example 10)
+PR/commit:      see git log (claude/coachhelm-course-plan)
+Contract IDs:   none
+Actions:        none (read-only server actions)
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/CoursePlan.tsx`: under the chosen player's card, a
+  Course plan button lists the player's courses with three or more
+  rounds; picking one shows at most three plan lines from their own
+  history there, the thin-history line below six rounds, and the
+  player's version to copy. Targets and sides only, never a club.
+- Shown only when `coachhelm_course_plan_v1` is on (off everywhere).
+  Preview: `/clubhouse-preview/coachhelm?state=courseplan`,
+  `courseplannone`, `courseplanfailed`.
+
+### Why
+
+- Supercharge 03 row 8 and 04 Example 10: a course plan from the
+  player's own rounds, on the coach's request (no event carries a course).
+
+## 2026-10-21 — Coach board: Team patterns
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7b; 03 §5.1, 04 Layout 4)
+PR/commit:      see git log (claude/coachhelm-team-pattern)
+Contract IDs:   CH-13995 (the Team patterns card)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pattern_v1 is on)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/TeamPatterns.tsx` under the program pulse: up to four
+  rows, each a family shared by at least 3 players and 30% of the players
+  with enough rounds ("Wedges 50–125 yd · finishing short", "3 of 5
+  players with enough rounds · about 1.1 strokes a round across the
+  team"), opening to the practice block and each member's number and
+  ladder word. A counted line says how many more reads are shared by too
+  few players. Coach only; the player board never reads it.
+- `data/coachhelm-team-pattern.ts` maps `computeTeamPatterns`
+  (`lib/coachhelm/v3/team-pattern/pattern.ts`) to the card. The loader
+  reads it only with the flag on; a failed read draws no card.
+- Preview: `/clubhouse-preview/coachhelm?state=patterns`.
+
+### Verified
+
+- `coachhelm-team-pattern.test.tsx` (fixture runs the real computation).
+- Phone screenshot (390 × 844) of the preview state.
+
 ## 2026-10-21 — What the engine knows, on the coach and player surfaces
 
 ```text

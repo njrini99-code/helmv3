@@ -24,33 +24,17 @@ merge conflict on this file for every other open PR touching the same docs —
 the main CI-throughput bottleneck as of 2026-09-23. Run `npm run docs:refs` for
 the same counts computed fresh, printed to stdout, never committed.
 
+There is deliberately no summary table either (2026-10-21): its per-category
+totals changed whenever any document was added, so two open PRs adding a
+document of the same kind always conflicted here. Run
+`npm run knowledge:doc-inventory -- --summary` for the same table computed fresh,
+printed to stdout, never committed.
+
 There is deliberately no last-touch-SHA column: this file is tracked, so the
 commit recording every other file's SHA would change them and a `--check`
 gate would fail on its own commit. For per-file staleness use the rule
 `.claude/rules/shipping.md` already sets — record an anchor SHA in the
 document and run `git rev-list --count <sha>..HEAD -- <path>`.
-
-## Summary
-
-| Category | Files | Routed | Claims authority | Dead refs |
-| --- | --- | --- | --- | --- |
-| `POLICY` | 16 | 3 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
-| `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
-| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
-| `RUNBOOK` | 5 | 2 | 1 | 0 |
-| `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 44 | 5 | 17 | 63 |
-| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 36 |
-| `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 57 | 15 | 2 | 4 |
-| `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 29 | 2 | 12 | 5 |
-| `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 352 | 13 | 71 | 93 |
 
 ## Files
 
@@ -683,6 +667,7 @@ them would bury everything above.
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | - |
 | `.github/branch-protection.md` | current | - | - | - | 1 |
+| `.oss-scanner/threat_model.md` | current | - | - | - | - |
 | `DESIGN.md` | current | - | - | yes | - |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `design/handoff/README-v1.md` | current | - | - | - | - |

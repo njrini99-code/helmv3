@@ -119,7 +119,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 12 |  | 17 | 11 | 39 | 19 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 187 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 12 |  | 29 | 1 | 37 | 27 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 162 |
+| P013 | 7 | 12 |  | 29 | 1 | 37 | 38 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 173 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -432,7 +432,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 41601 | CH-4601 | 16 Micro animation | `FOCUSING_A_PLAYER_ON_THE_TREND` | implemented | Focusing a player on the trend |
 | 41602 | CH-4602 | 16 Micro animation | `CHOOSING_A_LEG` | implemented | Choosing a leg |
 | 41603 | CH-4603 | 16 Micro animation | `CHANGING_THE_TRENDS_MEASURE` | implemented | Changing the trend's measure |
-| 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
+| 41604 | CH-4604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | reserved | A new window's figures arrive |
 | 41701 | CH-4701 | 17 Haptic | `CHOOSING_A_LEG_FOCUSING_A_PLAYER_CHANGING` | reserved | Choosing a leg, focusing a player, changing the window or lens |
 | 41702 | CH-4702 | 17 Haptic | `AN_EXPORT_LANDS_FAILS` | reserved | An export lands / fails |
 | 41703 | CH-4703 | 17 Haptic | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | implemented | Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total) |
@@ -521,7 +521,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 51601 | CH-5601 | 16 Micro animation | `CHANGING_TABS` | implemented | Changing tabs |
 | 51602 | CH-5602 | 16 Micro animation | `OPENING_ADD_FOCUS_AREA` | implemented | Opening Add focus area |
 | 51603 | CH-5603 | 16 Micro animation | `THE_TABS_PANEL_SWAPS` | implemented | The tab's panel swaps |
-| 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | implemented | A new window's figures arrive |
+| 51604 | CH-5604 | 16 Micro animation | `A_NEW_WINDOWS_FIGURES_ARRIVE` | reserved | A new window's figures arrive |
 | 51701 | CH-5701 | 17 Haptic | `CHANGING_TABS_THE_WINDOW_OR_PAGING_PLAYERS` | reserved | Changing tabs, the window, or paging players; choosing a Game detail leg |
 | 51702 | CH-5702 | 17 Haptic | `PROPOSING_A_FOCUS_AREA_WITH_NO_NAME` | reserved | Proposing a focus area with no name |
 | 51703 | CH-5703 | 17 Haptic | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | reserved | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
@@ -1521,6 +1521,17 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130725 | CH-13991 | 07 Network / offline | `COACH_PLAYER_WHY_DO_YOU_THINK_SO` | implemented | Coach, player: why do you think so |
 | 130726 | CH-13992 | 07 Network / offline | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | implemented | Coach, player: reads the recheck cleared |
 | 130727 | CH-13993 | 07 Network / offline | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | implemented | Deep dive: the Read's Why line from the cause state |
+| 130728 | CH-13995 | 07 Network / offline | `COACH_TEAM_PATTERNS` | implemented | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
+| 130729 | CH-13960 | 07 Network / offline | `COACH_THE_TRACK_RECORD` | implemented | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
+| 130730 | CH-13961 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | implemented | Track record: a level with enough rechecked reads (10 or more) |
+| 130731 | CH-13962 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | implemented | Track record: a level or a family with fewer than 10 rechecked reads |
+| 130732 | CH-13963 | 07 Network / offline | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | implemented | Track record: the staff's corrections |
+| 130733 | CH-13964 | 07 Network / offline | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | implemented | Track record: one row per family |
+| 130734 | CH-13965 | 07 Network / offline | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | implemented | Track record: CoachHelm is off for the team |
+| 130735 | CH-13966 | 07 Network / offline | `TRACK_RECORD_A_READ_IT_IS_MADE` | implemented | Track record: a read it is made from failed |
+| 130736 | CH-13967 | 07 Network / offline | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | implemented | Track record: the database cannot answer yet (its function is not applied) |
+| 130737 | CH-13968 | 07 Network / offline | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | implemented | Track record: nothing shown since the season start |
+| 130738 | CH-13969 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | implemented | Coach board: the link to the Track record |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
