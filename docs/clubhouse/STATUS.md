@@ -259,7 +259,13 @@ a new production deploy.
   is unsaved.
 - **Before turn-on, name the rollback deployment.** Record the current
   flag-off production deployment id here so a promote back to it is one step.
-  Not recorded yet.
+  Read from Vercel 2026-10-21 (release `d0f467a73`, deployed by the owner that
+  morning): production is `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc`; the one before
+  it, `dpl_6Enpeka5udJctZo5MC5VHnVQ7o7R`, is the promote-back target while
+  that stays current. Both are READY rollback candidates. Merges since then are
+  not live, so the next production deploy replaces this: re-read it from
+  `npm run release:status` (or Vercel) the day of turn-on and update this line
+  in the same change.
 - **Never promote `dpl_DowNH8VfxSXvSp5ggp2ZMkHMZpCb` (`ef6e017a2`).** It was
   the 2026-09-30 train's rollback target. Promoting it now would undo #2170
   and everything after it.
