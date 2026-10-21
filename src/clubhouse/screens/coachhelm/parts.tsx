@@ -7,6 +7,7 @@ import { haptic } from '../../lib/haptics';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SerifText } from '../../ui/SerifText';
+import { CorrectionChips, ReadLater } from './Corrections';
 import { EngineState, WhyAudit } from './EngineState';
 
 /**
@@ -114,6 +115,9 @@ export function Evidence({ ev, who }: { ev: ChHelmEvidence; who?: string }) {
 export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: ChInsight; who?: string; assigned?: ChHelmAssigned | null; defaultOpen?: boolean }) {
   const [why, setWhy] = useState(defaultOpen);
   const id = useId();
+  const cx = ins.engine?.corrections;
+  // Show later (coachhelm_corrections_v1): the read is held back, its title and when it comes back left in its place.
+  const [held, setHeld] = useState<number | null>(cx?.laterRounds ?? null);
   return (
     <article className="ch-hl-focus" aria-labelledby={`${id}-t`}>
       {/* The claim. On the phone it is the screen's one green feature card (the Mobile clubhouse pass, 2026-10-08), and
@@ -126,44 +130,52 @@ export function FocusCard({ ins, who, assigned, defaultOpen = false }: { ins: Ch
         <h2 id={`${id}-t`}>
           <SerifText text={ins.title} />
         </h2>
-        {ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
+        {held == null && ins.lede && <p className="ch-hl-lede">{ins.lede}</p>}
       </div>
-      {/* CH-13903: a read from before the newest round is never drawn as current. */}
-      {ins.stale && (
-        <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
-          A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
-        </p>
-      )}
-      {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
-      <EngineState engine={ins.engine} />
-      <Evidence ev={ins.evidence} who={who} />
-      {ins.week && (
-        <div className="ch-hl-drill">
-          <span className="ch-hl-drill__k">
-            <Icon icon={Target} size={14} />
-            This week
-          </span>
-          {ins.week.title && (
-            <p className="ch-hl-drill__t">
-              <b>{ins.week.title}</b>
-              {ins.week.meta && <em> · {ins.week.meta}</em>}
+      {held != null ? (
+        <ReadLater rounds={held} />
+      ) : (
+        <>
+          {/* CH-13903: a read from before the newest round is never drawn as current. */}
+          {ins.stale && (
+            <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
+              A round played {ins.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
             </p>
           )}
-          {ins.week.text && <p>{ins.week.text}</p>}
-        </div>
-      )}
-      {ins.why && (
-        <>
-          <button type="button" className="ch-hl-why" onClick={() => setWhy((v) => !v)} aria-expanded={why} aria-controls={`${id}-why`}>
-            <span>Why we think this</span>
-            <Icon icon={why ? ChevronUp : ChevronDown} size={15} />
-          </button>
-          <p id={`${id}-why`} className="ch-hl-why__b" hidden={!why}>
-            {ins.why}
-          </p>
+          {/* What the engine now knows (each part only with its flag on): how sure, the cause, its status, its focus area's verdict. */}
+          <EngineState engine={ins.engine} />
+          <Evidence ev={ins.evidence} who={who} />
+          {ins.week && (
+            <div className="ch-hl-drill">
+              <span className="ch-hl-drill__k">
+                <Icon icon={Target} size={14} />
+                This week
+              </span>
+              {ins.week.title && (
+                <p className="ch-hl-drill__t">
+                  <b>{ins.week.title}</b>
+                  {ins.week.meta && <em> · {ins.week.meta}</em>}
+                </p>
+              )}
+              {ins.week.text && <p>{ins.week.text}</p>}
+            </div>
+          )}
+          {ins.why && (
+            <>
+              <button type="button" className="ch-hl-why" onClick={() => setWhy((v) => !v)} aria-expanded={why} aria-controls={`${id}-why`}>
+                <span>Why we think this</span>
+                <Icon icon={why ? ChevronUp : ChevronDown} size={15} />
+              </button>
+              <p id={`${id}-why`} className="ch-hl-why__b" hidden={!why}>
+                {ins.why}
+              </p>
+            </>
+          )}
+          <WhyAudit lines={ins.engine?.audit} />
         </>
       )}
-      <WhyAudit lines={ins.engine?.audit} />
+      {/* The correction chips, under the audit (03 §7.2), only when the loader put them on the card. */}
+      {cx && <CorrectionChips c={cx} held={held} onHeld={setHeld} />}
     </article>
   );
 }
