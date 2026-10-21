@@ -11,8 +11,8 @@
 -- src/lib/golf/conversation-audience.ts); a direct PostgREST insert did not.
 --
 -- Now the added user must belong to the conversation's team: on its roster
--- (any membership status), or a coach staffed on it. That is the app's own
--- audience (resolveGolfTeamAudience) minus one thing: the app also admits
+-- (an ACTIVE row), or a coach staffed on it. That is the app's own audience
+-- (resolveGolfTeamAudience) minus one thing: the app also admits
 -- coaches of the team's organization who have no staff row. The database does
 -- not, because organization membership is the S1 attack surface (a coach row's
 -- organization_id is being pinned separately) and a staff row is what every
@@ -21,10 +21,11 @@
 -- participant, so no flow the product has used is cut off.
 --
 -- Why a new helper rather than golf_user_on_conversation_team (branch 3's):
--- that one requires an ACTIVE roster row. Team broadcasts
--- (createGolfTeamBroadcast) and the new-group picker include every roster row,
--- and production has 4 inactive players with accounts; branch 2 with the
--- active-only helper would refuse an "all players" broadcast on their teams.
+-- that one answers only for a player on a settled team chat, and branch 2 must
+-- also admit a coach staffed on the team while the conversation is formed.
+-- Players count only while their roster row is active, as the broadcast and
+-- the new-group picker list them (createGolfTeamBroadcast reads active members
+-- only): a pending, inactive or removed player must not be added to a chat.
 -- Branch 1 (self) and branch 3 (team-chat teammate) are unchanged.
 --
 -- Production, 2026-10-16 (read-only): of 46 existing non-creator participant
@@ -72,6 +73,7 @@ as $$
              from public.golf_team_members gtm
              join public.golf_players gp on gp.id = gtm.player_id
             where gtm.team_id = c.team_id
+              and gtm.status = 'active'
               and gp.user_id = p_user_id
          )
          or exists (
@@ -86,7 +88,7 @@ as $$
 $$;
 
 comment on function public.golf_user_in_conversation_team_audience(uuid, uuid) is  -- noqa: LT05
-'True when p_user_id is on the conversation''s team roster (any status) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';  -- noqa: LT05
+'True when p_user_id is on the conversation''s team roster (active rows) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';  -- noqa: LT05
 
 revoke execute on function public.golf_user_in_conversation_team_audience(
     uuid, uuid

@@ -1146,7 +1146,7 @@ features:
         # The player hub's announcements and events reads (security review S3,
         # held). Owned here, not by player_hub: its db globs already overlap
         # calendar_events' (check-registry-globs).
-        - supabase/migrations/20261017001000_golf_player_hub_rpcs_staff_gate.sql
+        - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
       tests:
         - e2e/messages.spec.ts
         - src/clubhouse/__tests__/messages*.test.*

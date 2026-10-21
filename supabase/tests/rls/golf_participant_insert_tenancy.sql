@@ -3,19 +3,19 @@
 --
 -- The creator of a fresh conversation could add ANY user id as a participant
 -- (golf_participants_insert_v2, branch 2). Now the added user must be on the
--- conversation's team: roster (any status) or staffed coach.
+-- conversation's team: an ACTIVE roster row or a staffed coach.
 --
 -- Behavioural, as the conversation's creator through request.jwt.claims, on
 -- conversations with no participant yet, in the exact orders the app uses:
 -- self then the others as a second statement (createConversation), and
 -- everyone in one statement (createGolfTeamBroadcast).
 --
--- Plan arithmetic: 2 structural + 6 behavioural = 8.
+-- Plan arithmetic: 2 structural + 7 behavioural = 9.
 
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(8);
+SELECT plan(9);
 
 SELECT ok(
   EXISTS (
@@ -108,13 +108,23 @@ SELECT lives_ok(
   'a DM with a player on the team is still created (self, then the other)'
 );
 
--- The broadcast the app creates: everyone in one statement, an inactive player included.
-SELECT lives_ok(
+-- A broadcast that names an inactive roster row is refused whole (the app's
+-- broadcast reads active members only; a former player must not read the chat).
+SELECT throws_ok(
   $$INSERT INTO public.golf_conversation_participants (conversation_id, user_id) VALUES
       ('00000000-0000-0000-0000-000017003503', '00000000-0000-0000-0000-000017003001'),
       ('00000000-0000-0000-0000-000017003503', '00000000-0000-0000-0000-000017003002'),
       ('00000000-0000-0000-0000-000017003503', '00000000-0000-0000-0000-000017003003')$$,
-  'an all-players broadcast is still created in one statement, inactive roster rows included'
+  '42501', NULL,
+  'the creator CANNOT add a player whose roster row is inactive'
+);
+
+-- The broadcast the app creates: the active roster in one statement.
+SELECT lives_ok(
+  $$INSERT INTO public.golf_conversation_participants (conversation_id, user_id) VALUES
+      ('00000000-0000-0000-0000-000017003503', '00000000-0000-0000-0000-000017003001'),
+      ('00000000-0000-0000-0000-000017003503', '00000000-0000-0000-0000-000017003002')$$,
+  'an all-players broadcast of the active roster is still created in one statement'
 );
 
 -- The documented gap against the app's audience: an organization coach with no staff row.

@@ -1,6 +1,6 @@
 -- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner's approval to apply
 -- (supabase/migrations/HELD.md). Apply: npm run db:apply --
--- supabase/migrations/20261017001000_golf_player_hub_rpcs_staff_gate.sql
+-- supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
 --
 -- Security review 2026-10-16, item S3. The two player-hub SECURITY DEFINER
 -- functions return a team's announcements (with per-player targeting) and
@@ -33,15 +33,27 @@
 -- (src/clubhouse/data/hub.ts). All of them pass the signed-in player's own id
 -- today; none uses the coach branch.
 --
--- The return-building SQL below is the baseline's
--- (20260527000000_prod_public_baseline.sql), with p_player_id replaced by the
--- resolved v_player_id. pgTAP:
+-- The announcements body is the baseline's
+-- (20260527000000_prod_public_baseline.sql) with p_player_id replaced by the
+-- resolved v_player_id. The events body is the
+-- latest one in the repo, 20261018120000_golf_events_meetings_invitees_only.sql
+-- (which carries 20261017111000's cancelled_at filter and the meeting rule),
+-- with the same gate and p_player_id replaced by v_player_id; a staffed coach
+-- still sees every meeting. pgTAP:
 -- supabase/tests/rls/golf_player_hub_rpcs_staff_gate.sql.
 --
--- ROLLBACK: re-run the two CREATE OR REPLACE FUNCTION blocks from
--- 20260527000000_prod_public_baseline.sql (get_player_hub_announcements,
--- get_player_hub_events), whose gate is the organization join above, and
--- GRANT EXECUTE on both to anon to restore the previous ACL.
+-- ORDER: this file is dated after both 20261017111000 (applied) and
+-- 20261018120000 (held) on purpose: it re-creates get_player_hub_events from
+-- their body, so it must land after them. Applying 20261018120000 AFTER this
+-- file puts the organization-coach gate back; if that happens, apply this
+-- file again.
+--
+-- ROLLBACK: re-create get_player_hub_events from
+-- 20261018120000_golf_events_meetings_invitees_only.sql (or, while that is
+-- held, from 20261017111000_golf_home_event_rpcs_skip_cancelled.sql) and
+-- get_player_hub_announcements from 20260527000000_prod_public_baseline.sql;
+-- their gate is the organization join above. GRANT EXECUTE on both to anon to
+-- restore the previous ACL.
 --
 -- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_announcements(uuid, uuid)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;  -- noqa: LT05
 -- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;  -- noqa: LT05
@@ -183,6 +195,7 @@ set search_path = public, pg_temp
 as $$
 DECLARE
   v_player_id uuid;
+  v_coach boolean := false;
 BEGIN
   -- A coach staffed on the team may read it for one of its active players.
   IF public.is_golf_team_coach(p_team_id)
@@ -193,6 +206,7 @@ BEGIN
          AND gtm.status = 'active'
      ) THEN
     v_player_id := p_player_id;
+    v_coach := true;
   ELSE
     -- Anyone else reads their own hub: the player is the caller.
     SELECT gp.id INTO v_player_id
@@ -212,9 +226,23 @@ BEGIN
     WITH events AS (
       -- is_mandatory is exposed to the client; not a real column on golf_events.
       SELECT id, title, event_type, start_time, end_time, location
-      FROM golf_events
+      FROM golf_events ge
       WHERE team_id = p_team_id
         AND start_time >= p_since
+        -- A cancelled event stays in the table (soft cancel); not one to show.
+        AND cancelled_at IS NULL
+        -- A meeting is listed only for the players invited to it (their own
+        -- attendance row), as 20261018120000 decides it; a coach sees all.
+        AND (
+          event_type <> 'meeting'
+          OR v_coach
+          OR EXISTS (
+            SELECT 1
+            FROM golf_event_attendance mine
+            WHERE mine.event_id = ge.id
+              AND mine.player_id = v_player_id
+          )
+        )
       ORDER BY start_time ASC
       LIMIT 20
     ),

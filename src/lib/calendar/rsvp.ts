@@ -96,10 +96,14 @@ async function getEventRSVPSummary(
   }
 
   // Names and avatars through golf_player_profiles: a player may no longer
-  // read a teammate's golf_players row (security review S4). A failed read
-  // leaves the names unknown, as a failed embed did.
+  // read a teammate's golf_players row (security review S4). A failed read is
+  // an error, not a list of "Unknown" attendees: the profile embed used to be
+  // part of the checked attendance query above, so it failed the same way.
   const rows = (attendances || []) as GolfEventAttendance[];
   const profiles = await readGolfPlayerProfiles(supabase, { playerIds: rows.map((a) => a.player_id) });
+  if (profiles.error) {
+    throw new Error(`Could not load the event's attendees: ${profiles.error.message}`);
+  }
   const profileById = profilesById(profiles.data ?? []);
   const attendanceRows: AttendanceWithPlayer[] = rows.map((a) => {
     const p = profileById.get(a.player_id);

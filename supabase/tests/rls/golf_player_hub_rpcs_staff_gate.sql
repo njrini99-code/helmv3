@@ -1,4 +1,4 @@
--- pgTAP contracts for 20261017001000_golf_player_hub_rpcs_staff_gate.sql
+-- pgTAP contracts for 20261021100000_golf_player_hub_rpcs_staff_gate.sql
 -- (security review 2026-10-16, S3).
 --
 -- get_player_hub_announcements / get_player_hub_events are SECURITY DEFINER,

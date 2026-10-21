@@ -3867,11 +3867,11 @@
       },
       {
         "id": "get_player_hub_announcements",
-        "definedIn": "supabase/migrations/20261017001000_golf_player_hub_rpcs_staff_gate.sql"
+        "definedIn": "supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql"
       },
       {
         "id": "get_player_hub_events",
-        "definedIn": "supabase/migrations/20261017001000_golf_player_hub_rpcs_staff_gate.sql"
+        "definedIn": "supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql"
       },
       {
         "id": "get_qualifier_leaderboard",

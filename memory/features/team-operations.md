@@ -170,7 +170,7 @@ Player Team Hub
   `attachmentsError` beside the id (`announcements.ts`).
 - A player reads a teammate's display columns (name, avatar, class year,
   handicap) only through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`,
-  the `golf_player_profiles` function), never a `golf_players` table read or
+  the player-profiles database function), never a `golf_players` table read or
   embed: email, phone, gpa, school, hometown and state are for the player and
   their coaches (security review S4). Until `20261017004000` is applied the
   reader falls back to the table, so the app ships before the migration;
