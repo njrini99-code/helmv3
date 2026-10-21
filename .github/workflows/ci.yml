@@ -887,10 +887,17 @@ jobs:
             echo "::notice::No code-relevant path changed; nothing for this job to check."
           elif [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_TIER" = "false" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "quick=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Follow-up push (quick tier): the Next build runs on the full run pr:land starts."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # pr:land reads this step: a run where it succeeded skipped this job's
+      # real work, so it is not the full run a merge needs.
+      - name: Quick tier (follow-up push)
+        if: steps.gate.outputs.quick == 'true'
+        run: echo "Skipped by the quick tier; npm run pr:land starts the full run."
 
       - name: Setup Node and install dependencies
         if: steps.gate.outputs.run == 'true'
@@ -1077,10 +1084,17 @@ jobs:
             echo "::notice::No code-relevant path changed; nothing for this job to check."
           elif [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_TIER" = "false" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "quick=true" >> "$GITHUB_OUTPUT"
             echo "::notice::Follow-up push (quick tier): Supabase lint and RLS runs on the full run pr:land starts."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # pr:land reads this step: a run where it succeeded skipped this job's
+      # real work, so it is not the full run a merge needs.
+      - name: Quick tier (follow-up push)
+        if: steps.gate.outputs.quick == 'true'
+        run: echo "Skipped by the quick tier; npm run pr:land starts the full run."
 
       - name: Setup Node and install dependencies
         if: steps.gate.outputs.run == 'true'

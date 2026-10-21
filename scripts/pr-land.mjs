@@ -125,6 +125,7 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
 export const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
 export const UNIT_SHARDS = [1, 2, 3, 4, 5];
 const SCOPE_STEP = 'Decide test scope';
+export const QUICK_TIER_STEP = 'Quick tier (follow-up push)';
 
 /**
  * One shard's verdict from its job. `job` is the Actions API job (`{ steps: [{ name, conclusion }] }`), or undefined when the run has no
@@ -156,11 +157,17 @@ export function evaluateUnitShards(runs, shards = UNIT_SHARDS) {
   let best = null;
   for (const run of runs) {
     const verdicts = shards.map((n) => ({ n, ...unitShardVerdict((run.jobs ?? []).find((j) => j.name === `Unit tests (${n})`), n, shards.length) }));
+    // A job that took the quick tier (ci.yml) skipped its real work, so the run is not a full run whatever the shards did.
+    for (const j of run.jobs ?? []) {
+      if ((j.steps ?? []).some((s) => s.name === QUICK_TIER_STEP && s.conclusion === 'success')) {
+        verdicts.push({ n: j.name, ok: false, why: `${j.name} took the quick tier (follow-up push)` });
+      }
+    }
     const passing = verdicts.filter((v) => v.ok).length;
-    if (passing === shards.length) return { ok: true, runId: run.id, problems: [] };
+    if (passing === verdicts.length) return { ok: true, runId: run.id, problems: [] };
     if (!best || passing > best.passing || (passing === best.passing && run.id > best.run.id)) best = { run, passing, verdicts };
   }
-  return { ok: false, runId: best.run.id, problems: best.verdicts.filter((v) => !v.ok).map((v) => `shard ${v.n}/${shards.length}: ${v.why}`) };
+  return { ok: false, runId: best.run.id, problems: best.verdicts.filter((v) => !v.ok).map((v) => (typeof v.n === 'number' ? `shard ${v.n}/${shards.length}: ${v.why}` : v.why)) };
 }
 
 /**
