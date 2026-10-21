@@ -424,7 +424,8 @@ Design package: none (CoachHelm supercharge, Slice 2; 00 open question 3)
 PR/commit:      see git log (claude/coachhelm-root-cause)
 Contract IDs:   CH-13982 (the diagnosis block; no id added)
 Actions:        none
-Data impact:    none (read-only; inert until coachhelm_root_cause_diagnosis is on)
+Data impact:    none (read-only; inert until coachhelm_root_cause_diagnosis is
+                on)
 Held items:     none
 ```
 
@@ -521,7 +522,8 @@ Held items:     none
 ## 2026-10-20 — The Deep dive stops drawing the placeholder cause
 
 ```text
-Design package: none (CoachHelm supercharge, Slice 0a; recommendation in /mnt/project-files/coachhelm/supercharge)
+Design package: none (CoachHelm supercharge, Slice 0a; recommendation in
+                /mnt/project-files/coachhelm/supercharge)
 PR/commit:      see git log (claude/project-thread-hrav6r)
 Contract IDs:   CH-13982 (the diagnosis block; no id added)
 Actions:        none
@@ -706,9 +708,11 @@ Held items:     none
 ## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
 
 ```text
-Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and
+                failure states)
 PR/commit:      lane L3 commits on agent/clubhouse-complete
-Contract IDs:   CH-13301, CH-13302, CH-13304, CH-13305, CH-13306, CH-13307, CH-13360, CH-13370, CH-13382, CH-13383, CH-13384
+Contract IDs:   CH-13301, CH-13302, CH-13304, CH-13305, CH-13306, CH-13307,
+                CH-13360, CH-13370, CH-13382, CH-13383, CH-13384
 Actions:        none
 Data impact:    none
 Held items:     none
@@ -717,7 +721,8 @@ Held items:     none
 ### Changed
 
 - CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
-- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
+- First-run boards, Game profile and Standing draw rows under the sentence; the
+  coach's board draws portrait rows.
 - Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
@@ -1045,7 +1050,8 @@ Held items:     none
 
 ```text
 Design package: none (polish review row 18; no new pattern)
-PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+PR/commit:      uncommitted (Clubhouse polish review,
+                agent/fairway-fixes-polish)
 Contract IDs:   none
 Actions:        none
 Data impact:    none
@@ -1246,9 +1252,12 @@ pulse second" stays not built (the owner declined it).
 ## 2026-10-08 — Ask: the @ picker is cmdk, and offers the stats
 
 ```text
-Design package: none; no owner board draws the picker (phone spec note in docs/clubhouse/phone/coachhelm.md)
-Contract IDs:   CH-13821 (catalog row widened: stats, docked list, Tab, the select haptic)
-Data impact:    none; the stats are the agent's metric catalog (metrics-catalog.ts), no new read
+Design package: none; no owner board draws the picker (phone spec note in
+                docs/clubhouse/phone/coachhelm.md)
+Contract IDs:   CH-13821 (catalog row widened: stats, docked list, Tab, the
+                select haptic)
+Data impact:    none; the stats are the agent's metric catalog
+                (metrics-catalog.ts), no new read
 Held items:     before and after screenshots (no dev server in this pass)
 ```
 
@@ -2087,7 +2096,8 @@ Contract IDs:   30 new Bridge IDs, all CH-13xxx: CH-13260, 13270, 13271,
                 (loading); 13780 (haptic); 13860, 13880, 13890
                 (accessibility); 13930, 13931 (sub-navigation); 13980 to 13982
                 (the pushed read, ?insight=, a hypothesis). CH-13304 widened to
-                every view. CH-1301 (not rebuilt) is no longer said by this page;
+                every view. CH-1301 (not rebuilt) is no longer said by this
+                page;
                 130104 reworded
 Actions:        none: the three views are reads, with no write path
 Data impact:    none (reads of golf_player_genome, golf_player_standing,
