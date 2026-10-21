@@ -147,16 +147,20 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 }
 
 /** Standing: the green card with what is most to gain, then the groups of stats (CH-13470). */
+/** The loaded hero card's height on a 390 phone, measured in Chromium (the ladder took "Most to gain" off it). */
+const HERO_PHONE_390 = 256.3;
+
 export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   if (phone) {
-    // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups. The
-    // card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
+    // The phone: where you stand's feature card (the headline and the note), then Where strokes go's four rows, then the
+    // groups. The card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
     return (
       <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
         <div className="ch-hs-sk__hero">
-          <Skeleton width="100%" height={511} radius={14} shape="solid" />
+          <Skeleton width="100%" height={HERO_PHONE_390} radius={14} shape="solid" />
         </div>
+        <StandingGroupSkeleton rows={4} />
         <StandingGroupSkeleton rows={3} />
         <StandingGroupSkeleton rows={2} />
       </Chrome>
@@ -171,8 +175,8 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
           <Skeleton width="60%" height={32} radius={8} />
           <Skeleton width="78%" height={13} />
         </div>
-        <Skeleton width="100%" height={200} radius={16} />
       </div>
+      <StandingGroupSkeleton rows={4} />
       <StandingGroupSkeleton rows={5} />
       <StandingGroupSkeleton rows={4} />
       <StandingGroupSkeleton rows={4} />

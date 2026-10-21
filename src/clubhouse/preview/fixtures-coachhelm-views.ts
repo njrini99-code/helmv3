@@ -10,6 +10,7 @@ import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
 import { diveCounts, orderDive, themesByCategory, toChDeepInsight, type ChDeepDive, type ChDeepInsight, type ChDiveInputs, type DiveFocusRow, type DiveRoundRow } from '../data/coachhelm-dive-shape';
 import { speak } from '../data/coachhelm-voice';
 import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
+import type { ChLadderReads } from '../data/coachhelm-ladder-shape';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from '../data/coachhelm-standing-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { bigNumber, breakBias, MANY_FINDINGS, MANY_NEWEST_ROUND, MANY_STALE, MANY_STRENGTHS, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
@@ -102,7 +103,34 @@ export const STANDING_ROWS: PlayerStanding[] = [
 
 const BASELINE: ChStandBaselineRead = { status: 'ok', roundsPlayed: 14, scoringAverage: 77.2 };
 
-export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE);
+/**
+ * The open reads behind Where strokes go, as the loader hands them over (title in their voice, the confidence word, the cause
+ * state's word and line). Synthetic. Approach has two, putting and the tee one each, around the green none; the scoring read is
+ * not a part of the round and is not on the ladder.
+ */
+export const LADDER_READS: ChLadderReads = {
+  status: 'ok',
+  list: [
+    { id: 'ld-app-1', category: 'approach', title: 'Approaches from 125–175 yd finish 47 ft away', priority: 'high', word: 'Solid read', cause: { word: 'Counted', line: '9 of 14 missed greens went short, then into the rough, across 5 rounds.' } },
+    { id: 'ld-app-2', category: 'approach', title: 'You hit 58% of greens in regulation', priority: 'medium', word: 'Early read', cause: null },
+    { id: 'ld-putt-1', category: 'putting', title: 'Putts from 5–10 ft drop 38% of the time', priority: 'high', word: 'Solid read', cause: { word: 'Not traced yet', line: '6 of the 10 misses it needs; 4 more misses and the why is checked.' } },
+    { id: 'ld-tee-1', category: 'tee', title: 'Tee shots miss right on 1 hole in 3', priority: 'medium', word: 'Early read', cause: { word: 'Data gap', line: 'Miss direction is recorded on only 4 of the tee misses. Tag it on the next 6 and the why is checked again.' } },
+    { id: 'ld-score-1', category: 'scoring', title: 'Par 5s cost you 0.3 strokes against your par 4s', priority: 'low', word: 'Thin read, n=8', cause: null },
+  ],
+};
+
+export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE, LADDER_READS);
+/**
+ * Thin data: four rounds, with strokes gained only for approach and putting (no tee or around-the-green figure yet, said in words),
+ * and one thin read behind putting.
+ */
+export const PREVIEW_STANDING_THIN: ChStanding = toChStanding(
+  STANDING_ROWS.filter((r) => ['sg_approach', 'sg_putting', 'putts_made_3_5ft_pct', 'putts_made_5_10ft_pct', 'gir_pct'].includes(r.metric_id)),
+  { status: 'ok', roundsPlayed: 4, scoringAverage: 79.1 },
+  { status: 'ok', list: [{ id: 'ld-thin-1', category: 'putting', title: 'Putts from 3–5 ft drop 71% of the time', priority: 'medium', word: 'Thin read, n=11', cause: null }] },
+);
+/** The reads behind the ladder did not load: the strokes still draw, nothing opens, and the ladder says so once. */
+export const PREVIEW_STANDING_READSFAILED: ChStanding = toChStanding(STANDING_ROWS, BASELINE, { status: 'failed' });
 /** Three rounds in: every comparison draws, no projection does, and the page says it is an early read. */
 export const PREVIEW_STANDING_EARLY: ChStanding = toChStanding(STANDING_ROWS.slice(0, 8), { status: 'ok', roundsPlayed: 3, scoringAverage: 80.4 });
 export const PREVIEW_STANDING_EMPTY: ChStanding = toChStanding([], { status: 'ok', roundsPlayed: 2, scoringAverage: null });

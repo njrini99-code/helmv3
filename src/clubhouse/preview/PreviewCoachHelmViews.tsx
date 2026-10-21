@@ -23,6 +23,8 @@ import {
   PREVIEW_STANDING_EARLY,
   PREVIEW_STANDING_EMPTY,
   PREVIEW_STANDING_NOBASELINE,
+  PREVIEW_STANDING_READSFAILED,
+  PREVIEW_STANDING_THIN,
   PREVIEW_STANDING_WOMENS,
   profileLoad,
   standingLoad,
@@ -34,7 +36,7 @@ const OFF = { status: 'off', reason: 'We are pausing AI insights until after the
 
 /**
  * The player's CoachHelm drills for the dev preview: `?view=profile|standing|deep-dive`, and `?state=` for the read's answer
- * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `engine` (every engine flag on), `corrections` and `corrections-good` (the player's own chips), `cleared`, `manycleared`, `holes` (with `&insight=in-pen`), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
+ * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`, `thin`, `readsfailed`; the Deep dive's `engine` (every engine flag on), `corrections` and `corrections-good` (the player's own chips), `cleared`, `manycleared`, `holes` (with `&insight=in-pen`), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
  */
 export function PreviewCoachHelmViews({ view, state, insight }: { view?: string; state?: string; insight?: string }) {
   const failed: ChViewLoad<never> = { status: 'failed' };
@@ -49,7 +51,7 @@ export function PreviewCoachHelmViews({ view, state, insight }: { view?: string;
     if (state === 'loading') return <StandingSkeleton />;
     if (state === 'failed') return <Standing load={failed} />;
     if (state === 'off') return <Standing load={OFF} />;
-    const data = { early: PREVIEW_STANDING_EARLY, empty: PREVIEW_STANDING_EMPTY, womens: PREVIEW_STANDING_WOMENS, nobaseline: PREVIEW_STANDING_NOBASELINE }[state ?? ''] ?? PREVIEW_STANDING;
+    const data = { early: PREVIEW_STANDING_EARLY, empty: PREVIEW_STANDING_EMPTY, womens: PREVIEW_STANDING_WOMENS, nobaseline: PREVIEW_STANDING_NOBASELINE, thin: PREVIEW_STANDING_THIN, readsfailed: PREVIEW_STANDING_READSFAILED }[state ?? ''] ?? PREVIEW_STANDING;
     return <Standing load={standingLoad(data)} />;
   }
   if (view === 'deep-dive') {

@@ -39,6 +39,17 @@ Contract IDs:   CH-13996 (new); CH-13890, CH-13992, CH-13282, CH-13480
 Actions:        none (read only)
 Data impact:    none written; the rounds the example holes are on are read in
                 the same golf_rounds read as the rounds behind the reads
+## 2026-10-21 — Standing: Where strokes go replaces Most to gain
+
+```text
+Design package: clubhouse-coachhelm-design-call.md (Standing); review
+                2026-10-19 section 7.4
+PR/commit:      see git log (claude/coachhelm-strokes-ladder)
+Contract IDs:   CH-13273, CH-13374 (new); CH-13271, CH-13371, CH-13470,
+                CH-13880 reworded
+Actions:        none (read only)
+Data impact:    none written; reads the Deep dive's own feed of the player's
+                reads (no exposure recorded) beside the standing
 Held items:     none
 ```
 
@@ -119,6 +130,37 @@ Held items:     none
   the footer under the card (CH-13310).
 - Ask's greeting no longer draws the findings block; it keeps the openers
   and the line saying who the answers cover.
+- The hero names the part of the round that loses the most against the Tour,
+  once, with no number ("Your approach shots cost you the most strokes
+  against the Tour"). With no losing part it keeps the old count headline.
+- "Most to gain" is gone. Under the hero, "Where strokes go": four flush rows
+  (Off the tee, Approach, Around the green, Putting), each the strokes a round
+  against the Tour from the player's strokes-gained rows, two decimals with a
+  true minus, a thin bar against the largest (losses amber, gains green).
+- "Because" opens the open reads in that part in place (one row at a time,
+  height and opacity on the base duration), each with its firmness words
+  ("Solid read · Counted") and the counted sequence or why it is not traced
+  yet, linking to the read in the Deep dive.
+- A part with no figure says why in words (CH-13374). Reads that did not load
+  are said once under the ladder, and nothing opens (CH-13273). That includes
+  the team, Tour and newest-round lookups behind the reads: failing, they fail
+  the reads rather than draw them against no Tour or as current.
+- The reads behind "Because" are the ones the Deep dive delivers: the ladder
+  asks the Deep dive's feed (same ranking, feedback, folding and 30-read limit,
+  recording nothing as shown), so no link opens to a read the Deep dive does
+  not draw.
+- The Strokes gained group no longer draws the four parts of the round (the
+  ladder draws them; no number twice on one screen). It keeps Strokes gained:
+  total, and a group left with nothing is not drawn. The other groups with
+  You / Tour / Team are unchanged, and the hero's counts still include the
+  four. The loading shape follows the shorter card.
+- Preview: `/clubhouse-preview/coachhelm-views?view=standing` with
+  `&state=thin` and `&state=readsfailed`.
+
+### Why
+
+- The design call: the hero, Most to gain and the group rows drew the same top
+  gap three times on one screen.
 
 ## 2026-10-21 — Correction chips under a read's audit (flag off)
 

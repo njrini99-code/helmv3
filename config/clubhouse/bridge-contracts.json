@@ -14628,6 +14628,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130430,
+    "page": "P013",
+    "category": 4,
+    "item": 30,
+    "name": "STANDING_A_PART_OF_THE_ROUND_ON",
+    "chCode": "CH-13374",
+    "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -15066,6 +15077,17 @@
     "name": "RECHECK_RATE_LIMITED",
     "chCode": "CH-13007",
     "meaning": "Re-check rate-limited",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130640,
+    "page": "P013",
+    "category": 6,
+    "item": 40,
+    "name": "STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES",
+    "chCode": "CH-13273",
+    "meaning": "Standing: the open reads behind Where strokes go don't load",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
