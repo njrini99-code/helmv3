@@ -318,9 +318,10 @@ It also refuses unless one CI run of the head ran the whole unit suite: every
 `Unit tests (n)` job's `Unit tests (shard n/5)` step must have concluded
 `success` on all five shards. A follow-up push runs only the related tests (in a
 separate `Related unit tests` step of each shard) and skips the full-suite step,
-so the required contexts can be green without the suite having run (it let a broken test onto `main` on 2026-10-21). On a
-refusal, flip the PR to draft and back to ready to get a full run. A PR with no
-code-relevant change (the path gate skips the scope step) passes without one.
+so the required contexts can be green without the suite having run (it let a
+broken test onto `main` on 2026-10-21). On a refusal, flip the PR to draft and
+back to ready to get a full run. A PR with no code-relevant change (the path
+gate skips the scope step) passes without one.
 
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
