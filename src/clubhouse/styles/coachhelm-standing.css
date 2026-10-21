@@ -621,9 +621,8 @@
   /* Closed, it takes no room: the row's gap above it is taken back, and the open list's first read carries its own. */
   margin-top: -8px;
   opacity: 0;
-  transition:
-    grid-template-rows var(--ch-dur-base) var(--ch-ease),
-    opacity var(--ch-dur-base) var(--ch-ease);
+  /* The list's height changes at once; only its opacity eases (a new height transition recalculates layout each frame). */
+  transition: opacity var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hs-ld__b[data-open='true'] {
   grid-template-rows: 1fr;
