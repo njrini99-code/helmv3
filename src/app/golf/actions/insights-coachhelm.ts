@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { resolveEngineOwner } from '@/lib/coachhelm/engine-owner';
 import { revalidatePath } from 'next/cache';
 import {
   coachHelmIntelligence,
@@ -435,16 +436,11 @@ async function triggerPlayerInsightsAfterRoundImpl(
   try {
     const admin = createAdminClient();
 
-    // Look up the player's coach and team
-    const { data: membership } = await admin
-      .from('golf_team_members')
-      .select('team_id, golf_teams(organization_id)')
-      .eq('player_id', playerId)
-      .eq('status', 'active')
-      .limit(1)
-      .single();
+    // Look up the player's coach and team, and whether CoachHelm is on for
+    // them (shared with the roster sweep's stale refresh: engine-owner.ts).
+    const owner = await resolveEngineOwner(admin, playerId);
 
-    if (!membership?.team_id) {
+    if (owner.kind === 'no_team') {
       // Not a defect. CoachHelm is a coach-owned layer: it needs a roster to
       // resolve the team's organisation, its coach, and that coach's
       // philosophy. A player who has never joined a team — or who left / was
@@ -461,62 +457,22 @@ async function triggerPlayerInsightsAfterRoundImpl(
         code: 'engine_no_team_membership',
       };
     }
-
-    const teamId = membership.team_id;
-    const orgId = (membership.golf_teams as { organization_id: string } | null)?.organization_id;
     // No organisation → no coach → no philosophy to run against. Typed as
     // not-applicable (R3): nothing to retry until the team's org is fixed.
-    if (!orgId) return { success: false, error: 'Team organization not found', code: 'engine_no_coach' };
-
-    // Find the coach for this organization.
-    //
-    // The order is load-bearing, not cosmetic: `player-signal-settings.ts`
-    // documents that it resolves the coach the SAME way as this path, so a
-    // player's Stats page and their post-round insights agree on whose windows
-    // apply. Without a total order neither query guarantees a row, so two
-    // multi-coach organizations (measured: 2, holding 5 coaches) could resolve
-    // differently here than there. `created_at` is nullable, so `id` is the
-    // tie-break that makes it total. Keep the two in step.
-    const { data: coach } = await admin
-      .from('golf_coaches')
-      .select('id')
-      .eq('organization_id', orgId)
-      .order('created_at', { ascending: true, nullsFirst: true })
-      .order('id', { ascending: true })
-      .limit(1)
-      .single();
-
-    if (!coach) return { success: false, error: 'Coach not found for team organization', code: 'engine_no_coach' };
-
-    const { data: coachSettings } = await admin
-      .from('golf_coachhelm_settings')
-      .select('enabled, disabled_reason')
-      .eq('coach_id', coach.id)
-      .maybeSingle();
-    if (coachSettings?.enabled === false) {
+    if (owner.kind === 'no_org') return { success: false, error: 'Team organization not found', code: 'engine_no_coach' };
+    if (owner.kind === 'no_coach') return { success: false, error: 'Coach not found for team organization', code: 'engine_no_coach' };
+    if (owner.kind === 'disabled') {
       // An intentional switch-off, not a failure (R3 `disabled`): the round
       // parks until the setting changes.
       return {
         success: false,
-        error: coachSettings.disabled_reason || 'CoachHelm disabled for coach',
+        error: owner.reason || (owner.scope === 'coach' ? 'CoachHelm disabled for coach' : 'CoachHelm disabled for team'),
         code: 'engine_disabled',
-        details: { scope: 'coach' },
+        details: { scope: owner.scope },
       };
     }
-
-    const { data: teamSettings } = await admin
-      .from('golf_team_coachhelm_settings')
-      .select('enabled, disabled_reason')
-      .eq('team_id', teamId)
-      .maybeSingle();
-    if (teamSettings?.enabled === false) {
-      return {
-        success: false,
-        error: teamSettings.disabled_reason || 'CoachHelm disabled for team',
-        code: 'engine_disabled',
-        details: { scope: 'team' },
-      };
-    }
+    const teamId = owner.teamId;
+    const coach = { id: owner.coachId };
 
     // Get coach philosophy
     const philosophy = await getCoachPhilosophy(coach.id, admin);

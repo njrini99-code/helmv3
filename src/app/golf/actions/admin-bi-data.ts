@@ -6,6 +6,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { computeD7Retention, type RoundForRetention } from '@/lib/admin/metrics';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
+import { STALE_REFRESH_PARKED_LOG_TYPE } from '@/lib/coachhelm/v3/engine/stale-refresh';
 
 // ============================================
 // TYPES
@@ -124,7 +125,9 @@ async function getEnhancedBIDataImpl(): Promise<EnhancedBIData> {
         adminDb
           .from('golf_insight_generation_log')
           .select('id, player_id, insights_generated, created_at')
-          .gte('created_at', ago30d),
+          .gte('created_at', ago30d)
+          // A stale-refresh marker is not an engine run (stale-refresh.ts).
+          .or(`insight_type.is.null,insight_type.neq.${STALE_REFRESH_PARKED_LOG_TYPE}`),
 
         // Insight action data: counts of insights actually addressed/resolved
         // vs total generated over the same 30d window. Drives the real

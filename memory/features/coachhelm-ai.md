@@ -164,9 +164,13 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   and a completed round in the engine's 90-day window: at most 6 a night,
   oldest first, after the freshness picks and under the same time budget,
   logged with `logServerEvent` (`cron.coachhelm.rosterSweep.staleRefresh`).
-  A lookup error means no stale refresh that night. Known limit: a player the
-  engine parks without a run row (coach or team switched off, no coach) is
-  picked again each night until the reads age out.
+  A lookup error means no stale refresh that night. A player the engine
+  would park for its owner (no coach, CoachHelm off for the coach or team)
+  is skipped with the engine's own check (`src/lib/coachhelm/engine-owner.ts`)
+  and never takes a slot. A pick whose run writes nothing leaves a
+  `stale_refresh_parked` row in `golf_insight_generation_log` (team_id null,
+  excluded from the admin BI AI-user read) that counts toward the anchor, so
+  no player is picked two nights running for nothing.
 - Team pool benchmark (supercharge Slice 7a, 2026-10-20), behind
   `coachhelm_team_pool_v1` (OFF; off reads nothing and writes nothing new):
   - Putt make by band, approach green-hit by band, sand save, par 3/4/5

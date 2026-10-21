@@ -19,7 +19,12 @@
  *     re-emit stamps last_refreshed_at) and their newest engine run
  *     (`golf_insight_generation_log` post_round_v2). The run log matters: a
  *     run that re-emits nothing leaves the row stamps old, and without it the
- *     same player would hold a slot every night.
+ *     same player would hold a slot every night. A pick whose run wrote
+ *     nothing at all leaves a `STALE_REFRESH_PARKED_LOG_TYPE` row, which
+ *     counts the same way.
+ *   - The route skips a player the engine would park for its owner (no
+ *     coach, CoachHelm off for the coach or team: `engine-owner.ts`, the
+ *     engine's own check), so they never take a slot.
  *   - Only players with at least one open (product-visible) read qualify:
  *     with no read there is nothing stale to refresh.
  *   - The route also requires a completed round inside
@@ -111,3 +116,11 @@ export function roundInsideEngineWindow(roundDate: string | null | undefined, no
 
 /** config/feature-flags.yml; read through the CoachHelm canary gate by the route. */
 export const STALE_REFRESH_FLAG = 'coachhelm_stale_refresh_v1';
+
+/**
+ * `golf_insight_generation_log.insight_type` for a stale pick whose run wrote
+ * nothing (parked, failed or threw). It counts toward the anchor so the same
+ * player is not picked two nights running for nothing. It is not an engine
+ * run: written with team_id null, and the admin BI "AI users" read excludes it.
+ */
+export const STALE_REFRESH_PARKED_LOG_TYPE = 'stale_refresh_parked';

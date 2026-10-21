@@ -47,12 +47,14 @@ import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { freshnessReadsEnabled } from '@/lib/coachhelm/v3/engine/read-floors';
 import { coachhelmTeamAllowlist, isCoachHelmFlagEnabled, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { resolveEngineOwner } from '@/lib/coachhelm/engine-owner';
 import {
   roundInsideEngineWindow,
   selectStaleRefreshPlayers,
   STALE_REFRESH_CAP,
   STALE_REFRESH_DAYS,
   STALE_REFRESH_FLAG,
+  STALE_REFRESH_PARKED_LOG_TYPE,
   type StaleAnchorRow,
 } from '@/lib/coachhelm/v3/engine/stale-refresh';
 import { loadPlayerRoundIndex, newestCountableRound } from '@/lib/coachhelm/v3/engine/read-window';
@@ -185,6 +187,10 @@ async function handleRosterSweep(): Promise<NextResponse> {
     : [];
   let staleRefreshed = 0;
   let staleDeferred = 0;
+  // Stale picks whose run wrote nothing (parked, failed or threw): each gets
+  // a STALE_REFRESH_PARKED_LOG_TYPE row so it counts toward the anchor and is
+  // not picked again for STALE_REFRESH_DAYS.
+  const staleUnproductive: string[] = [];
 
   const toRun: Array<{ playerId: string; mode: RunMode }> = [
     ...decisions.filter((d) => d.kind === 'legacy').map((d) => ({ playerId: d.playerId, mode: 'legacy' as const })),
@@ -212,6 +218,7 @@ async function handleRosterSweep(): Promise<NextResponse> {
       }),
     );
     for (const p of pairs) {
+      if (p.mode === 'stale' && !(p.ok && p.result.success)) staleUnproductive.push(p.playerId);
       if (!p.ok) {
         failed++;
         await logServerError(
@@ -253,6 +260,10 @@ async function handleRosterSweep(): Promise<NextResponse> {
     + freshnessCooldown
     + freshnessDeferred;
 
+  const staleMarked = staleUnproductive.length > 0
+    ? await recordUnproductiveStaleRuns(supabase, staleUnproductive)
+    : 0;
+
   if (stalePicks.length > 0) {
     await logServerEvent(
       `cron.rosterSweep.staleRefresh: ${staleRefreshed} of ${stalePicks.length} idle players refreshed`,
@@ -264,6 +275,8 @@ async function handleRosterSweep(): Promise<NextResponse> {
           picked: stalePicks.length,
           refreshed: staleRefreshed,
           deferred: staleDeferred,
+          unproductive: staleUnproductive.length,
+          unproductiveMarked: staleMarked,
           cap: STALE_REFRESH_CAP,
           staleDays: STALE_REFRESH_DAYS,
           oldestDays: stalePicks[0]?.staleDays ?? null,
@@ -463,7 +476,7 @@ async function pickStaleRefreshes(
           supabase
             .from('golf_insight_generation_log')
             .select('player_id, created_at')
-            .eq('insight_type', 'post_round_v2')
+            .in('insight_type', ['post_round_v2', STALE_REFRESH_PARKED_LOG_TYPE])
             .in('player_id', chunk)
             .gte('created_at', since)
             .order('id', { ascending: true })
@@ -489,5 +502,50 @@ async function pickStaleRefreshes(
       lastRunAt.set(run.player_id, Math.max(lastRunAt.get(run.player_id) ?? Number.NEGATIVE_INFINITY, t));
     }
   }
-  return selectStaleRefreshPlayers(candidateIds, reads, lastRunAt, nowMs);
+  // Every stale candidate, oldest first; then keep the first
+  // STALE_REFRESH_CAP the engine would actually run. A player whose coach or
+  // team has CoachHelm off (or with no coach) is skipped with the engine's
+  // own park check, so they never take a slot.
+  const ordered = selectStaleRefreshPlayers(candidateIds, reads, lastRunAt, nowMs, {
+    cap: Number.POSITIVE_INFINITY,
+  });
+  const picks: ReturnType<typeof selectStaleRefreshPlayers> = [];
+  for (const pick of ordered) {
+    if (picks.length >= STALE_REFRESH_CAP) break;
+    const owner = await resolveEngineOwner(supabase, pick.playerId);
+    if (owner.kind === 'ok') picks.push(pick);
+  }
+  return picks;
+}
+
+/**
+ * One STALE_REFRESH_PARKED_LOG_TYPE row per stale pick whose run wrote
+ * nothing, so the pick counts toward the player's anchor. team_id stays null
+ * and the admin BI read excludes the type: it is not an engine run. Returns
+ * how many rows were written (0 on a write error, which is logged; the
+ * player may then be picked again tomorrow).
+ */
+async function recordUnproductiveStaleRuns(
+  supabase: ReturnType<typeof createAdminClient>,
+  playerIds: readonly string[],
+): Promise<number> {
+  const { error } = await supabase.from('golf_insight_generation_log').insert(
+    playerIds.map((playerId) => ({
+      player_id: playerId,
+      team_id: null,
+      insight_type: STALE_REFRESH_PARKED_LOG_TYPE,
+      insights_generated: 0,
+      rounds_analyzed: 0,
+      engine_version: 'v3',
+    })),
+  );
+  if (error) {
+    await logServerError(
+      `cron.rosterSweep.staleRefresh marker write failed: ${error.message}`,
+      { action: 'cron.coachhelm.rosterSweep.staleRefresh', featureArea: 'coachhelm', extra: { code: error.code ?? null } },
+      'warning',
+    );
+    return 0;
+  }
+  return playerIds.length;
 }

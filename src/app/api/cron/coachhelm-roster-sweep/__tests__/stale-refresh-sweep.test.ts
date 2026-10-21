@@ -27,7 +27,11 @@ import { GET } from '../route';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { __resetRoundIndexMemo } from '@/lib/coachhelm/v3/engine/read-window';
-import { STALE_REFRESH_CAP, STALE_REFRESH_FLAG } from '@/lib/coachhelm/v3/engine/stale-refresh';
+import {
+  STALE_REFRESH_CAP,
+  STALE_REFRESH_FLAG,
+  STALE_REFRESH_PARKED_LOG_TYPE,
+} from '@/lib/coachhelm/v3/engine/stale-refresh';
 
 const triggerMock = vi.mocked(triggerPlayerInsightsAfterRound);
 const DAY = 86_400_000;
@@ -63,7 +67,11 @@ function openRead(player: string, refreshedDaysAgo: number) {
 
 /** One rostered, analyzed player whose newest analysis is `staleDays` old. */
 function addIdle(player: string, staleDays: number, opts: { roundDaysAgo?: number } = {}) {
-  tables.golf_team_members!.push({ id: `m-${player}`, team_id: 't1', player_id: player, status: 'active' });
+  tables.golf_team_members!.push({
+    id: `m-${player}`, team_id: 't1', player_id: player, status: 'active',
+    // The fake ignores embeds; the engine-owner read takes the joined org from here.
+    golf_teams: { organization_id: 'org1' },
+  });
   tables.golf_rounds!.push(roundRow(`r-${player}`, player, opts.roundDaysAgo ?? staleDays + 5, true));
   tables.golf_coach_insights!.push(openRead(player, staleDays));
 }
@@ -75,6 +83,9 @@ function seed() {
     golf_rounds: [roundRow('r-new', 'player-new', 1, false)],
     golf_coach_insights: [],
     golf_insight_generation_log: [],
+    golf_coaches: [{ id: 'coach1', organization_id: 'org1', created_at: '2026-01-01T00:00:00Z' }],
+    golf_coachhelm_settings: [],
+    golf_team_coachhelm_settings: [],
   };
   fake = createFakeSupabase({ tables });
 }
@@ -172,6 +183,56 @@ describe('roster sweep — idle-player stale refresh', () => {
     );
     const body = await callGet();
     expect(body).toMatchObject({ staleRefreshPicked: 1, staleRefreshed: 0, failed: 1 });
+  });
+
+  it('skips a player whose team has CoachHelm off, so they never take a slot', async () => {
+    enabledFlags.add(STALE_REFRESH_FLAG);
+    addIdle('player-off', 60);
+    addIdle('player-on', 30);
+    // player-off moves to a team that switched CoachHelm off (same org and coach).
+    tables.golf_team_members!.find((m) => m.player_id === 'player-off')!.team_id = 't-off';
+    tables.golf_team_coachhelm_settings!.push({ team_id: 't-off', enabled: false, disabled_reason: 'paused' });
+    const body = await callGet();
+    expect(ran()).toEqual(['player-new', 'player-on']);
+    expect(body).toMatchObject({ staleRefreshPicked: 1 });
+  });
+
+  it('skips a player whose coach has CoachHelm off', async () => {
+    enabledFlags.add(STALE_REFRESH_FLAG);
+    addIdle('player-idle', 30);
+    tables.golf_coachhelm_settings!.push({ coach_id: 'coach1', enabled: false, disabled_reason: null });
+    await callGet();
+    expect(ran()).toEqual(['player-new']);
+  });
+
+  it('a pick the engine parks leaves a marker, so it is not picked the next night', async () => {
+    enabledFlags.add(STALE_REFRESH_FLAG);
+    addIdle('player-parked', 30);
+    triggerMock.mockImplementation(async (playerId: string) =>
+      playerId === 'player-parked'
+        ? { success: false, code: 'engine_below_round_floor' as never, error: 'under floor' }
+        : { success: true, insights_created: 1 },
+    );
+    const first = await callGet();
+    expect(ran()).toEqual(['player-new', 'player-parked']);
+    expect(first).toMatchObject({ staleRefreshPicked: 1, staleRefreshed: 0, skipped: 1 });
+    const markers = tables.golf_insight_generation_log!.filter((r) => r.insight_type === STALE_REFRESH_PARKED_LOG_TYPE);
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toMatchObject({ player_id: 'player-parked', team_id: null });
+
+    // Next night: the marker is the newest "analysis", so the player waits.
+    triggerMock.mockClear();
+    markers[0]!.created_at = daysAgo(1);
+    const second = await callGet();
+    expect(ran()).toEqual(['player-new']);
+    expect(second).toMatchObject({ staleRefreshPicked: 0 });
+  });
+
+  it('a successful stale run leaves no marker', async () => {
+    enabledFlags.add(STALE_REFRESH_FLAG);
+    addIdle('player-idle', 30);
+    await callGet();
+    expect(tables.golf_insight_generation_log!.filter((r) => r.insight_type === STALE_REFRESH_PARKED_LOG_TYPE)).toEqual([]);
   });
 
   describe('HELM_COACHHELM_TEAMS canary', () => {
