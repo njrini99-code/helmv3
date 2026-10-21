@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-recruit-documents-film
-Status: HELD
+Status: RELEASED
 Pages: Recruiting (P014): a prospect's Documents (the upload dialog and the file drop)
 Feature: recruiting (memory/registry.yml)
 Migration: supabase/migrations/20260930140000_recruit_documents_film.sql
@@ -136,3 +136,9 @@ was told to leave HELD.md alone.
 - [ ] RLS verified
 - [ ] a real film uploaded, opened and removed on a test prospect
 - [ ] held status discharged
+
+## Released
+
+Applied to production on 2026-10-21 by the production rollout: `supabase_migrations.schema_migrations`
+holds version `20260930140000` (production rollout ledger). The status above moved from HELD to
+RELEASED to match.
