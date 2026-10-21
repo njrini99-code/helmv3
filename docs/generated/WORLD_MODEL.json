@@ -17467,6 +17467,11 @@
       "evidence": [
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/data-prompts/recovery.ts",
+          "anchor": "src/lib/golf/round-session/play-order"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/new-round-setup-restore-signal.ts",
           "anchor": "src/lib/golf/round-session/routes"
         },
