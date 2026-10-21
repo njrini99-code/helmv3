@@ -108,7 +108,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -125,7 +125,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -142,7 +142,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -159,7 +159,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -172,11 +172,11 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -210,7 +210,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -244,7 +244,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -274,11 +274,11 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -295,7 +295,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -312,7 +312,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the next analysis run rewrites each row's diagnosis with the old template and drops evidence.cause (the update path replaces evidence).",
@@ -346,7 +346,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -363,7 +363,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the coach board draws no Team patterns section, and the next analysis run writes the bad-day-floor and pressure reads without detail.field_day and with the bad-day gate as before.",
@@ -380,7 +380,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the next analysis run rewrites each row's evidence without evidence.comparison (the update path replaces evidence), and the surfaces fall back to their Tour wording.",
@@ -397,7 +397,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -448,7 +448,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
