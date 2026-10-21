@@ -237,6 +237,9 @@ export function scanOptions(env = process.env, only = []) {
   return { pages, engines, motions, widths, heights, schemes };
 }
 
+/** How many times the scan opens a page's sheet or menu before it counts as a miss. */
+const OPEN_ATTEMPTS = 3;
+
 async function main() {
   const { pages, engines, motions, widths, heights, schemes } = scanOptions(process.env, process.argv.slice(2));
   const browsers = await import('playwright');
@@ -269,15 +272,23 @@ async function main() {
       }
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
       const label = `${engine} ${scheme} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      // A tap made before the dev server's page hydrates does nothing, so the next step never appears and the scan
+      // reported "could not tap" for a page that was fine (run 39617783087: three misses in one scan, passing on the
+      // sibling pages). Reload and open it again, up to three times; a control that is really missing still fails.
       let stuck = null;
-      for (const step of [opener ?? []].flat()) {
-        try {
-          await tab.click(step, { timeout: 10_000 });
-        } catch {
-          stuck = step;
-          break;
+      for (let attempt = 1; attempt <= OPEN_ATTEMPTS; attempt++) {
+        stuck = null;
+        for (const step of [opener ?? []].flat()) {
+          try {
+            await tab.click(step, { timeout: 10_000 });
+          } catch {
+            stuck = step;
+            break;
+          }
+          await tab.waitForTimeout(400);
         }
-        await tab.waitForTimeout(400);
+        if (!stuck) break;
+        if (attempt < OPEN_ATTEMPTS) await tab.reload({ waitUntil: 'networkidle', timeout: 240_000 });
       }
       if (stuck) {
         failed++;
