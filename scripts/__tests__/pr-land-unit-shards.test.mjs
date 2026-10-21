@@ -1,5 +1,5 @@
 // scripts/pr-land.mjs refuses to land unless one CI run of the head commit ran all five unit shards. A follow-up push runs only the
-// related tests on shard 1 and skips shards 2-5, so every required context can be green without the suite having run (#2269 / #2270).
+// related tests (a separate step of each shard) and skips the full-suite step, so every required context can be green without the suite having run (#2269 / #2270).
 import { describe, expect, it } from 'vitest';
 import { checkUnitShards, evaluateUnitShards, newestAttempts, unitShardVerdict, workflowFile } from '../pr-land.mjs';
 
@@ -16,10 +16,10 @@ const job = (n, { scope = 'success', test } = {}) => ({
   ],
 });
 const fullRun = (id) => ({ id, jobs: [1, 2, 3, 4, 5].map((n) => job(n, { test: 'success' })) });
-/** The follow-up-push shape: shard 1 runs the related tests, shards 2-5 skip the step. */
+/** The follow-up-push shape: every shard runs its related tests in a differently named step and skips the full-suite step. */
 const scopedRun = (id) => ({
   id,
-  jobs: [1, 2, 3, 4, 5].map((n) => job(n, { test: n === 1 ? 'success' : 'skipped' })),
+  jobs: [1, 2, 3, 4, 5].map((n) => job(n, { test: 'skipped' })),
 });
 
 describe('unitShardVerdict', () => {
@@ -54,11 +54,11 @@ describe('evaluateUnitShards', () => {
   it('passes when one run ran all five shards', () => {
     expect(evaluateUnitShards([fullRun(10)])).toEqual({ ok: true, runId: 10, problems: [] });
   });
-  it('refuses a follow-up (scoped) run and names shards 2-5', () => {
+  it('refuses a follow-up (scoped) run and names every shard', () => {
     const r = evaluateUnitShards([scopedRun(11)]);
     expect(r.ok).toBe(false);
     expect(r.runId).toBe(11);
-    expect(r.problems.map((p) => p.split(':')[0])).toEqual(['shard 2/5', 'shard 3/5', 'shard 4/5', 'shard 5/5']);
+    expect(r.problems.map((p) => p.split(':')[0])).toEqual(['shard 1/5', 'shard 2/5', 'shard 3/5', 'shard 4/5', 'shard 5/5']);
   });
   it('refuses one red shard in an otherwise full run', () => {
     const run = fullRun(12);
