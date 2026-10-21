@@ -41,7 +41,7 @@ const okWrites = () => ({ assign: vi.fn(() => Promise.resolve({ success: true })
 const show = (data: ChCoachHelmData) => render(wrap(<CoachBoard data={data} writes={okWrites()} />));
 const card = () => document.querySelector('.ch-hl-focus') as HTMLElement;
 const path = () => card().querySelector('[data-ch-code="CH-13940"]') as HTMLElement | null;
-const flat = (t: string | null | undefined) => (t ?? '').replace(/ /g, ' ');
+const flat = (t: string | null | undefined) => (t ?? '').replace(/\u00a0/g, ' ');
 const COACH = { role: 'coach', first: 'Eli' } as const;
 
 const cause = (over: Partial<InsightCause>): InsightCause => ({
