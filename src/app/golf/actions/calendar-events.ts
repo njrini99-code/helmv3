@@ -2,7 +2,7 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import { fromUntyped, rpcUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
@@ -2198,7 +2198,7 @@ async function getEventRSVPImpl(eventId: string): Promise<ActionResult<RSVPStats
     // the totals come from golf_event_attendance_counts, which returns numbers for the caller's own teams. Before the
     // migration the function is missing (PGRST202 / 42883) and the row totals stand; for a coach both agree.
     const row = await Promise.resolve()
-      .then(() => supabase.rpc('golf_event_attendance_counts', { p_event_ids: [eventId] }))
+      .then(() => rpcUntyped(supabase, 'golf_event_attendance_counts', { p_event_ids: [eventId] }))
       .then(({ data, error }) => (error ? undefined : data?.[0]))
       .catch(() => undefined);
     if (row && row.invited > stats.summary.total) {

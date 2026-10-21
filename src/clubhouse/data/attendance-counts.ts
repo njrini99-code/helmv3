@@ -1,5 +1,6 @@
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { rpcUntyped } from '@/lib/supabase/untyped';
 
 /**
  * RSVP counts for a player's screens, without reading teammates' rows.
@@ -78,7 +79,7 @@ export async function loadAttendanceCounts(supabase: Client, eventIds: string[])
   const ids = [...new Set(eventIds)];
   if (!ids.length) return { kind: 'ok', byEvent: new Map() };
   // One POST body, not a query string, so no .in() URL-length chunking is needed.
-  const { data, error } = await supabase.rpc('golf_event_attendance_counts', { p_event_ids: ids });
+  const { data, error } = await rpcUntyped(supabase, 'golf_event_attendance_counts', { p_event_ids: ids });
   if (error) {
     const code = (error as { code?: string }).code;
     return code && NOT_DEPLOYED.has(code) ? { kind: 'missing' } : { kind: 'error', error };

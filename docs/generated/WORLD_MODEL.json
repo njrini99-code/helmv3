@@ -12563,18 +12563,6 @@
     },
     {
       "source": "calendar_events",
-      "target": "golf_event_attendance_counts",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/golf/actions/calendar-events.ts",
-          "anchor": "golf_event_attendance_counts"
-        }
-      ]
-    },
-    {
-      "source": "calendar_events",
       "target": "golf_insight_action",
       "kind": "feature_table",
       "evidence": [
@@ -12796,18 +12784,6 @@
           "kind": "rpc_call",
           "path": "src/clubhouse/data/coachhelm-track-record.ts",
           "anchor": "golf_coachhelm_shown_reads"
-        }
-      ]
-    },
-    {
-      "source": "clubhouse",
-      "target": "golf_event_attendance_counts",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/clubhouse/data/attendance-counts.ts",
-          "anchor": "golf_event_attendance_counts"
         }
       ]
     },

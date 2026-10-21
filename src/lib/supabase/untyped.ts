@@ -70,3 +70,31 @@ export function fromUntyped(client: SupabaseClient<any>, table: UntypedTable): a
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return client.from(table) as any;
 }
+
+/**
+ * RPC functions the code calls before the migration that creates them is applied (each caller handles the
+ * function-missing error, PGRST202 / 42883). `database.ts` is regenerated from production, so a held function
+ * is not in it; the row shape lives here until the migration applies and `npm run db:types` picks it up.
+ */
+export type UntypedRpc = {
+  // Held migration 20261017102000_golf_event_attendance_players_own_rows.sql.
+  golf_event_attendance_counts: {
+    args: { p_event_ids: string[] };
+    row: { event_id: string; invited: number; accepted: number; declined: number; pending: number; coach_invited: number };
+  };
+};
+
+export type UntypedRpcResult<Row> = { data: Row[] | null; error: { code?: string; message: string } | null };
+
+/** Call an RPC listed in `UntypedRpc` with its declared argument and row types (no `any` at the call site). */
+export function rpcUntyped<F extends keyof UntypedRpc>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  client: SupabaseClient<any>,
+  fn: F,
+  args: UntypedRpc[F]['args'],
+): PromiseLike<UntypedRpcResult<UntypedRpc[F]['row']>> {
+  const untyped = client as unknown as {
+    rpc(name: string, params: Record<string, unknown>): PromiseLike<UntypedRpcResult<UntypedRpc[F]['row']>>;
+  };
+  return untyped.rpc(fn, args);
+}

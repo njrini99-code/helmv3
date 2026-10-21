@@ -98,7 +98,7 @@ Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** none
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
@@ -108,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`
+- **RPCs:** `golf_coachhelm_shown_reads`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
