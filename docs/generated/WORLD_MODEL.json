@@ -19331,6 +19331,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/composite/synthesis.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/counterfactual/baseline-loader.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19378,6 +19383,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/shot-source.ts",
           "anchor": "src/lib/supabase/admin"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/generators/approach-miss.ts",
+          "anchor": "src/lib/flags/is-enabled"
         },
         {
           "kind": "import_graph",

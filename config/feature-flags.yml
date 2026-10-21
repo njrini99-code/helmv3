@@ -625,12 +625,17 @@ flags:
       Runs the five CoachHelm insight-angle generators under
       src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy,
       bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss
-      compass) in every analyzePlayer pass. On: each writes at most one
+      compass) and the Slice 5b counted families (par-3 tee shots, strokes
+      gained per approach in three bands, lag leave, breaking-putt low-side
+      misses) in every analyzePlayer pass. On: each writes at most one
       golf_coach_insights row per player when its own floors and its
       one-sided z >= 1.645 gate pass, so coaches and players can see these
-      new reads. Off: the orchestrator call site (insightAngleGenerators)
-      returns no entries, and each angle generator's run() returns before
-      any read, write or sweep, so nothing is read, written or archived.
+      new reads; the approach-miss bands also leave out par-3 tee shots,
+      composites C6 and C8 read the counted rows instead of an estimated
+      3-putt rate and a 22 ft target, and no composite is written as urgent.
+      Off: the orchestrator call site (insightAngleGenerators) returns no
+      entries, each angle generator's run() returns before any read, write
+      or sweep, and approach-miss and the composites behave as before.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -647,7 +652,8 @@ flags:
       off stops new angle rows; rows already written stay until the
       lifecycle cron archives them (archive them by signature prefix
       v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:,
-      v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate
+      v3:tee_miss_cost:, v3:approach_miss_compass:, v3:par3_tee:,
+      v3:approach_sg:, v3:lag_leave:, v3:under_reading: for an immediate
       rollback). If coaches keep the angles through one season, remove the
       flag and the run() flag check in angle-generator.ts; if rejected, delete the
       insight-angles directory, its orchestrator call site and its metric

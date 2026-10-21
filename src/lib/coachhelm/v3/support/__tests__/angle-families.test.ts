@@ -114,6 +114,64 @@ const SPECS: Record<AngleFamilyId, RowSpec> = {
     gap: { kind: 'mean', value: 0.9, se: 0.15, df: 40, benchmark: 0.3, polarity: 'lower_better' },
     detail: { worse_side: 'short', better_side: 'long', sides: { short: { costed: 40 }, long: { costed: 20 } } },
   },
+  // Slice 5b. SG per par-3 tee shot −0.30 vs the team pool's −0.10.
+  par3_tee: {
+    yourValue: -0.3,
+    comparisonValue: -0.1,
+    comparisonSource: 'team_avg',
+    sampleN: 60,
+    roundsN: 15,
+    strokes: 0.8,
+    gap: { kind: 'mean', value: -0.3, se: 0.05, df: 80, benchmark: -0.1, polarity: 'higher_better' },
+  },
+  // SG per approach in each band, 0.2 behind the team pool.
+  approach_sg_50_125: {
+    yourValue: -0.25,
+    comparisonValue: -0.05,
+    comparisonSource: 'team_avg',
+    sampleN: 60,
+    roundsN: 15,
+    strokes: 0.8,
+    gap: { kind: 'mean', value: -0.25, se: 0.05, df: 80, benchmark: -0.05, polarity: 'higher_better' },
+  },
+  approach_sg_125_175: {
+    yourValue: -0.35,
+    comparisonValue: -0.15,
+    comparisonSource: 'team_avg',
+    sampleN: 60,
+    roundsN: 15,
+    strokes: 0.8,
+    gap: { kind: 'mean', value: -0.35, se: 0.05, df: 80, benchmark: -0.15, polarity: 'higher_better' },
+  },
+  approach_sg_175_plus: {
+    yourValue: -0.45,
+    comparisonValue: -0.25,
+    comparisonSource: 'team_avg',
+    sampleN: 60,
+    roundsN: 15,
+    strokes: 0.8,
+    gap: { kind: 'mean', value: -0.45, se: 0.05, df: 80, benchmark: -0.25, polarity: 'higher_better' },
+  },
+  // 20 of 60 lag putts inside 5 ft vs the team pool's 65% (a rough estimate).
+  lag_leave: {
+    yourValue: 33.3,
+    comparisonValue: 65,
+    comparisonSource: 'team_avg',
+    sampleN: 60,
+    roundsN: 12,
+    strokes: 0.4,
+    gap: { kind: 'proportion', k: 20, n: 60, benchmark: 0.65, polarity: 'higher_better' },
+  },
+  // 30 of 40 side-tagged breaking-putt misses low vs an even split; unsized.
+  under_reading: {
+    yourValue: 75,
+    comparisonValue: 50,
+    comparisonSource: 'your_baseline',
+    sampleN: 40,
+    roundsN: 10,
+    strokes: 0,
+    gap: { kind: 'proportion', k: 30, n: 40, benchmark: 0.5, polarity: 'lower_better' },
+  },
 };
 
 const IDS = Object.keys(ANGLE_FAMILIES) as AngleFamilyId[];

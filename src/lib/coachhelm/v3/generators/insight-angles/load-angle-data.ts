@@ -114,12 +114,12 @@ async function readAngleData(sb: Sb, playerId: string): Promise<AngleData> {
 
   const holes: AngleHole[] = [];
   const shots: AngleShot[] = [];
-  for (const ids of chunk(rounds.map((r) => r.id))) {
+  for (const idChunk of chunk(rounds.map((r) => r.id))) {
     const { data: h, error: hErr } = await fetchAllRowsResult<AngleHole>((from, to) =>
       sb
         .from('golf_holes')
         .select(HOLE_COLUMNS)
-        .in('round_id', ids)
+        .in('round_id', idChunk)
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: AngleHole[] | null; error: { message: string } | null }>,
     );
@@ -129,7 +129,7 @@ async function readAngleData(sb: Sb, playerId: string): Promise<AngleData> {
       sb
         .from('golf_shots')
         .select(SHOT_COLUMNS)
-        .in('round_id', ids)
+        .in('round_id', idChunk)
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: AngleShot[] | null; error: { message: string } | null }>,
     );
@@ -243,12 +243,12 @@ async function readTeamShots(sb: Sb, teamId: string, playerId: string): Promise<
     t.rounds = t.rounds.slice(0, ANGLE_ROUND_LIMIT);
     for (const r of t.rounds) owner.set(r.id, t);
   }
-  for (const ids of chunk([...owner.keys()])) {
+  for (const idChunk of chunk([...owner.keys()])) {
     const { data: h, error: hErr } = await fetchAllRowsResult<AngleHole>((from, to) =>
       sb
         .from('golf_holes')
         .select(HOLE_COLUMNS)
-        .in('round_id', ids)
+        .in('round_id', idChunk)
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: AngleHole[] | null; error: { message: string } | null }>,
     );
@@ -258,7 +258,7 @@ async function readTeamShots(sb: Sb, teamId: string, playerId: string): Promise<
       sb
         .from('golf_shots')
         .select(SHOT_COLUMNS)
-        .in('round_id', ids)
+        .in('round_id', idChunk)
         .in('shot_type', [...TEAM_SHOT_TYPES])
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: AngleShot[] | null; error: { message: string } | null }>,
