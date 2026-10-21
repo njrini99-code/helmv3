@@ -35,7 +35,7 @@ export function PathLine({ path }: { path: ChPathLine | null }) {
                     ›
                   </span>
                 )}
-                {step}
+                <span className="ch-hl-path__step">{step}</span>
               </span>
             ))}
           </span>

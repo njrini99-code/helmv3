@@ -207,8 +207,7 @@
   gap: 4px;
   color: var(--ch-text-secondary);
 }
-.ch-hl-path__chip:not(:has(.ch-hl-path__sep)),
-.ch-hl-path__chip > .ch-hl-path__sep + * {
+.ch-hl-path__step {
   padding: 3px 8px;
   border-radius: 999px;
   background: rgb(28 25 18 / 0.06);
