@@ -1,7 +1,7 @@
 // scripts/pr-land.mjs refuses to land unless one CI run of the head commit ran all five unit shards. A follow-up push runs only the
 // related tests on shard 1 and skips shards 2-5, so every required context can be green without the suite having run (#2269 / #2270).
 import { describe, expect, it } from 'vitest';
-import { checkUnitShards, evaluateUnitShards, newestAttempts, unitShardVerdict } from '../pr-land.mjs';
+import { checkUnitShards, evaluateUnitShards, newestAttempts, unitShardVerdict, workflowFile } from '../pr-land.mjs';
 
 const SHA = 'a'.repeat(40);
 
@@ -161,5 +161,25 @@ describe('newestAttempts — a failed-jobs rerun keeps the shards that already p
     };
     expect(checkUnitShards({ repo: 'o/r', sha: SHA, run })).toEqual({ ok: true, runId: 9, problems: [] });
     expect(calls.filter((c) => c.includes('/jobs?')).length).toBe(2);
+  });
+});
+
+describe('workflowFile — the run path with or without a ref suffix', () => {
+  it('strips what follows @', () => {
+    expect(workflowFile('.github/workflows/ci.yml@refs/pull/2273/merge')).toBe('.github/workflows/ci.yml');
+    expect(workflowFile('.github/workflows/ci.yml@main')).toBe('.github/workflows/ci.yml');
+  });
+  it('leaves a plain path alone and survives a missing one', () => {
+    expect(workflowFile('.github/workflows/ci.yml')).toBe('.github/workflows/ci.yml');
+    expect(workflowFile(undefined)).toBe('');
+  });
+  it('checkUnitShards finds the CI run when the path carries a ref', () => {
+    const run = (args) => {
+      if (args[1].includes('/actions/runs?')) {
+        return { ok: true, stdout: JSON.stringify({ workflow_runs: [{ id: 3, path: '.github/workflows/ci.yml@refs/pull/9/merge', head_sha: SHA }] }) };
+      }
+      return { ok: true, stdout: JSON.stringify({ jobs: [1, 2, 3, 4, 5].map((n) => ({ ...job(n, { test: 'success' }), run_attempt: 1, id: n })) }) };
+    };
+    expect(checkUnitShards({ repo: 'o/r', sha: SHA, run })).toEqual({ ok: true, runId: 3, problems: [] });
   });
 });

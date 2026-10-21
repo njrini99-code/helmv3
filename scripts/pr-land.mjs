@@ -176,6 +176,11 @@ export function newestAttempts(jobs) {
   return [...byName.values()];
 }
 
+/** A workflow run's `path` without the ref the REST API may append (`.github/workflows/ci.yml@refs/heads/main`). Pure. */
+export function workflowFile(path) {
+  return String(path ?? '').split('@')[0];
+}
+
 /**
  * Reads the CI workflow's runs for `sha` and their jobs through `run(args)` (gh), then judges them with evaluateUnitShards. Fails closed:
  * a read that errors is a refusal, never a pass.
@@ -207,7 +212,7 @@ export function checkUnitShards({ repo, sha, run }) {
   const listed = readJson(['api', `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`]);
   if (!listed || !Array.isArray(listed.workflow_runs)) return { ok: false, runId: null, problems: ['could not read the CI runs for this head commit'] };
   const runs = [];
-  for (const wr of listed.workflow_runs.filter((w) => w.path === CI_WORKFLOW_PATH && w.head_sha === sha)) {
+  for (const wr of listed.workflow_runs.filter((w) => workflowFile(w.path) === CI_WORKFLOW_PATH && w.head_sha === sha)) {
     const jobs = readAllJobs(wr.id);
     if (!jobs) return { ok: false, runId: wr.id, problems: [`could not read the jobs of CI run ${wr.id}`] };
     runs.push({ id: wr.id, jobs: newestAttempts(jobs) });
