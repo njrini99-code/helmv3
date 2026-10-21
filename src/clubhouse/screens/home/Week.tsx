@@ -9,7 +9,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { TYPE_ICON } from '../calendar/type-icon';
 import { messagesPrefillHref } from '../messages/prefill';
 import { rebuiltHref } from '../../shell/nav';
-import { nudgeDraft } from './DayCard';
+import { nudgeDraft } from './nudge-draft';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
