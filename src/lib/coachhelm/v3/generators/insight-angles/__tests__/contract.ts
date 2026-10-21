@@ -1,5 +1,6 @@
 /** Shared assertion: an angle row carries the Slice 5a read contract for its family. */
 import { expect } from 'vitest';
+import { buildCandidate } from '@/lib/coachhelm/v3/support/candidate';
 import { ANGLE_FAMILIES, type AngleFamilyId, type AngleGapInput, type AngleTest } from '../angle-data';
 
 export function expectFamilyContract(
@@ -55,4 +56,12 @@ export function expectFamilyContract(
   }
   // JSON round trip keeps every field (no Infinity / undefined numbers).
   expect(JSON.parse(JSON.stringify(gap))).toEqual(gap);
+  // The Slice 1 support pass reads this row as its own family and tests it
+  // on the weak side it claims (Slice 1c).
+  const candidate = buildCandidate({ id: 'row', insight_type: def.insight_type, evidence: JSON.parse(JSON.stringify(ev)) });
+  expect(candidate.family).toBe(family);
+  expect(candidate.untestableReason).toBeNull();
+  expect(candidate.gapInput).toEqual(gap);
+  expect(candidate.direction).toBe('weakness');
+  for (const arm of candidate.arms) expect(arm.have, arm.key).not.toBeNull();
 }

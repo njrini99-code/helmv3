@@ -1242,6 +1242,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/golf/actions/conversation-hide.ts",
+        "pattern": "src/app/golf/actions/conversation-hide.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/golf/actions/course-library.ts",
         "pattern": "src/app/golf/actions/course-library.ts",
         "category": "actions"
@@ -2521,6 +2526,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/test/actions/hide-golf-conversation.test.ts",
+        "pattern": "src/test/actions/hide-golf-conversation.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/test/actions/send-message-duplicate-key-equivalence.test.ts",
         "pattern": "src/test/actions/send-message-duplicate-key-equivalence.test.ts",
         "category": "tests"
@@ -3155,6 +3165,12 @@
         "id": "golf_coachhelm_action_runs",
         "definedIn": [
           "supabase/migrations/20260725170000_coachhelm_action_runs_and_ui_parts.sql"
+        ]
+      },
+      {
+        "id": "golf_coachhelm_corrections",
+        "definedIn": [
+          "supabase/migrations/20261020121000_golf_coachhelm_corrections.sql"
         ]
       },
       {
@@ -13982,6 +13998,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -14196,6 +14217,16 @@
       "target": "auth_onboarding_join",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
@@ -14648,6 +14679,17 @@
     },
     {
       "source": "coachhelm_ai",
+      "target": "golf_coachhelm_corrections",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261020121000_golf_coachhelm_corrections.sql"
+        }
+      ]
+    },
+    {
+      "source": "coachhelm_ai",
       "target": "golf_coachhelm_player_state",
       "kind": "feature_table",
       "evidence": [
@@ -14829,6 +14871,21 @@
           "kind": "feature_doc_contract",
           "path": "memory/features/coachhelm-ai.md",
           "anchor": "player_coachhelm_development"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/flag"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/input"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/coachhelm/v3/corrections/types"
         },
         {
           "kind": "import_graph",
@@ -19331,6 +19388,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/counterfactual/baseline-loader.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -19655,6 +19717,21 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/load-weights.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/load-weights.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/corrections/load-weights.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/effectiveness/attribution-read.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -19762,6 +19839,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/lifecycle/job.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/ranking/score.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/ranking/score.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         },
         {
           "kind": "import_graph",
@@ -23936,6 +24023,18 @@
     },
     {
       "source": "team_communications",
+      "target": "actions:src/app/golf/actions/conversation-hide.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/conversation-hide.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "actions:src/app/golf/actions/message-attachments.ts",
       "kind": "feature_action",
       "evidence": [
@@ -24065,6 +24164,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/conversation-hide.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/message-attachments.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -24174,6 +24278,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/communication.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/conversation-hide.ts",
           "anchor": "src/lib/supabase/server"
         },
         {
@@ -24694,6 +24803,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
+      "target": "tests:src/test/actions/hide-golf-conversation.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/test/actions/hide-golf-conversation.test.ts"
         }
       ]
     },

@@ -20,7 +20,7 @@
  *
  * Pure data.
  */
-import { KAPPA } from './shrink-baseline';
+import { KAPPA } from '@/lib/coachhelm/v3/support/shrink';
 
 export type RoundCacheCountColumn =
   | 'fairways_hit'

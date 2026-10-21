@@ -12,7 +12,7 @@ import type { InsightFraming } from '@/lib/coachhelm/v3/engine/root-cause';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { Direction, DirectionBasis, GapInput, Polarity } from './gap';
 import { familyFor, type CountUnit, type FamilyDef } from './families';
-import { minRung, type LadderRung, type WhyState } from './ladder';
+import { LADDER_RUNGS, minRung, type LadderRung, type WhyState } from './ladder';
 
 /** Observed-path floors (02 §6: raised from PR #2073's 3 and 25%). */
 export const PATH_MIN_OCCURRENCES = 4;
@@ -75,6 +75,8 @@ export interface SupportCandidate {
   capReasons: string[];
   splitHalf: { gap_old: number; gap_new: number; n_old: number; n_new: number } | null;
   checkpointsHeld: number;
+  /** The n a mean contrast shrinks by when it is not `n` (the arms' harmonic n). */
+  shrinkN?: number;
 }
 
 type Obj = Record<string, unknown>;
@@ -291,6 +293,47 @@ function readSplitHalf(evidence: Obj): SupportCandidate['splitHalf'] {
   return { gap_old: gapOld, gap_new: gapNew, n_old: nOld, n_new: nNew };
 }
 
+/** Harmonic n of two arms, the effective n of a contrast (1b finding 6). */
+function harmonicOf(a: number, b: number): number {
+  return a > 0 && b > 0 ? (2 * a * b) / (a + b) : 0;
+}
+
+function polarityValue(v: unknown): Polarity | null {
+  return v === 'higher_better' || v === 'lower_better' ? v : null;
+}
+
+/**
+ * The test input a Slice 5a angle row wrote (`detail.gap_input`, the
+ * {@link GapInput} shape: `angle-data.ts` `AngleGapInput`), checked field by
+ * field. Null when it is missing, of another kind than the family's, or not
+ * finite.
+ */
+export function angleGapInput(
+  detail: Obj | null,
+  def: FamilyDef,
+): Extract<GapInput, { kind: 'proportion' | 'mean' }> | null {
+  const gi = obj(detail?.gap_input);
+  if (!gi || gi.kind !== def.shape) return null;
+  const polarity = polarityValue(gi.polarity);
+  if (!polarity) return null;
+  if (gi.kind === 'proportion') {
+    const k = num(gi.k);
+    const n = num(gi.n);
+    const b = num(gi.benchmark);
+    if (k === null || n === null || b === null || !(n > 0) || k < 0 || k > n || !(b > 0 && b < 1)) return null;
+    return { kind: 'proportion', k, n, benchmark: b, polarity };
+  }
+  if (gi.kind === 'mean') {
+    const value = num(gi.value);
+    const se = num(gi.se);
+    const df = num(gi.df);
+    const b = num(gi.benchmark);
+    if (value === null || se === null || b === null || !(se > 0)) return null;
+    return { kind: 'mean', value, se, df: df !== null && df >= 1 ? df : Infinity, benchmark: b, polarity };
+  }
+  return null;
+}
+
 export function buildCandidate(row: { id: string; insight_type: string | null; evidence: unknown }): SupportCandidate {
   const evidence = obj(row.evidence) ?? {};
   const detail = obj(evidence.detail);
@@ -312,7 +355,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   // to have a sample the size of this player's (documented default, finding 5).
   const pool = usedBenchmark?.basis === 'team_loo' ? usedBenchmark.pool_n ?? 0 : 0;
 
-  switch (def.shape) {
+  switch (def.angle ? 'angle' : def.shape) {
     case 'proportion': {
       let k: number | null = null;
       let total: number | null;
@@ -433,6 +476,24 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     }
     case 'untestable':
       break;
+    case 'angle': {
+      // A Slice 5a angle wrote its own test input; read it rather than
+      // re-deriving it. The benchmark is the one that input names, labelled
+      // by the row's comparison source (team median, Tour, or the player's own
+      // other side).
+      const angleInput = angleGapInput(detail, def);
+      gapInput = angleInput;
+      if (!angleInput) {
+        untestableReason = 'no_gap_input';
+      } else {
+        if (sampleN === null && angleInput.kind === 'proportion') n = angleInput.n;
+        const source = mapComparisonSource(evidence.comparison_source);
+        const value = angleInput.kind === 'proportion' ? angleInput.benchmark * 100 : angleInput.benchmark;
+        usedBenchmark = { source, value, basis: source === 'self' ? 'self' : 'row_comparison' };
+        prior = { source, value };
+      }
+      break;
+    }
   }
 
   // A row that claims nothing (a neutral verdict, or a strength row in a
@@ -457,6 +518,21 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     if (lowered !== cap) capReasons.push('tour_benchmark_only');
     cap = lowered;
   }
+  if (def.angle && gapInput) {
+    // 1b / 02 §7: a rough-estimate saving never reads above Likely, and an
+    // angle row's own stamped cap (`detail.ladder_cap`) is never exceeded.
+    if (detail?.impact_kind === 'rough_estimate') {
+      const lowered = minRung(cap, 'likely');
+      if (lowered !== cap) capReasons.push('rough_estimate');
+      cap = lowered;
+    }
+    const stamped = detail?.ladder_cap;
+    if (typeof stamped === 'string' && (LADDER_RUNGS as readonly string[]).includes(stamped)) {
+      const lowered = minRung(cap, stamped as LadderRung);
+      if (lowered !== cap) capReasons.push('row_ladder_cap');
+      cap = lowered;
+    }
+  }
   if (evidence.estimated === true) {
     // 04 §1.1: `estimated` must be false on every read at Observed or above.
     const lowered = minRung(cap, 'likely');
@@ -465,7 +541,17 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   }
 
   const splitHalf = readSplitHalf(evidence);
-  const arms = (def.arms ?? []).map((a) => ({ key: a.key, have: num(detail?.[a.key]), need: a.min }));
+  const arms = (def.arms ?? []).map((a) => ({
+    key: a.key,
+    have: detail ? num(a.read ? a.read(detail) : detail[a.key]) : null,
+    need: a.min,
+  }));
+  // A two-arm mean contrast shrinks toward "no difference" by its arms'
+  // harmonic n, as two-proportion contrasts do (finding 6).
+  const armA = arms[0]?.have ?? null;
+  const armB = arms[1]?.have ?? null;
+  const shrinkN = gapInput && def.shrinkByArms && armA !== null && armB !== null ? harmonicOf(armA, armB) : undefined;
+  if (gapInput && def.nFromArms) n = armA !== null && armB !== null ? armA + armB : 0;
   return {
     id: row.id,
     family: def.family,
@@ -479,12 +565,13 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
     benchmark: gapInput ? usedBenchmark : null,
     prior: gapInput ? prior : null,
     direction,
-    directionBasis: direction === null ? null : def.allowStrength ? 'data' : 'declared',
+    directionBasis: direction === null ? null : def.allowStrength || def.sidePickedFromData ? 'data' : 'declared',
     arms,
     why: whyStateOf(evidence),
     cap,
     capReasons,
     splitHalf,
     checkpointsHeld: num(obj(evidence.stability)?.checkpoints_held) ?? 0,
+    ...(shrinkN !== undefined && shrinkN > 0 ? { shrinkN } : {}),
   };
 }

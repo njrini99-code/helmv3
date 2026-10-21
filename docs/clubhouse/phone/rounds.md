@@ -1,6 +1,7 @@
 # Design: Rounds (player, desktop and phone)
 
 <!-- clubhouse:release-audit:start -->
+
 ## Phone acceptance audit — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.
@@ -176,8 +177,12 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
   (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round
   complete) are bottom sheets that drag to close.
-- Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar
-  for it); an iPhone pass.
+- The number pad's Done key (2026-10-20, release blocker 19): in the app, round
+  entry holds the system's keyboard accessory bar (‹ › Done) up from mount to
+  unmount (`useRoundDoneKey`, `pinKeyboardAccessoryBar`), so every field, sheets
+  included, can put its keyboard away; Mobile Safari draws that bar itself. Not
+  yet felt on a device.
+- Not yet: an iPhone pass.
 
 ## Tap in on the phone (draft, no owner board)
 
