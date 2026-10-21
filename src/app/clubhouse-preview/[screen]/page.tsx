@@ -163,6 +163,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/coachhelm ?state=engine | engine-notmoved   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm ?state=corrections | corrections-notthis | corrections-wrongcause | corrections-already | corrections-later | corrections-good | corrections-unavailable | corrections-failed   (the correction chips, coachhelm_corrections_v1)
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate | patterns | courseplan | courseplannone | courseplanfailed | brieflink   (the coach; Maya)
+ *   /clubhouse-preview/coachhelm ?state=recheck-running | recheck-done | recheck-quiet | recheck-ratelimited | recheck-failed   (Re-check reads answers that way once tapped)
  *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)

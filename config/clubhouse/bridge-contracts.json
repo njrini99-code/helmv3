@@ -14296,6 +14296,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130213,
+    "page": "P013",
+    "category": 2,
+    "item": 13,
+    "name": "RECHECK_RUNNING",
+    "chCode": "CH-13406",
+    "meaning": "Re-check running",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -15037,6 +15048,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130638,
+    "page": "P013",
+    "category": 6,
+    "item": 38,
+    "name": "RECHECK_FAILS",
+    "chCode": "CH-13006",
+    "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130639,
+    "page": "P013",
+    "category": 6,
+    "item": 39,
+    "name": "RECHECK_RATE_LIMITED",
+    "chCode": "CH-13007",
+    "meaning": "Re-check rate-limited",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -15622,6 +15655,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130754,
+    "page": "P013",
+    "category": 7,
+    "item": 54,
+    "name": "RECHECK_READS",
+    "chCode": "CH-13944",
+    "meaning": "Re-check reads (coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130755,
+    "page": "P013",
+    "category": 7,
+    "item": 55,
+    "name": "RECHECK_LANDS",
+    "chCode": "CH-13945",
+    "meaning": "Re-check lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -15954,6 +16009,17 @@
     "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
     "chCode": "CH-13780",
     "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131708,
+    "page": "P013",
+    "category": 17,
+    "item": 8,
+    "name": "RECHECK_TAPPED",
+    "chCode": "CH-13705",
+    "meaning": "Re-check tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
