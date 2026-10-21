@@ -9,8 +9,8 @@ PR/commit:      see git log (claude/coachhelm-strokes-ladder)
 Contract IDs:   CH-13273, CH-13374 (new); CH-13271, CH-13371, CH-13470,
                 CH-13880 reworded
 Actions:        none (read only)
-Data impact:    none written; reads the player's visible golf_coach_insights
-                rows (the Board's own read) beside the standing
+Data impact:    none written; reads the Deep dive's own feed of the player's
+                reads (no exposure recorded) beside the standing
 Held items:     none
 ```
 
@@ -28,7 +28,13 @@ Held items:     none
   ("Solid read · Counted") and the counted sequence or why it is not traced
   yet, linking to the read in the Deep dive.
 - A part with no figure says why in words (CH-13374). Reads that did not load
-  are said once under the ladder, and nothing opens (CH-13273).
+  are said once under the ladder, and nothing opens (CH-13273). That includes
+  the team, Tour and newest-round lookups behind the reads: failing, they fail
+  the reads rather than draw them against no Tour or as current.
+- The reads behind "Because" are the ones the Deep dive delivers: the ladder
+  asks the Deep dive's feed (same ranking, feedback, folding and 30-read limit,
+  recording nothing as shown), so no link opens to a read the Deep dive does
+  not draw.
 - The Strokes gained group no longer draws the four parts of the round (the
   ladder draws them; no number twice on one screen). It keeps Strokes gained:
   total, and a group left with nothing is not drawn. The other groups with

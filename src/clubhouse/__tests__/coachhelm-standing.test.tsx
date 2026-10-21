@@ -18,6 +18,9 @@ vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
+// The ladder's reads are the Deep dive's own feed (`getInsightsForPlayer`, ranking, feedback, folding and limit included); here it answers what the destination delivers.
+const feed = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock('@/app/golf/actions/insight-delivery', () => ({ getInsightsForPlayer: feed.read, getTopInsightsForPlayers: vi.fn(), getThemesForPlayer: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadPlayerStandingMap: standingRead.load }));
 // The cohort lookup the loader reads beside the standing (CH-13272) goes to the service client; here it answers, and its failure is in coachhelm-failed-reads.test.
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: 'mens', level: null })) }));
@@ -63,6 +66,8 @@ beforeEach(() => {
   hapticSpy.mockClear();
   logServer.mockClear();
   standingRead.load.mockReset();
+  feed.read.mockReset();
+  feed.read.mockResolvedValue([]);
   tables.current = {};
 });
 afterEach(cleanup);
@@ -342,20 +347,59 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.baseline', expect.objectContaining({ message: 'boom' }), 'coachhelm');
   });
 
-  it('the ladder’s reads: the player’s own visible findings, less the ones they dismissed, filed by part of the round', async () => {
+  it('the ladder’s reads: the findings the Deep dive delivers (its own feed, less dismissals), filed by part of the round', async () => {
     standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
-    const row = (i: ReturnType<typeof slope>) => ({ ...i, metadata: i.metadata ?? null });
-    tables.current = {
-      golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } },
-      golf_coach_insights: { data: [row(slope('pl-jonah')), row(breakBias('pl-jonah')), row(penalties('pl-jonah')), row(slope('pl-someone-else', 'in-other'))] },
-      golf_insight_player_feedback: { data: [{ insight_id: 'in-brk', rating: 'dismissed', created_at: '2026-10-01T00:00:00Z' }] },
-    };
+    // The feed has already left out the dismissed break-bias read; a row that is anyone else's is never linked, whatever it returned.
+    feed.read.mockResolvedValue([slope('pl-jonah'), penalties('pl-jonah'), slope('pl-someone-else', 'in-other')]);
+    tables.current = { golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } } };
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
     const putting = out.data.ladder.rows.find((r) => r.id === 'putting')!;
     expect(putting.causes.map((c) => c.id)).toEqual(['in-slope']);
     expect(out.data.ladder.rows.flatMap((r) => r.causes.map((c) => c.id))).toEqual(['in-slope']);
     expect(out.data.ladder.readsFailed).toBe(false);
+  });
+
+  it('every link goes to a read the Deep dive delivers: the ladder asks the Deep dive’s own feed (its limit, includeMore), records nothing as shown, and links no visible row the feed folded or cut', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    // Three visible putting findings; the feed (reads-v1 folding, the 30-read limit) delivers only the slope.
+    const row = (i: ReturnType<typeof slope>) => ({ ...i, metadata: i.metadata ?? null });
+    tables.current = {
+      golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } },
+      golf_coach_insights: { data: [row(slope('pl-jonah')), row(slope('pl-jonah', 'in-folded')), row(breakBias('pl-jonah'))] },
+    };
+    feed.read.mockResolvedValue([slope('pl-jonah')]);
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.ladder.rows.flatMap((r) => r.causes.map((c) => c.id))).toEqual(['in-slope']);
+    expect(feed.read).toHaveBeenCalledTimes(1);
+    const [playerId, opts] = feed.read.mock.calls[0] as [string, { limit: number; includeMore: boolean; drawnLater: (shown: unknown[]) => Promise<string[]> }];
+    expect(playerId).toBe('pl-jonah');
+    expect(opts).toMatchObject({ limit: 30, includeMore: true });
+    // `drawnLater` answers no ids: the feed records no exposure for a page that shows only titles.
+    await expect(opts.drawnLater([slope('pl-jonah')])).resolves.toEqual([]);
+  });
+
+  it('an empty feed is told from a first run as the Deep dive does: visible reads the player has not dismissed mean it failed; none (or all dismissed) is no open reads', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    const row = (i: ReturnType<typeof slope>) => ({ ...i, metadata: i.metadata ?? null });
+    const withInsights = (data: unknown[], dismissed: unknown[]) => ({
+      golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } },
+      golf_coach_insights: { data },
+      golf_insight_player_feedback: { data: dismissed },
+    });
+    tables.current = withInsights([row(slope('pl-jonah'))], []);
+    const failed = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (failed.status !== 'ready') throw new Error('not ready');
+    expect(failed.data.ladder.readsFailed).toBe(true);
+    tables.current = withInsights([row(slope('pl-jonah'))], [{ insight_id: 'in-slope', rating: 'dismissed', created_at: '2026-10-01T00:00:00Z' }]);
+    const dismissedAll = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (dismissedAll.status !== 'ready') throw new Error('not ready');
+    expect(dismissedAll.data.ladder.readsFailed).toBe(false);
+    tables.current = withInsights([], []);
+    const none = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (none.status !== 'ready') throw new Error('not ready');
+    expect(none.data.ladder.readsFailed).toBe(false);
   });
 
   it('CH-13273 the ladder’s reads failing leaves the strokes drawn and says so; the page is not failed', async () => {
@@ -365,6 +409,61 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     if (out.status !== 'ready') throw new Error('not ready');
     expect(out.data.ladder.readsFailed).toBe(true);
     expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+  });
+
+  it('the feed throwing fails the ladder’s reads, logged, with the strokes still drawn', async () => {
+    standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+    feed.read.mockRejectedValue(new Error('feed down'));
+    const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+    if (out.status !== 'ready') throw new Error('not ready');
+    expect(out.data.ladder.readsFailed).toBe(true);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+    expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.reads', expect.any(Error), 'coachhelm');
+  });
+
+  describe('a supporting lookup that fails fails the ladder’s reads instead of reading them against a null Tour or newest round', () => {
+    const base = () => ({
+      golf_player_stats_cache: { data: { rounds_played: 14, scoring_average: 77.2 } },
+      golf_team_members: { data: { team_id: 't1', golf_teams: { gender: 'mens' } } },
+      golf_pga_standards: { data: [{ metric_id: 'penalty_rate_per_round', pga_tour_value: 0.3 }] },
+    });
+    const ladderOf = async (delivered: unknown[] = [slope('pl-jonah')]) => {
+      standingRead.load.mockResolvedValue(map(rows('pl-jonah')));
+      feed.read.mockResolvedValue(delivered);
+      const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+      if (out.status !== 'ready') throw new Error('not ready');
+      return out.data.ladder;
+    };
+
+    it('with every lookup answering, the read draws (the control)', async () => {
+      tables.current = base();
+      const ladder = await ladderOf();
+      expect(ladder.readsFailed).toBe(false);
+      expect(ladder.rows.flatMap((r) => r.causes.map((c) => c.id))).toEqual(['in-slope']);
+    });
+
+    it('the team lookup failing', async () => {
+      tables.current = { ...base(), golf_team_members: { error: { message: 'boom' } } };
+      const ladder = await ladderOf();
+      expect(ladder.readsFailed).toBe(true);
+      expect(ladder.rows.flatMap((r) => r.causes)).toEqual([]);
+      expect(ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', '−0.91', '−0.18', '−0.63']);
+    });
+
+    it('the Tour’s values failing (the team known, the Tour not)', async () => {
+      tables.current = { ...base(), golf_pga_standards: { error: { message: 'boom' } } };
+      const ladder = await ladderOf();
+      expect(ladder.readsFailed).toBe(true);
+      expect(ladder.rows.flatMap((r) => r.causes)).toEqual([]);
+    });
+
+    it('the newest-round lookup failing (which reads are out of date is not known)', async () => {
+      tables.current = { ...base(), golf_rounds: { error: { message: 'boom' } } };
+      // A read that says when it was refreshed is one a newer round could make out of date: that is what sends the lookup.
+      const ladder = await ladderOf([{ ...slope('pl-jonah'), metadata: { last_refreshed_at: '2026-09-01T00:00:00Z' } }]);
+      expect(ladder.readsFailed).toBe(true);
+      expect(ladder.rows.flatMap((r) => r.causes)).toEqual([]);
+    });
   });
 
   it('no stats row at all is "rounds unknown", an early read: not zero, not a failure', async () => {
