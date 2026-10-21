@@ -14,24 +14,31 @@ Held items:     none
 
 ### Added
 
-- `/golf/dashboard/whats-new` is a Clubhouse screen for a coach instead of a redirect to Home: the team's CoachHelm
-  activity of the past seven days (insights detected, matured and resolved, patterns validated, focus areas started and
-  finished), newest first, grouped by day in the team's own time zone. A row names the player and what happened, shows
-  the insight's or focus area's own words (three lines at most), and opens that player's Stats (a focus area opens
-  their Development tab). A filter narrows to Insights, Patterns or Focus areas, with the counts.
-- Reached from the command palette ("What’s new", under CoachHelm), as the old page was; it is not a sidebar section.
-- A failed feed says so (CH-13231) and never reads as a quiet week; a refresh that fails keeps the week on screen and
-  says it may be out of date (CH-13230); a category at its row ceiling says older updates may be missing (CH-13332).
+- `/golf/dashboard/whats-new` is a Clubhouse screen for a coach instead of a
+  redirect to Home: the team's CoachHelm activity of the past seven days
+  (insights detected, matured and resolved, patterns validated, focus areas
+  started and finished), newest first, grouped by day in the team's own time
+  zone. A row names the player and what happened, shows the insight's or focus
+  area's own words (three lines at most), and opens that player's Stats (a focus
+  area opens their Development tab). A filter narrows to Insights, Patterns or
+  Focus areas, with the counts.
+- Reached from the command palette ("What’s new", under CoachHelm), as the old
+  page was; it is not a sidebar section.
+- A failed feed says so (CH-13231) and never reads as a quiet week; a refresh
+  that fails keeps the week on screen and says it may be out of date (CH-13230);
+  a category at its row ceiling says older updates may be missing (CH-13332).
 
 ### Fixed
 
-- Every day label and time is made on the server in the team's zone, so the first paint cannot disagree with hydration
-  (the Fairway feed threw React #418 on exactly that).
+- Every day label and time is made on the server in the team's zone, so the
+  first paint cannot disagree with hydration (the Fairway feed threw React #418
+  on exactly that).
 
 ### Notes
 
-A player's `/whats-new` still opens Home (a coach-only feature in Fairway too). Reads one action, the Fairway page's own,
-so the visibility rules on insights are the same in both UIs.
+A player's `/whats-new` still opens Home (a coach-only feature in Fairway too).
+Reads one action, the Fairway page's own, so the visibility rules on insights
+are the same in both UIs.
 
 ## 2026-10-21 — useHydrated moved to the shared lib
 
@@ -448,8 +455,8 @@ Held items:     none
 
 - `placeholder-cause.test.ts` (both production spellings) and
   `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
-  observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule
-  changed.
+  observed and hypothesis cases are unchanged). No screenshot: the card loses
+  one block and no layout rule changed.
 
 ## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
 
@@ -588,11 +595,18 @@ Held items:     none
 
 ### Why
 
-- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+- The same control behaved differently from page to page: a save greyed its
+  button out at 42%, five places drew their own spinner, icon-only buttons had
+  no words on desktop and a scroller gave no sign there was more. They now come
+  from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
 
 ### Verification
 
-- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`;
+  the busy ring was captured at 390 and 1280, light and dark, on
+  `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips
+  and edge fades on the messages, roster and CoachHelm previews. Pages other
+  than the one captured were checked in source only.
 
 ## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
 
@@ -607,18 +621,31 @@ Held items:     none
 
 ### Changed
 
-- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
-- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
-- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
+- CoachHelm turned off for a player, or off for everyone for a coach, is the
+  restricted state: a lock and who can change it, with no action that would
+  fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence; the
+  coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan)
+  use the shared compact state; `.ch-hd-none` is gone.
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
 ### Why
 
-- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+- Every empty page was one template: a green tile, a headline, a sentence and a
+  button in blank space. The waiting form draws the shape of what will fill the
+  space (rules, rings, a baseline; no bars, no fake text) under one sentence
+  that names what fills it and who does it, and a filter that hides everything
+  is told apart from a first run, a lock and a failed read.
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone
+  unchanged) and this page's tests; captured at 390 and 1280, light and dark,
+  before and after, on `/clubhouse-preview/coachhelm?state=empty` and
+  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted
+  state) was captured after only, phone, light. The Deep dive empties have unit
+  tests but no capture.
 
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 

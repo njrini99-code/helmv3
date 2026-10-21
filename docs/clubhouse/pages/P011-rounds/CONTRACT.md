@@ -14,28 +14,35 @@ implemented/tested behavior from open runtime acceptance; this pass does not
 reserve new IDs or mark manual contracts verified.
 <!-- clubhouse:release-audit:end -->
 
-Every behaviour Rounds promises, by the 25 V2 categories (D-69). A contract's number is its Bridge ID (D-68:
-namespace 11, category, item); `Code` is the catalog code on the element and in the test
-(`docs/clubhouse/catalog/rounds.md`). Rows without a code are behaviours with no single element, recorded in
-`config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001, namespace 1) apply here too and are
-named where they carry a category. `clubhouse:check` holds this file to the registry.
+Every behaviour Rounds promises, by the 25 V2 categories (D-69). A contract's
+number is its Bridge ID (D-68: namespace 11, category, item); `Code` is the
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/rounds.md`). Rows without a code are behaviours with no
+single element, recorded in `config/clubhouse/bridge-contracts.json` by hand.
+The shell's contracts (P001, namespace 1) apply here too and are named where
+they carry a category. `clubhouse:check` holds this file to the registry.
 
-The page has four surfaces (PAGE.md, "What is live"). All four are routed: the library and the review, and round
-entry (setup, then the shot screen) at `/rounds/new` and `/rounds/continue/[id]`, over the round engine. A hand
-contract is `implemented` once every test file it lists carries its Bridge ID in a title, and `reserved` until then.
-Each category's note says which hand contracts a test covers (the test is named in the contract's `tests`) and which
+The page has four surfaces (PAGE.md, "What is live"). All four are routed: the
+library and the review, and round entry (setup, then the shot screen) at
+`/rounds/new` and `/rounds/continue/[id]`, over the round engine. A hand
+contract is `implemented` once every test file it lists carries its Bridge ID in
+a title, and `reserved` until then. Each category's note says which hand
+contracts a test covers (the test is named in the contract's `tests`) and which
 have no covering test at all; VERIFY.md repeats the split.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-The library opens for a player and the review for a player or a coach of the player's team; the server has read
-both before first paint, so nothing is fetched in the browser to draw them. Round entry reads its courses, tees and
-qualifiers in the browser after the shell draws (a skeleton, CH-11407, until the day and the qualifiers are known), and
-the continue page hands over the round it loaded on the server (110114). Setup and the shot screen draw the same way
-in the preview, from fixtures and fake ports. Picking a hole in the review changes state only, so a reload opens
-on the first hole over par again. A test covers 110101 to 110115.
+The library opens for a player and the review for a player or a coach of the
+player's team; the server has read both before first paint, so nothing is
+fetched in the browser to draw them. Round entry reads its courses, tees and
+qualifiers in the browser after the shell draws (a skeleton, CH-11407, until the
+day and the qualifiers are known), and the continue page hands over the round it
+loaded on the server (110114). Setup and the shot screen draw the same way in
+the preview, from fixtures and fake ports. Picking a hole in the review changes
+state only, so a reload opens on the first hole over par again. A test covers
+110101 to 110115.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -60,13 +67,14 @@ on the first hole over par again. A test covers 110101 to 110115.
 
 Status: DEFINED
 
-The library's route skeleton (CH-11401) is the Clubhouse one inside the shell and Fairway's outside it
-(`rounds/loading.tsx` through `ClubhouseSwitch`); nothing shows for the first 150ms, then a fade (the shell's
-11609). The review loads under its Clubhouse skeleton (CH-11406) inside the
-shell, at `rounds/[id]` and at the old
-`rounds/[id]/review` address, and under Fairway's outside it (110206). Setup and
-the shot screen load in place: the
-course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole saving (CH-11402).
+The library's route skeleton (CH-11401) is the Clubhouse one inside the shell
+and Fairway's outside it (`rounds/loading.tsx` through `ClubhouseSwitch`);
+nothing shows for the first 150ms, then a fade (the shell's 11609). The review
+loads under its Clubhouse skeleton (CH-11406) inside the shell, at `rounds/[id]`
+and at the old `rounds/[id]/review` address, and under Fairway's outside it
+(110206). Setup and the shot screen load in place: the course library
+(CH-11403), a course's tees (CH-11404), the scorecard (CH-11405), and a hole
+saving (CH-11402).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -87,20 +95,27 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 
 ## 03 — Background loading / refresh
 
-Status: N/A — the library and the review have no realtime, polling or pull to refresh: the server reads the page once per visit, and a Try again reads it again (category 14). The shot screen's background save is a network state, not a refresh of the page (category 07).
+Status: N/A — the library and the review have no realtime, polling or pull to
+
+refresh: the server reads the page once per visit, and a Try again reads it
+again (category 14). The shot screen's background save is a network state, not a
+refresh of the page (category 07).
 
 ## 04 — Empty
 
 Status: DEFINED
 
-First run is the whole-page empty state (CH-11301, with Start a round once entry is rebuilt); a season with no
-countable 18-hole round has its own card (CH-11302) and the rounds still list; a search that matches nothing says
-so (CH-11303); nothing in progress is the idle card (CH-11304). The review has a round posted as a total
-(CH-11305) and a hole scored without shots (CH-11306), and a round that is missing or not the viewer's is the
-not-here page (CH-11307); the shot screen has a hole with no shots yet (CH-11308). Setup has no course chosen yet
-(CH-11309), a search with no match (CH-11310), a course with no playable tees (CH-11311) and no open qualifier
-(CH-11312). A failed read is never shown as empty: the first-run page shows only when every read answered and was
-empty (110413). A test covers 110413.
+First run is the whole-page empty state (CH-11301, with Start a round once entry
+is rebuilt); a season with no countable 18-hole round has its own card
+(CH-11302) and the rounds still list; a search that matches nothing says so
+(CH-11303); nothing in progress is the idle card (CH-11304). The review has a
+round posted as a total (CH-11305) and a hole scored without shots (CH-11306),
+and a round that is missing or not the viewer's is the not-here page (CH-11307);
+the shot screen has a hole with no shots yet (CH-11308). Setup has no course
+chosen yet (CH-11309), a search with no match (CH-11310), a course with no
+playable tees (CH-11311) and no open qualifier (CH-11312). A failed read is
+never shown as empty: the first-run page shows only when every read answered and
+was empty (110413). A test covers 110413.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -132,15 +147,18 @@ empty (110413). A test covers 110413.
 
 Status: DEFINED
 
-Nothing is sent with a mistake in it: the controls that send are off, with the one thing wrong named beside them.
-Start round names it in the dock (110510): a yardage that is missing or over 999 (CH-11107), a date after today
-(CH-11109), and when adding a course the step's own message (CH-11108). Pars are buttons for 3 to 6, and the yardage
-box takes digits only. On the shot screen the one thing missing is named above the disabled Next shot (CH-11101),
-by the rules the Fairway entry runs (`shot-entry-rules`, so the hint cannot disagree with the button); an unusual
-shot asks once (CH-11102), an impossible one is blocked (CH-11103), a distance that is not a plain number says so
-and keeps Next shot off (CH-11104; a comma is read as the decimal point), a changed shot that breaks a rule, or whose
-distance is not a number, says so in its sheet (CH-11105), and shot 12 warns of the 15-stroke
-limit (CH-11106). A test covers 110510.
+Nothing is sent with a mistake in it: the controls that send are off, with the
+one thing wrong named beside them. Start round names it in the dock (110510): a
+yardage that is missing or over 999 (CH-11107), a date after today (CH-11109),
+and when adding a course the step's own message (CH-11108). Pars are buttons for
+3 to 6, and the yardage box takes digits only. On the shot screen the one thing
+missing is named above the disabled Next shot (CH-11101), by the rules the
+Fairway entry runs (`shot-entry-rules`, so the hint cannot disagree with the
+button); an unusual shot asks once (CH-11102), an impossible one is blocked
+(CH-11103), a distance that is not a plain number says so and keeps Next shot
+off (CH-11104; a comma is read as the decimal point), a changed shot that breaks
+a rule, or whose distance is not a number, says so in its sheet (CH-11105), and
+shot 12 warns of the 15-stroke limit (CH-11106). A test covers 110510.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -160,14 +178,18 @@ limit (CH-11106). A test covers 110510.
 
 Status: DEFINED
 
-Discard and Start have their own toast naming what failed and what to do, with Retry (CH-11001, CH-11007). On the shot
-screen a failure is said where it happened: the undo (CH-11002), a hole that does not save (CH-11003, Try again),
-changing or deleting a shot (CH-11004), the submit (CH-11005, Try again) and Exit's discard (CH-11006). Every read that
-fails has its own notice with Try again (CH-11201, CH-11202, CH-11204 to CH-11206, CH-11208 to CH-11211), a hole that
-does not exist on the shot screen says so (CH-11207), and a crash stays in its section (CH-11203, `SectionBoundary`).
-A partial read still renders the rest (110619). A player whose team membership read fails gets the route's error view,
-never "no team" (shared with every page, `routes/team.ts`; not tested here). Neither route has a Clubhouse error view:
-`rounds/error.tsx` and `rounds/[id]/error.tsx` are the shared Fairway boundary.
+Discard and Start have their own toast naming what failed and what to do, with
+Retry (CH-11001, CH-11007). On the shot screen a failure is said where it
+happened: the undo (CH-11002), a hole that does not save (CH-11003, Try again),
+changing or deleting a shot (CH-11004), the submit (CH-11005, Try again) and
+Exit's discard (CH-11006). Every read that fails has its own notice with Try
+again (CH-11201, CH-11202, CH-11204 to CH-11206, CH-11208 to CH-11211), a hole
+that does not exist on the shot screen says so (CH-11207), and a crash stays in
+its section (CH-11203, `SectionBoundary`). A partial read still renders the rest
+(110619). A player whose team membership read fails gets the route's error view,
+never "no team" (shared with every page, `routes/team.ts`; not tested here).
+Neither route has a Clubhouse error view: `rounds/error.tsx` and
+`rounds/[id]/error.tsx` are the shared Fairway boundary.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -260,15 +282,22 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Who may open the page: a player, or a coach for a review, with `golf_clubhouse_ui` on for that role (the shell's gate);
-anyone else gets the Fairway page. The library is for players: a coach session renders nothing from the Clubhouse
-route and keeps the Fairway page (110801). A round's review opens for the player who played it and a coach of their team,
-and everyone else gets the same not-here page, so it never confirms that someone else's round exists; a failed check
-is an error, never "not found" (110802). The library reads only the player's own rounds (110803, tested in `rounds-contracts.test.tsx`). Discard is checked again by its server action (110804, run in
-`rounds-actions-contracts.test.ts`; another player's round the caller can see is refused, and one it cannot see reads as already gone; nothing is deleted either way), which is the legacy library's
-action, unchanged. A qualifier with no round open cannot be chosen (110805). `/rounds/new` and `/rounds/continue/[id]`
-are rebuilt for a player (the page branches on the flag for the player's role, 110114); a coach on `/rounds/new`
-keeps the legacy message. `/rounds/recover` is not rebuilt, so nothing links to it.
+Who may open the page: a player, or a coach for a review, with
+`golf_clubhouse_ui` on for that role (the shell's gate); anyone else gets the
+Fairway page. The library is for players: a coach session renders nothing from
+the Clubhouse route and keeps the Fairway page (110801). A round's review opens
+for the player who played it and a coach of their team, and everyone else gets
+the same not-here page, so it never confirms that someone else's round exists; a
+failed check is an error, never "not found" (110802). The library reads only the
+player's own rounds (110803, tested in `rounds-contracts.test.tsx`). Discard is
+checked again by its server action (110804, run in
+`rounds-actions-contracts.test.ts`; another player's round the caller can see is
+refused, and one it cannot see reads as already gone; nothing is deleted either
+way), which is the legacy library's action, unchanged. A qualifier with no round
+open cannot be chosen (110805). `/rounds/new` and `/rounds/continue/[id]` are
+rebuilt for a player (the page branches on the flag for the player's role,
+110114); a coach on `/rounds/new` keeps the legacy message. `/rounds/recover` is
+not rebuilt, so nothing links to it.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -285,15 +314,20 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A discard that lands says "Round discarded" in a toast with the success haptic (110901). Start lands without a toast,
-because the round opening is the confirmation. A submitted round says "Round posted" over the screen and links its
-review (110902); using a course you typed in closes its sheet with the success haptic.
+A discard that lands says "Round discarded" in a toast with the success haptic
+(110901). Start lands without a toast, because the round opening is the
+confirmation. A submitted round says "Round posted" over the screen and links
+its review (110902); using a course you typed in closes its sheet with the
+success haptic.
 
-A posted round opens its review with `?just=submitted` (the submit path's own navigation and its link). The review's
-round card (CH-11920 to CH-11924, `screens/rounds/card/`) settles in once on the smooth spring and says one quiet line
-about the round, using only figures the page shows; the success haptic was fired by the submit path and the card fires
-none. The parameter is taken out of the address after it is read, so a reload does not replay it. Share draws the card
-as a 1200px picture on the device (Canvas 2D) and hands it to the share sheet, or downloads it; nothing goes to a server.
+A posted round opens its review with `?just=submitted` (the submit path's own
+navigation and its link). The review's round card (CH-11920 to CH-11924,
+`screens/rounds/card/`) settles in once on the smooth spring and says one quiet
+line about the round, using only figures the page shows; the success haptic was
+fired by the submit path and the card fires none. The parameter is taken out of
+the address after it is read, so a reload does not replay it. Share draws the
+card as a 1200px picture on the device (Canvas 2D) and hands it to the share
+sheet, or downloads it; nothing goes to a server.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -306,21 +340,28 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 Status: DEFINED
 
-Rounds' non-blocking warnings are minted in category 05 by the catalog's kind map, which files a warning under
-Validation: the unusual-shot warning that asks once (CH-11102, 110502) and the countdown to the 15-stroke limit
-(CH-11106, 110506). Neither is a category-10 contract of its own; Discard, Undo and Delete ask first instead (category 11).
+Rounds' non-blocking warnings are minted in category 05 by the catalog's kind
+map, which files a warning under Validation: the unusual-shot warning that asks
+once (CH-11102, 110502) and the countdown to the 15-stroke limit (CH-11106,
+110506). Neither is a category-10 contract of its own; Discard, Undo and Delete
+ask first instead (category 11).
 
 ## 11 — Destructive
 
 Status: DEFINED
 
-Discarding an unfinished round asks first, with the warning haptic before the question, and says what goes with it: every
-shot, and that it can't be undone (CH-11501, CH-11701). On the shot screen, Undo asks first (CH-11502), Delete shot asks
-inside the change sheet (CH-11505; a recorded shot opens it from the open shot log before the hole is holed, as
-Fairway's shot pills do, and from the hole review after), leaving a hole with a result picked but not recorded asks (CH-11504), and Exit's
-Discard round asks again (CH-11507). Nothing is optimistic: the card leaves only once the server has deleted the round
-(111301). There is no Undo after a discard. The catalog's kind map files every confirm-kind row here, so this category
-also holds sheets that are not destructive (Penalty, Exit, Scorecard, Round complete, Browse courses, Add a course).
+Discarding an unfinished round asks first, with the warning haptic before the
+question, and says what goes with it: every shot, and that it can't be undone
+(CH-11501, CH-11701). On the shot screen, Undo asks first (CH-11502), Delete
+shot asks inside the change sheet (CH-11505; a recorded shot opens it from the
+open shot log before the hole is holed, as Fairway's shot pills do, and from the
+hole review after), leaving a hole with a result picked but not recorded asks
+(CH-11504), and Exit's Discard round asks again (CH-11507). Nothing is
+optimistic: the card leaves only once the server has deleted the round (111301).
+There is no Undo after a discard. The catalog's kind map files every
+confirm-kind row here, so this category also holds sheets that are not
+destructive (Penalty, Exit, Scorecard, Round complete, Browse courses, Add a
+course).
 
 Change round type (111121, owner 2026-08-31, Q-92b; the dropped Fairway editor
 rebuilt) opens from a continued
@@ -388,9 +429,11 @@ lands).
 
 Status: DEFINED
 
-Nothing on the library is optimistic: Discard waits for the server, and the card leaves only on success (111301). The
-shot screen adds a shot to the hole at once, and the round screen's engine saves it in the background and retries on its own
-(the save line, CH-11901): that is the engine's contract, not an optimistic write of this page.
+Nothing on the library is optimistic: Discard waits for the server, and the card
+leaves only on success (111301). The shot screen adds a shot to the hole at
+once, and the round screen's engine saves it in the background and retries on
+its own (the save line, CH-11901): that is the engine's contract, not an
+optimistic write of this page.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -400,9 +443,10 @@ shot screen adds a shot to the hole at once, and the round screen's engine saves
 
 Status: DEFINED
 
-The error toast's Retry runs the same write with the same arguments, and when it lands everything the button would have done
-follows (111401). Try again on a failed-read notice asks again (111402); on the shot screen it runs the hole's save or the
-submit again (111403).
+The error toast's Retry runs the same write with the same arguments, and when it
+lands everything the button would have done follows (111401). Try again on a
+failed-read notice asks again (111402); on the shot screen it runs the hole's
+save or the submit again (111403).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -417,11 +461,14 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: DEFINED
 
-Nothing refreshes in the background: the page is as fresh as its last read. A discard takes its card out in place and does
-not read the page again (an unfinished round never counts toward the season). The total and the season are the one rule Home
-and Stats use (111501), the review draws only what was recorded (111502), and a stale tee read is ignored (111503). A round's
-date is a date-only value drawn at noon UTC so no time zone moves it a day; "today" is resolved on the server in the team's
-zone (America/New_York for a player with no team).
+Nothing refreshes in the background: the page is as fresh as its last read. A
+discard takes its card out in place and does not read the page again (an
+unfinished round never counts toward the season). The total and the season are
+the one rule Home and Stats use (111501), the review draws only what was
+recorded (111502), and a stale tee read is ignored (111503). A round's date is a
+date-only value drawn at noon UTC so no time zone moves it a day; "today" is
+resolved on the server in the team's zone (America/New_York for a player with no
+team).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -459,12 +506,14 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Rounds' own haptics are on the v2 grammar (D-70): a warning before Discard (CH-11701), a selection tick for opening a round, a
-hole picked in the review and going to another hole (CH-11702, CH-11704, CH-11706), light for Continue, Submit and Start a round
-(CH-11703), a medium tap once per recorded shot (CH-11705), and a warning for Undo, Delete shot, Discard round and Leave
-without it (CH-11707); success and error come from the shell for every write.
-Tap in (CH-11913) is a medium tap and then
-success once the hole it holed is saved (CH-11710).
+Rounds' own haptics are on the v2 grammar (D-70): a warning before Discard
+(CH-11701), a selection tick for opening a round, a hole picked in the review
+and going to another hole (CH-11702, CH-11704, CH-11706), light for Continue,
+Submit and Start a round (CH-11703), a medium tap once per recorded shot
+(CH-11705), and a warning for Undo, Delete shot, Discard round and Leave without
+it (CH-11707); success and error come from the shell for every write. Tap in
+(CH-11913) is a medium tap and then success once the hole it holed is saved
+(CH-11710).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -487,12 +536,16 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-Each round in the book is one named link (or one named group), each month or course a labelled region, the ribbon one labelled
-image, and the in-progress card's strip is hidden from screen readers while the card says the same in words (CH-11801 to
-CH-11803). The review's card is two captioned tables with a pressed button per hole (CH-11804). On the shot screen the strip,
-the choices, the distance box and the hole map are named in words (CH-11805 to CH-11808). The figures are description lists
-(111811), the shot screen's scorecard scrolls in a focusable region (111810, tested in `rounds-contracts.test.tsx`), and axe over 12 preview pages at
-1280 and 390 was clean on 2026-09-30 (111809, reserved: a script, not a test). Not built: arrow keys inside the radio groups.
+Each round in the book is one named link (or one named group), each month or
+course a labelled region, the ribbon one labelled image, and the in-progress
+card's strip is hidden from screen readers while the card says the same in words
+(CH-11801 to CH-11803). The review's card is two captioned tables with a pressed
+button per hole (CH-11804). On the shot screen the strip, the choices, the
+distance box and the hole map are named in words (CH-11805 to CH-11808). The
+figures are description lists (111811), the shot screen's scorecard scrolls in a
+focusable region (111810, tested in `rounds-contracts.test.tsx`), and axe over
+12 preview pages at 1280 and 390 was clean on 2026-09-30 (111809, reserved: a
+script, not a test). Not built: arrow keys inside the radio groups.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -525,11 +578,15 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below the library and the review are the phone build (`useChPhone`; the spec is `docs/clubhouse/phone/rounds.md`,
-approved), not shrunken desktops (111901, tested in `rounds-contracts.test.tsx`: the top bars through the shell's slot, the stacking against the stylesheet's container rules); inside each surface the layout follows its own
-container, with the phone rules at 640px and below. The ribbon draws the last ten rounds on the phone (111902); setup and the shot
-screen are full screen and hide the tab bar (111903, tested in `rounds-contracts.test.tsx`). That the sheets are bottom sheets on the phone is CSS
-and is not tested.
+At 820px and below the library and the review are the phone build (`useChPhone`;
+the spec is `docs/clubhouse/phone/rounds.md`, approved), not shrunken desktops
+(111901, tested in `rounds-contracts.test.tsx`: the top bars through the shell's
+slot, the stacking against the stylesheet's container rules); inside each
+surface the layout follows its own container, with the phone rules at 640px and
+below. The ribbon draws the last ten rounds on the phone (111902); setup and the
+shot screen are full screen and hide the tab bar (111903, tested in
+`rounds-contracts.test.tsx`). That the sheets are bottom sheets on the phone is
+CSS and is not tested.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -561,8 +618,9 @@ From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 
 Status: DEFINED
 
-The loaders read in rounds and never one request per round (112101, tested in `rounds-contracts.test.tsx`). Web vitals are the
-shell's. The shot screen's own cost is not measured.
+The loaders read in rounds and never one request per round (112101, tested in
+`rounds-contracts.test.tsx`). Web vitals are the shell's. The shot screen's own
+cost is not measured.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -574,7 +632,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page. Rounds adds no events of its own.
+The shell records rage, dead and slow clicks for every page. Rounds adds no
+events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -582,8 +641,8 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failed reads are logged by name, failed writes are reported under the `rounds` surface with their action, and a crash reports
-under its own section (112301).
+Failed reads are logged by name, failed writes are reported under the `rounds`
+surface with their action, and a crash reports under its own section (112301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -595,9 +654,11 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-The page's tests are `rounds.test.tsx` (the library), `round-review.test.tsx`, `round-setup.test.tsx` and `round-tracking.test.tsx`,
-with `src/lib/golf/__tests__/shot-entry-rules.test.ts` for the shared rules. `clubhouse:check` fails a catalog row of kinds 0 to 5
-that no test names; the hand contracts are named by Bridge ID only once the titles carry them (112401).
+The page's tests are `rounds.test.tsx` (the library), `round-review.test.tsx`,
+`round-setup.test.tsx` and `round-tracking.test.tsx`, with
+`src/lib/golf/__tests__/shot-entry-rules.test.ts` for the shared rules.
+`clubhouse:check` fails a catalog row of kinds 0 to 5 that no test names; the
+hand contracts are named by Bridge ID only once the titles carry them (112401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -608,4 +669,7 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open a round, discard a round, start a round, record a shot) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open a round, discard a round, start a
+round, record a shot) are defined when the Bridge is.

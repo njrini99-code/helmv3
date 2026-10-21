@@ -11,19 +11,26 @@ Data impact:    writes golf_round_reviews.coach_notes (update, or insert marked 
 Held items:     none
 ```
 
-A coach's Rounds (`/golf/dashboard/rounds`) is now a Clubhouse screen, Team rounds (`TeamRounds`, `loadTeamRounds`),
-and no longer a redirect to Team stats. Four figures since 1 August (rounds, average, under par, low round), a search,
-a player filter, and every posted round by month or by player; a row opens the round's review and the review's back link
-returns to the list. The same rounds and the same one-total rule as the player's library (`toLibraryRound`).
+A coach's Rounds (`/golf/dashboard/rounds`) is now a Clubhouse screen, Team
+rounds (`TeamRounds`, `loadTeamRounds`), and no longer a redirect to Team stats.
+Four figures since 1 August (rounds, average, under par, low round), a search, a
+player filter, and every posted round by month or by player; a row opens the
+round's review and the review's back link returns to the list. The same rounds
+and the same one-total rule as the player's library (`toLibraryRound`).
 
-The round review has a Coach note card (`CoachNote`, zone "In words"). A player reads "From your coach" and sees nothing
-when there is none; a coach of the player's team adds or edits the note in place. `saveRoundCoachNote` changes only `coach_notes` and `updated_at` on the round's
-`golf_round_reviews` row, so a generated review is never changed. A round with no review yet (465 of 823 completed
-rounds on 2026-10-21) gets a row with just the note and `patterns_detected: { status: 'pending' }`, the state
-`generateRoundReview` treats as still to generate, so no reader takes the note for a generated review: the column's
-default (`draft`) would have made that action answer "Review already exists" with no content. The other readers check
-`summary` or `round_stats`, which a note row lacks. It tells the player (`notifyCoachCommented`). Q-72f's "coach
-notes" gap is closed for the write side.
+The round review has a Coach note card (`CoachNote`, zone "In words"). A player
+reads "From your coach" and sees nothing when there is none; a coach of the
+player's team adds or edits the note in place. `saveRoundCoachNote` changes only
+`coach_notes` and `updated_at` on the round's `golf_round_reviews` row, so a
+generated review is never changed. A round with no review yet (465 of 823
+completed rounds on 2026-10-21) gets a row with just the note and
+`patterns_detected: { status: 'pending' }`, the state `generateRoundReview`
+treats as still to generate, so no reader takes the note for a generated review:
+the column's default (`draft`) would have made that action answer "Review
+already exists" with no content. The other readers check `summary` or
+`round_stats`, which a note row lacks. It tells the player
+(`notifyCoachCommented`). Q-72f's "coach notes" gap is closed for the write
+side.
 
 ## 2026-10-21 — Season bars and the round review are drawn at once
 
@@ -216,16 +223,25 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, end blocks of `rounds.css` and `rounds-setup.css`): on a canvas under 761px the round card's wide table takes the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px card without the circled and squared scores overlapping; the review's nine-hole tables drop their 560px minimum width (at any canvas in the tier) instead of scrolling by a few pixels (they scrolled by 52px at 1180px).
-- Setup: the photo's "Change" label is shown wherever there is no hover (it showed on hover or focus only).
+- Tablet tier (821 to 1180px, end blocks of `rounds.css` and
+  `rounds-setup.css`): on a canvas under 761px the round card's wide table takes
+  the phone card's label, subtotal and mark sizes, so 18 holes fit in the 518px
+  card without the circled and squared scores overlapping; the review's
+  nine-hole tables drop their 560px minimum width (at any canvas in the tier)
+  instead of scrolling by a few pixels (they scrolled by 52px at 1180px).
+- Setup: the photo's "Change" label is shown wherever there is no hover (it
+  showed on hover or focus only).
 
 ### Why
 
-- An iPad portrait with the sidebar open leaves 17px a hole in the card; a touch screen has no hover to reveal the label.
+- An iPad portrait with the sidebar open leaves 17px a hole in the card; a touch
+  screen has no hover to reveal the label.
 
 ### Verification
 
-- WebKit, touch, 834 and 1024 before and after looked at; the rules sit in a `screen and (821px to 1180px)` media query, and the label rule in `(hover: none)`, so a mouse desktop at 1181px and wider is unchanged.
+- WebKit, touch, 834 and 1024 before and after looked at; the rules sit in a
+  `screen and (821px to 1180px)` media query, and the label rule in `(hover:
+  none)`, so a mouse desktop at 1181px and wider is unchanged.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
@@ -240,17 +256,35 @@ Held items:     none
 
 ### Changed (rounds.css, rounds-setup.css, rounds-track.css, rounds-recover.css)
 
-- The season figure, the review's hero and figure values, the setup and shot screen's headline numerals, the unfinished-round line and the share card's labels follow the iPhone's text size. The scorecards (review nine, shot card, share card table), the season ribbon, the score strip cells and the zone drawings' SVG text keep their fixed sizes.
-- Radii on the 5, 7, 10, 14, 20 scale (pills, circles and bars stay; sheet corners of 24 to 28px are left).
-- The library's Continue link and Discard key reach 44px on the phone; the par keys, quick distances and setup segments reach 44px down the page; the review nine, season, spark, figure and shot-count numerals use tabular numerals (the font shorthand had dropped them).
+- The season figure, the review's hero and figure values, the setup and shot
+  screen's headline numerals, the unfinished-round line and the share card's
+  labels follow the iPhone's text size. The scorecards (review nine, shot card,
+  share card table), the season ribbon, the score strip cells and the zone
+  drawings' SVG text keep their fixed sizes.
+- Radii on the 5, 7, 10, 14, 20 scale (pills, circles and bars stay; sheet
+  corners of 24 to 28px are left).
+- The library's Continue link and Discard key reach 44px on the phone; the par
+  keys, quick distances and setup segments reach 44px down the page; the review
+  nine, season, spark, figure and shot-count numerals use tabular numerals (the
+  font shorthand had dropped them).
 
 ### Why
 
-- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20
+  scale, some phone controls were under 44px, some clickable things did not
+  answer a pointer, and the font shorthand had dropped tabular figures from
+  figures that sit in columns.
 
 ### Verification
 
-- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up,
+  sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the
+  phone with `--ch-type-scale: 1.4` scales text with no sideways overflow
+  (scrollWidth equals clientWidth). Touch reach was measured with
+  `elementFromPoint` 21px beyond each short control; hover was measured by
+  comparing computed styles under the pointer; figures were measured by computed
+  `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing
+  shadows in `auth.css` (lines 1809 and 1872).
 
 ## 2026-10-19 — In-flight actions are busy; one spinner; round setup choices use the shared segmented control
 
@@ -265,18 +299,31 @@ Held items:     none
 
 ### Changed
 
-- Restore round, Discard, Change round type, Reload and the conflict banner's Discard are busy while they run instead of disabled.
-- The posting, saving and sync rings are the shared `Spinner` (one duration, still under reduced motion and Animations off).
-- Round type, Holes (setup and Add a course) and Which nine are the shared `Segmented`, with the unavailable 18-hole option skipped by the arrow keys. `.ch-rsu-seg` in `rounds-setup.css` is no longer used.
-- Previous and next hole, the discard buttons and the course view's controls show their name on hover and focus. The hole strip and the review scorecard fade a clipped edge.
+- Restore round, Discard, Change round type, Reload and the conflict banner's
+  Discard are busy while they run instead of disabled.
+- The posting, saving and sync rings are the shared `Spinner` (one duration,
+  still under reduced motion and Animations off).
+- Round type, Holes (setup and Add a course) and Which nine are the shared
+  `Segmented`, with the unavailable 18-hole option skipped by the arrow keys.
+  `.ch-rsu-seg` in `rounds-setup.css` is no longer used.
+- Previous and next hole, the discard buttons and the course view's controls
+  show their name on hover and focus. The hole strip and the review scorecard
+  fade a clipped edge.
 
 ### Why
 
-- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+- The same control behaved differently from page to page: a save greyed its
+  button out at 42%, five places drew their own spinner, icon-only buttons had
+  no words on desktop and a scroller gave no sign there was more. They now come
+  from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
 
 ### Verification
 
-- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`;
+  the busy ring was captured at 390 and 1280, light and dark, on
+  `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips
+  and edge fades on the messages, roster and CoachHelm previews. Pages other
+  than the one captured were checked in source only.
 
 ## 2026-10-19 — The library reaches the card; the round's labels are callable from the server
 
@@ -291,12 +338,14 @@ Held items:     none
 
 ### Changed
 
-- Right-click (or Shift+F10) on a posted round in the library offers Open round and Scorecard; Scorecard opens the review
-  at the card (#ch-rcard). Shift+right-click keeps the browser's own menu, so open-in-new-tab is still there. Both note
-  the round as opened from the library, so the review's Back is a step back (a link item in ui/Menu now runs its
-  onSelect as it opens).
-- dateOf and TYPE_LABEL moved to rounds/labels.ts (a plain module); parts.tsx re-exports them. The card's model imported
-  them from a 'use client' module, which the client-boundary test refuses.
+- Right-click (or Shift+F10) on a posted round in the library offers Open round
+  and Scorecard; Scorecard opens the review at the card (#ch-rcard).
+  Shift+right-click keeps the browser's own menu, so open-in-new-tab is still
+  there. Both note the round as opened from the library, so the review's Back is
+  a step back (a link item in ui/Menu now runs its onSelect as it opens).
+- dateOf and TYPE_LABEL moved to rounds/labels.ts (a plain module); parts.tsx
+  re-exports them. The card's model imported them from a 'use client' module,
+  which the client-boundary test refuses.
 
 ## 2026-10-19 — The round card: a scorecard to keep, share and print
 
@@ -311,33 +360,46 @@ Held items:     none
 
 ### Changed
 
-- A round's review has a scorecard under the hero: Out, In and Total, par, the score in scorecard notation (circle birdie,
-  double circle eagle or better, square bogey, double square double bogey or worse; red for under par only), putts,
-  fairways and greens where tracked, the course, tees, rating and slope, the date, holes played, and the strokes gained by
-  leg. Phone: two bands of nine. Desktop: one wide table. A nine-hole round has one band; a round with holes missing says
-  "Thru 14 of 18 holes" and shows no short subtotal. No card for a round posted as a total.
-- Arriving from Post round (`?just=submitted`, added to the engine's own navigation and its link in `RoundRuntime`), the
-  card settles in once on the smooth spring, with one quiet line from figures the page shows: "Best on hole 5, a birdie.
-  35 putts, 1.9 a hole." Reduced motion: no movement. No haptic (the submit path fired it). A reload does not replay it.
-- Share card: a sheet with the picture, drawn on the device with the Canvas 2D API at 1200px wide after the fonts load,
-  and two switches (Strokes gained; Putts, fairways and greens) that redraw it. Share on a device that can share files,
-  Save image otherwise, named for the course, date and score. Nothing leaves the device. The picture names the player
-  before the date and has a quiet foot inside the frame: GolfHelm in the brand green and the team name when known.
-- Print (desktop): the page prints only the card, on one page, ledger rules kept, in ink on white in either theme.
+- A round's review has a scorecard under the hero: Out, In and Total, par, the
+  score in scorecard notation (circle birdie, double circle eagle or better,
+  square bogey, double square double bogey or worse; red for under par only),
+  putts, fairways and greens where tracked, the course, tees, rating and slope,
+  the date, holes played, and the strokes gained by leg. Phone: two bands of
+  nine. Desktop: one wide table. A nine-hole round has one band; a round with
+  holes missing says "Thru 14 of 18 holes" and shows no short subtotal. No card
+  for a round posted as a total.
+- Arriving from Post round (`?just=submitted`, added to the engine's own
+  navigation and its link in `RoundRuntime`), the card settles in once on the
+  smooth spring, with one quiet line from figures the page shows: "Best on hole
+  5, a birdie. 35 putts, 1.9 a hole." Reduced motion: no movement. No haptic
+  (the submit path fired it). A reload does not replay it.
+- Share card: a sheet with the picture, drawn on the device with the Canvas 2D
+  API at 1200px wide after the fonts load, and two switches (Strokes gained;
+  Putts, fairways and greens) that redraw it. Share on a device that can share
+  files, Save image otherwise, named for the course, date and score. Nothing
+  leaves the device. The picture names the player before the date and has a
+  quiet foot inside the frame: GolfHelm in the brand green and the team name
+  when known.
+- Print (desktop): the page prints only the card, on one page, ledger rules
+  kept, in ink on white in either theme.
 
 ### Why
 
-- The round is the product's heart and its last screen was a report. A player and a coach want the card itself, the way
-  it would come off a scorecard, to keep.
+- The round is the product's heart and its last screen was a report. A player
+  and a coach want the card itself, the way it would come off a scorecard, to
+  keep.
 
 ### Verification
 
-- `screens/rounds/card/__tests__/` (card-model, share-card, draw-card, round-card): mark mapping, 9, 18 and partial rounds,
-  Out and In against the page's own figures, the share and download branches, the 1200px canvas. The existing review and
-  round-entry tests pass with the new card (two assertions scoped to the review's own scorecard; the engine's post
-  navigation now carries `?just=submitted`).
-- WebKit captures (headless, 390 and 1280, light and dark), the exported PNG, print emulation, and a Chromium PDF (one page).
-  Not tried: a physical iPhone, the native share sheet, a physical printer.
+- `screens/rounds/card/__tests__/` (card-model, share-card, draw-card,
+  round-card): mark mapping, 9, 18 and partial rounds, Out and In against the
+  page's own figures, the share and download branches, the 1200px canvas. The
+  existing review and round-entry tests pass with the new card (two assertions
+  scoped to the review's own scorecard; the engine's post navigation now carries
+  `?just=submitted`).
+- WebKit captures (headless, 390 and 1280, light and dark), the exported PNG,
+  print emulation, and a Chromium PDF (one page). Not tried: a physical iPhone,
+  the native share sheet, a physical printer.
 
 ## 2026-10-19 — Right-click on an unfinished round
 
@@ -352,13 +414,16 @@ Held items:     none
 
 ### Changed
 
-- Right-click (or Shift F10) on the round in progress, or a row under "more unfinished rounds", offers Continue (Post round when
-  every hole is scored) and Discard round, the same links and the same confirmation as the row's own buttons. A posted round has
-  one action, a link, and keeps the browser's menu (open in a new tab). Desktop only.
+- Right-click (or Shift F10) on the round in progress, or a row under "more
+  unfinished rounds", offers Continue (Post round when every hole is scored) and
+  Discard round, the same links and the same confirmation as the row's own
+  buttons. A posted round has one action, a link, and keeps the browser's menu
+  (open in a new tab). Desktop only.
 
 ### Why
 
-- Discarding was a small bin icon; the menu is the keyboard-reachable form of it.
+- Discarding was a small bin icon; the menu is the keyboard-reachable form of
+  it.
 
 ### Verification
 
@@ -377,8 +442,20 @@ Held items:     none
 
 ### Changed (2026-10-18, L2 pickers and controls)
 
-- The browser's own date and time inputs are gone. The new round's Date (no day after today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
-- Round type, Holes, Qualifier, Which nine, a hole's par, tee colour, penalty choices and the miss-direction grid is one tab stop with the arrow keys, Home and End moving and choosing, as a native radio group does (`ui/use-roving.ts`); a disabled option is skipped.
+- The browser's own date and time inputs are gone. The new round's Date (no day
+  after today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30
+  PM") and opens a month (dates) or a list by the quarter hour (times): a
+  popover under the field on desktop, a bottom sheet on the phone. On desktop
+  the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530")
+  and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed.
+  Today carries a dot, the chosen day is the segmented control's lit chip, days
+  outside the range are off, and arrows, PageUp and PageDown, Home and End and
+  Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm`
+  string as before.
+- Round type, Holes, Qualifier, Which nine, a hole's par, tee colour, penalty
+  choices and the miss-direction grid is one tab stop with the arrow keys, Home
+  and End moving and choosing, as a native radio group does
+  (`ui/use-roving.ts`); a disabled option is skipped.
 
 ## 2026-10-18 — Wave 10: one Start a round in the library
 

@@ -4,8 +4,7 @@
   "slug": "coachhelm",
   "bridgeNamespace": 13,
   "routes": [
-    "/golf/dashboard/coachhelm",
-    "/golf/dashboard/whats-new"
+    "/golf/dashboard/coachhelm"
   ],
   "roles": [
     "coach",

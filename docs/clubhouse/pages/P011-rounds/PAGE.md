@@ -30,10 +30,11 @@ earlier observations below retain their original date and scope.
 | Screenshots | `npm run clubhouse:shots -- gallery --page P011`, which opens `.helm/screenshots/clubhouse/P011-rounds/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-One page for a player's rounds: the library (the round in progress, the season's scoring and every posted
-round), a round's review for the player and the coach of their team, a new round's setup, and the shot
-screen. All four are routed: the library and the review, and round entry (setup, then the shot screen) over the
-round engine (see "What is live" below).
+One page for a player's rounds: the library (the round in progress, the season's
+scoring and every posted round), a round's review for the player and the coach
+of their team, a new round's setup, and the shot screen. All four are routed:
+the library and the review, and round entry (setup, then the shot screen) over
+the round engine (see "What is live" below).
 
 ## Identity
 
@@ -52,8 +53,8 @@ Manifest:           config/clubhouse/pages/P011-rounds.json
 
 ## What is live, and what is preview only
 
-Everything below is Clubhouse, behind the `golf_clubhouse_ui` flag (`isClubhouseFor`), which stays off in
-production.
+Everything below is Clubhouse, behind the `golf_clubhouse_ui` flag
+(`isClubhouseFor`), which stays off in production.
 
 | Surface | Address | Who | State today | Code | Preview |
 | --- | --- | --- | --- | --- | --- |
@@ -63,62 +64,75 @@ production.
 | Setup | `/golf/dashboard/rounds/new` | player | **routed** through `ClubhouseNewRoundRoute` (`NewRound` over `useNewRoundSession`); it draws against `ChSetupPorts`, which `entry/setup-reads.ts` and the engine's `start(form)` supply | `setup/` (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`), `entry/` (`NewRound`, `setup-reads`) | `/clubhouse-preview/setup` |
 | Shot screen | the tracking phase of `/rounds/new`, and `/rounds/continue/[id]` | player | **routed** through `NewRound` and `ClubhouseContinueRoundRoute` (`ContinueRound` over `useContinueRoundSession`); built on `useShotTracking` and `shot-entry-rules`, the Fairway screen's own logic moved unchanged; the round's sheets (Exit, Scorecard, Round complete, Submitting, the closed-qualifier sheets) are driven by `RoundRuntime` | `track/` (`RoundTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `parts`, `labels`), `entry/` (`RoundRuntime`, `ports`, `session`, `QualifierRoundSheet`) | `/clubhouse-preview/track` |
 
-The plan and its order are in `docs/clubhouse/ROUNDS_PLAN.md` (the renderer first, the engine move, then the
-wiring: #2104 moved the engines to `src/lib/golf/round-session/`, and round entry is wired to them here). Both
-entry routes are in the shell's rebuilt list for a player, so the library's New round, Start a round and Continue,
-and Home's and CoachHelm's "post a round" links, are drawn (`nav.rebuiltHref`); a coach's are not. With the flag
-off the pages render Fairway's clients exactly as before. `/rounds/[id]/review` (CoachHelm's AI review) is not part
-of this page and stays as it is. `/rounds/recover` is rebuilt for a player (swap audit F-02): where a submit that could
-not reach the server lands, with no link from the Library.
+The plan and its order are in `docs/clubhouse/ROUNDS_PLAN.md` (the renderer
+first, the engine move, then the wiring: #2104 moved the engines to
+`src/lib/golf/round-session/`, and round entry is wired to them here). Both
+entry routes are in the shell's rebuilt list for a player, so the library's New
+round, Start a round and Continue, and Home's and CoachHelm's "post a round"
+links, are drawn (`nav.rebuiltHref`); a coach's are not. With the flag off the
+pages render Fairway's clients exactly as before. `/rounds/[id]/review`
+(CoachHelm's AI review) is not part of this page and stays as it is.
+`/rounds/recover` is rebuilt for a player (swap audit F-02): where a submit that
+could not reach the server lands, with no link from the Library.
 
 ## Purpose
 
 ### Primary user
 
-A college golfer who plays and tracks rounds for a coach who reads them: the player opens Rounds to see what
-is in progress and how the season is going, tracks a round shot by shot, and looks back at one. A coach of
-their team reads the same review of a player's round.
+A college golfer who plays and tracks rounds for a coach who reads them: the
+player opens Rounds to see what is in progress and how the season is going,
+tracks a round shot by shot, and looks back at one. A coach of their team reads
+the same review of a player's round.
 
 ### Job to be done
 
-Player: start a round in two taps, record every shot without thinking about the app, post it, and see the
-season add up. Coach: open a player's round and see the card, the figures and the shots.
+Player: start a round in two taps, record every shot without thinking about the
+app, post it, and see the season add up. Coach: open a player's round and see
+the card, the figures and the shots.
 
 ### Primary action
 
-Library: Start a round (or Continue at hole N when one is in progress). Review: read; the hole picker is the interaction. Setup: Start
-round. Shot screen: Next shot (Hole out on the last putt).
+Library: Start a round (or Continue at hole N when one is in progress). Review:
+read; the hole picker is the interaction. Setup: Start round. Shot screen: Next
+shot (Hole out on the last putt).
 
 ### Secondary actions
 
-Library: discard an unfinished round (asks first), search by course, group by month or by course, open a
-round's review. Review: pick a hole or step through them, go back to Rounds (or, for a coach, to that
-player's rounds on Stats). Setup: browse the course library, add a course by hand, play an open qualifier,
-edit a hole's par and yardage for this round, choose Front 9 or Back 9. Shot screen: undo, add a penalty,
-change or delete a recorded shot, go to another hole, open the scorecard, exit (save for later, keep playing,
-discard), submit the round.
+Library: discard an unfinished round (asks first), search by course, group by
+month or by course, open a round's review. Review: pick a hole or step through
+them, go back to Rounds (or, for a coach, to that player's rounds on Stats).
+Setup: browse the course library, add a course by hand, play an open qualifier,
+edit a hole's par and yardage for this round, choose Front 9 or Back 9. Shot
+screen: undo, add a penalty, change or delete a recorded shot, go to another
+hole, open the scorecard, exit (save for later, keep playing, discard), submit
+the round.
 
 ### Information hierarchy
 
-1. Library: the round in progress beside the season's scoring (average, best, putts, greens, then the ribbon
-   of every round against par).
-2. The book: every posted round by month or by course, each with its card figures.
-3. Review: the hero (score and to par), the five figures, the scorecard, then the picked hole's shots.
+1. Library: the round in progress beside the season's scoring (average, best,
+   putts, greens, then the ribbon of every round against par).
+2. The book: every posted round by month or by course, each with its card
+   figures.
+3. Review: the hero (score and to par), the five figures, the scorecard, then
+   the picked hole's shots.
 
 ### User should notice first
 
-The round waiting to be continued or submitted. In a review, the score and the hole where the round went over.
+The round waiting to be continued or submitted. In a review, the score and the
+hole where the round went over.
 
 ### User should never have to think about
 
-Whether a round was saved (the shot screen says "Saving round" and "Round saved" and retries on its own), whether
-a number is a real figure (a missing one is "—", never zero), or whether the library and the review agree with
-Home and Stats (one total, one season rule).
+Whether a round was saved (the shot screen says "Saving round" and "Round saved"
+and retries on its own), whether a number is a real figure (a missing one is
+"—", never zero), or whether the library and the review agree with Home and
+Stats (one total, one season rule).
 
 ### Success looks like
 
-A player finishes nine holes, leaves for class with "Save for later", and finds the round waiting in the
-library; after posting, the season card and the ribbon include it, and the coach can open its review.
+A player finishes nine holes, leaves for class with "Save for later", and finds
+the round waiting in the library; after posting, the season card and the ribbon
+include it, and the coach can open its review.
 
 ## Semantic features
 
@@ -143,16 +157,20 @@ Status:           approved
 
 ### Enters from
 
-The player's sidebar (My game › Rounds) and the phone tab bar's Rounds tab (D-66). A round's review from the
-library's rows and from the Stats player page's Rounds list (for a player and for a coach, through `rebuiltHref`
-with the viewer's role); the review's Back goes to Rounds, or for a coach to that player's rounds on Stats (D-53).
+The player's sidebar (My game › Rounds) and the phone tab bar's Rounds tab
+(D-66). A round's review from the library's rows and from the Stats player
+page's Rounds list (for a player and for a coach, through `rebuiltHref` with the
+viewer's role); the review's Back goes to Rounds, or for a coach to that
+player's rounds on Stats (D-53).
 
 ### Exits to
 
-A round's review (from the library), Rounds (from a review), Stats (from a coach's review), and
-`/rounds/new` and `/rounds/continue/[id]` (the library's New round, Start a round and Continue, Home's
-and CoachHelm's post-a-round links). A posted round opens its review; a round that could not reach the server opens Rounds. A round still being played that is opened at `/rounds/[id]` goes to
-`/rounds/continue/[id]`, as on the legacy page.
+A round's review (from the library), Rounds (from a review), Stats (from a
+coach's review), and `/rounds/new` and `/rounds/continue/[id]` (the library's
+New round, Start a round and Continue, Home's and CoachHelm's post-a-round
+links). A posted round opens its review; a round that could not reach the server
+opens Rounds. A round still being played that is opened at `/rounds/[id]` goes
+to `/rounds/continue/[id]`, as on the legacy page.
 
 ## Ownership
 
