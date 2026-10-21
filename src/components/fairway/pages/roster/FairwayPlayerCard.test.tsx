@@ -70,9 +70,8 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
 
   it('shows an honest em-dash for SG:Total when the stats cache has no row yet', () => {
     render(<FairwayPlayerCard player={makePlayer({ sg_total: null })} intent={null} />);
-    // Two "SG:Total" em-dash siblings aren't queried here — assert the label
-    // renders and no signed number does.
-    expect(screen.getByText('SG:Total')).toBeInTheDocument();
+    // Assert the label renders and no signed number does.
+    expect(screen.getByText('SG / round')).toBeInTheDocument();
     expect(screen.queryByText(/^[+-]\d/)).toBeNull();
   });
 
@@ -83,22 +82,7 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
         intent={null}
       />,
     );
-    expect(screen.getByText('Top quartile on team')).toBeInTheDocument();
-  });
-
-  it('shows an active focus-area count badge when the player has one', () => {
-    render(<FairwayPlayerCard player={makePlayer({ active_focus_areas: 2 })} intent={null} />);
-    expect(screen.getByText('2 active')).toBeInTheDocument();
-  });
-
-  it('shows "None yet" for focus areas and goals when both are zero', () => {
-    render(<FairwayPlayerCard player={makePlayer({ active_focus_areas: 0, active_goals: 0 })} intent={null} />);
-    expect(screen.getAllByText('None yet')).toHaveLength(2);
-  });
-
-  it('shows an active goals count badge when the player has one', () => {
-    render(<FairwayPlayerCard player={makePlayer({ active_goals: 3 })} intent={null} />);
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('top 25%')).toBeInTheDocument();
   });
 
   it('still renders the Avg score anchor stat and View player CTA unchanged', () => {
@@ -111,20 +95,22 @@ describe('FairwayPlayerCard — CoachHelm signal strip', () => {
     );
   });
 
-  it('states the round count behind the anchor stat', () => {
-    render(<FairwayPlayerCard player={makePlayer({ rounds_count: 1, avg_score: 88 })} intent={null} />);
-    // One round is the case that most needs the caveat.
-    expect(screen.getByText(/1 round\b/i)).toBeInTheDocument();
-  });
-
-  it('pluralizes the round count', () => {
+  it('shows the rounds played beside the anchor stat', () => {
     render(<FairwayPlayerCard player={makePlayer({ rounds_count: 16 })} intent={null} />);
-    expect(screen.getByText(/16 rounds/i)).toBeInTheDocument();
+    expect(screen.getByText('Rounds')).toBeInTheDocument();
+    expect(screen.getByText('16')).toBeInTheDocument();
   });
 
-  it('says "No rounds" rather than "0 rounds" when the player has never played', () => {
+  it('shows 0 rounds and an em-dash average when the player has never played', () => {
     render(<FairwayPlayerCard player={makePlayer({ rounds_count: 0, avg_score: undefined })} intent={null} />);
-    expect(screen.getByText(/no rounds/i)).toBeInTheDocument();
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
+
+  it('does not render focus areas or goals on the card', () => {
+    render(<FairwayPlayerCard player={makePlayer({ active_focus_areas: 3, active_goals: 2 })} intent={null} />);
+    expect(screen.queryByText('Focus')).toBeNull();
+    expect(screen.queryByText('Goals')).toBeNull();
   });
 });
 
@@ -168,9 +154,4 @@ describe('FairwayPlayerCard — wrap-safe at narrow widths', () => {
     expect(meta.className).toMatch(/\bmin-w-0\b/);
   });
 
-  it('lets the Focus mini-stat badge wrap instead of clipping mid-word ("3 active" never becomes "3 activ")', () => {
-    render(<FairwayPlayerCard player={makePlayer({ active_focus_areas: 3 })} intent={null} />);
-    const badge = screen.getByText('3 active');
-    expect(badge.className).toMatch(/\bwhitespace-normal\b/);
-  });
 });
