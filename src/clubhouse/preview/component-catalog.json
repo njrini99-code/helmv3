@@ -1621,14 +1621,11 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
-        "src/clubhouse/styles/coachhelm-profile.css",
-        "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/rounds.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1686,7 +1683,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1729,7 +1725,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1894,7 +1889,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1987,7 +1981,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2634,7 +2627,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2689,7 +2681,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -7931,6 +7922,8 @@
       "file": "src/clubhouse/styles/coachhelm-dive.css",
       "classes": [
         "ch-hd",
+        "ch-hd-cl",
+        "ch-hd-cl__b",
         "ch-hd-dos",
         "ch-hd-dos__h",
         "ch-hd-dx",
@@ -7943,20 +7936,17 @@
         "ch-hd-grp",
         "ch-hd-grp__h",
         "ch-hd-hero",
-        "ch-hd-hero__f",
-        "ch-hd-hero__k",
-        "ch-hd-hero__main",
-        "ch-hd-hero__n",
-        "ch-hd-hero__sub",
         "ch-hd-it",
         "ch-hd-it__b",
         "ch-hd-it__d",
+        "ch-hd-it__f",
         "ch-hd-it__v",
         "ch-hd-main",
         "ch-hd-meas",
         "ch-hd-meas__s",
         "ch-hd-meas__v",
         "ch-hd-meas__w",
+        "ch-hd-more",
         "ch-hd-plan",
         "ch-hd-plan__b",
         "ch-hd-plan__i",
@@ -7989,6 +7979,10 @@
         "ch-hd-tr",
         "ch-hd-tr__k",
         "ch-hd-tr__t",
+        "ch-hd-where",
+        "ch-hd-where__b",
+        "ch-hd-where__d",
+        "ch-hd-where__i",
         "ch-hd-why",
         "ch-hl",
         "ch-hl-drill",
@@ -8000,7 +7994,6 @@
         "ch-hl-pri",
         "ch-hl-stale",
         "ch-hv-sk-head",
-        "ch-scoreboard",
         "ch-skel"
       ],
       "tokens": [
@@ -8008,109 +8001,109 @@
           "name": "--ch-hd-dot",
           "value": "var(--ch-ivory-400)",
           "scope": ".ch-hd-it",
-          "line": 136
+          "line": 63
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-ink-600)",
           "scope": ".ch-hd-it",
-          "line": 137
+          "line": 64
         },
         {
           "name": "--ch-hd-dot",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-hd-it.is-high",
-          "line": 151
+          "line": 78
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-it.is-high",
-          "line": 152
+          "line": 79
         },
         {
           "name": "--ch-hd-dot",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-hd-it.is-medium",
-          "line": 155
+          "line": 82
         },
         {
           "name": "--ch-hd-ink",
           "value": "#7a5a12",
           "scope": ".ch-hd-it.is-medium",
-          "line": 156
+          "line": 83
         },
         {
           "name": "--ch-hd-dot",
           "value": "var(--ch-green-600)",
           "scope": ".ch-hd-it.is-ok",
-          "line": 159
+          "line": 86
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-it.is-ok",
-          "line": 160
+          "line": 87
         },
         {
           "name": "--ch-hd-dot",
           "value": "var(--ch-green-400)",
           "scope": ".ch-hd-it.is-done",
-          "line": 163
+          "line": 90
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-it.is-done",
-          "line": 164
+          "line": 91
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-text-tertiary)",
           "scope": ".ch-hd-it.is-stale",
-          "line": 167
+          "line": 94
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-meas",
-          "line": 337
+          "line": 324
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-meas.is-good",
-          "line": 343
+          "line": 330
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-meas.is-warn",
-          "line": 346
+          "line": 333
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-tr",
-          "line": 383
+          "line": 370
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-tr li.is-good",
-          "line": 404
+          "line": 391
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
-          "line": 407
+          "line": 394
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-champagne-300)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-hd-it.is-medium",
-          "line": 1317
+          "line": 1199
         }
       ]
     },

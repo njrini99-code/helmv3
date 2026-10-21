@@ -2,12 +2,12 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { projectInsightForPlayer } from '@/lib/coachhelm/delivery/player-projection';
 import type { InsightCause } from '@/lib/coachhelm/v2/insights/types';
 import type { FocusAreaVerdict } from '@/lib/coachhelm/v3/verdicts/verdict';
-import { toChDeepInsight, type ChDeepDive } from '../data/coachhelm-dive-shape';
+import { toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDiveCleared } from '../data/coachhelm-dive-shape';
 import { shapeReadsLifecycle, type ChEngineFlags, type ChVerdictRow } from '../data/coachhelm-engine-shape';
 import { toChInsight } from '../data/coachhelm-map';
 import { firstName, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChPlayerHelm } from '../data/coachhelm-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
-import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, FULL_INPUTS } from './fixtures-coachhelm-views';
+import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, FULL_INPUTS, PREVIEW_DIVE } from './fixtures-coachhelm-views';
 import { bigNumber, breakBias, HELM_PLAYERS, penalties, PREVIEW_HELM_COACH, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 
 /**
@@ -355,6 +355,39 @@ export const PREVIEW_DIVE_ENGINE: ChDeepDive = (() => {
   const say = (t: string) => speak(t, ME);
   return diveOf(
     shaped.kept.map((r) => toChDeepInsight(r, card(r), FULL_INPUTS, say)),
-    { cleared: shaped.cleared },
+    { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) },
   );
 })();
+
+/** A read the recheck cleared, as the player's feed hands it: a putting band (putts) or a par type (holes). Synthetic. */
+const clearedRead = (id: string, label: string, category: 'putting' | 'scoring', at: string): EvidenceInsight =>
+  patch(
+    { ...slope('pl-jonah', id), category, title: label },
+    {
+      metric_label: label,
+      recheck:
+        category === 'putting'
+          ? { window: 'newest_15_rounds', rounds_n: 15, recent_value: 75.9, recent_n: 29, recent_unit: 'putts', recent_lower_90: 65.7, recent_upper_90: 84, old_value: 62, old_n: 95, benchmark: 72, polarity: 'higher_better', outcome: 'cleared', min_n: 20, computed_at: at }
+          : { window: 'newest_15_rounds', rounds_n: 12, recent_value: 3.08, recent_n: 48, recent_unit: 'holes', recent_lower_90: 2.96, recent_upper_90: 3.2, old_value: 3.41, old_n: 60, benchmark: 3.15, polarity: 'lower_better', outcome: 'cleared', min_n: 30, computed_at: at },
+    },
+  );
+
+/** The cleared rows of these reads, as the Deep dive's loader files them. */
+const diveCleared = (rows: EvidenceInsight[]): ChDiveCleared[] =>
+  shapeReadsLifecycle(rows.map(projectInsightForPlayer), true, ME, ENGINE_NOW).clearedReads.map((c) => toDiveCleared(c.read, c.line));
+
+/** Two reads cleared, each kept in its own area of the ledger beside the open reads (D6). `?view=deep-dive&state=cleared`. */
+export const PREVIEW_DIVE_CLEARED: ChDeepDive = diveOf([...PREVIEW_DIVE.list], {
+  cleared: diveCleared([clearedRead('in-cl-46', '4–6 ft putts', 'putting', '2026-10-12T03:00:00Z'), clearedRead('in-cl-p5', 'Par 5 scoring', 'scoring', '2026-10-05T03:00:00Z')]),
+});
+
+/** Five reads cleared: the newest three show in their areas, then "2 more cleared". `?view=deep-dive&state=manycleared`. */
+export const PREVIEW_DIVE_MANY_CLEARED: ChDeepDive = diveOf([...PREVIEW_DIVE.list], {
+  cleared: diveCleared([
+    clearedRead('in-cl-35', '3–5 ft putts', 'putting', '2026-10-14T03:00:00Z'),
+    clearedRead('in-cl-46', '4–6 ft putts', 'putting', '2026-10-12T03:00:00Z'),
+    clearedRead('in-cl-p5', 'Par 5 scoring', 'scoring', '2026-10-05T03:00:00Z'),
+    clearedRead('in-cl-610', '6–10 ft putts', 'putting', '2026-09-30T03:00:00Z'),
+    clearedRead('in-cl-p3', 'Par 3 scoring', 'scoring', '2026-09-21T03:00:00Z'),
+  ]),
+});

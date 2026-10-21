@@ -1,5 +1,51 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Deep dive: one read ledger, cleared reads kept, where it happened
+
+```text
+Design package: design call (clubhouse-coachhelm-design-call.md: Player Deep
+                dive, States, Ranking and limits, D6)
+PR/commit:      see git log (claude/coachhelm-deepdive-ledger)
+Contract IDs:   CH-13996 (new); CH-13890, CH-13992, CH-13282, CH-13480
+                (changed)
+Actions:        none (read only)
+Data impact:    none written; the rounds the example holes are on are read in
+                the same golf_rounds read as the rounds behind the reads
+Held items:     none
+```
+
+### Changed
+
+- The summary is one sentence ("CoachHelm has 5 reads on your game, 2 of
+  them in your plan."); the Needs work, What's working and In your plan
+  tiles are gone. With plans that did not load the plan clause is left out.
+- Needs work and What's working are replaced by one flush read ledger
+  grouped by area (Off the tee, Approach, Around the green, Putting, Course
+  and scoring). Each row has its stance word and its firmness word: the claim
+  ladder's word for a coach with the support pass on, else the confidence
+  word (the player's feed drops the ladder, so a player sees Solid, Early or
+  Thin read). An out-of-date read keeps its row with the firmness word greyed.
+- A read the recheck cleared stays in its area as a line ("Cleared Oct 12",
+  the read, the recheck's numbers) instead of a Cleared section beside the
+  list; the newest three show, then "N more cleared" shows the rest.
+
+### Added
+
+- "Where it happened" in the read (CH-13996): up to five example holes, each
+  with its round's day and course, the hole and the counted path in shot-type
+  words, read only from a stored counted sequence (`evidence.cause` in the
+  counted state, a shot-sequence basis, or an insight angle's sequence that
+  meets the Observed floors). Without one the section is not drawn.
+- Preview: `?view=deep-dive&state=cleared`, `state=manycleared` and
+  `state=holes&insight=in-pen`.
+
+### Why
+
+- Design call, Player Deep dive: three count tiles before the claim, and a
+  rail of groups as a panel, do with more containers what one ledger does;
+  a cleared read must not disappear without trace (D6); example holes are
+  the evidence list for a counted path.
+
 ## 2026-10-21 — useHydrated moved to the shared lib
 
 No visible change. `screens/coachhelm/use-hydrated.ts` re-exports

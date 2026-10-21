@@ -9,6 +9,7 @@ import {
   diveLoad,
   PREVIEW_DIVE,
   PREVIEW_DIVE_EMPTY,
+  PREVIEW_DIVE_HOLES,
   PREVIEW_DIVE_MANY,
   PREVIEW_DIVE_NO_ROUNDS,
   PREVIEW_DIVE_PARTS_FAILED,
@@ -26,13 +27,13 @@ import {
   profileLoad,
   standingLoad,
 } from './fixtures-coachhelm-views';
-import { PREVIEW_DIVE_ENGINE } from './fixtures-coachhelm-engine';
+import { PREVIEW_DIVE_CLEARED, PREVIEW_DIVE_ENGINE, PREVIEW_DIVE_MANY_CLEARED } from './fixtures-coachhelm-engine';
 
 const OFF = { status: 'off', reason: 'We are pausing AI insights until after the spring qualifier' } as const;
 
 /**
  * The player's CoachHelm drills for the dev preview: `?view=profile|standing|deep-dive`, and `?state=` for the read's answer
- * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `engine` (every engine flag on), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
+ * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `engine` (every engine flag on), `cleared`, `manycleared`, `holes` (with `&insight=in-pen`), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
  */
 export function PreviewCoachHelmViews({ view, state, insight }: { view?: string; state?: string; insight?: string }) {
   const failed: ChViewLoad<never> = { status: 'failed' };
@@ -54,7 +55,7 @@ export function PreviewCoachHelmViews({ view, state, insight }: { view?: string;
     if (state === 'loading') return <DiveSkeleton />;
     if (state === 'failed') return <DeepDive load={failed} />;
     if (state === 'off') return <DeepDive load={OFF} />;
-    const data = { engine: PREVIEW_DIVE_ENGINE, many: PREVIEW_DIVE_MANY, young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS, teampool: PREVIEW_DIVE_TEAM_POOL }[state ?? ''] ?? PREVIEW_DIVE;
+    const data = { engine: PREVIEW_DIVE_ENGINE, cleared: PREVIEW_DIVE_CLEARED, manycleared: PREVIEW_DIVE_MANY_CLEARED, holes: PREVIEW_DIVE_HOLES, many: PREVIEW_DIVE_MANY, young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS, teampool: PREVIEW_DIVE_TEAM_POOL }[state ?? ''] ?? PREVIEW_DIVE;
     return <DeepDive load={diveLoad(data)} initialId={insight ?? null} />;
   }
   return null;
