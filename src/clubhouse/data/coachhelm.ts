@@ -535,6 +535,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: [], error: true }, withoutSignals: 0 };
 
   // The Tour is not waited for until here: nothing the next reads need comes from it, so it finishes beside them.
+  // The team patterns count only current findings, by the same predicate as the player cards, so they wait for the newest rounds and
+  // the Tour (their own eligibility read still runs beside the others).
+  const newestRead = newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...top]));
+  const openRows = Promise.all([newestRead, tourRead]).then(([n, t]) => visible.rows.filter((r) => isOpenFinding(r, t.baseline, n.days.get(r.player_id) ?? null)));
   const [drills, assigned, declined, newest, tourResult, teamPatterns] = await Promise.all([
     drillTextByInsight(supabase, top),
     assignedByInsight(
@@ -545,9 +549,9 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
       supabase,
       top.map((i) => i.id),
     ),
-    newestRounds(supabase, ids, earliestStaleFloor([...visible.rows, ...top])),
+    newestRead,
     tourRead,
-    teamPatternsOf(supabase, input.teamId, roster, visible.rows),
+    teamPatternsOf(supabase, input.teamId, roster, openRows),
   ]);
   const tour = tourResult.baseline;
   // The engine's states on each player's one card, each behind its flag (surfaces A). The lifecycle shapes each player's visible
@@ -629,13 +633,16 @@ export async function eligibleForPatterns(supabase: Supabase, playerIds: string[
  * engine's cause families shared by enough of the roster, from the visible
  * reads the board already loaded. Off, or a failed read, draws nothing.
  */
-async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, rows: readonly RankableEvidenceInsight[]): Promise<ChTeamPatterns | null> {
+async function teamPatternsOf(supabase: Supabase, teamId: string, roster: ReadonlyArray<{ id: string; name: string }>, openRows: Promise<readonly RankableEvidenceInsight[]>): Promise<ChTeamPatterns | null> {
   if (!teamPatternEnabled() || roster.length === 0) return null;
   try {
-    const eligible = await eligibleForPatterns(
-      supabase,
-      roster.map((p) => p.id),
-    );
+    const [eligible, rows] = await Promise.all([
+      eligibleForPatterns(
+        supabase,
+        roster.map((p) => p.id),
+      ),
+      openRows,
+    ]);
     if (!eligible) return null;
     const result = computeTeamPatterns({
       teamId,
