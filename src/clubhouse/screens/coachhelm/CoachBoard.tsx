@@ -22,7 +22,8 @@ import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTab
 import { BoardPartial, FocusCard, Head, PulseList } from './parts';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
-import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
+import { CoursePlan } from './CoursePlan';
+import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, type ChCoachHelmWrites, type ChCoursePlanReads } from './writes';
 import { SideScroll } from '../../ui/SideScroll';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
@@ -41,7 +42,7 @@ export const coachBoardLinks = {
  * own players are read (data/coachhelm.ts). Share with the player has no action
  * behind it (players already see their own insights), so it is not drawn.
  */
-export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; initialPlayer?: string }) {
+export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanReads = LIVE_COURSE_PLAN_READS, initialPlayer }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; coursePlanReads?: ChCoursePlanReads; initialPlayer?: string }) {
   const phone = useChPhone();
   const toast = useToast();
   const players = data.players.list;
@@ -328,6 +329,12 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                   </>
                 )}
               </SectionBoundary>
+              {/* Slice 7c: the course plan, on request, behind coachhelm_course_plan_v1 (off); the loader sets coursePlan only when it is on. */}
+              {data.coursePlan && (
+                <SectionBoundary surface="coachhelm.course-plan" label="Course plan" code="CH-13204">
+                  <CoursePlan key={cur.id} playerId={cur.id} who={firstName(cur.name)} reads={coursePlanReads} />
+                </SectionBoundary>
+              )}
             </div>
           </div>
           {data.withoutSignals > 0 && (

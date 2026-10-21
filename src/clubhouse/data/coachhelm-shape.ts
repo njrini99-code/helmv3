@@ -285,6 +285,8 @@ export interface ChCoachHelmData {
   withoutNames?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
+  /** The coach may ask for a course plan for the chosen player (`coachhelm_course_plan_v1`, off). Absent: not offered. */
+  coursePlan?: boolean;
 }
 
 /** Names said before the rest are counted: "A, B, C and 2 more". */

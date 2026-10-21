@@ -1287,6 +1287,24 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/CoursePlan.tsx",
+      "group": "screens",
+      "exports": [
+        "CoursePlan"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/PlayerBoard.tsx",
       "group": "screens",
       "exports": [
@@ -8383,6 +8401,15 @@
         "ch-hl-note",
         "ch-hl-pl",
         "ch-hl-pl__c",
+        "ch-hl-plan",
+        "ch-hl-plan__c",
+        "ch-hl-plan__courses",
+        "ch-hl-plan__h",
+        "ch-hl-plan__lines",
+        "ch-hl-plan__player",
+        "ch-hl-plan__pt",
+        "ch-hl-plan__start",
+        "ch-hl-plan__thin",
         "ch-hl-plist",
         "ch-hl-pri",
         "ch-hl-prop",
