@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 350 | 13 | 71 | 92 |
+| `UNKNOWN` | 351 | 13 | 71 | 92 |
 
 ## Files
 
