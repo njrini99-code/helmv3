@@ -82,9 +82,10 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
         </span>
       }
       href={href ?? undefined}
-      onClick={href ? () => {
+      onClick={href ? (e) => {
         haptic('select');
-        noteOpenedFromLibrary(r.id);
+        // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
+        if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
       } : undefined}
       label={`${r.player}, ${shortDay(r.date)}, ${r.course}, ${r.score}${r.toPar != null ? ` (${formatToPar(r.toPar)})` : ''}`}
     />
