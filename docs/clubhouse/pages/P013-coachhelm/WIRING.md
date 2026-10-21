@@ -118,7 +118,8 @@ Client controller: useAction (offline refusal CH-1903, slow notice CH-1902,
 Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method
     per server action
 ↓
-Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2, acceptFocusArea, declineFocusArea),
+Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2,
+                acceptFocusArea, declineFocusArea),
                 src/app/golf/actions/insights-feed.ts (dismissInsight, reactivateInsight)
 ↓
 Data: golf_player_focus_areas, golf_coach_insights, golf_insight_action
@@ -142,7 +143,8 @@ component) -> the view's loader, for session.player.id
 ↓
 Reads (the shared client unless the lib's own loader says otherwise; every
 failure logs through chLogServer('coachhelm', …)):
-  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the Board's insight read, carried as `sees`)
+  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the
+               Board's insight read, carried as `sees`)
   standing  -> loadPlayerStandingMap (golf_player_standing; the lib's
                service-role client, scoped by the player id and filtered to
                it), golf_player_stats_cache (rounds played and the scoring
@@ -248,8 +250,10 @@ Tables:   golf_coach_insights (visible rows, evidence), golf_insight_player_feed
 RPCs:     none read by these loaders (the delivery actions have their own reads)
 Storage:  none
 Realtime: none
-Cache:    none, except the pulse's per-request React cache; a Try again reads the page again (router.refresh)
-RLS:      the RLS-scoped client throughout; the server actions check the caller first
+Cache:    none, except the pulse's per-request React cache; a Try again reads
+          the page again (router.refresh)
+RLS:      the RLS-scoped client throughout; the server actions check the
+          caller first
 Read path:  the loaders, on the server, in rounds (132101); a coach's are the resolved team's active players' (130802),
             a player's are their own (130803)
 Write path: the server actions above, through writes.ts
