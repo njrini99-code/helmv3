@@ -9,7 +9,7 @@
  * across calls. Each generator's `run()` also checks the flag, and with it off
  * returns without reading, writing or sweeping (`angle-generator.ts`).
  */
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { INSIGHT_ANGLES_FLAG } from './angle-data';
 import { ApproachMissCompassGenerator } from './approach-miss-compass';
 import { ApproachSgGenerator, Par3TeeGenerator } from './approach-sg';
@@ -28,7 +28,7 @@ export interface AngleGeneratorEntry {
 
 /** Tier-1 entries for the angle generators; empty while the flag is off. */
 export function insightAngleGenerators(playerId: string): AngleGeneratorEntry[] {
-  if (!isFlagEnabled(INSIGHT_ANGLES_FLAG)) return [];
+  if (!isCoachHelmFlagEnabled(INSIGHT_ANGLES_FLAG)) return [];
   const loaders = createAngleLoaders(playerId);
   return [
     { name: 'v3.angles.lieApproach', fn: () => new LieApproachGenerator(playerId, loaders).run() },

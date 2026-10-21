@@ -12,7 +12,7 @@
  * per read, never a collision with a legacy key. Rows without a stamped
  * `newest_round_id` (v2 miners, unstamped v3 rows) keep the legacy key.
  */
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import type { InsightEvidence } from './types';
 
 /** Pure: the key for one evidence object under the given mode. */
@@ -53,5 +53,5 @@ export function carryForwardStamp(
 export function evidenceRevisionKey(
   evidence: Pick<InsightEvidence, 'sample_n' | 'window_start' | 'window_end' | 'newest_round_id'>,
 ): string {
-  return revisionKeyFor(evidence, isFlagEnabled('coachhelm_reads_v1_copy'));
+  return revisionKeyFor(evidence, isCoachHelmFlagEnabled('coachhelm_reads_v1_copy'));
 }

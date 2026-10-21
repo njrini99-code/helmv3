@@ -18,7 +18,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { isVerdictsEnabled } from './flag';
+import { withPlayerCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { isFlagEnabled } from '@/lib/flags';
+import { VERDICTS_FLAG, isVerdictsEnabled } from './flag';
 import { buildPrescriptionFromRead, toColumnPatch, type AssignedBy, type NoCriterionReason } from './prescription';
 import { isMissingSchemaError } from './schema-missing';
 
@@ -43,6 +45,17 @@ export interface StampPrescriptionArgs {
 const ACTION = 'coachhelm.verdicts.stampPrescription';
 
 export async function stampPrescriptionFromRead(
+  client: SupabaseClient<Database>,
+  args: StampPrescriptionArgs,
+): Promise<StampPrescriptionResult> {
+  // HELM_COACHHELM_TEAMS canary: the flag is read in the player's team scope
+  // (one team read through the caller's client). Unset: nothing extra is read.
+  // The global flag off still reads nothing at all.
+  if (!isFlagEnabled(VERDICTS_FLAG)) return { status: 'flag_off' };
+  return withPlayerCoachHelmTeams(args.playerId, () => client, () => stampInScope(client, args));
+}
+
+async function stampInScope(
   client: SupabaseClient<Database>,
   args: StampPrescriptionArgs,
 ): Promise<StampPrescriptionResult> {

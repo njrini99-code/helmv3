@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeSupabase, type FakeCall, type FakeResponse } from './fake-supabase';
 
 const flag = vi.hoisted(() => ({ on: false }));
@@ -83,6 +83,44 @@ describe('stampPrescriptionFromRead', () => {
     const { client: c } = client({ data: null, error: { code: '42501', message: 'denied' } });
     await expect(stampPrescriptionFromRead(c, ARGS)).resolves.toEqual({ status: 'write_failed' });
     expect(logServerError).toHaveBeenCalledWith(expect.stringContaining('prescription write failed'), expect.anything(), 'warning');
+  });
+
+  describe('HELM_COACHHELM_TEAMS canary', () => {
+    afterEach(() => {
+      delete process.env.HELM_COACHHELM_TEAMS;
+    });
+
+    function canaryClient(teamIds: string[]) {
+      return fakeSupabase((call: FakeCall) => {
+        if (call.table === 'golf_team_members') return { data: teamIds.map((team_id) => ({ team_id })), error: null };
+        if (call.table === 'golf_coach_insights') return { data: { evidence: EVIDENCE }, error: null };
+        if (call.table === 'golf_player_focus_areas' && call.op === 'update') return { data: null, error: null };
+        throw new Error(`unexpected ${call.op} on ${call.table}`);
+      });
+    }
+
+    it('a player on a listed team: stamped (the flag is read in the player’s team scope)', async () => {
+      flag.on = true;
+      process.env.HELM_COACHHELM_TEAMS = 'team-1';
+      const { client: c, calls } = canaryClient(['team-1']);
+      await expect(stampPrescriptionFromRead(c, ARGS)).resolves.toMatchObject({ status: 'stamped' });
+      expect(calls.find((x) => x.table === 'golf_team_members')!.steps).toContainEqual(['eq', ['player_id', 'player-1']]);
+    });
+
+    it('a player on no listed team: flag off, nothing written', async () => {
+      flag.on = true;
+      process.env.HELM_COACHHELM_TEAMS = 'team-1';
+      const { client: c, calls } = canaryClient(['team-2']);
+      await expect(stampPrescriptionFromRead(c, ARGS)).resolves.toEqual({ status: 'flag_off' });
+      expect(calls.map((x) => x.table)).toEqual(['golf_team_members']);
+    });
+
+    it('the global flag off: reads nothing, not even the team', async () => {
+      process.env.HELM_COACHHELM_TEAMS = 'team-1';
+      const { client: c, calls } = canaryClient(['team-1']);
+      await expect(stampPrescriptionFromRead(c, ARGS)).resolves.toEqual({ status: 'flag_off' });
+      expect(calls).toHaveLength(0);
+    });
   });
 
   it('a read the area cannot be judged on still records who assigned it', async () => {

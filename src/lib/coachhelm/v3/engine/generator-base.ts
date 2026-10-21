@@ -38,7 +38,7 @@ import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import {
   diagnoseRootCause,
   resolveInsightFraming,
@@ -807,7 +807,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       // Slice 2 root cause (flag on): the cause state decides the diagnosis;
       // a strength/neutral row ships neither. Flag off: the P0-05 block below,
       // unchanged.
-      if (isFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG)) {
+      if (isCoachHelmFlagEnabled(ROOT_CAUSE_DIAGNOSIS_FLAG)) {
         const rooted = await this.diagnoseRootCause(composed, evidence);
         const { diagnosis: _composedDiagnosis, ...rest } = evidence;
         void _composedDiagnosis;
