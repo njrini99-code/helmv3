@@ -24093,6 +24093,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/stats-data.ts",
+          "anchor": "src/lib/golf/player-profiles"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/stats-data.ts",
           "anchor": "src/lib/golf/detailed-stats-admin-bridge"
         },
         {
