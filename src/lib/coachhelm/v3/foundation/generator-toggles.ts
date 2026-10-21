@@ -55,11 +55,12 @@ export async function isGeneratorEnabledForPlayer(
     if (!membership?.team_id) return true;
 
     // Read the team's preference blob (the `preferences` JSONB column).
-    const { data: settings } = await admin
+    const { data: settings, error: settingsError } = await admin
       .from('golf_team_coachhelm_settings')
       .select('preferences')
       .eq('team_id', membership.team_id)
       .maybeSingle();
+    if (settingsError) throw settingsError;
 
     const prefs = (settings?.preferences ?? {}) as Record<string, unknown>;
     // Default true — only explicit false disables.

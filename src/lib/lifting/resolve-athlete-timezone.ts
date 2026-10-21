@@ -31,6 +31,8 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 const DEFAULT_TZ = 'America/New_York';
 
@@ -46,11 +48,18 @@ export async function resolveLiftingAthleteTimezone(athleteId: string): Promise<
 
   const supabase = await createClient();
 
-  const { data: athlete } = await supabase
+  const { data: athlete, error: athleteError } = await supabase
     .from('helm_lifting_athletes')
     .select('sport, sport_player_id')
     .eq('id', athleteId)
     .maybeSingle();
+
+  if (athleteError) {
+    await logServerError(`Lifting athlete timezone: athlete lookup failed: ${describeError(athleteError)}`, {
+      action: 'lifting.resolveAthleteTimezone',
+    });
+    return DEFAULT_TZ;
+  }
 
   if (!athlete?.sport_player_id) return DEFAULT_TZ;
 
