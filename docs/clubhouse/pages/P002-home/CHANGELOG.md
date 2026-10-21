@@ -3,7 +3,7 @@
 ## 2026-10-21 — The team form is drawn at once
 
 ```text
-Design package: none (motion decision Q-145, three votes, 3 to 0)
+Design package: none (motion decision Q-153, three votes, 3 to 0)
 PR/commit:      claude/clubhouse-no-first-paint-draw-ins
 Contract IDs:   none
 Actions:        none
@@ -13,7 +13,7 @@ Held items:     none
 
 The team-form line no longer wipes in left to right and its end dot no longer
 fades in after 520 ms. The chart is drawn in place on first paint (`home.css`,
-`TeamForm.tsx`; Q-145). Motion report 2026-10-20-home.md box 3 reported this
+`TeamForm.tsx`; Q-153). Motion report 2026-10-20-home.md box 3 reported this
 as a FAIL.
 
 ## 2026-10-20 — Honest deltas (stats visuals 2)

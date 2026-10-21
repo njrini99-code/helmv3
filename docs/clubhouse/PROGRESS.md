@@ -1889,10 +1889,10 @@ decision named.
   up twice in series (the proxy, then the render: about 50 ms of a 230 ms
   local request). Reading the proxy's verified claims (getClaims) would save
   one. It is an auth change and needs a security review. Kept: two lookups.
-- Q-145 (answered 2026-10-21, three independent votes, 3 to 0 for A; the owner
+- Q-153 (answered 2026-10-21, three independent votes, 3 to 0 for A; the owner
   delegated open design calls to a vote) The motion pass found three
   first-paint draw-ins on the 520 ms reveal: Home's team-form wipe, Roster's
-  spread dots gliding out from the team line, and Rounds' staggered bars (plus
+  and Qualifiers' spread dots gliding out from the team line, and Rounds' staggered bars (plus
   the round review's line, fill, dots and shot arcs). Options: A instant, B a
   narrow chart exception, C keep only Home's wipe. All three voters chose A:
   Q-139 already retired the reveal ("crossfade only"), the rules say content
