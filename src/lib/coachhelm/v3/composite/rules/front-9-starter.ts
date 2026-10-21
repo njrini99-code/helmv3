@@ -99,7 +99,7 @@ const rule: CompositeRule = {
           `to par while holes 4-18 average ${restAvg.toFixed(2)}, ` +
           `that's +${delta.toFixed(2)} strokes/hole on the opening stretch. ` +
           `Slow starts are usually warmup, not technique. ${v.pick('Add', 'Have them add')} 5 more putts and ` +
-          `3 ${v.pick('wedge shots', 'short pitch shots')} to ${v.your} range routine and arrive 20 minutes earlier.`,
+          `3 short pitch shots to ${v.your} range routine and arrive 20 minutes earlier.`,
       })),
       signature: 'front_9_starter',
       evidence: {

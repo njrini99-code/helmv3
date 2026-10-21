@@ -218,7 +218,7 @@ export function parMixSentence(split: ParSplit, v: Voice = PLAYER_VOICE): string
   if (par5Share >= PAR_MIX_DOMINANT_SHARE) {
     return (
       ` ${(par5Share * 100).toFixed(0)}% of these (${split.par5.attempts} of ${known}) were second shots on par 5s,` +
-      ` where laying up to ${v.pick('a wedge number', 'a preferred yardage')} is often the right play and a lay-up records as a missed green.` +
+      ` where laying up to a preferred yardage is often the right play and a lay-up records as a missed green.` +
       ` On par 4s, where ${v.you} have to go at it, ${v.you} found the green ${split.par4.greenHitPct?.toFixed(0)}%` +
       ` of the time over ${split.par4.attempts} approaches.`
     );
@@ -540,7 +540,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // dial-in lever); left/right is the fallback when the vertical miss is
     // balanced. Omitted entirely when neither axis dominates — no fabricated
     // tendency. The reading states the measured share and names what the shot
-    // record does NOT contain (intent, club, wind, target); it never asserts a
+    // record does NOT contain (intent, wind, target); it never asserts a
     // mechanical cause. The same reading is stamped as the typed diagnosis so
     // the structured root cause and the prose cannot disagree.
     const slDom = dominantAxis(agg.miss_short_long);
@@ -555,10 +555,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     }
     if (axisMeta) {
       reading = approachAxisReading(axisMeta.axis, axisMeta.share, axisMeta.n);
-      const { axis, share, n } = axisMeta;
-      const recordText = axisReadingToText(reading);
-      axisSentence = (v) =>
-        ' ' + (v.coach ? axisReadingToText(approachAxisReading(axis, share, n, 'coach')) : recordText);
+      const text = ` ${axisReadingToText(reading)}`;
+      axisSentence = () => text;
     }
     const metricLabel = `Greens hit from ${label}`;
     const diagnosis: Diagnosis | undefined =

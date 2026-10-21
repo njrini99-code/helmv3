@@ -981,7 +981,7 @@ export function observedAction(target: SequenceTarget, pattern: string): string 
   const first = pattern.split(' → ')[0]!;
   switch (target.family) {
     case 'tee':
-      return `Work on the tee shot that starts this path (${first}): target and club choice on those holes`;
+      return `Work on the tee shot that starts this path (${first}): target, and whether to hit driver, on those holes`;
     case 'approach':
       return `Practice the shot these misses leave you (${first}) and the recovery that follows`;
     case 'putt': {

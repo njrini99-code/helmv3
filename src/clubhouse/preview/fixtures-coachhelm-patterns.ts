@@ -5,8 +5,8 @@ import { HELM_PLAYERS, PREVIEW_HELM_COACH } from './fixtures-coachhelm';
 
 /**
  * The coach board with Team patterns (supercharge Slice 7b, `coachhelm_team_pattern_v1`): synthetic reads run through the real
- * `computeTeamPatterns`, so the preview draws exactly what the engine would. Five players, all with enough rounds: three share wedges
- * finishing short and three share 5-10 ft putts; two share penalties, which is under the threshold and only counted.
+ * `computeTeamPatterns`, so the preview draws exactly what the engine would. Five players, all with enough rounds: three share approaches from
+ * 50-125 yd finishing short and three share 5-10 ft putts; two share penalties, which is under the threshold and only counted.
  */
 const SAM = { id: 'pl-sam', name: 'Sam Whitfield' };
 const ROSTER = [...Object.values(HELM_PLAYERS), SAM];
@@ -22,7 +22,7 @@ const wedge = (player: string, value: number, strokes: number, ladder: string) =
   read(player, `tp-w-${player}`, {
     insight_type: 'approach_miss',
     metric: 'approach_miss_recovery_cost',
-    metric_label: 'Wedges 50–125 yd',
+    metric_label: 'Approaches 50–125 yd',
     unit: 'percent',
     your_value: value,
     ladder,

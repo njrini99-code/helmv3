@@ -54,7 +54,7 @@ describe('dominantAxis', () => {
 
 describe('approachAxisReading — observation / check / action (repair plan Package 2)', () => {
   // Assertive cause phrasings the old driver sentences used. Naming a cause
-  // inside a list of unknowns ("comes from under-clubbing, a headwind, …") is
+  // inside a list of unknowns ("comes from too little carry, a headwind, …") is
   // enumeration, not assertion, and is allowed.
   const MECHANICAL_CAUSE = /the driver is|not aim|not a distance fix|club up and commit|club down and take spin|decelerat|face-control pattern/i;
 
@@ -63,7 +63,7 @@ describe('approachAxisReading — observation / check / action (repair plan Pack
     expect(r.observation).toBe('70% of the 78 misses with a distance read finished SHORT.');
     // The check names what the record does not contain — never a cause.
     expect(r.check).toMatch(/does not say why/i);
-    expect(r.check).toMatch(/check the club and target/i);
+    expect(r.check).toMatch(/check the carry number and target/i);
     expect(r.action).toMatch(/^Recommended:/);
     for (const field of [r.observation, r.check, r.action]) {
       expect(field).not.toMatch(MECHANICAL_CAUSE);
@@ -73,7 +73,7 @@ describe('approachAxisReading — observation / check / action (repair plan Pack
   it('LONG → same structure, long-side alternatives named as unknowns', () => {
     const r = approachAxisReading('long', 0.62, 40);
     expect(r.observation).toContain('62% of the 40 misses with a distance read finished LONG.');
-    expect(r.check).toMatch(/over-clubbing, a helping wind, a back-pin target/);
+    expect(r.check).toMatch(/too much carry for the number, a helping wind, a back-pin target/);
     expect(r.check).not.toMatch(/^You/);
   });
 

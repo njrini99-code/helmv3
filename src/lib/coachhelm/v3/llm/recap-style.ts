@@ -95,7 +95,7 @@ export function buildDeterministicRecap(
   } else if (stp < 0) {
     lede = `${score} dipped under par, the kind of round the rest of the season measures itself against.`;
   } else if (puttHeavy) {
-    lede = `${score} on the card, but the putter cost ${round.total_putts} strokes on ${round.holes_played} holes.`;
+    lede = `${score} on the card, but putting cost ${round.total_putts} strokes on ${round.holes_played} holes.`;
   } else if (fir !== null && fir > 75) {
     lede = `${score} on the card, built off the tee with ${fir}% of fairways found.`;
   } else if (gir !== null && gir < 40) {

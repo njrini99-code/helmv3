@@ -474,7 +474,7 @@ function lieSummary(row: TeeSideRow): string {
 
 export const TEE_MISS_DEFINITION =
   'Miss cost = hole score to par after a tee miss minus the mean score to par on your fairway holes of the same par and driver/non-driver (≥ 5 fairway holes as reference). ' +
-  'Next-shot SG = strokes gained of the shot after the tee shot. Tee shots exist only on par 4s and 5s; club is recorded only as driver / non-driver.';
+  'Next-shot SG = strokes gained of the shot after the tee shot. Tee shots exist only on par 4s and 5s, and are recorded only as driver / non-driver.';
 
 function sgText(v: number | null, n: number): string {
   return v === null ? `n/a (n=${n})` : `${v > 0 ? '+' : ''}${v.toFixed(2)} (n=${n})`;
@@ -587,7 +587,7 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
       excluded: r.excluded,
       linked_area: 'approach',
       chain: ['tee', 'approach'],
-      club_note: 'Club is recorded only as driver / non-driver; cost is compared within par × that split.',
+      club_note: 'Tee shots are recorded only as driver / non-driver; cost is compared within par × that split.',
       rounds: r.rounds,
     },
     diagnosis: {

@@ -879,7 +879,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |

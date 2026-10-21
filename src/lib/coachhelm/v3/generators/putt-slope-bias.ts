@@ -331,7 +331,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     return {
       ...inBothVoices((v) => ({
         title: `Downhill putts from ${agg.band}: a real penalty`,
-        content: `From ${agg.band}, ${v.pick("you're", 'the player is')} making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap. Short putts carry the highest leverage per attempt in ${v.pick('your bag', 'their game')} (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. ${v.pick('Rehearse', 'Have the player rehearse')} a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+        content: `From ${agg.band}, ${v.pick("you're", 'the player is')} making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap. Short putts carry the highest leverage per attempt in ${v.your} game (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. ${v.pick('Rehearse', 'Have the player rehearse')} a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
       })),
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,

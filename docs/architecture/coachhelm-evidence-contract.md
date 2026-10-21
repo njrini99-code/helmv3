@@ -2593,15 +2593,19 @@ families) and every composite rule writes the coach's copy of its read. The
 generator writes its title and content once, as a function of a `Voice`
 (`v3/engine/coach-voice.ts`), and `inBothVoices` renders it twice:
 
-- **Player** (`title`, `content`): exactly the text written before.
+- **Player** (`title`, `content`): second person ("you", "your").
 - **Coach** (`evidence.coach_copy`): third person. The first mention is "the
   player" (or "the player's"), later ones "they" / "their" / "them"; the
   Clubhouse reader (`speak`) puts the first name in place of "the player", so
   no name is stored. Actions are the coach's ("Have the player rehearse ...",
   "Drill to assign: ..."). Titles carry no name (the name is in the eyebrow).
-  Where the player copy names a club ("tee fairway clubs", "under-clubbing",
-  "wedge"), the coach copy says shot type or carry instead ("non-driver tee
-  shots", "too little carry for the number", "short-approach").
+
+Neither voice names a club (owner rule): a read speaks of the shot type, and
+driver vs not-driver off the tee, and nothing else ("non-driver tee shots",
+"too little carry for the number", "short-approach"). The same holds for the
+diagnosis on the evidence, the Contradicted pair lines and the tee path's
+practice focus. `v3/engine/__tests__/no-club-words.test.ts` checks every
+generator, angle and composite fixture in both voices against `CLUB_WORDS`.
 
 Rule-based templates only; no LLM. The numbers are the same interpolations in
 both voices. Before storing, `BaseGenerator.run()` and
