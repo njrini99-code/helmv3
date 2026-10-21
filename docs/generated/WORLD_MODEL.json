@@ -17006,6 +17006,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/data-prompts/flag.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/progress-drivers.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -17109,6 +17114,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-review-narrative.ts",
           "anchor": "src/lib/coachhelm/round-single-flight-lock"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/data-prompts/flag.ts",
+          "anchor": "src/lib/coachhelm/canary"
         },
         {
           "kind": "import_graph",
