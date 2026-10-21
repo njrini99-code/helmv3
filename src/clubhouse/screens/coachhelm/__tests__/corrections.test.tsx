@@ -11,7 +11,7 @@ vi.mock('@/lib/coachhelm/v3/corrections/flag', () => ({ CORRECTIONS_FLAG: 'coach
 
 import type { CorrectionResult } from '@/lib/coachhelm/v3/corrections/input';
 import { readCorrections } from '../../../data/coachhelm-corrections';
-import { correctionsOf, ENGINE_OFF, laterRoundsLeft, type ChCorrections, type ChCorrectionsInput } from '../../../data/coachhelm-engine-shape';
+import { correctionsOf, ENGINE_OFF, laterRoundsLeft, snoozeRoundsSince, type ChCorrections, type ChCorrectionsInput } from '../../../data/coachhelm-engine-shape';
 import { toChInsight } from '../../../data/coachhelm-map';
 import { haptic } from '../../../lib/haptics';
 import { PREVIEW_TOUR, slope } from '../../../preview/fixtures-coachhelm';
@@ -164,13 +164,22 @@ describe('correction chips on the coach card', () => {
 });
 
 describe('readCorrections (the loader)', () => {
-  const sb = (answer: { data: unknown; error: unknown }) => {
-    const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'in', 'gt']) chain[m] = vi.fn(() => chain);
-    chain.order = vi.fn(async () => answer);
+  /** The corrections table answers with `answer`; `golf_rounds` (the Show later count) with `rounds`. */
+  const sb = (answer: { data: unknown; error: unknown }, rounds: { data: unknown; error: unknown } = { data: [], error: null }) => {
+    const make = (table: string) => {
+      const chain: Record<string, unknown> = {};
+      for (const m of ['select', 'eq', 'in', 'gt']) chain[m] = vi.fn(() => chain);
+      if (table === 'golf_rounds') {
+        chain.order = vi.fn(() => chain);
+        chain.limit = vi.fn(async () => rounds);
+      } else {
+        chain.order = vi.fn(async () => answer);
+      }
+      return chain;
+    };
     return {
       auth: { getUser: vi.fn(async () => ({ data: { user: { id: 'u-1' } } })) },
-      from: vi.fn(() => chain),
+      from: vi.fn((table: string) => make(table)),
     } as unknown as Parameters<typeof readCorrections>[0];
   };
   const reads = [{ id: READ_ID, playerId: 'p-1' }];
@@ -199,5 +208,43 @@ describe('readCorrections (the loader)', () => {
     ];
     const out = await readCorrections(sb({ data: rows, error: null }), { role: 'player', teamIds: ['t-1'], reads });
     expect(out?.get(READ_ID)).toEqual({ role: 'player', latest: { kind: 'confirm', reason: null }, laterRounds: null });
+  });
+
+  describe('Show later rounds left', () => {
+    const snooze = [{ insight_id: READ_ID, kind: 'snooze', reason: null, created_at: '2026-10-10T12:00:00Z', checkpoint_round_id: 'r-anchor' }];
+    const full = { holes_played: 18, total_score: 80, front_nine: 40, back_nine: 40, total_putts: 31 };
+    const round = (id: string, round_date: string, created_at: string, over: Record<string, unknown> = {}) => ({ id, round_date, created_at, ...full, ...over });
+    const left = async (rounds: unknown[]) =>
+      (await readCorrections(sb({ data: snooze, error: null }, { data: rounds, error: null }), { role: 'coach', teamIds: ['t-1'], reads }))?.get(READ_ID)?.laterRounds;
+
+    it('counts the rounds ahead of the saved anchor, so a round started before the answer and finished after still counts', async () => {
+      // r-late was created (started) before the answer at 12:00 but sorts ahead of the anchor by date; r-anchor is the answer's checkpoint.
+      expect(await left([round('r-late', '2026-10-12', '2026-10-09T08:00:00Z'), round('r-anchor', '2026-10-09', '2026-10-09T09:00:00Z')])).toBe(1);
+    });
+
+    it('does not count a round that is not countable, or a back-dated one that sorts behind the anchor', async () => {
+      expect(
+        await left([
+          round('r-short', '2026-10-13', '2026-10-13T08:00:00Z', { front_nine: null, back_nine: null }),
+          round('r-anchor', '2026-10-09', '2026-10-09T09:00:00Z'),
+          round('r-backdated', '2026-09-01', '2026-10-11T08:00:00Z'),
+        ]),
+      ).toBe(2);
+    });
+
+    it('brings the read back after two countable rounds', async () => {
+      expect(await left([round('r-b', '2026-10-14', '2026-10-14T08:00:00Z'), round('r-a', '2026-10-12', '2026-10-12T08:00:00Z'), round('r-anchor', '2026-10-09', '2026-10-09T09:00:00Z')])).toBeNull();
+    });
+
+    it('falls back to rounds created after the answer when the anchor is gone, and to the whole list when there was none', () => {
+      const rows = [round('r-b', '2026-10-14', '2026-10-14T08:00:00Z'), round('r-old', '2026-10-01', '2026-10-01T08:00:00Z')];
+      expect(snoozeRoundsSince('deleted', '2026-10-10T12:00:00Z', rows)).toBe(1);
+      expect(snoozeRoundsSince(null, '2026-10-10T12:00:00Z', rows)).toBe(2);
+    });
+
+    it('keeps the read held for the whole period when the count fails', async () => {
+      const out = await readCorrections(sb({ data: snooze, error: null }, { data: null, error: { message: 'x' } }), { role: 'coach', teamIds: ['t-1'], reads });
+      expect(out?.get(READ_ID)?.laterRounds).toBe(2);
+    });
   });
 });

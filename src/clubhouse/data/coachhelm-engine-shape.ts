@@ -1,4 +1,5 @@
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { LADDER_RUNGS, type LadderRung } from '@/lib/coachhelm/v3/support/ladder';
 import { shapeLifecycle, shortDate, type LifecycleWord, type ShapeableRead } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import type { LifecycleEvidence } from '@/lib/coachhelm/v3/lifecycle/types';
@@ -132,6 +133,33 @@ export function correctionsOf(insightId: string, input: ChCorrectionsInput): ChC
 export function laterRoundsLeft(roundsSince: number): number | null {
   const left = SNOOZE_CHECKPOINTS - Math.max(0, Math.floor(roundsSince));
   return left > 0 ? left : null;
+}
+
+/** A completed, non-test round as the checkpoint counter orders them (round_date desc, created_at desc), with what the countable rule reads. */
+export interface SnoozeRoundRow extends CountableRoundInput {
+  id: string;
+  round_date: string | null;
+  created_at: string | null;
+}
+
+/**
+ * Countable rounds posted since a Show later answer, the way the lifecycle engine counts a checkpoint (`evaluateCheckpoint`): the
+ * rounds that sort ahead of the answer's saved anchor (`checkpoint_round_id`, the newest completed round when it was given) in
+ * round-date order, not the rounds created after it, so a round started before the answer and finished after still counts and a
+ * back-dated round does not. `rounds` is the player's completed, non-test rounds, newest first. An answer saved with no anchor
+ * (the player had no round then) counts every countable round. An anchor that is no longer in the list (deleted) falls back to
+ * countable rounds created after the answer, so a hold never lasts forever.
+ */
+export function snoozeRoundsSince(
+  anchorRoundId: string | null,
+  answeredAt: string,
+  rounds: readonly SnoozeRoundRow[],
+): number {
+  const countable = (r: SnoozeRoundRow) => Boolean(r.round_date) && isCountableRound(r);
+  if (!anchorRoundId) return rounds.filter(countable).length;
+  const at = rounds.findIndex((r) => r.id === anchorRoundId);
+  if (at < 0) return rounds.filter((r) => countable(r) && (r.created_at ?? '') > answeredAt).length;
+  return rounds.slice(0, at).filter(countable).length;
 }
 
 export const LADDER_WORD: Record<LadderRung, string> = {

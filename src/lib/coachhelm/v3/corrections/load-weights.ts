@@ -247,7 +247,7 @@ export function selectCorrectionsForInsights(sb: SupabaseClient<Database>, insig
 }
 
 /** The caller's own corrections on these reads, newest first (for the chips' chosen state on reload). */
-export type OwnCorrection = Pick<CorrectionRow, 'insight_id' | 'kind' | 'reason' | 'created_at'>;
+export type OwnCorrection = Pick<CorrectionRow, 'insight_id' | 'kind' | 'reason' | 'created_at' | 'checkpoint_round_id'>;
 
 /**
  * The signed-in author's own corrections on a set of reads, newest first, for the Clubhouse correction chips. RLS lets every
@@ -262,7 +262,7 @@ export async function selectOwnCorrections(
   const rows: OwnCorrection[] = [];
   for (const chunk of chunkIds([...insightIds])) {
     const res = (await fromUntyped(sb, CORRECTIONS_TABLE)
-      .select('insight_id, kind, reason, created_at')
+      .select('insight_id, kind, reason, created_at, checkpoint_round_id')
       .eq('author_user_id', authorUserId)
       .in('insight_id', chunk)
       .order('created_at', { ascending: false })) as { data: OwnCorrection[] | null; error: ReadError | null };

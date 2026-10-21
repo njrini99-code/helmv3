@@ -4,7 +4,10 @@ import { isCorrectionsEnabled } from '@/lib/coachhelm/v3/corrections/flag';
 import { selectOwnCorrections } from '@/lib/coachhelm/v3/corrections/load-weights';
 import type { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { laterRoundsLeft, type ChCorrectionsInput } from './coachhelm-engine-shape';
+import { laterRoundsLeft, snoozeRoundsSince, type ChCorrectionsInput, type SnoozeRoundRow } from './coachhelm-engine-shape';
+
+/** The newest rounds read to count a hold's checkpoints (the lifecycle job reads the same number). */
+const ROUNDS_LIMIT = 120;
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -51,16 +54,19 @@ export async function readCorrections(
         const last = latest.get(read.id) ?? null;
         let laterRounds: number | null = null;
         if (last?.kind === 'snooze' && input.role === 'coach') {
-          // Completed rounds posted since the answer: each is a checkpoint the read is rechecked on. A count that fails keeps the
-          // read held back for the whole period rather than showing it early.
-          const res = await supabase
+          // Countable rounds posted since the answer, counted from its saved anchor in the engine's round order: each is a
+          // checkpoint the read is rechecked on. A count that fails keeps the read held back for the whole period rather than
+          // showing it early.
+          const res = (await supabase
             .from('golf_rounds')
-            .select('id', { count: 'exact', head: true })
+            .select('id, round_date, created_at, holes_played, total_score, front_nine, back_nine, total_putts')
             .eq('player_id', read.playerId)
             .eq('is_test', false)
             .eq('status', 'completed')
-            .gt('created_at', last.created_at);
-          laterRounds = laterRoundsLeft(res.error ? 0 : (res.count ?? 0));
+            .order('round_date', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(ROUNDS_LIMIT)) as { data: SnoozeRoundRow[] | null; error: unknown };
+          laterRounds = laterRoundsLeft(res.error ? 0 : snoozeRoundsSince(last.checkpoint_round_id, last.created_at, res.data ?? []));
         }
         out.set(read.id, { role: input.role, latest: last ? { kind: last.kind, reason: last.reason } : null, laterRounds });
       }),
