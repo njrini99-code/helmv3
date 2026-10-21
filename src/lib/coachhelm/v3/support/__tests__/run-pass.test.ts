@@ -165,7 +165,34 @@ describe('runSupportPass', () => {
       shown: 1,
       engine_version: 'v3',
       support_version: 'support_v1',
+      m_recorded: 1,
+      m_gated: 0,
+      m_refused: 0,
     });
+    // The row carries the run it was stamped by (finding 9).
+    const stamped = evidence.support as { run_at: string; run_id: string };
+    expect(stamped.run_id).toBe((log.values as { id: string }).id);
+    expect(stamped.run_at).toBe((log.values as { run_at: string }).run_at);
+  });
+
+  it('counts gated-out and refused hypotheses in m, and logs the split', async () => {
+    const { client, calls } = fakeClient({
+      select: (table) => (table === 'golf_coach_insights' ? { data: [ROW], error: null } : { data: [], error: null }),
+      update: () => ({ data: [{ id: 'i1' }], error: null }),
+    });
+    const r = await runSupportPass({
+      playerId: 'p1',
+      insightIds: ['i1'],
+      gated: [{ id: 'gated:x', insight_type: 'par_scoring', evidence: { metric: 'scoring_par_3', sample_n: 12 } }],
+      refused: 2,
+      supabase: client,
+      enabled: true,
+    });
+    expect(r!.summary.tests_in_run).toBe(4);
+    const log = calls.find((c) => c.op === 'insert')!;
+    expect(log.values).toMatchObject({ candidates: 4, m_recorded: 1, m_gated: 1, m_refused: 2 });
+    // Only the written row is updated; the gated one is never written.
+    expect(calls.filter((c) => c.op === 'update')).toHaveLength(1);
   });
 
   it('reads nothing for a run that wrote no rows, and still logs the run', async () => {
@@ -218,7 +245,10 @@ describe('run log writer', () => {
   it('recognises both missing-table codes', () => {
     expect(isMissingTableError({ code: '42P01' })).toBe(true);
     expect(isMissingTableError({ code: 'PGRST205' })).toBe(true);
-    expect(isMissingTableError({ message: 'relation "public.golf_coachhelm_run_log" does not exist' })).toBe(true);
+    // Codes only (post-merge nit): a message match also caught 42703, a
+    // missing COLUMN, which is a real failure to log.
+    expect(isMissingTableError({ message: 'relation "public.golf_coachhelm_run_log" does not exist' })).toBe(false);
+    expect(isMissingTableError({ code: '42703', message: 'column "m_gated" does not exist' })).toBe(false);
     expect(isMissingTableError({ code: '23505' })).toBe(false);
     expect(isMissingTableError(null)).toBe(false);
   });
@@ -256,5 +286,8 @@ function emptySummary() {
     families: {},
     watching: [],
     tests_in_run: 0,
+    m_recorded: 0,
+    m_gated: 0,
+    m_refused: 0,
   };
 }

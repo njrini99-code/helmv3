@@ -87,7 +87,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   flag on nothing else on the row changes (confidence, copy, priority,
   lifecycle), and no surface reads the ladder yet. Contract and the back-test
   numbers: "Support and the claim ladder" in
-  `docs/architecture/coachhelm-evidence-contract.md`.
+  `docs/architecture/coachhelm-evidence-contract.md`. Slice 1b fixed the
+  tested direction (the row's claim; two-sided p to BH when the side follows
+  the data), one BH m for gated and ungated callers (written + gated out +
+  refused), shared floors with per-arm minimums, a leave-one-out team
+  benchmark with its variance, `support.run_at` / `run_id`, and strips the
+  ladder keys from the player feed ("Slice 1b fixes" in that section).
   <!-- schema-drift-absent: golf_coachhelm_run_log -->
 - Honest root cause (supercharge Slice 2, 2026-10-20), behind
   `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
