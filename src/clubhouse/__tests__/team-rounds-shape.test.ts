@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { groupTeamRounds } from '../screens/rounds/TeamRounds';
 import { teamSeasonFrom, toTeamRounds, type ChTeamRoundRow } from '../data/team-rounds-shape';
 
 /** A round's total is its nines (the canonical total), so `score` sets the back nine against a 36 front. */
@@ -72,5 +73,36 @@ describe('teamSeasonFrom', () => {
   it('is empty, not NaN, when nothing is in the season', () => {
     const s = teamSeasonFrom(rounds, '2027-08-01');
     expect(s).toMatchObject({ rounds: 0, players: 0, avg: null, underPar: 0, best: null });
+  });
+
+  it('falls back to the lowest gross score for the low round when no round has a score to par', () => {
+    const noPar = toTeamRounds(
+      [
+        row({ id: 'n1', player_id: 'a', round_date: '2026-09-01', total_score: 75, score_to_par: null, back_nine: 39 }),
+        row({ id: 'n2', player_id: 'b', round_date: '2026-09-02', total_score: 71, score_to_par: null, back_nine: 35 }),
+      ],
+      names,
+    ).list;
+    const s = teamSeasonFrom(noPar, '2026-08-01');
+    expect(s.best).toMatchObject({ score: 71, toPar: null, player: 'Ben Ortiz' });
+  });
+});
+
+describe('groupTeamRounds by player', () => {
+  it('keeps two players who share a display name in separate groups', () => {
+    const twins = toTeamRounds(
+      [
+        row({ id: 't1', player_id: 'a', round_date: '2026-09-01' }),
+        row({ id: 't2', player_id: 'c', round_date: '2026-09-02' }),
+      ],
+      new Map([
+        ['a', 'Sam Lee'],
+        ['c', 'Sam Lee'],
+      ]),
+    ).list;
+    const groups = groupTeamRounds(twins, 'player', '', 'all');
+    expect(groups).toHaveLength(2);
+    expect(groups.map((g) => g.title)).toEqual(['Sam Lee', 'Sam Lee']);
+    expect(groups.map((g) => g.rounds.length)).toEqual([1, 1]);
   });
 });

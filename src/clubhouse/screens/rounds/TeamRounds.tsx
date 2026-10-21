@@ -36,18 +36,19 @@ export const teamRoundsLinks = {
 };
 
 /** Rounds that match the search (player or course) and the player filter, grouped in display order: months newest first, or players A to Z. */
-export function groupTeamRounds(list: readonly ChTeamRound[], by: Group, q: string, player: string): Array<{ key: string; rounds: ChTeamRound[] }> {
+export function groupTeamRounds(list: readonly ChTeamRound[], by: Group, q: string, player: string): Array<{ key: string; title: string; rounds: ChTeamRound[] }> {
   const needle = q.trim().toLowerCase();
   const shown = list.filter((r) => (player === ALL_PLAYERS || r.playerId === player) && (!needle || r.player.toLowerCase().includes(needle) || r.course.toLowerCase().includes(needle)));
-  const groups = new Map<string, ChTeamRound[]>();
+  // Players are keyed by id, so two with the same display name stay separate groups; the name is only the heading.
+  const groups = new Map<string, { title: string; rounds: ChTeamRound[] }>();
   for (const r of shown) {
-    const k = by === 'month' ? monthLabel(r.date) : r.player;
-    const xs = groups.get(k) ?? [];
-    xs.push(r);
-    groups.set(k, xs);
+    const k = by === 'month' ? monthLabel(r.date) : r.playerId;
+    const g = groups.get(k) ?? { title: by === 'month' ? k : r.player, rounds: [] };
+    g.rounds.push(r);
+    groups.set(k, g);
   }
-  const out = [...groups].map(([key, rounds]) => ({ key, rounds }));
-  return by === 'player' ? out.sort((a, b) => a.key.localeCompare(b.key)) : out;
+  const out = [...groups].map(([key, g]) => ({ key, title: g.title, rounds: g.rounds }));
+  return by === 'player' ? out.sort((a, b) => a.title.localeCompare(b.title) || a.key.localeCompare(b.key)) : out;
 }
 
 function dayLead(iso: string) {
@@ -191,8 +192,8 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
                   </span>
                 );
                 return (
-                  <Section key={g.key} id={`ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`} title={g.key} meta={meta}>
-                    <LedgerList label={`${g.key}, ${g.rounds.length} rounds`}>
+                  <Section key={g.key} id={`ch-trd-${g.key.replace(/\W+/g, '-').toLowerCase()}`} title={g.title} meta={meta}>
+                    <LedgerList label={`${g.title}, ${g.rounds.length} rounds`}>
                       {g.rounds.map((r) => (
                         <TeamRoundRow key={r.id} r={r} by={group} />
                       ))}

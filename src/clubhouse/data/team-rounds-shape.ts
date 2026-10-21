@@ -22,7 +22,7 @@ export interface ChTeamSeason {
   avg: number | null;
   /** Rounds under par among them. */
   underPar: number;
-  /** The best round by score to par, then by score. */
+  /** The best round by score to par, then by score; the lowest gross score when no round has a to-par. */
   best: { score: number; toPar: number | null; player: string; course: string; date: string } | null;
 }
 
@@ -62,12 +62,17 @@ const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.l
 export function teamSeasonFrom(list: readonly ChTeamRound[], since: string): ChTeamSeason {
   const s = list.filter((r) => r.countable && r.holes === 18 && r.date >= since);
   const withPar = s.filter((r): r is ChTeamRound & { toPar: number } => r.toPar != null);
-  const best = withPar.length ? withPar.reduce((m, r) => (r.toPar < m.toPar || (r.toPar === m.toPar && r.score < m.score) ? r : m)) : null;
+  // The low round is by score to par; a season with no to-par at all falls back to the lowest gross score, so the tile isn't blank.
+  const best: ChTeamRound | null = withPar.length
+    ? withPar.reduce((m, r) => (r.toPar < m.toPar || (r.toPar === m.toPar && r.score < m.score) ? r : m))
+    : s.length
+      ? s.reduce((m, r) => (r.score < m.score ? r : m))
+      : null;
   return {
     rounds: s.length,
     players: new Set(s.map((r) => r.playerId)).size,
     avg: mean(s.map((r) => r.score)),
     underPar: withPar.filter((r) => r.toPar < 0).length,
-    best: best ? { score: best.score, toPar: best.toPar, player: best.player, course: best.course, date: best.date } : null,
+    best: best ? { score: best.score, toPar: best.toPar ?? null, player: best.player, course: best.course, date: best.date } : null,
   };
 }
