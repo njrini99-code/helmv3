@@ -108,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 

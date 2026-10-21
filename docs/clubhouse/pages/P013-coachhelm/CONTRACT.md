@@ -228,6 +228,16 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130726 | CH-13992 | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | Coach, player: reads the recheck cleared |
 | 130727 | CH-13993 | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | Deep dive: the Read's Why line from the cause state |
 | 130728 | CH-13995 | `COACH_TEAM_PATTERNS` | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
+| 130729 | CH-13960 | `COACH_THE_TRACK_RECORD` | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
+| 130730 | CH-13961 | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | Track record: a level with enough rechecked reads (10 or more) |
+| 130731 | CH-13962 | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | Track record: a level or a family with fewer than 10 rechecked reads |
+| 130732 | CH-13963 | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | Track record: the staff's corrections |
+| 130733 | CH-13964 | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | Track record: one row per family |
+| 130734 | CH-13965 | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | Track record: CoachHelm is off for the team |
+| 130735 | CH-13966 | `TRACK_RECORD_A_READ_IT_IS_MADE` | Track record: a read it is made from failed |
+| 130736 | CH-13967 | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | Track record: the database cannot answer yet (its function is not applied) |
+| 130737 | CH-13968 | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | Track record: nothing shown since the season start |
+| 130738 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
 
 ## 08 — Permission / authorization
 

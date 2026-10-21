@@ -3872,6 +3872,10 @@
         "definedIn": "supabase/migrations/20260802115900_golf_announcement_addressed_to_me_fn.sql"
       },
       {
+        "id": "golf_coachhelm_shown_reads",
+        "definedIn": "supabase/migrations/20261021090000_golf_coachhelm_shown_reads.sql"
+      },
+      {
         "id": "golf_conversation_created_by_me",
         "definedIn": "supabase/migrations/20260807080000_golf_dm_join_requires_creator.sql"
       },
@@ -12785,6 +12789,18 @@
     },
     {
       "source": "clubhouse",
+      "target": "golf_coachhelm_shown_reads",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/coachhelm-track-record.ts",
+          "anchor": "golf_coachhelm_shown_reads"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "golf_event_attendance_counts",
       "kind": "feature_rpc",
       "evidence": [
@@ -19721,6 +19737,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/team-pattern/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/track-record/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
         },
         {

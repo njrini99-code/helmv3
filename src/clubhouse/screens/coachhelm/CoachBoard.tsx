@@ -44,7 +44,8 @@ export const coachBoardLinks = {
  * own players are read (data/coachhelm.ts). Share with the player has no action
  * behind it (players already see their own insights), so it is not drawn.
  */
-export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanReads = LIVE_COURSE_PLAN_READS, initialPlayer }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; coursePlanReads?: ChCoursePlanReads; initialPlayer?: string }) {
+/** `trackRecordHref`: the Track record's address, handed over only with `coachhelm_track_record_v1` on (the route checks it); without it no link is drawn. */
+export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanReads = LIVE_COURSE_PLAN_READS, initialPlayer, trackRecordHref }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; coursePlanReads?: ChCoursePlanReads; initialPlayer?: string; trackRecordHref?: string }) {
   const phone = useChPhone();
   const toast = useToast();
   const players = data.players.list;
@@ -367,6 +368,13 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}
+      {trackRecordHref && !data.off && (
+        <p className="ch-htr-link" data-ch-code="CH-13969">
+          <Button variant="secondary" href={trackRecordHref}>
+            Track record
+          </Button>
+        </p>
+      )}
     </main>
   );
 }

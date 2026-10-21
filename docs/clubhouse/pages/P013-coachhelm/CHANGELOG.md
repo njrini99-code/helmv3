@@ -1,5 +1,46 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: the Track record (flag off)
+
+```text
+Design package: none (supercharge 02 section 9, 03 section 7.3; design call)
+PR/commit:      see git log (claude/coachhelm-track-record)
+Contract IDs:   CH-13960 to CH-13969
+Actions:        none (read only)
+Data impact:    none written; reads golf_insight_exposure through the held
+                function golf_coachhelm_shown_reads (20261021090000)
+Held items:     20261021090000_golf_coachhelm_shown_reads.sql
+```
+
+### Added
+
+- `?view=track-record` for a coach, behind `coachhelm_track_record_v1`
+  (off): since Aug 1, how many reads CoachHelm showed the team and how many
+  held, cleared on their own or were contradicted when rechecked; By level
+  (the five claim levels, "Seen repeatedly · 12 of 14 held", a bar of the
+  same count with the target as a thin line); Your corrections; By family.
+  Below 10 rechecked reads a level or family says "Not enough yet" with its
+  count. Words and counts only, never a percent.
+- The coach board gets a "Track record" button under it, only with the flag
+  on and CoachHelm on (CH-13969).
+- States: CoachHelm off (CH-13965), a read failed (CH-13966), the function
+  not applied yet (CH-13967), nothing shown since Aug 1 (CH-13968).
+- Preview: `/clubhouse-preview/coachhelm-track` with `?state=early | empty |
+  unavailable | failed | off | loading`, built from synthetic reads through
+  the page's own counting.
+
+### Why
+
+- The engine grades itself in public (02 section 9): a coach sees how often
+  each level of claim held on the next rounds before trusting it.
+
+### Verification
+
+- `coachhelm-track-record.test.tsx` (words, states, loader) and
+  `coachhelm.test.tsx` (CH-13969). Phone screenshots at 390 x 844 from the
+  preview are in the PR description. No owner board exists for this view;
+  the phone draft is in `docs/clubhouse/phone/coachhelm.md`.
+
 ## 2026-10-21 — Course plan on the coach's board (flag off)
 
 ```text

@@ -233,3 +233,15 @@ export async function loadCorrectionWeightsForPlayer(
   const map = await loadCorrectionWeightsForPlayers(sb, [playerId]);
   return map.get(playerId)?.weights ?? {};
 }
+
+/**
+ * One page of the corrections on a set of insight ids, with the author, the kind and the team, for the Clubhouse Track record. It lives here because
+ * the table is not in the generated types yet and this file already holds the one sanctioned untyped read of it (any-ratchet).
+ */
+export function selectCorrectionsForInsights(sb: SupabaseClient<Database>, insightIds: string[], from: number, to: number) {
+  return fromUntyped(sb, CORRECTIONS_TABLE)
+    .select('insight_id, author_user_id, author_role, kind, created_at, team_id')
+    .in('insight_id', insightIds)
+    .order('id', { ascending: true })
+    .range(from, to);
+}

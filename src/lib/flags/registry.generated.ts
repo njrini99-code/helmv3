@@ -370,6 +370,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "When the owner turns production on and coaches have read team lines for a season without a privacy or accuracy complaint, delete the flag check in team-pool/attach.ts and this entry in the same change; if the team line is rejected, turn it off and remove team-pool/ instead.",
   },
   {
+    feature_id: "coachhelm_track_record_v1",
+    owner: "golf/coachhelm",
+    purpose: "Shows a coach the CoachHelm Track record in Clubhouse (P013, /golf/dashboard/coachhelm?view=track-record, linked from the bottom of the coach board): since the season start, how many reads CoachHelm showed the team, how many held, cleared or were contradicted when rechecked, a five-level strip (Seen repeatedly to Not enough yet) with the back-test target drawn as a thin line, the staff's corrections, and one row per family. Words and counts only; below 10 rechecked reads a row says Not enough yet. Read only: it writes nothing and changes no engine output. Reason: 02-accuracy-standard section 9, the engine grades itself in public. Off: no link, and the address shows the board. Clubhouse itself is off in production, so turning this on reaches coaches only once Clubhouse is on.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on (development, preview, then production) only after the owner applies 20261021090000_golf_coachhelm_shown_reads.sql (HELD.md row; without it the page says not available, never zeros). The counts fill in once coachhelm_support_v1 (ladder), coachhelm_recheck_v1 (rechecks) and coachhelm_corrections_v1 (corrections) are on. Remove the flag once the page has served coaches for a season.",
+  },
+  {
     feature_id: "coachhelm_trust_status_exclude_unmeasured_outcomes",
     owner: "golf/coachhelm",
     purpose: "Gates whether getInsightEffectivenessSignals excludes a null-improvement golf_insight_outcome row (an attempted-but-thin-sample attribution) from the `measured`/`worked` trust-status counts instead of counting it as a real measurement. OWNER DECISION (2026-09-23): the owner reviewed the prod diff before enabling — 26 of 68 insights move trust tier with the flag on, all 26 from `needs_validation` to `new_hypothesis` and all 26 driven by a single thin-sample (null-improvement) outcome row; zero insights move into or out of `supported`/`promising`/`underperforming`. Approved to ship enabled.",

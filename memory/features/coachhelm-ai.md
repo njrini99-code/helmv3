@@ -471,7 +471,36 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   family x rung, `shown` (distinct reads, rung of the newest exposure's
   `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
   `contradicted` (newest recheck outcome; Slice 3 supplies them),
-  `not_this`. No surface renders the chips, counters or Track record yet.
+  `not_this`, and `confirm` (Good read, added by Slice 6b). No surface
+  renders the chips yet.
+- Track record (Slice 6b, 2026-10-21, flag `coachhelm_track_record_v1`,
+  off; 02 §9, 03 §7.3). Clubhouse coach view
+  `/golf/dashboard/coachhelm?view=track-record`, linked from the coach
+  board only with the flag on. Computed on read, no rollup table:
+  `golf_coachhelm_shown_reads(team, since)` (held migration
+  20261021090000, SECURITY DEFINER, coaches of the team only) returns one
+  row per read shown since the season start (newest exposure, its
+  `rank_factors.ladder`); `src/clubhouse/data/coachhelm-track-record.ts`
+  adds each read's family, `evidence.ladder` and lifecycle block, plus the
+  corrections, and `v3/track-record/track-record.ts` (pure) counts them.
+  Rules: a read's level is its exposure's ladder, else its current
+  `evidence.ladder`, else unrated (program line only); the outcome comes
+  from `metadata.coachhelm_lifecycle` (`v3/track-record/outcome.ts`:
+  contradicted when retired on an opposing direction, else the newest
+  recheck's cleared / holds, else history); "held" is of rechecked, never
+  of shown; below 10 rechecked a level or family says "Not enough yet";
+  targets are 02 §8's bars (8, 7, 6 in 10; Not enough yet under 5, over 6
+  means the floors are too strict; Working hypothesis none). No percent is
+  printed. A missing function (42883 / PGRST202) is "not available"; a
+  missing corrections table leaves the corrections line out; any other
+  failed read is the view failing, never zeros. The view is off (CH-13965)
+  when CoachHelm is off for the selected team, even if another team the
+  coach staffs is on; a coach's correction counts only when its `team_id`
+  is this team (a player's own corrections always count).
+  <!-- schema-drift-absent: golf_coachhelm_shown_reads -->
+  (The function is held, so it is not in `database.ts` until the owner
+  applies 20261021090000 and runs `npm run db:types`; then drop the comment
+  above.)
   <!-- schema-drift-absent: golf_coachhelm_corrections -->
   (The table is held, so it is not in `database.ts` until the owner applies
   20261020121000 and runs `npm run db:types`; then drop the comment above.)
