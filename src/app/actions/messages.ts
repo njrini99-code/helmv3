@@ -1301,18 +1301,17 @@ export async function deleteBaseballMessage(messageId: string) {
 async function getGolfPlayerUserIdImpl(playerId: string): Promise<string | null> {
   const supabase = await createClient();
 
-  const { data: player, error } = await supabase
-    .from('golf_players')
-    .select('user_id')
-    .eq('id', playerId)
-    .single();
+  // Through golf_player_profiles: a player starting a DM from the roster may no
+  // longer read a teammate's golf_players row (security review S4).
+  const { data: profiles, error } = await readGolfPlayerProfiles(supabase, { playerIds: [playerId] });
 
-  if (error || !player) {
+  if (error) {
     await logServerError(`[getGolfPlayerUserId] Error: ${describeError(error)}`, { action: 'messages.getGolfPlayerUserId' });
     return null;
   }
 
-  return player.user_id;
+  // Not visible to the caller (or no such player): no account to message.
+  return profiles?.[0]?.user_id ?? null;
 }
 
 const observedGetGolfPlayerUserId = withAdminObserved(

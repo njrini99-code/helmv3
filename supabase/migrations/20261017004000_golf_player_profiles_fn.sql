@@ -34,8 +34,8 @@
 -- src/lib/golf/player-profiles.ts, which falls back to the table read while
 -- this function is not applied, so the app can ship first.
 --
--- pgTAP: NOT WRITTEN YET. Required before this is applied (HELD.md):
--- supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
+-- pgTAP: supabase/tests/rls/golf_player_profiles_teammate_scope.sql (covers
+-- both files; CI builds the database from every migration).
 --
 -- ROLLBACK: DROP FUNCTION public.golf_player_profiles(uuid[], uuid[], uuid[]);
 -- only
