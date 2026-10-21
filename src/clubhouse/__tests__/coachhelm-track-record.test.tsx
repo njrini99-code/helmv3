@@ -21,12 +21,13 @@ const db = vi.hoisted(() => ({
   rpc: { data: [], error: null } as Answer,
   insights: { data: [], error: null } as Answer,
   corrections: { data: [], error: null } as Answer,
+  teamSettings: { data: null, error: null } as Answer,
   calls: [] as string[],
 }));
 vi.mock('@/lib/supabase/server', () => {
   const chain = (answer: () => Answer) => {
     const q: Record<string, unknown> = {};
-    for (const m of ['select', 'in', 'order', 'range', 'eq']) q[m] = () => q;
+    for (const m of ['select', 'in', 'order', 'range', 'eq', 'maybeSingle']) q[m] = () => q;
     q.then = (ok: (a: Answer) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(answer()).then(ok, bad);
     return q;
   };
@@ -38,7 +39,7 @@ vi.mock('@/lib/supabase/server', () => {
       },
       from: (table: string) => {
         db.calls.push(`from:${table}`);
-        return chain(() => (table === 'golf_coach_insights' ? db.insights : db.corrections));
+        return chain(() => (table === 'golf_coach_insights' ? db.insights : table === 'golf_team_coachhelm_settings' ? db.teamSettings : db.corrections));
       },
     }),
   };
@@ -71,6 +72,7 @@ beforeEach(() => {
   db.rpc = { data: [], error: null };
   db.insights = { data: [], error: null };
   db.corrections = { data: [], error: null };
+  db.teamSettings = { data: null, error: null };
   db.calls = [];
 });
 afterEach(cleanup);
@@ -182,9 +184,9 @@ describe('loadCoachTrackRecord', () => {
       ],
       error: null,
     };
-    db.corrections = { data: [{ insight_id: 'a', author_user_id: 'c1', author_role: 'coach', kind: 'confirm', created_at: '2026-10-01T00:00:00Z' }], error: null };
+    db.corrections = { data: [{ insight_id: 'a', author_user_id: 'c1', author_role: 'coach', kind: 'confirm', created_at: '2026-10-01T00:00:00Z', team_id: 'team' }], error: null };
     const out = await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
-    expect(db.calls).toEqual(['rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
+    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'rpc:golf_coachhelm_shown_reads', 'from:golf_coach_insights', 'from:golf_coachhelm_corrections']);
     if (out.status !== 'ready' || out.data.state !== 'ready') throw new Error('not ready');
     expect(out.data.program).toBe('Since Aug 1 CoachHelm showed 2 reads on this team. 1 held when rechecked, 0 cleared on their own, 0 were contradicted by later rounds. 1 not rechecked yet.');
     expect(out.data.corrections).toBe('Your staff marked 1 good read.');
@@ -216,5 +218,35 @@ describe('loadCoachTrackRecord', () => {
     gate.current = { status: 'failed' };
     expect(await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team' })).toEqual({ status: 'failed' });
     expect(db.calls).toEqual([]);
+  });
+
+  it('CH-13965 for the selected team: the coach gate is on (another staffed team is on) but this team is off, so nothing else is read', async () => {
+    db.teamSettings = { data: { enabled: false, disabled_reason: 'Paused for the off-season' }, error: null };
+    expect(await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team' })).toEqual({ status: 'off', reason: 'Paused for the off-season' });
+    db.teamSettings = { data: { enabled: false, disabled_reason: 'Disabled by team' }, error: null };
+    expect(await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team' })).toEqual({ status: 'off', reason: null });
+    expect(db.calls).toEqual(['from:golf_team_coachhelm_settings', 'from:golf_team_coachhelm_settings']);
+    db.teamSettings = { data: null, error: { code: '57014', message: 'timeout' } };
+    expect(await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team' })).toEqual({ status: 'failed' });
+    expect(db.calls).not.toContain('rpc:golf_coachhelm_shown_reads');
+  });
+
+  it("a coach's correction made for another team (the player moved) is not this staff's; a player's own correction still counts", async () => {
+    db.rpc = { data: [{ insight_id: 'a', last_shown_at: '2026-10-10T00:00:00Z', shown_ladder: 'observed' }], error: null };
+    db.insights = { data: [{ id: 'a', insight_type: 'putt_distance', ladder: 'observed', lifecycle }], error: null };
+    const mine = { insight_id: 'a', author_user_id: 'c1', author_role: 'coach', kind: 'confirm', created_at: '2026-10-01T00:00:00Z', team_id: 'team' };
+    const player = { insight_id: 'a', author_user_id: 'p1', author_role: 'player', kind: 'not_this', created_at: '2026-10-02T00:00:00Z', team_id: null };
+    const former = { insight_id: 'a', author_user_id: 'c2', author_role: 'coach', kind: 'wrong_cause', created_at: '2026-10-03T00:00:00Z', team_id: 'old-team' };
+    const run = async (rows: unknown[]) => {
+      db.corrections = { data: rows, error: null };
+      const out = await loadCoachTrackRecord({ coachId: 'coach', teamId: 'team', now: new Date('2026-10-21T00:00:00Z') });
+      if (out.status !== 'ready' || out.data.state !== 'ready') throw new Error('not ready');
+      return out.data;
+    };
+    const without = await run([mine, player]);
+    const withFormer = await run([mine, player, former]);
+    expect(withFormer.corrections).toBe(without.corrections);
+    expect(withFormer.families).toEqual(without.families);
+    expect(withFormer.corrections).not.toMatch(/wrong cause/);
   });
 });

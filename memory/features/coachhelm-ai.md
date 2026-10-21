@@ -467,7 +467,10 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   means the floors are too strict; Working hypothesis none). No percent is
   printed. A missing function (42883 / PGRST202) is "not available"; a
   missing corrections table leaves the corrections line out; any other
-  failed read is the view failing, never zeros.
+  failed read is the view failing, never zeros. The view is off (CH-13965)
+  when CoachHelm is off for the selected team, even if another team the
+  coach staffs is on; a coach's correction counts only when its `team_id`
+  is this team (a player's own corrections always count).
   <!-- schema-drift-absent: golf_coachhelm_shown_reads -->
   (The function is held, so it is not in `database.ts` until the owner
   applies 20261021090000 and runs `npm run db:types`; then drop the comment

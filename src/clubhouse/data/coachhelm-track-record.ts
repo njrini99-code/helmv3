@@ -62,12 +62,19 @@ async function loadReads(supabase: Supabase, ids: string[]): Promise<{ rows: Ins
   return { rows, error: null };
 }
 
-async function loadCorrections(supabase: Supabase, ids: string[]): Promise<{ rows: CorrectionForPrecision[]; available: boolean; error: ReadError }> {
+type CorrectionRow = CorrectionForPrecision & { team_id: string | null };
+
+/**
+ * The corrections on the shown reads that this team's record counts: every player-authored row (a player marks only their own read),
+ * and a coach-authored row only when it was made for this team (`team_id`), so after a player moves teams the former staff's marks are
+ * never counted as "Your staff".
+ */
+async function loadCorrections(supabase: Supabase, teamId: string, ids: string[]): Promise<{ rows: CorrectionForPrecision[]; available: boolean; error: ReadError }> {
   const rows: CorrectionForPrecision[] = [];
   for (const chunk of chunkIds(ids)) {
-    const { data, error } = await fetchAllRowsResult<CorrectionForPrecision>((from, to) =>
+    const { data, error } = await fetchAllRowsResult<CorrectionRow>((from, to) =>
       fromUntyped(supabase, CORRECTIONS_TABLE)
-        .select('insight_id, author_user_id, author_role, kind, created_at')
+        .select('insight_id, author_user_id, author_role, kind, created_at, team_id')
         .in('insight_id', chunk)
         .order('id', { ascending: true })
         .range(from, to),
@@ -76,14 +83,32 @@ async function loadCorrections(supabase: Supabase, ids: string[]): Promise<{ row
       if (isMissingTableError(error)) return { rows: [], available: false, error: null };
       return { rows, available: false, error };
     }
-    rows.push(...(data ?? []));
+    for (const { team_id, ...row } of data ?? []) {
+      if (row.author_role === 'coach' && team_id !== teamId) continue;
+      rows.push(row);
+    }
   }
   return { rows, available: true, error: null };
 }
 
 /**
+ * Whether CoachHelm is switched off for this team (`golf_team_coachhelm_settings`, no row = on). The coach gate is on when any team the
+ * coach staffs is on, so the selected team is checked on its own. A failed read fails closed.
+ */
+async function loadTeamOff(supabase: Supabase, teamId: string): Promise<{ reason: string | null } | null | 'failed'> {
+  const { data, error } = await supabase.from('golf_team_coachhelm_settings').select('enabled, disabled_reason').eq('team_id', teamId).maybeSingle();
+  if (error) {
+    chLogServer('coachhelm', 'track_record_team_gate', error);
+    return 'failed';
+  }
+  if (data?.enabled !== false) return null;
+  const reason = data.disabled_reason && !/^Disabled by (user|team)$/.test(data.disabled_reason) ? data.disabled_reason : null;
+  return { reason };
+}
+
+/**
  * The coach's Track record for one team (P013 `?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag).
- * Read only once CoachHelm is on for this coach, as the board is. Never throws: a read that failed is `failed`, and a function or
+ * Read only once CoachHelm is on for this coach, as the board is, and for this team. Never throws: a read that failed is `failed`, and a function or
  * table that is not applied yet is "not available" (the counts it feeds are left out, never drawn as zeros).
  *
  * Reads: the reads shown to the team's active players since the season start (one row each, from `golf_coachhelm_shown_reads`),
@@ -95,6 +120,10 @@ export async function loadCoachTrackRecord(input: { coachId: string; teamId: str
   if (gate.status === 'failed') return { status: 'failed' };
 
   const supabase = await createClient();
+  // The gate above is the coach's (on when any staffed team is on); the record is one team's, so that team must be on too.
+  const teamOff = await loadTeamOff(supabase, input.teamId);
+  if (teamOff === 'failed') return { status: 'failed' };
+  if (teamOff) return { status: 'off', reason: teamOff.reason };
   const since = seasonStartDate(input.now);
 
   const shown = await loadShownReads(supabase, input.teamId, since);
@@ -106,7 +135,7 @@ export async function loadCoachTrackRecord(input: { coachId: string; teamId: str
   const shownRows = shown.data ?? [];
   const ids = [...new Set(shownRows.map((r) => r.insight_id))];
 
-  const [reads, corrections] = await Promise.all([loadReads(supabase, ids), loadCorrections(supabase, ids)]);
+  const [reads, corrections] = await Promise.all([loadReads(supabase, ids), loadCorrections(supabase, input.teamId, ids)]);
   if (reads.error) {
     chLogServer('coachhelm', 'track_record_reads', reads.error);
     return { status: 'failed' };
