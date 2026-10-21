@@ -84,7 +84,10 @@ describe('loadCoachWeightsForPlayer — gated behind coachhelm_learned_personali
   });
 
   it('flag ON: still resolves the coach and applies a calibrated weight', async () => {
-    isFlagEnabled.mockReturnValue(true);
+    // Only this flag: coachhelm_corrections_v1 (Slice 6a) stays off here, so
+    // the outcome-weight path is exercised alone (see
+    // __tests__/coach-weights-corrections.test.ts for the corrections path).
+    isFlagEnabled.mockImplementation((id: string) => id === 'coachhelm_learned_personalization');
     fromSpy.mockImplementation((table: string) => {
       if (table === 'golf_team_members') {
         return {

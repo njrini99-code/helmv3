@@ -941,3 +941,40 @@ flags:
       correctness issue) and runs npm run test:rls. Remove the flag and its
       checks once the Layout 5 verdict view ships and the verdict job has run
       stably for a month.
+
+  # CoachHelm supercharge Slice 6a: learning from corrections
+  # (/mnt/project-files/coachhelm/supercharge/04-output-specs-and-examples.md
+  # §1.4, 03 §2.2 and §7.2, 07 §2 F). Off everywhere until the owner applies
+  # the held corrections migration and a surface renders the chips.
+  - feature_id: coachhelm_corrections_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Lets a coach (or a player, on their own read) record a correction on a
+      CoachHelm read through recordCoachHelmCorrection (Not this with a reason,
+      Wrong cause, Already on it, Show later, Good read) into
+      golf_coachhelm_corrections, and multiplies the learned coach weight W
+      (start 1.0, -0.1 per Not this, +0.05 per Good read, bounds 0.5 to 1.5,
+      one vote per read) into insight ranking through
+      loadCoachWeightsForPlayer, for families with no calibrated outcome
+      weight. Turning it on reorders a coach's feeds for the player's primary
+      coach once that coach has recorded corrections; player surfaces stay
+      neutral (a coach's corrections are not readable by players). No
+      surface draws the chips yet. Off: the action writes nothing and returns
+      not available, and ranking is byte-identical to before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on (development, preview, production) only after the owner
+      applies 20261020121000_golf_coachhelm_corrections.sql (HELD.md row;
+      the code treats the missing table as not available, so order is not a
+      correctness issue) and the audit-view chips ship. Remove the flag and
+      the isCorrectionsEnabled branches once corrections have fed ranking
+      stably for a month.
