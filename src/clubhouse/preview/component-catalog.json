@@ -337,6 +337,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
@@ -1270,6 +1271,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -1680,6 +1682,27 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-views.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/views/MondayBrief.tsx",
+      "group": "screens",
+      "exports": [
+        "MondayBrief"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7767,6 +7790,29 @@
           "scope": "html:not([data-fw-theme='dark']) .ch-ask"
         }
       ]
+    },
+    {
+      "file": "src/clubhouse/styles/coachhelm-brief.css",
+      "classes": [
+        "ch-hmb-back",
+        "ch-hmb-body",
+        "ch-hmb-cleared",
+        "ch-hmb-counts",
+        "ch-hmb-link",
+        "ch-hmb-ood",
+        "ch-hmb-row",
+        "ch-hmb-row__a",
+        "ch-hmb-row__b",
+        "ch-hmb-row__m",
+        "ch-hmb-row__main",
+        "ch-hmb-row__n",
+        "ch-hmb-row__t",
+        "ch-hmb-row__who",
+        "ch-hmb-rows",
+        "ch-hmb-sub",
+        "ch-hmb-team"
+      ],
+      "tokens": []
     },
     {
       "file": "src/clubhouse/styles/coachhelm-dive.css",
@@ -16257,6 +16303,10 @@
     {
       "name": "coachhelm-track",
       "href": "/clubhouse-preview/coachhelm-track"
+    },
+    {
+      "name": "coachhelm-brief",
+      "href": "/clubhouse-preview/coachhelm-brief"
     },
     {
       "name": "auth",

@@ -241,6 +241,14 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130739 | CH-13970 | `COACH_PLAYER_CORRECTION_CHIPS` | Coach, player: correction chips |
 | 130740 | CH-13971 | `COACH_PLAYER_ANSWER_RECORDED` | Coach, player: answer recorded |
 | 130741 | CH-13972 | `COACH_READ_HELD_BACK` | Coach: read held back |
+| 130742 | CH-13932 | `COACH_THE_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130743 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
+| 130744 | CH-13934 | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | Monday brief: the team pattern row |
+| 130745 | CH-13935 | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | Monday brief: nothing to raise this week |
+| 130746 | CH-13936 | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | Monday brief: CoachHelm is off for the team |
+| 130747 | CH-13937 | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | Monday brief: a read it is made from failed |
+| 130748 | CH-13938 | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | Coach board: the link to the Monday brief |
+| 130749 | CH-13939 | `MONDAY_BRIEF_THE_COUNTS_LINE` | Monday brief: the counts line |
 
 ## 08 — Permission / authorization
 

@@ -119,7 +119,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 12 |  | 17 | 11 | 39 | 19 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 187 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 12 |  | 29 | 1 | 37 | 41 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 176 |
+| P013 | 7 | 12 |  | 29 | 1 | 37 | 49 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 184 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -1535,6 +1535,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130739 | CH-13970 | 07 Network / offline | `COACH_PLAYER_CORRECTION_CHIPS` | implemented | Coach, player: correction chips |
 | 130740 | CH-13971 | 07 Network / offline | `COACH_PLAYER_ANSWER_RECORDED` | implemented | Coach, player: answer recorded |
 | 130741 | CH-13972 | 07 Network / offline | `COACH_READ_HELD_BACK` | implemented | Coach: read held back |
+| 130742 | CH-13932 | 07 Network / offline | `COACH_THE_MONDAY_BRIEF` | implemented | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130743 | CH-13933 | 07 Network / offline | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | implemented | Monday brief: a player read at Likely or above |
+| 130744 | CH-13934 | 07 Network / offline | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | implemented | Monday brief: the team pattern row |
+| 130745 | CH-13935 | 07 Network / offline | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | implemented | Monday brief: nothing to raise this week |
+| 130746 | CH-13936 | 07 Network / offline | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | implemented | Monday brief: CoachHelm is off for the team |
+| 130747 | CH-13937 | 07 Network / offline | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | implemented | Monday brief: a read it is made from failed |
+| 130748 | CH-13938 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | implemented | Coach board: the link to the Monday brief |
+| 130749 | CH-13939 | 07 Network / offline | `MONDAY_BRIEF_THE_COUNTS_LINE` | implemented | Monday brief: the counts line |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |

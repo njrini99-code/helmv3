@@ -5,12 +5,15 @@ import { Users } from 'lucide-react';
 import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
+import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
 import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
+import { loadCoachMondayBrief } from '../data/coachhelm-monday-brief';
+import { COACH_MONDAY_BRIEF_HREF } from '../data/coachhelm-monday-brief-shape';
 import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
@@ -23,6 +26,7 @@ import { Profile } from '../screens/coachhelm/views/Profile';
 import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
+import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
 import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
 import '../styles/coachhelm.css';
@@ -32,6 +36,7 @@ import '../styles/coachhelm-profile.css';
 import '../styles/coachhelm-standing.css';
 import '../styles/coachhelm-dive.css';
 import '../styles/coachhelm-track.css';
+import '../styles/coachhelm-brief.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -51,7 +56,7 @@ import '../styles/coachhelm-track.css';
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer }: { coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} />;
+  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} mondayBriefHref={isMondayBriefEnabled() ? COACH_MONDAY_BRIEF_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
   // "did not load" notice, never with a chat that runs against a switch that is off.
@@ -64,6 +69,11 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
 /** The coach's Track record (`?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
 async function CoachTrackRecordView({ coachId, teamId }: { coachId: string; teamId: string }) {
   return <TrackRecord load={await loadCoachTrackRecord({ coachId, teamId })} />;
+}
+
+/** The coach's Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
+async function CoachMondayBriefView({ coachId, teamId }: { coachId: string; teamId: string }) {
+  return <MondayBrief load={await loadCoachMondayBrief({ coachId, teamId })} />;
 }
 
 /**
@@ -120,6 +130,14 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
       return (
         <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
           <CoachTrackRecordView coachId={team.coachId} teamId={team.teamId} />
+        </Suspense>
+      );
+    }
+    // The Monday brief is the coach's alone, and only with its flag on; with it off the address is the board.
+    if (view === 'monday-brief' && isMondayBriefEnabled()) {
+      return (
+        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+          <CoachMondayBriefView coachId={team.coachId} teamId={team.teamId} />
         </Suspense>
       );
     }
