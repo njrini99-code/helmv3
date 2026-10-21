@@ -83,6 +83,14 @@ describe('ChatThread — Confirm cards', () => {
     expect(handlers.onApprove).toHaveBeenCalledWith('appr_1');
   });
 
+  it('a replayed card with no live approval shows a note instead of buttons that do nothing', () => {
+    renderThread([userTurn('u1', 'Make a putting focus area'), proposalTurn('a1', null)]);
+
+    expect(screen.queryByRole('button', { name: /confirm/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /cancel/i })).toBeNull();
+    expect(screen.getByText(/can no longer be confirmed here/i)).toBeTruthy();
+  });
+
   it('a newer question turns the unanswered card into "Cancelled. Nothing was created."', () => {
     renderThread([
       userTurn('u1', 'Make a putting focus area'),
