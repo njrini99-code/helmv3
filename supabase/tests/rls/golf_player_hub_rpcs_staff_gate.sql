@@ -38,9 +38,11 @@ BEGIN
     VALUES ('00000000-0000-0000-0000-000017001101', 'Hub Gate Org', 'college')
   ON CONFLICT DO NOTHING;
 
-  INSERT INTO public.golf_teams (id, name, join_code, organization_id) VALUES
-    ('00000000-0000-0000-0000-000017001201', 'Hub Gate Team',  'HUBG0001', '00000000-0000-0000-0000-000017001101'),
-    ('00000000-0000-0000-0000-000017001202', 'Hub Gate Other', 'HUBG0002', '00000000-0000-0000-0000-000017001101')
+  -- One program has at most one team per gender (golf_teams_org_gender_uidx),
+  -- so the second team in the same organization is the women's team.
+  INSERT INTO public.golf_teams (id, name, join_code, organization_id, gender) VALUES
+    ('00000000-0000-0000-0000-000017001201', 'Hub Gate Team',  'HUBG0001', '00000000-0000-0000-0000-000017001101', 'mens'),
+    ('00000000-0000-0000-0000-000017001202', 'Hub Gate Other', 'HUBG0002', '00000000-0000-0000-0000-000017001101', 'womens')
   ON CONFLICT DO NOTHING;
 
   -- Both coaches are in the team's organization; only the first is staffed.
