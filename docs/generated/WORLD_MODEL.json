@@ -2431,6 +2431,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:src/app/golf/actions/__tests__/hide-golf-conversation.test.ts",
+        "pattern": "src/app/golf/actions/__tests__/hide-golf-conversation.test.ts",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
         "pattern": "src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
         "category": "tests"
@@ -2638,11 +2643,6 @@
       {
         "id": "tests:src/lib/security/__tests__/clubhouse-preview-headers.test.ts",
         "pattern": "src/lib/security/__tests__/clubhouse-preview-headers.test.ts",
-        "category": "tests"
-      },
-      {
-        "id": "tests:src/test/actions/hide-golf-conversation.test.ts",
-        "pattern": "src/test/actions/hide-golf-conversation.test.ts",
         "category": "tests"
       },
       {
@@ -25084,6 +25084,18 @@
     },
     {
       "source": "team_communications",
+      "target": "tests:src/app/golf/actions/__tests__/hide-golf-conversation.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/golf/actions/__tests__/hide-golf-conversation.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "team_communications",
       "target": "tests:src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts",
       "kind": "feature_test",
       "evidence": [
@@ -25199,18 +25211,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/lib/golf/__tests__/client-resource-cache.test.ts"
-        }
-      ]
-    },
-    {
-      "source": "team_communications",
-      "target": "tests:src/test/actions/hide-golf-conversation.test.ts",
-      "kind": "feature_test",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "src/test/actions/hide-golf-conversation.test.ts"
         }
       ]
     },
