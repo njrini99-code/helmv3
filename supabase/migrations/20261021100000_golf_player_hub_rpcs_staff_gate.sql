@@ -19,9 +19,9 @@
 --   * A coach must be staffed on the team (is_golf_team_coach(p_team_id), the
 --     helper every golf team policy uses), and the player they ask about must
 --     be an active member of that team.
---   * Anyone else gets their OWN hub: the player is derived from auth.uid()
---     (an active member of p_team_id), whatever p_player_id says. A caller who
---     is neither is refused 42501, as before.
+--   * Anyone else may ask only about themselves: p_player_id must be the
+--     caller's own active membership of p_team_id. A caller who is neither is
+--     refused 42501, as before.
 --   * EXECUTE is revoked from PUBLIC and anon. CREATE OR REPLACE keeps the
 --     baseline's `GRANT ALL ... TO anon`; anon was refused by the body (no
 --     auth.uid()), and is now refused by the grant as well.
@@ -84,11 +84,13 @@ BEGIN
      ) THEN
     v_player_id := p_player_id;
   ELSE
-    -- Anyone else reads their own hub: the player is the caller.
+    -- Anyone else may ask only about themselves: p_player_id must be the
+    -- caller's own active membership, as before this change.
     SELECT gp.id INTO v_player_id
     FROM public.golf_players gp
     JOIN public.golf_team_members gtm ON gtm.player_id = gp.id
-    WHERE gp.user_id = (SELECT auth.uid())
+    WHERE gp.id = p_player_id
+      AND gp.user_id = (SELECT auth.uid())
       AND gtm.team_id = p_team_id
       AND gtm.status = 'active'
     LIMIT 1;
@@ -182,7 +184,7 @@ END;
 $$;
 
 comment on function public.get_player_hub_announcements(uuid, uuid) is
-'Returns up to 5 player-visible announcements with ack/docs/tasks counts. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 5-query waterfall in getPlayerHubAnnouncements.';  -- noqa: LT05
+'Returns up to 5 player-visible announcements with ack/docs/tasks counts. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else may ask only about themselves (p_player_id must be their own active membership). Replaces 5-query waterfall in getPlayerHubAnnouncements.';  -- noqa: LT05
 
 create or replace function public.get_player_hub_events(
     p_team_id uuid, p_player_id uuid, p_since timestamp with time zone
@@ -191,7 +193,7 @@ returns jsonb
 language plpgsql
 stable
 security definer
-set search_path = public, pg_temp
+set search_path = 'public'
 as $$
 DECLARE
   v_player_id uuid;
@@ -208,11 +210,13 @@ BEGIN
     v_player_id := p_player_id;
     v_coach := true;
   ELSE
-    -- Anyone else reads their own hub: the player is the caller.
+    -- Anyone else may ask only about themselves: p_player_id must be the
+    -- caller's own active membership, as before this change.
     SELECT gp.id INTO v_player_id
     FROM public.golf_players gp
     JOIN public.golf_team_members gtm ON gtm.player_id = gp.id
-    WHERE gp.user_id = (SELECT auth.uid())
+    WHERE gp.id = p_player_id
+      AND gp.user_id = (SELECT auth.uid())
       AND gtm.team_id = p_team_id
       AND gtm.status = 'active'
     LIMIT 1;
@@ -286,7 +290,7 @@ END;
 $$;
 
 comment on function public.get_player_hub_events(uuid, uuid, timestamp with time zone) is  -- noqa: LT05
-'Returns upcoming events for a team with player RSVP + going/maybe counts joined. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 3-round-trip waterfall in hub/page.tsx.';  -- noqa: LT05
+'Returns upcoming events for a team with player RSVP + going/maybe counts joined. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else may ask only about themselves (p_player_id must be their own active membership). Replaces 3-round-trip waterfall in hub/page.tsx.';  -- noqa: LT05
 
 revoke execute on function public.get_player_hub_announcements(uuid, uuid)
 from public, anon;

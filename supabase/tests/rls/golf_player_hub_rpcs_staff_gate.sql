@@ -12,7 +12,7 @@
 --   3-4   a staffed coach reads the team for one of its players (kept)
 --   5     a staffed coach cannot point it at a player who is not on the team
 --   6-7   a player reads their own hub (kept), targeting honoured
---   8-9   a player who names a teammate still gets their OWN hub
+--   8-9   a player who names a teammate is refused (events, announcements)
 --   10    a player not on the team is refused
 --   11    anon cannot execute either function
 --
@@ -154,18 +154,18 @@ SELECT is(
 
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000017001003", "role": "authenticated"}';
 
-SELECT is(
-  (SELECT public.get_player_hub_events('00000000-0000-0000-0000-000017001201',
-      '00000000-0000-0000-0000-000017001402', now() - interval '1 day') -> 0 ->> 'rsvp_status'),
-  NULL,
-  'player A naming player B gets their OWN hub: no reply, not B''s'
+SELECT throws_ok(
+  $$SELECT public.get_player_hub_events('00000000-0000-0000-0000-000017001201',
+      '00000000-0000-0000-0000-000017001402', now() - interval '1 day')$$,
+  '42501', NULL,
+  'player A naming player B is refused: no reply of B''s, no hub'
 );
 
-SELECT is(
-  jsonb_array_length(public.get_player_hub_announcements('00000000-0000-0000-0000-000017001201',
-      '00000000-0000-0000-0000-000017001402')),
-  0,
-  'player A naming player B does not see the announcement addressed to B'
+SELECT throws_ok(
+  $$SELECT public.get_player_hub_announcements('00000000-0000-0000-0000-000017001201',
+      '00000000-0000-0000-0000-000017001402')$$,
+  '42501', NULL,
+  'player A naming player B cannot read the announcement addressed to B'
 );
 
 SET LOCAL request.jwt.claims TO '{"sub": "00000000-0000-0000-0000-000017001005", "role": "authenticated"}';
