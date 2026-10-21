@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Flag, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import type { ChRosterPlayer } from '../../data/roster';
+import type { ChRosterHelm, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
@@ -10,7 +10,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { AvailabilityPanel, CoachNote, type AvailabilityControl, type NoteSaved } from './RosterPeek';
+import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
 import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
 
 /**
@@ -25,12 +25,15 @@ export function RosterProfile({
   statsError,
   onNoteSaved,
   availability,
+  helm,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
   statsError: boolean;
   onNoteSaved: NoteSaved;
   availability: AvailabilityControl;
+  /** What CoachHelm reads in each player's rounds (loadRoster); off draws no panel. */
+  helm: ChRosterHelm;
 }) {
   // The trend's legend is about form: availability has the identity line and its own panel here, so it is left out.
   const note = rowNote({ ...p, availability: 'available' }, statsError);
@@ -92,6 +95,7 @@ export function RosterProfile({
           <dd className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
         </div>
       </dl>
+      <LegsCaption p={p} />
 
       {statsError ? (
         <InlineNotice
@@ -157,6 +161,8 @@ export function RosterProfile({
           ))}
         </section>
       )}
+
+      <HelmPanel p={p} helm={helm} />
 
       {facts.length > 0 && (
         <section className="ch-rsm-panel ch-rsm-about" aria-labelledby={`about-${p.id}`}>
