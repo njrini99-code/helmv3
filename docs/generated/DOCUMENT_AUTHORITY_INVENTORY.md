@@ -36,10 +36,10 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | --- | --- | --- | --- | --- |
 | `POLICY` | 16 | 3 | 6 | 0 |
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 29 | 29 | 16 | 0 |
+| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 45 | 3 | 24 | 4 |
-| `PROCESS_CONTRACT` | 10 | 6 | 9 | 0 |
+| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 44 | 5 | 17 | 63 |
@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 356 | 13 | 75 | 93 |
+| `UNKNOWN` | 352 | 13 | 71 | 93 |
 
 ## Files
 
@@ -225,8 +225,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/features/calendar-events.md` | current | yes | - | yes | - |
 | `memory/features/coach-intelligence-triage.md` | current | yes | - | yes | - |
 | `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
-| `memory/features/coachhelm-ai.md` | current | yes | - | yes | - |
 | `memory/features/crm_outreach.md` | current | yes | - | - | - |
 | `memory/features/email_outbound.md` | current | yes | - | - | - |
 | `memory/features/golf-round-lifecycle.md` | current | yes | - | yes | - |
@@ -314,12 +312,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/AUDITS.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
-| `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
-| `docs/clubhouse/generated/CLUBHOUSE_BRIDGE_MAP.md` | generated | - | - | yes | - |
 | `docs/clubhouse/generated/CLUBHOUSE_HELD_MAP.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_PAGE_MAP.md` | generated | - | - | - | - |
-| `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
-| `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/clubhouse/generated/CLUBHOUSE_STATUS.md` | generated | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/PAGE.md` | generated | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/PAGE.md` | generated | - | - | yes | - |
@@ -359,8 +353,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/ai-system/selfheal/README.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/repair-contract.md` | current | yes | - | yes | - |
 | `docs/ai-system/selfheal/triage-contract.md` | current | yes | - | yes | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | - |
-| `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | - |
 | `docs/architecture/coachhelm-evidence-contract.md` | current | yes | - | yes | - |
 | `docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md` | superseded | - | - | yes | - |
 | `docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md` | superseded | - | - | yes | - |
@@ -902,10 +894,6 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
-| `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |
