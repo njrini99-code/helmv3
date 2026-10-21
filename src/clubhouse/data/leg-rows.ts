@@ -133,4 +133,3 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
     ),
   ];
 }
-
