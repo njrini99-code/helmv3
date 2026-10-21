@@ -39,9 +39,22 @@ namespace 1) apply here too and are named where they carry a category.
 
 Status: DEFINED
 
-The page opens on Account, or on the section the address names, with a header (role, team and email), the rail of this role's sections and the section's cards. It needs no team. A section is linkable with ?section= (80102), and the two old links open theirs.
+The page opens on Account, or on the section the address names, with a header
+(role, team and email), the rail of this role's sections and the section's
+cards. It needs no team. A section is linkable with ?section= (80102), and the
+two old links open theirs.
 
-Account › Profile (2026-10-21, spec C): a coach's card pairs Full name with Title (`golf_coaches.title`, up to 100 characters, placeholder "Assistant coach", help "With your name in Messages, on announcements and in Team settings."); on the phone the Profile sheet has a Title row under Full name. The title is saved with the name and photo in the coach's own-row write (`golf_coaches_update_own`), trimmed, and a blank one is cleared to null. Players have no title: their card and sheet show none and their write never names it. There is no separate coaching-profile section: bio and phone have no reader, and a phone would be readable by players in the same organization, so neither is collected. The player roster's coaches list keeps showing "Head coach" for the head coach.
+Account › Profile (2026-10-21, spec C): a coach's card pairs Full name with
+Title (`golf_coaches.title`, up to 100 characters, placeholder "Assistant
+coach", help "With your name in Messages, on announcements and in Team
+settings."); on the phone the Profile sheet has a Title row under Full name. The
+title is saved with the name and photo in the coach's own-row write
+(`golf_coaches_update_own`), trimmed, and a blank one is cleared to null.
+Players have no title: their card and sheet show none and their write never
+names it. There is no separate coaching-profile section: bio and phone have no
+reader, and a phone would be readable by players in the same organization, so
+neither is collected. The player roster's coaches list keeps showing "Head
+coach" for the head coach.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -55,7 +68,12 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-One route skeleton in Settings' own shape (80201): the title, the rail and two cards. It is `settings/loading.tsx`, and since 2026-09-30 also the loading file of the two old links, which used to show the Fairway skeleton inside the Clubhouse frame. Nothing on the page loads by itself after first paint (everything is read on the server, 82101), so there is no skeleton per section. v2 timing: nothing for 150ms, then a fade (the shell's 11609).
+One route skeleton in Settings' own shape (80201): the title, the rail and two
+cards. It is `settings/loading.tsx`, and since 2026-09-30 also the loading file
+of the two old links, which used to show the Fairway skeleton inside the
+Clubhouse frame. Nothing on the page loads by itself after first paint
+(everything is read on the server, 82101), so there is no skeleton per section.
+v2 timing: nothing for 150ms, then a fade (the shell's 11609).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -67,7 +85,12 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-There is no polling, realtime or pull to refresh. What runs in the background is work the person started: a form saving (80301: the button reads Saving… and cannot be pressed twice), a photo uploading (80302, a state tested in the preview only) and the CoachHelm autosave, whose row says Saved once it lands (80303; the phone keeps its line under the title). After a save that changes what the server renders the page reads again (81501).
+There is no polling, realtime or pull to refresh. What runs in the background is
+work the person started: a form saving (80301: the button reads Saving… and
+cannot be pressed twice), a photo uploading (80302, a state tested in the
+preview only) and the CoachHelm autosave, whose row says Saved once it lands
+(80303; the phone keeps its line under the title). After a save that changes
+what the server renders the page reads again (81501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -79,7 +102,15 @@ There is no polling, realtime or pull to refresh. What runs in the background is
 
 Status: DEFINED
 
-First-run states only; the page has no filter or search, so no filtered empty. A coach with no team sees why Team is empty (80401); a player with no team can join one (80402) and sees a request that is waiting (80403), in place of the form as soon as the page reads again after Ask to join (fixed 2026-10-17: the form stayed until the section was reopened); no photo shows the monogram (80404). Settings never replaces the whole page with a no-team state (80405, so D-71 does not apply): Account, Notifications and Preferences work without a team. A failed read is never drawn as empty; it is a notice with Try again (category 06).
+First-run states only; the page has no filter or search, so no filtered empty. A
+coach with no team sees why Team is empty (80401); a player with no team can
+join one (80402) and sees a request that is waiting (80403), in place of the
+form as soon as the page reads again after Ask to join (fixed 2026-10-17: the
+form stayed until the section was reopened); no photo shows the monogram
+(80404). Settings never replaces the whole page with a no-team state (80405, so
+D-71 does not apply): Account, Notifications and Preferences work without a
+team. A failed read is never drawn as empty; it is a notice with Try again
+(category 06).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -94,7 +125,15 @@ First-run states only; the page has no filter or search, so no filtered empty. A
 
 Status: DEFINED
 
-Each card checks its fields before anything is sent and keeps Save disabled while a value is invalid or unchanged (80501 to 80515). The message shows in the card's footer or under the field. The password card shows its message after the first press of Update password, with the warning haptic. A photo of the wrong type or over 2 MB is refused before it uploads (80602, in the write). The reminder times are checked in order whether or not reminders are on, because the database checks them either way; out of order with reminders off, the two times stay on screen so they can be fixed (80511; fixed 2026-10-17: switching reminders off let an out-of-order schedule send and fail).
+Each card checks its fields before anything is sent and keeps Save disabled
+while a value is invalid or unchanged (80501 to 80515). The message shows in the
+card's footer or under the field. The password card shows its message after the
+first press of Update password, with the warning haptic. A photo of the wrong
+type or over 2 MB is refused before it uploads (80602, in the write). The
+reminder times are checked in order whether or not reminders are on, because the
+database checks them either way; out of order with reminders off, the two times
+stay on screen so they can be fixed (80511; fixed 2026-10-17: switching
+reminders off let an out-of-order schedule send and fail).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -178,7 +217,13 @@ are the shell's (10603 to 10607).
 
 Status: DEFINED
 
-Offline and slow saves are the shell's: a form save offline is refused before anything is sent (10703), a save over 5 seconds says so once (10702), the banner (10701), Try again on a notice while offline (10704). Settings adds one: a switch or a CoachHelm autosave offline is refused before it changes anything (80701). Not covered: the photo upload, push on this device, sign out, copy and Report a problem check nothing first and fail with their own toast (80602, 80607, 80624, 80613).
+Offline and slow saves are the shell's: a form save offline is refused before
+anything is sent (10703), a save over 5 seconds says so once (10702), the banner
+(10701), Try again on a notice while offline (10704). Settings adds one: a
+switch or a CoachHelm autosave offline is refused before it changes anything
+(80701). Not covered: the photo upload, push on this device, sign out, copy and
+Report a problem check nothing first and fail with their own toast (80602,
+80607, 80624, 80613).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -192,7 +237,31 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Who may open it: a signed-in coach or player with the Clubhouse flag on (the shell's gate). A session with neither profile gets nothing from the route, and the old links send a signed-out visitor to sign in (80803). What each role sees: the rail lists the role's sections and a section it does not have opens Account (80801); the old coaching link opens CoachHelm for a coach and Account for a player (80802). What an assistant coach cannot change: the whole-team CoachHelm switch, disabled with the reason and refused again by the server (80804). When the head-coach check itself fails, the loader logs it and leaves the switch out instead of treating the coach as an assistant (80804). The migrations in the repo let any staff coach of the team write the team and its settings, and any coach of the organization write the organization, so an assistant coach gets every team card (80805). A save the database refuses reaches the person as that card's failure toast. An update whose row a policy hides comes back with no error and no row; profile, team details, golf details and the coaching settings count the rows they change and fail with "Your account doesn’t have access to do this" (80808), as leaving a team already did. A refusal that arrives as an error, such as an upsert against a policy ("violates row-level security"), reads as "Check your connection" because the toast drops technical wording. All of this was read from the migrations and the code, not checked against the live database. Off team: a coach with no team has no team cards (80401); a player with no team can join with a code (80402), and the server actions refuse a request made with another player's profile or a cancel of someone else's request (read from the actions, not tested here). Writes are scoped to the caller (80806) and a new password needs the current one (80807). Deleting the account acts on the signed-in user only; the route takes no id.
+Who may open it: a signed-in coach or player with the Clubhouse flag on (the
+shell's gate). A session with neither profile gets nothing from the route, and
+the old links send a signed-out visitor to sign in (80803). What each role sees:
+the rail lists the role's sections and a section it does not have opens Account
+(80801); the old coaching link opens CoachHelm for a coach and Account for a
+player (80802). What an assistant coach cannot change: the whole-team CoachHelm
+switch, disabled with the reason and refused again by the server (80804). When
+the head-coach check itself fails, the loader logs it and leaves the switch out
+instead of treating the coach as an assistant (80804). The migrations in the
+repo let any staff coach of the team write the team and its settings, and any
+coach of the organization write the organization, so an assistant coach gets
+every team card (80805). A save the database refuses reaches the person as that
+card's failure toast. An update whose row a policy hides comes back with no
+error and no row; profile, team details, golf details and the coaching settings
+count the rows they change and fail with "Your account doesn’t have access to do
+this" (80808), as leaving a team already did. A refusal that arrives as an
+error, such as an upsert against a policy ("violates row-level security"), reads
+as "Check your connection" because the toast drops technical wording. All of
+this was read from the migrations and the code, not checked against the live
+database. Off team: a coach with no team has no team cards (80401); a player
+with no team can join with a code (80402), and the server actions refuse a
+request made with another player's profile or a cancel of someone else's request
+(read from the actions, not tested here). Writes are scoped to the caller
+(80806) and a new password needs the current one (80807). Deleting the account
+acts on the signed-in user only; the route takes no id.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -214,7 +283,15 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A save that lands says so by name and fires the success haptic (80901); a card with a Save button keeps its inline bar for about two seconds to say Saved, then lets it go (the bar is there only while the card has something to save, and Cmd or Ctrl+S saves it). A switch, segment, slider or CoachHelm autosave that lands says nothing loud (80902, D-70): its selection tick was the feedback, and its own row (or its card's head, for a group of sliders) says Saved for about two seconds. There is no line over the CoachHelm title. Deleting the account has its own hand-over (80903). Copying the invite code or link toasts and fires the success haptic (81705).
+A save that lands says so by name and fires the success haptic (80901); a card
+with a Save button keeps its inline bar for about two seconds to say Saved, then
+lets it go (the bar is there only while the card has something to save, and Cmd
+or Ctrl+S saves it). A switch, segment, slider or CoachHelm autosave that lands
+says nothing loud (80902, D-70): its selection tick was the feedback, and its
+own row (or its card's head, for a group of sliders) says Saved for about two
+seconds. There is no line over the CoachHelm title. Deleting the account has its
+own hand-over (80903). Copying the invite code or link toasts and fires the
+success haptic (81705).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

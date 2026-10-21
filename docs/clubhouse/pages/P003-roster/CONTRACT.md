@@ -124,7 +124,14 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 
 Status: DEFINED
 
-Two inputs have a limit: the coach's note (30501, 2,000 characters; the counter appears in the last 200 and typing stops at the limit) and the availability note (30503, 280 characters, the column's CHECK; the counter appears in the last 40, and `setPlayerAvailability` refuses more with "Keep the note under 280 characters"). The search box takes any text. Nothing else is typed into a form: players join by code, and the server checks who may decide a request (30803). What players and coaches typed comes out safely: the export writes a name or an availability note that could be read as a formula as text (30502).
+Two inputs have a limit: the coach's note (30501, 2,000 characters; the counter
+appears in the last 200 and typing stops at the limit) and the availability note
+(30503, 280 characters, the column's CHECK; the counter appears in the last 40,
+and `setPlayerAvailability` refuses more with "Keep the note under 280
+characters"). The search box takes any text. Nothing else is typed into a form:
+players join by code, and the server checks who may decide a request (30803).
+What players and coaches typed comes out safely: the export writes a name or an
+availability note that could be read as a formula as text (30502).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -136,7 +143,12 @@ Two inputs have a limit: the coach's note (30501, 2,000 characters; the counter 
 
 Status: DEFINED
 
-Every change has its own toast (30601 to 30607, 30619 to 30621) naming what failed and what to do, and every read that fails to load has its own notice with Try again (30608 to 30610, 30614 to 30616). A crash stays in its section (30611 to 30613, SectionBoundary). Try again refreshes the whole page (31402). A refused change shows the server's own sentence when it is short and readable (30803).
+Every change has its own toast (30601 to 30607, 30619 to 30621) naming what
+failed and what to do, and every read that fails to load has its own notice with
+Try again (30608 to 30610, 30614 to 30616). A crash stays in its section (30611
+to 30613, SectionBoundary). Try again refreshes the whole page (31402). A
+refused change shows the server's own sentence when it is short and readable
+(30803).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |

@@ -1,13 +1,15 @@
 # P003 — Roster: changelog
 
-## 2026-10-21 — Availability: injured and away on the coach's roster; the desk view prints
+## 2026-10-21 — Availability on the coach's roster; the desk view prints
 
 ```text
-Design package: spec C (coach parity, /mnt/project-files/coach-parity/spec-C-roster-availability-settings.md)
+Design package: spec C, coach parity
+                (coach-parity/spec-C-roster-availability-settings.md)
 PR/commit:      see git log (parity/roster-settings)
 Contract IDs:   30203 (CH-3405), 30503 (CH-3102), 30620 (CH-3009),
                 30621 (CH-3010), 31809 (CH-3809) new; 30502 text
-Actions:        setPlayerAvailability (new, src/app/golf/actions/team-management.ts)
+Actions:        setPlayerAvailability (new,
+                src/app/golf/actions/team-management.ts)
 Data impact:    reads and writes golf_team_members.availability,
                 availability_note, availability_updated_at (already live; no
                 migration). Write policy golf_team_members_update_coach.
@@ -40,7 +42,8 @@ Held items:     none
 - Needs a look leaves out a player who is out (`attentionFor`); rankings, the
   strip and the team average are unchanged. CSV: Availability and Availability
   note after Status, the note written as text (30502).
-- No new colour: red stays under par, and the word carries the meaning (CH-3809).
+- No new colour: red stays under par, and the word carries the meaning
+  (CH-3809).
 - Players see none of it in v1 (`loadPlayerRoster` still reads `player_id`).
 - Print (`roster.css`): the desk view printed from a desktop shows (the phone
   breakpoint hid it), fits the sheet without the actions column or avatars,
