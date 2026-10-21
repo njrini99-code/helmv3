@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { COACH_MONDAY_BRIEF_HREF } from '../data/coachhelm-monday-brief-shape';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
@@ -28,5 +29,6 @@ export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state
   }, [state]);
   const plan = state?.startsWith('courseplan') ?? false;
   const reads = useMemo(() => previewCoursePlanReads(state), [state]);
-  return <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} />;
+  // `brieflink`: the board with coachhelm_monday_brief_v1 on, so the Monday brief link is drawn.
+  return <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} mondayBriefHref={state === 'brieflink' ? COACH_MONDAY_BRIEF_HREF : undefined} />;
 }

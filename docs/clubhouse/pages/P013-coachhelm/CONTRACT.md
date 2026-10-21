@@ -238,6 +238,14 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130736 | CH-13967 | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | Track record: the database cannot answer yet (its function is not applied) |
 | 130737 | CH-13968 | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | Track record: nothing shown since the season start |
 | 130738 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
+| 130739 | CH-13970 | `COACH_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130740 | CH-13971 | `BRIEF_READ_ROW` | Monday brief: a player read at Likely or above |
+| 130741 | CH-13972 | `BRIEF_PATTERN_ROW` | Monday brief: the team pattern row |
+| 130742 | CH-13973 | `BRIEF_NOTHING` | Monday brief: nothing to raise this week |
+| 130743 | CH-13974 | `BRIEF_OFF` | Monday brief: CoachHelm is off for the team |
+| 130744 | CH-13975 | `BRIEF_FAILED` | Monday brief: a read it is made from failed |
+| 130745 | CH-13976 | `BOARD_BRIEF_LINK` | Coach board: the link to the Monday brief |
+| 130746 | CH-13977 | `BRIEF_COUNTS` | Monday brief: the counts line |
 
 ## 08 — Permission / authorization
 

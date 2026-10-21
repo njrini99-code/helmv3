@@ -4398,6 +4398,12 @@
         "schedule": "0 4 * * *"
       },
       {
+        "id": "vercel_cron:/api/cron/coachhelm-monday-brief",
+        "kind": "vercel_cron",
+        "path": "/api/cron/coachhelm-monday-brief",
+        "schedule": "0 5 * * 1"
+      },
+      {
         "id": "vercel_cron:/api/cron/coachhelm-roster-sweep",
         "kind": "vercel_cron",
         "path": "/api/cron/coachhelm-roster-sweep",

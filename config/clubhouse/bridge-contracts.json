@@ -15457,6 +15457,94 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130739,
+    "page": "P013",
+    "category": 7,
+    "item": 39,
+    "name": "COACH_MONDAY_BRIEF",
+    "chCode": "CH-13970",
+    "meaning": "Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130740,
+    "page": "P013",
+    "category": 7,
+    "item": 40,
+    "name": "BRIEF_READ_ROW",
+    "chCode": "CH-13971",
+    "meaning": "Monday brief: a player read at Likely or above",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130741,
+    "page": "P013",
+    "category": 7,
+    "item": 41,
+    "name": "BRIEF_PATTERN_ROW",
+    "chCode": "CH-13972",
+    "meaning": "Monday brief: the team pattern row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130742,
+    "page": "P013",
+    "category": 7,
+    "item": 42,
+    "name": "BRIEF_NOTHING",
+    "chCode": "CH-13973",
+    "meaning": "Monday brief: nothing to raise this week",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130743,
+    "page": "P013",
+    "category": 7,
+    "item": 43,
+    "name": "BRIEF_OFF",
+    "chCode": "CH-13974",
+    "meaning": "Monday brief: CoachHelm is off for the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130744,
+    "page": "P013",
+    "category": 7,
+    "item": 44,
+    "name": "BRIEF_FAILED",
+    "chCode": "CH-13975",
+    "meaning": "Monday brief: a read it is made from failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130745,
+    "page": "P013",
+    "category": 7,
+    "item": 45,
+    "name": "BOARD_BRIEF_LINK",
+    "chCode": "CH-13976",
+    "meaning": "Coach board: the link to the Monday brief",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130746,
+    "page": "P013",
+    "category": 7,
+    "item": 46,
+    "name": "BRIEF_COUNTS",
+    "chCode": "CH-13977",
+    "meaning": "Monday brief: the counts line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,

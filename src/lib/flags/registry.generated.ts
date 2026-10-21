@@ -234,6 +234,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on once golf_coachhelm_coach_weights has accumulated enough post-fix (corrected v2 causality attribution) samples to trust the persisted weights, or remove the coach-weight read entirely if that ranking signal is abandoned.",
   },
   {
+    feature_id: "coachhelm_monday_brief_v1",
+    owner: "golf/coachhelm",
+    purpose: "The coach Monday brief (CoachHelm task chs-28; supercharge 04 section 4 and Layout 1). Reason: the design call's \"Monday before practice\" moment wants one screen that says who needs a conversation and what the team practises, instead of a card per player. Effect when on: the Clubhouse coach view /golf/dashboard/coachhelm?view=monday-brief and its link on the coach board show up to five items (the team pattern when one exists, then player reads at Likely or above, one per player, most strokes first) and a counts line (new, cleared, contradicted, out of date); and the Monday 05:00 UTC cron /api/cron/coachhelm-monday-brief emails each opted-in primary coach a non-empty brief. Strengths, Watching, Working hypothesis and reads two or more rounds behind are never in it. Off: no link, the address shows the board, and the cron returns before it reads or sends anything. Email also needs HELM_CUSTOMER_EMAIL_ENABLED, which is off in production. Clubhouse is off in production, so the view reaches coaches only once it is on.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: true,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on in production only after coachhelm_support_v1 has written ladders (until then every brief is empty and nothing is sent) and the owner has decided to re-enable customer email. Remove the flag once the brief has served coaches for a season.",
+  },
+  {
     feature_id: "coachhelm_reads_v1_copy",
     owner: "golf/coachhelm",
     purpose: "Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads fold into one at delivery and each player's feeds hold 3 open reads plus 1 strength. Freshness: a new or refreshed read needs at least 3 countable rounds and its family's attempt floor or it is held back as Watching with a count-down; a new evidence revision is a new newest round in the window (or a moved window), not a changed sample count; empty window dates are filled from the rounds read; and the nightly roster sweep re-analyzes players whose newest countable round is newer than their newest read (deterministic generators only, no LLM). Off until the owner reviews the shorter feeds and the Watching counts.",

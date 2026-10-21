@@ -1120,3 +1120,36 @@ flags:
       fill in once coachhelm_support_v1 (ladder), coachhelm_recheck_v1
       (rechecks) and coachhelm_corrections_v1 (corrections) are on. Remove
       the flag once the page has served coaches for a season.
+  - feature_id: coachhelm_monday_brief_v1
+    owner: golf/coachhelm
+    purpose: >-
+      The coach Monday brief (CoachHelm task chs-28; supercharge 04 section 4
+      and Layout 1). Reason: the design call's "Monday before practice" moment
+      wants one screen that says who needs a conversation and what the team
+      practises, instead of a card per player. Effect when on: the Clubhouse
+      coach view /golf/dashboard/coachhelm?view=monday-brief and its link on
+      the coach board show up to five items (the team pattern when one
+      exists, then player reads at Likely or above, one per player, most
+      strokes first) and a counts line (new, cleared, contradicted, out of
+      date); and the Monday 05:00 UTC cron /api/cron/coachhelm-monday-brief
+      emails each opted-in primary coach a non-empty brief. Strengths,
+      Watching, Working hypothesis and reads two or more rounds behind are
+      never in it. Off: no link, the address shows the board, and the cron
+      returns before it reads or sends anything. Email also needs
+      HELM_CUSTOMER_EMAIL_ENABLED, which is off in production. Clubhouse is
+      off in production, so the view reaches coaches only once it is on.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on in production only after coachhelm_support_v1 has written
+      ladders (until then every brief is empty and nothing is sent) and the
+      owner has decided to re-enable customer email. Remove the flag once the
+      brief has served coaches for a season.
