@@ -183,7 +183,7 @@ Animation:         v2 tokens only; the animation features load after first paint
 Notes:             LCP and INP come only from sampled Sentry tracing (12101)
 ```
 
-## The push ask in the app (2026-10-16, CH-1910, blocker 12)
+## The push ask in the app (2026-10-16, CH-1911, blocker 12)
 
 - Tests: `src/clubhouse/shell/__tests__/push-ask.test.tsx` (12: the settle wait, the quiet routes and a navigation
   restarting the wait, a sheet open or a field focused holding it, the role's copy, Turn on with iOS allowing and not
