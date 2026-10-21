@@ -1000,6 +1000,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | - |
+| `docs/operations/PR_PIPELINE.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |
