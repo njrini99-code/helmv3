@@ -14,6 +14,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, friendlyReason, isOffline, useAction, type ActionCopy, type ActionResult } from '../../lib/use-action';
 import { isRawBrowserFailure } from '../../lib/friendly-reason';
 import { haptic } from '../../lib/haptics';
+import { useHydrationGuard } from '../../lib/use-hydration-guard';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import type { ChProblem, ChResult } from './model';
 
@@ -145,13 +146,15 @@ export function Field({
   error?: ChProblem | null;
   span?: 1 | 2;
 } & React.InputHTMLAttributes<HTMLInputElement>) {
+  // Read-only until hydrated, so text typed into the server markup is never wiped (the first name lost in WebKit).
+  const guard = useHydrationGuard(input.readOnly);
   return (
     <div className={'ch-field' + (span === 2 ? ' ch-set-span2' : '')}>
       {/* CH-8807: every field has a label, and its help or error is read with it; CH-8804: the error is an alert. */}
       <label htmlFor={id} className="ch-field__label">
         {label}
       </label>
-      <input id={id} className="ch-input" aria-invalid={error ? true : undefined} aria-describedby={help || error ? `${id}-h` : undefined} {...input} />
+      <input id={id} className="ch-input" aria-invalid={error ? true : undefined} aria-describedby={help || error ? `${id}-h` : undefined} {...input} {...guard} />
       {(error || help) && (
         <span id={`${id}-h`} className={'ch-field__help' + (error ? ' is-error' : '')} role={error ? 'alert' : undefined} data-ch-code={error?.code}>
           {error?.text || help}

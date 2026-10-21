@@ -8854,25 +8854,25 @@
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - 48px)",
           "scope": ".ch-modal__panel",
-          "line": 356
+          "line": 363
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal",
-          "line": 450
+          "line": 457
         },
         {
           "name": "--ch-modal-max-h",
           "value": "92dvh",
           "scope": "@media (max-width: 820px) → .ch-modal__panel",
-          "line": 456
+          "line": 463
         },
         {
           "name": "--ch-modal-max-h",
           "value": "calc(100dvh - var(--keyboard-height, 0px) - env(safe-area-inset-top) - 8px)",
           "scope": "@media (max-width: 820px) → body.keyboard-open .ch-modal__panel",
-          "line": 544
+          "line": 551
         }
       ]
     },

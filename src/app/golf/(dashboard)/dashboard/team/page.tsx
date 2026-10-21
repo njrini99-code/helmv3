@@ -8,6 +8,7 @@ import { FairwayTeam } from '@/components/fairway/pages/team';
 import { InlineNotice } from '@/components/fairway';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import type { Metadata } from 'next';
 
 /**
@@ -276,13 +277,13 @@ export default async function TeamSettingsPage() {
 
   const rosterPlayerIds = (teamMembers || []).map(tm => tm.player_id);
 
-  const { data: roster, error: rosterError } = rosterPlayerIds.length > 0
-    ? await supabase
-        .from('golf_players')
-        .select('id, first_name, last_name, avatar_url, handicap')
-        .in('id', rosterPlayerIds)
-        .order('last_name')
-    : { data: [], error: null };
+  // Teammates' display columns only, through golf_player_profiles: a player
+  // may no longer read a teammate's golf_players row (security review S4).
+  const { data: rosterProfiles, error: rosterError } = await readGolfPlayerProfiles(supabase, { playerIds: rosterPlayerIds });
+  const roster = (rosterProfiles ?? [])
+    .map((p) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url, handicap: p.handicap }))
+    // As `.order('last_name')` did: by last name, a missing one last.
+    .sort((a, b) => (a.last_name === null ? 1 : 0) - (b.last_name === null ? 1 : 0) || (a.last_name ?? '').localeCompare(b.last_name ?? ''));
 
   // The `error` is READ. A ternary, so the unchecked-read ratchet never counted
   // it — but a failure renders a team with no teammates on it to a player who

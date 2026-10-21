@@ -19,6 +19,7 @@ import { computeFormScore, type FormRoundInput, type FormScore } from '@/lib/gol
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import {
   verifyPlayerAccess as canonicalVerifyPlayerAccess,
@@ -1215,11 +1216,19 @@ async function getPlayerWhatIfImpl(
       .maybeSingle();
 
     if (membership?.team_id) {
-      const { data: teamMembers } = await supabase
-        .from('golf_team_members')
-        .select('player_id, golf_players(id, first_name, last_name)')
-        .eq('team_id', membership.team_id)
-        .eq('status', 'active');
+      // Teammates' names through golf_player_profiles, read beside the roster:
+      // a player may no longer read a teammate's golf_players row (security
+      // review S4). Unreadable names drop the rank projection, as an empty
+      // embed did.
+      const [{ data: teamMembers }, teamProfiles] = await Promise.all([
+        supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', membership.team_id)
+          .eq('status', 'active'),
+        readGolfPlayerProfiles(supabase, { teamIds: [membership.team_id] }),
+      ]);
+      const teamProfileById = profilesById(teamProfiles.data ?? []);
 
       if (teamMembers && teamMembers.length > 1) {
         // Batch fetch all team members' rounds in a single query to avoid N+1
@@ -1249,7 +1258,7 @@ async function getPlayerWhatIfImpl(
         const profiles: PlayerProfile[] = [playerProfile];
 
         for (const m of teamMembers) {
-          const info = m.golf_players as { id: string; first_name: string | null; last_name: string | null } | null;
+          const info = teamProfileById.get(m.player_id) ?? null;
           if (!info || m.player_id === playerId) continue;
 
           const mScores = (roundsByPlayer.get(m.player_id) ?? []).slice(0, 20);

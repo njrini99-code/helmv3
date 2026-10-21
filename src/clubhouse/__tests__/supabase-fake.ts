@@ -3,7 +3,9 @@
  * table answers with one `{ data, error, count }`, whatever the query chain;
  * a function answer sees the filters, for tables read more than one way.
  * An RPC answers from `rpc:<name>` (the function answer sees `[['args', [args]]]`);
- * one with no answer is "function not found" (PGRST202), as PostgREST says.
+ * one with no answer is "function not found" (PGRST202), as PostgREST says. The one exception is `golf_player_profiles`
+ * (teammates' display columns, security review S4): unless a test answers it, it returns the `player` objects that the
+ * `golf_qualifier_entries` and `golf_team_members` answers carry, as the join those rows used to embed.
  *
  *   const tables = vi.hoisted(() => ({ current: {} as ChFakeTables }));
  *   vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
@@ -42,8 +44,22 @@ function query(table: string, tables: ChFakeHandle) {
   return chain;
 }
 
+/** The players the entries and roster answers embed: what `golf_player_profiles` would return for them. */
+function embeddedPlayers(tables: ChFakeHandle): unknown[] {
+  const seen = new Map<string, unknown>();
+  for (const table of ['golf_qualifier_entries', 'golf_team_members']) {
+    const a = tables.current[table];
+    if (!a || typeof a === 'function' || !Array.isArray(a.data)) continue;
+    for (const row of a.data as Array<{ player?: { id?: string } | null }>) {
+      if (row.player?.id) seen.set(row.player.id, row.player);
+    }
+  }
+  return [...seen.values()];
+}
+
 function rpc(name: string, args: unknown, tables: ChFakeHandle) {
   const a = tables.current[`rpc:${name}`];
+  if (!a && name === 'golf_player_profiles') return Promise.resolve({ data: embeddedPlayers(tables), error: null });
   if (!a) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } });
   const res = typeof a === 'function' ? a([['args', [args]]]) : a;
   return Promise.resolve({ data: null, error: null, ...res });

@@ -1,5 +1,48 @@
 # P015 — Auth: changelog
 
+## 2026-10-21 — Sign-in adopts text entered before hydration
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-signin-adopt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The sign-in email and password stay editable in server HTML so autofill works. Text put in them before hydration is
+adopted into state at mount, read through the boxes' refs at once (not inside the state updater), and the submit stays
+held until then. A test hydrates real server markup with typed values and checks they survive and reach `signIn`.
+
+## 2026-10-21 — Sign-in boxes wait for hydration
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-login-hydration)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The reset email box (`ForgotPassword`) and every `GateInput` (reset
+  password, staff invitation, demo entry) are read-only until React has
+  hydrated them, through the shared `useHydrationGuard`
+  (`lib/use-hydration-guard.ts`). The boxes look the same while they wait.
+- The sign-in email and password are left as they were: a read-only box in
+  the server HTML is skipped by page-load autofill, and returning users rely
+  on it. Their submit is still held until hydration.
+
+### Why
+
+Text typed into server HTML before hydration is reset when the controlled
+value is applied, and WebKit drops the first-typed box. The reset and gate
+boxes now wait for hydration. Sign in is the one place a browser or password
+manager fills at page load, so its boxes stay editable.
+
 ## 2026-10-19 — The new-coach guard reads its errors
 
 ```text

@@ -65,7 +65,7 @@ log).
   hidden), `golf_qualifier_selection_reasons` (P009 reads the column instead),
   `golf_set_course_image` (P011: coaches fall back, a player's photo is refused
   and the upload is now discarded), the batch trace writer (falls back per
-  step), and recruit film (P014: Storage refuses video, CH-14107/8 says so).
+  step), and recruit film (P014: if Storage refuses video, CH-14107/8 says so).
   `database.ts` matches production apart from the two functions this branch
   adds. The audit's write fixes are in code (group-chat reuse, second-team
   approval, task status sync, assistant travel brief, tee rollback, document
@@ -108,7 +108,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 1 contract without a test (111809, was 11 on 10-17); the round E2E runs only against a local stack, in CI only once draft #2208 lands |
 | P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once could still both insert (a read before the insert, not a constraint) |
 | P013 CoachHelm | Ready with caveats | Q-124 (the stats cache counts test rounds; fix is the held stats chain); 8 contracts without a test (was 17 on 10-17); Player Ask decision open |
-| P014 Recruiting | Ready with caveats | Film uploads refused until held `20260930140000` (the dialog says so). Fixed 2026-10-20: after a lost reply, an Add with a corrected field (not the name) created the prospect twice; Retry and a repeated Save were already safe (CH-14915) |
+| P014 Recruiting | Ready with caveats | Film uploads on (`20260930140000` applied 2026-10-21; `RECRUIT_FILM_ENABLED` is the off switch). Fixed 2026-10-20: after a lost reply, an Add with a corrected field (not the name) created the prospect twice; Retry and a repeated Save were already safe (CH-14915) |
 | P015 Auth (front door) | Not ready, stays off | Since #2210 (D-77) reset-password, demo, coach onboarding, `coach/pending`, `join`, `join/[code]` and `staff/join/[token]` have Clubhouse screens; crash containment, route error, not-found, error tracking and the device checks are still unticked in `screens/auth.md`. Off at turn-on (step 5) |
 
 ### Cross-cutting findings
@@ -257,7 +257,13 @@ a new production deploy.
   is unsaved.
 - **Before turn-on, name the rollback deployment.** Record the current
   flag-off production deployment id here so a promote back to it is one step.
-  Not recorded yet.
+  Read from Vercel 2026-10-21 (release `d0f467a73`, deployed by the owner that
+  morning): production is `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc`; the one before
+  it, `dpl_6Enpeka5udJctZo5MC5VHnVQ7o7R`, is the promote-back target while
+  that stays current. Both are READY rollback candidates. Merges since then are
+  not live, so the next production deploy replaces this: re-read it from
+  `npm run release:status` (or Vercel) the day of turn-on and update this line
+  in the same change.
 - **Never promote `dpl_DowNH8VfxSXvSp5ggp2ZMkHMZpCb` (`ef6e017a2`).** It was
   the 2026-09-30 train's rollback target. Promoting it now would undo #2170
   and everything after it.
