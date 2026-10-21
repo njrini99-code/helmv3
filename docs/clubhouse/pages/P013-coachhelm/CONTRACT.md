@@ -29,27 +29,44 @@ reserve new IDs or mark manual contracts verified.
 
 Every behaviour CoachHelm promises, by the 25 V2 categories (D-69). A contract's
 number is its Bridge ID (D-68: namespace 13, category, item); `Code` is the
-catalog code on the element and in the test (`docs/clubhouse/catalog/coachhelm.md`).
-Rows without a code are behaviours with no single element, recorded in
-`config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001,
-namespace 1) apply here too and are named where they carry a category.
-`clubhouse:check` holds this file to the registry.
+catalog code on the element and in the test
+(`docs/clubhouse/catalog/coachhelm.md`). Rows without a code are behaviours with
+no single element, recorded in `config/clubhouse/bridge-contracts.json` by hand.
+The shell's contracts (P001, namespace 1) apply here too and are named where
+they carry a category. `clubhouse:check` holds this file to the registry.
 
 The hand contracts on this page start as `reserved`. The registry marks a hand
-contract `implemented` only when a test file names its Bridge ID in a test title, and
-`coachhelm.test.tsx` names catalog codes, not these IDs yet. Each note below says which of
-them a test in that file covers today (`VERIFY.md` has the same list); the ones it says
-are not tested, or only partly, stay reserved.
-`coachhelm-contracts.test.tsx` and `coachhelm-actions-contracts.test.ts` (2026-10-19) name 130104, 130608, 130702, 130804, 131201, 131501, 131901,
-132101 and 132301 in test titles, so those are implemented. The ones that stay reserved are 131807 (a script, not a test) and the seven that
-have a catalog code (130713, 130721, 130722, 131704, 131808, 131816, 131817): their tests exist, but the registry marks a coded contract
-`implemented` only once its CH- code is in the source, and these are not yet.
+contract `implemented` only when a test file names its Bridge ID in a test
+title, and `coachhelm.test.tsx` names catalog codes, not these IDs yet. Each
+note below says which of them a test in that file covers today (`VERIFY.md` has
+the same list); the ones it says are not tested, or only partly, stay reserved.
+`coachhelm-contracts.test.tsx` and `coachhelm-actions-contracts.test.ts`
+(2026-10-19) name 130104, 130608, 130702, 130804, 131201, 131501, 131901, 132101
+and 132301 in test titles, so those are implemented. The ones that stay reserved
+are 131807 (a script, not a test) and the seven that have a catalog code
+(130713, 130721, 130722, 131704, 131808, 131816, 131817): their tests exist, but
+the registry marks a coded contract `implemented` only once its CH- code is in
+the source, and these are not yet.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-One address, `/golf/dashboard/coachhelm`, is the coach's board for a coach and the player's for a player, and the role is the session's (130101). The server has read the page before first paint, so nothing is fetched in the browser to draw it. The focus is the top-ranked insight that is not working, or the one the person picks (130102), and a coach's players come most pressing first (130103). Every number is the generator's own, re-shaped and never computed here (130106). The header counts the players with an open signal, never the rows behind them, and a strength, a card that states no finding and a read that is out of date are not open signals (130105, 130107). `?view=profile`, `standing` and `deep-dive` are the player's own Game profile, Standing and Deep dive, each read for the signed-in player alone and only once CoachHelm is on for them, and `?view=development` goes to Stats' Development (130104, Q-76); none says "not rebuilt yet" any more. Tested for each view in `coachhelm-views.test.tsx`: who it reads for, the switch, a gate lookup that failed, and that a coach following one of those addresses is a coach and reads no player's data.
+One address, `/golf/dashboard/coachhelm`, is the coach's board for a coach and
+the player's for a player, and the role is the session's (130101). The server
+has read the page before first paint, so nothing is fetched in the browser to
+draw it. The focus is the top-ranked insight that is not working, or the one the
+person picks (130102), and a coach's players come most pressing first (130103).
+Every number is the generator's own, re-shaped and never computed here (130106).
+The header counts the players with an open signal, never the rows behind them,
+and a strength, a card that states no finding and a read that is out of date are
+not open signals (130105, 130107). `?view=profile`, `standing` and `deep-dive`
+are the player's own Game profile, Standing and Deep dive, each read for the
+signed-in player alone and only once CoachHelm is on for them, and
+`?view=development` goes to Stats' Development (130104, Q-76); none says "not
+rebuilt yet" any more. Tested for each view in `coachhelm-views.test.tsx`: who
+it reads for, the switch, a gate lookup that failed, and that a coach following
+one of those addresses is a coach and reads no player's data.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -65,7 +82,10 @@ One address, `/golf/dashboard/coachhelm`, is the coach's board for a coach and t
 
 Status: DEFINED
 
-The route skeleton is a Clubhouse one inside the shell and Fairway's outside it, in the signed-in role's shape (130204); a write in flight says so on its button (Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its own after the server render, so there are no section skeletons.
+The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
+in the signed-in role's shape (130204); a write in flight says so on its button
+(Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its
+own after the server render, so there are no section skeletons.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -81,11 +101,14 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 | 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
-| 130213 | CH-13406 | `COACH_RE_CHECK_READS_IS_RUNNING` | Coach: Re-check reads is running |
+| 130213 | CH-13406 | `RECHECK_RUNNING` | Re-check running |
 
 ## 03 — Background loading / refresh
 
-Status: N/A — CoachHelm has no realtime, polling or pull to refresh: the server reads the page once per visit, and Try again reads it again (categories 14 and 15).
+Status: N/A — CoachHelm has no realtime, polling or pull to refresh: the server
+
+reads the page once per visit, and Try again reads it again (categories 14 and
+15).
 
 ## 04 — Empty
 
@@ -140,7 +163,10 @@ filter, so it has no filtered empty state.
 
 Status: DEFINED
 
-The board has no form: Assign as focus, Dismiss and Undo are buttons, and what they send is the insight's own text. The Ask composer has one rule: nothing is sent while an action card waits for Confirm or Cancel, and the box says why (CH-13120).
+The board has no form: Assign as focus, Dismiss and Undo are buttons, and what
+they send is the insight's own text. The Ask composer has one rule: nothing is
+sent while an action card waits for Confirm or Cancel, and the box says why
+(CH-13120).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -150,7 +176,14 @@ The board has no form: Assign as focus, Dismiss and Undo are buttons, and what t
 
 Status: DEFINED
 
-Every write has its own toast naming what failed and what to do, with Retry (CH-13001 to CH-13003). A player who already has an active focus on the metric is not an error (130903). Every section that fails to load has its own notice with Try again (CH-13201 to CH-13203), and a crash stays in its section (CH-13204, `SectionBoundary`). A gate that cannot be looked up is a failed read and not "CoachHelm is off" (130608), for a coach as for a player; see the contract for what the coach's board draws in that case. The toast's Retry runs the whole change again, follow-ups included (131401).
+Every write has its own toast naming what failed and what to do, with Retry
+(CH-13001 to CH-13003). A player who already has an active focus on the metric
+is not an error (130903). Every section that fails to load has its own notice
+with Try again (CH-13201 to CH-13203), and a crash stays in its section
+(CH-13204, `SectionBoundary`). A gate that cannot be looked up is a failed read
+and not "CoachHelm is off" (130608), for a coach as for a player; see the
+contract for what the coach's board draws in that case. The toast's Retry runs
+the whole change again, follow-ups included (131401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -189,14 +222,19 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
-| 130638 | CH-13006 | `COACH_RE_CHECK_READS_FAILS` | Coach: Re-check reads fails (the action refused, threw, or the coach is offline) |
-| 130639 | CH-13007 | `COACH_RE_CHECK_READS_IS_REFUSED_BY` | Coach: Re-check reads is refused by the engine's rate limit (5 runs a minute per coach) |
+| 130638 | CH-13006 | `RECHECK_FAILS` | Re-check fails or is offline |
+| 130639 | CH-13007 | `RECHECK_RATE_LIMITED` | Re-check rate-limited |
 
 ## 07 — Network / offline
 
 Status: DEFINED
 
-Every write refuses while offline before anything is sent, with the shell's toast naming what did not happen (130702), the error haptic and Retry. A save over 5 seconds says so once (the shell's). CH-13901, the dismissed notice, sits in this category by its kind's default: it is the outcome of a Dismiss and not a network state. CoachHelm has no realtime, so it has no connection-lost state of its own.
+Every write refuses while offline before anything is sent, with the shell's
+toast naming what did not happen (130702), the error haptic and Retry. A save
+over 5 seconds says so once (the shell's). CH-13901, the dismissed notice, sits
+in this category by its kind's default: it is the outcome of a Dismiss and not a
+network state. CoachHelm has no realtime, so it has no connection-lost state of
+its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -245,14 +283,25 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130743 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
 | 130744 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
 | 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
-| 130746 | CH-13944 | `COACH_RE_CHECK_READS` | Coach: Re-check reads |
-| 130747 | CH-13945 | `COACH_RE_CHECK_READS_LANDS` | Coach: Re-check reads lands |
+| 130746 | CH-13944 | `RECHECK_READS` | Re-check reads (coach) |
+| 130747 | CH-13945 | `RECHECK_LANDS` | Re-check lands |
 
 ## 08 — Permission / authorization
 
 Status: DEFINED
 
-Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone else gets the Fairway page (130805). The role decides the view: only the coach's board has Assign, Dismiss and Undo, and the player's board has no write (130801). A coach reads only the active players of the team the shell resolved, whichever other teams they staff (130802), and a player reads only their own insights, with or without a team (130803). Assign is offered only for an insight that has no focus made from it, a strength included (130806, Q-80). Off a team a coach gets the no-team page (CH-13308, category 04). The server actions are the gate that counts (130804, reserved: read, not run). The program pulse is the coach's own (`getCoachProgramPulse` takes no team) and this page's team comes from `resolveClubhouseTeam`; both follow the active-team cookie and nothing here proves they can never differ.
+Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone
+else gets the Fairway page (130805). The role decides the view: only the coach's
+board has Assign, Dismiss and Undo, and the player's board has no write
+(130801). A coach reads only the active players of the team the shell resolved,
+whichever other teams they staff (130802), and a player reads only their own
+insights, with or without a team (130803). Assign is offered only for an insight
+that has no focus made from it, a strength included (130806, Q-80). Off a team a
+coach gets the no-team page (CH-13308, category 04). The server actions are the
+gate that counts (130804, reserved: read, not run). The program pulse is the
+coach's own (`getCoachProgramPulse` takes no team) and this page's team comes
+from `resolveClubhouseTeam`; both follow the active-team cookie and nothing here
+proves they can never differ.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -270,7 +319,10 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A change that lands confirms itself where it happened and does not ask for a toast: the Assigned chip, the dismissed notice, the returned focus card (130901); Assign makes a proposal the player accepts (130902, Q-77); a player who already has the focus is treated as done, with one toast saying so (130903).
+A change that lands confirms itself where it happened and does not ask for a
+toast: the Assigned chip, the dismissed notice, the returned focus card
+(130901); Assign makes a proposal the player accepts (130902, Q-77); a player
+who already has the focus is treated as done, with one toast saying so (130903).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -366,7 +418,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131705 | CH-13721 | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
-| 131708 | CH-13705 | `RE_CHECK_READS_IS_TAPPED` | Re-check reads is tapped |
+| 131708 | CH-13705 | `RECHECK_TAPPED` | Re-check tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,

@@ -194,8 +194,7 @@ Choosing a player or an insight is page state, not an action record.
 | `screens/coachhelm/Proposals.tsx` | "Proposed for you": each focus a coach proposed, with Accept and Decline and the answered chip | CH-13004, CH-13005, CH-13205, CH-13204, CH-13404, CH-13704, CH-13807, CH-13902 |
 | `screens/coachhelm/CoachBoard.tsx` | The coach's page: header, pulse, By player, the chosen player's focus and the three writes | CH-13001 to CH-13003, CH-13202 to CH-13204, CH-13305 to CH-13307, CH-13309, CH-13310, CH-13403, CH-13601, CH-13703, CH-13901, CH-13942, CH-13943 |
 | `screens/coachhelm/parts.tsx` | `FocusCard`, `Evidence` (`Gauge`, bars, `ReadMeter`), `PriPill`, `InsightRow`, `PulseList`, `Head` | CH-13802, CH-13803, CH-13804, CH-13806 |
-| `screens/coachhelm/Recheck.tsx` | `RecheckReads`: the coach's Re-check reads under the board and its one-line outcome | CH-13006, CH-13007, CH-13406, CH-13705, CH-13944, CH-13945 |
-| `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES`, `LIVE_PLAYER_WRITES` and `LIVE_RECHECK_WRITES`; preview and tests pass their own set | — |
+| `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES`, `LIVE_PLAYER_WRITES` and `LIVE_RECHECK_WRITES` (Re-check reads, `Recheck.tsx`: CH-13006, CH-13007, CH-13406, CH-13705, CH-13944, CH-13945); preview and tests pass their own set | — |
 | `screens/coachhelm/CoachHelmSkeleton.tsx` | Route skeleton, one shape per role | CH-13401, CH-13402 |
 | `screens/coachhelm/views/Frame.tsx` | The page every player view is drawn in (phone top bar, sub-navigation, header; `after` holds a pushed phone screen outside the page's size container) and `HelmOff` | CH-13304, CH-13801 |
 | `screens/coachhelm/views/PlayerHelmTabs.tsx` | The player's sub-navigation: Board, Game profile, Standing, Deep dive as one radiogroup, a row of chips on the phone, and the Development link | CH-13930, CH-13931 |
