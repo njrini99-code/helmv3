@@ -73,6 +73,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   season: 'Fall 2026',
   window: 'last10',
+  last: 10,
   filter: filterFor('last10'),
   filterOptions: optionsFrom(TEAM_PICK_ROUNDS),
   activeCount: 7,
@@ -402,6 +403,7 @@ const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: 
 export const PREVIEW_PLAYER: ChPlayerProfile = {
   viewer: 'coach',
   window: 'last10',
+  last: 10,
   filter: filterFor('last10'),
   filterOptions: optionsFrom(JONAH_PICK_ROUNDS),
   id: 'jonah',

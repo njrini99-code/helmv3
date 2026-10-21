@@ -30,6 +30,7 @@ vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed, ge
 
 import { approachBands } from '../data/stats-detail';
 import { bandPutts, PUTT_BANDS, PUTT_BANDS_NINE } from '../data/stats-common';
+import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor } from '@/lib/golf/putt-make';
 import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
@@ -276,6 +277,19 @@ describe('putts by distance', () => {
     expect(by('5–10 ft')).toMatchObject({ attempts: 1, made: 0 });
     expect(by('15–25 ft')).toMatchObject({ attempts: 1, made: 1 });
     expect(by('25+ ft')).toMatchObject({ attempts: 2, made: 1 });
+  });
+
+  it('bands are the shared lib\u2019s: the same edges, every putt in the band the shared cut puts it in', () => {
+    expect(PUTT_BANDS_NINE.map((b) => b.fine)).toEqual(PUTT_MAKE_BANDS.map((b) => [b.id]));
+    expect(PUTT_BANDS_NINE.map((b) => b.label)).toEqual(['0–3 ft', '3–5 ft', '5–10 ft', '10–15 ft', '15–20 ft', '20–25 ft', '25–30 ft', '30–35 ft', '35+ ft']);
+    expect(PUTT_BANDS.map((b) => b.label)).toEqual(['0–3 ft', '3–5 ft', '5–10 ft', '10–15 ft', '15–25 ft', '25+ ft']);
+    const feet = [0, 0.5, 3, 3.01, 5, 5.01, 10, 10.01, 15, 15.01, 20, 20.01, 25, 25.01, 30, 30.01, 35, 35.01, 120];
+    const nine = bandPutts(feet.map((f) => put(f, true)), new Map(), PUTT_BANDS_NINE);
+    const six = bandPutts(feet.map((f) => put(f, true)), new Map());
+    for (const [i, band] of PUTT_MAKE_BANDS.entries()) expect(nine[i]!.attempts).toBe(feet.filter((f) => puttMakeBandFor(f) === band.id).length);
+    for (const b of PUTT_BANDS) expect(six.find((x) => x.label === b.label)!.attempts).toBe(feet.filter((f) => b.fine.includes(puttMakeBandFor(f))).length);
+    expect(PUTT_BANDS.flatMap((b) => b.fine).sort()).toEqual(PUTT_MAKE_BANDS.map((b) => b.id).sort());
+    expect(PUTT_BANDS.every((b) => b.fine.every((id) => PUTT_REPORT_BAND_OF[id] === PUTT_REPORT_BAND_OF[b.fine[0]!]))).toBe(true);
   });
 
   it('the nine bands add up to the six, and each carries the Tour value its standard maps to', () => {

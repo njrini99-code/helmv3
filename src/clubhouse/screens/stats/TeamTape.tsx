@@ -42,25 +42,25 @@ const PAD = 5;
  * larger than its standard error (`deltaTone`, decision Q4): green better, amber worse, neutral ink and "No clear change"
  * otherwise, the signed change still shown.
  */
-export function TeamTape({ items }: { items: TapeItem[] }) {
+export function TeamTape({ items, against = 'vs previous 10' }: { items: TapeItem[]; /** What a change is against, in the window's words ("vs previous 5"). */ against?: string }) {
   return (
     <ul className="ch-tp" aria-label="Team figures">
       {items.map((it) => (
-        <TapeCell key={it.label} it={it} />
+        <TapeCell key={it.label} it={it} against={against} />
       ))}
     </ul>
   );
 }
 
-function TapeCell({ it }: { it: TapeItem }) {
+function TapeCell({ it, against }: { it: TapeItem; against: string }) {
   const d = it.delta;
   // A figure with no value keeps no caption: "vs previous 10" and the coverage note under an em dash describe a number that is not there.
   const none = it.value === NO_DATA;
   const signal = deltaTone(d, it.se, it.lowerIsBetter);
-  // A change is always against the previous 10 (the loader has one only then); a figure whose caption says something else
+  // A change is always against the previous N (the loader has one only then); a figure whose caption says something else
   // (the Tour's average, "Eagles not counted") keeps that caption on the note line, under the change's words.
-  const words = d != null ? deltaWords(d, signal, 'vs previous 10') : it.context;
-  const note = [d != null && it.context !== 'vs previous 10' ? it.context : null, it.note].filter(Boolean).join(' · ') || undefined;
+  const words = d != null ? deltaWords(d, signal, against) : it.context;
+  const note = [d != null && it.context !== against ? it.context : null, it.note].filter(Boolean).join(' · ') || undefined;
   const vals = it.series.filter((v): v is number => v != null);
   const lo = Math.min(...vals);
   const hi = Math.max(...vals);

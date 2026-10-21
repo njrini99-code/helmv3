@@ -27,7 +27,7 @@ import {
   type ChWindow,
 } from './stats-common';
 import { holeCoverage, holeRounds } from './round-scope';
-import { effectiveWindow, filterFor, hasPrevious, type ChFilter, type ChFilterOptions } from './stats-filter';
+import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe, meanSe, type SpreadKind } from '../lib/stats-signal';
 
@@ -98,6 +98,8 @@ export interface ChTeamStats {
   /** The team's season ("Fall 2026"), beside its name in the head's eyebrow as Roster's; null when the team has none. */
   season?: string | null;
   window: ChWindow;
+  /** How many rounds Last N counts (read with `window: 'last10'`). */
+  last: ChLast;
   /** The round filter in force (the address's), and what its sheet can list: every loaded round of the active players, of either length. */
   filter: ChFilter;
   filterOptions: ChFilterOptions;
@@ -265,7 +267,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // The previous stretch needs three whole rounds with shots, as the window's own figures do.
   const sgPrev = effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null;
   // The reason (or "vs previous 10") reads the whole window; the number compares the same players (Q-112).
-  const sgBase = sgChange(sgTotal, sgPrev, effectiveWindow(f), earlier);
+  const sgBase = sgChange(sgTotal, sgPrev, effectiveWindow(f), earlier, null, f.last);
   const sgPaired = weightedMean(holePaired, (r) => r.strokes_gained_total);
   const sgDelta =
     sgBase.delta != null
@@ -295,11 +297,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
       gauge: { kind: 'sg' },
     },
-    { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? 'vs previous 10' : sample, gauge: { kind: 'par', toPar } },
+    { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
     { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), se: rateSe('greens_hit', 'greens_total'), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
-    { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), se: seOf(puttsOf, holePaired, holePrev, null), lowerIsBetter: true, context: hasPrev ? 'vs previous 10' : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), se: rateSe('scrambles_converted', 'scramble_attempts'), lowerIsBetter: false, context: hasPrev ? 'vs previous 10' : holeSample, note: coverage, gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
+    { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), se: seOf(puttsOf, holePaired, holePrev, null), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'putts' } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), se: rateSe('scrambles_converted', 'scramble_attempts'), lowerIsBetter: false, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
     {
       key: 'birdies',
       series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),
@@ -375,6 +377,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     teamName: teamRes.data?.name ?? 'Your team',
     season: teamRes.data?.season ?? null,
     window: f.window,
+    last: f.last,
     filter: f,
     filterOptions: filterOptions(season.rounds, new Map(players.map((p) => [p.id, fullName(p)]))),
     activeCount: players.length,

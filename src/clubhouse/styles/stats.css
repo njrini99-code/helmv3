@@ -130,8 +130,7 @@
 .ch-loss {
   color: var(--ch-chart-loss);
 }
-.ch-lg__cell .ch-loss,
-.ch-ft__you .ch-loss {
+.ch-lg__cell .ch-loss {
   color: var(--ch-chart-loss-on-tint);
 }
 
@@ -907,102 +906,6 @@
   .ch-ax {
     font-size: 24px;
   }
-}
-.ch-board {
-  display: grid;
-  grid-template-columns: repeat(var(--ch-n, 10), minmax(0, 1fr));
-  gap: 4px;
-  margin-top: 2px;
-}
-.ch-board__c {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-.ch-board__d {
-  font: 500 10.5px/1 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  white-space: nowrap;
-}
-.ch-board__n {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 34px;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 2px rgb(28 25 18 / 0.06);
-  font: 600 16px/1 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-}
-.ch-board__n.is-under {
-  color: var(--ch-chart-flag);
-}
-.ch-board__n.is-even {
-  color: var(--ch-forest-800);
-}
-/* Strokes gained route (design system StrokesGainedRoute). */
-.ch-yb .ch-route {
-  width: 100%;
-  max-width: 360px;
-}
-.ch-route rect.is-pos {
-  fill: var(--ch-green-500);
-}
-.ch-route rect.is-neg {
-  fill: var(--ch-chart-loss);
-}
-.ch-route__v {
-  font: 700 14px var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  fill: var(--ch-ink-500);
-}
-.ch-route__v.is-pos {
-  fill: var(--ch-chart-gain);
-}
-.ch-route__v.is-neg {
-  fill: var(--ch-chart-loss);
-}
-.ch-route__k {
-  font: italic 500 11.5px var(--ch-font-sans);
-  fill: var(--ch-ink-600);
-}
-.ch-ft {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-.ch-ft th {
-  padding: 0 0 10px;
-  font: 500 12px/1 var(--ch-font-sans);
-  color: var(--ch-ink-500);
-  text-align: center;
-}
-.ch-ft th:first-child,
-.ch-ft td:first-child {
-  text-align: left;
-}
-.ch-ft td {
-  height: 44px;
-  border-top: 1px solid rgb(28 25 18 / 0.1);
-  font: 600 14px/1 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-.ch-ft td:first-child {
-  font: 500 13.5px/1.2 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-ink-700);
-}
-.ch-ft__you span {
-  display: inline-grid;
-  place-items: center;
-  min-width: 52px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgb(21 90 57 / 0.07);
 }
 /* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
 .ch-st-grid2 .ch-yb {
@@ -2834,20 +2737,6 @@
   font-style: normal;
   color: var(--ch-text-secondary);
 }
-.ch-ft__g th {
-  padding: 18px 0 8px;
-  border-top: 1px solid rgb(28 25 18 / 0.1);
-  font: 600 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-  text-align: left;
-}
-.ch-ft__floor {
-  display: block;
-  margin-top: 4px;
-  font: var(--ch-type-caption);
-  font-style: normal;
-  color: var(--ch-text-tertiary);
-}
 @container (max-width: 720px) {
   .ch-gx-pars {
     grid-template-columns: minmax(0, 1fr);
@@ -3083,6 +2972,11 @@
   .ch-stm-controls > :first-child .ch-seg__b {
     flex: 1;
     justify-content: center;
+    padding-inline: 8px;
+  }
+  /* The range is Last 5, 10, 20, Season and Qualifiers (and Custom): the three counts drop "Last" here so they fit the row beside the filter. */
+  .ch-stm-controls .ch-sw-last {
+    display: none;
   }
   /* Drawn as tall as the window switch's 40px track, with its 14px radius, so the row's two controls share one edge;
      the shared button reach (controls.css) still takes a 44px tap. */
@@ -3430,7 +3324,6 @@
     font-size: 12px;
   }
   .ch-lg__r--h,
-  .ch-board__d,
   .ch-pf-tag,
   .ch-pf-hero__figs dt,
   .ch-fws__z em,
@@ -3996,7 +3889,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-sgt__team b,
 :where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
 :where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
-:where(html[data-fw-theme='dark']) .ch-board__n.is-even,
 :where(html[data-fw-theme='dark']) .ch-pf-tag,
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'],
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
@@ -4025,17 +3917,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 :where(html[data-fw-theme='dark']) .ch-yb__head {
   border-bottom-color: var(--ch-border-subtle);
-}
-:where(html[data-fw-theme='dark']) .ch-board__n {
-  background: var(--ch-ivory-100);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-elevation-bubble);
-}
-:where(html[data-fw-theme='dark']) .ch-ft td,
-:where(html[data-fw-theme='dark']) .ch-ft__g th {
-  border-top-color: var(--ch-border-subtle);
-}
-:where(html[data-fw-theme='dark']) .ch-ft__you span {
-  background: rgb(107 187 140 / 0.1);
 }
 :where(html[data-fw-theme='dark']) .ch-pg-leader {
   stroke: var(--ch-st-mean-rule);
@@ -6451,7 +6332,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   .ch-st .ch-tr,
   .ch-st .ch-zrow,
   .ch-st .ch-lb__r,
-  .ch-st .ch-ft tr,
   .ch-st .ch-tp__c,
   .ch-st .ch-fm,
   .ch-st .ch-st-card,

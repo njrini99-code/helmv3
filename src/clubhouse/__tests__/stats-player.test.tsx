@@ -1033,7 +1033,7 @@ describe('Stats player · the page', () => {
     const user = userEvent.setup();
     createFocusArea.mockResolvedValue({ success: true });
     show(player());
-    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    screen.getByRole('radio', { name: 'Last 20' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));

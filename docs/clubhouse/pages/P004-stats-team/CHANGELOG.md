@@ -1,5 +1,28 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
+
+```text
+Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals log)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none (wording: switch label, "vs previous N")
+Actions:        none
+Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands cut at the same edges)
+Held items:     none
+```
+
+### Changed
+
+- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers. Last 10 is still the default and
+  leaves the address as it was; Last 5 and Last 20 add `?last=5` or `?last=20`. Everything that said "previous 10"
+  says "previous N" for the cut in force (the tape, the strokes gained chip, the Window figure on the header).
+  Earlier-rounds wording ("Comparing starts at 13 rounds") follows N.
+- Team putting by distance counts its bands from `lib/golf/putt-make.ts` (the cut Fairway, the calculator and
+  CoachHelm share), not a copy. Band edges and counts are unchanged; a test pins it.
+- Removed the unused `FigureCards`, `ScoreBoardTrend`, `LegRoute` and `FieldTable` and their styles (`.ch-board`,
+  `.ch-route`, `.ch-ft`): the figure tape, the round trend, the strokes gained bars and the ranked dot plot
+  replaced them, and nothing imported them.
+
 ## 2026-10-20 — Team ranking dot plot (stats visuals 5)
 
 ```text

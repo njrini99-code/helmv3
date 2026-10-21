@@ -71,13 +71,13 @@ export function RoundsExtra({
   const card = share ? bestCardFields({ ...share, bests: b }) : null;
   const c = x.compare;
   const at = (v: { course: string; date: string } | null) => (v ? `${v.course} · ${v.date}` : null);
-  // Only the newest-ten cut has an earlier window; a date range, picked rounds, the season and the qualifiers have none by design.
+  // Only the newest-N cut has an earlier window; a date range, picked rounds, the season and the qualifiers have none by design.
   const why = hasPrevious(filter)
     ? filter.holes !== '18'
-      ? 'Needs 3 earlier rounds before the newest 10 that match these filters, counting a 9-hole round as half.'
+      ? `Needs 3 earlier rounds before the newest ${filter.last} that match these filters, counting a 9-hole round as half.`
       : isFiltered(filter)
-        ? 'Needs 3 earlier 18-hole rounds: fewer than 13 match these filters.'
-        : 'Comparing starts at 13 rounds: the newest 10 against at least 3 before them.'
+        ? `Needs 3 earlier 18-hole rounds: fewer than ${filter.last + 3} match these filters.`
+        : `Comparing starts at ${filter.last + 3} rounds: the newest ${filter.last} against at least 3 before them.`
     : hasRange(filter)
       ? 'A date range has no earlier window to compare with.'
       : filter.pick?.mode === 'only'

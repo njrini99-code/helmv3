@@ -27,7 +27,7 @@ import {
   type ChWindow,
 } from './stats-common';
 import { holeRounds } from './round-scope';
-import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions } from './stats-filter';
+import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
@@ -146,6 +146,8 @@ export interface ChProfileExtra {
 export interface ChPlayerProfile {
   viewer: ChViewer;
   window: ChWindow;
+  /** How many rounds Last N counts (read with `window: 'last10'`). */
+  last: ChLast;
   /** The round filter in force (the address's), and what its sheet can list: this player's loaded rounds only. */
   filter: ChFilter;
   filterOptions: ChFilterOptions;
@@ -380,7 +382,7 @@ export async function loadPlayerProfile(input: {
   // The change is painted only when it clears its standard error, from both windows' per-18 rounds with strokes gained (Q4).
   const sgOf = (r: ChRound) => r.strokes_gained_total;
   const sgSe = prevList ? windowChangeSe(holeWin, holeRounds(prevList), sgOf, 'sg') : null;
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe);
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe, f.last);
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
@@ -490,6 +492,7 @@ export async function loadPlayerProfile(input: {
     attestingCoach,
     viewer: input.viewer,
     window: f.window,
+    last: f.last,
     filter: f,
     filterOptions: filterOptions(mine),
     id: p.id,
