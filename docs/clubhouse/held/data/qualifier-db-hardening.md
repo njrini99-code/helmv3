@@ -2,7 +2,7 @@
 
 ```text
 Plan ID: HD-qualifier-db-hardening
-Status: HELD
+Status: RELEASED
 Pages: Qualifiers (P009): coach and player list, detail, edit; /my-qualifiers
 Feature: qualifiers (memory/features/qualifiers.md)
 Migration: supabase/migrations/20260929200000_golf_qualifier_db_hardening.sql
@@ -112,3 +112,10 @@ Registered: supabase/migrations/HELD.md, row 20260929200000_golf_qualifier_db_ha
 - [ ] RLS verified
 - [ ] page wiring activated
 - [ ] held status discharged
+
+## Released
+
+Applied to production on 2026-10-21 through the `db-apply` workflow with the
+held override (read-only verification at 14:31Z; the production rollout ledger
+and rollback SQL are in `/prod-rollout`). The status above moved from HELD to
+RELEASED to match.
