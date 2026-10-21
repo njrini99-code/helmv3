@@ -5,6 +5,7 @@ import { chLogServer } from '../lib/track-server';
 import { fullName } from './season';
 import { tourForGender } from './stats-common';
 import { readRoundTypeOptions } from './rounds-type-options';
+import { loadRoundDebrief } from './round-debrief';
 import { currentRoundType, toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChReviewTypeEdit, type ChRoundReview, type ChShotRow } from './round-review-shape';
 
 export type * from './round-review-shape';
@@ -89,23 +90,26 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   if (teamRes.error) log('team', teamRes.error);
 
   const holes = holesRes.error ? [] : toHoles((holesRes.data ?? []) as ChHoleRow[], shotsRes.error ? [] : (shotsRes.data ?? []));
+  const review = toReview(row, {
+    holes,
+    holesError: !!holesRes.error,
+    shotsError: !!shotsRes.error,
+    // No name is a gap the page says (`playerError`), never an invented "Player": a read that failed, and a coach's read that
+    // found no player row, are both that.
+    playerName: playerRes.data ? fullName(playerRes.data) : null,
+    coachView: viewer.role === 'coach',
+    teeYards: teeRes.data?.total_yards ?? null,
+    // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
+    tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
+    teeError: !!teeRes.error,
+    playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
+    tourError: !!teamRes.error,
+  });
+  // CoachHelm chs-30: the player's 30-second debrief (flag `coachhelm_reads_v1_copy`; off, nothing is read and the review is as before).
+  const debrief = await loadRoundDebrief(supabase, review, viewer);
   return {
     kind: 'ok',
     typeEdit: { viewer: viewer.role, current: currentRoundType(row), options: typeOptions },
-    review: toReview(row, {
-      holes,
-      holesError: !!holesRes.error,
-      shotsError: !!shotsRes.error,
-      // No name is a gap the page says (`playerError`), never an invented "Player": a read that failed, and a coach's read that
-      // found no player row, are both that.
-      playerName: playerRes.data ? fullName(playerRes.data) : null,
-      coachView: viewer.role === 'coach',
-      teeYards: teeRes.data?.total_yards ?? null,
-      // Without the team's row the tour is unknown and no baseline is claimed (as on Stats, CH-4210); a read that failed says so.
-      tour: teamRes.data ? tourForGender(teamRes.data.gender) : null,
-      teeError: !!teeRes.error,
-      playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
-      tourError: !!teamRes.error,
-    }),
+    review: debrief ? { ...review, debrief } : review,
   };
 }

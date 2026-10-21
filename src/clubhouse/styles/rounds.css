@@ -1543,6 +1543,46 @@ a.ch-rd-sc:focus-visible {
   font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   text-wrap: pretty;
 }
+/* CoachHelm's 30-second debrief (chs-30): the recap's panel, its four lines as label and text. */
+.ch-rv-debrief__l {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+.ch-rv-debrief__l > div {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+}
+.ch-rv-debrief__l dt {
+  font: 600 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+}
+.ch-rv-debrief__l dd {
+  margin: 0;
+  font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  text-wrap: pretty;
+}
+.ch-rv-debrief__l dd b {
+  font-weight: 600;
+}
+.ch-rv-debrief__why {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-hero-mint);
+  text-decoration: none;
+}
+.ch-rv-debrief__why:focus-visible {
+  outline: 2px solid var(--ch-hero-mint);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
 .ch-rv-notes p {
   margin: 0;
   padding: 0 20px 18px;
@@ -1923,6 +1963,31 @@ a.ch-rd-sc:focus-visible {
   }
   .ch-rv.is-phone .ch-rv-recap p {
     color: var(--ch-text-secondary);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l dt {
+    color: var(--ch-text-tertiary);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l dd {
+    color: var(--ch-text-secondary);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l dd b {
+    color: var(--ch-text-primary);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-good {
+    color: var(--ch-chart-gain);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__l dd b.is-bad {
+    color: var(--ch-chart-loss);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__why {
+    color: var(--ch-green-600);
+  }
+  .ch-rv.is-phone .ch-rv-debrief__why:focus-visible {
+    outline-color: var(--ch-green-600);
   }
 
   /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
