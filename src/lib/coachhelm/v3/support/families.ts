@@ -17,15 +17,34 @@
  * which is the proportion test's own (`MIN_PUTTS_PER_SIDE`, 02 §7 #7). Every
  * two-arm contrast also needs at least {@link MIN_ARM} in each arm.
  *
+ * The six Slice 5a insight angles (Slice 1c) are matched by metric before any
+ * insight-type match, and take their floors, κ and cap from the angle
+ * registry (`ANGLE_FAMILIES`), never from `FAMILY_FLOORS` (see
+ * {@link angleDef}).
+ *
  * Pure data.
  */
 import { FAMILY_FLOORS, MIN_ROUNDS_PER_READ } from '@/lib/coachhelm/v3/engine/read-floor-table';
 import { MIN_PUTTS_PER_SIDE } from '@/lib/coachhelm/v3/stats/proportion-test';
+import {
+  ANGLE_FAMILIES,
+  type AngleFamilyId,
+  type AngleSampleUnit,
+} from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import type { LadderRung } from './ladder';
 import { KAPPA } from './shrink';
 
 export type FamilyShape = 'proportion' | 'two_proportion' | 'mean' | 'rate_per_round' | 'untestable';
-export type CountUnit = 'attempts' | 'opportunities' | 'rounds' | 'shots';
+export type CountUnit = 'attempts' | 'opportunities' | 'rounds' | 'shots' | AngleSampleUnit;
+
+/** One arm of a two-arm contrast and its floor. */
+export interface ArmFloor {
+  /** The arm's name in reports (and its `evidence.detail` key unless `read` is given). */
+  key: string;
+  min: number;
+  /** Reads the arm count from `evidence.detail` when it is not a flat key. */
+  read?: (detail: Record<string, unknown>) => unknown;
+}
 
 export interface FamilyDef {
   family: string;
@@ -43,7 +62,7 @@ export interface FamilyDef {
    * Per-arm floors of a two-arm contrast, read from `evidence.detail[key]`
    * (each at least {@link MIN_ARM}). A missing arm count fails its floor.
    */
-  arms?: ReadonlyArray<{ key: string; min: number }>;
+  arms?: ReadonlyArray<ArmFloor>;
   kappa: number;
   cap: LadderRung;
   /** The row's `standing.team_avg` measures the same quantity as `your_value`. */
@@ -63,6 +82,27 @@ export interface FamilyDef {
    * strokes estimate of its own.
    */
   strokesPerGapUnit?: number;
+  /**
+   * A Slice 5a insight angle (`ANGLE_FAMILIES`). The row carries its own test
+   * input in `evidence.detail.gap_input` (the {@link GapInput} shape), so the
+   * candidate reads that instead of re-deriving it.
+   */
+  angle?: AngleFamilyId;
+  /**
+   * The generator names the worse of the player's own two sides from the
+   * same data the test judges (tee miss left vs right, approach miss short vs
+   * long). The row only ever claims that side is worse, but the side itself
+   * was picked from the data, so BH gets the two-sided p (1b, blocker 1).
+   */
+  sidePickedFromData?: boolean;
+  /** Shrink a two-arm mean contrast by the harmonic n of its arms (1b finding 6). */
+  shrinkByArms?: boolean;
+  /**
+   * `n` is the two arms together, not `sample_n`: the row's `sample_n` counts
+   * one arm only (rough execution writes rough approaches), while the angle
+   * registry's floor counts both sides of a contrast.
+   */
+  nFromArms?: boolean;
 }
 
 /** Smallest arm of any two-arm contrast (02 §7: 6 + 6 for the pressure split). */
@@ -114,7 +154,98 @@ function teeFloors(): Floors {
   };
 }
 
-const DEFS: ReadonlyArray<FamilyDef & { match: (insightType: string, metric: string) => boolean }> = [
+type MatchedDef = FamilyDef & { match: (insightType: string, metric: string) => boolean };
+
+function obj(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+}
+
+/**
+ * `detail.sides[detail[sideKey]].costed`: the costed misses on the side the
+ * row names (`worse_side` or `better_side`) in the tee-miss and approach-miss
+ * angles.
+ */
+function costedOnSide(sideKey: 'worse_side' | 'better_side') {
+  return (detail: Record<string, unknown>): unknown => {
+    const side = detail[sideKey];
+    return typeof side === 'string' ? obj(obj(detail.sides)?.[side])?.costed : undefined;
+  };
+}
+
+/**
+ * A Slice 5a angle family, straight from {@link ANGLE_FAMILIES}: matched by
+ * `evidence.metric` alone (two angles share insight type `tee`, and every
+ * angle's insight type is shared with an older generator), floors, κ and cap
+ * as the generator declares them. Angle rows read under `angle:<family>`
+ * (`angle-generator.ts`), which `FAMILY_FLOORS` deliberately does not list,
+ * so the floors come from the angle registry, not the 0b table. `floor` and
+ * `n` count both sides of a contrast together (the `ANGLE_FAMILIES`
+ * convention); each side is held to `per_side_floor` as an arm.
+ */
+function angleDef(id: AngleFamilyId, extra: Partial<FamilyDef> = {}): MatchedDef {
+  const a = ANGLE_FAMILIES[id];
+  return {
+    family: id,
+    angle: id,
+    match: (_t, m) => m === a.metric,
+    shape: a.gap_kind,
+    nUnit: a.sample_unit,
+    floor: a.floor,
+    roundFloor: Math.max(MIN_ROUNDS_PER_READ, a.round_floor),
+    floorsKey: `angle:${id}`,
+    kappa: a.kappa.value,
+    cap: a.cap,
+    // The benchmark is the one the row's own gap input names.
+    teamBenchmark: false,
+    // Every angle writes a row only when the player is on the worse side
+    // (z >= 1.645 that way), so the family claims the weak side alone.
+    allowStrength: false,
+    ...extra,
+  };
+}
+
+/** Per-side floor of a two-arm angle, never below {@link MIN_ARM}. */
+function angleArm(id: AngleFamilyId): number {
+  return Math.max(MIN_ARM, ANGLE_FAMILIES[id].per_side_floor ?? MIN_ARM);
+}
+
+/** The six angle families (Slice 5a, #2229), ahead of every insight-type match. */
+const ANGLE_DEFS: readonly MatchedDef[] = [
+  angleDef('three_putt_chain'),
+  angleDef('bad_day_floor'),
+  angleDef('lie_rough_execution', {
+    // Band-held fairway vs rough approaches (8+ each in every tested band).
+    arms: [
+      { key: 'rough_shots', min: angleArm('lie_rough_execution') },
+      { key: 'fairway_shots', min: angleArm('lie_rough_execution') },
+    ],
+    // `sample_n` is rough approaches only (`toLieAggregate`); the family
+    // floor counts both sides, so n is rough + fairway, and the contrast
+    // shrinks by the arms' harmonic n like the other two-arm angles.
+    nFromArms: true,
+    shrinkByArms: true,
+  }),
+  angleDef('lie_fairway_exposure'),
+  angleDef('tee_miss_cost', {
+    arms: [
+      { key: 'worse_side_costed', min: angleArm('tee_miss_cost'), read: costedOnSide('worse_side') },
+      { key: 'better_side_costed', min: angleArm('tee_miss_cost'), read: costedOnSide('better_side') },
+    ],
+    sidePickedFromData: true,
+    shrinkByArms: true,
+  }),
+  angleDef('approach_miss_compass', {
+    arms: [
+      { key: 'worse_side_costed', min: angleArm('approach_miss_compass'), read: costedOnSide('worse_side') },
+      { key: 'better_side_costed', min: angleArm('approach_miss_compass'), read: costedOnSide('better_side') },
+    ],
+    sidePickedFromData: true,
+    shrinkByArms: true,
+  }),
+];
+
+const DEFS: readonly MatchedDef[] = [
+  ...ANGLE_DEFS,
   {
     family: 'putt_distance',
     match: (t, m) => t === 'putt_distance' || m.startsWith('putts_made_'),
@@ -288,8 +419,9 @@ const UNKNOWN: FamilyDef = {
 export function familyFor(insightType: string | null | undefined, metric: string | null | undefined): FamilyDef {
   const t = insightType ?? '';
   const m = metric ?? '';
-  // Metric-specific families first (slope rows are written as insight_type 'putt_bias').
-  const byMetric = DEFS.find((d) => d.family === 'putt_slope' && d.match(t, m));
+  // Metric-specific families first: the angles (they share insight types with
+  // older generators), then slope rows (written as insight_type 'putt_bias').
+  const byMetric = DEFS.find((d) => (d.angle !== undefined || d.family === 'putt_slope') && d.match(t, m));
   if (byMetric) return byMetric;
   return DEFS.find((d) => d.match(t, m)) ?? UNKNOWN;
 }

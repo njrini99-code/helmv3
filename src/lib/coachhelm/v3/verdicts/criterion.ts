@@ -22,7 +22,7 @@
  */
 import { Z_ONE_SIDED_90 } from './bounds';
 import type { VerdictMetricDef } from './metrics';
-import { keptShare, shrinkToward } from './shrink-baseline';
+import { keptShare, shrinkToward } from '@/lib/coachhelm/v3/support/shrink';
 
 /**
  * Smallest worthwhile change for a make rate when the team spread is not
