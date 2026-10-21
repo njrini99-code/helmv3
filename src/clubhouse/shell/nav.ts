@@ -128,6 +128,8 @@ export const CH_NAV = CH_NAV_COACH;
 export function routeLabel(pathname: string): string | null {
   const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0];
   if (!seg) return null;
+  // A name an apostrophe makes: the slug cannot carry it.
+  if (seg === 'whats-new') return 'What’s new';
   const words = seg.split('-').join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }

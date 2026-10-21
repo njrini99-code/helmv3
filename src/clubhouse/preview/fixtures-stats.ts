@@ -701,3 +701,14 @@ export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
   rounds: [],
   stats: null,
 };
+
+/** The player's own page with two of CoachHelm's suggested goals waiting to be answered (Goals, par-19). */
+export const PREVIEW_PLAYER_SUGGESTED: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  viewer: 'player',
+  nav: null,
+  goalSuggestions: [
+    { id: 'gs1', metric: 'sg_putting', target: 0.3, days: 30 },
+    { id: 'gs2', metric: 'approach_proximity', target: 32, days: 60 },
+  ],
+};

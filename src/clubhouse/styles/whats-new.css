@@ -17,3 +17,13 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* The time is the row's lead: one width for every time ("9:20 AM", "10:05 AM"), so the titles line up, and titles wrap. */
+.ch-wn .ch-lgr__lead {
+  min-width: 68px;
+}
+.ch-wn .ch-lgr__title {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
