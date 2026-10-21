@@ -57,6 +57,29 @@ describe('rank_factors on exposure rows (Slice 1, flag coachhelm_support_v1)', (
     expect(f.R).toBe(0.65);
   });
 
+  it('leaves a strength out of S when its strokes are the row Tour cost (Slice 1b, finding 7)', () => {
+    const ctx = { score: 1, position: 0, surface: 'coach_feed' };
+    const tourCost = rankFactorsFromEvidence(
+      { ladder: 'observed', strokes_shrunk: 0.9, support: { direction: 'strength', strokes_basis: 'row' } },
+      ctx,
+    )!;
+    expect(tourCost.S).toBeNull();
+    expect(tourCost.S_excluded).toBe('strength_tour_cost');
+    // Strokes derived from the gap itself are on the gap's benchmark: kept.
+    const fromGap = rankFactorsFromEvidence(
+      { ladder: 'observed', strokes_shrunk: 0.9, support: { direction: 'strength', strokes_basis: 'gap' } },
+      ctx,
+    )!;
+    expect(fromGap.S).toBe(0.9);
+    expect(fromGap).not.toHaveProperty('S_excluded');
+    // A weakness keeps its strokes either way.
+    expect(rankFactorsFromEvidence({ ladder: 'observed', strokes_shrunk: 0.9, support: { direction: 'weakness', strokes_basis: 'row' } }, ctx)!.S).toBe(0.9);
+  });
+
+  it('ignores an inherited key as a rung', () => {
+    expect(rankFactorsFromEvidence({ ladder: 'toString' }, { score: 1, position: 0, surface: 'x' })).toBeNull();
+  });
+
   it('uses the 03 §2.2 rung weights', () => {
     expect(RUNG_WEIGHT).toEqual({
       seen_repeatedly: 1,

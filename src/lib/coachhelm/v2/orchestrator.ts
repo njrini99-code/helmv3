@@ -37,6 +37,7 @@ import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
 import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy';
+import { insightAngleGenerators } from '@/lib/coachhelm/v3/generators/insight-angles';
 
 // W28: composite-rule synthesis runs after Tier-1 generators finish so
 // rules can detect cross-insight patterns in this round's freshly-written
@@ -446,6 +447,10 @@ class CoachHelmIntelligence {
       // v3 — tee strategy (W43; gated by per-team toggle in
       // golf_team_coachhelm_settings.preferences.tee_strategy_enabled)
       { name: 'v3.teeStrategy',  fn: () => new TeeStrategyGenerator(playerId).run() },
+      // v3 — insight angles (CoachHelm Slice 5a, ported from PR #2073).
+      // Behind coachhelm_insight_angles_v1 (default OFF): with the flag off
+      // this spreads nothing and no angle generator runs.
+      ...insightAngleGenerators(playerId),
       // v2 (still deferred — worst-holes pattern rework planned post-launch)
       { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];
@@ -569,7 +574,13 @@ class CoachHelmIntelligence {
     // each row's evidence, plus one run-log row. Off → never entered, nothing
     // read or written. Failure-isolated inside runSupportPass.
     if (supportEnabled && runCollector) {
-      await runSupportPass({ playerId, insightIds: runCollector.ids(), trigger: options.runTrigger });
+      await runSupportPass({
+        playerId,
+        insightIds: runCollector.ids(),
+        gated: runCollector.gated().map((g) => ({ id: `gated:${g.signature}`, insight_type: g.insight_type, evidence: g.evidence })),
+        refused: runCollector.refused(),
+        trigger: options.runTrigger,
+      });
     }
 
     // Extract features for the legacy pipeline

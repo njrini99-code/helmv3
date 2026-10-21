@@ -142,6 +142,10 @@ GRANT ALL ON TABLE "public"."golf_coachhelm_llm_calls" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_coachhelm_llm_calls" TO "service_role";
 
+GRANT SELECT ON TABLE "public"."golf_coachhelm_player_state" TO "authenticated";
+
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE "public"."golf_coachhelm_player_state" TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_coachhelm_settings" TO "anon";
 
 GRANT ALL ON TABLE "public"."golf_coachhelm_settings" TO "authenticated";
