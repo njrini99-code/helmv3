@@ -179,6 +179,20 @@ test('Team Hub: a player acknowledges the announcement', async ({ page }) => {
     .toBe(true);
 });
 
+/**
+ * Fill a field and make sure the value stays. The server HTML is typeable before React hydrates, and hydration puts a
+ * controlled input back to its saved value, so a fill made in that gap is wiped. WebKit hit it (2026-10-21, run
+ * 39617783087): First name stayed "Theo" while Last name, filled later, saved. Fill again until the value holds.
+ */
+async function fillAndHold(input: Locator, value: string) {
+  await expect(async () => {
+    await input.fill(value);
+    await expect(input).toHaveValue(value);
+    await input.page().waitForTimeout(300);
+    await expect(input).toHaveValue(value);
+  }).toPass({ timeout: 30_000 });
+}
+
 /** The save landed: main greys Save changes out; #2202's Settings removes its save bar once nothing is unsaved. */
 async function saveSettled(section: Locator) {
   const save = section.getByRole('button', { name: 'Save changes', exact: true });
@@ -190,7 +204,7 @@ test('Settings: a coach changes their name', async ({ page }) => {
   await signIn(page, coach());
   await open(page, '/golf/dashboard/settings');
   const profile = page.getByRole('region', { name: 'Profile' });
-  await profile.getByRole('textbox', { name: 'Full name' }).fill(name);
+  await fillAndHold(profile.getByRole('textbox', { name: 'Full name' }), name);
   await profile.getByRole('button', { name: 'Save changes', exact: true }).click();
   await saveSettled(profile);
   await expect.poll(async () => (await sql<{ n: string }>('select full_name as n from golf_coaches where id = $1', [team.coach.coachId]))[0]?.n).toBe(name);
@@ -200,8 +214,8 @@ test('Settings: a player changes their name', async ({ page }) => {
   await signIn(page, player());
   await open(page, '/golf/dashboard/settings');
   const profile = page.getByRole('region', { name: 'Profile' });
-  await profile.getByRole('textbox', { name: 'First name' }).fill('Theodore');
-  await profile.getByRole('textbox', { name: 'Last name' }).fill('Marsh-Ellery');
+  await fillAndHold(profile.getByRole('textbox', { name: 'First name' }), 'Theodore');
+  await fillAndHold(profile.getByRole('textbox', { name: 'Last name' }), 'Marsh-Ellery');
   await profile.getByRole('button', { name: 'Save changes', exact: true }).click();
   await saveSettled(profile);
   await expect
