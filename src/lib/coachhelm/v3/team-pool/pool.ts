@@ -10,8 +10,12 @@
  *
  * Rules (owner defaults, `03` §5.2 and the slice brief):
  *   - the player's own attempts are never in their pool;
- *   - only countable, non-test rounds count (`isCountableRound`), inside the
- *     read's window;
+ *   - only non-test rounds inside the read's window count. Each family takes
+ *     its attempts from the same rounds the player's value does
+ *     (`roundRuleFor`): every completed round for approach green-hit and sand
+ *     save (`loadApproachShots` / `loadSandShots`), countable rounds
+ *     (`isCountableRound`) for the rest. The roster and teammate floors
+ *     always count countable rounds;
  *   - privacy: at least 5 rostered players with a countable round in the
  *     window (the player included), or no team line, so a pool never stands
  *     for one identifiable teammate on a tiny roster;
@@ -133,6 +137,13 @@ export interface TeamPool {
   unit: InsightUnit;
   /** Teammates whose attempts are in the pool. */
   players: number;
+  /**
+   * The pool's statistical exposure for a per-round rate: scored holes ÷ 18,
+   * the denominator `value` is scaled by. `n` stays the rounds counted (what
+   * the line says); nine-hole rounds make the two differ. Absent for attempt
+   * families, where `n` is the exposure.
+   */
+  exposure_rounds?: number;
   window_start: string | null;
   window_end: string;
 }
@@ -272,6 +283,25 @@ export function countableRoundsInWindow(player: PoolPlayer, w: PoolWindow): Pool
   );
 }
 
+/**
+ * Which rounds a family's attempts come from: the rule the player's own value
+ * uses, so the pool and `your_value` measure the same thing. The approach and
+ * sand reads load every completed, non-test round (`loadApproachShots`,
+ * `loadSandShots` in `engine/shot-source.ts`); the others read countable
+ * rounds.
+ */
+export type PoolRoundRule = 'completed' | 'countable';
+
+export function roundRuleFor(family: TeamPoolFamily): PoolRoundRule {
+  return family.startsWith('approach_green_hit:') || family === 'sand_save' ? 'completed' : 'countable';
+}
+
+/** A player's rounds a family's attempts come from (the loader reads completed rounds only). */
+export function familyRoundsInWindow(player: PoolPlayer, w: PoolWindow, rule: PoolRoundRule): PoolRound[] {
+  if (rule === 'countable') return countableRoundsInWindow(player, w);
+  return player.rounds.filter((r) => r.is_test !== true && typeof r.round_date === 'string' && inWindow(r.round_date, w));
+}
+
 function roundTo(v: number, dp: number): number {
   const f = 10 ** dp;
   return Math.round(v * f) / f;
@@ -288,7 +318,12 @@ export function computeTeamPool(input: {
   window: PoolWindow;
 }): TeamPoolOutcome {
   const { players, playerId, family, window } = input;
-  const byPlayer = players.map((p) => ({ id: p.player_id, rounds: countableRoundsInWindow(p, window) }));
+  const rule = roundRuleFor(family);
+  const byPlayer = players.map((p) => ({
+    id: p.player_id,
+    rounds: countableRoundsInWindow(p, window),
+    familyRounds: familyRoundsInWindow(p, window, rule),
+  }));
   const withRounds = byPlayer.filter((p) => p.rounds.length > 0).length;
   if (withRounds < TEAM_POOL_MIN_ROSTER) return { kind: 'none', reason: 'privacy_roster' };
 
@@ -304,7 +339,7 @@ export function computeTeamPool(input: {
   for (const t of teammates) {
     let pDen = 0;
     let pRounds = 0;
-    for (const r of t.rounds) {
+    for (const r of t.familyRounds) {
       const tally = tallyRound(r, family);
       num += tally.num;
       pDen += tally.den;
@@ -334,6 +369,7 @@ export function computeTeamPool(input: {
       n_noun: meta.n_noun,
       unit: meta.unit,
       players: contributing,
+      ...(meta.n_unit === 'rounds' ? { exposure_rounds: roundTo(den / 18, 2) } : {}),
       window_start: window.start,
       window_end: window.end,
     },
@@ -373,8 +409,11 @@ function day(value: string | null | undefined): string | null {
 
 /**
  * Pure: the pool window for a read. The read's own window: `window_end` (today
- * when empty) back to `window_start`, else `window_days` before the end, else
- * the beginning (a lifetime value with no start).
+ * when empty) back to `window_start`, else the `window_days` days ending on
+ * `window_end`, both ends included (a stamped span such as
+ * `lifetimeSpanDays` counts both endpoints: Jan 1 to Jan 10 is 10 days), else
+ * the beginning (a lifetime value with no start). A rolling generator's
+ * window always carries its own start (`rollingWindowEvidence`).
  */
 export function poolWindowFor(
   evidence: Pick<InsightEvidence, 'window_start' | 'window_end' | 'window_days' | 'window_basis'>,
@@ -385,7 +424,7 @@ export function poolWindowFor(
   if (start) return { start, end };
   const days = Number(evidence.window_days);
   if (evidence.window_basis !== 'lifetime' && Number.isFinite(days) && days > 0) {
-    const s = new Date(Date.parse(`${end}T00:00:00Z`) - days * 86400_000).toISOString().slice(0, 10);
+    const s = new Date(Date.parse(`${end}T00:00:00Z`) - (days - 1) * 86400_000).toISOString().slice(0, 10);
     return { start: s, end };
   }
   return { start: null, end };
@@ -402,6 +441,7 @@ export function teamPoolLine(pool: TeamPool): ComparisonLine {
     n_unit: pool.n_unit,
     n_noun: pool.n_noun,
     players: pool.players,
+    ...(pool.exposure_rounds !== undefined ? { exposure_rounds: pool.exposure_rounds } : {}),
     window_start: pool.window_start,
     window_end: pool.window_end,
   };

@@ -117,6 +117,21 @@ describe('loadTeamPoolPlayers', () => {
     expect(three).toMatchObject({ kind: 'pool', pool: { n: 360, value: 5.6 } });
   });
 
+  it("loads completed rounds that are not countable too (the approach and sand pools use them, as the player's value does)", async () => {
+    const t = fixture();
+    t.golf_rounds.push({
+      id: 't1-partial', player_id: 't1', round_date: '2026-09-25', status: 'completed', is_test: false,
+      holes_played: 18, total_score: 40, front_nine: 40, back_nine: null, total_putts: 18,
+    });
+    t.golf_shots.push({ id: 'a-partial', round_id: 't1-partial', shot_type: 'approach', distance_to_hole_before: 150, distance_unit_before: 'yards', distance_to_hole_after: 20, result: 'green', lie_after: 'green', putt_made: null });
+    const players = await loadTeamPoolPlayers(fakeSupabase(t), 'team-1', NOW);
+    const partial = players!.find((p) => p.player_id === 't1')!.rounds.find((r) => r.id === 't1-partial');
+    expect(partial?.approaches).toHaveLength(1);
+    // The putt pool still counts countable rounds only: unchanged at 600.
+    const out = computeTeamPool({ players: players!, playerId: 'me', family: 'putt_make:3_5ft', window: { start: '2026-09-01', end: '2026-10-15' } });
+    expect(out).toMatchObject({ kind: 'pool', pool: { n: 600 } });
+  });
+
   it('pages past the 1,000-row cap', async () => {
     // 6 players × 4 rounds × 31 shots = 744 putting + approach rows; 8 rounds each → 1,488.
     const players = await loadTeamPoolPlayers(fakeSupabase(fixture(5, 8)), 'team-1', NOW);

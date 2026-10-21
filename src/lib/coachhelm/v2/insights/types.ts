@@ -303,6 +303,9 @@ export interface ComparisonLine {
   n_noun?: string;
   /** Teammates pooled (never who): a team_pool line only. */
   players?: number;
+  /** A per-round team_pool line's exposure (scored holes ÷ 18), which the
+   *  support test uses as the pool's sample; `n` is the rounds it says. */
+  exposure_rounds?: number;
   /** The days the pool covered (YYYY-MM-DD); a team_pool line only. */
   window_start?: string | null;
   window_end?: string;

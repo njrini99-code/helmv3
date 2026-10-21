@@ -4,8 +4,11 @@ import {
   TEAM_POOL_FAMILIES,
   computeTeamPool,
   familyForRead,
+  familyRoundsInWindow,
   poolWindowFor,
   puttBandOf,
+  roundRuleFor,
+  teamPoolLine,
   tallyRound,
   withTeamComparison,
   type PoolHole,
@@ -163,6 +166,68 @@ describe('computeTeamPool', () => {
     expect(pool.value).toBe(1);
     expect(pool.n).toBe(12);
     expect(pool.n_unit).toBe('rounds');
+    // 12 full rounds: the exposure is the same 12.
+    expect(pool.exposure_rounds).toBe(12);
+  });
+
+  it('penalties per round: the exposure is scored holes / 18, not the rounds named (nine-hole rounds)', () => {
+    // 4 teammates × 3 rounds with only the front nine scored, 1 penalty each.
+    const players = team(4, 3, {});
+    for (const t of players.slice(1)) {
+      t.rounds = t.rounds.map((r) => ({
+        ...r,
+        holes: r.holes.map((h, i) => (i >= 9 ? { ...h, score: null } : i === 0 ? { ...h, penalty_strokes: 1 } : h)),
+      }));
+    }
+    const out = computeTeamPool({ players, playerId: 'me', family: 'penalty_rate', window: WINDOW });
+    const pool = (out as { pool: TeamPool }).pool;
+    // 12 penalties over 108 holes = 2.0 per 18; the line still says 12 rounds,
+    // but the sample behind the rate is 6 rounds' worth of holes.
+    expect(pool.value).toBe(2);
+    expect(pool.n).toBe(12);
+    expect(pool.exposure_rounds).toBe(6);
+    expect(teamPoolLine(pool)).toMatchObject({ n: 12, exposure_rounds: 6 });
+    // Attempt families carry no separate exposure.
+    const putts = computeTeamPool({ players: team(4), playerId: 'me', family: 'putt_make:3_5ft', window: WINDOW });
+    expect(putts.kind === 'pool' && putts.pool.exposure_rounds).toBeUndefined();
+  });
+
+  it("approach and sand pools use every completed round, as the player's own value does; putts keep countable rounds", () => {
+    // Each teammate: 3 countable rounds plus 2 completed rounds that are not
+    // countable (no back nine recorded). Floors still count countable rounds.
+    const players: PoolPlayer[] = [
+      player('me', 5),
+      ...Array.from({ length: 4 }, (_, i) => ({
+        player_id: `t${i}`,
+        rounds: [
+          ...player(`t${i}`, 3).rounds,
+          round('2026-09-20', { back_nine: null }),
+          round('2026-09-21', { back_nine: null }),
+        ],
+      })),
+    ];
+    expect(roundRuleFor('approach_green_hit:125_175ft')).toBe('completed');
+    expect(roundRuleFor('sand_save')).toBe('completed');
+    expect(roundRuleFor('putt_make:3_5ft')).toBe('countable');
+    expect(roundRuleFor('penalty_rate')).toBe('countable');
+    // Putts: 4 × 3 countable rounds × 10 = 120.
+    const putts = computeTeamPool({ players, playerId: 'me', family: 'putt_make:3_5ft', window: WINDOW });
+    expect(putts.kind === 'pool' && putts.pool.n).toBe(120);
+    // Approaches and sand read all 5 completed rounds of each teammate.
+    const rounds = familyRoundsInWindow(players[1]!, WINDOW, 'completed');
+    expect(rounds).toHaveLength(5);
+    expect(familyRoundsInWindow(players[1]!, WINDOW, 'countable')).toHaveLength(3);
+    // Sand: a bunker hole only on the uncountable rounds still counts.
+    for (const t of players.slice(1)) {
+      t.rounds = t.rounds.map((r) =>
+        r.back_nine === null ? { ...r, holes: r.holes.map((h) => ({ ...h, sand_save: true })) } : r,
+      );
+    }
+    const sand = computeTeamPool({ players, playerId: 'me', family: 'sand_save', window: WINDOW });
+    // 4 teammates × 2 rounds × 18 bunker holes = 144, all saved.
+    expect(sand.kind === 'pool' && sand.pool).toMatchObject({ n: 144, value: 100, players: 4 });
+    // Test rounds stay out under either rule.
+    expect(familyRoundsInWindow({ player_id: 'x', rounds: [round('2026-09-10', { is_test: true })] }, WINDOW, 'completed')).toHaveLength(0);
   });
 
   it('par scoring: mean strokes per par-N hole', () => {
@@ -227,9 +292,15 @@ describe('familyForRead', () => {
 
 describe('poolWindowFor', () => {
   const now = new Date('2026-10-20T12:00:00Z');
+  it('counts window_days with both ends included, as lifetimeSpanDays does', () => {
+    // Jan 1 to Jan 10 is a 10-day span; the pool must not reach back to Dec 31.
+    expect(poolWindowFor({ window_start: '', window_end: '2026-01-10', window_days: 10 }, now)).toEqual({ start: '2026-01-01', end: '2026-01-10' });
+    expect(poolWindowFor({ window_start: '', window_end: '2026-01-10', window_days: 1 }, now)).toEqual({ start: '2026-01-10', end: '2026-01-10' });
+  });
+
   it('uses the stamped bounds, else window_days back from the end, else from the beginning', () => {
     expect(poolWindowFor({ window_start: '2026-08-01', window_end: '2026-10-10', window_days: 70 }, now)).toEqual({ start: '2026-08-01', end: '2026-10-10' });
-    expect(poolWindowFor({ window_start: '', window_end: '2026-10-10', window_days: 10 }, now)).toEqual({ start: '2026-09-30', end: '2026-10-10' });
+    expect(poolWindowFor({ window_start: '', window_end: '2026-10-10', window_days: 10 }, now)).toEqual({ start: '2026-10-01', end: '2026-10-10' });
     expect(poolWindowFor({ window_start: '', window_end: '', window_days: 0, window_basis: 'lifetime' }, now)).toEqual({ start: null, end: '2026-10-20' });
   });
 });

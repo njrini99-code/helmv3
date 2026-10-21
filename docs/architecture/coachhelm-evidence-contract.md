@@ -2163,12 +2163,18 @@ The module also pools three-putts per putted hole, GIR and scrambling on
 missed greens, which no single-metric read carries today.
 
 - **Pooled attempts, not a median.** The pool sums the attempts of the
-  teammates in the read's own window (`poolWindowFor`; a rolling generator's
-  `rollingWindowDays` window), on the same definitions the player's value
+  teammates in the read's own window (`poolWindowFor`: the stamped bounds, a
+  rolling generator's `rollingWindowDays` window, or the `window_days` days
+  ending on `window_end` with both ends included, as `lifetimeSpanDays`
+  counts them), on the same definitions the player's value
   uses (putt bands and the made rule of `update_player_putt_make_pct`,
   approach bands of `bucketApproachDistance`, `approachFoundGreen`).
-- **Countable, non-test rounds only** (`isCountableRound`), and never the
-  player's own.
+- **The player's own round rule, non-test rounds only**, and never the
+  player's own attempts. Approach green-hit and sand save pool every
+  completed round, as `loadApproachShots` and `loadSandShots` do for the
+  player's value; the other families pool countable rounds
+  (`isCountableRound`). `roundRuleFor` in `pool.ts` holds the rule. The
+  roster and teammate floors below always count countable rounds.
 - **Floors.** At least 5 rostered players with a countable round in the
   window (privacy, `03` §5.2), at least 4 teammates with 3 or more countable
   rounds (only they contribute), at least 4 of them with attempts in the
@@ -2176,10 +2182,14 @@ missed greens, which no single-metric read carries today.
   rate). Below any floor there is no team line; there is no program pool
   (open owner question, default no).
 - **Shape.** `ComparisonLine = { source, label, value, n, unit, n_unit?,
-  n_noun?, players?, window_start?, window_end?, citation? }`. `primary` is
+  n_noun?, players?, exposure_rounds?, window_start?, window_end?,
+  citation? }`. `primary` is
   the `team_pool` line ("Team pool"); `lines` is the team line, then the
   Tour (`source: 'tour'`, the flat comparison) when the flat comparison is a
   `pga_baseline`. `players` is how many teammates were pooled, never who.
+  `exposure_rounds` (the per-round penalty line only) is scored holes ÷ 18,
+  the denominator the value is scaled by; `n` stays the rounds the line
+  names, so nine-hole rounds make the two differ.
 - **A composed comparison stays.** A read that already wrote its own
   `comparison` (the Slice 5a insight angles, whose `primary` matches their
   own gap test) keeps its `primary` and every line; the team line is added
@@ -2196,7 +2206,7 @@ missed greens, which no single-metric read carries today.
   line reads as before.
 - **Loader.** `v3/team-pool/loader.ts`: one batched read per team (roster,
   test players, completed non-test rounds over 730 days, then the holes and
-  the putting and approach shots of the countable ones), with the service
+  the putting and approach shots of all of them), with the service
   client the generators already use, `.in()` chunked and paged past the
   1,000-row cap, memoised for 5 minutes per team. Any read error is logged
   (`coachhelm.v3.teamPool.load`) and the read keeps its Tour comparison.
@@ -2205,7 +2215,9 @@ missed greens, which no single-metric read carries today.
   a read's team pool line as μ (`shrink.prior_source: 'team_pool'`,
   `prior_value` = the pool value, in the row's own scale). For a one-sample
   test (a rate against a benchmark, or a count per round) the pool is also
-  the benchmark, with its pooled count as the benchmark's own sample
+  the benchmark, with its pooled count as the benchmark's own sample (for
+  the per-round penalty rate, `exposure_rounds`; a line without it is the
+  prior only)
   (`support.benchmark_basis: 'team_pool'`, `benchmark_variance: true`): the
   variance is exact, in place of Slice 1b's leave-one-out team mean, which
   has to assume each teammate's sample is the player's size. A read without

@@ -120,8 +120,9 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     scoring and penalties-per-round reads get `evidence.comparison`, with the
     teammates' pooled attempts in the read's window as `primary` ("Team pool
     72% (240 putts)") and the Tour as a further line (`v3/team-pool/`).
-  - The player's own attempts, test rounds and uncountable rounds never
-    count. No line under 5 rostered players with rounds, 4 teammates with 3+
+  - The player's own attempts and test rounds never count. Approach and
+    sand pools use every completed round (as the player's value does); the
+    rest use countable rounds; the floors count countable rounds. No line under 5 rostered players with rounds, 4 teammates with 3+
     rounds and attempts in the family, or 100 pooled attempts. No program
     pool. Strokes, standing and the flat `comparison_*` fields stay Tour.
   - The Clubhouse Deep dive Read and the Fairway `EvidencePanel` print the

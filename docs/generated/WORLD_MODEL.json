@@ -20464,11 +20464,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/team-pool/loader.ts",
-          "anchor": "src/lib/golf/round-countable"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/team-pool/pool.ts",
           "anchor": "src/lib/golf/round-countable"
         }

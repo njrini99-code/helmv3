@@ -20,7 +20,6 @@
  */
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isCountableRound } from '@/lib/golf/round-countable';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerEvent } from '@/lib/server-error-logger';
@@ -170,9 +169,11 @@ async function loadTeamRows(supabase: SupabaseClient, teamId: string, now: numbe
         .range(from, to) as unknown as Rows<RoundRow>,
     'rounds',
   );
-  // Only countable rounds need their holes and shots; the pure pool checks again.
-  const countable = rounds.filter((r) => r.is_test !== true && isCountableRound(r));
-  const roundIds = countable.map((r) => r.id);
+  // Every completed, non-test round: the approach and sand pools use them all,
+  // as the player's own value does; the pure pool applies each family's rule
+  // (`roundRuleFor`) and the countable floors.
+  const kept = rounds.filter((r) => r.is_test !== true);
+  const roundIds = kept.map((r) => r.id);
 
   const holes = roundIds.length
     ? await chunked<HoleRow>(
@@ -204,7 +205,7 @@ async function loadTeamRows(supabase: SupabaseClient, teamId: string, now: numbe
       )
     : [];
 
-  return assembleTeamPlayers(playerIds, countable, holes, shots);
+  return assembleTeamPlayers(playerIds, kept, holes, shots);
 }
 
 /**

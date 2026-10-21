@@ -48,7 +48,7 @@ export interface CandidateBenchmark {
   basis: BenchmarkBasis;
   /** Teammates behind a leave-one-out team value or a team pool. */
   pool_n?: number;
-  /** Pooled attempts (rounds for a per-round rate) behind a team pool value. */
+  /** Pooled attempts behind a team pool value (for a per-round rate, its exposure: scored holes ÷ 18). */
   pooled_n?: number;
 }
 export interface SupportCandidate {
@@ -308,14 +308,17 @@ function readSplitHalf(evidence: Obj): SupportCandidate['splitHalf'] {
  * primary `team_pool` with a teammates' median and `n` = players; that is not
  * a pooled count and is never read as one.
  */
-export function teamPoolLineOf(evidence: Obj): { value: number; n: number; players: number } | null {
+export function teamPoolLineOf(
+  evidence: Obj,
+): { value: number; n: number; players: number; exposureRounds: number | null } | null {
   const primary = obj(obj(evidence.comparison)?.primary);
   if (!primary || primary.source !== 'team_pool' || typeof primary.n_unit !== 'string') return null;
   const value = num(primary.value);
   const n = num(primary.n);
   const players = num(primary.players);
   if (value === null || n === null || !(n > 0) || players === null || !(players > 0)) return null;
-  return { value, n, players };
+  const exposure = num(primary.exposure_rounds);
+  return { value, n, players, exposureRounds: exposure !== null && exposure > 0 ? exposure : null };
 }
 
 export interface CandidateOptions {
@@ -355,13 +358,19 @@ export function buildCandidate(
   const teamPool = options.teamPool ? teamPoolLineOf(evidence) : null;
   if (teamPool) {
     prior = { source: 'team_pool', value: teamPool.value };
-    if (def.shape === 'proportion' || def.shape === 'rate_per_round') {
+    // A per-round rate's sample is its exposure (scored holes ÷ 18, what the
+    // value is scaled by), not the rounds the line names: nine-hole rounds
+    // would otherwise overstate the pool's events. Without it the pool is the
+    // prior only.
+    const poolSample =
+      def.shape === 'rate_per_round' ? teamPool.exposureRounds : def.shape === 'proportion' ? teamPool.n : null;
+    if (poolSample !== null) {
       usedBenchmark = {
         source: 'team',
         value: teamPool.value,
         basis: 'team_pool',
         pool_n: teamPool.players,
-        pooled_n: teamPool.n,
+        pooled_n: poolSample,
       };
     }
   }
