@@ -52,8 +52,8 @@
         "5": true,
         "10": true
       },
-      "irrelevant_chars": 3850,
-      "total_feature_doc_chars": 13850,
+      "irrelevant_chars": 5000,
+      "total_feature_doc_chars": 15000,
       "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
@@ -293,8 +293,8 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 8850,
-      "total_feature_doc_chars": 13850,
+      "irrelevant_chars": 10000,
+      "total_feature_doc_chars": 15000,
       "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
@@ -319,8 +319,8 @@
         "5": false,
         "10": false
       },
-      "irrelevant_chars": 13850,
-      "total_feature_doc_chars": 13850,
+      "irrelevant_chars": 15000,
+      "total_feature_doc_chars": 15000,
       "included_doc_count": 6,
       "stale_doc_count": 0,
       "historical_analogue_hit": false
@@ -744,7 +744,7 @@
     "recall_at_10_full": 0.7666666666666667,
     "recall_at_5_feature_docs_only": 0.7666666666666667,
     "recall_at_10_feature_docs_only": 0.7666666666666667,
-    "irrelevant_token_rate": 0.12723932016536518,
+    "irrelevant_token_rate": 0.13636363636363635,
     "stale_context_rate": 0,
     "historical_analogue_retrieval_rate": 0
   }

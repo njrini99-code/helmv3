@@ -48,3 +48,17 @@
 ## Screenshots / notes
 
 <!-- UI diffs, migration plan, rollout/deploy notes, anything a reviewer needs. -->
+
+## Handoff
+
+<!-- Builders: fill this in when the work is done, then hand off (docs/operations/PR_PIPELINE.md). Fixers read this instead of re-deriving intent. Delete only if this PR is not part of a builder/fixer handoff. -->
+
+- **Spec**: what it does and why; the doc or plan it implements
+- **Head SHA at handoff**:
+- **Ran** (command, exit code) / **Not run** (why):
+- **Screenshots** (UI changes):
+- **Flags touched** (name, default) / **Migrations** (file, held or not):
+- **Feature doc to update** (from `npm run knowledge:map`):
+- **Open risks**:
+- **Decisions** (taken on a default, or still open, with the recommended default):
+- **Do not touch**:

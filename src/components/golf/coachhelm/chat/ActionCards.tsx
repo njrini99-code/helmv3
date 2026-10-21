@@ -126,6 +126,12 @@ export function ActionProposalCard({
           <p className="font-fw-sans text-body-sm text-text-secondary">
             {decision === 'approved' ? 'Confirmed.' : 'Cancelled. Nothing was created.'}
           </p>
+        ) : !onApprove && !onDeny ? (
+          // A replayed or reloaded card has no live approval behind it: saying so
+          // beats Confirm and Cancel buttons that do nothing.
+          <p className="font-fw-sans text-body-sm text-text-secondary">
+            This can no longer be confirmed here. Ask again to run it.
+          </p>
         ) : (
           <>
             {/* eslint-disable-next-line helm/no-raw-button -- primary confirm on an approval card — sized to the card, not the global pill */}
