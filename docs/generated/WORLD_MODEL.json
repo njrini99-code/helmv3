@@ -19815,6 +19815,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/notifications/dispatch.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -20126,6 +20131,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/lifecycle/job.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         },
         {
           "kind": "import_graph",
@@ -20863,6 +20878,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/sequence-attribution-window.ts",
           "anchor": "src/lib/golf/date-only"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/golf/round-countable"
         },
         {
           "kind": "import_graph",
