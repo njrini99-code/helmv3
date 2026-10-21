@@ -852,9 +852,35 @@ jobs:
             next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
             next-build-${{ runner.os }}-
 
+      # 2026-10-21 (owner-approved): about one Next build in three died with
+      # "The runner has received a shutdown signal" during Next's in-process
+      # "Running TypeScript" step, right after "Compiled successfully". That is
+      # the hosted runner running out of memory, not a code failure: main's own
+      # builds pass while large PRs get killed. 10 GiB of swap gives the TypeScript
+      # step headroom, and the sampler below prints memory and swap use every
+      # 15s so the next death shows how close the build came. Swap is best
+      # effort: if the runner will not give it, the build still runs as before.
+      - name: Add swap
+        if: steps.gate.outputs.run == 'true'
+        continue-on-error: true
+        run: |
+          nproc
+          free -m
+          sudo fallocate -l 10G /mnt/helm-swap
+          sudo chmod 600 /mnt/helm-swap
+          sudo mkswap /mnt/helm-swap
+          sudo swapon /mnt/helm-swap
+          free -m
+
       - name: Build
         if: steps.gate.outputs.run == 'true'
-        run: npm run build
+        run: |
+          (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
+          sampler=$!
+          rc=0
+          npm run build || rc=$?
+          kill "$sampler" 2>/dev/null || true
+          exit "$rc"
 
       - name: Save Next build cache (push to main, once a day per lockfile)
         if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')

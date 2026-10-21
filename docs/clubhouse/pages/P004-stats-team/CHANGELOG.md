@@ -1,5 +1,172 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — Team ranking dot plot (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, spec 4.5, decision Q10)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   40101, 42001 (wording)
+Actions:        none
+Data impact:    grid rows gain spread (from rounds already read)
+Held items:     none
+```
+
+### Changed
+
+- New "Who gains and loses" section (`TeamRank`) after the figures and the
+  trend, before the leg cards and the grid: a ranked dot plot, one row per
+  player, one figure at a time from a compact menu (strokes gained, each leg,
+  scoring). Each dot is the player's mean with a whisker of one standard
+  error ("likely range"); a dashed line is the team's mean; zero is the
+  stronger grid line on strokes gained.
+- Rows are in order of the dot. A player closer than one standard error of
+  the difference to the head of the run above shares its rank ("T3") and
+  keeps their order (`rankWithTies`; a chain of near neighbors does not stretch
+  a tie). Better is to the right for every figure; the scoring
+  average runs the other way and says "lower is better" once in the caption.
+- Floors follow `sampleState`: an early read is a hollow dot with no gain or
+  loss color and a note naming who; under the show floor a player's row sits
+  below the axis with "Needs 3 rounds" (5 for around the green and putting)
+  and no dot or rank.
+- A pointer, a tap or the arrow keys read a player in the line above
+  ("Sofia Alvarez · +1.2 a round · T1 of 6 · 10 rounds · likely range +0.5
+  to +1.9 · team −0.5"); a tap or a key pins and announces it and shows
+  "Open player"; a second tap on the pinned row, or Enter, opens the player.
+- Phone: the same plot as an inset panel between strokes gained by leg and
+  Players, with 44px rows, short names ("Theo M.") and the native menu.
+- The grid ledger stays as the table view and the CSV export.
+- Data: each grid row carries `spread` (whole rounds and the standard error
+  of the mean for strokes gained, each leg and the scoring average) from the
+  player's per-18 round values in rounds the loader already reads; the
+  pooled spread under five rounds. No query, table or migration change.
+
+## 2026-10-20 — No visible change (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, piece 6; entry in P005)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` lost the old scoring mix rules
+  (`ch-mix`, `ch-zmix`) and gained `.ch-sv-mix-*`, and `charts.tsx` lost
+  `ScoreMix`; the team page used neither.
+
+## 2026-10-20 — No visible change (stats visuals 4)
+
+```text
+Design package: none (stats visuals piece 4; the page entry is in P005)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `MakeCurve` and `MakeRows` left `charts.tsx` for the
+  player profile's `PuttBands.tsx`, and `stats.css` gained the `.ch-sv-pb-*`
+  block and lost the unused `.ch-mk` rules, both files this page shares with the
+  player profile. Team putting (rings on desktop, bars on the phone) is its own
+  component and is unchanged.
+
+## 2026-10-20 — No visible change (stats visuals 3)
+
+```text
+Design package: none (stats visuals plan, piece 3; the page's own entry is in P005)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` gained the stats-owned `.ch-sv-rt` block
+  and `OverviewZones` and `StatsPlayerPhone` draw the new trend; the team page
+  keeps its own interactive `TeamTrendChart` and `ScoreLine` is not used by it.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Every change on the team page (the figure tape, the lead chip, the phone
+  hero and figure rows) is green or amber only when it is larger than one
+  standard error of the difference, and reads "Better than previous 10" or
+  "Worse than previous 10". Otherwise the signed number stays in neutral ink
+  with "No clear change vs previous 10". A change with no standard error gets
+  no colour.
+- The loader adds an `se` beside each figure's existing delta, from the
+  rounds it already reads (no new query): strokes gained and score use the
+  paired players' rounds with the pooled spread below five rounds, greens and
+  scrambling their per-round rates, putts and birdies only from five rounds.
+- A tape caption that is not "vs previous 10" ("Tour averages 66%", "Eagles
+  not counted") moves to the note line under the change's words.
+- On the preview team, scoring and greens read as clear changes; strokes
+  gained, putts, scrambling and birdies read "No clear change".
+- The leaderboard's form word (Improving, Steady, Slipping) follows the same
+  rule through `formStatus`, so it agrees with its form line.
+
+## 2026-10-20 — No visible change (stats visuals 1)
+
+```text
+Design package: none (stats visuals plan, piece 1; the page's own entry is in P005)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. The strokes gained bars moved from `charts.tsx` to
+  `SgBars.tsx` and `stats.css` gained the stats-owned `.ch-sv-*` block, both
+  files this page shares with the player profile. The team page still draws its
+  own leg grid and tabs.
+
+## 2026-10-19 — Team stats: putting beside the bests, no top bars
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Team putting and Season bests stay two columns down to an 860px canvas
+  (was 1080px). A 1280 window with the sidebar open is about 950px wide,
+  where the putting rings sat alone with half the row empty.
+- The 3px coloured bar across each figure card's top is gone. The change
+  under the number already says better or worse; a status is a dot or a
+  word. Its own commit, so it reverts cleanly (the owner's call left open on
+  #2202).
+
+### Verified
+
+WebKit at 390, 834, 1024, 1180, 1280 and 1440: no sideways scroll in the
+default, empty, partial and filtered states.
+
 ## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
 
 ```text

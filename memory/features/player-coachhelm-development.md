@@ -106,6 +106,39 @@ Player opens round review
   - Standing: `applyTeamFloor` (loader finalize chain) blanks `team_avg`/`team_pct` below 3 measured players. A 90-day standing alongside lifetime needs a new RPC (not built).
   - Distance profile (flag off): par-5 175+ lay-up intent comes from the leave distance (`v3/metrics/layup-intent.ts`, 50 yd cut), not from the miss; unknown leave → `layup_intent_unknown` exclusion.
 
+- Closed loop, CoachHelm Slice 4 (2026-10-20, flag `coachhelm_verdicts_v1`,
+  off; migration `20261020120000_golf_focus_area_prescription.sql` HELD).
+  Code in `src/lib/coachhelm/v3/verdicts/`.
+  - Prescription: a focus area created from a read (`createFocusArea` with
+    `from_insight_id`, `createFocusAreaFromInsightV2`,
+    `createFocusAreaFromInsight`) gets `assigned_by` and
+    `check_after_rounds` (3) and, when the read's metric has a verdict
+    source and a team prior (`standing.team_avg`, `team_n` ≥ 4),
+    `baseline_n`, `baseline_shrunk` = (n·y + κ·μ)/(n + κ) (κ 30 attempts),
+    `criterion` and `horizon`, in a second best-effort write after the
+    insert. Threshold = shrunk + max(0.5 × gap to team, 5 points), rounded
+    to a whole percent; a coach target on the improving side wins. Horizon
+    = attempts at which a post rate at the threshold separates from the
+    shrunk baseline at one-sided 90%, rounded up to 5 and held between the
+    family's say and Clear floors (putts 20 / 40). Rates are proportions.
+  - Verdict sources: putt bands `putts_made_*ft_pct` from `golf_shots`
+    (banded like `update_player_putt_make_pct`), and `fairways_hit_pct`,
+    `gir_pct`, `scrambling_pct`, `sand_save_pct` / `scrambling_pct_sand`
+    from `golf_round_stats_cache` counts. Anything else has no criterion
+    and no verdict.
+  - Verdict: the lifecycle cron (`coachhelm-insight-lifecycle`) counts whole
+    non-test rounds from `started_at` until the horizon is reached and
+    writes `verdict` once (worked, moved, did not move, got worse) from the
+    one-sided 90% bound vs `baseline_shrunk`; short of the horizon nothing
+    is written. `status` and `outcome_status` are never written. "Got
+    worse" puts one in-app bell row in front of the area's coach (no push,
+    nothing to the player).
+  - Missing columns (42703 / 42P01 / PGRST204 / PGRST205) read as "not
+    available"; flag off, nothing is read or written and the create
+    inserts exactly as before. A guard trigger in the migration lets only
+    a coach on the player's team change the prescription columns and
+    nobody but the service role change `verdict`.
+
 ## UI Contract
 
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.
@@ -548,6 +581,67 @@ Player opens round review
 - Alerts (row 53): `v3/notifications/notify.ts` has one helper per category; each uses the category as the daily throttle key. `notifyInsightResolved` covers the lifecycle cron and the coach resolve action, which bypass `upsertInsight`. Receipts carry the category in `data.coachhelm_category`; `notifications.type` stays `dev_plan_assigned` until migration `20260928120000` is applied and `COACHHELM_PER_CATEGORY_IN_APP_TYPES` is flipped. A receipt whose insight is no longer visible is hidden from the feed and the unread count (read-side only).
 - Weekly coach recap (row 10): shows insights new this week (created) and updated this week (refreshed, created earlier) separately; rounds pass `isCountableRound`.
 - Qualifiers (rows 54, 55): confirmation refuses with zero eligible players and composes the travel brief from the re-read workspace (slots filled, unscored entrants stated). Player notices are `selected` / `not_selected` / `not_scored`, nobody is notified when nobody was selected, and each notice writes an in-app `notifications` row with the outcome. The workspace loader (`v3/qualifying/loader.ts`) fails closed (2026-10-01): a failed qualifier, picks, reasons or rounds read returns null, so `chooseTiePlace` and `confirmSelection` answer "workspace not loadable" and write nothing, instead of counting zero picks (a tie place given twice, a coach's pick rewritten as a top-score place).
+
+## Read freshness (CoachHelm supercharge Slice 0b, 2026-10-20)
+
+Every v3 read now records which rounds it read. With
+`coachhelm_reads_v1_copy` off, nothing a coach or player sees changes. The
+displayed window bounds, the floors, the revision key and the sweep are all
+behind that flag.
+
+- Stamp fields (always on, shown nowhere today): `v3/engine/read-window.ts`
+  writes the following into every generator read (`BaseGenerator.run`) and
+  every composite (`synthesizeForPlayer`):
+  - `newest_round_id`: the newest round that contributed.
+  - `rounds_n`: the countable contributing rounds (`isCountableRound`).
+  - `source_round_ids`: the contributing rounds.
+  - `scanned_through_round_id`: the newest countable round the read looked
+    at. It can be newer than `newest_round_id`; for example, the newest round
+    may have had no bunker shot.
+  - `sample_unit`: what `sample_n` counts (`putts`, `approaches`,
+    `tee_shots`, `shots`, `rounds`, `holes`, `opportunities`, from
+    `FAMILY_FLOORS` in `read-floors.ts`).
+- Where the contributing rounds come from:
+  - Generators that name them (`GeneratorAggregate.windowRoundIds`) are
+    stamped from exactly those rounds.
+  - The cache-backed generators (par scoring, course management, putt
+    distance) use the real rounds inside their composed range.
+  - Composites use the rounds of the context array they read, or the union
+    of their sources' `source_round_ids`.
+  - Test rounds never enter a stamp.
+- A failed round load is logged (`coachhelm.v3.readWindow.load`) and the read
+  is written unstamped. `carryForwardStamp` (`v2/insights/revision-key.ts`,
+  called in `upsert.ts`) then keeps the previous row's stamp fields.
+- Window bounds (flag): an empty `window_start` gets the oldest contributing
+  round's day. `window_end` keeps meaning "the newest round the read
+  scanned":
+  - a composed end on a real round's day is never moved;
+  - an empty end, or one on a day with no real round (for example a
+    stats-cache date on a test round), becomes the newest real round scanned.
+- Floors (flag): a read needs 3 or more countable rounds (more for some
+  families) and its family's `say_n` (`FAMILY_FLOORS`; for rates, 20 to say
+  and 40 to be Clear). Below the floor nothing is written and the stale row in
+  that scope is retracted. `RunResult.watching` carries the count-down
+  (`countdownText`, for example "2 more rounds, 9 more approaches") for the
+  run log. A composite below its floor is skipped, and the stale sweep
+  archives it. This applies only when a player's engine runs: turning the flag
+  on retracts nothing by itself.
+- Revision key (flag): `v2/insights/revision-key.ts` keys maturation on
+  `r:<newest_round_id>|<window_start>` instead of `sample_n|window_end`, so
+  re-reading the same rounds three times can no longer mature a read.
+  Unstamped rows keep the legacy key.
+- Sweep (flag): the roster sweep (`api/cron/coachhelm-roster-sweep`) also
+  refreshes a player when both of these hold:
+  - their newest countable round is newer than their newest visible v3 read,
+    and no visible read names that round as its newest or scanned-through
+    round (`v3/engine/sweep-freshness.ts`, same index and order as the
+    stamp);
+  - their engine has not written a `post_round_v2` generation-log row in the
+    last 7 days.
+
+  The sweep picks these players round-robin by night, at most 25 a night. It
+  starts no freshness batch after 240 seconds. The refresh path is
+  deterministic (no LLM).
 
 ## §15.2 Regression Fixture Matrix (repair plan, 2026-09-23)
 

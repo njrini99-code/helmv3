@@ -41,11 +41,15 @@ describe('home logic', () => {
     expect(classYearLabel(2032, oct)).toBe('Class of 2032');
     expect(classYearLabel(null, oct)).toBeNull();
   });
-  it('reads form from the newer half against the older half', () => {
+  it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
-    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('improving');
-    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('slipping');
+    // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes.
+    expect(formStatus([78, 78, 77, 73, 72, 72])).toBe('improving');
+    expect(formStatus([72, 72, 72, 74, 76, 76, 77])).toBe('slipping');
     expect(formStatus([72, 72, 71, 72, 71, 71, 72])).toBe('steady');
+    // Down 2.3 a round was "improving" on the old half-stroke threshold; inside its standard error it is no clear change.
+    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('steady');
+    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('steady');
   });
 });
 
