@@ -28,6 +28,7 @@ import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
 import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
@@ -293,8 +294,8 @@ export function Roster({ data }: { data: ChRoster }) {
   const statsHref = (p: ChRosterPlayer) => rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
   const menuFor = (p: ChRosterPlayer): MenuItem[] => {
     const items: MenuItem[] = [];
-    // The board's first row item: CoachHelm opened on this player.
-    const insights = rebuiltHref(`/golf/dashboard/coachhelm?player=${p.id}`, 'coach');
+    // The board's first row item: CoachHelm's Deep dive of this player (spec A).
+    const insights = rebuiltHref(coachPlayerHref('deep-dive', p.id), 'coach');
     if (insights) items.push({ label: 'View insights', icon: Sparkles, href: insights });
     const s = statsHref(p);
     if (s) items.push({ label: 'View stats', icon: BarChart3, href: s });

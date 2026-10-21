@@ -244,3 +244,33 @@
 :where(html[data-fw-theme='dark']) .ch-hv-link {
   border-top-color: var(--ch-border-hairline);
 }
+
+/* A coach's view of one player (spec A) */
+/* The header's eyebrow is the way back to the board on desktop: the eyebrow's own look, a link by its underline on hover. */
+.ch-hv-role-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hv-role-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-hv-role-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* The Game profile's one line on what CoachHelm sees in this player's rounds, and the way to the Deep dive. */
+.ch-hv-seen b {
+  min-width: 0;
+}
+.ch-hv-seen__go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
