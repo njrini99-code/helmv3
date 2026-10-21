@@ -11,6 +11,28 @@ Actions:        Open (a link to the player on the board); none written
 Data impact:    none written; reads the visible v3 reads, the roster's
                 countable rounds and the Slice 7b team pattern
 Held items:     none
+## 2026-10-21 — Coach voice from the stored coach copy (chs-40)
+
+```text
+Design package: design call, "Coach voice vs player voice" (D1)
+PR/commit:      see git log (claude/coachhelm-coach-voice)
+Contract IDs:   none (CH-13940 and the card's title and claim, reworded)
+Actions:        none changed
+Data impact:    none (reads evidence.coach_copy, which the rows store)
+Held items:     none
+```
+
+### Changed
+
+- A coach's card title and claim come from the engine's stored coach copy
+  (`evidence.coach_copy`) when the row carries it, named for the player;
+  without it they are the row's own text through the `speak` regex, as
+  before. The Not enough yet line's titles follow the same rule.
+- Numbers are identical in both voices: a coach copy part whose numbers
+  differ from the player's text is not used.
+- The focus area a coach assigns is still saved in the player's own words.
+  Player surfaces are unchanged. Preview: `?state=coachcopy`.
+
 ## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
 
 ```text

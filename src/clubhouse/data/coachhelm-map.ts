@@ -6,7 +6,7 @@ import { MINUS } from '../lib/format';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
 import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
-import { speak, type ChViewer } from './coachhelm-voice';
+import { readTextFor, speak, type ChViewer } from './coachhelm-voice';
 import { pathLineFor } from './coachhelm-path';
 import { withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { anyEngineFlag, auditOf, causeOf, correctionsOf, isEmptyEngine, supportOf, verdictOf, type ChCorrectionsInput, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
@@ -272,6 +272,8 @@ export function toChInsight(
   const unit = buildInsightUnit(ins);
   const tour = extra.tour ?? null;
   const say = (text: string) => speak(text, extra.viewer);
+  // chs-40: a coach's card is spoken from the stored coach copy when the row has it (numbers identical), else the row's own text.
+  const voiced = readTextFor(ins, (extra.engine?.viewer ?? extra.viewer)?.role === 'coach');
   const priority: ChHelmPri = ins.priority === 'urgent' ? 'high' : ins.priority === 'high' || ins.priority === 'medium' ? ins.priority : 'low';
   const you = num(ev.your_value);
   const kind = kindOf(ins, tour);
@@ -279,8 +281,11 @@ export function toChInsight(
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
   // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
   // The generators' placeholder cause states no cause, so no line of the card prints it (design call §4, "Both worlds").
-  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutPlaceholderCause(withoutZeroImpact(ins.content, ev)), ev.metric)));
+  const parts = (content: string) => splitContent(withoutCollegeAverage(withoutSampleAside(withoutPlaceholderCause(withoutZeroImpact(content, ev)), ev.metric)));
+  const { lede, why } = parts(voiced.content);
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
+  // The focus area is saved with the player's own claim, so with the coach copy drawn it is split from the row's own content.
+  const playerClaim = voiced.coachCopy.content ? parts(ins.content).lede || ev.diagnosis?.symptom?.trim() || '' : claim;
   const evidence = evidenceFor(ins, kind, tour, say);
   const engine = kind === 'note' ? null : engineFor(ins, evidence, extra.engine, extra.engine?.viewer ?? extra.viewer);
   return {
@@ -292,9 +297,10 @@ export function toChInsight(
     kind,
     stale,
     acknowledged: ins.status === 'acknowledged',
-    title: say(ins.title),
-    // Typeset as the player reads it, with ordinary spaces: the focus area is saved, and Fairway draws it too.
-    assignAs: { title: plain(speak(ins.title, { role: 'player' })), description: plain(speak(claim, { role: 'player' }) || ins.title) },
+    title: say(voiced.title),
+    // Typeset as the player reads it, with ordinary spaces: the focus area is saved, and Fairway draws it too. Always the player's
+    // own text, never the coach copy.
+    assignAs: { title: plain(speak(ins.title, { role: 'player' })), description: plain(speak(playerClaim, { role: 'player' }) || ins.title) },
     lede: say(claim),
     why: why ? say(why) : null,
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
