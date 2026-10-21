@@ -5,15 +5,16 @@
  * GolfHelm Service Worker
  *
  * Provides offline functionality for the golf shot tracking application:
- * - Caches static assets and API responses
+ * - Caches static assets and golf dashboard pages
  * - Enables offline access to shot tracking pages
  * - Background sync when connection is restored
  * - Push notifications for sync completion
  *
  * Cache Strategy:
  * - Static assets: Cache-first (versioned)
- * - API responses: Network-first with cache fallback
- * - Dashboard pages: Network-first with cache fallback
+ * - API responses: Network only, never cached (see handleApiRequest)
+ * - Dashboard pages: Network-first with cache fallback; sign-out deletes them
+ *   (src/lib/offline/private-caches.ts)
  */
 
 // Stable source placeholder — scripts/stamp-sw.mjs rewrites this to
@@ -23,20 +24,11 @@
 const CACHE_VERSION = 'golfhelm-vsource';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
-const API_CACHE = `${CACHE_VERSION}-api`;
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
   '/manifest.json',
   '/offline.html',
-];
-
-// API routes to cache for offline access
-const CACHEABLE_API_PATTERNS = [
-  /\/api\/golf\/rounds/,
-  /\/api\/golf\/players/,
-  /\/api\/golf\/courses/,
-  /\/api\/health/,
 ];
 
 const GOLF_DASHBOARD_PATH = '/golf/dashboard';
@@ -71,12 +63,13 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    // Clean up old caches
+    // Clean up old caches. This also drops the `-api` cache earlier workers
+    // filled with signed-in API responses (see handleApiRequest).
     caches.keys()
       .then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter(name => name.startsWith('golfhelm-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== API_CACHE)
+            .filter(name => name.startsWith('golfhelm-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE)
             .map(name => {
               return caches.delete(name);
             })
@@ -160,27 +153,18 @@ self.addEventListener('fetch', (event) => {
 // ============================================================================
 
 /**
- * Handle API requests - Network first, cache fallback
+ * Handle API requests - network only.
+ *
+ * API responses are never cached. They were (network-first, keyed by URL
+ * alone), and nothing cleared them at sign-out, so offline the next person on
+ * a shared phone could be served the last person's roster, notes and messages
+ * (security review, 2026-10-16). Offline, an API read gets the JSON 503 below,
+ * which the app already treats as "offline".
  */
 async function handleApiRequest(request) {
-  const cache = await caches.open(API_CACHE);
-
   try {
-    const response = await fetch(request);
-
-    // Cache successful responses
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-
-    return response;
+    return await fetch(request);
   } catch {
-    const cachedResponse = await cache.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    // Return offline response for API
     return new Response(
       JSON.stringify({
         error: 'offline',
@@ -443,8 +427,7 @@ async function notifySyncComplete(data) {
 // ============================================================================
 
 function isApiRequest(url) {
-  return url.pathname.startsWith('/api/') ||
-    CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname));
+  return url.pathname.startsWith('/api/');
 }
 
 function isGolfDashboardPage(request, url) {

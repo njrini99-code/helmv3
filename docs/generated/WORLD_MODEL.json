@@ -9090,6 +9090,18 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "shot_tracking",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/session-activity.ts",
+          "anchor": "src/lib/offline/private-caches"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "team_communications",
       "kind": "feature_relation",
       "evidence": [
