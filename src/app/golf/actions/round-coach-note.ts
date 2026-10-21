@@ -24,9 +24,9 @@ export interface SaveRoundCoachNoteResult {
  *
  * `annotateReview` writes the same column but needs a review id, and a round has a
  * `golf_round_reviews` row only once CoachHelm has generated a review for it (358 of 823 completed
- * rounds on 2026-10-21). The row is unique per round, so this upserts on `round_id` and writes only
- * `coach_notes` and `updated_at`: a generated review's content is never touched, and a note left on a
- * round with no review yet leaves a row with just the note.
+ * rounds on 2026-10-21). The row is unique per round, so a round with a row has only `coach_notes` and
+ * `updated_at` changed (a generated review's content is never touched), and a round without one gets a row
+ * with just the note, marked `status: 'pending'` so no reader takes it for a generated review.
  *
  * Only a coach of the player's team may write. A player, including a coach looking at their own round
  * as the player, is refused (`verifyPlayerAccess` answers `self` for them).
@@ -59,13 +59,23 @@ async function saveRoundCoachNoteImpl(roundId: string, note: string): Promise<Sa
     if (!access.allowed || access.reason !== 'coach') return { success: false, error: 'Only a coach of this player’s team can leave a note.' };
 
     const updatedAt = new Date().toISOString();
-    const { data: saved, error } = await supabase
-      .from('golf_round_reviews')
-      .upsert({ round_id: round.id, player_id: round.player_id, coach_notes: trimmed, updated_at: updatedAt }, { onConflict: 'round_id' })
-      .select('id')
-      .maybeSingle();
+    // A round with a review row gets only its note changed. A round with none gets a row that says it holds no
+    // review yet (`status: 'pending'`, the state `generateRoundReview` treats as "still to generate"); the column's
+    // default would read as a finished "draft" and make that action answer "Review already exists" with no content.
+    const writeNote = () =>
+      supabase.from('golf_round_reviews').update({ coach_notes: trimmed, updated_at: updatedAt }).eq('round_id', round.id).select('id').maybeSingle();
+    let { data: saved, error } = await writeNote();
+    if (!error && !saved) {
+      ({ data: saved, error } = await supabase
+        .from('golf_round_reviews')
+        .insert({ round_id: round.id, player_id: round.player_id, coach_notes: trimmed, updated_at: updatedAt, patterns_detected: { status: 'pending' } })
+        .select('id')
+        .maybeSingle());
+      // A review was generated between the two writes (the row is unique per round): the note goes on it.
+      if (error?.code === '23505') ({ data: saved, error } = await writeNote());
+    }
     if (error || !saved) {
-      await logServerError(`saveRoundCoachNote upsert failed: ${error?.message ?? 'no row returned'}`, {
+      await logServerError(`saveRoundCoachNote write failed: ${error?.message ?? 'no row returned'}`, {
         action: 'saveRoundCoachNote',
         featureArea: 'round_reviews',
         extra: { roundId, errorCode: error?.code },

@@ -7,7 +7,7 @@ Design package: none (the player Rounds library's Ledger kit, owner direction 20
 PR/commit:      claude/project-thread-eitv8h
 Contract IDs:   CH-11023, CH-11219 to CH-11222, CH-11317 to CH-11322, CH-11412, CH-11413, CH-11523
 Actions:        ACT-P011-COACH-NOTE (saveRoundCoachNote)
-Data impact:    writes golf_round_reviews.coach_notes (upsert on round_id); reads the same column and the team's completed rounds; no migration
+Data impact:    writes golf_round_reviews.coach_notes (update, or insert marked pending); reads the same column and the team's completed rounds; no migration
 Held items:     none
 ```
 
@@ -17,13 +17,13 @@ a player filter, and every posted round by month or by player; a row opens the r
 returns to the list. The same rounds and the same one-total rule as the player's library (`toLibraryRound`).
 
 The round review has a Coach note card (`CoachNote`, zone "In words"). A player reads "From your coach" and sees nothing
-when there is none; a coach of the player's team adds or edits the note in place. `saveRoundCoachNote` upserts the round's
-`golf_round_reviews` row on `round_id` and writes only `coach_notes` and `updated_at`, so a generated review is never
-changed and a round with no review yet (465 of 823 completed rounds on 2026-10-21) can still carry a note; it tells the
-player (`notifyCoachCommented`). Q-72f's "coach notes" gap is closed for the write side.
-
-Known edge: a note on a round with no CoachHelm review leaves a row with only the note. Fairway's review flow reads that
-row as "a review exists"; Clubhouse is off in production, so nothing sees it until the flag turns on.
+when there is none; a coach of the player's team adds or edits the note in place. `saveRoundCoachNote` changes only `coach_notes` and `updated_at` on the round's
+`golf_round_reviews` row, so a generated review is never changed. A round with no review yet (465 of 823 completed
+rounds on 2026-10-21) gets a row with just the note and `patterns_detected: { status: 'pending' }`, the state
+`generateRoundReview` treats as still to generate, so no reader takes the note for a generated review: the column's
+default (`draft`) would have made that action answer "Review already exists" with no content. The other readers check
+`summary` or `round_stats`, which a note row lacks. It tells the player (`notifyCoachCommented`). Q-72f's "coach
+notes" gap is closed for the write side.
 
 ## 2026-10-21 — Season bars and the round review are drawn at once
 

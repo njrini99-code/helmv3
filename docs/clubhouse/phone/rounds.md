@@ -99,7 +99,7 @@ both roles.
 | The hole's shots: kind and club, from → where it finished, the miss, the putt's read | `golf_shots` for the round, by hole and shot number |
 | Scoring distribution | The holes against par |
 | Round recap | `golf_rounds.ai_recap`, written when the round was posted (407 rounds have one); hidden when absent |
-| Coach notes | `golf_round_reviews.coach_notes`, read by `loadRoundReview` and written by `saveRoundCoachNote` (an upsert on `round_id`, so a round with no CoachHelm review can carry one). The player's card reads "From your coach" and is absent when there is no note; a coach of the player's team gets Add a note / Edit in the card (CH-11523, CH-11023). The player's own notes keep their card (`golf_rounds.notes`, labelled "Your notes" or "Jonah's notes") |
+| Coach notes | `golf_round_reviews.coach_notes`, read by `loadRoundReview` and written by `saveRoundCoachNote` (a round with no CoachHelm review gets a row marked `pending` that holds only the note). The player's card reads "From your coach" and is absent when there is no note; a coach of the player's team gets Add a note / Edit in the card (CH-11523, CH-11023). The player's own notes keep their card (`golf_rounds.notes`, labelled "Your notes" or "Jonah's notes") |
 | Recap Focus and Keep | **Gap (Q-72f).** Their source is the CoachHelm review's takeaway and practice priority. All 295 stored reviews are unpublished drafts, so they are not shown here |
 
 The review's states: the card didn't load (CH-11204), the shots didn't load
