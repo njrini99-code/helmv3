@@ -6,6 +6,23 @@
 and a goal's state line and coach controls (P005). It is imported by the
 components that use it, not by `stats.css`.
 
+## 2026-10-21 — Component catalog stops recording CSS line numbers
+
+```text
+Design package: none
+PR/commit:      claude/catalog-no-line
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `component-catalog.json` tokens no longer carry `line`. Any stylesheet edit
+  shifted every later token's line, so each Clubhouse PR that landed made the
+  committed catalog stale on every other open PR. Nothing read the field.
+
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 
 ```text
