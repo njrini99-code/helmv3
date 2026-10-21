@@ -16,6 +16,7 @@ import {
   useContinueRoundSession,
   type ContinueRoundSessionProps,
 } from '@/lib/golf/round-session/use-continue-round-session';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -47,12 +48,15 @@ interface ContinueRoundClientProps extends ContinueRoundSessionProps {
   qualifierRoundNumberOptions?: number[];
   /** Explains why a legacy row cannot currently choose a safe result number. */
   qualifierRoundNumberUnavailableReason?: string;
+  /** CoachHelm Slice 8a: open one-tap asks, only with coachhelm_data_gap_prompt_v1 on. */
+  dataGapAsks?: readonly DataGapAsk[];
 }
 
 export default function ContinueRoundClient({
   roundTypeEditor,
   qualifierRoundNumberOptions = [],
   qualifierRoundNumberUnavailableReason,
+  dataGapAsks,
   ...session
 }: ContinueRoundClientProps) {
   const { setupData } = session;
@@ -229,6 +233,7 @@ export default function ContinueRoundClient({
           onAutoSave={handleAutoSave}
           autoSaveInterval={15000}
           autoSaveDisabled={submitting || !!completedRoundId}
+          dataGapAsks={dataGapAsks}
         />
       </div>
 

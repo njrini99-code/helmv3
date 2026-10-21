@@ -46,7 +46,6 @@ const ctx: CompositeContext = {
   short_game_shots: [
     { round_id: 's1', hole_number: 3, lie_before: 'sand', distance_to_hole_before: 10, distance_to_hole_after: 20 },
   ],
-  flyer_lie_shots: [],
 };
 
 describe('compositeWindowRoundIds', () => {
@@ -54,7 +53,6 @@ describe('compositeWindowRoundIds', () => {
     const match = { source_insight_ids: [], signals: {} };
     expect(compositeWindowRoundIds('closing_hole_fatigue', match, [], ctx)?.sort()).toEqual(['h1', 'h2']);
     expect(compositeWindowRoundIds('short_side_scrambling_chain', match, [], ctx)).toEqual(['s1']);
-    expect(compositeWindowRoundIds('flyer_lie_over_the_green', match, [], ctx)).toBeNull();
     expect(compositeWindowRoundIds('unknown_ctx_rule', match, [], ctx)).toBeNull();
   });
 

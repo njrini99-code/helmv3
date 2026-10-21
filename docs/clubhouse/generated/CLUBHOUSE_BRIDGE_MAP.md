@@ -33,9 +33,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-7017 | 15 Data freshness / sync | The send may or may not have landed: an unconfirmed sync, not a refusal. |
 | CH-7019 | 10 Warning | The group was created; one coach wasn't added. A partial success the coach can finish. |
 | CH-8025 | 10 Warning | Information, not an error: the in-app report form is unavailable, so email opens. |
+| CH-8902 | 08 Permission / authorization | The phone's push permission before iOS has asked: a permission request, not the network. |
+| CH-8903 | 08 Permission / authorization | The phone's push permission as iOS answered it, changed only in its Settings app. |
 | CH-09901 | 10 Warning | The qualifier is closed: a standing condition the coach and players are told about. |
 | CH-09902 | 06 Server / system error | An edit saved only in part, or not at all: the server refused a step. |
 | CH-1904 | 01 Default / core UI | Core navigation behaviour: a new page opens at the top. |
+| CH-1911 | 08 Permission / authorization | The app asks for the phone's push permission: a permission outcome, not the network. |
 | CH-1906 | 20 Keyboard / input | An input gesture (edge swipe, browser back) pops the pushed screen. |
 | CH-1907 | 20 Keyboard / input | An input gesture: a second tap on the open tab pops to its root, then scrolls it to the top. |
 | CH-1908 | 20 Keyboard / input | An input gesture: the edge swipe's Back, already animated by iOS, pops once. |
@@ -104,19 +107,19 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 
 | Page | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | Total |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 3 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 106 |
+| P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 2 | 3 | 9 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 37 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 101 |
-| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 8 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 133 |
+| P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 135 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 6 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 136 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 12 |  | 17 | 11 | 39 | 19 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 187 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 12 |  | 29 | 1 | 37 | 33 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 168 |
+| P013 | 7 | 12 |  | 29 | 1 | 37 | 38 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 173 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -159,6 +162,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 10801 |  | 08 Permission / authorization | `CLUBHOUSE_GATE` | implemented | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 |  | 08 Permission / authorization | `ROLE_SCOPED_NAV` | implemented | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 |  | 08 Permission / authorization | `TEAM_SWITCH_IS_A_HEAD_COACHS` | implemented | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
+| 10804 | CH-1911 | 08 Permission / authorization | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | implemented | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
 | 10901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change made through useAction that lands fires the success haptic and names itself in a toast; an action with no done line (an instant switch) shows no toast, its new position being the confirmation. |
 | 11301 |  | 13 Optimistic UI | `BELL_MARK_ALL_OPTIMISTIC` | implemented | Mark all read clears the unread rows at once and puts them back when the write fails (with CH-1001); opening an unread notification marks it read at once. |
 | 11401 |  | 14 Retry / recovery | `ROUTE_TRY_AGAIN` | implemented | A page that crashes shows its error view with Try again (Reload after an update), locked while it retries, the number of tries, and Back to Home. |
@@ -829,6 +833,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80806 |  | 08 Permission / authorization | `WRITES_SCOPED_TO_THE_CALLER` | implemented | Every write is scoped to the signed-in person: profile rows by their own user id, golf details by their own player id, leaving by their own membership of their team, and join requests, invite codes and the team CoachHelm switch by their own player or team id, which the server actions and row policies check again. |
 | 80807 |  | 08 Permission / authorization | `PASSWORD_NEEDS_THE_CURRENT_ONE` | implemented | A new password is set only after the current password signs in; a wrong current password changes nothing and says 'Your current password is incorrect.' |
 | 80808 |  | 08 Permission / authorization | `REFUSED_UPDATE_IS_A_FAILURE` | implemented | An update the database refuses by hiding the row (no error, no row changed) is a failure the person sees, not a save: profile, team details (the school, then the team), golf details and the coaching settings count the rows they change and fail with 'Nothing was saved. <what> was not found, or you are not allowed to change it.', which the toast shows as 'Your account doesn’t have access to do this.'; the card stays unsaved with its edits. Leaving a team already did this. |
+| 80809 | CH-8902 | 08 Permission / authorization | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE` | implemented | In the iPhone app, Notifications › This device before iOS has asked about push (blocker 12) |
+| 80810 | CH-8903 | 08 Permission / authorization | `IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE_2` | implemented | In the iPhone app, Notifications › This device after iOS has answered: allowed, or turned off (only the phone's Settings app changes either) |
 | 80901 |  | 09 Success | `CHANGE_LANDED` | implemented | A save that lands (profile, team details, scoring, reminders, golf details, email confirmation sent, password updated, new invite code, left the team, join request sent or cancelled) fires the success haptic and shows a toast naming what landed; a card with a Save button also says Saved for about two seconds. |
 | 80902 |  | 09 Success | `INSTANT_SAVE_SILENT` | implemented | A switch, segment, slider or CoachHelm autosave that lands says nothing: no toast and no success haptic, because its selection tick was the feedback (D-70); the CoachHelm status line reads All changes saved. |
 | 80903 |  | 09 Success | `ACCOUNT_DELETE_LANDED` | implemented | Once the account is deleted a toast says so and the success haptic fires, then this device's caches, active team and session are cleared and the person is sent to the sign-in page in the app or the home page on the web. |
@@ -1511,16 +1517,21 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130721 | CH-13911 | 07 Network / offline | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | reserved | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | 07 Network / offline | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | reserved | Ask: coming back to the page after leaving it |
 | 130723 | CH-13912 | 07 Network / offline | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | implemented | Player: a proposed focus area is declined (wave 7, decision C) |
-| 130724 | CH-13960 | 07 Network / offline | `COACH_THE_TRACK_RECORD` | implemented | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
-| 130725 | CH-13961 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | implemented | Track record: a level with enough rechecked reads (10 or more) |
-| 130726 | CH-13962 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | implemented | Track record: a level or a family with fewer than 10 rechecked reads |
-| 130727 | CH-13963 | 07 Network / offline | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | implemented | Track record: the staff's corrections |
-| 130728 | CH-13964 | 07 Network / offline | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | implemented | Track record: one row per family |
-| 130729 | CH-13965 | 07 Network / offline | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | implemented | Track record: CoachHelm is off for the team |
-| 130730 | CH-13966 | 07 Network / offline | `TRACK_RECORD_A_READ_IT_IS_MADE` | implemented | Track record: a read it is made from failed |
-| 130731 | CH-13967 | 07 Network / offline | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | implemented | Track record: the database cannot answer yet (its function is not applied) |
-| 130732 | CH-13968 | 07 Network / offline | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | implemented | Track record: nothing shown since the season start |
-| 130733 | CH-13969 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | implemented | Coach board: the link to the Track record |
+| 130724 | CH-13990 | 07 Network / offline | `COACH_PLAYER_WHAT_THE_ENGINE_KNOWS_ABOUT` | implemented | Coach, player: what the engine knows about a read |
+| 130725 | CH-13991 | 07 Network / offline | `COACH_PLAYER_WHY_DO_YOU_THINK_SO` | implemented | Coach, player: why do you think so |
+| 130726 | CH-13992 | 07 Network / offline | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | implemented | Coach, player: reads the recheck cleared |
+| 130727 | CH-13993 | 07 Network / offline | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | implemented | Deep dive: the Read's Why line from the cause state |
+| 130728 | CH-13995 | 07 Network / offline | `COACH_TEAM_PATTERNS` | implemented | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
+| 130729 | CH-13960 | 07 Network / offline | `COACH_THE_TRACK_RECORD` | implemented | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
+| 130730 | CH-13961 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | implemented | Track record: a level with enough rechecked reads (10 or more) |
+| 130731 | CH-13962 | 07 Network / offline | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | implemented | Track record: a level or a family with fewer than 10 rechecked reads |
+| 130732 | CH-13963 | 07 Network / offline | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | implemented | Track record: the staff's corrections |
+| 130733 | CH-13964 | 07 Network / offline | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | implemented | Track record: one row per family |
+| 130734 | CH-13965 | 07 Network / offline | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | implemented | Track record: CoachHelm is off for the team |
+| 130735 | CH-13966 | 07 Network / offline | `TRACK_RECORD_A_READ_IT_IS_MADE` | implemented | Track record: a read it is made from failed |
+| 130736 | CH-13967 | 07 Network / offline | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | implemented | Track record: the database cannot answer yet (its function is not applied) |
+| 130737 | CH-13968 | 07 Network / offline | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | implemented | Track record: nothing shown since the season start |
+| 130738 | CH-13969 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | implemented | Coach board: the link to the Track record |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |

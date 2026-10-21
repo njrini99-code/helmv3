@@ -56,6 +56,17 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - Service-role key usage is allowed only in explicit admin/server-only boundaries.
 - Browser code must never import server Supabase helpers or expose service-role credentials.
 - Coach access to a team is through `golf_team_coach_staff`.
+- Organization membership is not self-service (S1, `20261016200000_coach_organization_pin.sql`).
+  From the client, a golf or baseball coach row's `organization_id` may only be set to null, left
+  unchanged, or set to an organization the caller created in the last 5 minutes that nobody else
+  coaches (golf onboarding). `organizations.created_by` records the client creator. Every other
+  join goes through the service role (staff invites, approve and decline, baseball onboarding) or a
+  SECURITY DEFINER function (`helm_lifting_accept_invite`). Triggers check `current_user`, so those
+  paths pass. A Lift Lab coach cannot move their own row or reactivate it after removal. A Lift Lab
+  invite needs `helm_lifting_can_invite_coach`. An organization can be deleted from the client only
+  by its sole coach, or by its creator in onboarding's rollback (`can_delete_organization`). A
+  baseball team stays in its organization. `supabase/tests/rls/coach_organization_pin.sql` is the
+  contract.
 - Players can read or mutate only their own/team-allowed records, depending on the feature.
 - Every new table needs RLS enabled and policies in the same migration.
 - Security definer functions must pin `search_path`.
@@ -68,7 +79,8 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 ## UI Contract
 
 - Permission-denied states should be explicit and calm, not blank screens.
-- Team/admin/account destinations belong in drawer or secondary navigation, not duplicated across bottom nav.
+- Team/admin/account destinations belong in drawer or secondary navigation,
+  not duplicated across bottom nav.
 - Mobile changes must follow `AGENTS.md` Standard or Action header patterns.
 - A route's `loading.tsx` reserves the page's paint at t=0 — for a
   `'use client'` page holding its own `loading` state that is that
@@ -84,6 +96,12 @@ Use `memory/glossary.md` for table lookup and `memory/context/golfhelm-database.
 - Coach/team joins accidentally using stale `team_id` assumptions.
 - Admin or cron code leaking into client bundles.
 - RLS tests passing locally while live Supabase migration history drifts.
+  Production's `hlci_insert` had silently lost its organization check (found
+  2026-10-16), so compare live `pg_policies` with `supabase/schemas/**` before
+  trusting a local pass.
+- Any policy that trusts "a coach row in organization X" is only as safe as the
+  guard on `organization_id`; prefer team-staff checks
+  (`is_golf_team_coach(team_id)`).
 
 ## Tests To Prefer
 

@@ -41,6 +41,142 @@ Held items:     20261021090000_golf_coachhelm_shown_reads.sql
   preview are in the PR description. No owner board exists for this view;
   the phone draft is in `docs/clubhouse/phone/coachhelm.md`.
 
+## 2026-10-21 — Course plan on the coach's board (flag off)
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7c, 04 Example 10)
+PR/commit:      see git log (claude/coachhelm-course-plan)
+Contract IDs:   none
+Actions:        none (read-only server actions)
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/CoursePlan.tsx`: under the chosen player's card, a
+  Course plan button lists the player's courses with three or more
+  rounds; picking one shows at most three plan lines from their own
+  history there, the thin-history line below six rounds, and the
+  player's version to copy. Targets and sides only, never a club.
+- Shown only when `coachhelm_course_plan_v1` is on (off everywhere).
+  Preview: `/clubhouse-preview/coachhelm?state=courseplan`,
+  `courseplannone`, `courseplanfailed`.
+
+### Why
+
+- Supercharge 03 row 8 and 04 Example 10: a course plan from the
+  player's own rounds, on the coach's request (no event carries a course).
+
+## 2026-10-21 — Coach board: Team patterns
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7b; 03 §5.1, 04 Layout 4)
+PR/commit:      see git log (claude/coachhelm-team-pattern)
+Contract IDs:   CH-13995 (the Team patterns card)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pattern_v1 is on)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/TeamPatterns.tsx` under the program pulse: up to four
+  rows, each a family shared by at least 3 players and 30% of the players
+  with enough rounds ("Wedges 50–125 yd · finishing short", "3 of 5
+  players with enough rounds · about 1.1 strokes a round across the
+  team"), opening to the practice block and each member's number and
+  ladder word. A counted line says how many more reads are shared by too
+  few players. Coach only; the player board never reads it.
+- `data/coachhelm-team-pattern.ts` maps `computeTeamPatterns`
+  (`lib/coachhelm/v3/team-pattern/pattern.ts`) to the card. The loader
+  reads it only with the flag on; a failed read draws no card.
+- Preview: `/clubhouse-preview/coachhelm?state=patterns`.
+
+### Verified
+
+- `coachhelm-team-pattern.test.tsx` (fixture runs the real computation).
+- Phone screenshot (390 × 844) of the preview state.
+
+## 2026-10-21 — What the engine knows, on the coach and player surfaces
+
+```text
+Design package: none (CoachHelm supercharge 04 section 3 examples 2, 3,
+                5, 7, 11 and 12, section 4, section 6 layouts 2, 5, 6)
+PR/commit:      see git log (claude/coachhelm-surfaces-a)
+Contract IDs:   CH-13990 to CH-13993 (new)
+Actions:        none
+Data impact:    none (read-only; one new read of golf_player_focus_areas
+                behind coachhelm_verdicts_v1)
+Held items:     the verdict columns arrive with the held migration
+                20261020120000_golf_focus_area_prescription.sql
+```
+
+### Changed
+
+- The coach's card, the player's Board and the Deep dive draw what the
+  engine slices store, each behind the flag that writes it. With every flag
+  off (production today) nothing changes:
+  - `coachhelm_support_v1`: How sure (Seen repeatedly, Observed, Likely,
+    Working hypothesis, Not enough yet), the 95% range in words in the gap's
+    own unit, and the Watching count-down for a read held back. Coach only:
+    the player feed drops the support fields.
+  - `coachhelm_root_cause_diagnosis`: the cause state (Counted, Likely from
+    the totals for a coach, Not traced yet, Data gap) with its counts. On
+    the Deep dive it is the Read's Why line.
+  - `coachhelm_recheck_v1`: Cleared reads leave the list for a Cleared
+    section, a Contradicted pair is one item, Under review marks a read.
+    Contradicted reaches the player a day after the coach.
+  - `coachhelm_verdicts_v1`: the verdict on the focus area made from a read
+    (Worked, Moved, Did not move, Got worse, Too early, Can't tell) in the
+    Slice 4 copy, with its target. Got worse reaches the player a day after
+    the coach.
+  - `coachhelm_support_v1`: "Why do you think so?", a disclosure with the
+    read's audit lines (counted, rounds, compared with, and for a coach the
+    test and how sure).
+- The Read's Next line keeps a wrapping drill name as one run of text above
+  its description.
+- Review fixes: a `pct_points` range is said as stored (the engine already
+  works in points, so no rescale); the Deep dive counts only the reads it
+  draws after the lifecycle shaping as shown (`drawnLater`, as the Board);
+  the Board and the Deep dive keep the Cleared section when every read has
+  cleared.
+
+### Verification
+
+- `coachhelm-engine.test.tsx` (flags off draw nothing; older rows draw
+  nothing; each state in each voice). Preview `?state=engine` on
+  `coachhelm`, `coachhelm-player` and the Deep dive; 390 x 844 shots are in
+  the PR, none in git.
+
+## 2026-10-20 — Deep dive: the Read says the team pool when there is one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7a; 02 §3, 03 §5.2)
+PR/commit:      see git log (claude/coachhelm-team-pool)
+Contract IDs:   none (the Read's What line; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pool_v1 is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-read-shape.ts` `benchmarkOf`: a read whose
+  `evidence.comparison.primary` is a team pool says that line in place of
+  "Compared with …", e.g. "Team pool 0.6 a round (212 rounds)."
+  (`lib/coachhelm/reads/team-pool-line.ts`). One pooled number and its
+  count; never a teammate. Every other line is unchanged, and a row without
+  the field reads exactly as before. Only the engine writes the field, and
+  only with `coachhelm_team_pool_v1` on.
+- Preview: `?view=deep-dive&state=teampool&insight=in-pen`.
+
+### Verified
+
+- `coachhelm-read-team-pool.test.ts`: the team line replaces only the
+  comparison, in both voices, and a row without it reads as before.
+- Phone screenshot (390 × 844) of the preview state.
+
 ## 2026-10-20 — Board and Deep dive keep the reads past the feed cap
 
 ```text
@@ -328,16 +464,25 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and `coachhelm-ask.css`): a player's views head puts the view switch under the sentence when the page holds under 781px, where the sentence had a 56px column and ran a word to a line.
-- Ask: the "Since you were last here" cards take as many columns as fit (three at 1180, one at 834), their title no longer wraps to three lines, the chats panel is 216px on a canvas under 781px, and the evidence panel lays over the conversation as a side sheet there instead of taking a third column.
+- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and
+  `coachhelm-ask.css`): a player's views head puts the view switch under the
+  sentence when the page holds under 781px, where the sentence had a 56px column
+  and ran a word to a line.
+- Ask: the "Since you were last here" cards take as many columns as fit (three
+  at 1180, one at 834), their title no longer wraps to three lines, the chats
+  panel is 216px on a canvas under 781px, and the evidence panel lays over the
+  conversation as a side sheet there instead of taking a third column.
 
 ### Why
 
-- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation 338px and the cards 70px each.
+- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation
+  338px and the cards 70px each.
 
 ### Verification
 
-- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)` media query.
+- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask
+  answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)`
+  media query.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
@@ -352,18 +497,35 @@ Held items:     none
 
 ### Changed (coachhelm.css, coachhelm-ask.css, coachhelm-dive.css, coachhelm-profile.css, coachhelm-standing.css, coachhelm-thread.css, coachhelm-views.css)
 
-- Figures and labels still in pixels (the dive hero and measure values, the standing "you" figures, the focus and bars values, the thread's bar and rank values) follow the iPhone's text size. The thread's chart axis and reference labels keep theirs (SVG text).
+- Figures and labels still in pixels (the dive hero and measure values, the
+  standing "you" figures, the focus and bars values, the thread's bar and rank
+  values) follow the iPhone's text size. The thread's chart axis and reference
+  labels keep theirs (SVG text).
 - Radii on the 5, 7, 10, 14, 20 scale.
-- The phone's chat header keys, history keys and rows, question pills, composer chips, the thread's copy key, pills, chips and the "View as table" toggle reach 44px; the toggle, the work row, "Why we think this", the profile measure disclosure and the ask finder link have a hover state.
-- The thread's bar and rank values, and the profile's measure, standing and score figures, use tabular numerals.
+- The phone's chat header keys, history keys and rows, question pills, composer
+  chips, the thread's copy key, pills, chips and the "View as table" toggle
+  reach 44px; the toggle, the work row, "Why we think this", the profile measure
+  disclosure and the ask finder link have a hover state.
+- The thread's bar and rank values, and the profile's measure, standing and
+  score figures, use tabular numerals.
 
 ### Why
 
-- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20
+  scale, some phone controls were under 44px, some clickable things did not
+  answer a pointer, and the font shorthand had dropped tabular figures from
+  figures that sit in columns.
 
 ### Verification
 
-- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up,
+  sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the
+  phone with `--ch-type-scale: 1.4` scales text with no sideways overflow
+  (scrollWidth equals clientWidth). Touch reach was measured with
+  `elementFromPoint` 21px beyond each short control; hover was measured by
+  comparing computed styles under the pointer; figures were measured by computed
+  `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing
+  shadows in `auth.css` (lines 1809 and 1872).
 
 ## 2026-10-19 — In-flight actions are busy; one spinner; icon buttons have tooltips; chip and player rows fade a clipped edge
 
@@ -378,9 +540,12 @@ Held items:     none
 
 ### Changed
 
-- Accept, Decline, Assign as focus, Dismiss, Undo and a chat action's Confirm are busy while they run; only the one pressed shows the ring and its neighbours stay disabled.
+- Accept, Decline, Assign as focus, Dismiss, Undo and a chat action's Confirm
+  are busy while they run; only the one pressed shows the ring and its
+  neighbours stay disabled.
 - The thread's working step draws the shared `Spinner`.
-- Chats, New chat, Add to your question, Send, Stop, Mention, Copy and Close evidence show their name on hover and focus.
+- Chats, New chat, Add to your question, Send, Stop, Mention, Copy and Close
+  evidence show their name on hover and focus.
 - The phone's view chips and the player list fade only the clipped edge.
 
 ### Why

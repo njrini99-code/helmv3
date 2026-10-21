@@ -84,7 +84,7 @@ function seed(storedHoles: Array<{ hole_number: number; score: number | null }>)
       golf_team_members: [{ id: 'm-1', team_id: 'team-1', player_id: 'player-1', status: 'active' }],
       golf_rounds: [{
         id: ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-        course_name: 'Winchester CC', round_date: '2026-09-01', status: 'in_progress',
+        course_name: 'Winchester CC', round_date: '2026-09-01', status: 'in_progress', round_type: 'practice',
         updated_at: '2026-09-01T02:00:00Z',
       }],
       golf_holes: storedHoles.map((h) => ({ round_id: ROUND, ...h })),
@@ -206,7 +206,7 @@ describe('savePartialRound — salvage guard on the no-id REUSE path', () => {
         golf_team_members: [{ id: 'm-1', team_id: 'team-1', player_id: 'player-1', status: 'active' }],
         golf_rounds: [{
           id: ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-          course_name: 'Winchester CC', round_date: '2026-09-01', status: 'in_progress',
+          course_name: 'Winchester CC', round_date: '2026-09-01', status: 'in_progress', round_type: 'practice',
           qualifier_id: null, qualifier_round_number: null,
           updated_at: '2026-09-01T02:00:00Z',
         }],

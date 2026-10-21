@@ -40,13 +40,13 @@ CREATE POLICY "hlca_update" ON "public"."helm_lifting_coach_assignments" FOR UPD
 
 CREATE POLICY "hlci_delete" ON "public"."helm_lifting_coach_invites" FOR DELETE TO "authenticated" USING (("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
-CREATE POLICY "hlci_insert" ON "public"."helm_lifting_coach_invites" FOR INSERT TO "authenticated" WITH CHECK (("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "hlci_insert" ON "public"."helm_lifting_coach_invites" FOR INSERT TO "authenticated" WITH CHECK ((("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."helm_lifting_can_invite_coach"("organization_id")));
 
 CREATE POLICY "hlci_select" ON "public"."helm_lifting_coach_invites" FOR SELECT TO "authenticated" USING ((("lower"("email") = "lower"(( SELECT "u"."email"
    FROM "public"."users" "u"
   WHERE ("u"."id" = ( SELECT "auth"."uid"() AS "uid"))))) OR "public"."helm_lifting_coach_for_org"("organization_id")));
 
-CREATE POLICY "hlci_update" ON "public"."helm_lifting_coach_invites" FOR UPDATE TO "authenticated" USING (("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "hlci_update" ON "public"."helm_lifting_coach_invites" FOR UPDATE TO "authenticated" USING (("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK ((("invited_by_user_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."helm_lifting_can_invite_coach"("organization_id")));
 
 CREATE POLICY "hld_delete" ON "public"."helm_lifting_days" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM ("public"."helm_lifting_weeks" "w"
