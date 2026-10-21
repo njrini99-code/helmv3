@@ -193,6 +193,12 @@ supabase/.temp/
 # archive walk tests file paths without the directory pattern.
 .codex/config.toml
 .codex/**
+# The other absolute symlinks shared-workspace-runtime.mjs makes in a worktree
+# (RESOURCES there): same reasoning, so name each at file level
+# (.env* and .claude/settings.local.json already are, above).
+.vercel/project.json
+supabase/.temp/project-ref
+supabase/.temp/pooler-url
 .design-sync/
 .ultracode/
 .vscode/
