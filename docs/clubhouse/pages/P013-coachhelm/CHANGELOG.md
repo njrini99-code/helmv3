@@ -1238,6 +1238,7 @@ mention interaction tests and the popup browser audit on PR #2155.
 Physical VoiceOver acceptance remains open.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Streaming follow-scroll is scheduled once per browser frame and canceled

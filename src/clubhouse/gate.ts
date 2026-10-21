@@ -1,4 +1,5 @@
 import 'server-only';
+import * as Sentry from '@sentry/nextjs';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveClubhouseTeam } from './routes/team';
@@ -21,6 +22,22 @@ export function clubhouseTeamAllowlist(): Set<string> | null {
 }
 
 /**
+ * Tag the request's server events `ui=clubhouse`, the tag the browser sets for the whole session (`chTagSession`,
+ * lib/track.ts). Without it a server error during a canary could not be told from Fairway's. The isolation scope is
+ * the request's on the server, so the tag covers every event the request sends after the decision and no other
+ * request. Telemetry never decides the screen: a failure here is ignored.
+ */
+function tagServerRequest(clubhouse: boolean): boolean {
+  if (!clubhouse) return false;
+  try {
+    Sentry.getIsolationScope().setTag('ui', 'clubhouse');
+  } catch {
+    /* best effort */
+  }
+  return true;
+}
+
+/**
  * The one switch between Fairway and Clubhouse, for coaches and players.
  * Each role gets its rebuilt screens with its own permissions; a route without
  * a Clubhouse version redirects to the closest rebuilt one (route layouts,
@@ -30,16 +47,17 @@ export function clubhouseTeamAllowlist(): Set<string> | null {
  * Clubhouse; a user whose team cannot be read gets Fairway (fail closed to the
  * screens every team already uses). The session and team reads are
  * request-cached, so calling this from a layout and its page costs one read.
+ * A yes also tags the request's server events `ui=clubhouse` (above).
  */
 export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined): Promise<boolean> {
   if (!(role === 'coach' || role === 'player') || !isFlagEnabled('golf_clubhouse_ui')) return false;
   const allow = clubhouseTeamAllowlist();
-  if (!allow) return true;
+  if (!allow) return tagServerRequest(true);
   try {
     const session = await getGolfSessionProfile();
     if (!session) return false;
     const team = await resolveClubhouseTeam(session);
-    return team != null && team.role === role && allow.has(team.teamId);
+    return tagServerRequest(team != null && team.role === role && allow.has(team.teamId));
   } catch {
     return false;
   }
