@@ -1,5 +1,22 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — Season bars and the round review are drawn at once
+
+```text
+Design package: none (motion decision Q-145, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The season ribbon's bars no longer rise from the par line with a stagger,
+their scores no longer wait 0.6 x the reveal, and the round review's scoring
+line, fill, dots and shot arcs are shown at first paint (`parts.tsx`,
+`RoundZones.tsx`, `rounds.css`; Q-145). A bar still moves if its round
+changes. Motion report 2026-10-20-rounds.md box 3.
+
 ## 2026-10-20 — Honest deltas (stats visuals 2)
 
 ```text
