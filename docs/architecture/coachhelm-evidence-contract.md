@@ -2281,9 +2281,10 @@ Rules the pass applies:
 applies it) gets one row per player per run: candidates, testable,
 supported, shown (Working hypothesis or above, before delivery caps),
 suppressed by first reason, rungs, per-family rungs and the Watching list.
-`trigger` is `round` (round submitted), `checkpoint` (the safety-net cron
+`trigger` is `round` (round submitted), `safety_net` (the safety-net cron
 re-running a round whose analysis did not finish), `sweep` (roster sweep) or
-`manual` (a coach refresh or on-demand analysis); `newest_round_id` is the
+`manual` (a coach refresh or on-demand analysis); `checkpoint` is reserved
+for the 02 §5 checkpoint re-test; `newest_round_id` is the
 newest round that passes `isCountableRound` (`src/lib/golf/round-countable.ts`).
 `golf_insight_exposure.rank_factors` gets `{ version, score, S, R, ladder,
 q_adj, position, surface }` (S from `strokes_shrunk`, capped at 3; R the 03
@@ -2299,3 +2300,57 @@ testable reads are BH-supported; 5 of 49 players with >= 5 countable rounds
 would get an Observed-or-better read, against the 02 §8 bar of 70%. Ladder
 words must not reach players until the bars are met. The replay over past
 cutoffs (held / cleared / contradicted per rung) is not built yet.
+
+### Slice 1b fixes (post-merge review, 2026-10-20)
+
+Still behind `coachhelm_support_v1` (off). These supersede the rules above
+where they differ.
+
+- Direction. The tested side is the side the row claims (its framing), never
+  flipped to the side the data favour. Where the generator picks leak or
+  strength from the same comparison (the one-rate families, penalties,
+  pressure and opening hole), BH gets the two-sided
+  `min(1, 2·min(p_worse, p_better))` as `support.p_bh`;
+  `support.direction_basis` is `data`. Within-player contrasts only claim the
+  weak side, so their direction is `declared` and BH gets the one-sided p.
+- No claim. A row whose verdict claims nothing (putt-bias "balanced", tee
+  strategy "sharp" or "inconclusive", pressure or opening-hole gaps inside the
+  normal band) is untestable with `no_claim`, held at Not enough yet.
+- One m. BH's m is the rows the run wrote, plus rows the philosophy gate held
+  back (evaluated from their in-memory evidence, never written), plus rows
+  `upsertInsight` refused (p = 1). A gated and an ungated caller get the same
+  q for the same data. `support.m_basis` and the run log (`m_recorded`,
+  `m_gated`, `m_refused`) record the split.
+- Floors come from `FAMILY_FLOORS` (`engine/read-floor-table.ts`) whatever
+  `coachhelm_reads_v1_copy` says. Two-arm contrasts hold every arm to its
+  floor (at least 6; pressure 6 practice + 6 tournament, tee 20 driver + 12
+  non-driver) and fail with `below_arm_floor`. `ladder_reasons` puts the
+  binding floor first (the one furthest from passing).
+- Benchmark. `standing.team_avg` includes the player (checked against
+  production: 1,040 of 1,040 team rows). With `standing.player_value` the
+  benchmark is the leave-one-out team mean (`benchmark_basis: team_loo`), and
+  its own variance enters the range and p, taking each teammate's sample as
+  the size of this player's (Newcombe and pooled z for rates, MOVER and the
+  conditional binomial for counts per round, summed variances for means).
+  Without it the stored mean is used as exact (`team_incl_player`).
+- Shrink. The prior is the benchmark, labelled with its own source (a Tour
+  benchmark is a `tour` prior). A two-rate contrast shrinks by the harmonic
+  n, `2·nA·nB/(nA + nB)`.
+- Ranking. `rank_factors.S` leaves out a strength whose strokes are the row's
+  own Tour-cost figure (`S_excluded: strength_tour_cost`); strokes derived
+  from the gap (`support.strokes_basis: gap`) still rank.
+- Freshness. `support.run_at` and `support.run_id` (the run-log row id) say
+  which pass stamped the row.
+- Player paths. `getInsightsForPlayer`, `getTopInsightForPlayer` (urgent
+  and normal picks) and `getRoundTakeawayInsight` strip `support`, `ladder`,
+  `what_ladder`, `ladder_reasons`, `strokes_shrunk` and `shrink` from the
+  evidence they return (`src/lib/coachhelm/delivery/player-projection.ts`);
+  exposure rows still read them.
+- Watching also lists a read held only by an arm floor, with the short arms
+  (`watching[].arms`).
+
+Back-test on the 2026-10-20 export (715 live v3 reads, 70 players), main
+before these fixes vs after: testable 510 vs 468 (42 no-claim rows); BH
+supported 109 vs 96; as stored 6 / 0 / 8 / 701 vs 4 / 2 / 10 / 699
+(Observed / Likely / Working hypothesis / Not enough yet); with round counts
+stamped 6 / 2 / 47 / 660 vs 4 / 4 / 44 / 663; reach 5 vs 3 of 49 players.

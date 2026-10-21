@@ -695,7 +695,7 @@ export interface AnalysisOptions {
    * (`golf_coachhelm_run_log.trigger`, Slice 1, flag `coachhelm_support_v1`).
    * Omitted → 'unspecified'. Has no other effect.
    */
-  runTrigger?: 'round' | 'sweep' | 'manual' | 'checkpoint';
+  runTrigger?: 'round' | 'sweep' | 'manual' | 'safety_net' | 'checkpoint';
   depth?: 'quick' | 'standard' | 'deep';
   /**
    * Coach's persisted Insight Detail Level (golf_coach_philosophy.insight_verbosity).

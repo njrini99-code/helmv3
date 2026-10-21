@@ -90,7 +90,7 @@ describe('postRoundTrigger', () => {
     const cases = [
       [undefined, 'round'],
       ['round_submitted', 'round'],
-      ['safety_net', 'checkpoint'],
+      ['safety_net', 'safety_net'],
       ['manual_refresh', 'manual'],
       ['cron', 'sweep'],
     ] as const;
