@@ -13,18 +13,20 @@ Held items:     none
 
 ### Changed
 
-- The sign-in email and password boxes (`SignInForm`), the reset email box
-  (`ForgotPassword`) and every `GateInput` (reset password, staff invitation,
-  demo entry) are read-only until React has hydrated them, through the shared
-  `useHydrationGuard` (`lib/use-hydration-guard.ts`). The boxes look the same
-  while they wait.
+- The reset email box (`ForgotPassword`) and every `GateInput` (reset
+  password, staff invitation, demo entry) are read-only until React has
+  hydrated them, through the shared `useHydrationGuard`
+  (`lib/use-hydration-guard.ts`). The boxes look the same while they wait.
+- The sign-in email and password are left as they were: a read-only box in
+  the server HTML is skipped by page-load autofill, and returning users rely
+  on it. Their submit is still held until hydration.
 
 ### Why
 
 Text typed into server HTML before hydration is reset when the controlled
-value is applied, and WebKit drops the first-typed box: a wiped email or
-password at sign in. The submit button was already held until hydration;
-the boxes now are too. The mount-time adoption of values stays as it was.
+value is applied, and WebKit drops the first-typed box. The reset and gate
+boxes now wait for hydration. Sign in is the one place a browser or password
+manager fills at page load, so its boxes stay editable.
 
 ## 2026-10-19 — The new-coach guard reads its errors
 

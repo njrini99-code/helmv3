@@ -21,7 +21,6 @@ import {
 } from '@/lib/auth/golf-sign-in-logic';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { useHydrationGuard } from '../../lib/use-hydration-guard';
 import { Icon } from '../../ui/Icon';
 import { Tooltip } from '../../ui/Tooltip';
 import { AuthKeyLabel } from './AuthKey';
@@ -86,8 +85,8 @@ export function SignInForm({
   const [showPassword, setShowPassword] = useState(false);
   // False until the client has mounted; gates submit so a pre-hydration tap cannot fire the action with React's empty initial state (#1245).
   const [hydrated, setHydrated] = useState(false);
-  // The boxes are read-only until React has hydrated them, so a fast typist's first box is not reset (see use-hydration-guard).
-  const guard = useHydrationGuard();
+  // Email and password are deliberately not behind useHydrationGuard: a read-only box in the server HTML is skipped by the
+  // browser's and password managers' page-load fill, and sign in is where returning users rely on it. Submit is held instead.
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
@@ -299,7 +298,6 @@ export function SignInForm({
             <input
               ref={emailRef}
               id="golf-signin-email"
-              {...guard}
               type="email"
               inputMode="email"
               autoComplete="username"
@@ -335,7 +333,6 @@ export function SignInForm({
             <input
               ref={passwordRef}
               id="golf-signin-password"
-              {...guard}
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               autoCapitalize="none"

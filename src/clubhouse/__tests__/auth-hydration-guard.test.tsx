@@ -18,12 +18,11 @@ import { SignInForm } from '../screens/auth/SignInForm';
 
 /**
  * A fast typist's first box is reset when hydration applies the controlled value (the WebKit loss behind the Settings name
- * that never saved), and at sign in that is a wiped email or password. Every text box on the sign-in screens is read-only
- * until it has hydrated, through the one shared guard.
+ * that never saved). The reset email and the gate boxes are read-only until they have hydrated, through the one shared guard;
+ * the sign-in email and password are not, so page-load autofill still fills them (their submit is held until hydrated).
  */
 describe('sign-in boxes do not take text before they hydrate', () => {
   const cases: [string, () => React.ReactElement, string[]][] = [
-    ['SignInForm', () => <SignInForm onOpening={() => {}} />, ['#golf-signin-email', '#golf-signin-password']],
     ['ResetForm', () => <ResetForm initialEmail="" focusOnMount={false} onSent={() => {}} onBack={() => {}} />, ['#golf-forgot-email']],
     ['GateInput', () => <GateInput id="gate-x" label="New password" value="" onChange={() => {}} />, ['#gate-x']],
   ];
@@ -46,4 +45,11 @@ describe('sign-in boxes do not take text before they hydrate', () => {
       host.remove();
     });
   }
+
+  // Returning users rely on the browser's and password managers' page-load fill, which skips a read-only box.
+  it('SignInForm: the credential boxes stay editable in the server markup so page-load autofill can fill them', () => {
+    const host = document.createElement('div');
+    host.innerHTML = renderToString(<SignInForm onOpening={() => {}} />);
+    for (const sel of ['#golf-signin-email', '#golf-signin-password']) expect(host.querySelector<HTMLInputElement>(sel)!.readOnly, sel).toBe(false);
+  });
 });
