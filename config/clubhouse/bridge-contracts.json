@@ -15292,6 +15292,50 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130724,
+    "page": "P013",
+    "category": 7,
+    "item": 24,
+    "name": "COACH_PLAYER_WHAT_THE_ENGINE_KNOWS_ABOUT",
+    "chCode": "CH-13990",
+    "meaning": "Coach, player: what the engine knows about a read",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130725,
+    "page": "P013",
+    "category": 7,
+    "item": 25,
+    "name": "COACH_PLAYER_WHY_DO_YOU_THINK_SO",
+    "chCode": "CH-13991",
+    "meaning": "Coach, player: why do you think so",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130726,
+    "page": "P013",
+    "category": 7,
+    "item": 26,
+    "name": "COACH_PLAYER_READS_THE_RECHECK_CLEARED",
+    "chCode": "CH-13992",
+    "meaning": "Coach, player: reads the recheck cleared",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130727,
+    "page": "P013",
+    "category": 7,
+    "item": 27,
+    "name": "DEEP_DIVE_THE_READS_WHY_LINE_FROM",
+    "chCode": "CH-13993",
+    "meaning": "Deep dive: the Read's Why line from the cause state",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,

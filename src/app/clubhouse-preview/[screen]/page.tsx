@@ -111,6 +111,7 @@ import {
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
+import { PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -146,12 +147,14 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/qualifier ?q=live | upcoming | selected | completed | spring, &state=failed | scores | partial | failwrites | loading
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
+ *   /clubhouse-preview/coachhelm ?state=engine | engine-notmoved   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate   (the coach; Maya)
+ *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | failed | off | loading   (the player's Standing)
- *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
+ *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=engine | young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
@@ -418,7 +421,7 @@ export default async function ClubhousePreview({
         ) : (
           <PreviewCoachHelm
             state={state}
-            data={{ assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF }[state ?? ''] ?? PREVIEW_HELM_COACH}
+            data={{ engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF }[state ?? ''] ?? PREVIEW_HELM_COACH}
           />
         ),
     },
@@ -454,7 +457,7 @@ export default async function ClubhousePreview({
         ) : (
           <PreviewCoachHelmPlayer
             state={state}
-            data={{ many: PREVIEW_HELM_PLAYER_MANY, stale: PREVIEW_HELM_PLAYER_STALE, zero: PREVIEW_HELM_PLAYER_ZERO, empty: PREVIEW_HELM_PLAYER_EMPTY, norounds: PREVIEW_HELM_PLAYER_NO_ROUNDS, working: PREVIEW_HELM_PLAYER_WORKING, failed: PREVIEW_HELM_PLAYER_FAILED, off: PREVIEW_HELM_PLAYER_OFF, proposed: PREVIEW_HELM_PLAYER_PROPOSED, failproposal: PREVIEW_HELM_PLAYER_PROPOSED, proposalsfailed: PREVIEW_HELM_PLAYER_PROPOSALS_FAILED }[state ?? ''] ?? PREVIEW_HELM_PLAYER}
+            data={{ engine: PREVIEW_HELM_PLAYER_ENGINE, many: PREVIEW_HELM_PLAYER_MANY, stale: PREVIEW_HELM_PLAYER_STALE, zero: PREVIEW_HELM_PLAYER_ZERO, empty: PREVIEW_HELM_PLAYER_EMPTY, norounds: PREVIEW_HELM_PLAYER_NO_ROUNDS, working: PREVIEW_HELM_PLAYER_WORKING, failed: PREVIEW_HELM_PLAYER_FAILED, off: PREVIEW_HELM_PLAYER_OFF, proposed: PREVIEW_HELM_PLAYER_PROPOSED, failproposal: PREVIEW_HELM_PLAYER_PROPOSED, proposalsfailed: PREVIEW_HELM_PLAYER_PROPOSALS_FAILED }[state ?? ''] ?? PREVIEW_HELM_PLAYER}
           />
         ),
     },

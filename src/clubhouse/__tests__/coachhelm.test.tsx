@@ -572,6 +572,12 @@ describe('CoachHelm for the player, on screen', () => {
     await expectCode('CH-13301', /CoachHelm reads the rounds you post\. After 4 rounds, one thing to work on this week shows up here\./);
   });
 
+  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', async () => {
+    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] });
+    await expectCode('CH-13302');
+    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
+  });
+
   it('CH-13302 rounds posted but no insight yet: it says how many, that CoachHelm needs enough to find a pattern, and no threshold', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_EMPTY);
     await expectCode('CH-13302', /No insights yet.*You’ve posted 3 rounds\. CoachHelm needs enough rounds to find a pattern worth acting on/);

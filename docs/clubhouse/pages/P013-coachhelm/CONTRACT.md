@@ -223,6 +223,10 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
 | 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
+| 130724 | CH-13990 | `COACH_PLAYER_WHAT_THE_ENGINE_KNOWS_ABOUT` | Coach, player: what the engine knows about a read |
+| 130725 | CH-13991 | `COACH_PLAYER_WHY_DO_YOU_THINK_SO` | Coach, player: why do you think so |
+| 130726 | CH-13992 | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | Coach, player: reads the recheck cleared |
+| 130727 | CH-13993 | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | Deep dive: the Read's Why line from the cause state |
 
 ## 08 — Permission / authorization
 
