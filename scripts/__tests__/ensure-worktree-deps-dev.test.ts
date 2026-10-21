@@ -9,7 +9,7 @@
 // running gates, so it always asks for dev dependencies explicitly.
 
 import { describe, it, expect } from 'vitest';
-import { NPM_CI_ARGS } from '../../../scripts/ensure-worktree-deps.mjs';
+import { NPM_CI_ARGS } from '../ensure-worktree-deps.mjs';
 
 describe('ensure-worktree-deps npm ci arguments', () => {
   it('runs npm ci', () => {

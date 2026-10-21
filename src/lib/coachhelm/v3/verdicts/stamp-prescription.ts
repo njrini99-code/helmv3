@@ -15,7 +15,7 @@ import 'server-only';
  * must not become a public endpoint.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import type { Database } from '@/lib/types/database';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { isVerdictsEnabled } from './flag';
@@ -43,8 +43,7 @@ export interface StampPrescriptionArgs {
 const ACTION = 'coachhelm.verdicts.stampPrescription';
 
 export async function stampPrescriptionFromRead(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client: SupabaseClient<any, any, any>,
+  client: SupabaseClient<Database>,
   args: StampPrescriptionArgs,
 ): Promise<StampPrescriptionResult> {
   if (!isVerdictsEnabled()) return { status: 'flag_off' };
@@ -70,7 +69,8 @@ export async function stampPrescriptionFromRead(
       assignedBy: args.assignedBy,
     });
 
-    const { error: writeError } = await fromUntyped(client, 'golf_player_focus_areas')
+    const { error: writeError } = await client
+      .from('golf_player_focus_areas')
       .update(toColumnPatch(patch)) // nosemgrep: helmv3-action-missing-revalidate -- the calling action revalidates
       .eq('id', args.focusAreaId)
       .eq('player_id', args.playerId);

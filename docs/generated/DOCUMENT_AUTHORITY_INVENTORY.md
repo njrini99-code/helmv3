@@ -48,9 +48,9 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 57 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 28 | 2 | 12 | 5 |
+| `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 352 | 13 | 71 | 92 |
+| `UNKNOWN` | 352 | 13 | 71 | 93 |
 
 ## Files
 
@@ -658,6 +658,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `scripts/README.md` | current | - | - | yes | - |
 | `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
+| `src/clubhouse/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
 | `src/lib/coachhelm/README.md` | current | - | - | yes | - |
@@ -862,7 +863,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |

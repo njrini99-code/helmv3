@@ -19,7 +19,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -36,7 +36,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -53,7 +53,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -70,7 +70,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -87,7 +87,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -189,7 +189,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-22",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -223,7 +223,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -291,7 +291,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -359,7 +359,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "experiment",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: null,
+    expires_at: "2027-01-05",
     default: false,
     environment: {
       production: false,
@@ -368,23 +368,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Either promote to a permanent `release` flag once shadow-log data shows the learned thresholds track real coach preference (fewer dismissed alerts without missing real declines), or remove the wiring and this flag entirely if the evidence doesn't support it.",
-  },
-  {
-    feature_id: "coachhelm_v2_availability",
-    owner: "golf/coachhelm",
-    purpose: "Global product-availability switch for the CoachHelm V2 AI layer. Off disables the whole surface for every coach and player account; the underlying check is a fail-open string comparison (any value except the literal string \"false\" leaves it on).",
-    type: "release",
-    status: "active",
-    created_at: "2026-09-03",
-    expires_at: null,
-    default: true,
-    environment: {
-      production: true,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: null,
-    cleanup_plan: "No planned removal — this has been the live product-availability switch for CoachHelm V2 since its rollout; this registry entry documents it without wiring the call site, which lives outside this PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts through isFlagEnabled('coachhelm_v2_availability') as a small, independent follow-up.",
   },
   {
     feature_id: "coachhelm_verdicts_v1",
@@ -402,23 +385,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     },
     kill_switch_behavior: null,
     cleanup_plan: "Turn on only after the owner applies 20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code treats the missing columns as not available, so the order is not a correctness issue) and runs npm run test:rls. Remove the flag and its checks once the Layout 5 verdict view ships and the verdict job has run stably for a month.",
-  },
-  {
-    feature_id: "flight_recorder",
-    owner: "platform (Bridge)",
-    purpose: "Arms per-request golf round mutation tracing (client to server action to RPC to in-transaction checkpoints) so /admin/traces has data to show. An operability lever only — disabling it stops the mutation from being observed, never stops the mutation from running.",
-    type: "operations_kill_switch",
-    status: "active",
-    created_at: "2026-09-03",
-    expires_at: null,
-    default: true,
-    environment: {
-      production: false,
-      preview: true,
-      development: true,
-    },
-    kill_switch_behavior: "Off: no helm_debug_start_trace / helm_debug_record_trace_step / helm_debug_finalize_trace RPCs are called from the golf round action path. The round mutation itself is unaffected — this switch only controls whether it is observed. Changed by setting HELM_FLIGHT_RECORDER_ENABLED at the environment level (deploy-time, not a runtime toggle); auditable via the Vercel environment-variable change log.",
-    cleanup_plan: "No planned removal — permanent ops tooling. This registry entry documents the existing toggle; it does not wire the call sites, which sit outside this PR's file-ownership boundary. Wiring is left to the Sentry session that owns those two files.",
   },
   {
     feature_id: "golf_clubhouse_front_door",
