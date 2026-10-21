@@ -32,6 +32,7 @@ import { RoundsExtra } from './RoundsExtra';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
+import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { devProgress, devTitle, goalLine } from './dev-format';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
@@ -474,6 +475,7 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
               <b>{devTitle(f.title)}</b>
               <span className="ch-num">{f.status === 'proposed' ? 'Proposed, waiting to be accepted' : devProgress(f)}</span>
               {!coach && f.status === 'proposed' && <ProposalAnswer id={f.id} title={f.title} />}
+              <FocusLoop loop={f.loop} />
             </li>
           ))}
         </ul>

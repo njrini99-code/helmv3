@@ -4,6 +4,8 @@
  * GolfStats object starts from the real calculator's empty result, so the
  * shape can't drift from production.
  */
+import { focusLoopOf, type ChFocusLoopRow, type ChFocusPost } from '../data/focus-loop-shape';
+import type { ChViewer as ChFocusViewer } from '../data/coachhelm-voice';
 import { calculateStatsFromShots, type GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
@@ -701,3 +703,48 @@ export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
   rounds: [],
   stats: null,
 };
+
+/**
+ * CoachHelm chs-11 (`coachhelm_verdicts_v1` on): the prescription and verdict loop on each focus area, built by the page's own
+ * shaping from synthetic prescription rows with supercharge 04 example 11's numbers: short putts still short of the horizon (22 of
+ * 40 in), 5–10 ft putts Worked (31 of 42 against 18 of 31), greens Did not move (24 of 40); the approach area has no criterion.
+ */
+const LOOP_AT = '2026-10-19T06:00:00Z';
+const loopVerdict = (word: 'worked' | 'did_not_move', made: number, n: number, lower: number, upper: number) => ({
+  word,
+  post: { value: made / n, made, n, window_start: '2026-09-01', window_end: '2026-10-17' },
+  lower_bound_90: lower,
+  upper_bound_90: upper,
+  bound_method: 'normal' as const,
+  expected_without_coaching: 0.635,
+  threshold: 0.7,
+  horizon: { attempts: 40 },
+  computed_at: LOOP_AT,
+});
+const LOOP_ROWS: Array<{ row: ChFocusLoopRow; post: ChFocusPost | null }> = [
+  {
+    row: { id: 'f2', title: 'Short putts', from_insight_id: null, target_metric: 'putts_made_3_5ft_pct', baseline_value: 0.55, baseline_n: 40, criterion: { direction: 'higher', threshold: 0.85, unit: 'pct' }, horizon: { attempts: 40 }, verdict: null, started_at: '2026-10-01' },
+    post: { made: 18, n: 22 },
+  },
+  {
+    row: { id: 'f3', title: '5–10 ft putts', from_insight_id: null, target_metric: 'putts_made_5_10ft_pct', baseline_value: 18 / 31, baseline_n: 31, criterion: { direction: 'higher', threshold: 0.7, unit: 'pct' }, horizon: { attempts: 40 }, verdict: loopVerdict('worked', 31, 42, 0.651, 0.82), started_at: '2026-09-01' },
+    post: null,
+  },
+  {
+    row: { id: 'f4', title: 'Greens in regulation', from_insight_id: null, target_metric: 'gir_pct', baseline_value: 0.58, baseline_n: 54, criterion: { direction: 'higher', threshold: 0.7, unit: 'pct' }, horizon: { attempts: 40 }, verdict: loopVerdict('did_not_move', 24, 40, 0.501, 0.699), started_at: '2026-09-01' },
+    post: null,
+  },
+];
+const withLoops = (viewer: ChFocusViewer): ChPlayerProfile['focusAreas'] => {
+  const loops = new Map(LOOP_ROWS.map(({ row, post }) => [row.id, focusLoopOf(row, post, viewer, '2026-10-21T12:00:00Z')]));
+  return [
+    ...PREVIEW_PLAYER.focusAreas,
+    { id: 'f3', title: '5–10 ft putts', baseline: 58, current: 74, target: 70, metric: 'putts_made_5_10ft_pct', status: 'active' },
+    { id: 'f4', title: 'Greens in regulation', baseline: 58, current: 60, target: 70, metric: 'gir_pct', status: 'active' },
+  ].map((f) => {
+    const loop = loops.get(f.id);
+    return loop ? { ...f, loop } : f;
+  });
+};
+export const PREVIEW_PLAYER_LOOPS: ChPlayerProfile = { ...PREVIEW_PLAYER, focusAreas: withLoops({ role: 'coach', first: PREVIEW_PLAYER.firstName }) };
+export const PREVIEW_PLAYER_LOOPS_SELF: ChPlayerProfile = { ...PREVIEW_PLAYER, viewer: 'player', nav: null, focusAreas: withLoops({ role: 'player' }) };

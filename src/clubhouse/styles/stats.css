@@ -7117,3 +7117,55 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 .ch-sv-tr.is-phone .ch-sv-tr__v {
   padding-right: 6px;
 }
+
+/* CoachHelm chs-11: a focus area's prescription and verdict loop (layout 5), under its track or its line: target, progress, then
+   the verdict word in a pill with its line. Drawn only with coachhelm_verdicts_v1 on. The word carries the state; the tone is
+   decoration. Selectors are doubled so the phone list's own `span` and `b` rules do not reach the pill. */
+.ch-dv-loop {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0 0;
+}
+.ch-dv-loop > div {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-dv-loop dt {
+  padding-top: 2px;
+  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-dv-loop dd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-dv-loop .ch-dv-loop__w {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  background: var(--ch-ivory-150);
+  color: var(--ch-text-secondary);
+}
+.ch-dv-loop .ch-dv-loop__w.is-good {
+  background: var(--ch-positive-100);
+  color: var(--ch-positive-600);
+}
+.ch-dv-loop .ch-dv-loop__w.is-warn {
+  background: var(--ch-warning-100);
+  color: var(--ch-warning-600);
+}
+.ch-dv-loop .ch-dv-loop__l {
+  max-width: 62ch;
+  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  text-wrap: pretty;
+}

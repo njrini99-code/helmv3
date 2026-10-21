@@ -4219,6 +4219,24 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/stats/FocusLoop.tsx",
+      "group": "screens",
+      "exports": [
+        "FocusLoop"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/stats/GameDetail.tsx",
       "group": "screens",
       "exports": [
@@ -12158,6 +12176,9 @@
         "ch-cup__st",
         "ch-delta",
         "ch-dv",
+        "ch-dv-loop",
+        "ch-dv-loop__l",
+        "ch-dv-loop__w",
         "ch-dv__done",
         "ch-dv__dot",
         "ch-dv__end",
