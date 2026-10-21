@@ -31,7 +31,7 @@ import {
   type CounterfactualProjection,
 } from '@/lib/coachhelm/v3/counterfactual/types';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
-import { shotSgForRound, type RawShotRow } from './shot-sg';
+import { shotSgForRound, type RawShotRow, type ShotSgOptions } from './shot-sg';
 
 /** The one flag the angle generators share (config/feature-flags.yml). */
 export const INSIGHT_ANGLES_FLAG = 'coachhelm_insight_angles_v1';
@@ -252,7 +252,7 @@ export function shotsByHole(shots: readonly AngleShot[]): Map<string, AngleShot[
  * (`./shot-sg.ts#shotSgForRound`, ported from PR #2073), with the player's
  * `sg_scale_for_player`.
  */
-export function shotSgById(data: Pick<AngleData, 'shots' | 'holes' | 'scale'>): Map<string, number> {
+export function shotSgById(data: Pick<AngleData, 'shots' | 'holes' | 'scale'>, opts: ShotSgOptions = {}): Map<string, number> {
   // No SG scale → no per-shot SG (never computed at a guessed scale of 1).
   if (data.scale === null) return new Map();
   const scale = data.scale;
@@ -266,7 +266,7 @@ export function shotSgById(data: Pick<AngleData, 'shots' | 'holes' | 'scale'>): 
   }
   const out = new Map<string, number>();
   for (const list of byRound.values()) {
-    for (const sg of shotSgForRound(list, parByHoleId, scale)) out.set(sg.shotId, sg.sg);
+    for (const sg of shotSgForRound(list, parByHoleId, scale, opts)) out.set(sg.shotId, sg.sg);
   }
   return out;
 }

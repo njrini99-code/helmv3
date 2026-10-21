@@ -13,7 +13,10 @@
  * (`shot-sg.ts`) at the player's SG scale, summed over the attempt's own row
  * and the penalty rows recorded straight after it (and, for a par-3 tee
  * shot, a re-tee from the tee), so a ball in the water costs the approach
- * that hit it, exactly as the stored round SG charges it. Teammates are on
+ * that hit it, exactly as the stored round SG charges it. A shot ends where
+ * the next non-penalty shot starts (its own recorded finish only when no such
+ * shot follows), the endpoint rule of
+ * `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql`. Teammates are on
  * the same team, so `sg_scale_for_player` (a team setting) gives them the
  * same scale; the player's scale is used for the pool.
  */
@@ -34,7 +37,13 @@ export interface TeammateShots {
   player_id: string;
   rounds: Pick<AngleRound, 'id' | 'date' | 'holes'>[];
   holes: AngleHole[];
-  /** Approach, putting and penalty rows only (what the 5b families read). */
+  /**
+   * Every shot row of those rounds, whatever its type: the SG port resolves
+   * an attempt's endpoint from the row after it (an around-green chip, a
+   * re-tee), so filtering types would price a teammate's approach against a
+   * later shot than the player's unfiltered read does. Which rows count as an
+   * attempt is decided by the extractors, the same for both.
+   */
   shots: AngleShot[];
 }
 
@@ -42,9 +51,6 @@ export interface TeammateShots {
 export interface TeamShotData {
   teammates: TeammateShots[];
 }
-
-/** The shot types a teammate's read needs (see {@link TeammateShots.shots}). */
-export const TEAM_SHOT_TYPES = ['approach', 'putting', 'penalty'] as const;
 
 /** `03` §5.2: countable rounds a teammate needs to join the pool. */
 export const TEAMMATE_MIN_ROUNDS = 3;
@@ -192,7 +198,12 @@ export function extractApproaches(rec: ShotRecord): ApproachExtract {
     excluded: { tee_approaches: 0, no_band: 0, no_sg: 0, par3_first_not_tee: 0 },
   };
   if (rec.scale === null) return out;
-  const sg = shotSgById({ shots: rec.shots as AngleShot[], holes: rec.holes as AngleHole[], scale: rec.scale });
+  // Next-shot-start endpoint, as the stored round SG of
+  // 20260930150000_golf_sg_penalty_charged_to_earning_shot.sql prices it.
+  const sg = shotSgById(
+    { shots: rec.shots as AngleShot[], holes: rec.holes as AngleHole[], scale: rec.scale },
+    { endpoint: 'next_shot_start' },
+  );
   const dateOf = new Map(rec.rounds.map((r) => [r.id, r.date]));
   const holes = holeIndex(rec);
   for (const [key, list] of holesWithShots(rec)) {

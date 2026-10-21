@@ -21,6 +21,7 @@ import { composeLagLeave, computeLagLeave, lagLinkLine, lagLinkOf, lowerShareZ, 
 import { composeUnderReading, computeUnderReading, toUnderReadingAggregate } from '../under-reading';
 import { composeThreePuttChain, computeThreePuttChain, toThreePuttAggregate, type ThreePuttBenchmark } from '../three-putt-chain';
 import { bandApproachShots } from '@/lib/coachhelm/v3/generators/approach-miss';
+import { getExpectedStrokes } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ApproachShot } from '@/lib/coachhelm/v3/engine/shot-source';
 import { buildCandidate } from '@/lib/coachhelm/v3/support/candidate';
 import { expectFamilyContract } from './contract';
@@ -162,6 +163,22 @@ describe('extractApproaches', () => {
     expect(x.par3[0]!.sg).toBeLessThan(-1.5);
     expect(x.bands['50_125']).toHaveLength(1);
     expect(x.bands['50_125']![0]!.sg).toBeLessThan(-1);
+  });
+
+  it('prices an approach to the next non-penalty shot start when its recorded finish differs (stored round SG rule)', () => {
+    const r = mkRound(0);
+    const holes = [mkHole(r.id, 1, { par: 4 })];
+    const shots = [
+      mkShot(r.id, 1, 1, { shot_type: 'tee', lie_before: 'tee', distance_to_hole_before: 400, lie_after: 'fairway', distance_to_hole_after: 100, distance_unit_after: 'yards' }),
+      // Recorded finish: on the green 10 ft away; the next shot is a chip from 15 yd rough.
+      mkShot(r.id, 1, 2, { lie_before: 'fairway', distance_to_hole_before: 100, lie_after: 'green', result: 'green', distance_to_hole_after: 10, distance_unit_after: 'feet' }),
+      mkShot(r.id, 1, 3, { shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 15, lie_after: 'green', result: 'green', distance_to_hole_after: 4, distance_unit_after: 'feet' }),
+      mkShot(r.id, 1, 4, { shot_type: 'putting', lie_before: 'green', distance_to_hole_before: 4, distance_unit_before: 'feet', putt_made: true, result: 'holed' }),
+    ];
+    const x = extractApproaches({ rounds: [r], holes, shots, scale: 1 });
+    const want = getExpectedStrokes('fairway', 100, undefined, 1) - getExpectedStrokes('rough', 15, undefined, 1) - 1;
+    expect(x.bands['50_125']).toHaveLength(1);
+    expect(x.bands['50_125']![0]!.sg).toBeCloseTo(want, 6);
   });
 
   it('reads the depth of a miss and the side of a putt miss from compound tags', () => {

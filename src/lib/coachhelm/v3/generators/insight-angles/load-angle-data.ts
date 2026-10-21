@@ -16,8 +16,8 @@
  *   the cached three-putt count), never another player's shots.
  * - The Tour three-putt figure for the player's tour (`golf_pga_standards`).
  * - Slice 5b, a team's shots: each teammate's newest {@link ANGLE_ROUND_LIMIT}
- *   countable rounds, their holes and their approach, putting and penalty
- *   shots (the player excluded), for the pooled team lines of the counted
+ *   countable rounds, their holes and every recorded shot (all types, for
+ *   shot-ledger continuity; the player excluded), for the pooled team lines of the counted
  *   families. Only pooled counts and means leave the pure code; no teammate
  *   is ever named or shown on their own.
  */
@@ -39,7 +39,7 @@ import {
   type TourThreePutt,
 } from './angle-data';
 import type { AngleLoaders } from './angle-generator';
-import { TEAM_SHOT_TYPES, type TeamShotData, type TeammateShots } from './counted-shots';
+import type { TeamShotData, TeammateShots } from './counted-shots';
 
 const IN_CHUNK = 60;
 
@@ -259,7 +259,8 @@ async function readTeamShots(sb: Sb, teamId: string, playerId: string): Promise<
         .from('golf_shots')
         .select(SHOT_COLUMNS)
         .in('round_id', idChunk)
-        .in('shot_type', [...TEAM_SHOT_TYPES])
+        // Every shot type: the SG endpoint of an approach can be the
+        // around-green (or other) row after it, as in the player's read.
         .order('id', { ascending: true })
         .range(from, to) as unknown as PromiseLike<{ data: AngleShot[] | null; error: { message: string } | null }>,
     );
