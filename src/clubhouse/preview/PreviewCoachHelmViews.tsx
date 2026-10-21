@@ -26,13 +26,14 @@ import {
   profileLoad,
   standingLoad,
 } from './fixtures-coachhelm-views';
-import { PREVIEW_DIVE_ENGINE } from './fixtures-coachhelm-engine';
+import { PREVIEW_DIVE_CORRECTIONS, PREVIEW_DIVE_CORRECTIONS_GOOD, PREVIEW_DIVE_ENGINE, previewCorrectionWrites } from './fixtures-coachhelm-engine';
+import { CorrectionWritesProvider } from '../screens/coachhelm/Corrections';
 
 const OFF = { status: 'off', reason: 'We are pausing AI insights until after the spring qualifier' } as const;
 
 /**
  * The player's CoachHelm drills for the dev preview: `?view=profile|standing|deep-dive`, and `?state=` for the read's answer
- * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `engine` (every engine flag on), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
+ * (each view lists its own in the preview route's docblock: the profile's are `partial`, `empty`, `edge`; Standing's `early`, `empty`, `womens`, `nobaseline`; the Deep dive's `engine` (every engine flag on), `corrections` and `corrections-good` (the player's own chips), `young`, `partsfailed`, `teampool`, `empty`, `norounds`, with `&insight=` for the read it opens on; every view's `failed`, `off`, `loading`).
  */
 export function PreviewCoachHelmViews({ view, state, insight }: { view?: string; state?: string; insight?: string }) {
   const failed: ChViewLoad<never> = { status: 'failed' };
@@ -54,8 +55,12 @@ export function PreviewCoachHelmViews({ view, state, insight }: { view?: string;
     if (state === 'loading') return <DiveSkeleton />;
     if (state === 'failed') return <DeepDive load={failed} />;
     if (state === 'off') return <DeepDive load={OFF} />;
-    const data = { engine: PREVIEW_DIVE_ENGINE, many: PREVIEW_DIVE_MANY, young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS, teampool: PREVIEW_DIVE_TEAM_POOL }[state ?? ''] ?? PREVIEW_DIVE;
-    return <DeepDive load={diveLoad(data)} initialId={insight ?? null} />;
+    const data = { engine: PREVIEW_DIVE_ENGINE, corrections: PREVIEW_DIVE_CORRECTIONS, 'corrections-good': PREVIEW_DIVE_CORRECTIONS_GOOD, many: PREVIEW_DIVE_MANY, young: PREVIEW_DIVE_YOUNG, partsfailed: PREVIEW_DIVE_PARTS_FAILED, empty: PREVIEW_DIVE_EMPTY, norounds: PREVIEW_DIVE_NO_ROUNDS, teampool: PREVIEW_DIVE_TEAM_POOL }[state ?? ''] ?? PREVIEW_DIVE;
+    return (
+      <CorrectionWritesProvider value={previewCorrectionWrites(state)}>
+        <DeepDive load={diveLoad(data)} initialId={insight ?? null} />
+      </CorrectionWritesProvider>
+    );
   }
   return null;
 }

@@ -7,7 +7,7 @@ import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refre
 import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
-import { anyEngineFlag, auditOf, causeOf, isEmptyEngine, supportOf, verdictOf, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
+import { anyEngineFlag, auditOf, causeOf, correctionsOf, isEmptyEngine, supportOf, verdictOf, type ChCorrectionsInput, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
 
 /**
  * Generator output to what the CoachHelm screens draw (Clubhouse P013). Pure:
@@ -352,11 +352,13 @@ export interface ChEngineInputs {
   now: string;
   /** Whose surface it is, when the text's voice is not told (a coach's card for a player with no name on file). */
   viewer?: ChViewer;
+  /** The correction chips for this read: set only with `coachhelm_corrections_v1` on, the table there and the viewer allowed. */
+  corrections?: ChCorrectionsInput | null;
 }
 
 /** The card's engine states, each behind its flag; null when none applies (the card is then exactly what it was). */
 function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEngineInputs | undefined, viewer: ChViewer | undefined): ChReadEngine | null {
-  if (!inputs || !anyEngineFlag(inputs.flags)) return null;
+  if (!inputs || (!anyEngineFlag(inputs.flags) && !inputs.corrections)) return null;
   const { flags } = inputs;
   const ev = ins.evidence;
   const out: ChReadEngine = {};
@@ -378,5 +380,6 @@ function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEng
     const audit = auditOf(ev, viewer, { sample: evidence.sample || null, comparison, cause });
     if (audit.length > 0) out.audit = audit;
   }
+  if (inputs.corrections) out.corrections = correctionsOf(ins.id, inputs.corrections);
   return isEmptyEngine(out) ? null : out;
 }
