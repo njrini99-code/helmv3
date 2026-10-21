@@ -14594,7 +14594,17 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/reads/__tests__/team-pool-line.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/reads/cause-state.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/reads/team-pool-line.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         }
       ]
@@ -19506,6 +19516,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/verdicts/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
         }
@@ -19785,6 +19800,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/verdicts/stamp-prescription.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -19973,6 +19998,26 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/support/__tests__/run-collector.test.ts",
           "anchor": "src/lib/coachhelm/v2/insights/gate-context"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/__tests__/attach.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/__tests__/pool.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/attach.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/pool.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
           "kind": "import_graph",
@@ -20415,6 +20460,16 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/support/run-pass.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/loader.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/team-pool/pool.ts",
           "anchor": "src/lib/golf/round-countable"
         }
       ]
