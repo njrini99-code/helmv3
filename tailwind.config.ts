@@ -75,6 +75,7 @@ const config: Config = {
         surface:      tokenColor('--fw-color-surface'),
         'surface-tint':   tokenColor('--fw-color-surface-tint'),   // = spec "surface-warm"
         'surface-sunken': tokenColor('--fw-color-surface-sunken'),
+        'surface-tile':   tokenColor('--fw-color-surface-tile'),
         skeleton:     tokenColor('--fw-color-skeleton'),           // loading blocks
         inset:        tokenColor('--fw-color-surface-sunken'),      // alias — nested wells
         elevated:     tokenColor('--fw-color-elevated'),

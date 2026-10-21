@@ -16,6 +16,11 @@ irreversible — a production migration, a deploy — is NOT taken here.
 `--fw-color-border-focus` stays `accent-600` (light) / `accent-500` (dark). The artboard's
 two-layer soft glow *shape* is adopted; its `accent-500` literal is not.
 
+> **Amended 2026-09-27 (owner: "remove the green outlines").** On golf the focus token is
+> now a warm neutral, `oklch(0.42 0.02 68)` light / `oklch(0.82 0.02 78)` dark (6.5:1 and
+> 6.8:1 at worst), and `fwFocusRing` reads the token instead of hard-coding accent-600.
+> BaseballHelm and Lift Lab pin the old green values. The geometry call below is unchanged.
+
 **Why.** Three-way conflict, but the sources are not equal. `AGENTS.md` states the authority
 order outright — "Canonical sources, in authority order: `src/styles/design-tokens.css`
 (`--fw-*` tokens) → `src/components/fairway/**` → `.claude/rules/design-system.md`. **Tokens
