@@ -11,7 +11,12 @@ const baseURL = process.env.CH_BASE ?? 'http://127.0.0.1:3100';
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: ['clubhouse-round.spec.ts', 'clubhouse-journeys.spec.ts'],
+  // The evidence-screenshot spec is opt-in (CH_ROUTE_SHOTS=1); Playwright only runs files matched here, so it is listed only then.
+  testMatch: [
+    'clubhouse-round.spec.ts',
+    'clubhouse-journeys.spec.ts',
+    ...(process.env.CH_ROUTE_SHOTS === '1' ? ['clubhouse-route-shots.spec.ts'] : []),
+  ],
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,

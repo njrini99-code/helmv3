@@ -15,9 +15,8 @@ import { signIn, warmRoutes } from './helpers/clubhouse-journey';
 /**
  * Evidence screenshots of every Clubhouse page on its real route, with seeded data on a LOCAL Supabase: each page at 390px (an
  * iPhone-sized WebKit) and 1280px, as a coach and as a player where the page has that role, plus one empty state (a coach whose
- * team has no players, a player with no rounds) and, where a page writes, one failure state (the write's server action refused).
- * Server reads run in the Next server, so a read failure cannot be forced from the browser on a real route; pages that only read
- * have no failure capture here.
+ * team has no players, a player with no rounds). Failure states are NOT captured here: forcing a server action or a server read
+ * to fail from the browser on a real route is not built, so a page's failure evidence still comes from its fixture states.
  *
  * Files are named and filed by scripts/clubhouse/shots.mjs (`name --phase evidence`, then `record`); `clubhouse:shots -- log --page
  * P### --write` adds the VERIFY rows. Off unless CH_ROUTE_SHOTS=1, WebKit only (what Helm's users run):
