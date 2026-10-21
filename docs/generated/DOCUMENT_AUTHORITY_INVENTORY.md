@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
+| `GENERATED_TRUTH` | 43 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -46,11 +46,11 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
 | `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 56 | 15 | 2 | 4 |
+| `INCIDENT` | 57 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 350 | 13 | 71 | 93 |
+| `UNKNOWN` | 351 | 13 | 71 | 93 |
 
 ## Files
 
@@ -334,6 +334,8 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
+| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | - | - |
@@ -609,6 +611,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md` | current | - | - | - | - |
 | `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md` | current | - | - | - | - |
@@ -1001,6 +1004,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | - |
+| `docs/operations/PR_PIPELINE.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |

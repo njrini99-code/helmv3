@@ -32,6 +32,7 @@ import { isCountableRound } from '@/lib/golf/round-countable';
 import type { Database, Json } from '@/lib/types/database';
 import { evaluatePlayerRun, SUPPORT_VERSION, type RunSummary, type SupportRow } from './evaluate';
 import { isSupportPassEnabled } from './flag';
+import { teamPoolEnabled } from '@/lib/coachhelm/v3/team-pool/flag';
 import { buildRunLogRow, writeRunLog, type RunLogWriteResult, type RunTrigger } from './run-log';
 
 export { isSupportPassEnabled, SUPPORT_FLAG } from './flag';
@@ -135,7 +136,14 @@ export async function runSupportPass(opts: SupportPassOptions): Promise<SupportP
     // carry it (`support.run_id`) next to `support.run_at` (finding 9).
     const runAt = new Date().toISOString();
     const runId = randomUUID();
-    const evaluation = evaluatePlayerRun(list, { gated: opts.gated, refused: opts.refused, runAt, runId });
+    // Slice 7a: test and shrink against a row's team pool line when the flag is on.
+    const evaluation = evaluatePlayerRun(list, {
+      gated: opts.gated,
+      refused: opts.refused,
+      runAt,
+      runId,
+      teamPool: teamPoolEnabled(),
+    });
 
     let rowsUpdated = 0;
     let rowsSkipped = 0;

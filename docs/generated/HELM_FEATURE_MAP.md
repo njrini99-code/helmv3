@@ -82,7 +82,7 @@ is a second thing to keep true.
 - **Behaviour:** `memory/features/golf-round-lifecycle.md`
 - **Code:** `src/app/golf/(dashboard)/dashboard/rounds/**`, `src/components/fairway/pages/rounds/**`, `src/components/fairway/pages/rounds-new/**`, `src/components/fairway/pages/rounds-recover/**`, `src/hooks/golf/use-shot-tracking.ts`, `src/components/fairway/pages/rounds-tracking/**` … and 39 more in the registry
 - **Telemetry:** `round_tracking` (golfhelm, high), `course_library` (golfhelm, med)
-- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`
+- **Incidents:** `memory/incidents/golf_round_lifecycle/INC-2026-08-19-assistant-coach-cascade-delete-round-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-completed-round-sg-capability.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-nondestructive-submit-and-checkpoint-fallback.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-25-recap-persist-schema-permission.md`, `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md`, `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md`, `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md`
 - **Repair units:** `player-lookup-maybe-single-2026-09-25` (verified)
 - **History:** `memory/ledgers/changes/golf_round_lifecycle.md`, `memory/ledgers/tests/golf_round_lifecycle.md`
 
@@ -322,7 +322,7 @@ is a second thing to keep true.
 **Team Access Control And RLS** · active · criticality high · owner platform
 
 - **Behaviour:** `memory/features/team-access-control.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 25 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/settings/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/join/**`, `src/app/golf/admin/**`, `src/components/golf/settings/**` … and 26 more in the registry
 - **Telemetry:** none. Cross-cutting authorization enforced in RLS policies and action guards rather than on a screen. It has no surface of its own to instrument; a failure here shows up as a denial inside whichever feature the user was in.
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

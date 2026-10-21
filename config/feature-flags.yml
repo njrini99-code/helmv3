@@ -696,6 +696,43 @@ flags:
       accuracy complaint; if coaches reject it, turn it off and remove the
       cause path instead.
 
+  # CoachHelm supercharge Slice 7a (team pool benchmark). Created OFF on main;
+  # turning it on is the owner's call.
+  - feature_id: coachhelm_team_pool_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the team pool benchmark on v3 CoachHelm reads
+      (v3/team-pool/, run from BaseGenerator.run()). When on, a putt make
+      rate by band, approach green-hit rate by band, bunker up-and-down,
+      par 3/4/5 scoring or penalties-per-round read gets evidence.comparison
+      with the pooled attempts of the player's teammates in the same
+      window as the primary line ("Team pool 72% (240 putts)") and the Tour as a further
+      line, and the Clubhouse Deep dive Read and the Fairway evidence panel
+      print that team line. A pool is drawn only when at least 5 rostered
+      players have a countable round in the window and at least 4 teammates
+      (never the player) have 3 or more countable rounds and attempts in the
+      family, with at least 100 pooled attempts; it never names or ranks a
+      teammate. Strokes, standing and the flat comparison fields stay on the
+      Tour. When off, the engine writes exactly what it wrote before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off: the next analysis run rewrites each row's evidence without
+      evidence.comparison (the update path replaces evidence), and the
+      surfaces fall back to their Tour wording.
+    cleanup_plan: >-
+      When the owner turns production on and coaches have read team lines
+      for a season without a privacy or accuracy complaint, delete the flag
+      check in team-pool/attach.ts and this entry in the same change; if the
+      team line is rejected, turn it off and remove team-pool/ instead.
+
   # CoachHelm supercharge Slice 8a (the one-tap data-gap prompt). Created OFF
   # on main; turning it on is the owner's call. Only shows anything once
   # coachhelm_root_cause_diagnosis has written a putt miss_direction data_gap.
