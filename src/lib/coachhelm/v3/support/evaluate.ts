@@ -170,9 +170,11 @@ function shrinkFor(c: SupportCandidate, g: GapResult): SupportEvidencePatch['shr
       return { kappa, kept_share: round(keptShare(input.rounds, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
     }
     case 'mean': {
-      const value = shrinkToward(input.value, c.n, c.prior.value, kappa);
+      // A two-arm angle contrast shrinks by its arms' harmonic n (`shrinkN`).
+      const nS = c.shrinkN ?? c.n;
+      const value = shrinkToward(input.value, nS, c.prior.value, kappa);
       const gap = input.polarity === 'lower_better' ? value - input.benchmark : input.benchmark - value;
-      return { kappa, kept_share: round(keptShare(c.n, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
+      return { kappa, kept_share: round(keptShare(nS, kappa)), prior_source: c.prior.source, prior_value: c.prior.value, value: round(value), gap: round(gap) };
     }
     case 'two_proportion': {
       // The contrast shrinks toward "no difference" by the harmonic n of its

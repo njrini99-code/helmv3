@@ -2335,6 +2335,7 @@ Rules the pass applies:
 - Untestable today, by design (no counts or spread on the evidence):
   `par_scoring`, `big_number_rate`, composites, opening-hole and pressure rows
   without a stored interval, and putt-break rows without per-side counts.
+  (Insight-angle rows were `unknown` here until Slice 1c, below.)
 
 `golf_coachhelm_run_log` (migration 20261020114500, held until the owner
 applies it) gets one row per player per run: candidates, testable,
@@ -2413,3 +2414,49 @@ before these fixes vs after: testable 510 vs 468 (42 no-claim rows); BH
 supported 109 vs 96; as stored 6 / 0 / 8 / 701 vs 4 / 2 / 10 / 699
 (Observed / Likely / Working hypothesis / Not enough yet); with round counts
 stamped 6 / 2 / 47 / 660 vs 4 / 4 / 44 / 663; reach 5 vs 3 of 49 players.
+
+### Slice 1c: insight angles in the support pass (2026-10-21)
+
+Still behind `coachhelm_support_v1` (off); the angle rows themselves need
+`coachhelm_insight_angles_v1` (off).
+
+- The six Slice 5a angle families (`ANGLE_FAMILIES` in
+  `generators/insight-angles/angle-data.ts`) each have a support family of
+  the same id in `support/families.ts`, matched by `evidence.metric` before
+  any insight-type match (two angles share insight type `tee`, and every
+  angle's insight type is shared with an older generator, whose rows keep
+  their old family).
+- Test input: the row's own `detail.gap_input`, checked field by field (a
+  missing, wrong-kind or non-finite input is `untestable:no_gap_input`). The
+  benchmark is the value that input names, labelled by the row's
+  `comparison_source`: team median (`team`), Tour (`tour`), or the player's
+  own other side (`self`). Angle team medians carry no pool counts, so they
+  are tested as exact.
+- Floors, round floor, κ and cap come from `ANGLE_FAMILIES`, never from
+  `FAMILY_FLOORS` (angle rows read under `angle:<family>`, which that table
+  does not list). `n` and the floor count both sides of a contrast together,
+  as the angle registry does; each side is an arm held to `per_side_floor`
+  (at least 6): fairway and rough approaches for rough execution, the costed
+  misses on `detail.worse_side` and `detail.better_side` for the tee-miss
+  and approach-miss compasses. Rough execution writes only its rough
+  approaches as `sample_n`, so its `n` is rough + fairway approaches.
+- Direction. Every angle writes a row only when the player is on the worse
+  side, so each claims the weak side alone (`allowStrength` false; a
+  strength-framed row is `no_claim`). The tee-miss and approach-miss
+  compasses pick which of the player's sides is worse from the same data,
+  so their `direction_basis` is `data` and BH gets the two-sided p. The
+  approach compass also picks the costlier of two axes; that second choice
+  is not corrected for.
+- Caps. A Tour-only benchmark keeps the existing Working hypothesis cap
+  (three-putt chain when the Tour figure is its benchmark; rough execution,
+  which is measured against the Tour lie-adjusted SG baseline). A
+  `rough_estimate` impact never reads above Likely, and a row's own
+  `detail.ladder_cap` is never exceeded (`row_ladder_cap`).
+- Shrink. A two-arm mean contrast (the two compasses and rough execution)
+  shrinks by the arms' harmonic n, as two-rate contrasts do.
+
+Slice 4's verdicts now import `KAPPA`, `shrinkToward` and `keptShare` from
+`support/shrink.ts`; the temporary `verdicts/shrink-baseline.ts` is gone.
+The formula is the same one-sample shrink (`(n·y + κ·μ)/(n + κ)`), so every
+verdict number is unchanged (04 Example 11: 18 of 31 shrinks to 0.635 at
+κ 30).
