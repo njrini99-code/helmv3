@@ -12,7 +12,7 @@
  * ever render — never a fabricated "Tournaments"/"All events" row.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { FairwayCalendarSubscriptionsSheet } from '../CalendarSubscriptionsSheet';
 
 vi.mock('@/app/golf/actions/calendar-feeds', () => ({
@@ -33,6 +33,27 @@ const mockGetCalendarFeeds = vi.mocked(getCalendarFeeds);
 const mockCreateCalendarFeed = vi.mocked(createCalendarFeed);
 const mockRegenerateCalendarFeed = vi.mocked(regenerateCalendarFeed);
 const mockDeleteCalendarFeed = vi.mocked(deleteCalendarFeed);
+
+/**
+ * Open a row's inline confirm (Regenerate / Remove). The confirm state lives in
+ * the row, and the row remounts when the feed load settles, so a click that
+ * lands on a row about to be replaced is silently lost: on a loaded CI shard
+ * the Remove test failed with "Unable to find role=button name=Remove" while
+ * the confirm never opened (2026-10-21, ~1 in 10 runs, never reproduced
+ * locally). Click again until the confirm is actually on screen instead of
+ * assuming one click on the first row we saw is the one that sticks.
+ */
+async function openConfirm(trigger: string, confirm: string) {
+  await waitFor(
+    () => {
+      if (!screen.queryByRole('button', { name: confirm })) {
+        fireEvent.click(screen.getByRole('button', { name: trigger }));
+      }
+      expect(screen.getByRole('button', { name: confirm })).toBeInTheDocument();
+    },
+    { timeout: 5000 },
+  );
+}
 
 const REAL_TOKEN = 'abcd1234efgh5678ijkl9012mnop3456';
 const TEAM_FEED = {
@@ -131,9 +152,10 @@ describe('FairwayCalendarSubscriptionsSheet — create / regenerate / remove', (
     // Wait for the LOADED row, not its label: 'Team calendar' also renders on
     // the pre-load pass, and the load's skeleton swap remounts the row (which
     // drops the confirm state) if the click lands before it settles.
-    fireEvent.click(await screen.findByRole('button', { name: 'Regenerate link' }));
+    await screen.findByRole('button', { name: 'Regenerate link' });
+    await openConfirm('Regenerate link', 'Regenerate');
     expect(mockRegenerateCalendarFeed).not.toHaveBeenCalled();
-    expect(await screen.findByText('Get a new link? The old one stops working.')).toBeInTheDocument();
+    expect(screen.getByText('Get a new link? The old one stops working.')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Regenerate' }));
     // The mutation crosses a real microtask boundary (the code-split action
@@ -149,13 +171,12 @@ describe('FairwayCalendarSubscriptionsSheet — create / regenerate / remove', (
     mockDeleteCalendarFeed.mockResolvedValue({ success: true, data: undefined });
 
     render(<FairwayCalendarSubscriptionsSheet open onOpenChange={() => {}} canManageTeamFeed />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove feed' }));
+    await screen.findByRole('button', { name: 'Remove feed' });
+    await openConfirm('Remove feed', 'Remove');
     expect(mockDeleteCalendarFeed).not.toHaveBeenCalled();
-    // The inline confirm renders on the next commit; query it asynchronously
-    // (a synchronous getByRole raced it and failed on loaded CI runners).
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
 
-    expect(await screen.findByText('Not added yet')).toBeInTheDocument();
+    expect(await screen.findByText('Not added yet', undefined, { timeout: 5000 })).toBeInTheDocument();
     expect(mockDeleteCalendarFeed).toHaveBeenCalledWith('team');
   });
 });
