@@ -3,6 +3,7 @@
 import { Suspense, use, useId, useState } from 'react';
 import { Archive, Check, ChevronDown, ChevronUp, Flag, UserPlus, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
+import type { ChNotEnough } from '../../data/coachhelm-firm';
 import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
 import { useRefresh } from '../../lib/use-refresh';
@@ -159,6 +160,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
   // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
   const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
   const noReads = noReadRows(data.withoutSignals, data.withoutNames);
+  // CH-13943: a player every one of whose reads is Not enough yet has no card; they are a By player row that says so.
+  const heldOnly = data.notEnough?.players.filter((p) => !p.card) ?? [];
   const rosterHref = coachBoardLinks.roster();
   const inviteHref = coachBoardLinks.invite();
 
@@ -218,6 +221,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
               ) : undefined
             }
           />
+          {data.notEnough && <NotEnoughLine data={data.notEnough} />}
         </Section>
       ) : (
         <>
@@ -256,6 +260,15 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
                     <span>
                       <b>{r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`}</b>
                       <em>No reads yet</em>
+                    </span>
+                  </div>
+                ))}
+                {heldOnly.map((p) => (
+                  <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
+                    <Avatar name={p.name} size={phone ? 28 : 34} />
+                    <span>
+                      <b>{p.name}</b>
+                      <em>Not enough yet</em>
                     </span>
                   </div>
                 ))}
@@ -346,6 +359,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
               )}
             </div>
           </div>
+          {/* Round 2C (coachhelm_support_v1): reads rated Not enough yet are not cards; they are one collapsed line under the board. */}
+          {data.notEnough && <NotEnoughLine data={data.notEnough} />}
           {/* What failed beside the cards is one line under the list, not a banner over it (design call §3, States: Partial). */}
           {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
           {/* Slice 7b (coachhelm_team_pattern_v1, off): the loader hands rows only with the flag on. Flush under the Board (D5). */}
@@ -448,6 +463,39 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
             {gaps} didn’t load, so anything made from {pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked.
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * CH-13942: the reads the support pass rated Not enough yet, as one collapsed line under the board ("Not enough yet (5)"), which
+ * opens in place to each read: the player, its title and what it is waiting for. Flush rows, no glyphs; the tap is silent, as the
+ * header's line is (D-70). Drawn only with `coachhelm_support_v1` on and at least one read held back.
+ */
+function NotEnoughLine({ data }: { data: ChNotEnough }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className="ch-hl-ney" data-ch-code="CH-13942">
+      <button type="button" className="ch-hl-ney__b" aria-expanded={open} aria-controls={`${id}-ney`} onClick={() => setOpen((v) => !v)}>
+        <span>
+          Not enough yet <span className="ch-num">({data.count})</span>
+        </span>
+        <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
+      </button>
+      <div id={`${id}-ney`} hidden={!open}>
+        <p className="ch-hl-ney__m">Not on a card until there is enough to say something.</p>
+        <ul className="ch-hl-ney__l">
+          {data.players.flatMap((p) =>
+            p.reads.map((r) => (
+              <li key={r.id}>
+                <b>{p.name}</b> · <span>{r.title}</span>
+                {r.watching && <span className="ch-hl-ney__w ch-num">{r.watching}</span>}
+              </li>
+            )),
+          )}
+        </ul>
       </div>
     </div>
   );

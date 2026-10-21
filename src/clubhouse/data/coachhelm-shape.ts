@@ -1,6 +1,7 @@
 import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
 import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChPathLine } from './coachhelm-path';
+import type { ChNotEnough } from './coachhelm-firm';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
 
 /**
@@ -295,6 +296,11 @@ export interface ChCoachHelmData {
   teamPatterns?: ChTeamPatterns;
   /** The coach may ask for a course plan for the chosen player (`coachhelm_course_plan_v1`, off). Absent: not offered. */
   coursePlan?: boolean;
+  /**
+   * Reads the support pass rated Not enough yet, held back from the cards into one collapsed line (`coachhelm-firm.ts`). Absent with
+   * `coachhelm_support_v1` off or none held back. A player all of whose reads are held back has no card and is not in `withoutSignals`.
+   */
+  notEnough?: ChNotEnough;
 }
 
 /**

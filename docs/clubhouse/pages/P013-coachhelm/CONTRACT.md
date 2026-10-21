@@ -237,6 +237,8 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130738 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
 | 130739 | CH-13940 | `COACH_PLAYER_THE_PATH_LINE` | Coach, player: the path line (design call D2) |
 | 130740 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
+| 130741 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
+| 130742 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
 
 ## 08 — Permission / authorization
 

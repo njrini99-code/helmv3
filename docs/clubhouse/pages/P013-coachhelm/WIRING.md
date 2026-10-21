@@ -46,17 +46,22 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          needed: without one there is no tour and nothing
                          proposed). The boundary is the same one for every view
                          (perf, 2026-10-01): a switch keeps the view on screen,
-                         dimmed, and swaps once; the skeleton is for a hard load.
+                         dimmed, and swaps once; the skeleton is for a hard
+                         load.
                          A view's address never chooses whose data it reads: the
                          player id is the session's. ?insight=<id> (Deep dive
                          only) is a name to open, passed to the screen and
                          checked against the player's own list.
 Server loaders:          src/clubhouse/data/coachhelm.ts loadCoachCoachHelm and
                          loadPlayerCoachHelm (one read for the role; each failed
-                         read logs through chLogServer('coachhelm', …) and never
-                         throws for a partial read), with coachhelm-shape.ts
-                         (types, partition, ordering, the pulse rows) and
-                         coachhelm-map.ts (generator output to what is drawn).
+                         read logs through chLogServer('coachhelm', …) and
+                         never throws for a partial read), with
+                         coachhelm-shape.ts (types, partition, ordering, the
+                         pulse rows), coachhelm-map.ts (generator output to what
+                         is drawn) and
+                         coachhelm-firm.ts (with coachhelm_support_v1 on, the
+                         coach board's reads rated Not enough yet held back into
+                         one line, CH-13942 and CH-13943).
                          loadPlayerHelmGate is the switch the board and every
                          view share.
 View loaders (player):   coachhelm-profile.ts loadPlayerProfile,
@@ -98,15 +103,20 @@ Route error:             src/app/golf/(dashboard)/dashboard/coachhelm/error.tsx
 ## End-to-end graph
 
 ```text
-UI (Assign as focus, Dismiss, Undo in CoachBoard; Accept and Decline in the player's Proposals; the player and insight pickers; Try again on a notice)
+UI (Assign as focus, Dismiss, Undo in CoachBoard; Accept and Decline in the
+    player's Proposals; the player and insight pickers; Try again on a notice)
 ↓
-Action (a handler in CoachBoard or Proposals calls run() on a useAction and does nothing after it)
+Action (a handler in CoachBoard or Proposals calls run() on a useAction and
+    does nothing after it)
 ↓
-Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chReport + error toast with Retry + haptic).
-                   Every follow-up (the Assigned chip, hiding a dismissed card, restoring it, the Started or Declined chip) is
-                   INSIDE the action function, so Retry does it too.
+Client controller: useAction (offline refusal CH-1903, slow notice CH-1902,
+                   chReport + error toast with Retry + haptic). Every
+                   follow-up (the Assigned chip, hiding a dismissed card,
+                   restoring it, the Started or Declined chip) is INSIDE the
+                   action function, so Retry does it too.
 ↓
-Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method per server action
+Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method
+    per server action
 ↓
 Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2, acceptFocusArea, declineFocusArea),
                 src/app/golf/actions/insights-feed.ts (dismissInsight, reactivateInsight)
@@ -181,7 +191,7 @@ Choosing a player or an insight is page state, not an action record.
 | --- | --- | --- |
 | `screens/coachhelm/PlayerBoard.tsx` | The player's page: header, the proposals, the focus, Also worth knowing, Working; it writes only the player's own answer | CH-13201, CH-13204, CH-13301 to CH-13304, CH-13701, CH-13801, CH-13805 |
 | `screens/coachhelm/Proposals.tsx` | "Proposed for you": each focus a coach proposed, with Accept and Decline and the answered chip | CH-13004, CH-13005, CH-13205, CH-13204, CH-13404, CH-13704, CH-13807, CH-13902 |
-| `screens/coachhelm/CoachBoard.tsx` | The coach's page: header, pulse, By player, the chosen player's focus and the three writes | CH-13001 to CH-13003, CH-13202 to CH-13204, CH-13305 to CH-13307, CH-13309, CH-13310, CH-13403, CH-13601, CH-13703, CH-13901 |
+| `screens/coachhelm/CoachBoard.tsx` | The coach's page: header, pulse, By player, the chosen player's focus and the three writes | CH-13001 to CH-13003, CH-13202 to CH-13204, CH-13305 to CH-13307, CH-13309, CH-13310, CH-13403, CH-13601, CH-13703, CH-13901, CH-13942, CH-13943 |
 | `screens/coachhelm/parts.tsx` | `FocusCard`, `Evidence` (`Gauge`, bars, `ReadMeter`), `PriPill`, `InsightRow`, `PulseList`, `Head` | CH-13802, CH-13803, CH-13804, CH-13806 |
 | `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES` and `LIVE_PLAYER_WRITES`; preview and tests pass their own set | — |
 | `screens/coachhelm/CoachHelmSkeleton.tsx` | Route skeleton, one shape per role | CH-13401, CH-13402 |

@@ -1,5 +1,28 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
+
+```text
+Design package: round 2C (coordinator decision under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13942, CH-13943 (new)
+Actions:        none changed
+Data impact:    none (reads only the ladder the support pass stores)
+Held items:     none
+```
+
+### Changed
+
+- With `coachhelm_support_v1` on, the coach Board shows only reads at
+  Working hypothesis or firmer. Reads rated Not enough yet are one collapsed
+  line under the board, "Not enough yet (N)", that opens in place to each
+  read with its Watching count-down (CH-13942).
+- A ranked head rated Not enough yet gives way to the player's firmest other
+  read. A player all of whose reads are held back is a quiet By player row,
+  "Not enough yet" (CH-13943), not a card and not "No reads yet".
+- Flag off: unchanged. Player surfaces: unchanged. Preview:
+  `?state=notenough`.
+
 ## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
 
 ```text

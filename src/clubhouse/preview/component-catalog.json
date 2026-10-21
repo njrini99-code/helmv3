@@ -8574,6 +8574,11 @@
         "ch-hl-lede",
         "ch-hl-ledger",
         "ch-hl-more",
+        "ch-hl-ney",
+        "ch-hl-ney__b",
+        "ch-hl-ney__l",
+        "ch-hl-ney__m",
+        "ch-hl-ney__w",
         "ch-hl-note",
         "ch-hl-path",
         "ch-hl-path__chip",
@@ -8639,115 +8644,115 @@
           "name": "--ch-ink-700",
           "value": "#1c1b18",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1451
+          "line": 1500
         },
         {
           "name": "--ch-ink-600",
           "value": "#2b2a26",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1452
+          "line": 1501
         },
         {
           "name": "--ch-ink-500",
           "value": "#3a3833",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1453
+          "line": 1502
         },
         {
           "name": "--ch-ink-400",
           "value": "#55524b",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1454
+          "line": 1503
         },
         {
           "name": "--ch-ink-300",
           "value": "#7c786f",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1455
+          "line": 1504
         },
         {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-950)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1456
+          "line": 1505
         },
         {
           "name": "--ch-text-secondary",
           "value": "var(--ch-ink-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1457
+          "line": 1506
         },
         {
           "name": "--ch-text-tertiary",
           "value": "var(--ch-ink-700)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1458
+          "line": 1507
         },
         {
           "name": "--ch-border-hairline",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1459
+          "line": 1508
         },
         {
           "name": "--ch-border-subtle",
           "value": "rgb(28 25 18 / 0.22)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1460
+          "line": 1509
         },
         {
           "name": "--ch-border-control",
           "value": "rgb(28 25 18 / 0.34)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1461
+          "line": 1510
         },
         {
           "name": "--ch-border-strong",
           "value": "rgb(28 25 18 / 0.5)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1462
+          "line": 1511
         },
         {
           "name": "--ch-ledger-rule",
           "value": "rgb(28 25 18 / 0.26)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1463
+          "line": 1512
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "rgb(28 25 18 / 0.16)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1464
+          "line": 1513
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double rgb(28 25 18 / 0.36)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1465
+          "line": 1514
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-green-900)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1466
+          "line": 1515
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "var(--ch-text-secondary)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1467
+          "line": 1516
         },
         {
           "name": "--ch-champagne-rule",
           "value": "rgb(28 25 18 / 0.2)",
           "scope": "html:not([data-fw-theme='dark']) .ch-hl",
-          "line": 1468
+          "line": 1517
         },
         {
           "name": "--ch-ledger-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-hl .ch-scoreboard",
-          "line": 1487
+          "line": 1536
         }
       ]
     },

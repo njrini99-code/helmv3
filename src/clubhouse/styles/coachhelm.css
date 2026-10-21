@@ -335,6 +335,55 @@
   color: var(--ch-text-tertiary);
 }
 
+/* CH-13942: reads rated Not enough yet, one collapsed line under the board that opens in place (round 2C). */
+.ch-hl-ney {
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-ney__b {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-ney__b:focus-visible {
+  border-radius: var(--ch-radius-xs);
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hl-ney__b .ch-num {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-ney__m {
+  margin: 0 0 4px;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-ney__l {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hl-ney__l li {
+  max-width: 64ch;
+  padding: 8px 0;
+  border-top: 1px solid var(--ch-border-subtle);
+}
+.ch-hl-ney__l li b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-ney__w {
+  display: block;
+  color: var(--ch-text-tertiary);
+}
+
 /* By player: a player with no read yet is a quiet row, not a button. */
 .ch-hl-pl.is-none {
   cursor: default;
