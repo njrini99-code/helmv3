@@ -27,7 +27,8 @@ import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { CoursePlan } from './CoursePlan';
-import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, type ChCoachHelmWrites, type ChCoursePlanReads } from './writes';
+import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
+import { RecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
@@ -49,8 +50,25 @@ export const coachBoardLinks = {
  * own players are read (data/coachhelm.ts). Share with the player has no action
  * behind it (players already see their own insights), so it is not drawn.
  */
-/** `trackRecordHref`: the Track record's address, handed over only with `coachhelm_track_record_v1` on (the route checks it); without it no link is drawn. */
-export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanReads = LIVE_COURSE_PLAN_READS, initialPlayer, trackRecordHref }: { data: ChCoachHelmData; writes?: ChCoachHelmWrites; coursePlanReads?: ChCoursePlanReads; initialPlayer?: string; trackRecordHref?: string }) {
+/**
+ * `trackRecordHref`: the Track record's address, handed over only with `coachhelm_track_record_v1` on (the route checks it); without it no link is drawn.
+ * `recheck`: Re-check reads (CH-13944), the team re-run; preview and tests pass their own.
+ */
+export function CoachBoard({
+  data,
+  writes = LIVE_COACHHELM_WRITES,
+  coursePlanReads = LIVE_COURSE_PLAN_READS,
+  recheck = LIVE_RECHECK_WRITES,
+  initialPlayer,
+  trackRecordHref,
+}: {
+  data: ChCoachHelmData;
+  writes?: ChCoachHelmWrites;
+  coursePlanReads?: ChCoursePlanReads;
+  recheck?: ChRecheckWrites;
+  initialPlayer?: string;
+  trackRecordHref?: string;
+}) {
   const phone = useChPhone();
   const toast = useToast();
   const players = data.players.list;
@@ -400,6 +418,8 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}
+      {/* CH-13944: the team re-run, a quiet secondary action under the board. Not with CoachHelm off or with no players to read. */}
+      {!data.off && (data.roster.error || data.roster.count > 0) && <RecheckReads players={data.roster.error ? null : data.roster.count} writes={recheck} />}
       {trackRecordHref && !data.off && (
         <p className="ch-htr-link" data-ch-code="CH-13969">
           <Button variant="secondary" href={trackRecordHref}>

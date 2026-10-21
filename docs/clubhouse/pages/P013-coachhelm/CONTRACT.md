@@ -81,6 +81,7 @@ The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 | 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
+| 130213 | CH-13406 | `COACH_RE_CHECK_READS_IS_RUNNING` | Coach: Re-check reads is running |
 
 ## 03 — Background loading / refresh
 
@@ -188,6 +189,8 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
+| 130638 | CH-13006 | `COACH_RE_CHECK_READS_FAILS` | Coach: Re-check reads fails (the action refused, threw, or the coach is offline) |
+| 130639 | CH-13007 | `COACH_RE_CHECK_READS_IS_REFUSED_BY` | Coach: Re-check reads is refused by the engine's rate limit (5 runs a minute per coach) |
 
 ## 07 — Network / offline
 
@@ -242,6 +245,8 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130743 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
 | 130744 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
 | 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
+| 130746 | CH-13944 | `COACH_RE_CHECK_READS` | Coach: Re-check reads |
+| 130747 | CH-13945 | `COACH_RE_CHECK_READS_LANDS` | Coach: Re-check reads lands |
 
 ## 08 — Permission / authorization
 
@@ -361,6 +366,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131705 | CH-13721 | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
+| 131708 | CH-13705 | `RE_CHECK_READS_IS_TAPPED` | Re-check reads is tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,

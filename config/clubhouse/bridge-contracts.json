@@ -14296,6 +14296,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130213,
+    "page": "P013",
+    "category": 2,
+    "item": 13,
+    "name": "COACH_RE_CHECK_READS_IS_RUNNING",
+    "chCode": "CH-13406",
+    "meaning": "Coach: Re-check reads is running",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -15037,6 +15048,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130638,
+    "page": "P013",
+    "category": 6,
+    "item": 38,
+    "name": "COACH_RE_CHECK_READS_FAILS",
+    "chCode": "CH-13006",
+    "meaning": "Coach: Re-check reads fails (the action refused, threw, or the coach is offline)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130639,
+    "page": "P013",
+    "category": 6,
+    "item": 39,
+    "name": "COACH_RE_CHECK_READS_IS_REFUSED_BY",
+    "chCode": "CH-13007",
+    "meaning": "Coach: Re-check reads is refused by the engine's rate limit (5 runs a minute per coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130701,
     "page": "P013",
     "category": 7,
@@ -15534,6 +15567,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130746,
+    "page": "P013",
+    "category": 7,
+    "item": 46,
+    "name": "COACH_RE_CHECK_READS",
+    "chCode": "CH-13944",
+    "meaning": "Coach: Re-check reads",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130747,
+    "page": "P013",
+    "category": 7,
+    "item": 47,
+    "name": "COACH_RE_CHECK_READS_LANDS",
+    "chCode": "CH-13945",
+    "meaning": "Coach: Re-check reads lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -15866,6 +15921,17 @@
     "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
     "chCode": "CH-13780",
     "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131708,
+    "page": "P013",
+    "category": 17,
+    "item": 8,
+    "name": "RE_CHECK_READS_IS_TAPPED",
+    "chCode": "CH-13705",
+    "meaning": "Re-check reads is tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

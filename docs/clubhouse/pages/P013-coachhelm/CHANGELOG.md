@@ -1,5 +1,31 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach can re-check the team's reads
+
+```text
+Design package: round 3B brief (coordinator, under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-recheck-team)
+Contract IDs:   CH-13006, CH-13007, CH-13406, CH-13705, CH-13944,
+                CH-13945 (new)
+Actions:        ACT-P013-RECHECK-READS (new)
+Data impact:    none new (the existing refreshTeamAnalysisAsCoach writes)
+Held items:     none
+```
+
+### Changed
+
+- The coach Board has one quiet secondary action under it, "Re-check
+  reads", that re-runs CoachHelm for every active player on the team: the
+  action Fairway's Triage desk "Scan team" calls, which Clubhouse coaches
+  could not reach (CH-13944). No team or player id is sent.
+- Running: "Re-checking 5 players…" (CH-13406). Done: "Re-checked 5
+  players · 3 new reads", then the board reads its data again (CH-13945).
+  Rate-limited: the action's own words (CH-13007). Failed or offline: one
+  line, the board as it was (CH-13006). Outcome haptics only (CH-13705).
+- Not drawn with CoachHelm off or no players; players never see it.
+  Preview: `?state=recheck-running`, `recheck-done`, `recheck-quiet`,
+  `recheck-ratelimited`, `recheck-failed` (tap the button).
+
 ## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
 
 ```text
