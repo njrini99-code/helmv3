@@ -224,6 +224,19 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP are open (CH-1954)
 ```
 
+## Push on this device in the app (2026-10-16, CH-8902, CH-8903, blocker 12)
+
+- Tests: `src/clubhouse/__tests__/settings.test.tsx` (phone: the switch before iOS has asked and while it is being read,
+  On and Off with Open iOS Settings, no Open iOS Settings where it can't open, no Send a test in the app; wide layout:
+  the same three states) and `src/clubhouse/screens/settings/__tests__/native-push.test.tsx` (`useNativePush`: nothing
+  on the web, the read, Turn on allowed and refused, one ask for two taps, the read on return from iOS Settings that
+  registers push turned on there, Open iOS Settings only on iOS).
+- Browser: the preview has the three app states (`/clubhouse-preview/settings?section=notifications&state=nativeprompt`,
+  `nativeon`, `nativeoff`). The before capture (the preview's web push row) is filed below; the after captures were not
+  taken (no headless browser would launch on this machine after about 18:30 on 2026-10-16).
+- Not verified: on a device, including that `app-settings:` opens GolfHelm's page in the Settings app (from Capacitor
+  8.5.2's navigation handler, which hands a top-level navigation to a non-app URL to `UIApplication.shared.open`).
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -261,6 +274,7 @@ before, after, baseline or evidence.
 | `P008__premium-audit__coach__390__case-073-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-073-chromium-normal; /clubhouse-preview/settings; synthetic preview |
 | `P008__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P008__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P008__notifications__coach__390__web-push-preview__before__22e5426.png` | before | 22e5426 | Notifications on the phone (WebKit, preview): the web push row from the preview's fixture; in the app this group was hidden (web push is unsupported in the WebView) |
 
 ## Historical verification gaps
 

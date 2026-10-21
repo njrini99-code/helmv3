@@ -1,5 +1,20 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-21 — The standings spread starts in place
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The coins on the standings spread no longer glide out from even par when the chart scrolls into view. They sit at their score at first paint (`StandingsSpread.tsx`; Q-153). A coin still glides if the data moves it.
+
 ## 2026-10-19 — Qualifier leaderboard on an iPad: fits its column at 1180px
 
 ```text
