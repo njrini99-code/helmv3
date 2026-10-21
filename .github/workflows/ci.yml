@@ -898,13 +898,8 @@ jobs:
           sudo swapon /mnt/helm-swap
           free -m
 
-      # 12288 (was the workflow-wide 8192): Next builds died with "JavaScript
-      # heap out of memory" at ~6.5 GB of the old limit while the box had 3.5 GB
-      # free; the swap added above covers the headroom (2026-10-21).
       - name: Build
         if: steps.gate.outputs.run == 'true'
-        env:
-          NODE_OPTIONS: --max-old-space-size=12288
         run: |
           (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
           sampler=$!
