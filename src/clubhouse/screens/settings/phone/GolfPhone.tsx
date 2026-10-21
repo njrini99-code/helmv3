@@ -60,7 +60,7 @@ function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChS
 function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose: () => void; details: ChGolfDetails; writes: ChSettingsWrites }) {
   const { draft, setDraft, dirty } = useSheetDraft(details, open);
   const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, () => onClose());
-  const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => setDraft((d) => ({ ...d, [k]: e.target.value }));
+  const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; setDraft((d) => ({ ...d, [k]: value })); };
   const invalid = golfDetailsProblem(draft);
   return (
     <FormSheet
@@ -81,7 +81,7 @@ function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose:
         <FieldRow id="set-grad" label="Graduation year" inline inputMode="numeric" placeholder="2028" value={draft.graduationYear} onChange={set('graduationYear')} />
         <FieldRow id="set-phone" label="Phone" inline type="tel" autoComplete="tel" value={draft.phone} onChange={set('phone')} />
         <FieldRow id="set-home" label="Hometown" inline autoComplete="address-level2" value={draft.hometown} onChange={set('hometown')} />
-        <FieldRow id="set-state" label="State" inline maxLength={2} placeholder="NC" value={draft.state} onChange={(e) => setDraft((d) => ({ ...d, state: e.target.value.toUpperCase() }))} />
+        <FieldRow id="set-state" label="State" inline maxLength={2} placeholder="NC" value={draft.state} onChange={(e) => { const value = e.target.value.toUpperCase(); setDraft((d) => ({ ...d, state: value })); }} />
       </div>
       {invalid && dirty && <Problem problem={invalid} />}
     </FormSheet>

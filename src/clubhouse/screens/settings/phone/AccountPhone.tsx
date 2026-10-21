@@ -176,11 +176,11 @@ export function ProfileSheet({
 
       <div className="ch-setm-card">
         {coach ? (
-          <FieldRow id="set-fullname" label="Full name" inline autoComplete="name" value={draft.fullName} onChange={(e) => setDraft((d) => ({ ...d, fullName: e.target.value }))} />
+          <FieldRow id="set-fullname" label="Full name" inline autoComplete="name" value={draft.fullName} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, fullName: value })); }} />
         ) : (
           <>
-            <FieldRow id="set-first" label="First name" inline autoComplete="given-name" value={draft.firstName} onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))} />
-            <FieldRow id="set-last" label="Last name" inline autoComplete="family-name" value={draft.lastName} onChange={(e) => setDraft((d) => ({ ...d, lastName: e.target.value }))} />
+            <FieldRow id="set-first" label="First name" inline autoComplete="given-name" value={draft.firstName} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, firstName: value })); }} />
+            <FieldRow id="set-last" label="Last name" inline autoComplete="family-name" value={draft.lastName} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, lastName: value })); }} />
           </>
         )}
       </div>
