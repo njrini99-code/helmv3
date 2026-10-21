@@ -31,6 +31,8 @@ export interface ActionCopy {
    * nothing and ticks nothing, success or failure. Set it from `refine`, once the result is known.
    */
   quiet?: boolean;
+  /** An action on the success toast, for the next step it invites ("Add a note" after Mark injured). */
+  doneAction?: { label: string; run: () => void };
   /** `false` when trying again can't change the answer, so the failure toast has no action; a string names the action instead of "Retry". */
   retry?: false | string;
   /**
@@ -103,7 +105,7 @@ export function useAction<A extends unknown[], T>(
       if (result.success) {
         // CH-1702: a save or send that lands gives the success pattern; CH-1703: a failure the error pattern (below).
         haptic('success');
-        if (c.done) toast({ title: c.done });
+        if (c.done) toast(c.doneAction ? { title: c.done, action: c.doneAction } : { title: c.done });
       } else {
         // A handled failure (the action returned success: false) is still tracked, at low severity.
         if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });

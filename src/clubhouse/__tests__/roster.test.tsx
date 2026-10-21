@@ -31,26 +31,28 @@ const actions = vi.hoisted(() => ({
   requests: vi.fn(),
   intent: vi.fn(),
   status: vi.fn(),
+  availability: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
-vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status, setPlayerAvailability: actions.availability }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: vi.fn() }));
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { loadRoster, type ChRoster } from '../data/roster';
+import { attentionFor, loadRoster, type ChRoster } from '../data/roster';
 import { ClubhouseRosterRoute } from '../routes/roster';
 import { resolveClubhouseTeam } from '../routes/team';
 import { chReport, chTrail } from '../lib/track';
 import { Roster } from '../screens/roster/Roster';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
-import { NOTE_MAX } from '../screens/roster/RosterPeek';
+import { AVAILABILITY_NOTE_MAX, NOTE_MAX } from '../screens/roster/RosterPeek';
+import { availabilityLine, rowNote } from '../screens/roster/format';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_ROSTER, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -836,6 +838,247 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     await waitFor(() => expect(profileHeading('Theo Marchetti')).toBeNull());
     await user.click(screen.getByRole('button', { name: /^Theo Marchetti/ }));
     expect((screen.getByRole('textbox', { name: /Coach.s note/ }) as HTMLTextAreaElement).value).toBe('Lag putting drills');
+  });
+
+  it('availability on the phone: the kicker counts injured and away, a row reads "Junior · Injured · …" in plain ink', () => {
+    phone(PREVIEW_ROSTER_AVAILABILITY);
+    expect(document.querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity · 7 active · 1 injured · 1 away');
+    const ava = screen.getByRole('button', { name: /^Ava Lindqvist, Junior, Injured · Wrist · no tournament play until Nov/ });
+    expect(ava.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('Junior · Injured · Wrist · no tournament play until Nov');
+    // Plain ink: the availability line takes no tone class (red is under par; CH-3809).
+    expect(ava.querySelector('.ch-rsm-row__b > span > span')!.className).toBe('');
+    expect(screen.getByRole('button', { name: /^Luca Ferraro, Freshman, Away · Visa renewal · back Nov 2/ })).toBeTruthy();
+  });
+
+  it('CH-3009 the phone profile says the word in its identity line and sets availability in its own panel above the note; the ⋯ sheet is unchanged', async () => {
+    const user = userEvent.setup();
+    actions.availability.mockResolvedValue({ success: true });
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=ava');
+    phone(PREVIEW_ROSTER_AVAILABILITY);
+    expect(screen.getByText('Junior · Class of 2028 · Injured')).toBeTruthy();
+    const group = screen.getByRole('radiogroup', { name: 'Availability for Ava Lindqvist' });
+    expect(within(group).getByRole('radio', { name: 'Injured' }).getAttribute('aria-checked')).toBe('true');
+    // The panel sits above the coach's note.
+    const panels = [...document.querySelectorAll('.ch-rsm-prof > section')];
+    const at = (el: Element) => panels.indexOf(el.closest('section')!);
+    expect(at(group)).toBe(at(screen.getByRole('textbox', { name: /Coach.s note/ })) - 1);
+    await user.click(within(group).getByRole('radio', { name: 'Available' }));
+    expect(actions.availability).toHaveBeenCalledWith({ playerId: 'ava', availability: 'available' });
+    await waitFor(() => expect(screen.getByText('Junior · Class of 2028')).toBeTruthy());
+    expect(await screen.findByText('Ava Lindqvist marked available')).toBeTruthy();
+    // Mark available clears the note.
+    expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Ava Lindqvist' });
+    expect([...sheet.querySelectorAll('.ch-rsm-act b')].map((b) => b.textContent)).toEqual(['View stats', 'Mark inactive', 'Remove from team']);
+  });
+});
+
+/** Availability (P003): can they play. Display only, never team access; coaches only. */
+describe('Roster · availability (injured, away)', () => {
+  const ava = PREVIEW_ROSTER_AVAILABILITY.players.find((p) => p.id === 'ava')!;
+  const luca = PREVIEW_ROSTER_AVAILABILITY.players.find((p) => p.id === 'luca')!;
+  const menuLabels = () => within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent);
+  const openMenu = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+    await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    return menuLabels();
+  };
+  const metaOf = (name: string) => screen.getByRole('button', { name: `${name}. Open profile` }).querySelector('.ch-rs-who__m')!;
+
+  it('CH-3009 the row menu offers the two states the player is not in, between the links and Mark inactive', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_ROSTER_AVAILABILITY);
+    await toList(user);
+    const cases: Array<[string, string[], string]> = [
+      [theo.name, ['Mark injured', 'Mark away'], 'Mark available'],
+      [ava.name, ['Mark available', 'Mark away'], 'Mark injured'],
+      [luca.name, ['Mark available', 'Mark injured'], 'Mark away'],
+    ];
+    for (const [name, pair, absent] of cases) {
+      const labels = await openMenu(user, name);
+      const at = labels.indexOf(pair[0]!);
+      expect(labels.slice(at, at + 4)).toEqual([...pair, 'Mark inactive', 'Remove from team']);
+      expect(labels).not.toContain(absent);
+      // A separator on either side of the pair.
+      const items = [...screen.getByRole('menu').querySelectorAll('[role="menuitem"], [role="separator"]')].map((el) => el.getAttribute('role') === 'separator' ? '|' : el.textContent);
+      const i = items.indexOf(pair[0]!);
+      expect([items[i - 1], items[i + 2]]).toEqual(['|', '|']);
+      await user.keyboard('{Escape}');
+      await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    }
+  });
+
+  it('CH-3009 CH-3405 Mark injured shows the word at once, puts the player back when the save fails, and Retry finishes it', async () => {
+    const user = userEvent.setup();
+    let answer: (v: unknown) => void = () => {};
+    actions.availability.mockImplementationOnce(() => new Promise((r) => (answer = r))).mockResolvedValue({ success: true });
+    wrap(roster());
+    await toList(user);
+    await openMenu(user, 'Jonah Okafor');
+    await user.click(screen.getByRole('menuitem', { name: 'Mark injured' }));
+    // Optimistic: the row reads Injured before the server answers.
+    expect(metaOf('Jonah Okafor').textContent).toBe('Injured · Sophomore · Charlotte, NC');
+    expect(actions.availability).toHaveBeenCalledWith({ playerId: 'jonah', availability: 'injured' });
+    await act(async () => answer({ success: false }));
+    await expectCode('CH-3009', /Couldn’t mark Jonah Okafor injured/);
+    expect(code('CH-3009')!.textContent).toMatch(/Nothing changed on the roster/);
+    expect(metaOf('Jonah Okafor').textContent).toBe('Sophomore · Charlotte, NC');
+    expect(hapticSpy).toHaveBeenCalledWith('error');
+    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(metaOf('Jonah Okafor').textContent).toBe('Injured · Sophomore · Charlotte, NC'));
+    expect(await screen.findByText('Jonah Okafor marked injured')).toBeTruthy();
+    expect(hapticSpy).toHaveBeenCalledWith('success');
+    expect(actions.availability).toHaveBeenCalledTimes(2);
+  });
+
+  it('CH-3009 the toast from the row menu offers Add a note, which opens the panel with the note focused', async () => {
+    const user = userEvent.setup();
+    actions.availability.mockResolvedValue({ success: true });
+    wrap(roster());
+    await toList(user);
+    await openMenu(user, theo.name);
+    await user.click(screen.getByRole('menuitem', { name: 'Mark away' }));
+    expect(await screen.findByText('Theo Marchetti marked away')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Add a note' }));
+    const panel = await screen.findByRole('complementary', { name: theo.name });
+    const note = within(panel).getByRole('textbox', { name: 'Note' });
+    await waitFor(() => expect(document.activeElement).toBe(note));
+    expect(note.getAttribute('placeholder')).toBe('What, and until when');
+    expect(within(panel).getByRole('radio', { name: 'Away' }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('CH-3405 while a change is in flight the panel says so and refuses another', async () => {
+    const user = userEvent.setup();
+    let answer: (v: unknown) => void = () => {};
+    actions.availability.mockImplementation(() => new Promise((r) => (answer = r)));
+    wrap(roster());
+    await openPeek(user);
+    const group = screen.getByRole('radiogroup', { name: `Availability for ${theo.name}` });
+    await user.click(within(group).getByRole('radio', { name: 'Injured' }));
+    await expectCode('CH-3405');
+    expect(code('CH-3405')!.getAttribute('aria-busy')).toBe('true');
+    await user.click(within(group).getByRole('radio', { name: 'Away' }));
+    expect(actions.availability).toHaveBeenCalledTimes(1);
+    await act(async () => answer({ success: true }));
+    await waitFor(() => expect(code('CH-3405')).toBeNull());
+    expect(within(group).getByRole('radio', { name: 'Injured' }).getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('CH-3010 the availability note saves when the field loses focus; a failed save keeps the text', async () => {
+    const user = userEvent.setup();
+    actions.availability.mockResolvedValueOnce({ success: false }).mockResolvedValue({ success: true });
+    wrap(PREVIEW_ROSTER_AVAILABILITY);
+    // Ava's card opens the panel (the profile route is not rebuilt in this file).
+    await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
+    const panel = await screen.findByRole('complementary', { name: ava.name });
+    expect(within(panel).getByText('Junior · Class of 2028 · Injured')).toBeTruthy();
+    expect(within(panel).getByText('Updated 3 days ago')).toBeTruthy();
+    expect(within(panel).getByText('Shows on your roster only. It never changes their team access; Mark inactive does.')).toBeTruthy();
+    const note = within(panel).getByRole('textbox', { name: 'Note' }) as HTMLTextAreaElement;
+    expect(note.value).toBe('Wrist · no tournament play until Nov');
+    expect(note).toHaveAccessibleDescription(/Only coaches see this\./);
+    await user.clear(note);
+    await user.type(note, 'Wrist · back Nov 9');
+    await user.tab();
+    await expectCode('CH-3010', /Couldn’t save the availability note for Ava/);
+    expect(code('CH-3010')!.textContent).toMatch(/Your text is still in the field/);
+    expect(note.value).toBe('Wrist · back Nov 9');
+    await user.click(within(code('CH-3010') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('Availability note saved for Ava')).toBeTruthy();
+    expect(actions.availability).toHaveBeenLastCalledWith({ playerId: 'ava', availability: 'injured', note: 'Wrist · back Nov 9' });
+    // The list reads back with the saved note.
+    await toList(user);
+    expect(metaOf(ava.name).textContent).toBe('Injured · Wrist · back Nov 9 · Junior · Gothenburg, SE');
+  });
+
+  it('CH-3102 the availability note counts down in its last 40 characters, politely, and stops at 280', async () => {
+    const user = userEvent.setup();
+    const players = PREVIEW_ROSTER_AVAILABILITY.players.map((p) => (p.id === 'ava' ? { ...p, availabilityNote: 'x'.repeat(AVAILABILITY_NOTE_MAX - 41) } : p));
+    wrap(roster({ players }));
+    await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
+    const note = (await screen.findByRole('textbox', { name: 'Note' })) as HTMLTextAreaElement;
+    expect(code('CH-3102')).toBeNull();
+    await user.type(note, 'x');
+    await expectCode('CH-3102', /40 characters left/);
+    expect(code('CH-3102')!.getAttribute('aria-live')).toBe('polite');
+    expect(note.getAttribute('maxlength')).toBe('280');
+    await user.type(note, 'x'.repeat(45));
+    expect(note.value).toHaveLength(280);
+    await expectCode('CH-3102', /That’s the limit: 280 characters\./);
+  });
+
+  it('CH-3809 the head counts injured and away among the active; the list, faces and labels say it in words, never a colour', async () => {
+    const user = userEvent.setup();
+    wrap(PREVIEW_ROSTER_AVAILABILITY);
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active · 1 injured · 1 away. Team average 73.6 over the season.');
+    // Faces: the note slot holds the line in plain ink, and the card's name says the word.
+    const face = screen.getByRole('button', { name: /^Ava Lindqvist, scoring average 72\.4, 3 of 6, injured\. Open profile$/ });
+    const slot = face.querySelector('.ch-rs-face__note')!;
+    expect(slot.textContent).toBe('Injured · Wrist · no tournament play until Nov');
+    expect(slot.className).toBe('ch-rs-face__note is-availability');
+    expect(screen.getByRole('button', { name: /^Luca Ferraro.*, away\. Open profile$/ })).toBeTruthy();
+    await toList(user);
+    const meta = metaOf(ava.name);
+    expect(meta.textContent).toBe('Injured · Wrist · no tournament play until Nov · Junior · Gothenburg, SE');
+    expect(meta.getAttribute('title')).toBe(meta.textContent);
+    expect(meta.querySelector('.ch-rs-who__avail')!.textContent).toBe('Injured');
+    // The Status column is team access, untouched.
+    const row = screen.getAllByRole('row').find((r) => within(r).queryByRole('button', { name: `${ava.name}. Open profile` }))!;
+    expect(row.querySelector('.ch-rs-status')!.textContent).toBe('Active');
+    // Teammates who are out are not asked about under Needs a look.
+    expect(within(screen.getByRole('region', { name: 'Needs a look' })).queryByRole('button', { name: /Ava|Luca/ })).toBeNull();
+  });
+
+  it('30502 the export adds Availability and Availability note after Status, the note written as text', async () => {
+    const user = userEvent.setup();
+    let blob: Blob | undefined;
+    const url = URL as unknown as { createObjectURL?: unknown; revokeObjectURL?: unknown };
+    const prev = [url.createObjectURL, url.revokeObjectURL];
+    url.createObjectURL = (b: Blob) => {
+      blob = b;
+      return 'blob:x';
+    };
+    url.revokeObjectURL = () => {};
+    const players = PREVIEW_ROSTER_AVAILABILITY.players.map((p) => (p.id === 'luca' ? { ...p, availabilityNote: '=back Nov 2' } : p));
+    wrap(roster({ players }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    const lines = (await blob!.text()).split('\n');
+    expect(lines[0]).toBe('Player,Class,Status,Availability,Availability note,Rounds,Scoring avg,SG per round,Handicap');
+    expect(lines.find((l) => l.startsWith('"Ava Lindqvist"'))).toMatch(/^"Ava Lindqvist","Junior","active","Injured","Wrist · no tournament play until Nov","19"/);
+    expect(lines.find((l) => l.startsWith('"Luca Ferraro"'))).toContain('"Away","\'=back Nov 2"');
+    expect(lines.find((l) => l.startsWith('"Theo Marchetti"'))).toContain('"active","Available","",');
+    [url.createObjectURL, url.revokeObjectURL] = prev;
+  });
+
+  it('Needs a look leaves out a player who is out, and the row note is the availability line', () => {
+    const s = { rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'slipping', formChange: 2.1, recent: [], lastRoundDate: null } as unknown as Parameters<typeof attentionFor>[0];
+    const now = new Date('2026-10-21T12:00:00Z');
+    expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'Scoring up 2.1' });
+    expect(attentionFor(s, now, true, 'injured')).toBeNull();
+    expect(attentionFor(s, now, true, 'away')).toBeNull();
+    expect(rowNote(ava, false)).toEqual({ text: 'Injured · Wrist · no tournament play until Nov', tone: null });
+    expect(rowNote({ ...luca, availabilityNote: null }, true)).toEqual({ text: 'Away', tone: null });
+    expect(availabilityLine(theo)).toBeNull();
+  });
+
+  it('the loader reads availability with the membership, and an unknown value reads as available', async () => {
+    let membersSelect = '';
+    tables.current = {
+      golf_team_members: (f) => {
+        membersSelect = String(f.find(([k]) => k === 'select')![1][0]);
+        return {
+          data: [
+            { status: 'active', jersey_number: null, joined_at: null, availability: 'injured', availability_note: ' wrist ', availability_updated_at: '2026-10-18T10:00:00Z', player: { id: 'p1', first_name: 'Ava', last_name: 'L' } },
+            { status: 'inactive', jersey_number: null, joined_at: null, availability: 'away', availability_note: 'visa', availability_updated_at: null, player: { id: 'p2', first_name: 'Mia', last_name: 'T' } },
+            { status: 'active', jersey_number: null, joined_at: null, availability: 'mystery', availability_note: 'kept out', availability_updated_at: null, player: { id: 'p3', first_name: 'Theo', last_name: 'M' } },
+          ],
+        };
+      },
+    };
+    const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(membersSelect).toMatch(/^status, jersey_number, joined_at, availability, availability_note, availability_updated_at, player:golf_players\(/);
+    const by = Object.fromEntries(data.players.map((p) => [p.id, [p.availability, p.availabilityNote, p.availabilityUpdated]]));
+    expect(by).toEqual({ p1: ['injured', 'wrist', '2026-10-18T10:00:00Z'], p2: ['away', 'visa', null], p3: ['available', null, null] });
   });
 });
 
