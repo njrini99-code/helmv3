@@ -153,7 +153,8 @@ export interface ChTeamStats {
   longestError: boolean;
 }
 
-function sgLegs(r: ChRound): Array<number | null> {
+/** A round's strokes gained in each leg, in `LEGS` order. */
+export function sgLegs(r: ChRound): Array<number | null> {
   return [r.strokes_gained_tee, r.strokes_gained_approach, r.strokes_gained_around_green, r.strokes_gained_putting];
 }
 
@@ -339,30 +340,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   ) as Record<ChLeg, Array<number | null>>;
 
   // Player x leg grid.
-  const grid = players
-    .map((p) => {
-      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
-      const mineHoles = holeRounds(mine);
-      const s = summarizeWindow(mine);
-      const legs = LEGS.map((_, i) => (effectiveCount(mineHoles, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => sgLegs(r)[i]) : null));
-      // Late half against early half, both per 18 holes, and needing four whole rounds with shots (a nine-hole round is half).
-      const sgMine = mineHoles.filter((r) => r.strokes_gained_total != null).reverse();
-      const half = Math.floor(sgMine.length / 2);
-      const sgOf = (r: ChRound) => r.strokes_gained_total;
-      const change = effectiveCount(sgMine, sgOf) >= 4 ? (weightedMean(sgMine.slice(sgMine.length - half), sgOf) ?? 0) - (weightedMean(sgMine.slice(0, half), sgOf) ?? 0) : null;
-      // The ranked dot plot's whiskers: each figure's own round values from the rounds it reads (no new read).
-      const sample = (rs: ChRound[], pick: (r: ChRound) => number | null, kind: SpreadKind): ChRankSample => {
-        const v = roundValues(rs, pick);
-        return { n: v.n, se: meanSe(v.values, kind, v.n) };
-      };
-      const spread: ChRankSpread = {
-        sg: sample(mineHoles, sgOf, 'sg'),
-        legs: LEGS.map((_, i) => sample(mineHoles, (r) => sgLegs(r)[i] ?? null, 'sg')),
-        score: sample(mine.filter((r) => r.total_score != null), (r) => r.total_score, 'score'),
-      };
-      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread };
-    })
-    .filter((g) => g.rounds > 0);
+  const grid = teamGrid(players, season.rounds, f);
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
@@ -410,6 +388,40 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     puttsError: putts.error,
     longestError: longest.error,
   };
+}
+
+/**
+ * The player x leg grid (Team Stats' TeamRank and grid, and Coach Home's "The team's game"): for each player with a round
+ * in the filter, their strokes gained per round in each leg (three or more whole rounds with it, else null), in total,
+ * the late-half against early-half change, the scoring average and each figure's sample. Pure: the rounds are the
+ * loaded ones of `players` (the active roster), grouped by player here, and nothing outside `players` is counted.
+ */
+export function teamGrid(players: Array<{ id: string; first_name: string | null; last_name: string | null }>, rounds: ChRound[], f: ChFilter): ChTeamStats['grid'] {
+  const byPlayer = groupByPlayer(rounds);
+  return players
+    .map((p) => {
+      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
+      const mineHoles = holeRounds(mine);
+      const s = summarizeWindow(mine);
+      const legs = LEGS.map((_, i) => (effectiveCount(mineHoles, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => sgLegs(r)[i]) : null));
+      // Late half against early half, both per 18 holes, and needing four whole rounds with shots (a nine-hole round is half).
+      const sgMine = mineHoles.filter((r) => r.strokes_gained_total != null).reverse();
+      const half = Math.floor(sgMine.length / 2);
+      const sgOf = (r: ChRound) => r.strokes_gained_total;
+      const change = effectiveCount(sgMine, sgOf) >= 4 ? (weightedMean(sgMine.slice(sgMine.length - half), sgOf) ?? 0) - (weightedMean(sgMine.slice(0, half), sgOf) ?? 0) : null;
+      // The ranked dot plot's whiskers: each figure's own round values from the rounds it reads (no new read).
+      const sample = (rs: ChRound[], pick: (r: ChRound) => number | null, kind: SpreadKind): ChRankSample => {
+        const v = roundValues(rs, pick);
+        return { n: v.n, se: meanSe(v.values, kind, v.n) };
+      };
+      const spread: ChRankSpread = {
+        sg: sample(mineHoles, sgOf, 'sg'),
+        legs: LEGS.map((_, i) => sample(mineHoles, (r) => sgLegs(r)[i] ?? null, 'sg')),
+        score: sample(mine.filter((r) => r.total_score != null), (r) => r.total_score, 'score'),
+      };
+      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread };
+    })
+    .filter((g) => g.rounds > 0);
 }
 
 function seasonBests(
