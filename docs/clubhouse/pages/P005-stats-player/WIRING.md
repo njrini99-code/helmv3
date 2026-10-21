@@ -24,7 +24,11 @@ Address:                 ?player= ?tab= and the round filter: window, type, hole
 Clubhouse route adapter: src/clubhouse/routes/stats.tsx ClubhouseStatsRoute (session, resolveClubhouseTeam;
                          no team -> StatsNoTeam, CH-4309; a player -> loadPlayerProfile as viewer player for
                          their own id; a coach with ?player= -> loadPlayerProfile as viewer coach, or NotOnTeam,
-                         CH-5306, when the loader finds nobody or the id is not shaped like one)
+                         CH-5306, when the loader finds nobody or the id is not shaped like one).
+                         Beside the profile: Game detail's CoachHelm counts,
+                         loadStatsReads (DATA-STATS-READS); for a coach only
+                         after loadCoachPlayerScope answers ok (readsForScope),
+                         for a player for the session's own id
 Server loader:           src/clubhouse/data/stats-player.ts loadPlayerProfile (with data/stats-common.ts and
                          data/season.ts; a failed rounds, shot detail, benchmark, focus area or goal read logs
                          through chLogServer('stats', …) and never throws; a failed player or membership read
@@ -149,6 +153,38 @@ Read path:  loadPlayerProfile on the server, one pass. golf_rounds is read from 
             The sheet's list (`filterOptions`) is this player's loaded rounds: a player's read never loads a
             teammate's, so a teammate's round id in the address is not there to pick (Q-91)
 Write path: createFocusArea (a coach's insert into golf_player_focus_areas, status proposed)
+```
+
+### DATA-STATS-READS
+
+```text
+Loader:   src/clubhouse/data/stats-reads.ts loadStatsReads (spec D build A,
+          2026-10-21), never throws
+Input:    a coach: the branded ChCoachPlayerScope only
+          (data/coachhelm-player.ts; a raw id does not compile); a player: the
+          session's own golf_players.id (the route's team.playerId), never the
+          address
+Gates:    a coach's: both, inside loadCoachPlayerScope (not-member and either
+          gate off read nothing, `off`); a player's: loadPlayerHelmGate (off ->
+          `off`, a failed lookup -> `failed`)
+Tables:   golf_coach_insights (loadVisible: the Board's visible-rows read,
+          deduplicated, no exposure recorded), golf_teams + golf_pga_standards
+          (coachTour; a player's through playerTeam), golf_rounds (newestRounds
+          from earliestStaleFloor), golf_insight_player_feedback (a player's own
+          dismissals, loadPlayerDismissed)
+Count:    countReads (data/coachhelm-classify.ts), per section by readAreaOf:
+          tee, approach, short_game -> short, putting, scoring and
+          course_management -> scoring; pressure and notes are not counted; a
+          read older than the newest countable round is not counted. The coach's
+          Game profile line (readSeen) and the roster's CoachHelm block use the
+          same function
+Answer:   { status: 'ready', byArea } (only sections with a read; each with
+          costing, working and the Deep dive href, `&insight=<id>` when the
+          section has exactly one read) | { status: 'off' } |
+          { status: 'failed' } (a failed gate, visible, dismissal or
+          newest-rounds read; CH-5214)
+Screen:   GameDetail `reads` -> ReadsLine under each section's Rule; the failed
+          line under .ch-gd__nav
 ```
 
 ## Held dependencies

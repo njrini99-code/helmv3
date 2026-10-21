@@ -162,6 +162,7 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
 | 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 | 50619 | CH-5005 | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | Sharing a personal-best card fails (the share sheet or the download is blocked) |
+| 50620 | CH-5214 | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
 
 ## 07 — Network / offline
 
