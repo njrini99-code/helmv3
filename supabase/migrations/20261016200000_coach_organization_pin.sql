@@ -285,6 +285,7 @@ AS $$
            WHERE bc.user_id = (SELECT auth.uid())
              AND bc.organization_id = p_org
              AND t.organization_id = p_org
+             AND s.status = 'active'
              AND (s.is_primary IS TRUE OR s.is_head_coach IS TRUE)
          )
       OR EXISTS (
