@@ -27,7 +27,7 @@ import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
-import { areaOf } from '../data/coachhelm-ladder-shape';
+import { areaOf, LADDER_METRICS } from '../data/coachhelm-ladder-shape';
 import { breakBias, penalties, slope } from '../preview/fixtures-coachhelm';
 import { figure, groupOf, MIN_PROJECTION_ROUNDS, toChStanding, versus } from '../data/coachhelm-standing-shape';
 import { Standing } from '../screens/coachhelm/views/Standing';
@@ -68,14 +68,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('the standing rows as the page draws them', () => {
-  it('every tracked metric the player has is drawn once, grouped as the Fairway drill groups them, in the registry’s order', () => {
+  it('every tracked metric the player has is drawn once, grouped as the Fairway drill groups them, in the registry’s order; the four parts of the round only on the ladder', () => {
     expect(PREVIEW_STANDING.groups.map((g) => g.label)).toEqual(['Strokes gained', 'Putting', 'Approach', 'Short game', 'Scoring', 'Course management', 'Pressure']);
     const names = { sg: 'Strokes gained', putting: 'Putting', approach: 'Approach', short_game: 'Short game', scoring: 'Scoring', course_mgmt: 'Course management', pressure: 'Pressure' } as const;
     for (const g of PREVIEW_STANDING.groups) {
-      const order = METRIC_IDS.filter((id) => STANDING_ROWS.some((r) => r.metric_id === id) && names[groupOf(id)] === g.label);
+      const order = METRIC_IDS.filter((id) => STANDING_ROWS.some((r) => r.metric_id === id) && names[groupOf(id)] === g.label && !LADDER_METRICS.has(id));
       expect(g.rows.map((r) => r.id), g.label).toEqual(order);
     }
-    expect(PREVIEW_STANDING.groups.flatMap((g) => g.rows)).toHaveLength(STANDING_ROWS.length);
+    // Design call: no number twice on one screen. The Strokes gained group keeps only the total; the four parts are the ladder's.
+    expect(PREVIEW_STANDING.groups[0]!.rows.map((r) => r.id)).toEqual(['sg_total']);
+    expect(PREVIEW_STANDING.groups.flatMap((g) => g.rows)).toHaveLength(STANDING_ROWS.length - 4);
+    // A group with nothing but those four is not drawn.
+    expect(toChStanding([standingRow('sg_ott', -0.4, 0, null), standingRow('gir_pct', 58, 66, null)], ok).groups.map((g) => g.id)).toEqual(['approach']);
   });
 
   it('every metric in the registry has a sentence-case label (a metric added without one fails to compile; this reads them)', () => {
@@ -84,7 +88,7 @@ describe('the standing rows as the page draws them', () => {
       ok,
     );
     for (const r of labelled.groups.flatMap((g) => g.rows)) expect(r.label, r.id).toMatch(/^[A-Z][a-z0-9]/);
-    expect(labelled.groups.flatMap((g) => g.rows)).toHaveLength(METRIC_IDS.length);
+    expect(labelled.groups.flatMap((g) => g.rows)).toHaveLength(METRIC_IDS.length - LADDER_METRICS.size);
   });
 
   it('figures use the true minus, a signed difference for strokes gained and a plain score for par scoring, and a dash for no data', () => {
@@ -190,7 +194,7 @@ describe('the standing rows as the page draws them', () => {
       ['Putting', '−0.63', 'loss'],
     ]);
     // The same figures the Strokes gained group draws: the standing rows, never a new estimate.
-    expect(rows[1]!.strokes).toBe(rowOf(PREVIEW_STANDING, 'sg_approach').you);
+    expect(rows[1]!.strokes).toBe(figure('sg_approach', METRIC_RENDER_CONFIG.sg_approach.unit, -0.91));
     expect(top).toBe('approach');
     expect(readsFailed).toBe(false);
     // The bar is against the largest of the four.
@@ -285,14 +289,16 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.status).toBe('ready');
     if (out.status !== 'ready') return;
     expect(out.data).toMatchObject({ state: 'ready', rounds: 14, scoringAverage: '77.2' });
-    expect(out.data.groups.flatMap((g) => g.rows)).toHaveLength(20);
+    expect(out.data.groups.flatMap((g) => g.rows)).toHaveLength(16);
+    expect(out.data.counts.measures).toBe(20);
   });
 
   it('a row that is anyone else’s is never drawn, whatever the standing loader returned', async () => {
     standingRead.load.mockResolvedValue(map([...rows('pl-jonah').slice(0, 2), { ...rows('pl-someone-else')[2]! }]));
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     if (out.status !== 'ready') throw new Error('not ready');
-    expect(out.data.groups.flatMap((g) => g.rows.map((r) => r.id))).toEqual(['sg_total', 'sg_ott']);
+    expect(out.data.groups.flatMap((g) => g.rows.map((r) => r.id))).toEqual(['sg_total']);
+    expect(out.data.ladder.rows.map((r) => r.strokes)).toEqual(['−0.42', null, null, null]);
   });
 
   it('each putt band is sized by its own attempts column over the rounds played; a band with none falls back to the cap', async () => {

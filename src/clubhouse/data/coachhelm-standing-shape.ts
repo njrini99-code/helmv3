@@ -7,7 +7,7 @@ import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config'
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { formatSigned, NO_DATA } from '../lib/format';
-import { toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
+import { LADDER_METRICS, toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
 
 /**
  * The player's Standing (Clubhouse P013, `?view=standing`): where they stand on every tracked metric against the Tour and against
@@ -282,9 +282,17 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
     const s = byId.get(id);
     if (s && Number.isFinite(s.player_value)) drawn.push({ id, row: toRow(s, id, average, attempts[id] ?? null, sgBehindTour(byId.get(parentSgMetric(id) ?? ''))) });
   }
-  const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...g, rows: drawn.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
+  // The four parts of the round are Where strokes go's; drawn again in the Strokes gained group they would repeat its numbers
+  // (design call: no number twice on one screen). Strokes gained: total stays there, and a group left empty is not drawn. They
+  // still count among the comparisons the hero states, since the ladder draws them.
+  const grouped = drawn.filter((d) => !LADDER_METRICS.has(d.id));
+  const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...g, rows: grouped.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
   const all = drawn.map((d) => d.row);
   const newest = rows.map((r) => r.computed_at).filter((d): d is string => typeof d === 'string').sort().pop() ?? null;
+  const ladder = toChLadder(
+    rows.filter((r) => Number.isFinite(r.player_value)),
+    reads,
+  );
   const withTour = all.filter((r) => r.vsTour);
   const withTeam = all.filter((r) => r.vsTeam);
   return {
@@ -301,9 +309,6 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
       tour: { of: withTour.length, ahead: withTour.filter((r) => r.vsTour?.sense === 'ahead').length },
       team: { of: withTeam.length, ahead: withTeam.filter((r) => r.vsTeam?.sense === 'ahead').length },
     },
-    ladder: toChLadder(
-      rows.filter((r) => Number.isFinite(r.player_value)),
-      reads,
-    ),
+    ladder,
   };
 }

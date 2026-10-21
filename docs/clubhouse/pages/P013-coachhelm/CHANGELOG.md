@@ -29,8 +29,11 @@ Held items:     none
   yet, linking to the read in the Deep dive.
 - A part with no figure says why in words (CH-13374). Reads that did not load
   are said once under the ladder, and nothing opens (CH-13273).
-- The groups with You / Tour / Team are unchanged. The loading shape follows
-  the shorter card.
+- The Strokes gained group no longer draws the four parts of the round (the
+  ladder draws them; no number twice on one screen). It keeps Strokes gained:
+  total, and a group left with nothing is not drawn. The other groups with
+  You / Tour / Team are unchanged, and the hero's counts still include the
+  four. The loading shape follows the shorter card.
 - Preview: `/clubhouse-preview/coachhelm-views?view=standing` with
   `&state=thin` and `&state=readsfailed`.
 

@@ -72,6 +72,9 @@ const AREAS: ReadonlyArray<{ id: ChLadderAreaId; label: string; metric: string }
   { id: 'putting', label: 'Putting', metric: 'sg_putting' },
 ];
 
+/** The strokes-gained metrics the ladder draws; the Standing groups leave them out so no number is drawn twice. */
+export const LADDER_METRICS: ReadonlySet<string> = new Set(AREAS.map((a) => a.metric));
+
 /** The hero's sentence for the area that loses the most: it names the area, and the number stays on the ladder. */
 export const LADDER_HEADLINE: Record<ChLadderAreaId, string> = {
   tee: 'Your tee shots cost you the most strokes against the Tour',
