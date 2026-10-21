@@ -362,26 +362,27 @@ const coachData = (top: ChInsight, count = 1): ChCoachHelmData => ({
 });
 const playerData = (...list: ChInsight[]): ChPlayerHelm => ({ off: null, proposals: { list: [], error: false }, insights: { list, error: false }, rounds: null });
 const focus = () => within(document.querySelector('.ch-hl-focus') as HTMLElement);
-const pill = () => document.querySelector('.ch-hl-focus .ch-hl-pri') as HTMLElement;
+/** The stance word in the card's eyebrow (D8: a word, never a pill); null when the eyebrow says none. */
+const pill = () => ({ textContent: /· (Priority|Working|Note|Out of date|Assigned|Acknowledged)$/.exec(document.querySelector('.ch-hl-focus .ch-hl-focus__k')!.textContent ?? '')?.[1] ?? null });
 
 describe('the cards, on screen', () => {
-  it('CH13-13 the gauge names the player on the coach’s board and says You on the player’s own', () => {
-    const legend = () => document.querySelector('.ch-hl-focus .ch-hl-g__lg span')!.textContent;
+  it('CH13-13 the ledger names the player on the coach’s board and says You on the player’s own', () => {
+    const legend = () => document.querySelector('.ch-hl-focus .ch-hl-ledger li')!.textContent;
     render(wrap(<CoachBoard data={coachData(chTop(penalties(jonah.id)))} />));
-    expect(legend()).toBe('Jonah · 1.1');
+    expect(legend()).toBe('Jonah1.1');
     cleanup();
     render(wrap(<PlayerBoard data={playerData(chTop(penalties(jonah.id)))} />));
-    expect(legend()).toBe('You · 1.1');
+    expect(legend()).toBe('You1.1');
   });
 
-  it('CH13-16 the pill is a word that is never a fresh Priority once the insight is assigned or acknowledged', () => {
+  it('CH13-16 the stance is a word that is never a fresh Priority once the insight is assigned or acknowledged; a medium finding says none', () => {
     const word = (top: ChInsight) => {
       render(wrap(<CoachBoard data={coachData(top)} />));
       const w = pill().textContent;
       cleanup();
       return w;
     };
-    expect(word(chTop(slope(jonah.id)))).toBe('Worth closing');
+    expect(word(chTop(slope(jonah.id)))).toBeNull();
     expect(word(chTop(penalties(jonah.id)))).toBe('Priority');
     expect(word(chTop(slope(jonah.id), { assigned: 'proposed' }))).toBe('Assigned');
     expect(word(chTop({ ...slope(jonah.id), status: 'acknowledged' }))).toBe('Acknowledged');
@@ -394,7 +395,7 @@ describe('the cards, on screen', () => {
     const userEvent = (await import('@testing-library/user-event')).default;
     const w = { assign: vi.fn(() => Promise.resolve({ success: true })), dismiss: vi.fn(), undo: vi.fn() };
     render(wrap(<CoachBoard data={coachData(chTop(slope(jonah.id)))} writes={w} />));
-    expect(pill().textContent).toBe('Worth closing');
+    expect(pill().textContent).toBeNull();
     await userEvent.setup().click(screen.getByRole('button', { name: 'Assign as focus' }));
     await screen.findByText(/Assigned as Jonah’s focus/);
     expect(pill().textContent).toBe('Assigned');

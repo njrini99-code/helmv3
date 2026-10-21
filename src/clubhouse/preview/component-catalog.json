@@ -929,6 +929,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -961,6 +962,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -989,6 +991,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1083,6 +1086,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1102,6 +1106,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1122,6 +1127,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1140,6 +1146,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1226,6 +1233,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1253,6 +1261,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1392,6 +1401,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-patterns.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1613,15 +1623,12 @@
         "FocusCard",
         "Head",
         "InsightRow",
-        "PriPill",
-        "PulseList",
-        "ReadMeter"
+        "PathLine"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
-        "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1794,6 +1801,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1827,6 +1835,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1846,6 +1855,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1881,6 +1891,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -1970,6 +1981,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1989,6 +2001,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2079,6 +2092,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2096,6 +2110,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2140,6 +2155,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2181,6 +2197,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2410,6 +2427,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2555,6 +2573,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2573,6 +2592,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2591,6 +2611,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -2617,6 +2638,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2634,6 +2656,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -2769,6 +2792,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2792,6 +2816,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2849,6 +2874,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2958,6 +2984,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3017,6 +3044,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3086,6 +3114,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -3109,6 +3138,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3128,6 +3158,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3171,6 +3202,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3201,6 +3233,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3220,6 +3253,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3251,6 +3285,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3274,6 +3309,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3292,6 +3328,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3337,6 +3374,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3486,6 +3524,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3504,6 +3543,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3821,6 +3861,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3913,6 +3954,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3932,6 +3974,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -3955,6 +3998,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -4024,6 +4068,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4077,6 +4122,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -4116,6 +4162,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4134,6 +4181,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4204,6 +4252,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -4228,6 +4277,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4246,6 +4296,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4265,6 +4316,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4284,6 +4336,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4303,6 +4356,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4333,6 +4387,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4352,6 +4407,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4384,6 +4440,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4403,6 +4460,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4507,6 +4565,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -4558,6 +4617,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4593,6 +4653,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -4613,6 +4674,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4632,6 +4694,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4651,6 +4714,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4669,6 +4733,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4710,6 +4775,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4738,6 +4804,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4880,6 +4947,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4993,6 +5061,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
@@ -5044,6 +5113,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5206,6 +5276,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5248,6 +5319,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5661,6 +5733,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5743,6 +5816,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5791,6 +5865,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/hero-tones.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -5884,6 +5959,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -6006,6 +6082,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -6073,6 +6150,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -6270,6 +6348,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -7612,20 +7691,10 @@
         "ch-ask-cmp__round",
         "ch-ask-cmp__send",
         "ch-ask-cmp__ta",
+        "ch-ask-cov",
         "ch-ask-dock",
         "ch-ask-drawer",
         "ch-ask-ev",
-        "ch-ask-find",
-        "ch-ask-find__card",
-        "ch-ask-find__cat",
-        "ch-ask-find__cov",
-        "ch-ask-find__ev",
-        "ch-ask-find__grid",
-        "ch-ask-find__head",
-        "ch-ask-find__item",
-        "ch-ask-find__link",
-        "ch-ask-find__q",
-        "ch-ask-find__top",
         "ch-ask-foot",
         "ch-ask-greet",
         "ch-ask-head",
@@ -7832,13 +7901,10 @@
         "ch-hd-tr__t",
         "ch-hd-why",
         "ch-hl",
-        "ch-hl-drill",
         "ch-hl-ev",
         "ch-hl-ev__f",
         "ch-hl-focus__k",
-        "ch-hl-g__you",
         "ch-hl-lede",
-        "ch-hl-pri",
         "ch-hl-stale",
         "ch-hv-sk-head",
         "ch-scoreboard",
@@ -7998,7 +8064,6 @@
         "ch-hg-stand__v",
         "ch-hg-tag",
         "ch-hg-tail",
-        "ch-hl-conf",
         "ch-hv",
         "ch-scoreboard",
         "ch-skel"
@@ -8297,8 +8362,6 @@
         "ch-hl-cgrid",
         "ch-hl-cleared",
         "ch-hl-cmain",
-        "ch-hl-conf",
-        "ch-hl-conf__d",
         "ch-hl-cx",
         "ch-hl-cx__c",
         "ch-hl-cx__chg",
@@ -8309,9 +8372,6 @@
         "ch-hl-cx__why",
         "ch-hl-dis",
         "ch-hl-done",
-        "ch-hl-drill",
-        "ch-hl-drill__k",
-        "ch-hl-drill__t",
         "ch-hl-eng",
         "ch-hl-eng__l",
         "ch-hl-eng__w",
@@ -8321,23 +8381,30 @@
         "ch-hl-focus",
         "ch-hl-focus__head",
         "ch-hl-focus__k",
-        "ch-hl-g",
-        "ch-hl-g__cmp",
-        "ch-hl-g__f",
-        "ch-hl-g__lg",
-        "ch-hl-g__sec",
-        "ch-hl-g__t",
-        "ch-hl-g__you",
         "ch-hl-grid",
         "ch-hl-h",
         "ch-hl-h__aside",
         "ch-hl-h__t",
         "ch-hl-later",
         "ch-hl-lede",
+        "ch-hl-ledger",
         "ch-hl-more",
+        "ch-hl-ney",
+        "ch-hl-ney__b",
+        "ch-hl-ney__l",
+        "ch-hl-ney__m",
+        "ch-hl-ney__w",
         "ch-hl-note",
+        "ch-hl-path",
+        "ch-hl-path__chip",
+        "ch-hl-path__chips",
+        "ch-hl-path__l",
+        "ch-hl-path__n",
+        "ch-hl-path__sep",
+        "ch-hl-path__step",
         "ch-hl-pl",
         "ch-hl-pl__c",
+        "ch-hl-pl__more",
         "ch-hl-plan",
         "ch-hl-plan__c",
         "ch-hl-plan__courses",
@@ -8348,18 +8415,10 @@
         "ch-hl-plan__start",
         "ch-hl-plan__thin",
         "ch-hl-plist",
-        "ch-hl-pri",
         "ch-hl-prop",
         "ch-hl-prop__a",
         "ch-hl-prop__r",
         "ch-hl-prop__t",
-        "ch-hl-pulse",
-        "ch-hl-pulse__clear",
-        "ch-hl-pulse__ic",
-        "ch-hl-pulse__none",
-        "ch-hl-pulse__sk",
-        "ch-hl-pulse__skrow",
-        "ch-hl-pulse__slot",
         "ch-hl-role",
         "ch-hl-row",
         "ch-hl-row__b",
@@ -8367,6 +8426,11 @@
         "ch-hl-row__v",
         "ch-hl-sec",
         "ch-hl-side",
+        "ch-hl-since",
+        "ch-hl-since__b",
+        "ch-hl-since__gap",
+        "ch-hl-since__l",
+        "ch-hl-since__retry",
         "ch-hl-sk",
         "ch-hl-sk--coach",
         "ch-hl-sk--player",
@@ -8375,24 +8439,22 @@
         "ch-hl-sk__claim",
         "ch-hl-sk__col",
         "ch-hl-sk__line",
-        "ch-hl-sk__pulse",
         "ch-hl-sk__row",
         "ch-hl-sk__rule",
         "ch-hl-sk__tabs",
         "ch-hl-stale",
+        "ch-hl-week",
+        "ch-hl-week__k",
+        "ch-hl-week__t",
         "ch-hl-why",
         "ch-hl-why__b",
         "ch-hv-tabs",
         "ch-notice",
+        "ch-num",
         "ch-scoreboard",
         "ch-skel"
       ],
       "tokens": [
-        {
-          "name": "--ch-hl-pulse-h",
-          "value": "202px",
-          "scope": "@media (min-width: 821px) → .ch-hl[data-canopy]"
-        },
         {
           "name": "--ch-ink-700",
           "value": "#1c1b18",

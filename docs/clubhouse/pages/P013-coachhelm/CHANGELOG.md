@@ -1,5 +1,61 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
+
+```text
+Design package: round 2C (coordinator decision under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13942, CH-13943 (new)
+Actions:        none changed
+Data impact:    none (reads only the ladder the support pass stores)
+Held items:     none
+```
+
+### Changed
+
+- With `coachhelm_support_v1` on, the coach Board shows only reads at
+  Working hypothesis or firmer. Reads rated Not enough yet are one collapsed
+  line under the board, "Not enough yet (N)", that opens in place to each
+  read with its Watching count-down (CH-13942).
+- A ranked head rated Not enough yet gives way to the player's firmest other
+  read. A player all of whose reads are held back is a quiet By player row,
+  "Not enough yet" (CH-13943), not a card and not "No reads yet".
+- Flag off: unchanged. Player surfaces: unchanged. Preview:
+  `?state=notenough`.
+
+## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
+
+```text
+Design package: design call D2, D4, Board spec, path line copy tables, §7
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13940, CH-13941 (new); CH-13203, CH-13206, CH-13309,
+                CH-13310, CH-13405 (reworded); CH-13223, CH-13226,
+                CH-13325 (retired)
+Actions:        none changed
+Data impact:    none (reads only what the rows already store)
+Held items:     none
+```
+
+### Changed
+
+- The program pulse block is gone from the coach Board. The header keeps its
+  one sentence and adds a collapsed "Since you were last here" line that
+  opens up to three items, flush (CH-13941). Its loading, failed, gap and
+  empty states are lines in the same place. Nothing sits between the header
+  and By player; Team patterns and the partial notice moved under the board.
+- The card's second line is the path line (CH-13940): what was seen · count
+  of denominator · rounds · firmness word, from the engine's stored cause, or
+  the symptom and "Not yet traced shot by shot". A stored narrowing adds its
+  steps as chips. The placeholder cause is never drawn, on any line.
+- The priority pill, the three-bar meter, the gauge and the drill well are
+  cut from the card. The eyebrow says the stance in words only when it is
+  news (Priority, Working, Assigned, Acknowledged, Out of date, Note); the
+  evidence is a ledger of flush rows; This week is flush under it.
+- A player with no read yet is a By player row, "No reads yet", instead of
+  the footer under the card (CH-13310).
+- Ask's greeting no longer draws the findings block; it keeps the openers
+  and the line saying who the answers cover.
+
 ## 2026-10-21 — Correction chips under a read's audit (flag off)
 
 ```text
