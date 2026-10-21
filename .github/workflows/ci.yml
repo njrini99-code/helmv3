@@ -888,6 +888,9 @@ jobs:
 
       - name: Build
         if: steps.gate.outputs.run == 'true'
+        env:
+          # The 8 GB workflow-level cap ran out of heap on a 16 GB runner (PR #2246, #2239).
+          NODE_OPTIONS: --max-old-space-size=12288
         run: |
           (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
           sampler=$!
