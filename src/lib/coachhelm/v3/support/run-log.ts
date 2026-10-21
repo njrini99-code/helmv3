@@ -24,13 +24,16 @@ export const RUN_LOG_TABLE = 'golf_coachhelm_run_log';
 
 /**
  * What started the engine run. 'round': a submitted round (round submit, the
- * job queue). 'checkpoint': the safety-net cron re-running a round whose
- * analysis did not finish. 'sweep': the roster sweep. 'manual': a coach
- * refresh or an on-demand analysis. 'unspecified': a caller that named none.
+ * job queue). 'safety_net': the safety-net cron re-running a round whose
+ * analysis did not finish. 'checkpoint': a scheduled 02 §5 checkpoint
+ * re-test (reserved; no caller yet). 'sweep': the roster sweep. 'manual': a
+ * coach refresh or an on-demand analysis. 'unspecified': a caller that named
+ * none.
  */
-export type RunTrigger = 'round' | 'sweep' | 'manual' | 'checkpoint' | 'unspecified';
+export type RunTrigger = 'round' | 'sweep' | 'manual' | 'safety_net' | 'checkpoint' | 'unspecified';
 
 export interface RunLogRow {
+  id?: string;
   player_id: string;
   run_at: string;
   trigger: RunTrigger;
@@ -44,22 +47,27 @@ export interface RunLogRow {
   families: Record<string, Partial<Record<string, number>>>;
   watching: RunSummary['watching'];
   tests_in_run: number;
+  /** How `tests_in_run` splits: rows written, rows the gate held back, rows refused. */
+  m_recorded: number;
+  m_gated: number;
+  m_refused: number;
   engine_version: string;
   support_version: string;
 }
 
-/** Postgres "relation does not exist" or PostgREST "table not in schema cache". */
+/**
+ * Postgres "relation does not exist" (42P01) or PostgREST "table not in
+ * schema cache" (PGRST205), by code only: a message match would also catch
+ * 42703 "column ... does not exist", a real failure that must be logged.
+ */
 export function isMissingTableError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const e = error as { code?: unknown; message?: unknown };
-  if (e.code === '42P01' || e.code === 'PGRST205') return true;
-  return (
-    typeof e.message === 'string' &&
-    (/relation .* does not exist/i.test(e.message) || /could not find the table/i.test(e.message))
-  );
+  const code = (error as { code?: unknown }).code;
+  return code === '42P01' || code === 'PGRST205';
 }
 
 export function buildRunLogRow(args: {
+  id?: string;
   playerId: string;
   runAt: string;
   trigger: RunTrigger;
@@ -70,6 +78,7 @@ export function buildRunLogRow(args: {
 }): RunLogRow {
   const { summary } = args;
   return {
+    ...(args.id ? { id: args.id } : {}),
     player_id: args.playerId,
     run_at: args.runAt,
     trigger: args.trigger,
@@ -85,6 +94,9 @@ export function buildRunLogRow(args: {
     families: summary.families,
     watching: summary.watching.slice(0, 50),
     tests_in_run: summary.tests_in_run,
+    m_recorded: summary.m_recorded,
+    m_gated: summary.m_gated,
+    m_refused: summary.m_refused,
     engine_version: args.engineVersion,
     support_version: args.supportVersion,
   };
