@@ -22,13 +22,17 @@ const state = vi.hoisted(() => ({
   tables: [] as string[],
   inFilters: {} as Record<string, unknown[]>,
   logServerError: vi.fn(async (..._args: unknown[]) => undefined),
+  wrapped: [] as Array<{ name: string; meta: Record<string, unknown> }>,
 }));
 
 vi.mock('@/lib/flags/is-enabled', () => ({
   isFlagEnabled: (id: string) => id === 'coachhelm_course_plan_v1' && state.flagOn,
 }));
 vi.mock('@/lib/admin/observed-action', () => ({
-  withAdminObserved: (_n: unknown, _m: unknown, fn: unknown) => fn,
+  withAdminObserved: (name: string, meta: Record<string, unknown>, fn: unknown) => {
+    state.wrapped.push({ name, meta });
+    return fn;
+  },
 }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: state.logServerError }));
 vi.mock('@/lib/admin/rls-denial', () => ({ maybeCaptureRlsDenial: () => undefined }));
@@ -109,6 +113,12 @@ beforeEach(() => {
 });
 
 describe('course plan actions', () => {
+  it('wraps both reads without the demo write guard, so the shared demo coach can open a plan', async () => {
+    await import('../coachhelm-course-plan');
+    expect(state.wrapped.map((w) => w.name).sort()).toEqual(['getCoursePlan', 'listCoursePlanCourses']);
+    for (const w of state.wrapped) expect(w.meta.demoSafe).toBeUndefined();
+  });
+
   it('reads nothing with the flag off', async () => {
     state.flagOn = false;
     expect(await listCoursePlanCourses(PLAYER)).toEqual({ status: 'not_available' });

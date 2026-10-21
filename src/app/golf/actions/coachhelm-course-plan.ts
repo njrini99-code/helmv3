@@ -177,8 +177,8 @@ async function getCoursePlanImpl(playerId: string, courseId: string): Promise<Co
   return { status: 'ok', plan };
 }
 
-const observedList = withAdminObserved('listCoursePlanCourses', { sport: 'golf', feature: 'coachhelm_ai_engine', demoSafe: true }, listCoursePlanCoursesImpl);
-const observedGet = withAdminObserved('getCoursePlan', { sport: 'golf', feature: 'coachhelm_ai_engine', demoSafe: true }, getCoursePlanImpl);
+const observedList = withAdminObserved('listCoursePlanCourses', { sport: 'golf', feature: 'coachhelm_ai_engine' }, listCoursePlanCoursesImpl);
+const observedGet = withAdminObserved('getCoursePlan', { sport: 'golf', feature: 'coachhelm_ai_engine' }, getCoursePlanImpl);
 
 /** Courses the player has three or more countable rounds on (coach only). */
 export async function listCoursePlanCourses(playerId: string): Promise<CoursePlanCoursesResult> {
