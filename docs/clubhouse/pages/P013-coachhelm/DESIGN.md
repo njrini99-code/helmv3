@@ -252,10 +252,17 @@ projections, which overlap and are not added. Under five rounds it is an early
 read, with no projection.
 
 **Deep dive.** Every insight the Board draws (the same feed, ranking, visibility
-and mapper, so one insight reads the same on both pages), in full. Desktop is a
-list (Needs work, then Working, a read that is out of date after the current
-ones) beside the read; the phone is the list, and a read is a pushed screen. A
-read opens with **the Read**, four lines under its title
+and mapper, so one insight reads the same on both pages), in full. It opens on
+one sentence ("CoachHelm has 5 reads on your game, 2 of them in your plan.";
+no count tiles) and the read ledger: one flush list grouped by area in the
+order a hole is played (Off the tee, Approach, Around the green, Putting,
+Course and scoring), each read in CoachHelm's own order within its area, each
+row with its stance word and its firmness word (the claim ladder's word for a
+coach with the support pass on, else the confidence word; an out-of-date read's
+greys). A read the recheck cleared stays in its area as a line ("Cleared Oct
+12" and its numbers); the newest three show, then "N more cleared". Desktop is
+the ledger beside the read; the phone is the ledger, and a read is a pushed
+screen. A read opens with **the Read**, four lines under its title
 (`data/coachhelm-read-shape.ts`), built only from fields the row carries:
 
 - **What**: the metric, the player's value and its sample ("18 of 31 putts"
@@ -287,7 +294,10 @@ rounds listed); the rounds behind it (the newest eight of the total it names,
 each a link to its review once that screen is rebuilt); why CoachHelm thinks so
 (the drivers with their counts, why the confidence is what it is unless it is
 the stock "sample adequate", then the full write-up, its first sentence
-included); and where it goes (the focus area or
+included); where it happened, only when the stored evidence carries a counted
+path with example holes (up to five, each with its round's day and course, the
+hole and the path in shot-type words; a hole on a round the player no longer
+has is left out, and with none the section is not drawn); and where it goes (the focus area or
 goal made from it, or one on the same stat, linking to Development). Strength
 against needs work follows the Board's doctrine. There is no coach control and
 no write: nothing to assign, dismiss or accept.
@@ -297,7 +307,8 @@ again and is never drawn as nothing: the Deep dive's rounds, plans and category
 trends each fail on their own, in place, without taking the insights down (two
 or more are said once under the read's head with one Try again, CH-1209, each
 part keeping its title where it would be; Standing's two side reads the same),
-and "In your plan" is a dash rather than a zero while plans did not load. First
+and the summary leaves its plan clause out rather than saying a zero while
+plans did not load. First
 run, early read and failed read are three different pages. A read from before
 the newest round says so (CH-13903). No sentence says strokes are being lost: a
 gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour

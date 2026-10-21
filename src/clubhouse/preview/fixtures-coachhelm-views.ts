@@ -294,6 +294,35 @@ export const DIVE_PENALTIES_TEAM: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
 });
 export const PREVIEW_DIVE_TEAM_POOL: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_TEAM, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
 
+/**
+ * The penalties read with a counted path and its example holes (chs-38): the root-cause pass stored the path and five holes, one of
+ * them on a round this player no longer has, so four are listed. Synthetic. `?view=deep-dive&state=holes&insight=in-pen`.
+ */
+export const DIVE_PENALTIES_HOLES: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
+  cause: {
+    state: 'observed_sequence',
+    population: 'penalties',
+    window: '2026-07-13 to 2026-09-28',
+    path: ['tee shot', 'penalty stroke', 'bogey or worse'],
+    occurrences: 6,
+    denominator: 9,
+    distinct_rounds: 4,
+    example_holes: [
+      { round_id: 'rd-01', hole_number: 7 },
+      { round_id: 'rd-03', hole_number: 12 },
+      { round_id: 'rd-gone', hole_number: 4 },
+      { round_id: 'rd-05', hole_number: 3 },
+      { round_id: 'rd-08', hole_number: 16 },
+    ],
+    event_strokes: null,
+    checked: { holes_with_full_record: 180, of: 198, fields_missing: [] },
+    alternatives: [],
+    data_gap: null,
+    coach_override: null,
+  },
+});
+export const PREVIEW_DIVE_HOLES: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_HOLES, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+
 /** The same crowded player as `PREVIEW_HELM_PLAYER_MANY`, on the Deep dive. `?state=many`. */
 export const PREVIEW_DIVE_MANY: ChDeepDive = diveOf([
   deep(DIVE_SLOPE, FULL_INPUTS, DRILL),

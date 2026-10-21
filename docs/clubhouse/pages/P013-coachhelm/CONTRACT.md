@@ -293,6 +293,7 @@ its own.
 | 130753 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
 | 130754 | CH-13944 | `RECHECK_READS` | Re-check reads (coach) |
 | 130755 | CH-13945 | `RECHECK_LANDS` | Re-check lands |
+| 130756 | CH-13996 | `DEEP_DIVE_WHERE_IT_HAPPENED` | Deep dive: where it happened (chs-38) |
 
 ## 08 — Permission / authorization
 

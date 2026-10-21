@@ -180,26 +180,17 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
   );
 }
 
-/** Deep dive: the green summary, the list of reads and, on desktop, the read beside it (CH-13480). */
+/** Deep dive: the one-sentence summary, the read ledger and, on desktop, the read beside it (CH-13480). */
 export function DiveSkeleton({ chained }: { chained?: boolean } = {}) {
   const phone = useChPhone();
   return (
     <Chrome label="Loading your deep dive" code="CH-13480" chained={chained} brief={3}>
-      {phone ? (
-        // The phone: what CoachHelm has found's feature card, with its figure line.
-        <div className="ch-hd-sk__hero">
-          <Skeleton width="100%" height={196} radius={14} shape="solid" />
+      {/* What CoachHelm has found: one sentence (chs-35). */}
+      <div className="ch-hd-sk__hero">
+        <div className="ch-hd-sk__col">
+          <Skeleton width={phone ? '88%' : '52%'} height={phone ? 22 : 26} radius={8} />
         </div>
-      ) : (
-        <div className="ch-hd-sk__hero">
-          <div className="ch-hd-sk__col">
-            <Skeleton width={150} height={11} />
-            <Skeleton width="70%" height={32} radius={8} />
-            <Skeleton width="86%" height={13} />
-          </div>
-          <Skeleton width="100%" height={72} radius={14} />
-        </div>
-      )}
+      </div>
       <div className="ch-hd">
         <div className="ch-hd-rail">
           {[4, 2].map((rows, g) => (

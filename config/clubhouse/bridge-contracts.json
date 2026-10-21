@@ -15677,6 +15677,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130756,
+    "page": "P013",
+    "category": 7,
+    "item": 56,
+    "name": "DEEP_DIVE_WHERE_IT_HAPPENED",
+    "chCode": "CH-13996",
+    "meaning": "Deep dive: where it happened (chs-38)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
