@@ -39,7 +39,7 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 
 import Loading from '@/app/golf/(dashboard)/dashboard/team-hub/loading';
-import { eventSpan, folders, formatters, loadTeamHub, replyIsClosed, type ChTeamHub } from '../data/hub';
+import { eventSpan, folders, formatters, loadTeamHub, replyIsClosed, weekOf, type ChTeamHub } from '../data/hub';
 import { ClubhouseHubRoute } from '../routes/hub';
 import { HubSkeleton } from '../screens/hub/HubSkeleton';
 import { parseHubTab, TeamHub, type ChHubTab } from '../screens/hub/TeamHub';
@@ -2710,6 +2710,19 @@ describe('Team Hub · the trip’s dates and the class lines (Q-84)', () => {
     expect(eventSpan({ start_time: '2026-11-03T23:00:00Z', end_time: '2026-11-04T06:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-04' });
     expect(eventSpan({ start_time: '2026-11-03T22:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-03' });
     expect(eventSpan({ start_time: '2026-11-05T00:00:00+00:00', end_time: '2026-11-03T00:00:00+00:00', all_day: true }, f)).toMatchObject({ from: '2026-11-05', to: '2026-11-05' });
+  });
+
+  it('Home’s week puts an all-day event on the date it was stored for, west of UTC too, and a timed one on its local day', () => {
+    const f = formatters('America/Los_Angeles', new Date('2026-10-14T18:00:00Z'));
+    const week = weekOf('2026-10-14', f, [
+      { id: 'a', title: 'Fall break', start_time: '2026-10-16T00:00:00+00:00', all_day: true, location: null, event_type: 'other' },
+      // 8 PM Pacific on the 15th is 3 AM UTC on the 16th.
+      { id: 't', title: 'Team dinner', start_time: '2026-10-16T03:00:00Z', all_day: false, location: null, event_type: 'team' },
+    ], []);
+    const on = (date: string) => week.find((d) => d.date === date)!.events.map((e) => e.title);
+    expect(on('2026-10-15')).toEqual(['Team dinner']);
+    expect(on('2026-10-16')).toEqual(['Fall break']);
+    expect(week.find((d) => d.date === '2026-10-16')!.events[0]!.time).toBe('All day');
   });
 
   it('the loader sends each event with the days it runs', async () => {

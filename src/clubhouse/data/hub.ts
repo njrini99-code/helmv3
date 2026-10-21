@@ -626,7 +626,8 @@ export function weekOf(
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(today, i);
     const todays = events
-      .filter((e) => f.day(e.start_time).date === date)
+      // An all-day event is stored at UTC midnight: read its date as written, never a day early west of UTC (eventSpan).
+      .filter((e) => (e.all_day ? e.start_time.slice(0, 10) : f.day(e.start_time).date) === date)
       .sort((a, b) => a.start_time.localeCompare(b.start_time))
       .map((e) => ({ id: e.id, title: e.title, time: e.all_day ? 'All day' : f.time(e.start_time), place: e.location, kind: e.event_type }));
     const on = trips.find((t) => t.departDate && t.departDate <= date && (t.returnDate ?? t.departDate) >= date);

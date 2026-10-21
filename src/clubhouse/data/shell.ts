@@ -75,6 +75,8 @@ export async function countOverdueTasks(supabase: Awaited<ReturnType<typeof crea
     .from('golf_tasks')
     .select('id, golf_task_assignments!inner(id)', { count: 'exact', head: true })
     .eq('team_id', teamId)
+    // A QA run's task is hidden on every task surface (loadTeamHub), so the badge must not count it either.
+    .eq('is_test', false)
     .is('parent_task_id', null)
     .lt('due_date', today)
     .or('status.is.null,status.neq.completed', { referencedTable: 'golf_task_assignments' });
