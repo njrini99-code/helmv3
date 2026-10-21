@@ -269,8 +269,19 @@ async function main() {
       }
       // Only the Clubhouse tree: the dev overlay and Next's portal are not ours.
       const label = `${engine} ${scheme} ${motion} ${page.padEnd(12)} ${width}x${height} ${path}${opener ? ` (opened ${[opener].flat().join(' > ')})` : ''}`;
+      // Wait for the page to be interactive before tapping anything: a tap before hydration does nothing, so the next
+      // step never appears and the scan reported "could not tap" for pages that were fine (run 39617783087: three
+      // misses, the same pages scanning fine at other sizes). The shell marks .ch-root[data-hydrated] once it has
+      // hydrated; a control that is really missing still fails.
       let stuck = null;
-      for (const step of [opener ?? []].flat()) {
+      if (opener) {
+        try {
+          await tab.waitForSelector('.ch-root[data-hydrated]', { timeout: 60_000 });
+        } catch {
+          stuck = '.ch-root[data-hydrated] (the page never became interactive)';
+        }
+      }
+      for (const step of stuck ? [] : [opener ?? []].flat()) {
         try {
           await tab.click(step, { timeout: 10_000 });
         } catch {
