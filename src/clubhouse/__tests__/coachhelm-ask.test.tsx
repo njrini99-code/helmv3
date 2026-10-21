@@ -228,7 +228,7 @@ describe('CH-13923 the sub-tab strip', () => {
 });
 
 describe('the new chat page (desktop)', () => {
-  it('CH-13721 greets with the team, offers the openers as pills that send with the select haptic, and draws the findings', async () => {
+  it('CH-13721 greets with the team, offers the openers as pills that send with the select haptic, and says who the answers cover', async () => {
     const { chat } = show();
     expect(screen.getByRole('heading', { name: 'What do you want to know about Finley University?' })).toBeInTheDocument();
     expect(screen.getByText('Answers come from your recorded rounds, signals and schedule.')).toBeInTheDocument();
@@ -237,44 +237,29 @@ describe('the new chat page (desktop)', () => {
     await userEvent.click(pills[1]!);
     expect(chat.calls.send).toHaveBeenCalledWith('Where is the team losing the most strokes?');
     expect(hapticSpy).toHaveBeenCalledWith('select');
-    expect(screen.getByRole('region', { name: 'Since you were last here' })).toBeInTheDocument();
     expect(screen.getByText('6 of 8 players have a round in the last 30 days. Answers cover those 6. As of 2:00 PM.')).toBeInTheDocument();
   });
 
-  it('a finding with a question is a button that asks it; one without is text; a link shows only when the data gave one', async () => {
-    const findings = [
-      { id: 'a', category: 'Putting', headline: 'Downhill putts dropped to 58%', evidence: 'Uphill is 81%.', tone: 'attention' as const, ask: 'Why are we missing short putts?', link: null },
-      { id: 'b', category: 'Coverage', headline: 'No rounds in 30 days', evidence: 'Since Sept 1.', tone: 'neutral' as const, ask: null, link: { label: 'Open roster', href: '/golf/dashboard/roster' } },
-    ];
-    const { chat } = show(ready({ pulse: { findings, coverage: null, asOfLabel: null } }));
-    await userEvent.click(screen.getByRole('button', { name: /Downhill putts dropped to 58%/ }));
-    expect(chat.calls.send).toHaveBeenCalledWith('Why are we missing short putts?');
-    expect(screen.queryByRole('button', { name: /No rounds in 30 days/ })).toBeNull();
-    expect(screen.getByText('No rounds in 30 days')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open roster' })).toHaveAttribute('href', '/golf/dashboard/roster');
-    expect(screen.queryByRole('link', { name: 'Open calendar' })).toBeNull();
+  it('D4 the findings block is the Board’s header line now: Ask draws no "Since you were last here", no finding and none of its states', () => {
+    const findings = [{ id: 'a', category: 'Putting', headline: 'Downhill putts dropped to 58%', evidence: 'Uphill is 81%.', tone: 'attention' as const, ask: 'Why are we missing short putts?', link: null }];
+    show(ready({ pulse: { findings, coverage: null, asOfLabel: null } }));
+    expect(screen.queryByRole('region', { name: 'Since you were last here' })).toBeNull();
+    expect(screen.queryByText('Downhill putts dropped to 58%')).toBeNull();
+    cleanup();
+    show(ready({ pulse: { findings: [], coverage: null, asOfLabel: null } }));
+    expect(code('CH-13325')).toBeNull();
+    cleanup();
+    show(ready({ pulse: null }));
+    expect(code('CH-13223')).toBeNull();
+    expect(code('CH-13322')).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
   });
 
-  it('CH-13322 players and no recorded round is "Nothing to report yet", with no findings grid and the chat still there', () => {
+  it('CH-13322 players and no recorded round is "Nothing to report yet", and the chat is still there', () => {
     show(ready(PREVIEW_ASK_NOROUNDS));
-    expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. Findings show up here after the first rounds come in\. You can still ask about your roster and schedule\./);
-    expect(document.querySelector('.ch-ask-find__grid')).toBeNull();
+    expect(code('CH-13322')?.textContent).toMatch(/Nothing to report yet.*No player has a recorded round yet\. You can still ask about your roster and schedule\./);
     expect(screen.getByRole('textbox', { name: 'Ask CoachHelm' })).toBeInTheDocument();
     expect(within(screen.getByRole('list', { name: 'Questions to start with' })).getAllByRole('button').map((b) => b.textContent)).toEqual(["What’s on this week?"]);
-  });
-
-  it('CH-13325 a pulse with no findings but rounds says nothing is flagged, not that nothing has been recorded', () => {
-    show(ready({ pulse: { findings: [], coverage: 'All 8 players have a round in the last 30 days.', asOfLabel: null } }));
-    expect(code('CH-13325')?.textContent).toMatch(/Nothing is flagged right now/);
-    expect(code('CH-13322')).toBeNull();
-  });
-
-  it('CH-13223 a pulse that did not load is a notice with Try again, never "nothing to report"', async () => {
-    show(ready({ pulse: null }));
-    expect(code('CH-13223')?.textContent).toMatch(/What’s new didn’t load/);
-    expect(code('CH-13322')).toBeNull();
-    await userEvent.click(within(code('CH-13223') as HTMLElement).getByRole('button', { name: 'Try again' }));
-    expect(router.refresh).toHaveBeenCalled();
   });
 });
 

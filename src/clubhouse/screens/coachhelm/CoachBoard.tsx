@@ -1,10 +1,12 @@
 'use client';
 
-import { Suspense, use, useState } from 'react';
-import { Archive, Check, Flag, UserPlus, Users } from 'lucide-react';
+import { Suspense, use, useId, useState } from 'react';
+import { Archive, Check, ChevronDown, ChevronUp, Flag, UserPlus, Users } from 'lucide-react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
-import { firstName, playersLine, pulseGapsLabel, withoutSignalsLine, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
+import type { ChNotEnough } from '../../data/coachhelm-firm';
+import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
 import { haptic } from '../../lib/haptics';
+import { useRefresh } from '../../lib/use-refresh';
 import { useChSessionState } from '../../lib/session-state';
 import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
@@ -19,7 +21,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState, Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
-import { BoardPartial, FocusCard, Head, PulseList } from './parts';
+import { BoardPartial, FocusCard, Head } from './parts';
 import { TeamPatterns } from './TeamPatterns';
 import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
@@ -38,9 +40,12 @@ export const coachBoardLinks = {
 
 /**
  * CoachHelm for the coach (P013; design/handoff/Coach - CoachHelm.html,
- * helm3.jsx `CoachHelm`; spec docs/clubhouse/phone/coachhelm.md): the program
- * pulse, the team's players with their top signal, and the chosen player's
- * focus with Assign as focus and Dismiss (Undo brings it back). Only the team's
+ * helm3.jsx `CoachHelm`; spec docs/clubhouse/phone/coachhelm.md; the design
+ * call's D2 and D4): the header sentence with the program pulse folded into one
+ * "Since you were last here" line, then the decision: the team's players with
+ * their top read (and a row for each player with no read yet), and the chosen
+ * player's card with its path line, Assign as focus and Dismiss (Undo brings it
+ * back). Team patterns sit flush under it. Only the team's
  * own players are read (data/coachhelm.ts). Share with the player has no action
  * behind it (players already see their own insights), so it is not drawn.
  */
@@ -171,6 +176,9 @@ export function CoachBoard({
   // A read beside the cards that failed (CH-13207): whether this card was already assigned, was declined, or is still current is not
   // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
   const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
+  const noReads = noReadRows(data.withoutSignals, data.withoutNames);
+  // CH-13943: a player every one of whose reads is Not enough yet has no card; they are a By player row that says so.
+  const heldOnly = data.notEnough?.players.filter((p) => !p.card) ?? [];
   const rosterHref = coachBoardLinks.roster();
   const inviteHref = coachBoardLinks.invite();
 
@@ -210,26 +218,10 @@ export function CoachBoard({
     />
   ) : (
     <>
-      <SectionBoundary surface="coachhelm.pulse" label="The program pulse" code="CH-13204">
-        <section className="ch-hl-pulse" aria-labelledby="ch-hl-pulse-h">
-          <h2 id="ch-hl-pulse-h">Program pulse</h2>
-          {/* The pulse is the longest read on the page and nothing else uses it, so the board does not wait for it (CH-13405): its card
-              holds its place at a reserved height, and the rows land in it. */}
-          <div className="ch-hl-pulse__slot">{isPulseLater(data.pulse) ? <Suspense fallback={<PulseSkeleton />}><PulseFromRead read={data.pulse} /></Suspense> : <PulseBody pulse={data.pulse} />}</div>
-        </section>
-      </SectionBoundary>
-
-      {/* Slice 7b (coachhelm_team_pattern_v1, off): the loader hands rows only with the flag on. */}
-      {data.teamPatterns && (
-        <SectionBoundary surface="coachhelm.patterns" label="Team patterns" code="CH-13204">
-          <TeamPatterns data={data.teamPatterns} />
-        </SectionBoundary>
-      )}
-
       {data.roster.error || data.players.error ? (
         <RefreshNotice code="CH-13202" title="Your players’ insights didn’t load" body="Nothing is lost. Every insight is still saved; try again in a moment." />
       ) : !cur ? (
-        // The pulse is on the page, so this is the players' section with nothing in it yet, not an empty page: its line
+        // The header is on the page, so this is the players' section with nothing in it yet, not an empty page: its line
         // and View roster sit right under the heading, in view on the desktop and the phone (states audit, 2026-10-08).
         <Section id="ch-hl-none" title="Your players">
           <EmptyState
@@ -246,10 +238,10 @@ export function CoachBoard({
               ) : undefined
             }
           />
+          {data.notEnough && <NotEnoughLine data={data.notEnough} />}
         </Section>
       ) : (
         <>
-          {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
           <div className="ch-hl-cgrid">
             <SectionBoundary surface="coachhelm.players" label="Your players" code="CH-13204">
               <SideScroll as="section" className="ch-hl-plist" aria-labelledby="ch-hl-plist-h">
@@ -278,6 +270,25 @@ export function CoachBoard({
                     </button>
                   );
                 })}
+                {/* CH-13310: a player with no read yet is a row in the list, not a footer under the card (design call §1, "What to cut"). */}
+                {noReads.map((r) => (
+                  <div key={r.key} className="ch-hl-pl is-none" data-ch-code="CH-13310">
+                    {r.name ? <Avatar name={r.name} size={phone ? 28 : 34} /> : <span className="ch-hl-pl__more ch-num" aria-hidden="true">+{r.more}</span>}
+                    <span>
+                      <b>{r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`}</b>
+                      <em>No reads yet</em>
+                    </span>
+                  </div>
+                ))}
+                {heldOnly.map((p) => (
+                  <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
+                    <Avatar name={p.name} size={phone ? 28 : 34} />
+                    <span>
+                      <b>{p.name}</b>
+                      <em>Not enough yet</em>
+                    </span>
+                  </div>
+                ))}
               </SideScroll>
             </SectionBoundary>
             {/* CH-13805: the focus is a polite live region, so choosing another player is announced. */}
@@ -365,10 +376,15 @@ export function CoachBoard({
               )}
             </div>
           </div>
-          {data.withoutSignals > 0 && (
-            <p className="ch-hl-note" data-ch-code="CH-13310">
-              {withoutSignalsLine(data.withoutSignals, data.withoutNames)}
-            </p>
+          {/* Round 2C (coachhelm_support_v1): reads rated Not enough yet are not cards; they are one collapsed line under the board. */}
+          {data.notEnough && <NotEnoughLine data={data.notEnough} />}
+          {/* What failed beside the cards is one line under the list, not a banner over it (design call §3, States: Partial). */}
+          {data.missing && <BoardPartial missing={data.missing} what="board" focus={false} />}
+          {/* Slice 7b (coachhelm_team_pattern_v1, off): the loader hands rows only with the flag on. Flush under the Board (D5). */}
+          {data.teamPatterns && (
+            <SectionBoundary surface="coachhelm.patterns" label="Team patterns" code="CH-13204">
+              <TeamPatterns data={data.teamPatterns} />
+            </SectionBoundary>
           )}
         </>
       )}
@@ -381,7 +397,23 @@ export function CoachBoard({
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Coach" phone={phone} aside={!phone ? tabs : undefined}>
+      <Head
+        who="Coach"
+        phone={phone}
+        aside={!phone ? tabs : undefined}
+        below={data.off || (!data.roster.error && data.roster.count === 0) ? undefined : (
+          // D4: the program pulse is one collapsed line in the header, never a block that comes before the decision.
+          <SectionBoundary surface="coachhelm.pulse" label="Since you were last here" code="CH-13204">
+            {isPulseLater(data.pulse) ? (
+              <Suspense fallback={<SinceSkeleton />}>
+                <SinceFromRead read={data.pulse} />
+              </Suspense>
+            ) : (
+              <SinceLine pulse={data.pulse} />
+            )}
+          </SectionBoundary>
+        )}
+      >
         {players.length > 0 && !data.off ? playersLine(playersOpen) : 'CoachHelm reads the rounds your players post.'}
       </Head>
       {body}
@@ -408,61 +440,125 @@ const isPulseLater = (p: ChCoachHelmData['pulse']): p is Promise<ChPulseResult> 
 /** A pulse that could not be read is the pulse not loading, as a result that says so (the loader's read never rejects). */
 const PULSE_NOT_LOADED: ChPulse = { rows: [], error: true };
 
-/** The pulse's rows, or what stands in for them: its own notice when it did not load, or when a read it is made from failed (never "nothing is flagged"). */
-function PulseBody({ pulse }: { pulse: ChPulse }) {
+/**
+ * "Since you were last here" (D4): the program pulse as one collapsed line in the header, up to three items when opened, flush,
+ * no glyphs. Each state is a line, never a block: not loaded (CH-13203), nothing new (CH-13309), and, when a read it is made from
+ * failed, what was not checked (CH-13206), so a gap is never read as "nothing is flagged". The tap is silent, as the card's other
+ * disclosures are (D-70).
+ */
+function SinceLine({ pulse }: { pulse: ChPulse }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
   const gaps = pulse.missing && pulse.missing.length > 0 ? pulseGapsLabel(pulse.missing) : null;
-  if (pulse.error) return <RefreshNotice code="CH-13203" title="The program pulse didn’t load" body="Your players’ insights below are not affected. Try again in a moment." />;
-  if (pulse.rows.length === 0 && !gaps) {
+  if (pulse.error) return <SinceFailed />;
+  const n = pulse.rows.length;
+  if (n === 0 && !gaps) {
     return (
-      <p className="ch-hl-pulse__none" data-ch-code="CH-13309">
-        Nothing is flagged in the pulse right now.
-      </p>
+      <div className="ch-hl-since is-quiet" data-ch-code="CH-13309">
+        Nothing new since you were last here.
+      </div>
+    );
+  }
+  // A read it is made from failed and nothing was found: said in the open, never behind the tap (CH-13206).
+  if (n === 0 && gaps && pulse.missing) {
+    return (
+      <div className="ch-hl-since is-quiet" role="status" data-ch-code="CH-13206">
+        Since you were last here: {gaps.charAt(0).toLowerCase() + gaps.slice(1)} didn’t load, so what is new was not checked.
+      </div>
     );
   }
   return (
-    <>
-      {pulse.rows.length > 0 && <PulseList rows={pulse.rows} />}
-      {/* Every read came in (no gaps), so what is not listed was checked and is clear: say so in the card's held space
-          instead of leaving it empty. Up to four items, the two rows the desktop's reserve leaves room under. */}
-      {!gaps && pulse.rows.length > 0 && pulse.rows.length <= 4 && (
-        <p className="ch-hl-pulse__clear">
-          <Icon icon={Check} size={13} />
-          Nothing else is flagged across the program.
-        </p>
-      )}
-      {/* CH-13206: a read the pulse is made from failed, so what is not listed was not checked: never "nothing is flagged". */}
-      {gaps && pulse.missing && (
-        <RefreshNotice
-          code="CH-13206"
-          title={pulse.rows.length === 0 ? 'The program pulse didn’t fully load' : 'The program pulse may be incomplete'}
-          body={`${gaps} didn’t load, so anything made from ${pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked. What is listed was found. Try again in a moment.`}
-        />
-      )}
-    </>
-  );
-}
-
-/** The pulse read the loader handed over still on its way; this suspends until it lands, inside the card's own Suspense. */
-function PulseFromRead({ read }: { read: Promise<ChPulseResult> }) {
-  const res = use(read);
-  return <PulseBody pulse={res.status === 'ok' ? res.pulse : PULSE_NOT_LOADED} />;
-}
-
-/** CH-13405: the pulse's rows on their way, in the card's reserved place (the slot holds its height whether the rows are here or not). */
-function PulseSkeleton() {
-  return (
-    <div className="ch-hl-pulse__sk" aria-busy="true" aria-label="Loading the program pulse" data-ch-code="CH-13405">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="ch-hl-pulse__skrow">
-          <Skeleton width={30} height={30} radius={10} />
-          <span>
-            <Skeleton width="58%" height={12} />
-            <Skeleton width="82%" height={10} />
-          </span>
-        </div>
-      ))}
+    <div className="ch-hl-since" data-ch-code="CH-13941">
+      <button type="button" className="ch-hl-since__b" aria-expanded={open} aria-controls={`${id}-since`} onClick={() => setOpen((v) => !v)}>
+        <span>Since you were last here</span>
+        <span className="ch-num">{gaps ? `${n} · may be incomplete` : n}</span>
+        <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
+      </button>
+      <div id={`${id}-since`} hidden={!open}>
+        <ul className="ch-hl-since__l">
+          {pulse.rows.map((r) => (
+            <li key={r.id} className={'is-' + r.tone}>
+              <b>{r.headline}</b> <span>{r.evidence}</span>
+            </li>
+          ))}
+        </ul>
+        {gaps && pulse.missing && (
+          <div className="ch-hl-since__gap" data-ch-code="CH-13206">
+            {gaps} didn’t load, so anything made from {pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked.
+          </div>
+        )}
+      </div>
     </div>
   );
+}
+
+/**
+ * CH-13942: the reads the support pass rated Not enough yet, as one collapsed line under the board ("Not enough yet (5)"), which
+ * opens in place to each read: the player, its title and what it is waiting for. Flush rows, no glyphs; the tap is silent, as the
+ * header's line is (D-70). Drawn only with `coachhelm_support_v1` on and at least one read held back.
+ */
+function NotEnoughLine({ data }: { data: ChNotEnough }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className="ch-hl-ney" data-ch-code="CH-13942">
+      <button type="button" className="ch-hl-ney__b" aria-expanded={open} aria-controls={`${id}-ney`} onClick={() => setOpen((v) => !v)}>
+        <span>
+          Not enough yet <span className="ch-num">({data.count})</span>
+        </span>
+        <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
+      </button>
+      <div id={`${id}-ney`} hidden={!open}>
+        <p className="ch-hl-ney__m">Not on a card until there is enough to say something.</p>
+        <ul className="ch-hl-ney__l">
+          {data.players.flatMap((p) =>
+            p.reads.map((r) => (
+              <li key={r.id}>
+                <b>{p.name}</b> · <span>{r.title}</span>
+                {r.watching && <span className="ch-hl-ney__w ch-num">{r.watching}</span>}
+              </li>
+            )),
+          )}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/** CH-13203: the line did not load, said as a line with its own Try again (`useRefresh`, as every notice's retry). */
+function SinceFailed() {
+  const { refresh, refreshing } = useRefresh();
+  return (
+    <div className="ch-hl-since is-quiet" role="status" data-ch-code="CH-13203">
+      What’s new since you were last here didn’t load. Your players’ reads below are not affected.{' '}
+      <button type="button" className="ch-hl-since__retry" onClick={refresh} disabled={refreshing}>
+        {refreshing ? 'Trying again…' : 'Try again'}
+      </button>
+    </div>
+  );
+}
+
+/** The pulse read the loader handed over still on its way; this suspends until it lands, inside the line's own Suspense. */
+function SinceFromRead({ read }: { read: Promise<ChPulseResult> }) {
+  const res = use(read);
+  return <SinceLine pulse={res.status === 'ok' ? res.pulse : PULSE_NOT_LOADED} />;
+}
+
+/** CH-13405: the line on its way, at the line's own height, so the header does not move when it lands. */
+function SinceSkeleton() {
+  return (
+    <div className="ch-hl-since is-loading" aria-busy="true" aria-label="Loading what’s new since you were last here" data-ch-code="CH-13405">
+      <Skeleton width={196} height={13} />
+    </div>
+  );
+}
+
+/** Roster players with no read yet, as By player rows: each named one, then the unnamed as one "N more players" row. */
+function noReadRows(count: number, names: readonly string[] = []): Array<{ key: string; name: string | null; more: number }> {
+  if (count <= 0) return [];
+  const shown = names.slice(0, count);
+  const more = count - shown.length;
+  return [...shown.map((name, i) => ({ key: `n${i}:${name}`, name, more: 0 })), ...(more > 0 ? [{ key: 'more', name: null, more }] : [])];
 }
 
 /** The top card is a signal the count includes: a finding whose read is current. */

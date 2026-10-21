@@ -56,7 +56,7 @@ describe('CH13-12 a strength points the way the comparison on the card points', 
     expect(drawnComparison(lowBigNumber.evidence, tour)).toBe(1.2);
     expect(kindOf(lowBigNumber, tour)).toBe('finding');
     expect(toChInsight(lowBigNumber, { tour })).toMatchObject({ kind: 'finding', strength: false, priority: 'low' });
-    expect(toChInsight(lowBigNumber, { tour }).evidence.gauge).toMatchObject({ good: false, cmp: 'Tour 1.2%' });
+    expect(toChInsight(lowBigNumber, { tour }).evidence.gauge).toMatchObject({ cmp: 'Tour 1.2%' });
   });
 
   it('ahead of the Tour value that is drawn (2%), at low priority, is a strength', () => {

@@ -10,7 +10,6 @@ import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { ReadMeter } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { KeepReading } from './KeepReading';
@@ -75,7 +74,8 @@ function Measure({ m }: { m: ChMeasure }) {
           {m.bound && <p className="ch-hg-m__edge">{m.bound}</p>}
           {m.meaning && <p className="ch-hg-m__mean">{m.meaning}</p>}
           <div className="ch-hg-m__f">
-            {m.read ? <ReadMeter read={m.read} /> : <span>No read yet</span>}
+            {/* Confidence is the word only (design call D8 cuts the three-bar meter). */}
+            <span>{m.read ? m.read.word : 'No read yet'}</span>
           </div>
           {(m.measured || m.floor) && (
             <details className="ch-hg-m__how">

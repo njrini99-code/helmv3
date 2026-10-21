@@ -7,6 +7,8 @@ import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refre
 import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
+import { pathLineFor } from './coachhelm-path';
+import { withoutPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { anyEngineFlag, auditOf, causeOf, correctionsOf, isEmptyEngine, supportOf, verdictOf, type ChCorrectionsInput, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
 
 /**
@@ -86,15 +88,6 @@ export function withoutCollegeAverage(content: string | null | undefined): strin
     .join(' ');
 }
 
-/** A round display ceiling for the gauge's track, a step above the largest value (a scale, never a shown number). */
-export function niceMax(v: number): number {
-  if (!(v > 0)) return 1;
-  const target = v * 1.25;
-  const base = 10 ** Math.floor(Math.log10(target));
-  for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * base >= target - 1e-9) return m * base;
-  return 10 * base;
-}
-
 /** A comparison number in its unit. Counts keep one decimal (0.6 penalties, not "1"), unlike `formatValue`. */
 export function formatComparison(v: number, unit: InsightUnit): string {
   switch (unit) {
@@ -159,7 +152,7 @@ function barsFor(ev: InsightEvidence): ChHelmBar[] | null {
   ];
 }
 
-function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | null): ChHelmGauge | null {
+function gaugeFor(ev: InsightEvidence, tour: ChTourBaseline | null): ChHelmGauge | null {
   const you = num(ev.your_value);
   if (you == null) return null;
   if (COLLEGE_NO_TOUR.has(ev.comparison_source)) return null;
@@ -171,31 +164,10 @@ function gaugeFor(ev: InsightEvidence, good: boolean, tour: ChTourBaseline | nul
   if (cmp == null) return null;
   const secRaw = college ? null : num(ev.secondary_value);
   const sec = secRaw != null && secRaw !== cmp ? secRaw : null;
-  const values = [you, cmp, ...(sec != null ? [sec] : [])];
-  const fromZero = values.every((v) => v >= 0);
-  let min = 0;
-  let max: number;
-  if (fromZero) {
-    max = niceMax(Math.max(...values));
-    // A percent track never runs past 100 (or past 1 when the values are fractions).
-    if (ev.unit === 'percent') max = Math.min(max, values.every((v) => v <= 1) ? 1 : 100);
-  } else {
-    const lo = Math.min(...values);
-    const hi = Math.max(...values);
-    const pad = hi === lo ? 1 : (hi - lo) * 0.15;
-    min = lo - pad;
-    max = hi + pad;
-  }
-  const pos = (v: number) => clamp(((v - min) / (max - min || 1)) * 100);
   return {
-    youPct: pos(you),
-    cmpPct: pos(cmp),
-    secPct: sec != null ? pos(sec) : null,
     you: ev.your_value_display?.trim() || formatComparison(you, ev.unit),
     cmp: college && tour ? `${TOUR_LABEL[tour.tour]} ${formatComparison(cmp, ev.unit)}` : labelled(ev.comparison_label, cmp, ev.unit),
     sec: sec != null ? labelled(ev.secondary_label ?? 'Tour', sec, ev.unit) : null,
-    good,
-    fromZero,
   };
 }
 
@@ -239,7 +211,7 @@ function evidenceFor(ins: EvidenceInsight, kind: ChKind, tour: ChTourBaseline | 
   if (kind === 'note') return { label: '', bars: null, gauge: null, sample: '', window: null, read: null, asOf };
   const n = num(ev.sample_n);
   const bars = barsFor(ev);
-  const gauge = bars ? null : gaugeFor(ev, kind === 'strength', tour);
+  const gauge = bars ? null : gaugeFor(ev, tour);
   return {
     label: sentenceCase(say(ev.metric_label)),
     bars,
@@ -306,7 +278,8 @@ export function toChInsight(
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
   // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
-  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutZeroImpact(ins.content, ev), ev.metric)));
+  // The generators' placeholder cause states no cause, so no line of the card prints it (design call §4, "Both worlds").
+  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutPlaceholderCause(withoutZeroImpact(ins.content, ev)), ev.metric)));
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
   const evidence = evidenceFor(ins, kind, tour, say);
   const engine = kind === 'note' ? null : engineFor(ins, evidence, extra.engine, extra.engine?.viewer ?? extra.viewer);
@@ -328,6 +301,15 @@ export function toChInsight(
     value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
     valueUnit: kind === 'note' ? null : valueUnitFor(ev),
     evidence,
+    path: pathLineFor(ev, {
+      viewer: extra.engine?.viewer ?? extra.viewer,
+      sample: evidence.sample,
+      measured: [evidence.label, ev.your_value_display?.trim()].filter(Boolean).join(': '),
+      stale: !!stale,
+      note: kind === 'note',
+      // The generators' Title Case label in the symptom is set in sentence case first, then in the viewer's voice.
+      say: (text: string) => say(sentenceCase(text)),
+    }),
     week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
