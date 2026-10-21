@@ -1,5 +1,20 @@
 # P015 — Auth: changelog
 
+## 2026-10-21 — Sign-in adopts text entered before hydration
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-signin-adopt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The sign-in email and password stay editable in server HTML so autofill works. Text put in them before hydration is
+adopted into state at mount, read through the boxes' refs at once (not inside the state updater), and the submit stays
+held until then. A test hydrates real server markup with typed values and checks they survive and reach `signIn`.
+
 ## 2026-10-21 — Sign-in boxes wait for hydration
 
 ```text

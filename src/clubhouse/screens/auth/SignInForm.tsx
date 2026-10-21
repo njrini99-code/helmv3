@@ -127,10 +127,12 @@ export function SignInForm({
    * credential pair and record a failed attempt against a blank identity.
    */
   const adoptDomValues = useCallback(() => {
-    const emailEl = document.getElementById('golf-signin-email') as HTMLInputElement | null;
-    const passwordEl = document.getElementById('golf-signin-password') as HTMLInputElement | null;
-    if (emailEl?.value) setEmail((cur) => cur || emailEl.value);
-    if (passwordEl?.value) setPassword((cur) => cur || passwordEl.value);
+    // Read the boxes now, through their refs, not inside the state updater: an updater can run after React has put the
+    // controlled (empty) value back, and would then adopt nothing.
+    const typedEmail = emailRef.current?.value ?? '';
+    const typedPassword = passwordRef.current?.value ?? '';
+    if (typedEmail) setEmail((cur) => cur || typedEmail);
+    if (typedPassword) setPassword((cur) => cur || typedPassword);
   }, []);
   useEffect(() => {
     adoptDomValues();
