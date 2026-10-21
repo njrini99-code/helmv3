@@ -21863,6 +21863,17 @@ export type Database = {
         }[]
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      golf_player_invited_to_event: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      golf_qualifier_selection_reasons: {
+        Args: { p_qualifier_id: string }
+        Returns: {
+          coach_reasoning: string
+          player_id: string
+        }[]
+      }
       golf_readable_round_ids: { Args: never; Returns: string[] }
       golf_set_course_image: {
         Args: { p_course_id: string; p_image_url: string }
