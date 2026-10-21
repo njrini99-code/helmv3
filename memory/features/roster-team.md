@@ -64,11 +64,12 @@ Team page
 - Coach membership and team management must route through `golf_team_coach_staff`.
 - Player status transitions are operational state: active, inactive, redshirt, medical, transfer.
 - Pending join requests should not become active membership without the intended approval path.
-- Availability (`golf_team_members.availability`: available, injured, away, with a coach-only note of up to 280
-  characters and `availability_updated_at`) is display only on the coach's roster. It never changes team access, which
-  is `status`. Only a coach of the team writes it (`golf_team_members_update_coach`, through `setPlayerAvailability`);
-  players have no UPDATE policy, so there is no self-report. Teammates can read every column of their team's rows, so
-  player screens never select `availability_note`.
+- Availability (`golf_team_members.availability`: available, injured, away, and `availability_updated_at`) is
+  display only on the coach's roster. It never changes team access, which is `status`. Only a coach of the team writes
+  it (`golf_team_members_update_coach`, through `setPlayerAvailability`); players have no UPDATE policy, so there is no
+  self-report. There is no note: teammates can read every column of their team's rows (select_v5), so
+  `availability_note` is not read or written anywhere (the action refuses a note) until a coach-only store exists,
+  which needs a held migration (docs/clubhouse/held/data/roster-availability.md).
 - Roster/player profile data must be team-scoped.
 - Player profile stats are derived from rounds and cache/source data, not hand-entered roster fields.
 - Roster card avg score, rounds count, trend and SG: Total use countable

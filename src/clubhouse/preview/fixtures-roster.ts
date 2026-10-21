@@ -51,16 +51,15 @@ export const PREVIEW_ROSTER: ChRoster = {
     coachNote: id === 'jonah' ? 'Confidence dips after a bad hole. Keep 1:1s short and specific.' : null,
     attention,
     availability: 'available' as const,
-    availabilityNote: null,
     availabilityUpdated: null,
   })),
 };
 
 /** Days before the preview's clock, as an ISO stamp (availability's "Updated 3 days ago"). */
 const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
-const AVAILABILITY: Record<string, Pick<ChRosterPlayer, 'availability' | 'availabilityNote' | 'availabilityUpdated'>> = {
-  ava: { availability: 'injured', availabilityNote: 'Wrist · no tournament play until Nov', availabilityUpdated: daysAgo(3) },
-  luca: { availability: 'away', availabilityNote: 'Visa renewal · back Nov 2', availabilityUpdated: daysAgo(0) },
+const AVAILABILITY: Record<string, Pick<ChRosterPlayer, 'availability' | 'availabilityUpdated'>> = {
+  ava: { availability: 'injured', availabilityUpdated: daysAgo(3) },
+  luca: { availability: 'away', availabilityUpdated: daysAgo(0) },
 };
 /**
  * `?state=availability`: Ava injured and Luca away (P003, availability). Both are active players, so the head counts

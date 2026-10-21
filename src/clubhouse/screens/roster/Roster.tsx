@@ -272,17 +272,16 @@ export function Roster({ data }: { data: ChRoster }) {
   );
   // Availability (display only; it never changes team access). Optimistic: the word appears at once and a failure puts
   // the player back. Both happen inside the action, so the toast's Retry applies the change again and finishes the job.
-  const [noteFocus, setNoteFocus] = useState<string | null>(null);
   const setAvailability = useAction(
     'roster.setAvailability',
-    async (p: ChRosterPlayer, to: ChAvailability, _from: 'menu' | 'panel' = 'panel') => {
-      const before = { availability: p.availability, availabilityNote: p.availabilityNote, availabilityUpdated: p.availabilityUpdated, attention: p.attention };
+    async (p: ChRosterPlayer, to: ChAvailability) => {
+      const before = { availability: p.availability, availabilityUpdated: p.availabilityUpdated, attention: p.attention };
       const stamp = new Date().toISOString();
       setPlayers((ps) =>
         ps.map((x) =>
           x.id === p.id
-            ? // Mark available clears the note; injured or away keeps any note and drops a Needs a look reason.
-              { ...x, availability: to, availabilityNote: to === 'available' ? null : x.availabilityNote, availabilityUpdated: stamp, attention: to === 'available' ? x.attention : null }
+            ? // Injured or away drops a Needs a look reason: the coach already knows why.
+              { ...x, availability: to, availabilityUpdated: stamp, attention: to === 'available' ? x.attention : null }
             : x,
         ),
       );
@@ -290,46 +289,22 @@ export function Roster({ data }: { data: ChRoster }) {
       if (!res.success) setPlayers((ps) => ps.map((x) => (x.id === p.id ? { ...x, ...before } : x)));
       return res;
     },
-    (p, to, from) =>
-      availabilityCopy(
-        p.name,
-        to,
-        // From the row menu the toast offers "Add a note": the panel opens on the player with the note focused.
-        from === 'menu'
-          ? () => {
-              setSel(p.id);
-              setNoteFocus(p.id);
-            }
-          : undefined,
-      ),
-  );
-  const availabilityNoteSaved = useCallback(
-    (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, availabilityNote: note } : x))),
-    [],
+    (p, to) => availabilityCopy(p.name, to),
   );
   const runAvailability = setAvailability.run;
-  const clearNoteFocus = useCallback(() => setNoteFocus(null), []);
   const availability: AvailabilityControl = useMemo(
-    () => ({
-      set: (p, to) => void runAvailability(p, to, 'panel'),
-      pending: setAvailability.pending,
-      onNoteSaved: availabilityNoteSaved,
-      focusNote: noteFocus,
-      onNoteFocused: clearNoteFocus,
-    }),
-    [runAvailability, setAvailability.pending, availabilityNoteSaved, noteFocus, clearNoteFocus],
+    () => ({ set: (p, to) => void runAvailability(p, to), pending: setAvailability.pending }),
+    [runAvailability, setAvailability.pending],
   );
 
   const exportCsv = () => {
-    const head = ['Player', 'Class', 'Status', 'Availability', 'Availability note', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
+    const head = ['Player', 'Class', 'Status', 'Availability', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
     const lines = rows.map((p) =>
       [
         asText(p.name),
         p.classYear ?? '',
         p.status,
         AVAILABILITY_WORD[p.availability ?? 'available'],
-        // The coach types the note, so it is written as text like a name (30502).
-        asText(p.availabilityNote ?? ''),
         p.rounds,
         p.avg?.toFixed(1) ?? '',
         p.sgPerRound?.toFixed(2) ?? '',
@@ -366,9 +341,9 @@ export function Roster({ data }: { data: ChRoster }) {
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
     // Availability: the two states the player is not in, written at once with no confirm (it never changes team access).
-    const markAvailable: MenuItem = { label: 'Mark available', icon: CircleCheck, onSelect: () => void setAvailability.run(p, 'available', 'menu') };
-    const markInjured: MenuItem = { label: 'Mark injured', icon: Bandage, onSelect: () => void setAvailability.run(p, 'injured', 'menu') };
-    const markAway: MenuItem = { label: 'Mark away', icon: Plane, onSelect: () => void setAvailability.run(p, 'away', 'menu') };
+    const markAvailable: MenuItem = { label: 'Mark available', icon: CircleCheck, onSelect: () => void setAvailability.run(p, 'available') };
+    const markInjured: MenuItem = { label: 'Mark injured', icon: Bandage, onSelect: () => void setAvailability.run(p, 'injured') };
+    const markAway: MenuItem = { label: 'Mark away', icon: Plane, onSelect: () => void setAvailability.run(p, 'away') };
     const now = p.availability ?? 'available';
     items.push(...(now === 'available' ? [markInjured, markAway] : now === 'injured' ? [markAvailable, markAway] : [markAvailable, markInjured]));
     items.push({ kind: 'separator' });
@@ -959,8 +934,8 @@ function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): str
 }
 
 /**
- * The list row's line under the name: availability first when they are injured or away ("Injured · wrist · Sophomore ·
- * Charlotte, NC"), the word in secondary ink and the rest tertiary, on one line with the whole of it in the title.
+ * The list row's line under the name: availability first when they are injured or away ("Injured · Sophomore · Charlotte,
+ * NC"), the word in secondary ink and the rest tertiary, on one line with the whole of it in the title.
  */
 function RowMeta({ p }: { p: ChRosterPlayer }) {
   const line = availabilityLine(p);

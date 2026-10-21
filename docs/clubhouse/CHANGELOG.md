@@ -8,12 +8,6 @@ CoachHelm, opening the player's deep dive
 it is not drawn while CoachHelm isn't rebuilt for coaches. Every page that
 wraps a name in `PlayerPeek` gets it (Coach Home spec B §3).
 
-## 2026-10-21 — A success toast can offer a next step
-
-`useAction`'s copy takes `doneAction` (`lib/use-action.ts`): the success toast
-carries that action, as Roster's "Add a note" after Mark injured (P003). Nothing
-else changes; failure toasts keep Retry.
-
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until

@@ -792,9 +792,6 @@
 .ch-rs-avail__seg {
   display: flex;
 }
-.ch-rs-avail__note {
-  gap: 4px;
-}
 .ch-rs-avail__cap {
   margin: 0;
   font: var(--ch-type-caption);

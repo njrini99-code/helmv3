@@ -1,5 +1,46 @@
 # P003 — Roster: changelog
 
+## 2026-10-21 — Availability is the word only: the note is pulled
+
+```text
+Design package: spec C, coach parity; code review follow-up
+PR/commit:      see git log (parity/roster-settings)
+Contract IDs:   CH-3010 (30621) and CH-3102 (30503) retired, never shipped;
+                30502, CH-3009, CH-3809 text
+Actions:        setPlayerAvailability (no note; refuses one)
+Data impact:    reads and writes golf_team_members.availability and
+                availability_updated_at only. availability_note is never read
+                or written.
+Held items:     a coach-only store for the note (needs a migration; see
+                docs/clubhouse/held/data/roster-availability.md)
+```
+
+### Changed
+
+- The availability note is gone: no note field, counter or blur save in the
+  panel or phone profile, no "Add a note" on the success toast (the shared
+  `doneAction` in `useAction` is reverted), and no "Availability note" column
+  in the export. The list, faces, phone row, panel and profile show the word
+  alone ("Injured", "Away").
+- `loadRoster` no longer selects `availability_note` and `ChRosterPlayer` has
+  no `availabilityNote`; `setPlayerAvailability` takes no note and refuses one
+  with "Availability notes are not saved", writing nothing.
+- The caption stays: "Shows on your roster only. It never changes their team
+  access; Mark inactive does." It is about the word, which is all there is.
+
+### Why
+
+- `golf_team_members_select_v5` lets every teammate read every column of their
+  team's rows through the API, so a note ("Only coaches see this") would have
+  reached players. Fixing that needs a migration, which is frozen.
+
+### Verification
+
+- `roster.test.tsx`: the panel has no note field, the toast has no action, the
+  export has no note column, the loader's select never names
+  `availability_note`, and no roster source mentions it;
+  `set-player-availability.test.ts`: a note is refused and nothing is written.
+
 ## 2026-10-21 — Availability on the coach's roster; the desk view prints
 
 ```text

@@ -2215,7 +2215,7 @@
     "category": 5,
     "item": 2,
     "name": "EXPORT_CELLS_ARE_TEXT",
-    "meaning": "The CSV export writes a player's name, or the coach's availability note, that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability and Availability note follow Status.",
+    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column.",
     "status": "implemented",
     "where": "src/clubhouse/screens/roster/Roster.tsx#exportCsv, asText",
     "tests": [
@@ -2229,8 +2229,8 @@
     "item": 3,
     "name": "AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS",
     "chCode": "CH-3102",
-    "meaning": "An availability note is within 40 characters of its 280 limit",
-    "status": "implemented",
+    "meaning": "Retired 2026-10-21, never shipped: the availability note’s counter",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2460,8 +2460,8 @@
     "item": 21,
     "name": "THE_AVAILABILITY_NOTE_DOESNT_SAVE",
     "chCode": "CH-3010",
-    "meaning": "The availability note doesn't save (on leaving the field)",
-    "status": "implemented",
+    "meaning": "Retired 2026-10-21, never shipped: the availability note",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
@@ -2866,7 +2866,7 @@
     "item": 9,
     "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
     "chCode": "CH-3809",
-    "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (with the coach's note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
+    "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },

@@ -47,7 +47,7 @@ import { resolveClubhouseTeam } from '../routes/team';
 import { chReport, chTrail } from '../lib/track';
 import { Roster } from '../screens/roster/Roster';
 import { RosterSkeleton } from '../screens/roster/RosterSkeleton';
-import { AVAILABILITY_NOTE_MAX, NOTE_MAX } from '../screens/roster/RosterPeek';
+import { NOTE_MAX } from '../screens/roster/RosterPeek';
 import { availabilityLine, rowNote } from '../screens/roster/format';
 import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
@@ -840,14 +840,14 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect((screen.getByRole('textbox', { name: /Coach.s note/ }) as HTMLTextAreaElement).value).toBe('Lag putting drills');
   });
 
-  it('availability on the phone: the kicker counts injured and away, a row reads "Junior · Injured · …" in plain ink', () => {
+  it('availability on the phone: the kicker counts injured and away, a row reads "Junior · Injured" in plain ink', () => {
     phone(PREVIEW_ROSTER_AVAILABILITY);
     expect(document.querySelector('.ch-rsm-kicker')!.textContent).toBe('Varsity · 7 active · 1 injured · 1 away');
-    const ava = screen.getByRole('button', { name: /^Ava Lindqvist, Junior, Injured · Wrist · no tournament play until Nov/ });
-    expect(ava.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('Junior · Injured · Wrist · no tournament play until Nov');
-    // Plain ink: the availability line takes no tone class (red is under par; CH-3809).
+    const ava = screen.getByRole('button', { name: /^Ava Lindqvist, Junior, Injured/ });
+    expect(ava.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('Junior · Injured');
+    // Plain ink: the availability word takes no tone class (red is under par; CH-3809).
     expect(ava.querySelector('.ch-rsm-row__b > span > span')!.className).toBe('');
-    expect(screen.getByRole('button', { name: /^Luca Ferraro, Freshman, Away · Visa renewal · back Nov 2/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Luca Ferraro, Freshman, Away/ })).toBeTruthy();
   });
 
   it('CH-3009 the phone profile says the word in its identity line and sets availability in its own panel above the note; the ⋯ sheet is unchanged', async () => {
@@ -866,7 +866,7 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(actions.availability).toHaveBeenCalledWith({ playerId: 'ava', availability: 'available' });
     await waitFor(() => expect(screen.getByText('Junior · Class of 2028')).toBeTruthy());
     expect(await screen.findByText('Ava Lindqvist marked available')).toBeTruthy();
-    // Mark available clears the note.
+    // The word only: no availability note field, injured or not (teammates could read it).
     expect(screen.queryByRole('textbox', { name: 'Note' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'More actions' }));
     const sheet = await screen.findByRole('dialog', { name: 'Ava Lindqvist' });
@@ -931,7 +931,7 @@ describe('Roster · availability (injured, away)', () => {
     expect(actions.availability).toHaveBeenCalledTimes(2);
   });
 
-  it('CH-3009 the toast from the row menu offers Add a note, which opens the panel with the note focused', async () => {
+  it('CH-3009 the success toast from the row menu has no action: there is no note to add', async () => {
     const user = userEvent.setup();
     actions.availability.mockResolvedValue({ success: true });
     wrap(roster());
@@ -939,12 +939,8 @@ describe('Roster · availability (injured, away)', () => {
     await openMenu(user, theo.name);
     await user.click(screen.getByRole('menuitem', { name: 'Mark away' }));
     expect(await screen.findByText('Theo Marchetti marked away')).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Add a note' }));
-    const panel = await screen.findByRole('complementary', { name: theo.name });
-    const note = within(panel).getByRole('textbox', { name: 'Note' });
-    await waitFor(() => expect(document.activeElement).toBe(note));
-    expect(note.getAttribute('placeholder')).toBe('What, and until when');
-    expect(within(panel).getByRole('radio', { name: 'Away' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.queryByRole('button', { name: 'Add a note' })).toBeNull();
+    expect(actions.availability).toHaveBeenCalledWith({ playerId: 'theo', availability: 'away' });
   });
 
   it('CH-3405 while a change is in flight the panel says so and refuses another', async () => {
@@ -964,9 +960,8 @@ describe('Roster · availability (injured, away)', () => {
     expect(within(group).getByRole('radio', { name: 'Injured' }).getAttribute('aria-checked')).toBe('true');
   });
 
-  it('CH-3010 the availability note saves when the field loses focus; a failed save keeps the text', async () => {
+  it('the panel says the word, when it changed and what it never does, and has no note field', async () => {
     const user = userEvent.setup();
-    actions.availability.mockResolvedValueOnce({ success: false }).mockResolvedValue({ success: true });
     wrap(PREVIEW_ROSTER_AVAILABILITY);
     // Ava's card opens the panel (the profile route is not rebuilt in this file).
     await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
@@ -974,37 +969,10 @@ describe('Roster · availability (injured, away)', () => {
     expect(within(panel).getByText('Junior · Class of 2028 · Injured')).toBeTruthy();
     expect(within(panel).getByText('Updated 3 days ago')).toBeTruthy();
     expect(within(panel).getByText('Shows on your roster only. It never changes their team access; Mark inactive does.')).toBeTruthy();
-    const note = within(panel).getByRole('textbox', { name: 'Note' }) as HTMLTextAreaElement;
-    expect(note.value).toBe('Wrist · no tournament play until Nov');
-    expect(note).toHaveAccessibleDescription(/Only coaches see this\./);
-    await user.clear(note);
-    await user.type(note, 'Wrist · back Nov 9');
-    await user.tab();
-    await expectCode('CH-3010', /Couldn’t save the availability note for Ava/);
-    expect(code('CH-3010')!.textContent).toMatch(/Your text is still in the field/);
-    expect(note.value).toBe('Wrist · back Nov 9');
-    await user.click(within(code('CH-3010') as HTMLElement).getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByText('Availability note saved for Ava')).toBeTruthy();
-    expect(actions.availability).toHaveBeenLastCalledWith({ playerId: 'ava', availability: 'injured', note: 'Wrist · back Nov 9' });
-    // The list reads back with the saved note.
-    await toList(user);
-    expect(metaOf(ava.name).textContent).toBe('Injured · Wrist · back Nov 9 · Junior · Gothenburg, SE');
-  });
-
-  it('CH-3102 the availability note counts down in its last 40 characters, politely, and stops at 280', async () => {
-    const user = userEvent.setup();
-    const players = PREVIEW_ROSTER_AVAILABILITY.players.map((p) => (p.id === 'ava' ? { ...p, availabilityNote: 'x'.repeat(AVAILABILITY_NOTE_MAX - 41) } : p));
-    wrap(roster({ players }));
-    await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
-    const note = (await screen.findByRole('textbox', { name: 'Note' })) as HTMLTextAreaElement;
+    expect(within(panel).queryByRole('textbox', { name: 'Note' })).toBeNull();
+    expect(within(panel).queryByText('Only coaches see this.')).toBeNull();
+    expect(code('CH-3010')).toBeNull();
     expect(code('CH-3102')).toBeNull();
-    await user.type(note, 'x');
-    await expectCode('CH-3102', /40 characters left/);
-    expect(code('CH-3102')!.getAttribute('aria-live')).toBe('polite');
-    expect(note.getAttribute('maxlength')).toBe('280');
-    await user.type(note, 'x'.repeat(45));
-    expect(note.value).toHaveLength(280);
-    await expectCode('CH-3102', /That’s the limit: 280 characters\./);
   });
 
   it('CH-3809 the head counts injured and away among the active; the list, faces and labels say it in words, never a colour', async () => {
@@ -1014,12 +982,12 @@ describe('Roster · availability (injured, away)', () => {
     // Faces: the note slot holds the line in plain ink, and the card's name says the word.
     const face = screen.getByRole('button', { name: /^Ava Lindqvist, scoring average 72\.4, 3 of 6, injured\. Open profile$/ });
     const slot = face.querySelector('.ch-rs-face__note')!;
-    expect(slot.textContent).toBe('Injured · Wrist · no tournament play until Nov');
+    expect(slot.textContent).toBe('Injured');
     expect(slot.className).toBe('ch-rs-face__note is-availability');
     expect(screen.getByRole('button', { name: /^Luca Ferraro.*, away\. Open profile$/ })).toBeTruthy();
     await toList(user);
     const meta = metaOf(ava.name);
-    expect(meta.textContent).toBe('Injured · Wrist · no tournament play until Nov · Junior · Gothenburg, SE');
+    expect(meta.textContent).toBe('Injured · Junior · Gothenburg, SE');
     expect(meta.getAttribute('title')).toBe(meta.textContent);
     expect(meta.querySelector('.ch-rs-who__avail')!.textContent).toBe('Injured');
     // The Status column is team access, untouched.
@@ -1029,7 +997,7 @@ describe('Roster · availability (injured, away)', () => {
     expect(within(screen.getByRole('region', { name: 'Needs a look' })).queryByRole('button', { name: /Ava|Luca/ })).toBeNull();
   });
 
-  it('30502 the export adds Availability and Availability note after Status, the note written as text', async () => {
+  it('the export adds Availability after Status, the word only (no note column)', async () => {
     const user = userEvent.setup();
     let blob: Blob | undefined;
     const url = URL as unknown as { createObjectURL?: unknown; revokeObjectURL?: unknown };
@@ -1039,29 +1007,28 @@ describe('Roster · availability (injured, away)', () => {
       return 'blob:x';
     };
     url.revokeObjectURL = () => {};
-    const players = PREVIEW_ROSTER_AVAILABILITY.players.map((p) => (p.id === 'luca' ? { ...p, availabilityNote: '=back Nov 2' } : p));
-    wrap(roster({ players }));
+    wrap(PREVIEW_ROSTER_AVAILABILITY);
     await user.click(screen.getByRole('button', { name: 'Export' }));
     const lines = (await blob!.text()).split('\n');
-    expect(lines[0]).toBe('Player,Class,Status,Availability,Availability note,Rounds,Scoring avg,SG per round,Handicap');
-    expect(lines.find((l) => l.startsWith('"Ava Lindqvist"'))).toMatch(/^"Ava Lindqvist","Junior","active","Injured","Wrist · no tournament play until Nov","19"/);
-    expect(lines.find((l) => l.startsWith('"Luca Ferraro"'))).toContain('"Away","\'=back Nov 2"');
-    expect(lines.find((l) => l.startsWith('"Theo Marchetti"'))).toContain('"active","Available","",');
+    expect(lines[0]).toBe('Player,Class,Status,Availability,Rounds,Scoring avg,SG per round,Handicap');
+    expect(lines.find((l) => l.startsWith('"Ava Lindqvist"'))).toMatch(/^"Ava Lindqvist","Junior","active","Injured","19"/);
+    expect(lines.find((l) => l.startsWith('"Luca Ferraro"'))).toContain('"active","Away","2"');
+    expect(lines.find((l) => l.startsWith('"Theo Marchetti"'))).toContain('"active","Available","24"');
     [url.createObjectURL, url.revokeObjectURL] = prev;
   });
 
-  it('Needs a look leaves out a player who is out, and the row note is the availability line', () => {
+  it('Needs a look leaves out a player who is out, and the row note is the availability word', () => {
     const s = { rounds: 10, avg: 74, sgPerRound: null, trend: [], status: 'slipping', formChange: 2.1, recent: [], lastRoundDate: null } as unknown as Parameters<typeof attentionFor>[0];
     const now = new Date('2026-10-21T12:00:00Z');
     expect(attentionFor(s, now, true)).toEqual({ tone: 'warning', text: 'Scoring up 2.1' });
     expect(attentionFor(s, now, true, 'injured')).toBeNull();
     expect(attentionFor(s, now, true, 'away')).toBeNull();
-    expect(rowNote(ava, false)).toEqual({ text: 'Injured · Wrist · no tournament play until Nov', tone: null });
-    expect(rowNote({ ...luca, availabilityNote: null }, true)).toEqual({ text: 'Away', tone: null });
+    expect(rowNote(ava, false)).toEqual({ text: 'Injured', tone: null });
+    expect(rowNote(luca, true)).toEqual({ text: 'Away', tone: null });
     expect(availabilityLine(theo)).toBeNull();
   });
 
-  it('the loader reads availability with the membership, and an unknown value reads as available', async () => {
+  it('the loader reads availability with the membership (never the note), and an unknown value reads as available', async () => {
     let membersSelect = '';
     tables.current = {
       golf_team_members: (f) => {
@@ -1076,9 +1043,20 @@ describe('Roster · availability (injured, away)', () => {
       },
     };
     const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
-    expect(membersSelect).toMatch(/^status, jersey_number, joined_at, availability, availability_note, availability_updated_at, player:golf_players\(/);
-    const by = Object.fromEntries(data.players.map((p) => [p.id, [p.availability, p.availabilityNote, p.availabilityUpdated]]));
-    expect(by).toEqual({ p1: ['injured', 'wrist', '2026-10-18T10:00:00Z'], p2: ['away', 'visa', null], p3: ['available', null, null] });
+    expect(membersSelect).toMatch(/^status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players\(/);
+    // Teammates can read every column of their team's rows (select_v5), so the note is never selected or carried.
+    expect(membersSelect).not.toContain('availability_note');
+    const by = Object.fromEntries(data.players.map((p) => [p.id, [p.availability, p.availabilityUpdated]]));
+    expect(by).toEqual({ p1: ['injured', '2026-10-18T10:00:00Z'], p2: ['away', null], p3: ['available', null] });
+    for (const p of data.players) expect(p).not.toHaveProperty('availabilityNote');
+  });
+
+  it('no roster loader or screen names availability_note (held until a coach-only store exists)', () => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    for (const file of ['../data/roster.ts', '../screens/roster/Roster.tsx', '../screens/roster/RosterPeek.tsx', '../screens/roster/RosterProfile.tsx', '../screens/roster/RosterPhone.tsx', '../screens/roster/format.ts']) {
+      const src = readFileSync(resolve(here, file), 'utf8');
+      expect(src.replace(/^\s*(\/\/|\*).*$/gm, ''), file).not.toMatch(/availability_note|availabilityNote/);
+    }
   });
 });
 
