@@ -138,16 +138,16 @@ export function strategyPairLines(conflict: ConflictRecord, voice: Voice): strin
       ? null
       : conflict.net_strokes >= 0
         ? `Net still favours driver, by about ${strokes(conflict.net_strokes)}.`
-        : `Net favours the layback club, by about ${strokes(conflict.net_strokes)}.`;
+        : `Net favours laying back off the tee, by about ${strokes(conflict.net_strokes)}.`;
   if (voice === 'player') {
     return [
       `Driver is working for you off the tee, but most of your penalties come right after it.`,
       ...(counted ? [counted] : []),
-      net ?? `Talk to your coach about where to take less club.`,
+      net ?? `Talk to your coach about where to lay back off the tee.`,
     ];
   }
   return [
-    `These pull in opposite directions: driver is the stronger tee club, but penalties follow it.`,
+    `These pull in opposite directions: driver is the stronger tee shot, but penalties follow it.`,
     ...(counted ? [counted] : []),
     net ?? `No net yet: driver's gain is not measured in strokes, so pick the holes where the layback is worth it.`,
   ];

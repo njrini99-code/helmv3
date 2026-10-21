@@ -89,7 +89,7 @@ function composeCounted(match: CompositeMatch): CompositeContent {
         content:
           `From 50–125 yd ${v.player} ${v.pick('lose', 'loses')} ${gap.toFixed(2)} strokes per approach against ${v.your} teammates' pooled approaches (hits and misses counted).${drivers} ` +
           `When ${v.you} miss the green ${v.you} save par ${scramble}% of the time. The two stack: a long first putt and a weak recovery both feed bogey. ` +
-          `${v.pick('Wedge', 'Short-approach')} distance-control reps from 50–125 yd first, then re-check the scrambling rate.`,
+          `Short-approach distance-control reps from 50–125 yd first, then re-check the scrambling rate.`,
       };
     }),
     signature: 'short_approach_proximity_gap:counted',
@@ -185,8 +185,8 @@ const rule: CompositeRule = {
           `target ~${DIAL_IN_TARGET_FT} ft, estimated), and ${v.pick('you are', 'the player is')} saving par ` +
           `${scramble}% of the time when ${v.you} miss. The two stack: a long first ` +
           `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
-          `share ${v.pick('a club or a yardage (full swing vs partial wedge)', 'a yardage or a swing length (full swing vs partial swing)')} before naming ` +
-          `the cause. Recommended: ${v.pick('wedge', 'short-approach')} distance-control reps to a 20-ft circle ` +
+          `share a yardage or a swing length (full swing vs partial swing) before naming ` +
+          `the cause. Recommended: short-approach distance-control reps to a 20-ft circle ` +
           `first, then re-check the scrambling rate.`,
       })),
       signature: 'short_approach_proximity_gap',
