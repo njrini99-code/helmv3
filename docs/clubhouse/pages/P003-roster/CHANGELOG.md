@@ -5,8 +5,7 @@
 ```text
 Design package: none (spec D, Game Fingerprint and roster detail bridges)
 PR/commit:      parity/bridges (not pushed)
-Contract IDs:   CH-3212 (new); 30806 text (a coach's old /roster/[id] link
-                goes to roster?player=<id>)
+Contract IDs:   CH-3212 (new)
 Actions:        none
 Data impact:    reads only: golf_coach_insights (visible rows, no exposure),
                 golf_teams, golf_pga_standards, golf_rounds; no new column
@@ -24,9 +23,6 @@ Held items:     none
   most ("Loses most putting, −1.1 a round") or, with none losing, where the
   player gains most.
 - The panel's Development counts link to the player's Development tab.
-- An old `/roster/[id]` link takes a coach to `roster?player=<id>` (it went to
-  their Stats): the phone opens that player's profile; desktop keeps ignoring
-  `?player=` (30102) and shows the list.
 
 ### Why
 

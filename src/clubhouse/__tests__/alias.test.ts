@@ -60,10 +60,10 @@ describe('redirectToClubhouse', () => {
 describe('30806 an old /roster/[id] link', () => {
   const PID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
 
-  it("opens the roster on the player's panel for a coach and the roster for a player (a teammate has no page), only with Clubhouse on", async () => {
+  it("opens the player's Stats for a coach and the roster for a player (a teammate has no page), only with Clubhouse on", async () => {
     const { default: RosterIdLayout } = await import('@/app/golf/(dashboard)/dashboard/roster/[id]/layout');
     const open = () => RosterIdLayout({ children: null, params: Promise.resolve({ id: PID }) });
-    await expect(open()).rejects.toThrow(`REDIRECT /golf/dashboard/roster?player=${PID}`);
+    await expect(open()).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
     session = { player: {} };
     await expect(open()).rejects.toThrow('REDIRECT /golf/dashboard/roster');
     flagOn = false;
