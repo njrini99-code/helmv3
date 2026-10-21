@@ -753,13 +753,14 @@ recovery.ts` (pure).
   `ShotRecord.lieAfterRecovery` on that tee shot only, then `onAutoSave`
   with the hole under the shared Edit/Undo lock, as the putt tag does.
 - Storage: `golf_shots.lie_after_recovery boolean` (null = not asked), added
-  by the HELD migration `20261021091000_shot_lie_after_recovery.sql`,
+  by migration `20261021091000_shot_lie_after_recovery.sql` (applied
+  2026-10-21),
   which also patches the shot INSERT of `save_partial_round_atomic` and
   `submit_round_atomic`. The partial and final actions send
   `shots[].lie_after_recovery` only for an answered rough/other tee shot
   (`lieAfterRecoveryPayload`; a stale answer on a shot edited to the
-  fairway is never sent). Before the apply the RPCs ignore the key and the
-  answer lives in the device copy only; the direct-table fallbacks strip it
+  fairway is never sent). With the column live the RPCs store the key; the direct-table
+  fallbacks still strip it
   (`withoutLieAfterRecovery`). Continue Round reads it back from
   `select('*')` when the column exists (`lieAfterRecoveryFromRow`).
   Stored beside the lie, not as a new lie value, so no strokes-gained lookup

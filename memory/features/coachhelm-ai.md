@@ -110,7 +110,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
   repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
   `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
-  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  `golf_coachhelm_run_log` row (migration 20261020114500, applied; a missing
   table is "not available"), and records `rank_factors` on exposures. With the
   flag on nothing else on the row changes (confidence, copy, priority,
   lifecycle), and no surface reads the ladder yet. Contract and the back-test
@@ -447,7 +447,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 - Learning from corrections (Slice 6a, 2026-10-20, flag
   `coachhelm_corrections_v1`, off). `recordCoachHelmCorrection`
   (`src/app/golf/actions/coachhelm-corrections.ts`) writes one append-only
-  `golf_coachhelm_corrections` row (held migration 20261020121000): kind
+  `golf_coachhelm_corrections` row (migration 20261020121000, applied): kind
   `not_this` (reason `wrong` / `not_important` / `already_know`),
   `wrong_cause` (optional alternative), `already_on_it`, `snooze`,
   `confirm`. Author, role, player and team come from the session and the
@@ -479,8 +479,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   off; 02 §9, 03 §7.3). Clubhouse coach view
   `/golf/dashboard/coachhelm?view=track-record`, linked from the coach
   board only with the flag on. Computed on read, no rollup table:
-  `golf_coachhelm_shown_reads(team, since)` (held migration
-  20261021090000, SECURITY DEFINER, coaches of the team only) returns one
+  `golf_coachhelm_shown_reads(team, since)` (migration
+  20261021090000, applied, SECURITY DEFINER, coaches of the team only) returns one
   row per read shown since the season start (newest exposure, its
   `rank_factors.ladder`); `src/clubhouse/data/coachhelm-track-record.ts`
   adds each read's family, `evidence.ladder` and lifecycle block, plus the
@@ -500,12 +500,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   coach staffs is on; a coach's correction counts only when its `team_id`
   is this team (a player's own corrections always count).
   <!-- schema-drift-absent: golf_coachhelm_shown_reads -->
-  (The function is held, so it is not in `database.ts` until the owner
-  applies 20261021090000 and runs `npm run db:types`; then drop the comment
-  above.)
+  (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
+  (PR #2203), so the loader reads it through the untyped `rpc` cast. After the
+  regen, drop the cast and this comment.)
   <!-- schema-drift-absent: golf_coachhelm_corrections -->
-  (The table is held, so it is not in `database.ts` until the owner applies
-  20261020121000 and runs `npm run db:types`; then drop the comment above.)
+  (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
+  (PR #2203). After the regen, drop this comment.)
 
 ## UI Contract
 
