@@ -281,6 +281,19 @@ export const PREVIEW_DIVE_YOUNG: ChDeepDive = diveOf([deep(DIVE_BREAK, BARE_INPU
 export const PREVIEW_DIVE_EMPTY: ChDeepDive = diveOf([], { rounds: 14, themes: {} });
 export const PREVIEW_DIVE_NO_ROUNDS: ChDeepDive = diveOf([], { rounds: 0, themes: {} });
 
+/**
+ * The penalties read with a team pool as its primary comparison (Slice 7a, written only with `coachhelm_team_pool_v1` on): the
+ * Read's What line says the team line instead of the Tour. Synthetic numbers. `?view=deep-dive&state=teampool&insight=in-pen`.
+ */
+const TEAM_LINE = { source: 'team_pool', label: 'Team pool', value: 0.6, n: 212, unit: 'count', n_unit: 'rounds', n_noun: 'rounds', players: 8, window_start: null, window_end: '2026-09-28' } as const;
+export const DIVE_PENALTIES_TEAM: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
+  comparison: {
+    primary: TEAM_LINE,
+    lines: [TEAM_LINE, { source: 'tour', label: DIVE_PENALTIES.evidence.comparison_label, value: DIVE_PENALTIES.evidence.comparison_value, n: null, unit: 'count' }],
+  },
+});
+export const PREVIEW_DIVE_TEAM_POOL: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_TEAM, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+
 /** The same crowded player as `PREVIEW_HELM_PLAYER_MANY`, on the Deep dive. `?state=many`. */
 export const PREVIEW_DIVE_MANY: ChDeepDive = diveOf([
   deep(DIVE_SLOPE, FULL_INPUTS, DRILL),

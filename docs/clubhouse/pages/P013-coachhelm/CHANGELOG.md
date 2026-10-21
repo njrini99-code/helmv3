@@ -1,5 +1,33 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-20 — Deep dive: the Read says the team pool when there is one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7a; 02 §3, 03 §5.2)
+PR/commit:      see git log (claude/coachhelm-team-pool)
+Contract IDs:   none (the Read's What line; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pool_v1 is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-read-shape.ts` `benchmarkOf`: a read whose
+  `evidence.comparison.primary` is a team pool says that line in place of
+  "Compared with …", e.g. "Team pool 0.6 a round (212 rounds)."
+  (`lib/coachhelm/reads/team-pool-line.ts`). One pooled number and its
+  count; never a teammate. Every other line is unchanged, and a row without
+  the field reads exactly as before. Only the engine writes the field, and
+  only with `coachhelm_team_pool_v1` on.
+- Preview: `?view=deep-dive&state=teampool&insight=in-pen`.
+
+### Verified
+
+- `coachhelm-read-team-pool.test.ts`: the team line replaces only the
+  comparison, in both voices, and a row without it reads as before.
+- Phone screenshot (390 × 844) of the preview state.
+
 ## 2026-10-20 — Board and Deep dive keep the reads past the feed cap
 
 ```text
