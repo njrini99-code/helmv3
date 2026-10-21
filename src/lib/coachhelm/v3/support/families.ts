@@ -97,6 +97,12 @@ export interface FamilyDef {
   sidePickedFromData?: boolean;
   /** Shrink a two-arm mean contrast by the harmonic n of its arms (1b finding 6). */
   shrinkByArms?: boolean;
+  /**
+   * `n` is the two arms together, not `sample_n`: the row's `sample_n` counts
+   * one arm only (rough execution writes rough approaches), while the angle
+   * registry's floor counts both sides of a contrast.
+   */
+  nFromArms?: boolean;
 }
 
 /** Smallest arm of any two-arm contrast (02 §7: 6 + 6 for the pressure split). */
@@ -213,6 +219,11 @@ const ANGLE_DEFS: readonly MatchedDef[] = [
       { key: 'rough_shots', min: angleArm('lie_rough_execution') },
       { key: 'fairway_shots', min: angleArm('lie_rough_execution') },
     ],
+    // `sample_n` is rough approaches only (`toLieAggregate`); the family
+    // floor counts both sides, so n is rough + fairway, and the contrast
+    // shrinks by the arms' harmonic n like the other two-arm angles.
+    nFromArms: true,
+    shrinkByArms: true,
   }),
   angleDef('lie_fairway_exposure'),
   angleDef('tee_miss_cost', {

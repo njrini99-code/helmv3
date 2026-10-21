@@ -168,7 +168,9 @@ describe('angle families: testable from detail.gap_input', () => {
     expect(c.untestableReason).toBeNull();
     expect(c.gapInput).toEqual(SPECS[id].gap);
     expect(c.direction).toBe('weakness');
-    expect(c.n).toBe(SPECS[id].sampleN);
+    // Rough execution counts both arms (60 rough + 50 fairway); its
+    // `sample_n` is the rough arm alone.
+    expect(c.n).toBe(id === 'lie_rough_execution' ? 110 : SPECS[id].sampleN);
     expect(c.roundsN).toBe(SPECS[id].roundsN);
     const patch = evaluateOne(angleRow(id, SPECS[id]));
     expect(patch.support.testable).toBe(true);
@@ -264,7 +266,9 @@ describe('angle families: floors hold a read back', () => {
       spec.gap?.kind === 'proportion'
         ? { ...spec.gap, n: floor - 1, k: Math.min(spec.gap.k, floor - 1) }
         : spec.gap;
-    const p = evaluateOne(angleRow(id, { ...spec, sampleN: floor - 1, gap }));
+    // Rough execution's n is its two arms together (11 rough + 8 fairway = 19).
+    const detail = id === 'lie_rough_execution' ? { rough_shots: floor - 9, fairway_shots: 8 } : spec.detail;
+    const p = evaluateOne(angleRow(id, { ...spec, sampleN: floor - 1, gap, detail }));
     expect(p.ladder).toBe('not_enough_yet');
     expect(p.ladder_reasons).toContain('below_attempt_floor');
   });
@@ -293,6 +297,30 @@ describe('angle families: floors hold a read back', () => {
     // A side the row does not name has no count, so it fails its floor.
     const unnamed = angleRow('approach_miss_compass', { ...SPECS.approach_miss_compass, detail: { sides: {} } });
     expect(evaluateOne(unnamed).ladder_reasons).toContain('below_arm_floor');
+  });
+});
+
+describe('lie rough execution: n is rough + fairway approaches (Codex P2 on #2242)', () => {
+  it('20 rough + 20 fairway is n = 40, so it clears the 2 × floor sample gate', () => {
+    const row = angleRow('lie_rough_execution', {
+      ...SPECS.lie_rough_execution,
+      // toLieAggregate writes rough approaches only as sample_n.
+      sampleN: 20,
+      detail: { rough_shots: 20, fairway_shots: 20 },
+    });
+    expect(buildCandidate(row).n).toBe(40);
+    const p = evaluateOne(row);
+    expect(p.support.n).toBe(40);
+    expect(p.support.clear).toBe(true);
+    expect(p.ladder_reasons).not.toContain('below_clear_n');
+    // The contrast shrinks by the arms' harmonic n, like the two compasses.
+    expect(p.shrink!.kept_share).toBeCloseTo(keptShare(harmonicN(20, 20), 20), 4);
+  });
+
+  it('a missing arm count leaves n at 0, never the one-arm sample_n', () => {
+    const row = angleRow('lie_rough_execution', { ...SPECS.lie_rough_execution, detail: { rough_shots: 60 } });
+    expect(buildCandidate(row).n).toBe(0);
+    expect(evaluateOne(row).ladder).toBe('not_enough_yet');
   });
 });
 

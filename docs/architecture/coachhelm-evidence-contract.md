@@ -2355,7 +2355,8 @@ Still behind `coachhelm_support_v1` (off); the angle rows themselves need
   as the angle registry does; each side is an arm held to `per_side_floor`
   (at least 6): fairway and rough approaches for rough execution, the costed
   misses on `detail.worse_side` and `detail.better_side` for the tee-miss
-  and approach-miss compasses.
+  and approach-miss compasses. Rough execution writes only its rough
+  approaches as `sample_n`, so its `n` is rough + fairway approaches.
 - Direction. Every angle writes a row only when the player is on the worse
   side, so each claims the weak side alone (`allowStrength` false; a
   strength-framed row is `no_claim`). The tee-miss and approach-miss
@@ -2368,8 +2369,8 @@ Still behind `coachhelm_support_v1` (off); the angle rows themselves need
   which is measured against the Tour lie-adjusted SG baseline). A
   `rough_estimate` impact never reads above Likely, and a row's own
   `detail.ladder_cap` is never exceeded (`row_ladder_cap`).
-- Shrink. A two-arm mean contrast (the two compasses) shrinks toward the
-  other side by the arms' harmonic n, as two-rate contrasts do.
+- Shrink. A two-arm mean contrast (the two compasses and rough execution)
+  shrinks by the arms' harmonic n, as two-rate contrasts do.
 
 Slice 4's verdicts now import `KAPPA`, `shrinkToward` and `keptShare` from
 `support/shrink.ts`; the temporary `verdicts/shrink-baseline.ts` is gone.

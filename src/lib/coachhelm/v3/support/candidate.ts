@@ -551,6 +551,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   const armA = arms[0]?.have ?? null;
   const armB = arms[1]?.have ?? null;
   const shrinkN = gapInput && def.shrinkByArms && armA !== null && armB !== null ? harmonicOf(armA, armB) : undefined;
+  if (gapInput && def.nFromArms) n = armA !== null && armB !== null ? armA + armB : 0;
   return {
     id: row.id,
     family: def.family,
