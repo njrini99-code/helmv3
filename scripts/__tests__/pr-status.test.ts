@@ -75,6 +75,12 @@ describe('summarizePr verdicts', () => {
     expect(s.verdict).toMatch(/^RED:/);
     expect(s.failedJobs[0].infra).toBe(false);
   });
+  it('CI_RUNNING while another required context is still pending, even if the CI workflow is done', () => {
+    const checks = [green[0], { name: 'Review Gate aggregate', status: 'in_progress', conclusion: null }];
+    const s = summarizePr({ ...base, checks }, REQUIRED);
+    expect(s.verdict).toMatch(/^CI_RUNNING/);
+    expect(s.ci.requiredPending).toEqual(['Review Gate aggregate']);
+  });
   it('ignores the derived CI aggregate as a cause', () => {
     const failedJobs = [{ id: 3, name: 'CI aggregate', conclusion: 'failure', steps: [] }];
     expect(summarizePr({ ...base, failedJobs }, REQUIRED).failedJobs).toEqual([]);
@@ -110,5 +116,27 @@ describe('collect and formatSummary', () => {
     expect(text).toContain('Lint > Lint ratchet  [own work]');
     expect(text).toContain('Next build > Build  [infra]');
     expect(text).toContain('CI spent 1 run(s)');
+  });
+
+  it('only looks at failed jobs of the CI workflow run, and reads required contexts from live protection', () => {
+    const calls: string[] = [];
+    const exec = (args: string[]) => {
+      const joined = args.join(' ');
+      calls.push(joined);
+      if (args[0] === 'pr') return JSON.stringify(pr());
+      if (joined.includes('/branches/main/protection')) return JSON.stringify(['Only This One']);
+      if (joined.includes('/check-runs')) return JSON.stringify([{ name: 'Only This One', status: 'completed', conclusion: 'success' }]);
+      if (joined.includes('/actions/runs?')) {
+        return JSON.stringify([
+          { head_sha: HEAD, run_attempt: 1, status: 'completed', conclusion: 'failure', name: 'Review Gate', id: 5 },
+          { head_sha: HEAD, run_attempt: 1, status: 'completed', conclusion: 'success', name: 'CI', id: 6 },
+        ]);
+      }
+      throw new Error(`unexpected ${joined}`);
+    };
+    const s = collect(7, exec);
+    expect(s.verdict).toMatch(/^GREEN/);
+    expect(s.failedJobs).toEqual([]);
+    expect(calls.some((c) => c.includes('/actions/runs/5/jobs'))).toBe(false);
   });
 });

@@ -27,6 +27,7 @@ import { DEFAULT_REQUIRED_CONTEXTS, evaluateRequiredChecks } from '../pr-land.mj
 
 const CI_WORKFLOW = 'CI';
 const LOG_TAIL_LINES = 40;
+const PENDING_STATES = new Set(['QUEUED', 'IN_PROGRESS', 'PENDING', 'WAITING', 'REQUESTED']);
 
 /** @returns {{ prNumber: number | null, log: boolean, json: boolean, help: boolean, error: string | null }} */
 export function parseArgs(argv) {
@@ -79,6 +80,12 @@ export function summarizePr({ pr, checks, runs, failedJobs }, requiredContexts =
     state: c.status && c.status !== 'completed' ? c.status : (c.conclusion ?? c.status),
   }));
   const required = evaluateRequiredChecks(rollup, requiredContexts);
+  // Any required context that is still queued or running counts as CI in flight,
+  // not only the CI workflow: pushing now would cancel it (Review Gate uses
+  // cancel-in-progress).
+  const pendingRequired = rollup
+    .filter((r) => requiredContexts.includes(r.name) && PENDING_STATES.has(String(r.state).toUpperCase()))
+    .map((r) => r.name);
   const jobs = (failedJobs ?? [])
     .filter((j) => j.name !== 'CI aggregate')
     .map((j) => {
@@ -92,7 +99,7 @@ export function summarizePr({ pr, checks, runs, failedJobs }, requiredContexts =
   if (pr.state !== 'OPEN') verdict = `CLOSED: ${pr.state.toLowerCase()}`;
   else if (pr.isDraft) verdict = 'DRAFT: CI is skipped on drafts by design; mark ready when the work is done';
   else if (conflicted) verdict = 'CONFLICT: merge main once, then push once';
-  else if (stats.headInFlight) verdict = 'CI_RUNNING: do not push; wait for the event';
+  else if (stats.headInFlight || pendingRequired.length) verdict = 'CI_RUNNING: do not push; wait for the event';
   else if (required.ok) verdict = pr.reviewDecision === 'CHANGES_REQUESTED' ? 'CHANGES_REQUESTED: answer the review' : 'GREEN: ready to land';
   else if (required.missing.length && !jobs.length && stats.onHead === 0) verdict = 'NO_CI_ON_HEAD: no run on this head yet (just pushed, or the draft was never marked ready)';
   else if (jobs.length && jobs.every((j) => j.infra)) verdict = 'RED_INFRA: runner/setup failure; the auto-retry covers it, do not push';
@@ -108,7 +115,7 @@ export function summarizePr({ pr, checks, runs, failedJobs }, requiredContexts =
     verdict,
     required: { ok: required.ok, missing: required.missing, failing: required.failing },
     failedJobs: jobs,
-    ci: stats,
+    ci: { ...stats, requiredPending: pendingRequired },
   };
 }
 
@@ -138,6 +145,22 @@ function defaultExec(args) {
   return r.stdout;
 }
 
+/**
+ * Required contexts from live branch protection, the same source `pr:land`
+ * gates on; DEFAULT_REQUIRED_CONTEXTS only when protection cannot be read.
+ */
+function liveRequiredContexts(exec) {
+  try {
+    const contexts = JSON.parse(
+      exec(['api', 'repos/{owner}/{repo}/branches/main/protection', '--jq', '.required_status_checks.contexts']),
+    );
+    if (Array.isArray(contexts) && contexts.length > 0) return contexts;
+  } catch {
+    // fall through to the default list
+  }
+  return DEFAULT_REQUIRED_CONTEXTS;
+}
+
 /** Reads GitHub through `exec` (gh args -> stdout) and returns the summary. */
 export function collect(prNumber, exec = defaultExec, { log = false } = {}) {
   const json = (args) => JSON.parse(exec(args));
@@ -150,7 +173,7 @@ export function collect(prNumber, exec = defaultExec, { log = false } = {}) {
     'api', `repos/{owner}/{repo}/actions/runs?event=pull_request&branch=${encodeURIComponent(pr.headRefName)}&per_page=100`,
     '--jq', '[.workflow_runs[] | {head_sha, run_attempt, status, conclusion, name, id}]',
   ]);
-  const latest = runs.filter((r) => r.head_sha === pr.headRefOid && r.status === 'completed' && r.conclusion === 'failure')[0];
+  const latest = runs.filter((r) => r.name === CI_WORKFLOW && r.head_sha === pr.headRefOid && r.status === 'completed' && r.conclusion === 'failure')[0];
   let failedJobs = [];
   if (latest) {
     failedJobs = json([
@@ -158,7 +181,7 @@ export function collect(prNumber, exec = defaultExec, { log = false } = {}) {
       '--jq', '[.jobs[] | select(.conclusion == "failure") | {id, name, conclusion, steps: [.steps[] | {name, conclusion, number}]}]',
     ]);
   }
-  const summary = summarizePr({ pr, checks, runs, failedJobs });
+  const summary = summarizePr({ pr, checks, runs, failedJobs }, liveRequiredContexts(exec));
   if (log) {
     for (const j of summary.failedJobs) {
       if (!j.id || j.infra) continue;

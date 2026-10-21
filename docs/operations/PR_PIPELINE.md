@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # Builder and fixer pipeline
 
 Status: living. Owner decision 2026-10-21: builders build and open PRs, then hand
