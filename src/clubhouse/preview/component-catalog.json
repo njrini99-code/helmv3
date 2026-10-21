@@ -3081,7 +3081,6 @@
       "group": "screens",
       "exports": [
         "PhoneSort",
-        "RollFigure",
         "RosterPhone",
         "RosterPhoneRow"
       ],
@@ -11063,7 +11062,6 @@
         "ch-rsm-code",
         "ch-rsm-facts",
         "ch-rsm-figs",
-        "ch-rsm-flowtext",
         "ch-rsm-head",
         "ch-rsm-hero",
         "ch-rsm-hero__act",
@@ -11111,103 +11109,103 @@
           "name": "--ch-text-primary",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2214
+          "line": 2202
         },
         {
           "name": "--ch-text-secondary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2215
+          "line": 2203
         },
         {
           "name": "--ch-text-tertiary",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2216
+          "line": 2204
         },
         {
           "name": "--ch-ledger-ink",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2217
+          "line": 2205
         },
         {
           "name": "--ch-ledger-rule",
           "value": "gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2218
+          "line": 2206
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "silver",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2219
+          "line": 2207
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double gray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2220
+          "line": 2208
         },
         {
           "name": "--ch-ledger-eyebrow",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2221
+          "line": 2209
         },
         {
           "name": "--ch-ink-950",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2222
+          "line": 2210
         },
         {
           "name": "--ch-ink-900",
           "value": "black",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2223
+          "line": 2211
         },
         {
           "name": "--ch-ink-700",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2224
+          "line": 2212
         },
         {
           "name": "--ch-ink-600",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2225
+          "line": 2213
         },
         {
           "name": "--ch-ink-500",
           "value": "dimgray",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2226
+          "line": 2214
         },
         {
           "name": "--ch-score-under",
           "value": "firebrick",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2227
+          "line": 2215
         },
         {
           "name": "--ch-chart-gain",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2228
+          "line": 2216
         },
         {
           "name": "--ch-chart-loss",
           "value": "sienna",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2229
+          "line": 2217
         },
         {
           "name": "--ch-green-700",
           "value": "darkgreen",
           "scope": "@media print → .ch-rsm,\n  .ch-rs",
-          "line": 2230
+          "line": 2218
         }
       ]
     },
@@ -13113,391 +13111,391 @@
           "name": "--ch-ivory-0",
           "value": "#ffffff",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4694
+          "line": 4688
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fdfcf8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4695
+          "line": 4689
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4696
+          "line": 4690
         },
         {
           "name": "--ch-ivory-100",
           "value": "#f4f2ea",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4697
+          "line": 4691
         },
         {
           "name": "--ch-ivory-150",
           "value": "#eeebe2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4698
+          "line": 4692
         },
         {
           "name": "--ch-ivory-200",
           "value": "#e7e3d8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4699
+          "line": 4693
         },
         {
           "name": "--ch-ivory-300",
           "value": "#dcd6c8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4700
+          "line": 4694
         },
         {
           "name": "--ch-ivory-400",
           "value": "#c9c2b1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4701
+          "line": 4695
         },
         {
           "name": "--ch-ink-950",
           "value": "#141412",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4702
+          "line": 4696
         },
         {
           "name": "--ch-ink-900",
           "value": "#1c1b18",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4703
+          "line": 4697
         },
         {
           "name": "--ch-ink-700",
           "value": "#3a3833",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4704
+          "line": 4698
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4705
+          "line": 4699
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4706
+          "line": 4700
         },
         {
           "name": "--ch-ink-400",
           "value": "#8f8b81",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4707
+          "line": 4701
         },
         {
           "name": "--ch-ink-300",
           "value": "#b3afa5",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4708
+          "line": 4702
         },
         {
           "name": "--ch-green-25",
           "value": "#f5f9f6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4709
+          "line": 4703
         },
         {
           "name": "--ch-green-50",
           "value": "#eef5f0",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4710
+          "line": 4704
         },
         {
           "name": "--ch-green-100",
           "value": "#ddebe1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4711
+          "line": 4705
         },
         {
           "name": "--ch-green-200",
           "value": "#bcd6c4",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4712
+          "line": 4706
         },
         {
           "name": "--ch-green-400",
           "value": "#4f8a64",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4713
+          "line": 4707
         },
         {
           "name": "--ch-green-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4714
+          "line": 4708
         },
         {
           "name": "--ch-green-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4715
+          "line": 4709
         },
         {
           "name": "--ch-green-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4716
+          "line": 4710
         },
         {
           "name": "--ch-green-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4717
+          "line": 4711
         },
         {
           "name": "--ch-green-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4718
+          "line": 4712
         },
         {
           "name": "--ch-forest-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4719
+          "line": 4713
         },
         {
           "name": "--ch-forest-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4720
+          "line": 4714
         },
         {
           "name": "--ch-green-fill-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4721
+          "line": 4715
         },
         {
           "name": "--ch-green-fill-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4722
+          "line": 4716
         },
         {
           "name": "--ch-green-fill-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4723
+          "line": 4717
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4724
+          "line": 4718
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4725
+          "line": 4719
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4726
+          "line": 4720
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4728
+          "line": 4722
         },
         {
           "name": "--ch-control-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4729
+          "line": 4723
         },
         {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5199
+          "line": 5193
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5200
+          "line": 5194
         },
         {
           "name": "--ch-pb-h",
           "value": "208px",
           "scope": ".ch-sv-pb",
-          "line": 6394
+          "line": 6388
         },
         {
           "name": "--ch-pb-pad",
           "value": "10px",
           "scope": ".ch-sv-pb",
-          "line": 6395
+          "line": 6389
         },
         {
           "name": "--ch-pb-y",
           "value": "44px",
           "scope": ".ch-sv-pb",
-          "line": 6396
+          "line": 6390
         },
         {
           "name": "--ch-pb-h",
           "value": "172px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6400
+          "line": 6394
         },
         {
           "name": "--ch-pb-y",
           "value": "40px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6401
+          "line": 6395
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-eagle-fill)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6646
+          "line": 6640
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6647
+          "line": 6641
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-chart-flag)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6650
+          "line": 6644
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6651
+          "line": 6645
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ivory-300)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6654
+          "line": 6648
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-ink-900)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6655
+          "line": 6649
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6658
+          "line": 6652
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6659
+          "line": 6653
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-double)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6662
+          "line": 6656
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6663
+          "line": 6657
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-bg-page)",
           "scope": "html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-bogey,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-double",
-          "line": 6670
+          "line": 6664
         },
         {
           "name": "--ch-tr-rank",
           "value": "40px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6867
+          "line": 6861
         },
         {
           "name": "--ch-tr-who",
           "value": "184px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6868
+          "line": 6862
         },
         {
           "name": "--ch-tr-v",
           "value": "64px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6869
+          "line": 6863
         },
         {
           "name": "--ch-tr-row",
           "value": "30px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6870
+          "line": 6864
         },
         {
           "name": "--ch-tr-cap",
           "value": "22px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6871
+          "line": 6865
         },
         {
           "name": "--ch-tr-axis",
           "value": "24px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6872
+          "line": 6866
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "0px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6873
+          "line": 6867
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "6px",
           "scope": ".ch-sv-tr__body:has(.ch-sv-tr__r.is-none)",
-          "line": 6937
+          "line": 6931
         },
         {
           "name": "--ch-tr-rank",
           "value": "30px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7095
+          "line": 7089
         },
         {
           "name": "--ch-tr-who",
           "value": "78px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7096
+          "line": 7090
         },
         {
           "name": "--ch-tr-v",
           "value": "46px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7097
+          "line": 7091
         },
         {
           "name": "--ch-tr-row",
           "value": "44px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7098
+          "line": 7092
         }
       ]
     },

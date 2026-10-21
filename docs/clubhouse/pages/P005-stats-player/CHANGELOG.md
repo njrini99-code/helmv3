@@ -1,5 +1,19 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — Team stats phone figures render directly (shared stylesheet)
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The shared stats stylesheet lost one rule that styled the rolling figure inside
+the Team stats strokes gained line. The player Stats page is unchanged.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text
