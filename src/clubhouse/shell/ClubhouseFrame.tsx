@@ -15,6 +15,7 @@ import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { activeNavItem, isAliased, isRebuilt, phoneFullScreen, phonePushedTop, routeLabel } from './nav';
 import { Sidebar } from './Sidebar';
+import { RailToggle } from './RailToggle';
 import { TopBar } from './TopBar';
 import { OfflineBanner } from './OfflineBanner';
 import { AccountSheet } from './AccountSheet';
@@ -95,6 +96,7 @@ export function ClubhouseFrame({
   search = '',
   forceRebuilt = false,
   lightAt = null,
+  folded: foldedHint = false,
   children,
 }: {
   userData: GolfUserData;
@@ -106,9 +108,12 @@ export function ClubhouseFrame({
   forceRebuilt?: boolean;
   /** Preview only: hold the global light at this instant (?at=). */
   lightAt?: number | null;
+  /** The sidebar folded to its icon rail on the last visit (the server's cookie; RailToggle). */
+  folded?: boolean;
   children: ReactNode;
 }) {
   const role = userData.role;
+  const [folded, setFolded] = useState(foldedHint);
   const teamSwitch = teamSwitchFor(userData);
   const item = activeNavItem(pathname, role);
   const rebuilt = forceRebuilt || isRebuilt(pathname, role);
@@ -143,8 +148,9 @@ export function ClubhouseFrame({
                       <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                         Skip to content
                       </a>
-                      <div className="ch-app">
-                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} />
+                      <div className="ch-app" data-ch-rail={folded ? 'folded' : undefined}>
+                        <Sidebar userData={userData} shell={shell} pathname={pathname} teamSwitch={teamSwitch} folded={folded} />
+                        <RailToggle folded={folded} onFold={setFolded} />
                         <div className="ch-canvas" id="ch-canvas">
                           <TopBar item={item} pathname={pathname} teamName={userData.teamName ?? null} pushed={pushed} />
                           <OfflineBanner />

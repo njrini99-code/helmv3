@@ -26,7 +26,9 @@ describe('BrandWord', () => {
     expect(word.querySelector('b')?.textContent).toBe('helm');
     expect(word.classList.contains('is-write')).toBe(false);
     // Script then logo: the wheel follows the word.
-    expect(word.nextElementSibling?.classList.contains('ch-brand__mark')).toBe(true);
+    // The word sits in its fold track (the sidebar's rail closes it), and the wheel follows that track.
+    expect(word.parentElement?.classList.contains('ch-brand__fold')).toBe(true);
+    expect(word.parentElement?.nextElementSibling?.classList.contains('ch-brand__mark')).toBe(true);
     expect(container.querySelector('.ch-brand__mark')!.classList.contains('is-write')).toBe(false);
   });
 

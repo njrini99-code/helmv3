@@ -485,6 +485,14 @@
 .ch-au .ch-au-sub {
   margin-top: 10px;
 }
+/* The heading's room under the lockup, written under .ch-au for the same reason (base.css zeroes .ch-root h1 too).
+   It sat flush under the logo; with the subtitle gone (owner, 2026-10-17) it needs its own air. Desktop only: the
+   phone has no lockup over the form. */
+@media (min-width: 821px) {
+  .ch-au .ch-au-form h1 {
+    margin-top: 28px;
+  }
+}
 .ch-au .ch-au-alt {
   margin-top: 20px;
 }
@@ -1333,9 +1341,6 @@
   }
   .ch-au .ch-au-sub {
     margin-top: 6px;
-  }
-  .ch-au-sub__more {
-    display: none;
   }
   .ch-au-notice-top {
     margin-top: 16px;

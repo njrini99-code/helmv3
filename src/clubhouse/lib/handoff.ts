@@ -1,6 +1,7 @@
 'use client';
 
 import { CH_DUR, CH_EASE } from './motion';
+import { CH_RAIL_COOKIE } from './rail-cookie';
 
 /**
  * The curtain between the welcome (or the last onboarding screen) and the
@@ -41,7 +42,10 @@ export function dropHandoffCurtain(): void {
   const from = document.querySelector('[data-ui="clubhouse"]');
   const frame = token(from, '--ch-frame', '#0a331f');
   const page = token(from, '--ch-bg-page', '#f7f5ef');
-  const sidebarW = token(from, '--ch-sidebar-w', '240px');
+  // The dashboard draws its sidebar folded to the rail when this browser last folded it (RailToggle), so the curtain's
+  // canvas starts where the dashboard's will.
+  const folded = document.cookie.split('; ').includes(`${CH_RAIL_COOKIE}=1`);
+  const sidebarW = folded ? token(from, '--ch-rail-w', '56px') : token(from, '--ch-sidebar-w', '240px');
   const phone = window.matchMedia(PHONE).matches;
   // At night the fold's strip is the flat frame (auth.css, onboard.css), so the curtain is too.
   const dark = document.documentElement.getAttribute('data-fw-theme') === 'dark';

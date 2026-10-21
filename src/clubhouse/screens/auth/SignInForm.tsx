@@ -277,10 +277,6 @@ export function SignInForm({
       <h1 ref={titleRef} tabIndex={-1}>
         Sign in
       </h1>
-      <p className="ch-au-sub">
-        Coaches and players use the same <span className="ch-au-nowrap">sign-in.</span>
-        <span className="ch-au-sub__more"> We’ll open the right clubhouse for you.</span>
-      </p>
       {notice && (
         <div className="ch-au-notice-top">
           <AuthNotice tone={NOTICE_TONE[messageKey ?? ''] ?? 'info'} code="CH-15904">

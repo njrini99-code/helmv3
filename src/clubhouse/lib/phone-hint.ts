@@ -1,6 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { CH_PHONE_COOKIE } from './phone-cookie';
+import { CH_RAIL_COOKIE } from './rail-cookie';
 
 /**
  * The request's guess at a phone, for a first visit with no layout cookie: the Sec-CH-UA-Mobile client hint where the
@@ -24,4 +25,9 @@ export async function phoneHint(): Promise<boolean> {
   if (remembered === '0') return false;
   const h = await headers();
   return phoneFromRequest(h.get('sec-ch-ua-mobile'), h.get('user-agent'));
+}
+
+/** Whether this browser last folded the desktop sidebar to its icon rail (shell/RailToggle.tsx). */
+export async function railHint(): Promise<boolean> {
+  return (await cookies()).get(CH_RAIL_COOKIE)?.value === '1';
 }

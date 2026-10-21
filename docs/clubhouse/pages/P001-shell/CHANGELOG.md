@@ -1,5 +1,28 @@
 # P001 — Shell: changelog
 
+## 2026-10-17 — The sidebar folds to an icon rail; three new nav icons
+
+Owner: "a little circle that collapses the sidebar and just shows the golfhelm
+logo and all the icons? so it makes the dashboard bigger". A 22px ivory circle
+on the seam, level with the brand (`RailToggle`, Cmd or Ctrl with \), folds the
+sidebar from 240px to a 56px rail (`--ch-rail-w`) and opens it again; the canvas
+takes the width. The rail is exactly the icons' column, so no icon moves. One
+motion on the smooth spring: the edge slides, the circle rides it and its
+chevron turns, the word's track closes (a grid column, 1fr to 0fr) and the
+wheel glides to the rail's centre. Words go first and come back last (out in
+about 0.13s; in after about 0.14s, drifting the last 4px), so no label is seen
+squeezed. On the rail, group headings become short rules and stop taking focus
+(inert), counts ride the icon's corner, the next-event or resume card folds
+away (inert), and a name tip shows beside the row under the pointer or focus
+(`RailTip`). The choice is remembered in a cookie (`ch_rail`) that the layout
+reads, so a reload draws the rail from the first frame, and the hand-off
+curtain after sign in matches it. Desktop only; reduced motion and Animations
+off swap at once.
+
+Icons (owner's picks from options shown on the live sidebar): CoachHelm is now
+brain-circuit (also in the bell's CoachHelm stack), Team Hub clipboard-list,
+Qualifiers trophy.
+
 ## 2026-10-16 — The brand's entrance waits until the dashboard is seen
 
 The entrance counted from the sidebar's mount, but after the welcome the
