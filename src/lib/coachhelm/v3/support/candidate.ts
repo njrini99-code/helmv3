@@ -33,17 +33,23 @@ export type BenchmarkSource = 'team' | 'cohort' | 'tour' | 'target' | 'self';
  *     `standing.team_avg`, `team_n` and the player's own `standing.player_value`;
  *   - `team_incl_player`: `standing.team_avg` as stored (the player is in it),
  *     used only when the leave-one-out inputs are missing;
+ *   - `team_pool` (Slice 7a, `coachhelm_team_pool_v1` on): the pooled attempts
+ *     of the player's teammates in the read's window (`evidence.comparison.
+ *     primary`, the player excluded), with the pooled count, so the
+ *     benchmark's own variance is exact rather than assumed;
  *   - `cohort`, `row_comparison` (the row's own comparison line), `self` (the
  *     player's other side in a within-player contrast).
  */
-export type BenchmarkBasis = 'team_loo' | 'team_incl_player' | 'cohort' | 'row_comparison' | 'self';
+export type BenchmarkBasis = 'team_loo' | 'team_incl_player' | 'team_pool' | 'cohort' | 'row_comparison' | 'self';
 
 export interface CandidateBenchmark {
   source: BenchmarkSource;
   value: number;
   basis: BenchmarkBasis;
-  /** Teammates behind a leave-one-out team value. */
+  /** Teammates behind a leave-one-out team value or a team pool. */
   pool_n?: number;
+  /** Pooled attempts behind a team pool value (for a per-round rate, its exposure: scored holes ÷ 18). */
+  pooled_n?: number;
 }
 export interface SupportCandidate {
   id: string;
@@ -58,11 +64,12 @@ export interface SupportCandidate {
   strokesRaw: number | null;
   benchmark: CandidateBenchmark | null;
   /**
-   * Shrinkage prior: always the benchmark value, labelled with the benchmark's
-   * own source (so a Tour benchmark is a `tour` prior, never "the team"), or
-   * "no difference" for a within-player contrast.
+   * Shrinkage prior: the benchmark value, labelled with the benchmark's own
+   * source (so a Tour benchmark is a `tour` prior, never "the team"), or "no
+   * difference" for a within-player contrast. With `coachhelm_team_pool_v1`
+   * on and a team pool line on the row, the pool (`team_pool`, 02 §4).
    */
-  prior: { source: BenchmarkSource | 'no_difference'; value: number } | null;
+  prior: { source: BenchmarkSource | 'team_pool' | 'no_difference'; value: number } | null;
   /** The side the row's own words claim; null when the row claims nothing or is untestable. */
   direction: Direction | null;
   /** `data` when the generator picked that side from the same comparison (BH gets the two-sided p). */
@@ -334,7 +341,42 @@ export function angleGapInput(
   return null;
 }
 
-export function buildCandidate(row: { id: string; insight_type: string | null; evidence: unknown }): SupportCandidate {
+/**
+ * The team pool line the row carries (`evidence.comparison.primary`, Slice
+ * 7a), in the row's own scale; null when there is none. The engine writes it
+ * only with `coachhelm_team_pool_v1` on and only above the pool's floors.
+ *
+ * Only the 7a pooled shape counts: it says what `n` counts (`n_unit`) and how
+ * many teammates are in it (`players`). A Slice 5a angle may label its own
+ * primary `team_pool` with a teammates' median and `n` = players; that is not
+ * a pooled count and is never read as one.
+ */
+export function teamPoolLineOf(
+  evidence: Obj,
+): { value: number; n: number; players: number; exposureRounds: number | null } | null {
+  const primary = obj(obj(evidence.comparison)?.primary);
+  if (!primary || primary.source !== 'team_pool' || typeof primary.n_unit !== 'string') return null;
+  const value = num(primary.value);
+  const n = num(primary.n);
+  const players = num(primary.players);
+  if (value === null || n === null || !(n > 0) || players === null || !(players > 0)) return null;
+  const exposure = num(primary.exposure_rounds);
+  return { value, n, players, exposureRounds: exposure !== null && exposure > 0 ? exposure : null };
+}
+
+export interface CandidateOptions {
+  /**
+   * Slice 7a (`coachhelm_team_pool_v1`): a row carrying a team pool line is
+   * tested against the pool with its exact pooled count and shrinks toward
+   * it. Off (the default): exactly the pre-7a behaviour.
+   */
+  teamPool?: boolean;
+}
+
+export function buildCandidate(
+  row: { id: string; insight_type: string | null; evidence: unknown },
+  options: CandidateOptions = {},
+): SupportCandidate {
   const evidence = obj(row.evidence) ?? {};
   const detail = obj(evidence.detail);
   const metric = typeof evidence.metric === 'string' ? evidence.metric : '';
@@ -348,8 +390,34 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
   let untestableReason: string | null = def.shape === 'untestable' ? def.untestableReason ?? 'untestable' : null;
   let n = sampleN ?? 0;
   const { benchmark, prior: benchPrior } = benchmarkFor(evidence, def);
-  let prior = benchPrior;
+  let prior: SupportCandidate['prior'] = benchPrior;
   let usedBenchmark = benchmark;
+  // Slice 7a (02 §3, §4): with the flag on and a team pool on the row, μ is the
+  // pool. The pool measures the read's own metric in the read's own scale
+  // (`familyForRead` matches it by type and metric), so for a one-sample test
+  // it is also the benchmark, with its pooled count: the benchmark's variance
+  // is then exact instead of the equal-size assumption below. A within-player
+  // contrast still shrinks toward "no difference" (below).
+  const teamPool = options.teamPool ? teamPoolLineOf(evidence) : null;
+  if (teamPool) {
+    prior = { source: 'team_pool', value: teamPool.value };
+    // A per-round rate's sample is its exposure (scored holes ÷ 18, what the
+    // value is scaled by), not the rounds the line names: nine-hole rounds
+    // would otherwise overstate the pool's events. Without it the pool is the
+    // prior only.
+    const poolSample =
+      def.shape === 'rate_per_round' ? teamPool.exposureRounds : def.shape === 'proportion' ? teamPool.n : null;
+    if (poolSample !== null) {
+      usedBenchmark = {
+        source: 'team',
+        value: teamPool.value,
+        basis: 'team_pool',
+        pool_n: teamPool.players,
+        pooled_n: poolSample,
+      };
+    }
+  }
+  const pooledN = usedBenchmark?.basis === 'team_pool' ? usedBenchmark.pooled_n ?? 0 : 0;
   // A leave-one-out team value is itself an estimate from the teammates'
   // samples. The row does not carry their counts, so each teammate is taken
   // to have a sample the size of this player's (documented default, finding 5).
@@ -382,7 +450,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
         k,
         n: total,
         benchmark: usedBenchmark.value / 100,
-        ...(pool > 0 ? { benchmarkN: total * pool } : {}),
+        ...(pooledN > 0 ? { benchmarkN: pooledN } : pool > 0 ? { benchmarkN: total * pool } : {}),
         polarity: polarityOf(evidence, 'higher_better'),
       };
       if (!(usedBenchmark.value > 0 && usedBenchmark.value < 100)) {
@@ -468,7 +536,7 @@ export function buildCandidate(row: { id: string; insight_type: string | null; e
         events: Math.round(yourValue * rounds),
         rounds,
         benchmark: usedBenchmark.value,
-        ...(pool > 0 ? { benchmarkRounds: rounds * pool } : {}),
+        ...(pooledN > 0 ? { benchmarkRounds: pooledN } : pool > 0 ? { benchmarkRounds: rounds * pool } : {}),
         polarity: polarityOf(evidence, 'lower_better'),
       };
       n = rounds;

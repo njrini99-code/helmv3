@@ -118,6 +118,26 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     no one-year fallback. Rolling generators load their own N-day window.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
+- Team pool benchmark (supercharge Slice 7a, 2026-10-20), behind
+  `coachhelm_team_pool_v1` (OFF; off reads nothing and writes nothing new):
+  - Putt make by band, approach green-hit by band, sand save, par 3/4/5
+    scoring and penalties-per-round reads get `evidence.comparison`, with the
+    teammates' pooled attempts in the read's window as `primary` ("Team pool
+    72% (240 putts)") and the Tour as a further line (`v3/team-pool/`).
+  - The player's own attempts and test rounds never count. Approach and
+    sand pools use every completed round (as the player's value does); the
+    rest use countable rounds; the floors count countable rounds. No line under 5 rostered players with rounds, 4 teammates with 3+
+    rounds and attempts in the family, or 100 pooled attempts. No program
+    pool. Strokes, standing and the flat `comparison_*` fields stay Tour.
+  - The Clubhouse Deep dive Read and the Fairway `EvidencePanel` print the
+    team line (`reads/team-pool-line.ts`). Contract:
+    `docs/architecture/coachhelm-evidence-contract.md`.
+  - The support pass tests a one-sample read against that pool with its
+    pooled count (`benchmark_basis: 'team_pool'`, exact variance) and
+    shrinks toward it (`prior_source: 'team_pool'`); without the line it is
+    exactly Slice 1b (leave-one-out team mean). An angle's own composed
+    `comparison` is kept; the team line is only appended.
+
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
