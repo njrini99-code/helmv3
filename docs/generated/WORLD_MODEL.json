@@ -14113,6 +14113,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/data-gap/load-asks.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/focus-areas/load-evidence-revision-status.ts",
           "anchor": "src/lib/flags"
         },
@@ -14425,6 +14430,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/data-gap/load-asks.ts",
           "anchor": "src/lib/supabase/server"
         },
         {
@@ -15086,6 +15096,21 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/coachhelm/v3/practice-rx/area-metric-map"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/data-gap/__tests__/asks.test.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/root-cause"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/data-gap/asks.ts",
+          "anchor": "src/lib/coachhelm/v3/context/normalize-shot"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/data-gap/load-asks.ts",
+          "anchor": "src/lib/coachhelm/v3/insight-visibility"
         },
         {
           "kind": "import_graph",

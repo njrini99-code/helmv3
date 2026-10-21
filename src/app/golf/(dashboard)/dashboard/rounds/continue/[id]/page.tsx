@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
+import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
 import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -710,6 +711,10 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     }));
   }
 
+  // CoachHelm Slice 8a: the one-tap data-gap asks (undefined with
+  // coachhelm_data_gap_prompt_v1 off, so nothing is read or passed).
+  const dataGapAsks = await dataGapAsksForShotEntry(player.id);
+
   return (
     <AnimatedPage>
       <ContinueRoundClient
@@ -736,6 +741,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         serverDataTimestamp={round.updated_at ?? undefined}
         qualifierRoundNumberOptions={qualifierRoundNumberOptions}
         qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
+        dataGapAsks={dataGapAsks}
       />
     </AnimatedPage>
   );

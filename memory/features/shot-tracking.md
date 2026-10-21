@@ -701,6 +701,38 @@ any make. No schema change.
   (hole-out `checkpoint` haptic) and Clubhouse `ShotEntry` (CH-11913: medium on
   the tap, success once the hole saves).
 
+## One-tap data-gap prompt (CoachHelm Slice 8a, added 2026-10-20)
+
+Behind `coachhelm_data_gap_prompt_v1` (OFF). With it off the New Round and
+Continue Round pages pass no `dataGapAsks` and the screen renders exactly as
+before.
+
+- Load: the pages call `dataGapAsksForShotEntry` (`src/lib/coachhelm/
+  data-gap/load-asks.ts`), which reads the player's visible v3 reads with an
+  `evidence.data_gap` (RLS, own client) and the putts already tagged since
+  each read's window. Any read error logs and answers no prompt.
+- Show: `useDataGapPrompt` in `FairwayShotTracking` (state survives the
+  entry/completed-hole switch and hole moves) asks about the hole's first
+  putt when it was missed from a band an open read waits on and has no miss
+  tag. `FairwayDataGapPrompt` draws one row above the entry panel or the
+  completed-hole review: "Which side?", Short · Long · High · Low, the
+  counter, Skip. Secondary buttons only; the one primary action stays Next
+  shot / Complete hole. It disappears at the target.
+- Write: `useShotTracking.handleTagPuttMiss` (`use-putt-miss-tagger.ts`)
+  dispatches `TAG_PUTT_MISS` (sets that putt's `puttMissTags` and
+  `missDirection`, nothing else, so the next shot's input survives) and
+  calls `onAutoSave` with the hole, the same tail an edit uses: device copy
+  first, then the server snapshot, held and retried by the state machine.
+  No second queue, no point update. It holds the shared Edit/Undo
+  `shotMutationInFlightRef` until that save settles, so an older tagged
+  snapshot cannot overwrite an edit or bring back an undone shot.
+- Target: tags and untagged misses in non-test rounds since the read are
+  counted at load; an untagged miss (stored, or skipped this session) joins
+  the engine's coverage population, so the target is recomputed
+  (`askTarget`) and Skip never closes the ask below 60%.
+- Clubhouse round entry does not show it yet (Clubhouse is off in
+  production).
+
 ## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
 
 - **Held, not saved.** When an autosave or completed-hole checkpoint does not
