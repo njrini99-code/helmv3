@@ -27,8 +27,8 @@
 -- table's policy reads golf_players except pinned to auth.uid(), and the only
 -- SECURITY INVOKER functions reading it are admin-only.
 --
--- pgTAP: NOT WRITTEN YET. Required before this is applied (HELD.md):
--- supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
+-- pgTAP: supabase/tests/rls/golf_player_profiles_teammate_scope.sql (covers
+-- both files; CI builds the database from every migration).
 --
 -- ROLLBACK: recreate the previous policy (pg_policies, 2026-10-16):
 --   create policy golf_players_select on public.golf_players for select

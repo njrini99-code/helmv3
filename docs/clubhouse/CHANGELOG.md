@@ -8,6 +8,22 @@ the next column and covered the figures it was fitted to protect. It is now the
 cell's width up to 328px (`hoverCardWidth` in `ui/Peek.tsx`), its keys wrap in a
 narrow cell and its text wraps (`styles/ui.css`, `.ch-hovercard--fit`).
 
+## 2026-10-21 — Name the rollback deployment (doc-45)
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-rollback-named
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `STATUS.md` names today's production deployment and its promote-back
+  target, and says to re-read both on the day of turn-on.
+
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until

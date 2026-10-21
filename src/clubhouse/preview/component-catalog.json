@@ -12687,6 +12687,7 @@
         "ch-lb__axis",
         "ch-lb__bar",
         "ch-lb__key",
+        "ch-lb__open",
         "ch-lb__r",
         "ch-lb__rail",
         "ch-lb__team",
@@ -12694,9 +12695,15 @@
         "ch-lb__who",
         "ch-lg",
         "ch-lg__a",
+        "ch-lg__bar",
         "ch-lg__cell",
         "ch-lg__ch",
-        "ch-lg__dot",
+        "ch-lg__cl",
+        "ch-lg__k",
+        "ch-lg__k--gain",
+        "ch-lg__k--loss",
+        "ch-lg__k--med",
+        "ch-lg__key",
         "ch-lg__med",
         "ch-lg__r",
         "ch-lg__r--h",
@@ -13041,463 +13048,463 @@
           "name": "--ch-fg-h",
           "value": "208px",
           "scope": "@container (max-width: 900px) → .ch-fg.ch-fg--lead",
-          "line": 1800
+          "line": 1869
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(28 25 18 / 0.35)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3855
+          "line": 3924
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "#fbf8ef",
           "scope": "[data-ui='clubhouse']",
-          "line": 3856
+          "line": 3925
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "rgb(154 101 18)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3857
+          "line": 3926
         },
         {
           "name": "--ch-st-team-line",
           "value": "var(--ch-green-800)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3858
+          "line": 3927
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-300)",
           "scope": "[data-ui='clubhouse']",
-          "line": 3859
+          "line": 3928
         },
         {
           "name": "--ch-st-mean-rule",
           "value": "rgb(237 231 216 / 0.4)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3862
+          "line": 3931
         },
         {
           "name": "--ch-st-dot-paper",
           "value": "var(--ch-chart-paper)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3863
+          "line": 3932
         },
         {
           "name": "--ch-st-miss-heat",
           "value": "var(--ch-warning-600)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3864
+          "line": 3933
         },
         {
           "name": "--ch-st-team-line",
           "value": "#b4dfc4",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3866
+          "line": 3935
         },
         {
           "name": "--ch-st-other-line",
           "value": "var(--ch-ink-400)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']",
-          "line": 3867
+          "line": 3936
         },
         {
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list",
-          "line": 4415
+          "line": 4484
         },
         {
           "name": "--ch-ivory-0",
           "value": "#ffffff",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4694
+          "line": 4763
         },
         {
           "name": "--ch-ivory-25",
           "value": "#fdfcf8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4695
+          "line": 4764
         },
         {
           "name": "--ch-ivory-50",
           "value": "#f9f7f1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4696
+          "line": 4765
         },
         {
           "name": "--ch-ivory-100",
           "value": "#f4f2ea",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4697
+          "line": 4766
         },
         {
           "name": "--ch-ivory-150",
           "value": "#eeebe2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4698
+          "line": 4767
         },
         {
           "name": "--ch-ivory-200",
           "value": "#e7e3d8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4699
+          "line": 4768
         },
         {
           "name": "--ch-ivory-300",
           "value": "#dcd6c8",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4700
+          "line": 4769
         },
         {
           "name": "--ch-ivory-400",
           "value": "#c9c2b1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4701
+          "line": 4770
         },
         {
           "name": "--ch-ink-950",
           "value": "#141412",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4702
+          "line": 4771
         },
         {
           "name": "--ch-ink-900",
           "value": "#1c1b18",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4703
+          "line": 4772
         },
         {
           "name": "--ch-ink-700",
           "value": "#3a3833",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4704
+          "line": 4773
         },
         {
           "name": "--ch-ink-600",
           "value": "#46433d",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4705
+          "line": 4774
         },
         {
           "name": "--ch-ink-500",
           "value": "#5f5c55",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4706
+          "line": 4775
         },
         {
           "name": "--ch-ink-400",
           "value": "#8f8b81",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4707
+          "line": 4776
         },
         {
           "name": "--ch-ink-300",
           "value": "#b3afa5",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4708
+          "line": 4777
         },
         {
           "name": "--ch-green-25",
           "value": "#f5f9f6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4709
+          "line": 4778
         },
         {
           "name": "--ch-green-50",
           "value": "#eef5f0",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4710
+          "line": 4779
         },
         {
           "name": "--ch-green-100",
           "value": "#ddebe1",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4711
+          "line": 4780
         },
         {
           "name": "--ch-green-200",
           "value": "#bcd6c4",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4712
+          "line": 4781
         },
         {
           "name": "--ch-green-400",
           "value": "#4f8a64",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4713
+          "line": 4782
         },
         {
           "name": "--ch-green-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4714
+          "line": 4783
         },
         {
           "name": "--ch-green-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4715
+          "line": 4784
         },
         {
           "name": "--ch-green-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4716
+          "line": 4785
         },
         {
           "name": "--ch-green-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4717
+          "line": 4786
         },
         {
           "name": "--ch-green-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4718
+          "line": 4787
         },
         {
           "name": "--ch-forest-800",
           "value": "#0b3a25",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4719
+          "line": 4788
         },
         {
           "name": "--ch-forest-900",
           "value": "#082b1c",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4720
+          "line": 4789
         },
         {
           "name": "--ch-green-fill-500",
           "value": "#1f6b45",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4721
+          "line": 4790
         },
         {
           "name": "--ch-green-fill-600",
           "value": "#155a39",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4722
+          "line": 4791
         },
         {
           "name": "--ch-green-fill-700",
           "value": "#0f4a2f",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4723
+          "line": 4792
         },
         {
           "name": "--ch-champagne-100",
           "value": "#efe6d2",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4724
+          "line": 4793
         },
         {
           "name": "--ch-champagne-300",
           "value": "#dccda6",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4725
+          "line": 4794
         },
         {
           "name": "--ch-champagne-500",
           "value": "#b09560",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4726
+          "line": 4795
         },
         {
           "name": "--ch-well-bg",
           "value": "linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4728
+          "line": 4797
         },
         {
           "name": "--ch-control-bg",
           "value": "linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%)",
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt",
-          "line": 4729
+          "line": 4798
         },
         {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5199
+          "line": 5268
         },
         {
           "name": "--ch-stage-down",
           "value": "var(--ch-champagne-300)",
           "scope": ".ch-st[data-canopy] .ch-sgt",
-          "line": 5200
+          "line": 5269
         },
         {
           "name": "--ch-pb-h",
           "value": "208px",
           "scope": ".ch-sv-pb",
-          "line": 6394
+          "line": 6478
         },
         {
           "name": "--ch-pb-pad",
           "value": "10px",
           "scope": ".ch-sv-pb",
-          "line": 6395
+          "line": 6479
         },
         {
           "name": "--ch-pb-y",
           "value": "44px",
           "scope": ".ch-sv-pb",
-          "line": 6396
+          "line": 6480
         },
         {
           "name": "--ch-pb-h",
           "value": "172px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6400
+          "line": 6484
         },
         {
           "name": "--ch-pb-y",
           "value": "40px",
           "scope": ".ch-sv-pb.is-compact",
-          "line": 6401
+          "line": 6485
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-eagle-fill)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6646
+          "line": 6730
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-eagle",
-          "line": 6647
+          "line": 6731
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-chart-flag)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6650
+          "line": 6734
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-birdie",
-          "line": 6651
+          "line": 6735
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ivory-300)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6654
+          "line": 6738
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-ink-900)",
           "scope": ".ch-sv-mix .is-par",
-          "line": 6655
+          "line": 6739
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6658
+          "line": 6742
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-bogey",
-          "line": 6659
+          "line": 6743
         },
         {
           "name": "--ch-sv-mix-fill",
           "value": "var(--ch-score-double)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6662
+          "line": 6746
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-text-on-accent)",
           "scope": ".ch-sv-mix .is-double",
-          "line": 6663
+          "line": 6747
         },
         {
           "name": "--ch-sv-mix-ink",
           "value": "var(--ch-bg-page)",
           "scope": "html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-bogey,\nhtml[data-fw-theme='dark'] .ch-sv-mix .is-double",
-          "line": 6670
+          "line": 6754
         },
         {
           "name": "--ch-tr-rank",
           "value": "40px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6867
+          "line": 6951
         },
         {
           "name": "--ch-tr-who",
           "value": "184px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6868
+          "line": 6952
         },
         {
           "name": "--ch-tr-v",
           "value": "64px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6869
+          "line": 6953
         },
         {
           "name": "--ch-tr-row",
           "value": "30px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6870
+          "line": 6954
         },
         {
           "name": "--ch-tr-cap",
           "value": "22px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6871
+          "line": 6955
         },
         {
           "name": "--ch-tr-axis",
           "value": "24px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6872
+          "line": 6956
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "0px",
           "scope": ".ch-sv-tr__plot",
-          "line": 6873
+          "line": 6957
         },
         {
           "name": "--ch-tr-none-gap",
           "value": "6px",
           "scope": ".ch-sv-tr__body:has(.ch-sv-tr__r.is-none)",
-          "line": 6937
+          "line": 7021
         },
         {
           "name": "--ch-tr-rank",
           "value": "30px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7095
+          "line": 7179
         },
         {
           "name": "--ch-tr-who",
           "value": "78px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7096
+          "line": 7180
         },
         {
           "name": "--ch-tr-v",
           "value": "46px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7097
+          "line": 7181
         },
         {
           "name": "--ch-tr-row",
           "value": "44px",
           "scope": ".ch-sv-tr.is-phone .ch-sv-tr__plot",
-          "line": 7098
+          "line": 7182
         }
       ]
     },
@@ -16964,6 +16971,7 @@
         "ch-form__line",
         "ch-form__mean",
         "ch-hovercard",
+        "ch-hovercard--fit",
         "ch-hovercard__act",
         "ch-hovercard__acts",
         "ch-hscroll",
@@ -17287,19 +17295,19 @@
           "name": "--ch-hs-fade",
           "value": "14px",
           "scope": ".ch-hscroll",
-          "line": 1896
+          "line": 1907
         },
         {
           "name": "--ch-hs-l",
           "value": "transparent",
           "scope": ".ch-hscroll[data-start='true']",
-          "line": 1904
+          "line": 1915
         },
         {
           "name": "--ch-hs-r",
           "value": "transparent",
           "scope": ".ch-hscroll[data-end='true']",
-          "line": 1907
+          "line": 1918
         }
       ]
     }

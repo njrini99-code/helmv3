@@ -50,6 +50,7 @@ import type {
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { __registerGetDetailedStatsAsAdmin } from '@/lib/golf/detailed-stats-admin-bridge';
 import { getStatsActionContext } from '@/lib/golf/stats-action-context';
@@ -1955,11 +1956,11 @@ async function getTeamComparisonImpl(
 
   const playerIds = teamMembers.map(tm => tm.player_id);
 
-  // Get player details
-  const { data: playersData } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name')
-    .in('id', playerIds);
+  // Get player details: names through golf_player_profiles, because a player
+  // comparing themselves with the team may no longer read a teammate's
+  // golf_players row (security review S4). A failed read leaves playersData
+  // null, as before, and the comparison comes back empty.
+  const { data: playersData } = await readGolfPlayerProfiles(supabase, { playerIds });
 
   // Get rounds for team members — bounded to current season (last 12 months)
   // to prevent unbounded queries on teams with years of historical data
