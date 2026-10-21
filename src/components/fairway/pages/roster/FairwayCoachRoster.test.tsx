@@ -13,7 +13,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FairwayCoachRoster } from './FairwayCoachRoster';
 import type { RosterPlayer } from './FairwayPlayerCard';
-import type { PlayersGridFocusArea } from '@/components/fairway/pages/coachhelm/PlayersGridView';
 
 const pushMock = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -44,7 +43,7 @@ function makePlayer(overrides: Partial<RosterPlayer> = {}): RosterPlayer {
 }
 
 describe('FairwayCoachRoster — roster-health header band', () => {
-  it('renders the "Who needs your attention" instrument above the player grid', () => {
+  it('does not render the roster-health band above the player grid', () => {
     render(
       <FairwayCoachRoster
         players={[makePlayer()]}
@@ -55,30 +54,10 @@ describe('FairwayCoachRoster — roster-health header band', () => {
         focusAreas={[]}
       />,
     );
-    expect(screen.getByText('Who needs your attention')).toBeInTheDocument();
-    // The flagged (declining, uncoached) player surfaces in the ranked list.
+    // Owner 2026-09-27: the roster-health band and its stat boxes are gone;
+    // the page goes straight to search and the player cards.
+    expect(screen.queryByText('Who needs your attention')).toBeNull();
     expect(screen.getAllByText('Jordan Lee').length).toBeGreaterThan(0);
-  });
-
-  it('navigates to the intelligence Players/Focus-areas drill, scoped to the player, when "Add focus area" is clicked from the needs list', async () => {
-    const { default: userEvent } = await import('@testing-library/user-event');
-    const user = userEvent.setup();
-    render(
-      <FairwayCoachRoster
-        players={[makePlayer()]}
-        teamName="Helm Golf"
-        inviteCode="ABC123"
-        intents={{}}
-        joinRequests={[]}
-        focusAreas={[]}
-      />,
-    );
-
-    const addButtons = screen.getAllByRole('button', { name: 'Add focus area' });
-    await user.click(addButtons[0]!);
-    expect(pushMock).toHaveBeenCalledWith(
-      '/golf/dashboard/intelligence?view=players&player=p1&playersTab=areas',
-    );
   });
 
   it('does not render the health header on the empty-roster state (avoids a second "awaiting" instrument stacked on Build your team)', () => {
@@ -120,25 +99,4 @@ describe('FairwayCoachRoster — roster-health header band', () => {
     expect(container.innerHTML).not.toMatch(/\bmd:grid-cols-2\b/);
   });
 
-  it('reflects a covered, non-flagged roster as the honest "covered" state', () => {
-    const covered = makePlayer({
-      id: 'p2',
-      recent_trend: 'improving',
-      active_focus_areas: 1,
-    });
-    const focusAreas: PlayersGridFocusArea[] = [
-      { id: 'fa1', area_type: 'general', title: null, player_id: 'p2', status: 'active' },
-    ];
-    render(
-      <FairwayCoachRoster
-        players={[covered]}
-        teamName="Helm Golf"
-        inviteCode="ABC123"
-        intents={{}}
-        joinRequests={[]}
-        focusAreas={focusAreas}
-      />,
-    );
-    expect(screen.getByText(/Roster.?s covered/)).toBeInTheDocument();
-  });
 });
