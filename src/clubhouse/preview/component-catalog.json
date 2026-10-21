@@ -214,6 +214,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/preview/PreviewPushAsk.tsx",
+      "group": "preview",
+      "exports": [
+        "PreviewPushAsk"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/PreviewQualifiers.tsx",
       "group": "preview",
       "exports": [
@@ -5038,6 +5048,17 @@
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/shell/PushAsk.tsx",
+      "group": "shell",
+      "exports": [
+        "PushAsk",
+        "PushAskSheet"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },

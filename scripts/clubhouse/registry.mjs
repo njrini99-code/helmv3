@@ -411,6 +411,23 @@ export function checkHeldPlan({ plan, at, exists, read, heldMd }) {
 
 // ── A page's CONTRACT.md: the tables are generated, the written notes are kept ──
 
+/** "From the shell (P001): …" broken at the commas so no line passes 78 columns (markdownlint MD013). */
+function wrapShellLine(items) {
+  const lines = [];
+  let line = 'From the shell (P001):';
+  items.forEach((item, i) => {
+    const piece = `${item}${i === items.length - 1 ? '.' : ','}`;
+    if (line.length + 1 + piece.length > 78 && line !== 'From the shell (P001):') {
+      lines.push(line);
+      line = piece;
+    } else {
+      line += ` ${piece}`;
+    }
+  });
+  lines.push(line);
+  return lines.join('\n');
+}
+
 /**
  * Rebuilds CONTRACT.md's contract tables from the registry and keeps what a
  * person wrote: the preamble, each category's Status line and its notes. A
@@ -428,8 +445,14 @@ export function renderContract({ m, bridge, cats, existing }) {
       const body = parts[i + 1] ?? '';
       const lines = body.split('\n');
       const status = lines.find((l) => /^Status:/.test(l.trim()))?.trim() ?? 'Status:';
+      // The shell line may be wrapped over several lines: drop it up to the blank line that ends it.
+      let inShell = false;
       const prose = lines
-        .filter((l) => !/^Status:/.test(l.trim()) && !l.startsWith('|') && !l.startsWith('From the shell (P001):'))
+        .filter((l) => {
+          if (l.startsWith('From the shell (P001):')) inShell = true;
+          else if (inShell && l.trim() === '') inShell = false;
+          return !inShell && !/^Status:/.test(l.trim()) && !l.startsWith('|');
+        })
         .join('\n')
         .replace(/\n{3,}/g, '\n\n')
         .trim();
@@ -448,7 +471,7 @@ export function renderContract({ m, bridge, cats, existing }) {
       out += '\n';
     }
     const shell = bridge.filter((r) => r.page === 'P001' && r.category === c && r.status !== 'deprecated');
-    if (sec.shell && shell.length) out += `From the shell (P001): ${shell.map((r) => `${r.id} ${r.chCode ?? r.name}`).join(', ')}.\n\n`;
+    if (sec.shell && shell.length) out += `${wrapShellLine(shell.map((r) => `${r.id} ${r.chCode ?? r.name}`))}\n\n`;
   }
   return out.replace(/\n+$/, '\n');
 }
