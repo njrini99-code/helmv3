@@ -136,6 +136,7 @@ export default function NewRoundClient({
     courseMode,
     selectedCourseId,
     resolvedCourseIdRef,
+    startLinkedCourseId,
     inProgressConflict,
     setInProgressConflict,
     conflictActionBusy,
@@ -192,7 +193,8 @@ export default function NewRoundClient({
   }, [resolvedCourseIdRef]);
   const courseNudge = useCourseNudge({
     enabled: dataPromptsV2,
-    hasCourse: resolvedCourseIdRef.current != null,
+    // A course picked or resolved on the device, or one the server linked at the start (a typed name the library matched).
+    hasCourse: resolvedCourseIdRef.current != null || startLinkedCourseId != null,
     courseName: setupData.courseName,
     onLink: linkRoundCourse,
   });

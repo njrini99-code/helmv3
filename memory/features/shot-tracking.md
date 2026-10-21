@@ -774,7 +774,10 @@ recovery.ts` (pure).
   Continue Round `linkedCourseIdRef`; either rides the next partial and
   final write as `courseId`, which both round RPCs keep with
   `COALESCE((p_round_data->>'course_id')::uuid, course_id)`. Skip hides it
-  for the round.
+  for the round. A typed name the library matches is linked by the server at
+  the start (`resolveCourseId`); `savePartialRound` returns that id as the
+  optional `data.courseId`, New Round keeps it as `startLinkedCourseId`, and
+  the nudge does not show for that round.
 - Production (2026-10-21, last 90 days): 35 of 572 rounds (6.1%) have no
   course id, every one with a typed course name; 30 of 521 completed. Tee
   shots ending `rough` 2,242 and `other` 387 (the recovery tap's

@@ -353,7 +353,9 @@ export interface SavePartialRoundDuplicateCompleted {
   completedRoundId: string;
 }
 export type SavePartialRoundResult =
-  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>
+  // `courseId` (additive): the golf_courses id the round is linked to when the server resolved one (a typed course name
+  // that matches the library), so the client knows the round has a course. Absent when none was resolved.
+  | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[]; courseId?: string }>
   | SavePartialRoundHoleInvalid
   | SavePartialRoundInProgressExists
   | SavePartialRoundDuplicateCompleted;
@@ -1400,7 +1402,7 @@ async function savePartialRoundImpl(
         // calls and produces "An unexpected response was received from the server"
         // errors. Revalidation happens when the round is actually submitted via
         // submitGolfRoundComprehensive.
-        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
+        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
       }
     } else {
       // Recover a session that lost its local roundId (e.g. a backgrounded/
@@ -1961,7 +1963,7 @@ async function savePartialRoundImpl(
     // conflict. Both queries above already `.select()` the full row; see
     // `roundUpdatedAtForResponse`'s declaration for why `round` itself
     // cannot be read here directly.
-    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined } };
+    return { success: true, data: { roundId, updatedAt: roundUpdatedAtForResponse ?? undefined, ...(resolvedCourseId ? { courseId: resolvedCourseId } : {}) } };
 
   } catch (err) {
     // Single log call per failure (see updateExisting branch above) — keep

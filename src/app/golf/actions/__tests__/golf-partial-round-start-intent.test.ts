@@ -105,6 +105,14 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     expect(tables.golf_rounds.find((r) => r.id === EXISTING_ROUND)?.status).toBe('in_progress');
   });
 
+  it('returns the course the round is linked to, so the client knows it has one (CoachHelm Slice 8b course nudge)', async () => {
+    const tables = baseTables();
+    seed(tables);
+    const result = await savePartialRound(newRoundPayload, undefined, { startIntent: true });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.courseId).toBe(COURSE);
+  });
+
   it('still inserts a fresh round for the same non-empty match when startIntent is NOT set (legacy callers unaffected)', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({
