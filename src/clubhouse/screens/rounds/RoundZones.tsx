@@ -3,7 +3,6 @@
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
 
@@ -48,7 +47,6 @@ export function ScoreFlow({
   const [hover, setHover] = useState<number | null>(null);
   // The card keeps the last hole it read while it fades out, so it never empties before it is gone.
   const [last, setLast] = useState<number | null>(null);
-  const [stageRef, seen] = useInViewOnce<HTMLDivElement>();
   const pts = flow(holes);
   if (pts.length < 2) return <p className="ch-znmiss">The running score needs two holes with scores.</p>;
   const n = Math.max(...holes.map((h) => h.n));
@@ -85,7 +83,7 @@ export function ScoreFlow({
     return pts.reduce((a, b) => (Math.abs(x(b.n) - vx) < Math.abs(x(a.n) - vx) ? b : a)).n;
   };
   return (
-    <div ref={stageRef} className={'ch-rzstage' + (seen ? ' is-in' : '')}>
+    <div className="ch-rzstage">
       <svg
         className="ch-rzsvg"
         viewBox={`0 0 ${W} ${height}`}

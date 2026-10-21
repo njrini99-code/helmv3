@@ -1,5 +1,21 @@
 # P003 — Roster: changelog
 
+## 2026-10-21 — The spread dots start in place
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The coins on Where the team sits no longer glide out from the team line when
+the chart scrolls into view. They sit at their score at first paint
+(`RosterSpread.tsx`; Q-153). A coin still glides if the data moves it. Motion
+report 2026-10-20-roster.md box 3.
+
 ## 2026-10-20 — The bell's join-request link lands on the requests on desktop
 
 ```text

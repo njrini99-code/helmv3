@@ -6,7 +6,6 @@ import { ArrowRight, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
 import { withPointSpan } from '../../ui/point-span';
 import type { ContextMenuBind } from '../../ui/ContextMenu';
@@ -195,8 +194,8 @@ export function UnfinishedCard({
  * Strokes against par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). Better is up, the one
  * scoring-axis convention (stats visuals Q1): a round under par rises above the par line, one over par hangs below it, and the ticks keep
  * their real values (+2 below Par, −1 above). CH-11803: one labelled
- * image; each bar has a title. Move across it (or touch it) and the round reads out on a card; the bars rise from the par line once,
- * the first time the chart is scrolled into view (`.is-in` on the stage that holds it, rounds.css).
+ * image; each bar has a title. Move across it (or touch it) and the round reads out on a card. The bars are drawn in place at first paint (Q-139: no
+ * first-paint draw-ins); a bar glides only when its round changes.
  */
 export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeason['ribbon']; avg: number; compact?: boolean }) {
   const id = useId();
@@ -436,11 +435,10 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
  * The bars rise from the par line the first time the stage is scrolled into view, and not again.
  */
 function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon']; avg: number; phone: boolean }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>();
   const under = ribbon.some((x) => x.toPar < 0);
   const q = ribbon.some((x) => x.type === 'qualifier');
   return (
-    <div ref={ref} className={'ch-rd-stage' + (seen ? ' is-in' : '')}>
+    <div className="ch-rd-stage">
       <div className="ch-rd-stage__h">
         <div className="ch-rd-season__ch">
           <b>Every round vs par</b>
