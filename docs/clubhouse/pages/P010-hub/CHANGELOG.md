@@ -1,5 +1,59 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-21 — Redesign: contrast, a summary strip, players' Tasks
+
+```text
+Design package: Team Hub redesign artifact (current beside proposed)
+PR/commit:      draft PR from claude/project-thread-ya6ije (frozen: no merge)
+Contract IDs:   100101 and 100102 reworded (tabs, strip, band, player Tasks)
+Actions:        none
+Data impact:    reads only: the loader leaves out rows flagged is_test
+Held items:     coach nav badge (audit par-24): new read on every shell load
+```
+
+### Changed
+
+- Diagnosis first: text contrast was already 8.7:1. What was missing was value
+  structure: the surfaces differed 1.10:1 and the hairlines 1.24:1, so nothing
+  led. Each tab now has one dark green surface (desktop) and a stronger rule
+  (`--ch-ledger-rule-strong`, 1.8:1, decorative).
+- A strip under the title says what the team is waiting on, one line; each
+  figure opens the tab it counts. Zero figures and failed reads are left out,
+  never shown as zero.
+- Home leads with a band (desktop): a trip leaving within two days, else the
+  next event that takes replies (a player's first one still owed), else the next
+  trip, else a quiet line with its next step. A coach's event band shows going,
+  maybe, can't and no reply.
+- Announcements: the lead post is the dark surface. Travel: the next pass is,
+  with a days-to-go count.
+- Tabs show a count when a post waits to be acknowledged or a task is late.
+  Overdue is amber (red stays for under par).
+- Tasks: a coach's board (done, left, overdue and a track) above the list; each
+  row shows "3/6" progress in place of the ring. A player now has a Tasks tab
+  (audit par-28); `/tasks` and task notification links land on `?tab=tasks` for
+  both roles.
+- QA rows already flagged `is_test` no longer show (the "Safe to delete" post).
+  Nothing was deleted.
+
+### Why
+
+- The owner found the page flat and thin: no contrast, little detail. The fix
+  adds structure and the figures a coach or player looks for, from data the page
+  already loads.
+
+### Verification
+
+- 30 new unit tests (strip, band rules, board, player Tasks tab, countdown,
+  test-row hiding); hub, alias and wiring tests updated for the player Tasks
+  tab.
+- Dev preview (`/clubhouse-preview/hub`, `hub-player`) in Chromium at 1440, 1100
+  and 390, light and dark, every tab. WebKit is the nightly's. Contrast
+  measured: ivory on the green 11.0:1, muted on-green 6.2:1, amber on the
+  workspace 5.2:1.
+- The loading head holds 164px (the player's loaded head); a coach's head is
+  188px at 1440 and 240px at 1100, so a coach's page moves down by that much on
+  load.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

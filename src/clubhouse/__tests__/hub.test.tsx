@@ -323,14 +323,16 @@ describe('Team Hub · player', () => {
     // A player is never shown their own role (wave 7); the coach keeps "Coach view" (100101 below).
     expect(screen.queryByText('Player view')).toBeNull();
     expect(document.querySelector('.ch-hb-role')).toBeNull();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents']);
+    // A tab that asks for something carries its figure (aria-hidden: the strip says it to a screen reader).
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
+    expect(screen.getByRole('tab', { name: 'Announcements' })).toBeTruthy();
     expect(screen.getByText('2 need a reply')).toBeTruthy();
     expect(screen.getByRole('radio', { name: 'Going', checked: true })).toBeTruthy();
     expect(screen.getByText('Needs your acknowledgement')).toBeTruthy();
     expect(screen.getByRole('heading', { level: 3, name: 'Pairings and tee times for Thursday' })).toBeTruthy();
     expect(screen.getByText('Traveling')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Your tasks' })).toBeTruthy();
-    expect(screen.getByText('2 open')).toBeTruthy();
+    expect(screen.getByText('3 open')).toBeTruthy();
   });
 
   it('101301 a reply is optimistic and ticks; CH-10001 a refused reply puts it back', async () => {
@@ -479,7 +481,7 @@ describe('Team Hub · coach', () => {
   it('100101 Home: replies as counts, read receipts, travelers; the Tasks tab', async () => {
     show(PREVIEW_HUB_COACH);
     expect(screen.getByText('Coach view')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents', 'Tasks']);
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
     expect(screen.getByText('4 going · 1 maybe · 0 can’t · 1 no reply')).toBeTruthy();
     expect(screen.getByText('5 of 6 acknowledged')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
@@ -932,7 +934,7 @@ describe('Team Hub · coach', () => {
 
   it('100102 ?tab= opens a tab the role has, else Home', () => {
     expect(parseHubTab('tasks', 'coach')).toBe('tasks');
-    expect(parseHubTab('tasks', 'player')).toBe('home');
+    expect(parseHubTab('tasks', 'player')).toBe('tasks');
     expect(parseHubTab('nonsense', 'player')).toBe('home');
     expect(parseHubTab(undefined, 'coach')).toBe('home');
   });
@@ -1007,6 +1009,60 @@ describe('Team Hub · the loader', () => {
     expect(asked.tasks).toContainEqual(['order', ['due_date', { ascending: false, nullsFirst: true }]]);
     expect(asked.tripEvents).toContainEqual(['not', ['event_type', 'in', '(class,practice,meeting)']]);
     expect(data.tripEvents.total).toBe(0);
+  });
+
+  it('QA rows a team flagged is_test never reach a coach: the test post, task, trip and file are left out, the real ones stay, and the task count drops with them', async () => {
+    base();
+    const post = (id: string) => ({ id, title: id, body: 'x', created_by: null, published_at: '2026-10-14T17:00:00Z', created_at: '2026-10-14T17:00:00Z', urgency: null, requires_acknowledgement: false, acknowledged_count: 0, recipient_count: 0, total_recipients: 0, task_count: 0, completed_task_count: 0, document_count: 0 });
+    actions.coachAnns.mockResolvedValue({ success: true, data: [post('real-post'), post('qa-post')] });
+    const doc = (id: string) => ({ id, title: id, folder: null, file_type: 'pdf', file_url: `x/${id}.pdf`, file_size: 10, updated_at: '2026-10-10T12:00:00Z', created_at: null, is_public: true });
+    actions.docs.mockResolvedValue({ data: [doc('real-doc'), doc('qa-doc')], error: null });
+    const soon = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+    const trip = (id: string) => ({ id, event_name: id, destination: 'Wilmington', departure_date: soon, return_date: soon, transportation_type: 'bus', event_id: null });
+    const task = (id: string) => ({ id, title: id, description: null, due_date: '2026-10-20', category: null, status: 'pending' });
+    // The flag read is by id for this team: it answers with the test rows only, and the main reads answer with everything.
+    const flagged = (ids: string[], all: unknown[], count?: number) => (filters: Array<[string, unknown[]]>) =>
+      filters.some(([k, a]) => k === 'eq' && a[0] === 'is_test' && a[1] === true)
+        ? { data: ids.map((id) => ({ id, is_test: true })) }
+        : { data: all, ...(count != null ? { count } : {}) };
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: { data: [], count: 0 },
+      golf_event_attendance: { data: [] },
+      golf_task_assignments: { data: [] },
+      golf_announcements: flagged(['qa-post'], []),
+      golf_documents: flagged(['qa-doc'], []),
+      golf_travel_itineraries: flagged(['qa-trip'], [trip('real-trip'), trip('qa-trip')]),
+      golf_tasks: flagged(['qa-task'], [task('real-task'), task('qa-task')], 2),
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.announcements.rows.map((a) => a.id)).toEqual(['real-post']);
+    expect(data.documents.folders.flatMap((f) => f.files.map((d) => d.id))).toEqual(['real-doc']);
+    expect(data.trips.rows.map((t) => t.id)).toEqual(['real-trip']);
+    expect(data.tasks.rows.map((t) => t.id)).toEqual(['real-task']);
+    expect(data.tasks.total).toBe(1);
+  });
+
+  it('a failed test-row read hides nothing and is logged, and an answer that ignores the filter never hides a real row', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    const task = (id: string) => ({ id, title: id, description: null, due_date: '2026-10-20', category: null, status: 'pending' });
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: { data: [], count: 0 },
+      golf_event_attendance: { data: [] },
+      golf_task_assignments: { data: [] },
+      golf_announcements: { error: { message: 'down' } },
+      golf_documents: { data: [] },
+      golf_travel_itineraries: { data: [] },
+      // No is_test on the rows: the flag read sees the same rows as the main read, and none of them is flagged.
+      golf_tasks: { data: [task('t1'), task('t2')], count: 2 },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.tasks.rows.map((t) => t.id).sort()).toEqual(['t1', 't2']);
+    expect(logServer).toHaveBeenCalledWith('hub', 'testRows:golf_announcements', expect.anything());
   });
 
   it('C-20 a capped task list says so', () => {

@@ -228,3 +228,14 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## Redesign — 2026-10-21
+
+Chromium (headless) against the dev preview (`/clubhouse-preview/hub` and
+`hub-player`, every `?tab=`) at 1440, 1100 and 390, light and dark: the strip,
+the Home band, the dark lead post, the dark travel pass, the task board and
+the player's Tasks tab were looked at after the change. Contrast was measured
+with a script (ivory on the green 11.0:1, muted on-green 6.2:1, amber on the
+workspace 5.2:1, strong rule 1.82:1). The loaded head was measured at 164px
+(player) and 188px / 240px (coach, 1440 / 1100). WebKit is the nightly's; this
+pass did not run it. The screenshots are attached to the pull request thread.

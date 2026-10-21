@@ -14,7 +14,7 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
 import { homeClock } from './home';
-import { fullName } from './season';
+import { fullName, loadSeasonRounds } from './season';
 
 /**
  * Team Hub (Clubhouse; docs/clubhouse/phone/team-hub.md). One server read for
@@ -105,6 +105,8 @@ export interface ChHubTrip {
   /** Player: invited to the linked event. */
   mine: boolean | null;
   upcoming: boolean;
+  /** Whole days from today (the team's zone) to departure, 0 on the day; null once it has left or with no date. */
+  inDays?: number | null;
 }
 
 export interface ChHubTripEvent {
@@ -177,6 +179,11 @@ export interface ChTeamHub {
   announcements: { rows: ChHubAnnouncement[]; error: boolean };
   trips: { rows: ChHubTrip[]; error: boolean };
   tasks: { rows: ChHubTask[]; error: boolean; /** How many there are when more than `rows` (the read is capped). */ total?: number | null };
+  /**
+   * Coach: how much the roster has played, for the head's one-line summary. Null when the rounds read failed (the line
+   * leaves it out, never says "no rounds"); absent for a player.
+   */
+  pulse?: { rounds30: number; active14: number; players: number } | null;
   documents: { folders: Array<{ name: string; files: ChHubFile[] }>; error: boolean };
   updates: { rows: ChHubUpdate[]; error: boolean };
 }
@@ -221,6 +228,27 @@ export function jsonText(v: unknown): string | null {
   return null;
 }
 
+/**
+ * Rows a team flagged `is_test` (QA runs leave a post, a task, a file and a trip behind): never shown to a coach or a
+ * player. Read by id for this team, so the shared reads (the player hub aggregate, getAnnouncementsWithMeta,
+ * getDocuments) stay as Fairway reads them. A failed read hides nothing and is logged: a test row shown is better than
+ * a real one missing.
+ */
+export type HiddenTestRows = { announcements: Set<string>; tasks: Set<string>; documents: Set<string>; trips: Set<string> };
+
+async function hiddenTestRows(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<HiddenTestRows> {
+  const ids = async (table: 'golf_announcements' | 'golf_tasks' | 'golf_documents' | 'golf_travel_itineraries') => {
+    const { data, error } = await supabase.from(table).select('id, is_test').eq('team_id', teamId).eq('is_test', true).limit(200);
+    if (error) log(`testRows:${table}`, error);
+    // The flag is checked again here, so an answer that ignores the filter can never hide a real row.
+    return new Set((data ?? []).filter((r) => r.is_test === true).map((r) => r.id));
+  };
+  const [announcements, tasks, documents, trips] = await Promise.all([ids('golf_announcements'), ids('golf_tasks'), ids('golf_documents'), ids('golf_travel_itineraries')]);
+  return { announcements, tasks, documents, trips };
+}
+
+const without = <T extends { id: string }>(rows: T[], hidden: Set<string>): T[] => (hidden.size ? rows.filter((r) => !hidden.has(r.id)) : rows);
+
 export async function loadTeamHub(input: { role: ChHubRole; teamId: string; userId: string; playerId: string | null }): Promise<ChTeamHub> {
   const supabase = await createClient();
   const now = new Date();
@@ -228,11 +256,12 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
   const f = formatters(tz, now);
 
-  const [teamRes, rosterRes, docsRes, updatesRes] = await Promise.all([
+  const [teamRes, rosterRes, docsRes, updatesRes, hidden] = await Promise.all([
     supabase.from('golf_teams').select('name, season').eq('id', input.teamId).maybeSingle(),
     supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name)').eq('team_id', input.teamId).eq('status', 'active'),
     getDocuments(input.teamId).catch((err: unknown) => ({ data: null, error: err instanceof Error ? err.message : 'failed' })),
     getUnifiedNotifications({ limit: 6 }).catch(() => ({ success: false as const, error: 'failed' })),
+    hiddenTestRows(supabase, input.teamId),
   ]);
   if (teamRes.error) log('team', teamRes.error);
   if (rosterRes.error) log('roster', rosterRes.error);
@@ -251,7 +280,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     viewerPlayerId: input.role === 'player' ? input.playerId : null,
     playersError: input.role === 'coach' && !!rosterRes.error,
     players: input.role === 'coach' ? roster.map((p) => ({ id: p.id, name: fullName(p) })).sort((a, b) => a.name.localeCompare(b.name)) : [],
-    documents: { folders: docsRes.error ? [] : folders(docsRes.data ?? [], f), error: !!docsRes.error },
+    documents: { folders: docsRes.error ? [] : folders(without(docsRes.data ?? [], hidden.documents), f), error: !!docsRes.error },
     updates: {
       rows: updatesRes.success && updatesRes.data
         ? updatesRes.data.items.slice(0, 6).map((n) => ({
@@ -279,11 +308,12 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     }
     const anns = summary && !summary.announcementsLoadError ? summary.announcements : null;
     const annsFallback = summary ? null : await getPlayerHubAnnouncements(input.teamId, playerId).catch(() => null);
-    const annList = anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null);
+    const annList = ((a) => (a ? without(a, hidden.announcements) : a))(anns ?? (annsFallback?.success ? (annsFallback.data ?? []) : null));
     if (!annList) log('announcements', 'player announcements did not load');
     // A trip is the player's when they're invited to its event. The aggregate's trips carry no event_id (its select
     // leaves it out), so the link is read here, for those trips only; a failed read leaves every trip unknown (C-19).
-    const tripLinks = await tripEventIds(supabase, (summary?.trips ?? []).map((t) => t.id));
+    const playerTrips = without(summary?.trips ?? [], hidden.trips);
+    const tripLinks = await tripEventIds(supabase, playerTrips.map((t) => t.id));
     const tripEvents = tripLinks ? [...new Set(tripLinks.values())] : [];
     // The aggregate lists every team event, with the player's own reply or null when they have no place on its invite
     // list (an attendance row is what invites someone, as in Calendar). Only their own are theirs to answer: a reply to
@@ -317,7 +347,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       announcements: { rows: (annList ?? []).map((a) => announcement(a, authors, f, 'player')), error: !annList },
       trips: {
         rows: summary
-          ? summary.trips.map((t) => {
+          ? playerTrips.map((t) => {
               const eventId = tripLinks?.get(t.id) ?? null;
               // No event: nobody is invited to anything, so whether the player travels is unknown, not "Not traveling".
               return trip({ ...(t as unknown as TripRow), event_id: eventId }, f, today, { travelers: null, count: null, mine: eventId && invited ? invited.has(eventId) : null });
@@ -326,7 +356,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         error: !summary,
       },
       tasks: {
-        rows: taskOrder((summary?.tasks ?? []).map((t) => ({
+        rows: taskOrder(without(summary?.tasks ?? [], hidden.tasks).map((t) => ({
           id: t.id,
           title: t.title,
           detail: t.category ?? firstLine(t.description),
@@ -385,19 +415,20 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
   if (tasksRes.error) log('tasks', tasksRes.error);
   if (eventsRes.error) log('events', eventsRes.error);
 
-  const trips = (tripsRes.data ?? []) as unknown as TripRow[];
+  const trips = without((tripsRes.data ?? []) as unknown as TripRow[], hidden.trips);
   // Soonest due first, the undated last; the rows are put in their shown order (`taskOrder`) once their status is known.
-  const tasks = (tasksRes.data ?? []).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
+  const tasks = without(tasksRes.data ?? [], hidden.tasks).slice().sort((a, b) => (a.due_date ?? '\uffff').localeCompare(b.due_date ?? '\uffff'));
   const events = eventsRes.data ?? [];
   const tripEvents = tripEventsRes.data ?? [];
   // One attendance read for this week's events, the trips' events and the builder's events; one for task completion.
-  const anns = annRes.success ? (annRes.data ?? []) : [];
-  const [attendance, assignments, authors, waiting] = await Promise.all([
+  const anns = annRes.success ? without(annRes.data ?? [], hidden.announcements) : [];
+  const [attendance, assignments, authors, waiting, pulse] = await Promise.all([
     attendanceFor(supabase, [...events.map((e) => e.id), ...trips.map((t) => t.event_id).filter((id): id is string => !!id), ...tripEvents.map((e) => e.id)]),
     assignmentsFor(supabase, tasks.map((t) => t.id)),
     authorNames(supabase, anns),
     // An all-team post's audience is the roster: without it, who is left is unknown.
     rosterRes.error ? null : notAckedFor(supabase, anns.filter((a) => a.requires_acknowledgement).map((a) => a.id), names),
+    rosterRes.error ? Promise.resolve(null) : rosterPulse(supabase, roster.map((p) => p.id), today),
   ]);
 
   return {
@@ -466,9 +497,20 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
         };
       })),
       error: !!tasksRes.error,
-      total: tasksRes.count ?? null,
+      total: tasksRes.count == null ? null : Math.max(0, tasksRes.count - hidden.tasks.size),
     },
+    pulse,
   };
+}
+
+/** Coach: rounds the roster logged in 30 days and how many players logged one in 14, or null when the read failed. */
+async function rosterPulse(supabase: Awaited<ReturnType<typeof createClient>>, playerIds: string[], today: string): Promise<NonNullable<ChTeamHub['pulse']> | null> {
+  if (!playerIds.length) return { rounds30: 0, active14: 0, players: 0 };
+  const res = await loadSeasonRounds(supabase, playerIds, { surface: 'hub', since: addDays(today, -30) });
+  if (res.error) return null;
+  const since14 = addDays(today, -14);
+  const active = new Set(res.rounds.filter((r) => r.round_date.slice(0, 10) >= since14).map((r) => r.player_id));
+  return { rounds30: res.rounds.length, active14: active.size, players: playerIds.length };
 }
 
 export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {
@@ -679,6 +721,7 @@ export function trip(t: TripRow, f: ReturnType<typeof formatters>, today: string
     travelerCount: who.count,
     mine: who.mine,
     upcoming: !!t.departure_date && (t.return_date ?? t.departure_date) >= today,
+    inDays: t.departure_date && t.departure_date >= today ? f.daysBetween(today, t.departure_date) : null,
   };
 }
 
@@ -779,6 +822,8 @@ export function formatters(tz: string, now: Date) {
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit' });
   const days = (a: string, b: string) => Math.round((utcDay(b).getTime() - utcDay(a).getTime()) / 86400000);
   return {
+    /** Whole days from one YYYY-MM-DD to another (negative when `b` is earlier). */
+    daysBetween: days,
     wd: (date: string) => wdFmt.format(utcDay(date)),
     short: (iso: string) => shortFmt.format(utcDay(ymd(new Date(iso)))),
     time: (iso: string) => timeFmt.format(new Date(iso)),

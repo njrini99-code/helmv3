@@ -20,6 +20,8 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { HubBand, HubStrip, TaskBoard } from './band';
+import { homeBand, hubStrip, tabAttention, taskFigures } from './hub-summary';
 import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
@@ -393,6 +395,25 @@ export function TeamHub({
   const featured = anns.find((a) => !coach && a.needAck && (ackPending(a) || !isAcked(a))) ?? anns[0] ?? null;
   const upcoming = tripRows.filter((t) => t.upcoming);
   const nextTrip = upcoming[0] ?? null;
+  // The strip, the tab figures and Home's band read what the page already holds. A read that failed contributes nothing
+  // (a failed read is never shown as zero), and the band is withheld while a read it leans on is down.
+  const summary = {
+    role: data.role,
+    players: coach && !data.playersError ? data.players.length : 0,
+    rsvps: data.rsvps.error ? [] : data.rsvps.rows,
+    replies,
+    announcements: data.announcements.error ? [] : anns,
+    isAcked,
+    tasks: data.tasks.error ? [] : tasks.rows,
+    isDone: taskDone,
+    nextTrip: data.trips.error ? null : nextTrip,
+    pulse: data.pulse ?? null,
+  };
+  const strip = hubStrip(summary);
+  const attention = tabAttention(summary);
+  const band = !phone && !data.rsvps.error && !data.trips.error ? homeBand({ role: data.role, rsvps: data.rsvps.rows, replies, upcoming, trips: tripRows }) : null;
+  const bandIsTrip = band?.kind === 'trip' || band?.kind === 'trip-soon';
+  const figures = coach && !data.tasks.error ? taskFigures(tasks.rows, taskDone) : null;
   // The page is empty only when every read answered and every one was empty: a failed read (updates included) shows its
   // own notice, and an update to read is something to show.
   const nothing =
@@ -480,6 +501,7 @@ export function TeamHub({
             Team Hub
           </h1>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
+          <HubStrip items={strip} onOpen={pick} />
         </div>
         {primary && (
           <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
@@ -512,6 +534,12 @@ export function TeamHub({
             onKeyDown={tabKeys}
           >
             {l}
+            {/* The same figures the strip says, drawn on the tab; a screen reader gets them from the strip. */}
+            {(attention[k] ?? 0) > 0 && (
+              <span className={'ch-hb-tabs__n ch-num' + (k === 'tasks' ? ' is-warn' : '')} aria-hidden="true">
+                {attention[k]}
+              </span>
+            )}
             {tab === k && <span className="ch-hb-tabs__bar" aria-hidden="true" />}
           </button>
         ))}
@@ -545,6 +573,8 @@ export function TeamHub({
                 }
               />
             ) : (
+              <>
+              {band && <HubBand band={band} onEditTrip={setEditingTrip} />}
               <div className="ch-hb-home">
                 <div className="ch-hb-col">
                   <SectionBoundary surface="hub.rsvps" label="RSVPs" code="CH-10205">
@@ -566,7 +596,7 @@ export function TeamHub({
                       <div className="ch-hb-part">
                         <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
                       </div>
-                    ) : nextTrip ? (
+                    ) : nextTrip && !bandIsTrip ? (
                       <TripPass t={nextTrip} role={data.role} {...tripActions} />
                     ) : null}
                   </SectionBoundary>
@@ -580,6 +610,7 @@ export function TeamHub({
                   {!coach && !phone && yourTasks}
                 </div>
               </div>
+              </>
             ))}
 
           {shownTab === 'ann' && (
@@ -625,10 +656,11 @@ export function TeamHub({
             </SectionBoundary>
           )}
 
-          {shownTab === 'tasks' && coach && (
+          {shownTab === 'tasks' && (
             <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
               <div className="ch-hb-list">
-                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={(t) => askDelete({ kind: 'task', t })} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
+                {figures && <TaskBoard figures={figures} />}
+                <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} onDelete={coach ? (t) => askDelete({ kind: 'task', t }) : undefined} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
               </div>
             </SectionBoundary>
           )}

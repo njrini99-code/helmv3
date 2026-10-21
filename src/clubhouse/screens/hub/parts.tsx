@@ -479,6 +479,18 @@ export function TripPass({
             </div>
           )}
         </dl>
+        {/* The countdown, on the next trip's big pass: the figure a coach and a player both open Travel for. */}
+        {big && t.upcoming && !later && t.inDays != null && (
+          <p className="ch-hb-pass__count">
+            {t.inDays <= 1 ? (
+              <b>{t.inDays <= 0 ? 'Leaves today' : 'Leaves tomorrow'}</b>
+            ) : (
+              <>
+                <b className="ch-num">{t.inDays}</b> days to go
+              </>
+            )}
+          </p>
+        )}
       </div>
       {big && (
         <div className="ch-hb-pass__stub">
@@ -676,12 +688,14 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   return (
     <div
       ref={row}
-      className={'ch-hb-task' + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
+      className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
       onPointerDown={lit && reduced ? () => setLit(false) : undefined}
     >
       {coach ? (
-        <span className="ch-hb-ring" style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? (t.done[0] / t.done[1]) * 100 : 0 }} aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
+        // A text figure and a track under it: "3/6" reads at a glance where the old ring's numeral was 8.5px.
+        <span className="ch-hb-prog" aria-label={t.done ? `${t.done[0]} of ${t.done[1]} done` : 'Completion didn’t load'}>
           <b className="ch-num">{t.done ? `${t.done[0]}/${t.done[1]}` : '—'}</b>
+          <i style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? t.done[0] / t.done[1] : 0 }} aria-hidden="true" />
         </span>
       ) : (
         <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>

@@ -58,6 +58,7 @@ const TRIPS: ChHubTrip[] = [
     travelerCount: 5,
     mine: true,
     upcoming: true,
+    inDays: 20,
   },
   {
     id: 'sea',
@@ -84,6 +85,7 @@ const TRIPS: ChHubTrip[] = [
     travelerCount: 5,
     mine: false,
     upcoming: true,
+    inDays: 31,
   },
 ];
 
@@ -147,8 +149,9 @@ export const PREVIEW_HUB_PLAYER: ChTeamHub = {
   tasks: {
     error: false,
     rows: [
-      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: null },
+      { id: 't4', title: 'Submit eligibility form', detail: 'Compliance', dueDate: '2026-10-10', due: 'Oct 10', status: 'overdue', done: null },
       { id: 't2', title: 'Post two practice rounds', detail: 'Qualifier eligibility', dueDate: '2026-10-15', due: 'Tomorrow', status: 'pending', done: null },
+      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: null },
       { id: 't3', title: 'Upload class schedule', detail: 'Fall term', dueDate: '2026-10-01', due: 'Oct 1', status: 'completed', done: null },
     ],
   },
@@ -189,11 +192,13 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
   tasks: {
     error: false,
     rows: [
-      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: [3, 5] },
+      { id: 't4', title: 'Submit eligibility form', detail: 'Compliance', dueDate: '2026-10-10', due: 'Oct 10', status: 'overdue', done: [0, 6] },
       { id: 't2', title: 'Post two practice rounds', detail: 'Qualifier eligibility', dueDate: '2026-10-15', due: 'Tomorrow', status: 'pending', done: [4, 6] },
+      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: [3, 5] },
       { id: 't3', title: 'Upload class schedule', detail: 'Fall term', dueDate: '2026-10-01', due: 'Oct 1', status: 'completed', done: [6, 6] },
     ],
   },
+  pulse: { rounds30: 34, active14: 5, players: 6 },
 };
 
 const empty = (d: ChTeamHub): ChTeamHub => ({
