@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
-import type { ChDevice, ChResult, ChSettingsData, ChSettingsSection, ChSettingsWrites } from '../screens/settings/model';
+import { useMemo, useState } from 'react';
+import type { ChDevice, ChNativePush, ChResult, ChSettingsData, ChSettingsSection, ChSettingsWrites } from '../screens/settings/model';
 import { SettingsView } from '../screens/settings/SettingsView';
 import { coachData, failedRead as failed, playerData, PREVIEW_PENDING_COACHES, PREVIEW_STAFF, PREVIEW_STAFF_AS_ASSISTANT } from './fixtures-settings';
 
 /**
  * Settings with the handoff's people and fake writes, for the dev preview.
- *   ?state= player | noteam | failed | partial | assistant | failwrites
+ *   ?state= player | noteam | failed | partial | assistant | failwrites | nativeprompt | nativeon | nativeoff
  *   (assistant: the viewer is not the head coach, so Team has no requests or invites; failed: Team's staff reads fail)
  *   &section= account | notifications | team | golf | coachhelm | preferences
  */
@@ -65,9 +65,18 @@ export function PreviewSettings({ state, section }: { state?: string; section?: 
     };
   }, [state]);
 
+  // `nativeprompt`, `nativeon` and `nativeoff`: the iOS app, where web push is unsupported and the row is Apple's push
+  // before iOS has asked, allowed and turned off (CH-8902, CH-8903).
+  const nativeStatus = ({ nativeprompt: 'prompt', nativeon: 'granted', nativeoff: 'denied' } as const)[state as 'nativeprompt' | 'nativeon' | 'nativeoff'];
+  const [nativeNow, setNativeNow] = useState<ChNativePush['status'] | undefined>(nativeStatus);
   const device: ChDevice = {
     native: true,
-    push: { status: 'subscribed', pending: false, subscribe: () => wait({ ok: true }), unsubscribe: () => wait({ ok: true }), test: () => wait(state === 'failwrites' ? { ok: false, error: 'No device has push on yet.' } : { ok: true, sent: 1 }) },
+    push: nativeStatus
+      ? { status: 'unsupported', pending: false, subscribe: () => wait({ ok: false }), unsubscribe: () => wait({ ok: true }) }
+      : { status: 'subscribed', pending: false, subscribe: () => wait({ ok: true }), unsubscribe: () => wait({ ok: true }), test: () => wait(state === 'failwrites' ? { ok: false, error: 'No device has push on yet.' } : { ok: true, sent: 1 }) },
+    nativePush: nativeNow
+      ? { status: nativeNow, pending: false, turnOn: async () => setNativeNow('granted'), openSettings: () => {} }
+      : undefined,
   };
   const valid = ['account', 'notifications', 'team', 'golf', 'coachhelm', 'preferences'];
   return <SettingsView data={data} writes={writes} device={device} initialSection={(valid.includes(section ?? '') ? section : 'account') as ChSettingsSection} opened={valid.includes(section ?? '')} onDeleted={() => {}} />;

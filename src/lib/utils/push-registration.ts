@@ -346,6 +346,23 @@ export async function shouldShowPushSoftAsk(): Promise<boolean> {
 }
 
 /**
+ * What iOS (or Android) says about push for this app, for a Settings row: `prompt` while it has never been asked,
+ * then `granted` or `denied`, which only the phone's Settings app can change. `unsupported` on the web, or when the
+ * plugin can't answer. A read only: it never prompts and never registers.
+ */
+export async function nativePushPermission(): Promise<'prompt' | 'granted' | 'denied' | 'unsupported'> {
+  if (!isNativeApp()) return 'unsupported';
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const { receive } = await PushNotifications.checkPermissions();
+    if (receive === 'granted' || receive === 'denied') return receive;
+    return 'prompt';
+  } catch {
+    return 'unsupported';
+  }
+}
+
+/**
  * Trigger the system permission prompt and register with APNs on grant.
  * Call this from the soft-ask sheet's "Enable" button.
  */

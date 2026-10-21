@@ -37,7 +37,13 @@ Native surface today:
 - **Push**: `src/lib/utils/push-registration.ts` park-then-flush token state
   machine (persistence deferred until an authenticated session), value-first
   pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx`, deep links
-  validated by `isSafeInternalPath`.
+  validated by `isSafeInternalPath`. Clubhouse has its own ask
+  (`src/clubhouse/shell/PushAsk.tsx`, CH-1911) on the same shared functions
+  and the same stored answer, and a Settings row for the app's push
+  (`useNativePush`, CH-8902/CH-8903) that reads `nativePushPermission` and
+  opens the app's page in iOS Settings (`openNativeAppSettings`,
+  `app-settings:`, which Capacitor's navigation handler passes to iOS).
+  Spec: `docs/clubhouse/phone/push-opt-in.md`.
 - **Theme/status bar**: `CapacitorProvider.tsx` syncs the native status bar
   to the app theme reactively.
 
