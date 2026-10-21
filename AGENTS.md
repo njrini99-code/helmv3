@@ -45,8 +45,10 @@ only, fills the PR's Handoff section and hands off. A fixer takes the PR, gets i
 green, updates the docs, checks correctness and lands it. Neither role runs
 `npm run build` or the full gates repeatedly, pushes to chase CI, or waits for an
 answer: take the recommended default, record it, and ask the coordinator.
-`npm run pr:status -- <n>` is the one-call view of a PR's CI state. Only deploys,
-production database writes, held migrations and flag flips wait on the owner.
+`npm run pr:status -- <n>` is the one-call view of a PR's CI state. Production
+changes (migrations, deploys) go to the Production rollout thread, which applies
+them only after showing they do no harm; flag flips and the Clubhouse turn-on
+wait on the owner.
 
 ## Workspace and Git
 

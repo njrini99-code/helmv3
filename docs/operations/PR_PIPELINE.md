@@ -26,7 +26,7 @@ these rules are in the project's pipeline folder (`measurements`).
 ## The PR states
 
     building -> ready-for-fixer -> fixing -> landed
-                      \-> owner-gated (only the four gated actions below)
+                      \-> owner-gated (only the gated actions below)
 
 - **building**: a draft PR from the first push. CI is skipped on drafts by
   design (`.github/workflows/ci.yml`; the aggregate fails on purpose), so
@@ -36,7 +36,7 @@ these rules are in the project's pipeline folder (`measurements`).
   queue entry. The PR stays a draft until the fixer marks it ready.
 - **fixing**: a fixer owns the branch. Only the fixer pushes.
 - **owner-gated**: label `blocked-owner`, used only when the remaining step is
-  one of the four gated actions under "Decisions". Everything else keeps moving.
+  one of the gated actions under "Decisions". Everything else keeps moving.
 - **landed**: merged through `npm run pr:land -- <n>` (add `--any-branch` for a
   `claude/*` branch).
 
@@ -52,11 +52,14 @@ Agents never sit waiting for an answer. When a call is needed, whoever hits it:
    the change, and the work is redone from the decision, not restarted.
 3. Never routes a decision request to Nick, to another builder, or to the PR.
 
-Four actions are the owner's alone and are never taken on a default: **deploys,
-production database writes (including `db:apply` and applying any migration),
-held migrations, and flag flips**. A PR that needs one is finished, merged if
-green, and its entry lists the gated action for Nick; the thread moves on to
-the next piece of work.
+Production changes follow the owner's rule (2026-10-21: apply them if they do
+not affect production in a negative way). The "Production rollout" thread owns
+them and applies a migration or deploy only after showing it does no harm.
+Builders and fixers never run `db:apply`, apply a held migration or deploy; they
+list the change in their queue entry (`gated_for_nick`) for Production rollout.
+Flag flips, including the Clubhouse turn-on, stay with the owner and are never
+taken on a default. A PR that needs one of these is finished and merged if
+green, its entry lists it, and the thread moves on to the next piece of work.
 
 Labels, set by whoever changes the state: `needs-fixer`, `fixer-working`,
 `blocked-owner`. GitHub creates a label the first time it is applied.
@@ -76,7 +79,7 @@ The PR body keeps the template (`.github/PULL_REQUEST_TEMPLATE.md`) and its
 6. **Docs**: the feature doc `npm run knowledge:map -- --files <paths>` names,
    and whether the contract changed.
 7. **Open risks** and weak spots the builder already knows about.
-8. **Decisions**: each call you made on a default, or still need, with the recommended default (the coordinator approves; see "Decisions: nobody waits"). Gated actions listed separately.
+8. **Decisions**: each call you made on a default, or still need, with the recommended default (the coordinator approves; see "Decisions: nobody waits"). Production changes and flag flips are listed separately.
 9. **Do not touch**: files another session owns.
 
 Then, in this order: update the queue entry, unsubscribe from the PR, post one

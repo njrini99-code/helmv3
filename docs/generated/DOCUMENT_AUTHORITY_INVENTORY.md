@@ -34,7 +34,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 16 | 3 | 6 | 1 |
+| `POLICY` | 16 | 3 | 6 | 0 |
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 333 | 13 | 71 | 92 |
+| `UNKNOWN` | 334 | 13 | 71 | 92 |
 
 ## Files
 
@@ -69,7 +69,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/integrations.md` | current | - | - | - | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | - |
 | `.claude/rules/shipping.md` | current | - | - | - | - |
-| `AGENTS.md` | current | yes | - | yes | 1 |
+| `AGENTS.md` | current | yes | - | yes | - |
 | `CLAUDE.md` | current | yes | - | yes | - |
 | `CONTRIBUTING.md` | current | - | - | yes | - |
 | `README.md` | current | - | - | - | - |
@@ -983,6 +983,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | - |
+| `docs/operations/PR_PIPELINE.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |
