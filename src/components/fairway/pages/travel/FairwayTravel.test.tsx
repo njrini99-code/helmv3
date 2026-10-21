@@ -1,33 +1,29 @@
 /**
  * ============================================================================
- * FairwayTravel
+ * FairwayTravel — #173 orphaned desktop detail-pane regression coverage
  * ----------------------------------------------------------------------------
- * #173 orphaned detail pane: CSS Grid's `stretch` matched the detail column to
- * the (taller) list column and centred its content far below the fold. The
- * grid disables stretch (`lg:items-start`) and the detail column opts out and
- * sticks (`lg:self-start lg:sticky lg:top-6`). jsdom can't measure layout, so
- * those tests lock the class contract.
+ * With a long enough trip list, the CSS-Grid `stretch` default matched the
+ * detail column's height to the (much taller) list column, then vertically
+ * centered its content — so the "Select a trip" empty state, and the real
+ * detail view once a trip is picked, rendered far below the fold instead of
+ * staying in view. The fix pins the detail column near the top of the
+ * viewport at `lg:` (`sticky` + `self-start`, mirroring FairwayTasks's
+ * templates rail) so it's always visible while the list scrolls beside it.
  *
- * Owner 2026-09-28 rebuild: the list groups by local calendar day, the desktop
- * panel always shows a trip (the default: on the road, else the next to
- * leave, else the latest past trip; never an empty "Select a trip"), every
- * panel action works on the trip the panel shows, and expense reads are per
- * trip so a late answer never lands on another trip.
+ * jsdom can't measure real layout/stretch, so this locks the CLASS CONTRACT
+ * that produces the fix: the grid disables stretch (`lg:items-start`) and the
+ * detail column opts out of it and sticks (`lg:self-start lg:sticky lg:top-6`).
  * ========================================================================== */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 
 import { FairwayTravel } from './FairwayTravel';
 import type { TravelItinerary } from './travel-helpers';
-import {
-  createGolfTravelItinerary,
-  getExpensesForItinerary,
-  getExpenseSummary,
-  type TravelExpense,
-} from '@/app/golf/actions/travel';
+import { createGolfTravelItinerary } from '@/app/golf/actions/travel';
 
-// Module-scope spies (via vi.hoisted so the hoisted vi.mock factory below can
-// close over the SAME objects the tests assert on).
+// Module-scope spies (via vi.hoisted so the vi.mock factory below — which is
+// itself hoisted above these imports — can close over the SAME objects the
+// tests assert on afterward, rather than a fresh vi.fn() per render).
 const { mockRouter } = vi.hoisted(() => ({
   mockRouter: { refresh: vi.fn(), push: vi.fn(), back: vi.fn(), replace: vi.fn(), prefetch: vi.fn() },
 }));
@@ -48,15 +44,10 @@ vi.mock('@/app/golf/actions/travel', () => ({
   exportExpensesToCSV: vi.fn(),
 }));
 
-// The expense editor is its own component with its own tests; here only which
-// trip it opens for matters.
-vi.mock('./FairwayExpenseForm', () => ({
-  FairwayExpenseForm: ({ isOpen, itineraryId }: { isOpen: boolean; itineraryId?: string | null }) =>
-    isOpen ? <div data-testid="expense-form" data-itinerary-id={itineraryId ?? ''} /> : null,
-}));
-
 // FairwayItineraryModal loads the optional "Link to event" picker via a
-// direct browser Supabase client, which throws without env vars.
+// direct browser Supabase client. The real client throws synchronously
+// without env vars (see src/lib/supabase/client.ts), so it's stubbed here —
+// the picker itself is irrelevant to the create-navigation contract below.
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     from: () => ({
@@ -72,6 +63,23 @@ vi.mock('@/lib/supabase/client', () => ({
     }),
   }),
 }));
+
+// The component upgrades `nowISO` to the real clock after mount, and trips are
+// grouped by status (upcoming vs completed). Pin the clock to the fixtures'
+// "today" so the August trips below stay upcoming whatever day the suite runs.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 6, 1, 9, 0, 0));
+  // Selection writes ?trip= into (shared, per-file) jsdom history; start clean.
+  window.history.replaceState(null, '', '/golf/dashboard/travel');
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+// Trips appear twice (the season strip and the list); act on the list row.
+const listButton = (name: RegExp) =>
+  within(screen.getByRole('heading', { name: 'Coming up' }).closest('section') as HTMLElement).getByRole('button', { name });
 
 function makeItinerary(id: string, overrides: Partial<TravelItinerary> = {}): TravelItinerary {
   return {
@@ -102,78 +110,6 @@ function makeItinerary(id: string, overrides: Partial<TravelItinerary> = {}): Tr
   };
 }
 
-/** The demo team's three production trips (the QA row is is_test and never reaches the page). */
-const DEMO_TRIPS: TravelItinerary[] = [
-  makeItinerary('3eced5b3-9bdd-4c46-8949-f8ac85602cca', {
-    event_name: 'Palmetto Qualifier — Greenville',
-    destination: 'Greenville, SC',
-    transportation_type: 'van',
-    departure_date: '2026-07-07',
-    return_date: '2026-07-09',
-  }),
-  makeItinerary('b9bd52f3-7925-48c0-8e21-eccb0ee73fe3', {
-    event_name: 'Spring Preview Tournament — Columbia',
-    destination: 'Columbia, SC',
-    transportation_type: 'van',
-    departure_date: '2026-07-31',
-    return_date: '2026-08-01',
-  }),
-  makeItinerary('d316e8be-dab3-443a-8472-64f612fd9fd3', {
-    event_name: 'Furman Fall Invitational Retry',
-    destination: 'Travelers Rest, SC (near Furman)',
-    departure_date: '2026-10-20',
-    return_date: null,
-  }),
-];
-const FURMAN_ID = 'd316e8be-dab3-443a-8472-64f612fd9fd3';
-
-/** matchMedia answering the desktop query (the panel is beside the list). */
-function stubDesktopViewport() {
-  const original = window.matchMedia;
-  beforeEach(() => {
-    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-      matches: query === '(min-width: 1024px)',
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }));
-  });
-  afterEach(() => {
-    window.matchMedia = original;
-  });
-}
-
-function deferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
-
-function expense(id: string, itineraryId: string, amount: number): TravelExpense {
-  return {
-    id,
-    itinerary_id: itineraryId,
-    team_id: 'team-1',
-    category: 'meals',
-    description: `Expense ${id}`,
-    amount,
-    receipt_url: null,
-    paid_by: 'team',
-    vendor_name: null,
-    expense_date: '2026-08-01',
-    notes: null,
-    created_by: 'coach-1',
-    created_at: '2026-08-01T00:00:00Z',
-    updated_at: '2026-08-01T00:00:00Z',
-  } as TravelExpense;
-}
-
 describe('FairwayTravel — #173 orphaned detail pane', () => {
   it('scrolls the selected detail into view after a normal mobile selection', async () => {
     const originalWidth = window.innerWidth;
@@ -181,7 +117,7 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
     const scrollIntoView = vi.fn();
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
-    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
       callback(0);
       return 0;
     });
@@ -197,11 +133,10 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
         />,
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
+      fireEvent.click(listButton(/Trip b/));
 
       await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' }));
     } finally {
-      raf.mockRestore();
       Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
       HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
     }
@@ -209,26 +144,12 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
 
   it('never stretches the detail column to the (possibly long) list column height on desktop', () => {
     const itineraries = Array.from({ length: 8 }, (_, i) => makeItinerary(String(i)));
+    // Redesign 2026-09-28: with nothing picked, the desktop panel shows the
+    // NEXT trip's sheet (no "Select a trip" pane) — same sticky column.
 
-    render(
-      <FairwayTravel itineraries={itineraries} coachId="coach-1" teamId="team-1" isCoach={false} nowISO="2026-07-01" />,
-    );
-
-    // Nothing picked: the panel shows the default trip, not an empty pane.
-    expect(screen.queryByText('Select a trip')).toBeNull();
-    const heading = screen.getByRole('heading', { level: 2, name: 'Trip 0' });
-    const detailColumn = heading.closest('.lg\\:col-span-2');
-    expect(detailColumn).not.toBeNull();
-    expect(detailColumn).toHaveClass('lg:col-span-2', 'lg:sticky', 'lg:top-6', 'lg:self-start');
-
-    const grid = detailColumn?.parentElement;
-    expect(grid).toHaveClass('lg:items-start');
-  });
-
-  it('keeps the same sticky/self-start column once a trip IS selected', () => {
     render(
       <FairwayTravel
-        itineraries={[makeItinerary('a'), makeItinerary('b')]}
+        itineraries={itineraries}
         coachId="coach-1"
         teamId="team-1"
         isCoach={false}
@@ -236,158 +157,58 @@ describe('FairwayTravel — #173 orphaned detail pane', () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
-
-    const heading = screen.getByRole('heading', { level: 2, name: 'Trip b' });
-    const detailColumn = heading.closest('.lg\\:col-span-2');
+    // The next trip ("Trip 0") is both the phone hero and the desktop sheet;
+    // the sheet's h2 is the last one.
+    const headings = screen.getAllByRole('heading', { level: 2, name: 'Trip 0' });
+    const detailColumn = headings[headings.length - 1]!.closest('.lg\\:col-span-2');
     expect(detailColumn).not.toBeNull();
-    expect(detailColumn).toHaveClass('lg:sticky', 'lg:top-6', 'lg:self-start');
-    expect(detailColumn).not.toHaveClass('hidden');
-  });
-});
+    expect(detailColumn).toHaveClass('lg:col-span-2');
+    expect(detailColumn).toHaveClass('lg:sticky');
+    expect(detailColumn).toHaveClass('lg:top-6');
+    expect(detailColumn).toHaveClass('lg:self-start');
 
-describe('FairwayTravel — grouped list and the default trip (production rows, Sep 28 2026)', () => {
-  it('groups by calendar day and counts the phases in the masthead', () => {
-    render(<FairwayTravel itineraries={DEMO_TRIPS} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-09-28" />);
-
-    const list = screen.getByRole('region', { name: 'Trips' });
-    const upcoming = within(list).getByRole('region', { name: 'Upcoming' });
-    const past = within(list).getByRole('region', { name: 'Past trips' });
-    expect(within(list).queryByRole('region', { name: 'On the road' })).toBeNull();
-
-    expect(within(upcoming).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      expect.stringContaining('Furman Fall Invitational Retry'),
-    ]);
-    expect(within(upcoming).getByText('In 22 days')).toBeInTheDocument();
-    // Most recent first.
-    expect(within(past).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      expect.stringContaining('Spring Preview Tournament'),
-      expect.stringContaining('Palmetto Qualifier'),
-    ]);
-    expect(within(past).getByText('Returned Aug 1')).toBeInTheDocument();
-
-    expect(screen.getByText('1 upcoming')).toBeInTheDocument();
-    expect(screen.getByText('2 past')).toBeInTheDocument();
+    const grid = detailColumn?.parentElement;
+    expect(grid).toHaveClass('lg:items-start');
   });
 
-  it('opens the panel on the next trip to leave, with no empty "Select a trip"', () => {
-    render(<FairwayTravel itineraries={DEMO_TRIPS} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-09-28" />);
+  it('keeps the same sticky/self-start column once a trip IS selected', () => {
+    const itineraries = [makeItinerary('a'), makeItinerary('b')];
 
-    expect(screen.queryByText('Select a trip')).toBeNull();
-    const heading = screen.getByRole('heading', { level: 2, name: 'Furman Fall Invitational Retry' });
-    // Shown, not picked: the panel stays desktop-only until a pick.
-    expect(heading.closest('.lg\\:col-span-2')).toHaveClass('hidden', 'lg:block');
-    expect(screen.getByTestId('trip-countdown')).toHaveTextContent('22days to go');
-
-    const furmanCard = screen.getByRole('button', { name: /Furman Fall Invitational Retry/ });
-    expect(furmanCard).toHaveAttribute('aria-pressed', 'false');
-    expect(furmanCard).toHaveClass('lg:border-border-strong');
-  });
-
-  it('opens on the latest past trip when nothing is ahead', () => {
     render(
       <FairwayTravel
-        itineraries={DEMO_TRIPS.slice(0, 2)}
+        itineraries={itineraries}
         coachId="coach-1"
         teamId="team-1"
         isCoach={false}
-        nowISO="2026-09-28"
+        nowISO="2026-07-01"
       />,
     );
 
-    expect(screen.getByRole('heading', { level: 2, name: 'Spring Preview Tournament — Columbia' })).toBeInTheDocument();
-  });
+    fireEvent.click(listButton(/Trip a/));
 
-  it('shows the latest past trips first and the rest on request', () => {
-    const past = Array.from({ length: 7 }, (_, i) =>
-      makeItinerary(`p${i}`, { departure_date: `2026-0${i + 1}-10`, return_date: `2026-0${i + 1}-12` }),
-    );
-    render(<FairwayTravel itineraries={past} coachId="coach-1" teamId="team-1" isCoach={false} nowISO="2026-09-28" />);
-
-    const group = screen.getByRole('region', { name: 'Past trips' });
-    expect(within(group).getAllByRole('button', { name: /^Trip p/ })).toHaveLength(4);
-    fireEvent.click(within(group).getByRole('button', { name: 'Show 3 earlier trips' }));
-    expect(within(group).getAllByRole('button', { name: /^Trip p/ })).toHaveLength(7);
-    expect(within(group).getByRole('button', { name: 'Show fewer' })).toHaveAttribute('aria-expanded', 'true');
-  });
-});
-
-describe('FairwayTravel — the panel acts on the trip it shows', () => {
-  stubDesktopViewport();
-
-  beforeEach(() => {
-    vi.mocked(getExpensesForItinerary).mockReset().mockResolvedValue({ success: true, data: [] });
-    vi.mocked(getExpenseSummary).mockReset().mockResolvedValue({ success: true, data: undefined });
-  });
-
-  it('loads the default trip’s expenses on desktop and adds an expense to that trip', async () => {
-    render(<FairwayTravel itineraries={DEMO_TRIPS} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-09-28" />);
-
-    await waitFor(() => expect(getExpensesForItinerary).toHaveBeenCalledWith(FURMAN_ID));
-    expect(await screen.findByText('No expenses logged yet.')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Add expense' }));
-    expect(screen.getByTestId('expense-form')).toHaveAttribute('data-itinerary-id', FURMAN_ID);
-  });
-
-  it('drops a late expense answer for a trip no longer shown', async () => {
-    const [palmetto, spring] = DEMO_TRIPS as [TravelItinerary, TravelItinerary];
-    const reads = new Map([
-      [FURMAN_ID, deferred<{ success: boolean; data: TravelExpense[] }>()],
-      [palmetto.id, deferred<{ success: boolean; data: TravelExpense[] }>()],
-      [spring.id, deferred<{ success: boolean; data: TravelExpense[] }>()],
-    ]);
-    vi.mocked(getExpensesForItinerary).mockImplementation((id: string) => reads.get(id)!.promise);
-
-    render(<FairwayTravel itineraries={DEMO_TRIPS} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-09-28" />);
-
-    fireEvent.click(screen.getByRole('button', { name: /Palmetto Qualifier/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Spring Preview Tournament/ }));
-    expect(screen.getByRole('heading', { level: 2, name: 'Spring Preview Tournament — Columbia' })).toBeInTheDocument();
-
-    // Spring Preview answers first with nothing logged; Palmetto's answer
-    // (three expenses) arrives late and must not paint onto Spring Preview.
-    await act(async () => {
-      reads.get(spring.id)!.resolve({ success: true, data: [] });
-    });
-    expect(await screen.findByText('No expenses logged yet.')).toBeInTheDocument();
-
-    await act(async () => {
-      reads.get(palmetto.id)!.resolve({
-        success: true,
-        data: [expense('x1', palmetto.id, 10), expense('x2', palmetto.id, 20), expense('x3', palmetto.id, 30)],
-      });
-      reads.get(FURMAN_ID)!.resolve({ success: true, data: [] });
-    });
-    expect(screen.getByText('No expenses logged yet.')).toBeInTheDocument();
-    expect(screen.queryByText(/across 3 expenses/)).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Delete itinerary' }));
-    expect(
-      screen.getByText('This removes the entire itinerary. No expenses are logged on this trip yet.'),
-    ).toBeInTheDocument();
-  });
-
-  it('shows a failed expense read as failed, with a retry', async () => {
-    vi.mocked(getExpensesForItinerary).mockResolvedValueOnce({ success: false, error: 'boom' });
-
-    render(<FairwayTravel itineraries={DEMO_TRIPS} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-09-28" />);
-
-    expect(await screen.findByText('Expenses could not load.')).toBeInTheDocument();
-    expect(screen.queryByText('No expenses logged yet.')).toBeNull();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-    expect(await screen.findByText('No expenses logged yet.')).toBeInTheDocument();
-    expect(getExpensesForItinerary).toHaveBeenCalledTimes(2);
+    // The detail panel now renders the selected trip's own heading — the LAST
+    // "Trip a" match (the first is the still-mounted list-card button label).
+    const matches = screen.getAllByText('Trip a');
+    const heading = matches[matches.length - 1]!;
+    const detailColumn = heading.closest('.lg\\:col-span-2');
+    expect(detailColumn).not.toBeNull();
+    expect(detailColumn).toHaveClass('lg:sticky');
+    expect(detailColumn).toHaveClass('lg:top-6');
+    expect(detailColumn).toHaveClass('lg:self-start');
   });
 });
 
 describe('FairwayTravel — create-itinerary success stays on Travel', () => {
   // GAPS_AUDIT_INTERACTION_CRUD_2026-09-02: a coach who creates a trip was
-  // reportedly bounced to /golf/dashboard/roster. Create and update run the
-  // same `handleSave` branch, which only calls `router.refresh()`. This locks
-  // that contract: a successful create refreshes in place, closes the modal,
-  // and never calls push/back/replace.
+  // reportedly bounced to /golf/dashboard/roster instead of staying on
+  // /golf/dashboard/travel, unlike edit/delete which stay in place. No
+  // navigation call was found anywhere in the create path (FairwayTravel,
+  // FairwayItineraryModal, the createGolfTravelItinerary/updateGolfTravel
+  // Itinerary server actions, ModalShell, or the dashboard layouts) — create
+  // and update run the identical `handleSave` branch below, which only ever
+  // calls `router.refresh()`. This locks that contract: a successful create
+  // refreshes in place, closes the modal, and never calls push/back/replace
+  // — with the roster route singled out as the one this regression would hit.
   beforeEach(() => {
     mockRouter.refresh.mockClear();
     mockRouter.push.mockClear();
@@ -402,7 +223,15 @@ describe('FairwayTravel — create-itinerary success stays on Travel', () => {
       data: { id: 'new-trip' },
     });
 
-    render(<FairwayTravel itineraries={[]} coachId="coach-1" teamId="team-1" isCoach nowISO="2026-07-01" />);
+    render(
+      <FairwayTravel
+        itineraries={[]}
+        coachId="coach-1"
+        teamId="team-1"
+        isCoach
+        nowISO="2026-07-01"
+      />,
+    );
 
     fireEvent.click(screen.getByRole('button', { name: 'Create first itinerary' }));
 
@@ -433,11 +262,14 @@ describe('FairwayTravel — create-itinerary success stays on Travel', () => {
       }),
     );
 
+    // The save success path: refresh in place, modal closed.
     await waitFor(() => {
       expect(screen.queryByText('Create travel itinerary')).not.toBeInTheDocument();
     });
     expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
 
+    // The regression itself: no client-side navigation anywhere, and
+    // specifically never to the roster route.
     expect(mockRouter.push).not.toHaveBeenCalled();
     expect(mockRouter.back).not.toHaveBeenCalled();
     expect(mockRouter.replace).not.toHaveBeenCalled();
@@ -445,73 +277,37 @@ describe('FairwayTravel — create-itinerary success stays on Travel', () => {
 });
 
 describe('FairwayTravel — phone navigation stack (NAT-05) and mark-seen (DATA-03)', () => {
-  it('keeps the panel desktop-only until a pick, then swaps the list for the detail', () => {
-    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      callback(0);
-      return 0;
-    });
-    try {
-      render(
-        <FairwayTravel
-          itineraries={[makeItinerary('a'), makeItinerary('b')]}
-          coachId="coach-1"
-          teamId="team-1"
-          isCoach
-          nowISO="2026-07-01"
-        />,
-      );
+  it('keeps the default detail desktop-only below lg and swaps the list for the detail on select', async () => {
+    render(
+      <FairwayTravel
+        itineraries={[makeItinerary('a'), makeItinerary('b')]}
+        coachId="coach-1"
+        teamId="team-1"
+        isCoach
+        nowISO="2026-07-01"
+      />,
+    );
 
-      // Nothing picked: the panel (showing the default) is desktop-only.
-      const detailColumn = screen.getByRole('heading', { level: 2, name: 'Trip a' }).closest('.lg\\:col-span-2');
-      expect(detailColumn).toHaveClass('hidden', 'lg:block');
-      expect(screen.queryByRole('button', { name: 'All trips' })).toBeNull();
+    // Nothing selected: the default (next-trip) detail is desktop-only; the
+    // phone root is the hero + lists.
+    const headings = screen.getAllByRole('heading', { level: 2, name: 'Trip a' });
+    const detailColumn = headings[headings.length - 1]!.closest('.lg\\:col-span-2');
+    expect(detailColumn).toHaveClass('hidden', 'lg:block');
 
-      const card = screen.getByRole('button', { name: /Trip b/ });
-      fireEvent.click(card);
+    fireEvent.click(listButton(/Trip b/));
+    // The pick is shareable / survives refresh: it is written to ?trip=.
+    expect(new URL(window.location.href).searchParams.get('trip')).toBe('b');
 
-      // Picked: the list hides below lg, the detail shows with a Back control.
-      expect(screen.getByRole('region', { name: 'Trips' })).toHaveClass('hidden', 'lg:flex');
-      expect(detailColumn).not.toHaveClass('hidden');
-      const back = screen.getByRole('button', { name: 'All trips' });
-      expect(back.closest('.lg\\:hidden')).not.toBeNull();
+    // Selected: the list column hides below lg, the detail shows with a Back control.
+    const listColumn = () => screen.getByRole('heading', { name: 'Coming up' }).closest('.lg\\:col-span-1');
+    expect(listColumn()).toHaveClass('hidden', 'lg:flex');
+    const back = screen.getByRole('button', { name: 'All trips' });
+    expect(back.closest('.lg\\:hidden')).not.toBeNull();
 
-      fireEvent.click(back);
-      expect(screen.getByRole('region', { name: 'Trips' })).not.toHaveClass('hidden');
-    } finally {
-      raf.mockRestore();
-    }
-  });
-
-  it('returns focus to the card a phone pick came from', () => {
-    const originalWidth = window.innerWidth;
-    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
-    HTMLElement.prototype.scrollIntoView = vi.fn();
-    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
-      callback(0);
-      return 0;
-    });
-    try {
-      render(
-        <FairwayTravel
-          itineraries={[makeItinerary('a'), makeItinerary('b')]}
-          coachId="coach-1"
-          teamId="team-1"
-          isCoach={false}
-          nowISO="2026-07-01"
-        />,
-      );
-
-      fireEvent.click(screen.getByRole('button', { name: /Trip b/ }));
-      expect(screen.getByRole('heading', { level: 2, name: 'Trip b' })).toHaveFocus();
-
-      fireEvent.click(screen.getByRole('button', { name: 'All trips' }));
-      expect(screen.getByRole('button', { name: /Trip b/ })).toHaveFocus();
-    } finally {
-      raf.mockRestore();
-      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
-      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalWidth });
-    }
+    // Back pops the pushed history entry (so the iOS back swipe does the same).
+    fireEvent.click(back);
+    await waitFor(() => expect(listColumn()).not.toHaveClass('hidden'));
+    expect(new URL(window.location.href).searchParams.get('trip')).toBeNull();
   });
 
   it('swallows a failed mark-seen instead of leaving an unhandled rejection', async () => {

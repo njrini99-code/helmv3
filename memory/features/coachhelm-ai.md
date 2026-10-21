@@ -116,6 +116,12 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     coach `DiagnosisPanel` shows it with no chip and no "Likely because".
   - No stamped window (or a zero-day one) means nothing is traced; there is
     no one-year fallback. Rolling generators load their own N-day window.
+- One-tap data-gap prompt (supercharge Slice 8a, 2026-10-20), behind
+  `coachhelm_data_gap_prompt_v1` (OFF): a putt `miss_direction` data gap is
+  asked in Fairway shot entry after a missed first putt from that band, with
+  a counter toward `target_count`; one tap writes the miss tag through the
+  round's autosave. Contract: the evidence contract's Slice 8a section;
+  entry side: `memory/features/shot-tracking.md`.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
 - Wave 6 (2026-10-18):

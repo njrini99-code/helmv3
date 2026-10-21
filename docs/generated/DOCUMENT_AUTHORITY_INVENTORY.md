@@ -38,7 +38,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 1 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 43 | 3 | 22 | 4 |
+| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
 | `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 349 | 13 | 71 | 93 |
+| `UNKNOWN` | 350 | 13 | 71 | 93 |
 
 ## Files
 
@@ -333,8 +333,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/ENTRY_POINTS.md` | generated | - | - | - | - |
 | `docs/generated/HELM_FEATURE_MAP.md` | generated | - | - | - | - |
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
-| `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
 | `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
@@ -956,6 +954,7 @@ them would bury everything above.
 | `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
+| `docs/design/taste-memory.md` | current | - | - | - | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | - |

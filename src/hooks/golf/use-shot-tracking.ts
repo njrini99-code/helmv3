@@ -12,6 +12,7 @@ import { useRef, useState, useCallback, useEffect, type ReactNode } from 'react'
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { useShotStateMachine } from '@/hooks/golf/use-shot-state-machine';
+import { usePuttMissTagger } from '@/hooks/golf/use-putt-miss-tagger';
 import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
@@ -554,6 +555,12 @@ export function useShotTracking(
     }
   }, [holeCheckpointStatus, shotHistory, completeHole, isProcessingShotRef]);
 
+  // The one-tap data-gap prompt (CoachHelm Slice 8a); see use-putt-miss-tagger.
+  // It holds the Edit/Undo mutation lock while its snapshot save runs.
+  const handleTagPuttMiss = usePuttMissTagger({
+    shotHistory, dispatch, onAutoSave, autoSaveDisabled, currentHoleIndex, shotMutationInFlightRef,
+  });
+
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
     scrollElementIntoView(shotHistoryRefs.current[shotNumber] ?? null);
@@ -624,5 +631,7 @@ export function useShotTracking(
     handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
+    /** Tag a recorded putt's miss (the data-gap prompt); see its doc comment. */
+    handleTagPuttMiss,
   };
 }
