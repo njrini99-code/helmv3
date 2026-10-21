@@ -1824,6 +1824,11 @@
         "category": "services"
       },
       {
+        "id": "services:e2e/clubhouse-quality.setup.ts",
+        "pattern": "e2e/clubhouse-quality.setup.ts",
+        "category": "services"
+      },
+      {
         "id": "services:memory/journeys/**",
         "pattern": "memory/journeys/**",
         "category": "services"
@@ -1836,6 +1841,11 @@
       {
         "id": "services:package.json",
         "pattern": "package.json",
+        "category": "services"
+      },
+      {
+        "id": "services:playwright.clubhouse-journeys.config.ts",
+        "pattern": "playwright.clubhouse-journeys.config.ts",
         "category": "services"
       },
       {
@@ -16189,6 +16199,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:e2e/clubhouse-quality.setup.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "e2e/clubhouse-quality.setup.ts"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:memory/journeys/**",
       "kind": "feature_service",
       "evidence": [
@@ -16220,6 +16242,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "package.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:playwright.clubhouse-journeys.config.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "playwright.clubhouse-journeys.config.ts"
         }
       ]
     },
