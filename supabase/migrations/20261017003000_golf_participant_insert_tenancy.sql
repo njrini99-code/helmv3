@@ -46,8 +46,8 @@
 -- without the golf_user_in_conversation_team_audience term), then
 -- DROP FUNCTION public.golf_user_in_conversation_team_audience(uuid, uuid).
 --
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversation_participants' and policyname = 'golf_participants_insert_v2' and position('golf_user_in_conversation_team_audience' in with_check) > 0 and position('golf_conversation_has_other_participant' in with_check) > 0 and position('golf_user_on_conversation_team' in with_check) > 0;
--- VERIFY: select 1 from pg_proc where oid = 'public.golf_user_in_conversation_team_audience(uuid, uuid)'::regprocedure and prosecdef and not has_function_privilege('anon', oid, 'EXECUTE') and has_function_privilege('authenticated', oid, 'EXECUTE');
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_conversation_participants' and policyname = 'golf_participants_insert_v2' and position('golf_user_in_conversation_team_audience' in with_check) > 0 and position('golf_conversation_has_other_participant' in with_check) > 0 and position('golf_user_on_conversation_team' in with_check) > 0;  -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where oid = 'public.golf_user_in_conversation_team_audience(uuid, uuid)'::regprocedure and prosecdef and not has_function_privilege('anon', oid, 'EXECUTE') and has_function_privilege('authenticated', oid, 'EXECUTE');  -- noqa: LT05
 
 -- The migration tool runs this file in one transaction.
 set local lock_timeout = '3s';
@@ -85,8 +85,8 @@ as $$
   );
 $$;
 
-comment on function public.golf_user_in_conversation_team_audience(uuid, uuid) is
-'True when p_user_id is on the conversation''s team roster (any status) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';
+comment on function public.golf_user_in_conversation_team_audience(uuid, uuid) is  -- noqa: LT05
+'True when p_user_id is on the conversation''s team roster (any status) or a coach staffed on that team. Bounds who a conversation''s creator may add while it is formed (golf_participants_insert_v2, branch 2). Definer rights avoid re-entering RLS on golf_conversation_participants.';  -- noqa: LT05
 
 revoke execute on function public.golf_user_in_conversation_team_audience(
     uuid, uuid

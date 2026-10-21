@@ -35,17 +35,18 @@
 --
 -- The return-building SQL below is the baseline's
 -- (20260527000000_prod_public_baseline.sql), with p_player_id replaced by the
--- resolved v_player_id. pgTAP: supabase/tests/rls/golf_player_hub_rpcs_staff_gate.sql.
+-- resolved v_player_id. pgTAP:
+-- supabase/tests/rls/golf_player_hub_rpcs_staff_gate.sql.
 --
 -- ROLLBACK: re-run the two CREATE OR REPLACE FUNCTION blocks from
 -- 20260527000000_prod_public_baseline.sql (get_player_hub_announcements,
 -- get_player_hub_events), whose gate is the organization join above, and
 -- GRANT EXECUTE on both to anon to restore the previous ACL.
 --
--- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_announcements(uuid, uuid)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;
--- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;
--- VERIFY: select 1 where not has_function_privilege('anon', 'public.get_player_hub_announcements(uuid, uuid)', 'EXECUTE') and not has_function_privilege('anon', 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)', 'EXECUTE');
--- VERIFY: select 1 where has_function_privilege('authenticated', 'public.get_player_hub_announcements(uuid, uuid)', 'EXECUTE') and has_function_privilege('authenticated', 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)', 'EXECUTE');
+-- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_announcements(uuid, uuid)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;  -- noqa: LT05
+-- VERIFY: select 1 from pg_proc where oid = 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)'::regprocedure and prosecdef and position('is_golf_team_coach' in prosrc) > 0 and position('organization_id' in prosrc) = 0;  -- noqa: LT05
+-- VERIFY: select 1 where not has_function_privilege('anon', 'public.get_player_hub_announcements(uuid, uuid)', 'EXECUTE') and not has_function_privilege('anon', 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)', 'EXECUTE');  -- noqa: LT05
+-- VERIFY: select 1 where has_function_privilege('authenticated', 'public.get_player_hub_announcements(uuid, uuid)', 'EXECUTE') and has_function_privilege('authenticated', 'public.get_player_hub_events(uuid, uuid, timestamp with time zone)', 'EXECUTE');  -- noqa: LT05
 
 -- The migration tool runs this file in one transaction.
 
@@ -169,7 +170,7 @@ END;
 $$;
 
 comment on function public.get_player_hub_announcements(uuid, uuid) is
-'Returns up to 5 player-visible announcements with ack/docs/tasks counts. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 5-query waterfall in getPlayerHubAnnouncements.';
+'Returns up to 5 player-visible announcements with ack/docs/tasks counts. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 5-query waterfall in getPlayerHubAnnouncements.';  -- noqa: LT05
 
 create or replace function public.get_player_hub_events(
     p_team_id uuid, p_player_id uuid, p_since timestamp with time zone
@@ -256,8 +257,8 @@ BEGIN
 END;
 $$;
 
-comment on function public.get_player_hub_events(uuid, uuid, timestamp with time zone) is
-'Returns upcoming events for a team with player RSVP + going/maybe counts joined. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 3-round-trip waterfall in hub/page.tsx.';
+comment on function public.get_player_hub_events(uuid, uuid, timestamp with time zone) is  -- noqa: LT05
+'Returns upcoming events for a team with player RSVP + going/maybe counts joined. A coach staffed on the team (is_golf_team_coach) may ask for one of its active players; anyone else gets their own (the player is derived from auth.uid()). Replaces 3-round-trip waterfall in hub/page.tsx.';  -- noqa: LT05
 
 revoke execute on function public.get_player_hub_announcements(uuid, uuid)
 from public, anon;

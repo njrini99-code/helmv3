@@ -34,12 +34,14 @@
 -- src/lib/golf/player-profiles.ts, which falls back to the table read while
 -- this function is not applied, so the app can ship first.
 --
--- pgTAP: supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
+-- pgTAP: NOT WRITTEN YET. Required before this is applied (HELD.md):
+-- supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
 --
--- ROLLBACK: DROP FUNCTION public.golf_player_profiles(uuid[], uuid[], uuid[]); only
+-- ROLLBACK: DROP FUNCTION public.golf_player_profiles(uuid[], uuid[], uuid[]);
+-- only
 -- after 20261017005000 is rolled back (the app falls back to the table read).
 --
--- VERIFY: select 1 from pg_proc where oid = 'public.golf_player_profiles(uuid[], uuid[], uuid[])'::regprocedure and prosecdef and not has_function_privilege('anon', oid, 'EXECUTE') and has_function_privilege('authenticated', oid, 'EXECUTE');
+-- VERIFY: select 1 from pg_proc where oid = 'public.golf_player_profiles(uuid[], uuid[], uuid[])'::regprocedure and prosecdef and not has_function_privilege('anon', oid, 'EXECUTE') and has_function_privilege('authenticated', oid, 'EXECUTE');  -- noqa: LT05
 
 -- The migration tool runs this file in one transaction.
 
@@ -86,7 +88,7 @@ as $$
 $$;
 
 comment on function public.golf_player_profiles(uuid[], uuid[], uuid[]) is
-'Display-safe golf player columns (no email, phone, gpa, school, hometown, state) for the given player ids, user ids or teams'' roster rows, limited to the players golf_players_select admitted before 2026-10-17: self, staffed coach, pending-join coach, active teammate, admin. How a player reads a teammate (security review S4).';
+'Display-safe golf player columns (no email, phone, gpa, school, hometown, state) for the given player ids, user ids or teams'' roster rows, limited to the players golf_players_select admitted before 2026-10-17: self, staffed coach, pending-join coach, active teammate, admin. How a player reads a teammate (security review S4).';  -- noqa: LT05
 
 revoke execute on function public.golf_player_profiles(uuid[], uuid[], uuid[])
 from public, anon;

@@ -1,6 +1,6 @@
 -- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner's approval to apply
 -- (supabase/migrations/HELD.md). ORDER MATTERS:
---   1. 20261017004000_golf_player_profiles_fn.sql is applied (this file checks).
+-- 1. 20261017004000_golf_player_profiles_fn.sql is applied (this file checks).
 --   2. The app from the same PR (security review S2-S9) is deployed: it reads
 --      teammates through golf_player_profiles instead of the table.
 --   3. Then this file.
@@ -8,7 +8,7 @@
 -- team, team hub, qualifier leaderboards, RSVP lists, attendance, messages)
 -- shows only the viewer, with no error.
 -- Apply: npm run db:apply --
--- supabase/migrations/20261017005000_golf_players_select_drop_teammate_branch.sql
+-- supabase/migrations/20261017005000_golf_players_select_drop_teammate_branch.sql  -- noqa: LT05
 --
 -- Security review 2026-10-16, item S4, step 2 of 2. golf_players_select let a
 -- player read a teammate's FULL row, email, phone, gpa, high_school_name,
@@ -27,7 +27,8 @@
 -- table's policy reads golf_players except pinned to auth.uid(), and the only
 -- SECURITY INVOKER functions reading it are admin-only.
 --
--- pgTAP: supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
+-- pgTAP: NOT WRITTEN YET. Required before this is applied (HELD.md):
+-- supabase/tests/rls/golf_player_profiles_teammate_scope.sql.
 --
 -- ROLLBACK: recreate the previous policy (pg_policies, 2026-10-16):
 --   create policy golf_players_select on public.golf_players for select
@@ -36,7 +37,7 @@
 --   or user_has_pending_join_request_to_coach_team(id)
 --   or user_is_teammate_of_golf_player(id));
 --
--- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_players' and policyname = 'golf_players_select' and position('user_is_teammate_of_golf_player' in qual) = 0 and position('user_is_coach_of_golf_player' in qual) > 0 and position('user_has_pending_join_request_to_coach_team' in qual) > 0;
+-- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'golf_players' and policyname = 'golf_players_select' and position('user_is_teammate_of_golf_player' in qual) = 0 and position('user_is_coach_of_golf_player' in qual) > 0 and position('user_has_pending_join_request_to_coach_team' in qual) > 0;  -- noqa: LT05
 
 -- The migration tool runs this file in one transaction.
 set local lock_timeout = '3s';

@@ -360,7 +360,10 @@ export function createFakeSupabase(opts: FakeOptions = {}) {
       if (!handler) {
         return Promise.resolve({
           data: null,
-          error: { message: `rpc ${name} not registered in fake-supabase` },
+          // PostgREST's own answer for a function the schema does not have, so code
+          // that falls back when a function is not applied yet (golf_player_profiles)
+          // takes that path here too.
+          error: { code: 'PGRST202', message: `rpc ${name} not registered in fake-supabase` },
         });
       }
       return handler(args);
