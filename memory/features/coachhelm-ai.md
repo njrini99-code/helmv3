@@ -138,6 +138,24 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     exactly Slice 1b (leave-one-out team mean). An angle's own composed
     `comparison` is kept; the team line is only appended.
 
+- Team pattern and same-day field (supercharge Slice 7b, 2026-10-21),
+  behind `coachhelm_team_pattern_v1` (OFF; off reads nothing new):
+  - `v3/team-pattern/pattern.ts` (pure): a cause family (support family,
+    metric band, miss side) shared by at least 3 players AND at least 30%
+    of the players with 3+ countable rounds, each at Likely or above on
+    `evidence.ladder`. Up to 4 rows, most team strokes (summed
+    `strokes_shrunk`) first; families under the threshold are counted only.
+    Computed at delivery from the reads the Clubhouse coach board already
+    loads; coach only. Needs `coachhelm_support_v1` writing the ladder.
+  - `v3/field-day/field.ts` (pure): rounds where 3+ teammates played one
+    course on one day get a score relative to the team's mean that day. The
+    bad-day-floor read does not fire when most bad rounds were hard days
+    for the whole field; the pressure read records both sides as audit
+    detail (`detail.field_day`, "Relative to the team on the day").
+  - LPGA approach: production has LPGA proximity rows for the three bands;
+    green-hit by band has no LPGA figure, so a women's approach read stays
+    absent and a women's standing omits the marker. Never PGA numbers.
+
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course

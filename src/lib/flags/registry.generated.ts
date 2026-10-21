@@ -302,6 +302,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Turn on (development, preview, production) only after the owner applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the writer treats the missing table as not available, so order is not a correctness issue) and the support back-test (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance bars. Remove the flag and the isSupportPassEnabled branches once the ladder renderers ship and the pass has run stably for a month.",
   },
   {
+    feature_id: "coachhelm_team_pattern_v1",
+    owner: "golf/coachhelm",
+    purpose: "Gates two Slice 7b pieces. (1) Team patterns on the Clubhouse coach CoachHelm board: a cause family (support family, band and miss side) that at least 3 players and at least 30% of the players with 3 or more countable rounds share, each at Likely or above on the support ladder, drawn as up to 4 rows with the players count, the team strokes a round at stake (sum of the shrunk strokes of those players), the common practice block and the list of those players; computed at delivery from the reads the board already loads, coach only. (2) The same-day field context: for rounds where 3 or more teammates played the same course on the same day, each round's score relative to the team's mean that day. The bad-day-floor read records it and does not fire when most of the player's bad rounds were hard days for the whole field; the pressure read records it as audit detail (\"Relative to the team on the day\"). When off, nothing new is read or written and every read is as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: "Off: the coach board draws no Team patterns section, and the next analysis run writes the bad-day-floor and pressure reads without detail.field_day and with the bad-day gate as before.",
+    cleanup_plan: "Turn on after the owner turns on coachhelm_support_v1 (the pattern needs the ladder on rows; without it no pattern can form). Remove the flag checks in v3/team-pattern/flag.ts callers and this entry once coaches have read team patterns for a season without an accuracy complaint; if rejected, turn it off and remove v3/team-pattern/ and v3/field-day/.",
+  },
+  {
     feature_id: "coachhelm_team_pool_v1",
     owner: "golf/coachhelm",
     purpose: "Gates the team pool benchmark on v3 CoachHelm reads (v3/team-pool/, run from BaseGenerator.run()). When on, a putt make rate by band, approach green-hit rate by band, bunker up-and-down, par 3/4/5 scoring or penalties-per-round read gets evidence.comparison with the pooled attempts of the player's teammates in the same window as the primary line (\"Team pool 72% (240 putts)\") and the Tour as a further line, and the Clubhouse Deep dive Read and the Fairway evidence panel print that team line. A pool is drawn only when at least 5 rostered players have a countable round in the window and at least 4 teammates (never the player) have 3 or more countable rounds and attempts in the family, with at least 100 pooled attempts; it never names or ranks a teammate. Strokes, standing and the flat comparison fields stay on the Tour. When off, the engine writes exactly what it wrote before.",

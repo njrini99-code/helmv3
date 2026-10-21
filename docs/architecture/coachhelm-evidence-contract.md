@@ -2225,6 +2225,55 @@ missed greens, which no single-metric read carries today.
   mean, cohort or the row's comparison), and a within-player contrast still
   shrinks toward no difference.
 
+## Team pattern and same-day field (supercharge Slice 7b, 2026-10-21)
+
+Behind `coachhelm_team_pattern_v1` (OFF). With the flag off nothing new is
+read or written.
+
+- **Team pattern** (`v3/team-pattern/pattern.ts`, pure, computed at
+  delivery, no table). The family key is `support.family` (else
+  `familyFor`), the read's metric (its band) and `detail.worse_side` when
+  the read names one. A member is a player with 3 or more countable rounds
+  whose read is a weakness at `ladder` Likely, Observed or Seen
+  repeatedly. A pattern needs at least 3 members AND at least 30% of those
+  players (`04` Example 8: "5 ≥ 3 and 5/6 ≥ 30%"). Row (`04` §1.6):
+  `team_id`, `family`, `window_end`, `members`, `roster_with_reads`,
+  `roster_total`, `strokes_sum` (sum of the members' `strokes_shrunk`),
+  `common_next` (the `diagnosis.recommended_action` most members share),
+  `computed_at`. At most 4 rows, most strokes first; the rest, and every
+  family with 2 or more members under the threshold, are counted
+  (`below_threshold`). The Clubhouse coach board draws it
+  (`TeamPatterns.tsx`); no player surface reads it.
+- **Same-day field** (`v3/field-day/field.ts`, pure, computed on read).
+  Rounds grouped by (team, `round_date`, `course_id`) with 3 or more
+  distinct players form a field; each round gets its per-18 score to par
+  minus the field mean (`relative`; positive = worse than the team that
+  day). Rounds without a course or score cannot join.
+  - Bad-day floor: `detail.field_day` (`bad_rounds_in_field`,
+    `bad_mean_relative`, `middle_rounds_in_field`, `middle_mean_relative`,
+    `bad_shared_with_field`, `explained_by_field`). When at least 2 bad
+    rounds, and more than half of them, sat in a field at or better than
+    the team's mean, the floor is the field's, not the player's, and the
+    read does not fire. The field comes from the team rounds the read
+    already loads (no new query).
+  - Pressure gap: `detail.field_day` (`practice`, `pressure`: field rounds
+    and mean relative score; `gap`: pressure minus practice, each relative
+    to the team on the day, with 3 or more field rounds a side). Audit
+    detail only; the gap, its noise band and the gate are unchanged. One
+    extra read of the team's rounds over the read's 90 days
+    (`v3/field-day/loader.ts`); a failed read leaves no context.
+  - Both carry `label: 'Relative to the team on the day'` for the audit
+    view (`03` §5.2).
+- **LPGA approach anchors.** Production `golf_pga_standards` (read
+  2026-10-21) has `tour = 'lpga'` rows for `approach_proximity_50_125ft`,
+  `_125_175ft`, `_175_plus_ft`, `gir_pct` and `sg_approach`, each with a
+  source; `TOUR_STANDARDS.lpga.approachProximityFt` mirrors them. There is
+  no LPGA green-hit-by-band figure, which is what the approach read is
+  built on, so `greenHitAnchor(band, 'womens')` stays null: a women's team
+  gets no approach read and its standing omits the Tour marker
+  (`pga_omitted`). No PGA number is ever used for a women's read, and no
+  rows were seeded.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.

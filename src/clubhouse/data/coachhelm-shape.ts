@@ -1,4 +1,5 @@
 import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChTeamPatterns } from './coachhelm-team-pattern';
 
 /**
  * CoachHelm's data shapes (Clubhouse P013) and the steps the screens share,
@@ -285,6 +286,8 @@ export interface ChCoachHelmData {
   withoutNames?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
+  /** Team pattern rows (supercharge Slice 7b, `coachhelm_team_pattern_v1`, off); absent with the flag off or nothing to show. */
+  teamPatterns?: ChTeamPatterns;
 }
 
 /** Names said before the rest are counted: "A, B, C and 2 more". */

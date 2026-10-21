@@ -148,7 +148,9 @@ async function readAngleData(sb: Sb, playerId: string): Promise<AngleData> {
 }
 
 type PeerRow = CountableRoundInput & {
+  id: string;
   player_id: string;
+  course_id: string | null;
   round_date: string;
   score_to_par: number | null;
   total_fairways_hit: number | null;
@@ -166,7 +168,7 @@ async function readTeamRounds(sb: Sb, teamId: string): Promise<PeerRound[]> {
     sb
       .from('golf_rounds')
       .select(
-        'player_id, round_date, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total, score_to_par, total_fairways_hit, total_fairways, golf_round_stats_cache(three_putts)',
+        'id, player_id, course_id, round_date, status, is_test, holes_played, total_score, front_nine, back_nine, total_putts, strokes_gained_total, score_to_par, total_fairways_hit, total_fairways, golf_round_stats_cache(three_putts)',
       )
       .eq('team_id', teamId)
       .eq('status', 'completed')
@@ -179,7 +181,9 @@ async function readTeamRounds(sb: Sb, teamId: string): Promise<PeerRound[]> {
   for (const r of data ?? []) {
     if (!isCountableRound(r)) continue;
     out.push({
+      round_id: r.id,
       player_id: r.player_id,
+      course_id: r.course_id ?? null,
       date: String(r.round_date).slice(0, 10),
       holes: r.holes_played ?? 18,
       sg_total: num(r.strokes_gained_total),

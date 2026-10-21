@@ -94,7 +94,11 @@ export interface AngleData {
 
 /** One teammate's countable rounds, for the peer benchmarks. */
 export interface PeerRound {
+  /** `golf_rounds.id` (the same-day field adjustment keys on it, Slice 7b). */
+  round_id?: string;
   player_id: string;
+  /** `golf_rounds.course_id`; null when the round names no course. */
+  course_id?: string | null;
   date: string;
   holes: number;
   sg_total: number | null;

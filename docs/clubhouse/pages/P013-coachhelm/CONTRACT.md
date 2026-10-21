@@ -223,6 +223,7 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
 | 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
+| 130724 | CH-13995 | `COACH_TEAM_PATTERNS` | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
 
 ## 08 — Permission / authorization
 
