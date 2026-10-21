@@ -152,6 +152,17 @@ export function bucketApproachDistance(
 
 const FEET_PER_YARD = 3;
 
+/**
+ * Did an approach find the green? `result` is the canonical signal; `lie_after`
+ * corroborates on older rows that only recorded the lie. The one definition
+ * the approach generator (`reachedGreen`) and the team pool both use.
+ */
+export function approachFoundGreen(s: { result: string | null; lie_after: string | null }): boolean {
+  const r = (s.result ?? '').toLowerCase();
+  if (r === 'green' || r === 'hole' || r === 'gir') return true;
+  return (s.lie_after ?? '').toLowerCase() === 'green';
+}
+
 const DEFAULT_WINDOW_DAYS = 90;
 
 /**

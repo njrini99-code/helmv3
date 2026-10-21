@@ -47,6 +47,7 @@ import {
   type RootCauseContext,
 } from './root-cause';
 import { loadRootCauseContext } from './root-cause-context';
+import { attachTeamPool } from '@/lib/coachhelm/v3/team-pool/attach';
 
 import type { Diagnosis, DiagnosisDriver, InsightCause, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
@@ -843,6 +844,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
       }
 
       const supabase = createAdminClient();
+      // Slice 7a (flag `coachhelm_team_pool_v1`, off): the team pool as the
+      // primary comparison line. Off, or no pool: the evidence is unchanged.
+      evidence = await attachTeamPool({
+        supabase,
+        playerId: this.playerId,
+        insightType: this.insightType,
+        evidence,
+        windowSource: this.rollingWindowDays !== null ? rollingWindowEvidence(this.rollingWindowDays) : undefined,
+      });
       // Audit row 22: persist the rounds behind the claim (failure-silent).
       // The Slice 0b stamp already set them when the round index loaded, and a
       // generator that composed its own list (the rounds it actually counted)
