@@ -32,7 +32,7 @@ export function localSupabase(): { url: string; serviceKey: string } | null {
  * `session_replication_role`, which the local `postgres` role is refused on current Supabase CLIs (the removal failed
  * and left the test player behind, 2026-10-14).
  */
-function localDbUrl(): string {
+export function localDbUrl(): string {
   if (!localSupabase()) throw new Error('clubhouse-local-seed: refusing a Supabase that is not local');
   const dbUrl = process.env.SUPABASE_DB_URL ?? 'postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres';
   const dbHost = new URL(dbUrl).hostname;
@@ -262,10 +262,12 @@ function entityTables(ids: SeededTeam): Array<[string, string[]]> {
   ];
 }
 
-async function tablesWith(db: PgClient, col: string): Promise<string[]> {
+/** Tables with a uuid column of this name (a text column of the same name, e.g. crm_unmatched_inbound.message_id, is
+ *  not a reference and cannot be compared with uuid[]). */
+export async function tablesWith(db: PgClient, col: string): Promise<string[]> {
   const res = await db.query(
     `select c.table_name from information_schema.columns c join information_schema.tables t on t.table_schema = c.table_schema and t.table_name = c.table_name
-     where c.table_schema = 'public' and c.column_name = $1 and t.table_type = 'BASE TABLE'`,
+     where c.table_schema = 'public' and c.column_name = $1 and c.data_type = 'uuid' and t.table_type = 'BASE TABLE'`,
     [col],
   );
   return res.rows.map((r) => r.table_name as string);
@@ -292,8 +294,13 @@ export async function removeTeamSeed(ids: SeededTeam): Promise<void> {
 
     const admin = adminClient();
     for (const id of ids.userIds) {
-      const { error } = await admin.auth.admin.deleteUser(id);
-      if (error && !/not found/i.test(error.message)) throw new Error(`cleanup: deleting auth user ${id}: ${error.message}`);
+      // A busy local auth server can time out ("Processing this request timed out"); the delete is safe to repeat.
+      for (let attempt = 1; ; attempt++) {
+        const { error } = await admin.auth.admin.deleteUser(id);
+        if (!error || /not found/i.test(error.message)) break;
+        if (attempt === 4 || !/timed out|retry/i.test(error.message)) throw new Error(`cleanup: deleting auth user ${id}: ${error.message}`);
+        await new Promise((r) => setTimeout(r, attempt * 5000));
+      }
     }
     await db.query('delete from public.users where id = any($1::uuid[])', [ids.userIds]);
 
@@ -690,6 +697,62 @@ export async function seedClubhouseTeam(options: SeedTeamOptions = {}): Promise<
     await db.query('rollback').catch(() => undefined);
     await db.end();
     await dropUsers();
+    throw err;
+  }
+  await db.end();
+  return team;
+}
+
+/**
+ * A head coach on a team with no players, rounds, events, qualifiers or messages, on a LOCAL Supabase only: the first-run (empty)
+ * states of a coach's pages (e2e/clubhouse-route-shots.spec.ts). Removed with `removeTeamSeed`, like a full team.
+ */
+export async function seedClubhouseCoach(): Promise<SeededTeam> {
+  const admin = adminClient();
+  const url = localDbUrl();
+  const tag = randomBytes(3).toString('hex');
+  const email = `e2e-ch-coach-${tag}@example.test`;
+  const password = `E2e-${randomBytes(12).toString('base64url')}`;
+  const created = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { role: 'coach', sport: 'golf', first_name: 'Robin', last_name: 'Hale' } });
+  if (created.error || !created.data.user) throw new Error(`seed user ${email}: ${created.error?.message}`);
+  const userId = created.data.user.id;
+  const team: SeededTeam = {
+    tag,
+    teamId: randomUUID(),
+    teamName: `New University Golf ${tag}`,
+    orgId: randomUUID(),
+    coach: { userId, coachId: randomUUID(), email, password },
+    players: [],
+    courseIds: [],
+    teeIds: [],
+    qualifierId: randomUUID(),
+    conversationId: randomUUID(),
+    eventIds: [],
+    roundIds: [],
+    userIds: [userId],
+    counts: { rounds: 0, holes: 0, shots: 0, events: 0 },
+  };
+  const db = new PgClient({ connectionString: url });
+  await db.connect();
+  try {
+    await db.query('begin');
+    await bulk(db, 'organizations', ['id', 'name', 'type', 'location_city', 'location_state'], [
+      { id: team.orgId, name: `New University ${tag}`, type: 'college', location_city: 'Testville', location_state: 'NC' },
+    ]);
+    await bulk(db, 'golf_coaches', ['id', 'user_id', 'organization_id', 'full_name', 'email', 'onboarding_completed'], [
+      { id: team.coach.coachId, user_id: userId, organization_id: team.orgId, full_name: 'Robin Hale', email, onboarding_completed: true },
+    ]);
+    await bulk(db, 'golf_teams', ['id', 'organization_id', 'name', 'join_code', 'season', 'created_by', 'timezone', 'gender', 'season_active'], [
+      { id: team.teamId, organization_id: team.orgId, name: team.teamName, join_code: `NEW${tag}`.toUpperCase(), season: '2026-27', created_by: team.coach.coachId, timezone: TZ, gender: 'mens', season_active: true },
+    ]);
+    await bulk(db, 'golf_team_coach_staff', ['team_id', 'coach_id', 'role', 'is_primary'], [{ team_id: team.teamId, coach_id: team.coach.coachId, role: 'head_coach', is_primary: true }]);
+    await bulk(db, 'golf_team_settings', ['team_id', 'timezone'], [{ team_id: team.teamId, timezone: TZ }]);
+    await db.query('commit');
+  } catch (err) {
+    await db.query('rollback').catch(() => undefined);
+    await admin.auth.admin.deleteUser(userId).catch(() => undefined);
+    await db.query('delete from public.users where id = $1', [userId]).catch(() => undefined);
+    await db.end();
     throw err;
   }
   await db.end();

@@ -55,6 +55,11 @@ const nextConfig = {
   // A phone on the same network can load the dev server for real-device checks (Safari on iPhone) when the host is
   // named explicitly: HELM_DEV_LAN_ORIGIN=192.168.x.y npm run dev. Dev only; production ignores allowedDevOrigins.
   allowedDevOrigins: ['127.0.0.1', ...(process.env.HELM_DEV_LAN_ORIGIN ? [process.env.HELM_DEV_LAN_ORIGIN] : [])],
+  // Browser suites that drive `next dev` (playwright.clubhouse*.config.ts and their workflows) set HELM_DEV_KEEP_ROUTES=1 so a
+  // compiled route stays compiled for the whole run. By default a route idle for 60s is disposed and compiled again on its next
+  // request, and each of those builds sends a hot update that can reload a page still open in the browser, under a test's
+  // click (clubhouse-quality.yml, 2026-10-15: "Clicking the checkbox did not change its state"). Dev only.
+  ...(process.env.HELM_DEV_KEEP_ROUTES === '1' ? { onDemandEntries: { maxInactiveAge: 24 * 60 * 60 * 1000, pagesBufferLength: 1000 } } : {}),
   reactStrictMode: true, // Enable to catch potential issues
   // Don't advertise the framework in an X-Powered-By header.
   poweredByHeader: false,
