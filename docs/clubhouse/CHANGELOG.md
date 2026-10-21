@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-21 — One hydration guard for text boxes
+
+`useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until
+React has hydrated it, so text typed into server HTML is not reset. Settings
+`Field` and `FieldRow` use it, and now so do the reset and gate boxes (P015).
+The sign-in email and password do not: page-load autofill skips a read-only box.
+
 ## 2026-10-21 — Settings boxes wait for hydration (WebKit journeys)
 
 Text typed into a Settings box before React hydrated it was wiped when the
