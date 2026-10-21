@@ -127,8 +127,10 @@ export interface ComposedContent {
    */
   framing?: 'leak' | 'strength' | 'neutral';
   /**
-   * The same title/content for a coach, in neutral third person (PR #2073).
-   * Stored as `evidence.coach_copy`. Omitted → coaches see `title`/`content`.
+   * The same title/content for a coach, in the third person (PR #2073;
+   * written with `inBothVoices`, `engine/coach-voice.ts`). Stored as
+   * `evidence.coach_copy` when it passes `coachCopyIssues` (same numbers, no
+   * "you", no club). Omitted → coaches see `title`/`content`.
    */
   coach?: { title: string; content: string };
 }

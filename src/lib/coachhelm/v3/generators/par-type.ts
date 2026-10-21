@@ -20,6 +20,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { lifetimeSpanDays, staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { measuredStrokesImpact } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
@@ -232,34 +233,40 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     const expectedBirdie = EXPECTED_BIRDIE_RATE[agg.par];
     const tailCost = agg.bogey_rate / 100 + (2 * agg.double_plus_rate) / 100; // strokes over par per hole from the bad tail
     const birdieShortfall = Math.max(0, expectedBirdie - agg.birdie_rate) / 100; // credit foregone vs healthy baseline
-    let driverClause: string;
-    if (agg.holes_scored < 5) {
-      driverClause =
-        `Too few par ${agg.par}s logged in the window to break down where the strokes go yet.`;
-    } else if (vsPar > 0 && tailCost >= birdieShortfall) {
-      // The over-par average is the bad tail, not a birdie shortfall.
-      driverClause =
-        `That's driven by ${r1(agg.double_plus_rate)}% doubles + ${r1(agg.bogey_rate)}% bogeys, ` +
-        `not a birdie problem (you birdie ${r1(agg.birdie_rate)}% of these). ` +
-        `Cutting the doubles is the fastest stroke back.`;
-    } else if (vsPar > 0) {
-      driverClause =
-        `Your tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys); ` +
-        `the over-par average is mostly a birdie-conversion gap (only ${r1(agg.birdie_rate)}% birdies here).`;
-    } else {
-      driverClause =
-        `You're at or under par here: ${r1(agg.birdie_rate)}% birdies, ${r1(agg.par_rate)}% pars, ` +
-        `${r1(agg.double_plus_rate)}% doubles.`;
-    }
+    const driverClause = (v: Voice): string => {
+      if (agg.holes_scored < 5) {
+        return `Too few par ${agg.par}s logged in the window to break down where the strokes go yet.`;
+      }
+      if (vsPar > 0 && tailCost >= birdieShortfall) {
+        // The over-par average is the bad tail, not a birdie shortfall.
+        return (
+          `That's driven by ${r1(agg.double_plus_rate)}% doubles + ${r1(agg.bogey_rate)}% bogeys, ` +
+          `not a birdie problem (${v.you} birdie ${r1(agg.birdie_rate)}% of these). ` +
+          `Cutting the doubles is the fastest stroke back.`
+        );
+      }
+      if (vsPar > 0) {
+        return (
+          `${v.Your} tail is reasonable (${r1(agg.double_plus_rate)}% doubles, ${r1(agg.bogey_rate)}% bogeys); ` +
+          `the over-par average is mostly a birdie-conversion gap (only ${r1(agg.birdie_rate)}% birdies here).`
+        );
+      }
+      return (
+        `${v.Youre} at or under par here: ${r1(agg.birdie_rate)}% birdies, ${r1(agg.par_rate)}% pars, ` +
+        `${r1(agg.double_plus_rate)}% doubles.`
+      );
+    };
 
-    const content =
-      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause}` +
-      staleDataSuffix(agg.last_round_date);
+    const copy = inBothVoices((v) => ({
+      title,
+      content:
+        `Across ${v.players} last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
+        `${v.you} average ${valueDisp} on ${agg.holes_scored} par ${agg.par}s (${vsParDisp} vs par). ${driverClause(v)}` +
+        staleDataSuffix(agg.last_round_date),
+    }));
 
     return {
-      title,
-      content,
+      ...copy,
       priority: 'low',
       signature: `par_scoring:par${agg.par}`,
       evidence: {

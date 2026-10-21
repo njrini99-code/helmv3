@@ -72,6 +72,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 export const COMPASS_MIN_ROUNDS = 5;
 export const COMPASS_MIN_PER_SIDE = 12;
@@ -460,11 +461,13 @@ export function composeApproachCompass(agg: CompassAggregate): ComposedContent &
   };
   return {
     category: 'short_game',
-    title: `Recovering from ${worse} misses costs you more than from ${better} ones`,
-    content:
-      `When you miss the green ${worse}, finishing the hole costs ${wCost.toFixed(2)} strokes more than expected from where the ball finished, vs ${bCost.toFixed(2)} after a ${better} miss ` +
-      `(${w.costed} ${worse} and ${b.costed} ${better} misses; a diagonal miss counts on both axes). Up and down in 2 or fewer: ${udText(w)} vs ${udText(b)}. ` +
-      `If ${worse} misses cost what ${better} ones do, that is about ${ax.cost_per_round.toFixed(1)} strokes a round. ${coverageNote}`,
+    ...inBothVoices((v) => ({
+      title: `Recovering from ${worse} misses costs ${v.pick('you ', '')}more than from ${better} ones`,
+      content:
+        `When ${v.player} ${v.pick('miss', 'misses')} the green ${worse}, finishing the hole costs ${wCost.toFixed(2)} strokes more than expected from where the ball finished, vs ${bCost.toFixed(2)} after a ${better} miss ` +
+        `(${w.costed} ${worse} and ${b.costed} ${better} misses; a diagonal miss counts on both axes). Up and down in 2 or fewer: ${udText(w)} vs ${udText(b)}. ` +
+        `If ${worse} misses cost what ${better} ones do, that is about ${ax.cost_per_round.toFixed(1)} strokes a round. ${coverageNote}`,
+    })),
     priority: ax.cost_per_round >= 0.5 ? 'medium' : 'low',
     signature: `approach_miss_compass:${r.lead}:${worse}`,
     evidence,
