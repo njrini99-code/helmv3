@@ -33,6 +33,8 @@ import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
 import {
   PREVIEW_PLAYER,
+  PREVIEW_PLAYER_LOOPS,
+  PREVIEW_PLAYER_LOOPS_SELF,
   PREVIEW_PLAYER_EARLY,
   PREVIEW_PLAYER_FILTERED,
   PREVIEW_PLAYER_NINES,
@@ -350,6 +352,10 @@ export default async function ClubhousePreview({
           <StatsPlayer data={PREVIEW_PLAYER_NOMATCH} coachId="preview-coach" />
         ) : state === 'nines' ? (
           <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" />
+        ) : state === 'loops' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_LOOPS} coachId="preview-coach" />
+        ) : state === 'loops-self' ? (
+          <StatsPlayer data={PREVIEW_PLAYER_LOOPS_SELF} coachId={null} />
         ) : (
           <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} />
         ),
