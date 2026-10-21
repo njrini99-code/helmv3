@@ -28,6 +28,15 @@ Held items:     none
   the coach Pause, Resume and Abandon, which asks first (`GoalStatus`). The
   player has no controls, as on the Fairway goal card.
 
+### Fixed
+
+- A goal reads by its own metric. The profile loader now selects
+  `golf_goals.metric_id` and carries it on each goal (`metric`), and the
+  Development card and phone row format with it (`devMetric`, `goalLine`), so a
+  goal titled "Greens in regulation, 30-day goal" shows 62% and not 62. Goals
+  titled "Goal — <metric_id>" still resolve from the title when the column is
+  not a known metric. No migration.
+
 Not done here: a coach assigning a goal to a player (no Fairway screen does it
 either; `createGoal` and `createTeamGoal` support it). The Goals empty-state
 copy is draft PR #2281's.

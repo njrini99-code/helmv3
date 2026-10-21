@@ -572,7 +572,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                     baseline={g.baseline}
                     current={g.current}
                     target={g.target}
-                    metric={devMetric(g.title)}
+                    metric={devMetric(g.title, g.metric)}
                     done={done}
                     extra={<GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />}
                   />

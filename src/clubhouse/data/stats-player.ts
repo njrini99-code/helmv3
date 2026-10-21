@@ -187,7 +187,7 @@ export interface ChPlayerProfile {
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
   focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
-  goals: Array<{ id: string; title: string; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
+  goals: Array<{ id: string; title: string; metric: string | null; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
   /** The goals CoachHelm suggests to the player, newest first (the player's own view only; none for a coach). */
   goalSuggestions?: ChGoalSuggestion[];
   /** The suggestions read failed: they are missing, not absent. */
@@ -254,7 +254,7 @@ export async function loadPlayerProfile(input: {
   const goalsRead = Promise.resolve(
     supabase
       .from('golf_goals')
-      .select('id, title, state, current_value, target_value, baseline_value')
+      .select('id, title, metric_id, state, current_value, target_value, baseline_value')
       .eq('player_id', input.playerId)
       .order('created_at', { ascending: false })
       .limit(20),
@@ -596,6 +596,7 @@ export async function loadPlayerProfile(input: {
     goals: (goalsRes.data ?? []).map((g) => ({
       id: g.id,
       title: g.title,
+      metric: g.metric_id,
       state: g.state,
       current: g.current_value,
       target: g.target_value,

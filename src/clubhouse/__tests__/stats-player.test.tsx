@@ -929,6 +929,14 @@ describe('Stats player · the loader', () => {
     expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
   });
 
+  it('a goal carries its metric_id from golf_goals into the profile, so a human-titled goal still formats by its metric', async () => {
+    tables.current = profileTables({
+      golf_goals: { data: [{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric_id: 'gir_pct', state: 'active', current_value: 62, target_value: 70, baseline_value: 55 }] },
+    });
+    const profile = await loadAs();
+    expect(profile!.goals).toEqual([{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric: 'gir_pct', state: 'active', current: 62, target: 70, baseline: 55 }]);
+  });
+
   it('52301 CH-5203 focus areas and goals that fail to read are logged and flagged, never thrown', async () => {
     tables.current = profileTables({ golf_player_focus_areas: { error: { message: 'boom' } }, golf_goals: { error: { message: 'boom' } } });
     const profile = await loadAs();

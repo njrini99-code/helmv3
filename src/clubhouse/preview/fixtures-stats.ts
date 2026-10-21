@@ -610,7 +610,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     { id: 'f1', title: 'Approach 125–150 yds', baseline: 38, current: 35, target: 30, metric: 'approach_proximity', status: 'active' },
     { id: 'f2', title: 'Short putts', baseline: 55, current: 62, target: 75, metric: 'putts_made_3_5ft_pct', status: 'active' },
   ],
-  goals: [{ id: 'g1', title: 'Break 70 in competition', state: 'active', current: 72, target: 69, baseline: 74 }],
+  goals: [{ id: 'g1', title: 'Break 70 in competition', metric: null, state: 'active', current: 72, target: 69, baseline: 74 }],
   devError: false,
   nav: { index: 4, total: 7, prev: 'ava', next: 'eli' },
   roundsError: false,
