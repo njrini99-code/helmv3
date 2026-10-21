@@ -8346,7 +8346,7 @@
           "name": "--ch-hs-tone",
           "value": "var(--ch-green-fill-600)",
           "scope": ".ch-hs-r.is-ahead",
-          "line": 805
+          "line": 804
         }
       ]
     },
