@@ -118,6 +118,8 @@ so a job split/rename does not silently break protection.
     `Control plane`, `Bridge env drift`, `Edge functions (Deno)`,
     `Business contracts`, `Route Hygiene P0/P1` and `Import-cycle ratchet`
     jobs)
+  - `World Model` (since 2026-10-21, its own job: the World Model check took
+    110-342 s inside `Static checks` and now runs beside it)
   - `TypeScript`
   - `Lint` (ESLint plus the former `Lint ratchet` steps)
   - `Unit tests`
