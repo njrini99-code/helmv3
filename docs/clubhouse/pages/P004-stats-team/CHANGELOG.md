@@ -1,5 +1,34 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
+
+```text
+Design package: none (owner, 2026-10-21: "these sliders are hard to read")
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none
+Actions:        none
+Data impact:    none (each grid row gains `last`, the newest scored round in the
+                window, from the rounds the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Each leg cell draws a bar from a strong zero line to the player's value on the
+  grid's one scale (loss left in amber, gain right in green), with a 2px tick at
+  the team median, in place of the 4px dot on a hairline. A key above the grid
+  names the bars, the tick and the scale ("Full bar is ±N strokes"). Contrast is
+  computed from the tokens by a test: bars, zero line and tick hold 3:1 and the
+  numbers 4.5:1 on the cell, the chosen column, the worst-loss wash and both,
+  light and dark.
+- The player hover card on the grid read "Last round —" for every player: the
+  grid rows never carried a last round. They now do, and the card shows it.
+- On the grid the hover card opens under the player's name cell, 288px wide
+  (`within` on `PlayerPeek`), so it no longer covers the numbers or bars beside
+  it. Other peeks are unchanged.
+- Preview: `/clubhouse-preview/stats?state=demo` shows the Demo University
+  fixture.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text

@@ -41,6 +41,7 @@ export const PEEK_FOCUS_MS = 600;
 const SLOP_PX = 8;
 const HOVER_GRACE_MS = 160;
 const CARD_W = 328;
+const FIT_MIN_W = 288;
 
 type Mode = { kind: 'press' | 'hover'; rect: DOMRect } | null;
 
@@ -49,10 +50,16 @@ export function PeekTarget({
   card,
   actions = [],
   disabled = false,
+  within,
   children,
 }: {
   /** Names the card for VoiceOver ("Theo Marchetti"). */
   label: string;
+  /**
+   * A selector for the closest ancestor the hover card stays under (for a table's name cell: '[role="cell"]'). The
+   * card then opens below that box, no wider than it (never under 288px), so it can't cover the figures beside it.
+   */
+  within?: string;
   /** Drawn only while open. */
   card: () => ReactNode;
   actions?: PeekAction[];
@@ -72,15 +79,21 @@ export function PeekTarget({
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   };
-  const anchor = (): DOMRect | null => {
+  const anchorEl = useCallback((): HTMLElement | null => {
     const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
-    return el ? el.getBoundingClientRect() : null;
-  };
-  const open = useCallback((kind: 'press' | 'hover') => {
-    const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
-    if (!el) return;
-    setMode({ kind, rect: el.getBoundingClientRect() });
-  }, []);
+    return el && within ? (el.closest(within) as HTMLElement | null) ?? el : el;
+  }, [within]);
+  const anchor = useCallback((): DOMRect | null => anchorEl()?.getBoundingClientRect() ?? null, [anchorEl]);
+  const open = useCallback(
+    (kind: 'press' | 'hover') => {
+      const el = (wrap.current?.firstElementChild as HTMLElement | null) ?? null;
+      if (!el) return;
+      // The press sheet keeps the target's own box; only the hover card follows `within`.
+      const box = kind === 'hover' ? anchorEl() ?? el : el;
+      setMode({ kind, rect: box.getBoundingClientRect() });
+    },
+    [anchorEl],
+  );
   const close = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
     setMode(null);
@@ -119,7 +132,7 @@ export function PeekTarget({
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll', onScroll, true);
     };
-  }, [openedAt, close]);
+  }, [openedAt, close, anchor]);
 
   const handlers = disabled
     ? {}
@@ -190,7 +203,7 @@ export function PeekTarget({
         {children}
       </span>
       {mode?.kind === 'hover' && (
-        <HoverCard id={cardId} label={label} rect={mode.rect} actions={shown} onEnter={holdHover} onLeave={leaveHover} onClose={close}>
+        <HoverCard id={cardId} label={label} rect={mode.rect} fit={!!within} actions={shown} onEnter={holdHover} onLeave={leaveHover} onClose={close}>
           {card()}
         </HoverCard>
       )}
@@ -228,6 +241,7 @@ function HoverCard({
   id,
   label,
   rect,
+  fit,
   actions,
   onEnter,
   onLeave,
@@ -237,6 +251,8 @@ function HoverCard({
   id: string;
   label: string;
   rect: DOMRect;
+  /** The card is held to the anchor's width instead of its usual 328px. */
+  fit: boolean;
   actions: PeekAction[];
   onEnter: () => void;
   onLeave: () => void;
@@ -246,13 +262,14 @@ function HoverCard({
   const card = useRef<HTMLDivElement>(null);
   const reduced = useChReducedMotion();
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  const w = fit ? Math.min(CARD_W, Math.max(FIT_MIN_W, rect.width)) : CARD_W;
   useLayoutEffect(() => {
     const h = card.current?.offsetHeight ?? 200;
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - CARD_W - 8));
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - w - 8));
     const below = rect.bottom + 8;
     const top = below + h > window.innerHeight - 8 ? Math.max(8, rect.top - 8 - h) : below;
     setPos({ left, top });
-  }, [rect]);
+  }, [rect, w]);
   if (typeof document === 'undefined') return null;
   return createPortal(
     <m.div
@@ -260,10 +277,10 @@ function HoverCard({
       id={id}
       data-ui="clubhouse"
       data-ch-code="CH-1831"
-      className="ch-hovercard"
+      className={fit ? 'ch-hovercard ch-hovercard--fit' : 'ch-hovercard'}
       role="dialog"
       aria-label={label}
-      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: CARD_W }}
+      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: w }}
       initial={reduced ? false : { opacity: 0, transform: 'translate(0px, 4px)' }}
       animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
       transition={reduced ? { duration: 0 } : chTween('quick')}

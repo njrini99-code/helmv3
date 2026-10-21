@@ -705,6 +705,11 @@ function LegGrid({
   const scale = sgScale(data.grid.flatMap((g) => g.legs));
   const medians = LEGS_LIST.map((_, i) => median(data.grid.map((g) => g.legs[i] ?? null)));
   const at = (v: number) => `${Math.max(0, Math.min(100, 50 + (v / scale) * 50)).toFixed(1)}%`;
+  // The bar runs from the zero line to the value: right of it for a gain, left for a loss, one scale for every cell.
+  const bar = (v: number): { left: string; width: string } => {
+    const w = Math.min(50, (Math.abs(v) / scale) * 50);
+    return { left: v >= 0 ? '50%' : `${(50 - w).toFixed(1)}%`, width: `${w.toFixed(1)}%` };
+  };
   return (
     <section className="ch-lg">
       <div className="ch-sgt__head">
@@ -714,6 +719,13 @@ function LegGrid({
             Strokes gained per round by leg &middot; {gridBasis(data.filter)} &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}
           </span>
         </div>
+        {/* The key for the bars: which way is which, what the tick is, and what a full bar is. */}
+        <p className="ch-lg__key">
+          <span><i className="ch-lg__k ch-lg__k--loss" aria-hidden="true" />Loses strokes</span>
+          <span><i className="ch-lg__k ch-lg__k--gain" aria-hidden="true" />Gains strokes</span>
+          <span><i className="ch-lg__k ch-lg__k--med" aria-hidden="true" />Team median</span>
+          <span className="ch-num">Full bar is &plusmn;{scale} strokes</span>
+        </p>
       </div>
       {rows.length === 0 ? (
         <EmptyState code="CH-4305" compact title="No player rounds in this window." />
@@ -746,7 +758,7 @@ function LegGrid({
                   <Avatar name={g.name} size={30} />
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
-                    <PlayerPeek player={gridPeek(g)}>
+                    <PlayerPeek player={gridPeek(g)} within="[role=cell]">
                       <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
                         <b>{g.name}</b>
                         <LinkPending />
@@ -763,8 +775,8 @@ function LegGrid({
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
+                        {v != null && <i className={'ch-lg__bar ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={bar(v)} />}
                         {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
-                        {v != null && <i className={'ch-lg__dot ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ left: at(v) }} />}
                       </span>
                     </span>
                   );

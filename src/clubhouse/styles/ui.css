@@ -1288,6 +1288,14 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-hovercard__act svg {
   color: var(--ch-text-secondary);
 }
+/* Held to a table's name cell (the leg grid): the three keys stay on one row at 288px. */
+.ch-hovercard--fit {
+  padding: 12px;
+}
+.ch-hovercard--fit .ch-hovercard__act {
+  gap: 4px;
+  padding: 0 4px;
+}
 :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
   background: rgb(0 0 0 / 0.5);
 }

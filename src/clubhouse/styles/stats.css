@@ -766,11 +766,12 @@
   color: var(--ch-green-700);
 }
 /* P004-A1: the grid is a ruled ledger. A cell is its signed number, right-aligned in tabular figures and coloured only
-   by sign, over a hairline track: a short tick at the team's median for the leg and a dot at the player's value. The
-   chosen leg is a 2px column rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash. */
+   by sign, over a diverging bar: a strong zero line in the middle, a bar from it to the player's value on one shared
+   scale (the key says what a full bar is), and a 2px tick at the team's median for the leg. The chosen leg is a 2px
+   column rule and a 4% wash; the worst losing leg in a row keeps an 8% amber wash. */
 .ch-lg__cell {
   display: grid;
-  grid-template-rows: auto 6px;
+  grid-template-rows: auto 10px;
   align-content: center;
   gap: 5px;
   align-self: stretch;
@@ -792,30 +793,77 @@
 }
 .ch-lg__track {
   position: relative;
-  height: 6px;
-  background: linear-gradient(var(--ch-ledger-rule-soft), var(--ch-ledger-rule-soft)) center / 100% 1px no-repeat;
+  height: 10px;
+  background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) center / 100% 1px no-repeat;
 }
 .ch-lg__track i {
   position: absolute;
-  translate: -50% 0;
 }
-.ch-lg__med {
+/* The zero line: a strong 1px stroke the full height of the track, the one place every bar starts from. */
+.ch-lg__track::before {
+  position: absolute;
   top: 0;
+  left: 50%;
   width: 1px;
+  height: 10px;
+  background: var(--ch-ink-600);
+  content: '';
+}
+/* A bar from zero to the player's value: 6px tall, at least 2px wide so a value near zero still shows. */
+.ch-lg__bar {
+  top: 2px;
   height: 6px;
-  background: var(--ch-ink-500);
+  min-width: 2px;
+  border-radius: 1px;
 }
-.ch-lg__dot {
-  top: 1px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-}
-.ch-lg__dot.is-gain {
+.ch-lg__bar.is-gain {
   background: var(--ch-chart-gain);
 }
-.ch-lg__dot.is-loss {
+.ch-lg__bar.is-loss {
   background: var(--ch-chart-loss);
+}
+/* The team median for the leg: a 2px tick taller than the bar, with a halo so it reads where it crosses one. */
+.ch-lg__med {
+  top: 0;
+  width: 2px;
+  height: 10px;
+  translate: -50% 0;
+  background: var(--ch-ink-700);
+  box-shadow: 0 0 0 1px var(--ch-ivory-25);
+}
+/* The key under the title: which way a bar goes, what the tick is, what a full bar is. */
+.ch-lg__key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin: 0;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-lg__key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-lg__k {
+  display: inline-block;
+  width: 14px;
+  height: 6px;
+  border-radius: 1px;
+}
+.ch-lg__k--gain {
+  background: var(--ch-chart-gain);
+}
+.ch-lg__k--loss {
+  background: var(--ch-chart-loss);
+}
+.ch-lg__k--med {
+  width: 2px;
+  height: 10px;
+  border-radius: 0;
+  background: var(--ch-ink-700);
 }
 .ch-lg__tot {
   font: 600 15px/1 var(--ch-font-sans);
