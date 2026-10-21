@@ -36,6 +36,7 @@ import {
   type RecheckRecord,
 } from '@/lib/coachhelm/v3/engine/recent-recheck';
 import { isRecheckEnabled } from './flag';
+import { loadCanaryPlayerTeams, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { isMissingSchemaError } from './schema-missing';
 import {
   anyCheckpoint,
@@ -123,7 +124,14 @@ export async function runCheckpointLifecycle(
   supabase: AnyClient,
   opts: { now?: Date; timeBudgetMs?: number; maxPlayers?: number } = {},
 ): Promise<LifecycleRunResult> {
-  if (!isRecheckEnabled()) return emptyResult(false, false);
+  // HELM_COACHHELM_TEAMS canary: with a team list the job runs for the
+  // players on a listed team only, each in its teams' scope. Unset: null, no
+  // read, and the flag alone decides as before.
+  const canaryTeams = await loadCanaryPlayerTeams(supabase);
+  const enabled = canaryTeams
+    ? [...canaryTeams.values()].some((teams) => runWithCoachHelmTeams(teams, isRecheckEnabled))
+    : isRecheckEnabled();
+  if (!enabled) return emptyResult(false, false);
 
   const now = opts.now ?? new Date();
   const nowIso = now.toISOString();
@@ -148,7 +156,7 @@ export async function runCheckpointLifecycle(
     list.push(r);
     byPlayer.set(r.player_id, list);
   }
-  const playerIds = [...byPlayer.keys()];
+  const playerIds = [...byPlayer.keys()].filter((id) => !canaryTeams || canaryTeams.has(id));
   const states = await loadStates(supabase, playerIds);
   // Least recently processed first, so a truncated run rotates fairly.
   playerIds.sort((a, b) => (states.get(a)?.updated_at ?? '').localeCompare(states.get(b)?.updated_at ?? '') || a.localeCompare(b));
@@ -164,7 +172,10 @@ export async function runCheckpointLifecycle(
     }
     result.players += 1;
     try {
-      await processPlayer(supabase, playerId, byPlayer.get(playerId) ?? [], states.get(playerId) ?? null, corrections.rows, now, result);
+      const step = () =>
+        processPlayer(supabase, playerId, byPlayer.get(playerId) ?? [], states.get(playerId) ?? null, corrections.rows, now, result);
+      const teams = canaryTeams?.get(playerId);
+      await (teams ? runWithCoachHelmTeams(teams, step) : step());
     } catch (err) {
       result.failed += 1;
       await logServerError(

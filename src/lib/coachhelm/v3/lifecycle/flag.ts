@@ -3,11 +3,11 @@
  * Kept in its own module so the lifecycle cron and the insight upsert can
  * check it without importing the lifecycle job.
  */
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 
 export const RECHECK_FLAG = 'coachhelm_recheck_v1';
 
 /** True when checkpoints, recheck, pairing and round-based archiving run. */
 export function isRecheckEnabled(): boolean {
-  return isFlagEnabled(RECHECK_FLAG);
+  return isCoachHelmFlagEnabled(RECHECK_FLAG);
 }

@@ -3,11 +3,11 @@
  * Its own module so the support pass can check it without importing the
  * team pool loader.
  */
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 
 /** Off until the owner turns it on. */
 export const TEAM_POOL_FLAG = 'coachhelm_team_pool_v1';
 
 export function teamPoolEnabled(): boolean {
-  return isFlagEnabled(TEAM_POOL_FLAG);
+  return isCoachHelmFlagEnabled(TEAM_POOL_FLAG);
 }

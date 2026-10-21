@@ -75,6 +75,25 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- One-team canary (`src/lib/coachhelm/canary.ts`, env `HELM_COACHHELM_TEAMS`,
+  2026-10-21): the v3 flags `coachhelm_reads_v1_copy`,
+  `coachhelm_data_gap_prompt_v1`, `coachhelm_corrections_v1`,
+  `coachhelm_recheck_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
+  `coachhelm_verdicts_v1`, `coachhelm_root_cause_diagnosis` and
+  `coachhelm_insight_angles_v1` are read through `isCoachHelmFlagEnabled`. Unset, empty or `*`: the global flag
+  decides, exactly as before, and no team is read. To run a wave on one team,
+  set `HELM_COACHHELM_TEAMS=<golf_teams id>` in Vercel production, redeploy,
+  then turn the wave's flag on: it is on only inside a team scope that holds
+  that team. Scopes are set by `analyzePlayer` (generators, support pass,
+  upserts), the player feed reads in `insight-delivery.ts`
+  (`getInsightsForPlayer`, `getTopInsightForPlayer`,
+  `getRoundTakeawayInsight`), the coach chat read tools (the chat's team), the
+  shot-entry ask loader, and the lifecycle cron (checkpoint job per player and
+  the scan's round-based archive rule). Anything outside a scope (coach feeds,
+  multi-player reads, the verdict job, the coach corrections action) reads the
+  flag as off during a canary, which is today's production state. A team read
+  that fails also reads as off. To widen, add ids; to finish, unset the
+  variable. Never used for auth, RLS or `golf_clubhouse_ui`.
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
   player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the

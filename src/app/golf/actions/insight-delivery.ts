@@ -54,7 +54,7 @@ import {
 } from './insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG, type FoldedRead, type ReadsDeliveryPlan } from './insight-delivery-reads';
 import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled, withPlayerCoachHelmTeams } from '@/lib/coachhelm/canary';
 import {
   V3_ENGINE_FILTER,
   VISIBLE_LIFECYCLE_STATES,
@@ -382,7 +382,7 @@ async function readsDeliveryPlan(
   playerIds: readonly string[],
   includeMore = false,
 ): Promise<ReadsDeliveryPlan> {
-  if (!isFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
+  if (!isCoachHelmFlagEnabled(READS_V1_FLAG)) return { fold: false, cap: false };
   // null: the focus-area read failed (logged by the loader). Fold without
   // pins rather than not at all; a read behind a focus could then fold, as it
   // did before the pin rule, and nothing else changes.
@@ -594,7 +594,10 @@ export async function getTopInsightForPlayer(
   playerId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight | null> {
-  return observedGetTopInsightForPlayer(playerId, supabaseOverride);
+  // HELM_COACHHELM_TEAMS canary: the player's team scope (no read when unset).
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetTopInsightForPlayer(playerId, supabaseOverride),
+  );
 }
 
 /**
@@ -801,7 +804,9 @@ export async function getInsightsForPlayer(
   opts: GetInsightsForPlayerOptions = {},
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight[]> {
-  return observedGetInsightsForPlayer(playerId, opts, supabaseOverride);
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetInsightsForPlayer(playerId, opts, supabaseOverride),
+  );
 }
 
 /**
@@ -1359,7 +1364,9 @@ export async function getRoundTakeawayInsight(
   roundId: string,
   supabaseOverride?: SupabaseClient,
 ): Promise<EvidenceInsight | null> {
-  return observedGetRoundTakeawayInsight(playerId, roundId, supabaseOverride);
+  return withPlayerCoachHelmTeams(playerId, () => supabaseOverride ?? createClient(), () =>
+    observedGetRoundTakeawayInsight(playerId, roundId, supabaseOverride),
+  );
 }
 
 // ---------------------------------------------------------------------------
