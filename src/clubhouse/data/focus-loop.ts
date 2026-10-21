@@ -7,7 +7,6 @@ import { accumulatePostWindow, type PostRound } from '@/lib/coachhelm/v3/verdict
 import { loadCache, loadPutts, loadRounds } from '@/lib/coachhelm/v3/verdicts/verdict-job';
 import type { RoundCacheCountColumn } from '@/lib/coachhelm/v3/verdicts/metrics';
 import type { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { chLogServer } from '../lib/track-server';
 import type { ChViewer } from './coachhelm-voice';
 import { focusLoopOf, focusMetricOf, horizonAttempts, type ChFocusLoop, type ChFocusLoopRow, type ChFocusPost } from './focus-loop-shape';
@@ -27,7 +26,7 @@ export async function loadFocusLoops(supabase: Supabase, playerId: string, areaI
   const out = new Map<string, ChFocusLoop>();
   if (!isFlagEnabled(VERDICTS_FLAG) || areaIds.length === 0) return out;
   try {
-    const res = (await fromUntyped(supabase, 'golf_player_focus_areas').select(COLUMNS).in('id', [...areaIds])) as {
+    const res = (await supabase.from('golf_player_focus_areas').select(COLUMNS).in('id', [...areaIds])) as {
       data: ChFocusLoopRow[] | null;
       error: { code?: string; message?: string } | null;
     };
