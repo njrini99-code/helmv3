@@ -15,11 +15,12 @@ shell's `overdueTasks` (a coach's overdue tasks with open work, read once by
 
 ## 2026-10-21 — Stronger rule token; players get a Tasks tab in Team Hub
 
-`--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both high-contrast
-sets) is a hairline at 1.8:1 against the workspace, for lines that divide a
-page's sections where the plain rule (1.2:1) lets the page read flat. It is
-decorative, not a 3:1 boundary. Team Hub uses it first (P010). `HUB_TABS.player`
-now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks` opens for a player.
+`--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both
+high-contrast sets) is a hairline at 1.8:1 against the workspace, for lines
+that divide a page's sections where the plain rule (1.2:1) lets the page read
+flat. It is decorative, not a 3:1 boundary. Team Hub uses it first (P010).
+`HUB_TABS.player` now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks`
+opens for a player.
 
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 
