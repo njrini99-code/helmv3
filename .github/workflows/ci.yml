@@ -664,6 +664,20 @@ jobs:
         continue-on-error: true
         run: npm run lint:duplicate-exports
 
+      # Escape-hatch counts that may only go down (plan phase 7b): `fromUntyped`
+      # imports and explicit `any`, and test files under src/test/** (new tests
+      # go in __tests__/ next to the code). Both read the working tree; no ESLint
+      # run, so they cost seconds.
+      - name: Type escape hatches (ratchet)
+        id: ratchet_any
+        continue-on-error: true
+        run: npm run lint:any-ratchet
+
+      - name: Test location (ratchet)
+        id: ratchet_test_location
+        continue-on-error: true
+        run: npm run lint:test-location
+
       # scripts/ is covered by the shared scan and the ratchet above. This is
       # the rest of what `npm run lint` covers locally (plan 4.10).
       - name: ESLint (e2e, hooks, edge functions)
@@ -874,6 +888,9 @@ jobs:
 
       - name: Build
         if: steps.gate.outputs.run == 'true'
+        env:
+          # The 8 GB workflow-level cap ran out of heap on a 16 GB runner (PR #2246, #2239).
+          NODE_OPTIONS: --max-old-space-size=12288
         run: |
           (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
           sampler=$!

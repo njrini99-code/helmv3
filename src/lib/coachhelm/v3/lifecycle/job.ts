@@ -18,6 +18,7 @@
  * written.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
@@ -52,8 +53,7 @@ import { planPlayer, type PlayerPlanCounts, type ReadPatch } from './plan';
 import { CONTRADICTION_RESOLVED_BY, LIVE_STATES, type CorrectionRow, type LifecycleReadRow } from './types';
 import { RECHECK_RESOLVED_BY } from '@/lib/coachhelm/v3/engine/recent-recheck';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyClient = SupabaseClient<any, any, any>;
+type Client = SupabaseClient<Database>;
 
 export const STATE_TABLE = 'golf_coachhelm_player_state';
 export const CORRECTIONS_TABLE = 'golf_coachhelm_corrections';
@@ -120,7 +120,7 @@ interface RoundRow extends CountableRoundInput {
 interface ShotRow extends CheckpointShot, LinkShot {}
 
 export async function runCheckpointLifecycle(
-  supabase: AnyClient,
+  supabase: Client,
   opts: { now?: Date; timeBudgetMs?: number; maxPlayers?: number } = {},
 ): Promise<LifecycleRunResult> {
   if (!isRecheckEnabled()) return emptyResult(false, false);
@@ -131,9 +131,7 @@ export async function runCheckpointLifecycle(
   const budget = opts.timeBudgetMs ?? DEFAULT_TIME_BUDGET_MS;
 
   // Probe: the table may not be applied yet.
-  const probe = (await fromUntyped(supabase, STATE_TABLE).select('player_id').limit(1)) as {
-    error: { message: string; code?: string | null } | null;
-  };
+  const probe = await supabase.from(STATE_TABLE).select('player_id').limit(1);
   if (probe.error) {
     if (isMissingSchemaError(probe.error)) return emptyResult(true, false);
     throw new Error(`lifecycle state probe failed: ${probe.error.message}`);
@@ -187,7 +185,7 @@ export async function runCheckpointLifecycle(
   return result;
 }
 
-async function loadReads(supabase: AnyClient): Promise<LifecycleReadRow[]> {
+async function loadReads(supabase: Client): Promise<LifecycleReadRow[]> {
   const live = await fetchAllRowsResult<LifecycleReadRow>((from, to) =>
     fromUntyped(supabase, 'golf_coach_insights')
       .select(READ_COLUMNS)
@@ -210,12 +208,13 @@ async function loadReads(supabase: AnyClient): Promise<LifecycleReadRow[]> {
   return [...(live.data ?? []), ...(retired.data ?? [])];
 }
 
-async function loadStates(supabase: AnyClient, playerIds: readonly string[]): Promise<Map<string, StateRow>> {
+async function loadStates(supabase: Client, playerIds: readonly string[]): Promise<Map<string, StateRow>> {
   const out = new Map<string, StateRow>();
   for (const ids of chunks(playerIds)) {
-    const { data, error } = (await fromUntyped(supabase, STATE_TABLE)
+    const { data, error } = await supabase
+      .from(STATE_TABLE)
       .select('player_id, last_checkpoint_round_id, last_checkpoint_at, checkpoint_count, rounds_since, attempts_since, updated_at')
-      .in('player_id', ids)) as { data: StateRow[] | null; error: { message: string } | null };
+      .in('player_id', ids);
     if (error) throw new Error(`lifecycle state query failed: ${error.message}`);
     for (const row of data ?? []) out.set(row.player_id, row);
   }
@@ -223,7 +222,7 @@ async function loadStates(supabase: AnyClient, playerIds: readonly string[]): Pr
 }
 
 async function loadCorrections(
-  supabase: AnyClient,
+  supabase: Client,
   insightIds: readonly string[],
 ): Promise<{ available: boolean; rows: CorrectionRow[] }> {
   const rows: CorrectionRow[] = [];
@@ -253,7 +252,7 @@ function toState(row: StateRow | null): PlayerCheckpointState | null {
 }
 
 async function processPlayer(
-  supabase: AnyClient,
+  supabase: Client,
   playerId: string,
   reads: readonly LifecycleReadRow[],
   stateRow: StateRow | null,
@@ -353,7 +352,7 @@ async function processPlayer(
   // State last: a failed patch above throws before the counter moves, so the
   // checkpoint is re-evaluated tomorrow rather than lost.
   const next = decision.next;
-  const { error: stateErr } = (await fromUntyped(supabase, STATE_TABLE).upsert(
+  const { error: stateErr } = await supabase.from(STATE_TABLE).upsert(
     {
       player_id: playerId,
       last_checkpoint_round_id: next.last_checkpoint_round_id,
@@ -364,11 +363,11 @@ async function processPlayer(
       updated_at: nowIso,
     },
     { onConflict: 'player_id' },
-  )) as { error: { message: string } | null };
+  );
   if (stateErr) throw new Error(`state upsert failed: ${stateErr.message}`);
 }
 
-async function loadShots(supabase: AnyClient, roundIds: readonly string[]): Promise<ShotRow[]> {
+async function loadShots(supabase: Client, roundIds: readonly string[]): Promise<ShotRow[]> {
   const out: ShotRow[] = [];
   for (const ids of chunks(roundIds)) {
     const { data, error } = await fetchAllRowsResult<ShotRow>((from, to) =>
@@ -386,7 +385,7 @@ async function loadShots(supabase: AnyClient, roundIds: readonly string[]): Prom
   return out;
 }
 
-async function loadHoles(supabase: AnyClient, roundIds: readonly string[]): Promise<RecentHole[]> {
+async function loadHoles(supabase: Client, roundIds: readonly string[]): Promise<RecentHole[]> {
   const out: RecentHole[] = [];
   for (const ids of chunks(roundIds)) {
     const { data, error } = await fetchAllRowsResult<RecentHole & { id: string }>((from, to) =>
@@ -403,7 +402,7 @@ async function loadHoles(supabase: AnyClient, roundIds: readonly string[]): Prom
 }
 
 /** Compare-and-set on the observed lifecycle and update time. */
-async function writePatch(supabase: AnyClient, patch: ReadPatch, nowIso: string): Promise<boolean> {
+async function writePatch(supabase: Client, patch: ReadPatch, nowIso: string): Promise<boolean> {
   const payload: Record<string, unknown> = { metadata: patch.metadata, updated_at: nowIso };
   if (patch.evidence) payload.evidence = patch.evidence;
   if (patch.lifecycle_state) payload.lifecycle_state = patch.lifecycle_state;

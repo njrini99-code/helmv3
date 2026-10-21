@@ -29,7 +29,7 @@ It depends on Team Operations, Calendar, and Team Communications. Because it agg
 
 ### Routes
 
-- `src/app/golf/(dashboard)/dashboard/hub/page.tsx`
+- `next.config.mjs` `redirects()`: `/golf/dashboard/hub` to `/golf/dashboard` (the stub page was deleted in plan phase 7b)
 
 ### Components
 

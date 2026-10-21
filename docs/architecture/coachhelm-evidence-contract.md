@@ -2138,6 +2138,30 @@ tell a likely cause from a not-traced one.
   sign of `your_value − comparison_value` declare `ComposedContent.framing`
   (`tee-strategy`, `putt-bias`, `pressure-gap`, `warmup-hole`); the others
   fall back to comparing the two values by polarity.
+
+## The one-tap data-gap prompt (supercharge Slice 8a, 2026-10-20)
+
+Behind `coachhelm_data_gap_prompt_v1` (OFF). It reads `evidence.data_gap`;
+it writes nothing new to a read. With the flag off the round entry pages
+read nothing extra and shot entry is unchanged.
+
+- **What is asked.** Only `field: 'miss_direction'` with the putt filter
+  Slice 2 writes, `{ shot_type: 'putting', first_putt: true, distance_feet:
+  [min, max), holed: false }` (`max` null is open). Other gaps (the putt
+  leave, approach and tee misses) are not asked; the tee `other` lie and the
+  club chip wait for data that does not exist yet.
+- **Matching.** `matchesGap` in `src/lib/coachhelm/data-gap/asks.ts`: the
+  hole's first non-penalty putt, its distance before in feet from its own
+  unit, inside the band, not holed. An unknown filter key never matches.
+- **Counter.** `target_count` counts the NEXT failures that must be tagged,
+  so progress is the matching failures already tagged in rounds dated after
+  the read's `window_end` (`loadDataGapAsks`, newest 20 rounds) plus the
+  taps in this entry session: "4 of 10 for your 5–10 ft putt read". The row
+  disappears at the target; the read is rechecked at the next engine run.
+- **Write.** One tap sets that putt's `puttMissTags` and `miss_direction`
+  (the same values the optional miss chips write) through the round's own
+  autosave, so it is offline-safe and retried like any shot. No new column,
+  table or migration.
 - **`evidence.coach_copy`** (title and content in a coach's third-person
   voice) is typed and stamped from `ComposedContent.coach`; no generator sets
   it yet.
@@ -2509,3 +2533,55 @@ Slice 4's verdicts now import `KAPPA`, `shrinkToward` and `keptShare` from
 The formula is the same one-sample shrink (`(n·y + κ·μ)/(n + κ)`), so every
 verdict number is unchanged (04 Example 11: 18 of 31 shrinks to 0.635 at
 κ 30).
+
+## Counted families (Slice 5b, 2026-10-21)
+
+Behind `coachhelm_insight_angles_v1` (off). With the flag off nothing
+below runs and the legacy generators and composites are unchanged.
+
+Each family's contract (`ANGLE_FAMILIES`):
+
+- `par3_tee` writes `par3_tee_sg_per_shot`: tee shots, floor 20 over 4+
+  rounds, mean gap, `sg_baseline` impact, team pool, capped at observed.
+- `approach_sg_50_125`, `approach_sg_125_175` and `approach_sg_175_plus`
+  write `approach_sg_per_shot_<band>`: approaches, floor 20 over 4+ rounds,
+  mean gap, `sg_baseline` impact, team pool, capped at seen repeatedly.
+- `lag_leave` writes `lag_leave_inside_5ft_pct`: putts, floor 20 over 3+
+  rounds, proportion gap, `rough_estimate` impact, team pool, capped at
+  likely.
+- `under_reading` writes `putt_break_low_side_miss_pct`: putts, floor 20
+  over 3+ rounds, proportion gap, `unsized` impact, an even split (50%) as
+  the benchmark, capped at observed.
+
+- **Per-attempt SG.** A shot's SG (the `shotSgForRound` port) plus the
+  penalty rows that follow it, and for a par-3 tee shot any re-tee. A
+  par-3 tee shot is the hole's first shot, from the tee, on a par 3. The
+  approach bands drop every `lie_before = 'tee'` row, so the two families
+  never share a shot.
+- **Team pool** (`counted-shots.ts`, `poolTeammates`). Teammates on the
+  player's primary team with 3+ countable rounds, newest 40 rounds each,
+  read once per call (`AngleLoaders.teamShots`). The pool needs 5+
+  teammates and 100+ pooled attempts, never includes the player, and is
+  priced at the player's SG scale. Below the floors there is no comparison
+  and no row; there is no Tour fallback (a Tour line is printed beside the
+  team line where one exists, as context).
+- **Test.** `detail.gap_input` is a `mean` with the Welch SE of the
+  player-minus-pool difference (SG families) or a `proportion` against the
+  pooled rate (lag leave) or 0.5 (under-reading). Rows need one-sided
+  z ≥ 1.645 and, where sized, 0.3+ strokes a round.
+- **Stability.** SG rows write `evidence.stability.split_half` (older and
+  newer half of the rounds, positive = worse) for the support pass.
+- **Lag leave** strokes = gap × lag putts per 18 × the three-putt rate
+  difference between leaves outside and inside 5 ft (the player's own when
+  each side has 10+ putts, else the team's), so it is `estimated: true`.
+  The three-putt chain prints the lag line and stores `detail.lag_leave`.
+- **Under-reading** writes nothing unless side-tagged misses are 60%+ of
+  breaking-putt misses and 20+. `strokes_impact` is 0 with
+  `peer_delta`, which the support pass reads as no estimate.
+- **Composites** (`ctx.counted_families`, flag on): C6 lag-to-3-putt needs
+  a `three_putts_per_18` row above its benchmark and a `lag_leave` row
+  below the team (metric `three_putt_lag_chain`, not estimated); C8 needs
+  the 50-125 yd SG row below the team plus weak scrambling (metric
+  `short_approach_sg_scramble_chain`, `team_avg`, no 22 ft target). No
+  composite is `urgent` (`compositeRulePriority` maps it to `high`). C4
+  flyer lie is deleted in every mode (it never fired); 8 rules remain.

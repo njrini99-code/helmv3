@@ -12,6 +12,8 @@ import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
+import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, partitionInsights, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
 import { tourForGender } from './stats-common';
@@ -418,7 +420,12 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
     return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo });
   }
 
-  const [drills, proposals, assigned, newest] = await Promise.all([
+  // The engine's states, each behind its flag (surfaces A): with every flag off `shaped.kept` is `drawn` and nothing is added.
+  const flags = readEngineFlags();
+  const now = new Date().toISOString();
+  const viewer = { role: 'player' } as const;
+  const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
+  const [drills, proposals, assigned, newest, focus] = await Promise.all([
     drillTextByInsight(supabase, drawn),
     proposalsOf(feed),
     assignedByInsight(
@@ -426,14 +433,28 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
       drawn.map((i) => i.id),
     ),
     newestRounds(supabase, [input.playerId], earliestStaleFloor(drawn)),
+    readFocusVerdicts(
+      supabase,
+      shaped.kept.map((i) => i.id),
+      flags.verdicts,
+    ),
   ]);
   const newestRound = newest.days.get(input.playerId) ?? null;
-  const list = drawn.map((i) => toChInsight(i, { drillText: drills.texts.get(i.id) ?? null, assigned: assigned.byInsight.get(i.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } }));
+  const list = shaped.kept.map((i) =>
+    toChInsight(i, {
+      drillText: drills.texts.get(i.id) ?? null,
+      assigned: assigned.byInsight.get(i.id) ?? null,
+      tour: team.tour,
+      newestRound,
+      viewer,
+      engine: { flags, lifecycle: shaped.byId.get(i.id) ?? null, focus: focus.get(i.id) ?? null, now },
+    }),
+  );
   // A read beside the cards that failed leaves them drawn without it, and the board says so (never "not assigned", "not out of date").
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
   const board = partitionInsights(list);
   const shown = [board.focus, ...board.also, ...board.working].flatMap((i) => (i ? [i.id] : []));
-  return done({ off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}) }, shown);
+  return done({ off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) }, shown);
 }
 
 /**
@@ -529,6 +550,15 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     teamPatternsOf(supabase, input.teamId, roster, visible.rows),
   ]);
   const tour = tourResult.baseline;
+  // The engine's states on each player's one card, each behind its flag (surfaces A). The lifecycle shapes each player's visible
+  // reads, so a Contradicted pair finds its other read and the Cleared ones are listed under the card.
+  const flags = readEngineFlags();
+  const now = new Date().toISOString();
+  const focus = await readFocusVerdicts(
+    supabase,
+    top.map((i) => i.id),
+    flags.verdicts,
+  );
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
   // newest round are not signals, and a player whose top card is one of those has none (the old floor of one counted them).
   const counts = new Map<string, number>();
@@ -539,6 +569,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     const head = heads.get(p.id)?.[0];
     if (!head) continue;
     const newestRound = newest.days.get(p.id) ?? null;
+    // The engine's states are the coach's whatever the name: the support pass and the coach-first day key on the role.
+    const coach = { role: 'coach', first: p.name === NO_NAME ? NO_NAME : firstName(p.name) } as const;
+    // The head leads its own list, so a pair it belongs to is drawn on it.
+    const shaped = flags.recheck ? shapeReadsLifecycle([head, ...visible.rows.filter((r) => r.player_id === p.id && r.id !== head.id)], true, coach, now) : null;
     const card = toChInsight(head, {
       drillText: drills.texts.get(head.id) ?? null,
       assigned: assigned.byInsight.get(head.id) ?? null,
@@ -547,9 +581,11 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
       newestRound,
       // The text is written to the player: by their first name on the coach's board (a player with no name keeps it as written).
       viewer: p.name === NO_NAME ? undefined : { role: 'coach', first: firstName(p.name) },
+      engine: { flags, lifecycle: shaped?.byId.get(head.id) ?? null, focus: focus.get(head.id) ?? null, now, viewer: coach },
     });
     // The top card is a signal the board draws, so it counts even where the visible read deduped another copy of it away.
-    list.push({ id: p.id, name: p.name, count: Math.max(counts.get(p.id) ?? 0, isOpenFinding(head, tour, newestRound) ? 1 : 0), top: card });
+    const cleared = shaped?.cleared ?? [];
+    list.push({ id: p.id, name: p.name, count: Math.max(counts.get(p.id) ?? 0, isOpenFinding(head, tour, newestRound) ? 1 : 0), top: card, ...(cleared.length > 0 ? { cleared } : {}) });
   }
   // A read beside the cards that failed leaves them drawn without it, and the board says so: never "not assigned", "not declined",
   // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.

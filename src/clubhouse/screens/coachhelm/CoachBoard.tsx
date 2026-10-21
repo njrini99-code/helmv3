@@ -21,6 +21,7 @@ import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
 import { BoardPartial, FocusCard, Head, PulseList } from './parts';
 import { TeamPatterns } from './TeamPatterns';
+import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from './writes';
@@ -333,6 +334,7 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, initialPlayer
                         )}
                       </div>
                     )}
+                    <ClearedLines lines={cur.cleared} />
                   </>
                 )}
               </SectionBoundary>

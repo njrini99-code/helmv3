@@ -34,83 +34,18 @@
 version: 1
 
 flags:
-  # Describes an EXISTING env-driven toggle. Does not change its runtime
-  # behavior: src/app/golf/actions/golf.ts:1210 and
-  # src/lib/observability/helm-flight-recorder.ts:194 (both owned by the
-  # parallel Sentry session per
-  # docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md's ownership
-  # table) still read process.env.HELM_FLIGHT_RECORDER_ENABLED directly.
-  # src/lib/flags/__tests__/is-enabled.test.ts proves isFlagEnabled('flight_recorder')
-  # returns exactly what that raw read returns across the same env matrix, so
-  # the owning session can swap the call site later with a parity guarantee
-  # already in place.
-  - feature_id: flight_recorder
-    owner: platform (Bridge)
-    purpose: >-
-      Arms per-request golf round mutation tracing (client to server action
-      to RPC to in-transaction checkpoints) so /admin/traces has data to
-      show. An operability lever only — disabling it stops the mutation
-      from being observed, never stops the mutation from running.
-    type: operations_kill_switch
-    status: active
-    created_at: "2026-09-03"
-    expires_at: null
-    default: true
-    environment:
-      # Real code: `!isProduction || traceId != null || HELM_FLIGHT_RECORDER_ENABLED === 'true'`.
-      # The `!isProduction` half is exactly what production=false/preview=
-      # true/development=true encodes here. The `traceId != null` half is a
-      # per-request override this boolean rollout model cannot express — a
-      # caller with an explicit trace id is force-armed regardless of this
-      # column, unchanged by this registry entry.
-      production: false
-      preview: true
-      development: true
-    kill_switch_behavior: >-
-      Off: no helm_debug_start_trace / helm_debug_record_trace_step /
-      helm_debug_finalize_trace RPCs are called from the golf round action
-      path. The round mutation itself is unaffected — this switch only
-      controls whether it is observed. Changed by setting
-      HELM_FLIGHT_RECORDER_ENABLED at the environment level (deploy-time,
-      not a runtime toggle); auditable via the Vercel environment-variable
-      change log.
-    cleanup_plan: >-
-      No planned removal — permanent ops tooling. This registry entry
-      documents the existing toggle; it does not wire the call sites, which
-      sit outside this PR's file-ownership boundary. Wiring is left to the
-      Sentry session that owns those two files.
-
-  # Describes an EXISTING env-driven toggle. Does not change its runtime
-  # behavior: src/lib/coachhelm/v2/gate.ts's isCoachHelmEnabled() still
-  # reads process.env.NEXT_PUBLIC_COACHHELM_ENABLED directly — not wired
-  # through this library. Included so the registry has one real example of
-  # a `release`-shaped entry alongside the operations_kill_switch example
-  # above, and so a future removal/rewrite of that toggle has a governance
-  # record to update rather than a bare env read to rediscover.
-  - feature_id: coachhelm_v2_availability
-    owner: golf/coachhelm
-    purpose: >-
-      Global product-availability switch for the CoachHelm V2 AI layer. Off
-      disables the whole surface for every coach and player account; the
-      underlying check is a fail-open string comparison (any value except
-      the literal string "false" leaves it on).
-    type: release
-    status: active
-    created_at: "2026-09-03"
-    expires_at: null
-    default: true
-    environment:
-      production: true
-      preview: true
-      development: true
-    kill_switch_behavior: null
-    cleanup_plan: >-
-      No planned removal — this has been the live product-availability
-      switch for CoachHelm V2 since its rollout; this registry entry
-      documents it without wiring the call site, which lives outside this
-      PR's scope. A future session may wire src/lib/coachhelm/v2/gate.ts
-      through isFlagEnabled('coachhelm_v2_availability') as a small,
-      independent follow-up.
+  # Two entries that only DESCRIBED env reads were removed in plan phase 7b
+  # because nothing calls isFlagEnabled() for them (verified by git grep):
+  #   flight_recorder             HELM_FLIGHT_RECORDER_ENABLED, read directly by
+  #                               shouldEmitHelmTraceContext()
+  #                               (src/app/golf/actions/golf-action-shared.ts) and
+  #                               src/lib/observability/helm-flight-recorder.ts.
+  #                               Production off, preview and development on.
+  #   coachhelm_v2_availability   NEXT_PUBLIC_COACHHELM_ENABLED, read directly by
+  #                               src/lib/coachhelm/v2/gate.ts; any value but the
+  #                               literal "false" leaves CoachHelm on.
+  # Both toggles still work exactly as before. Add a registry entry back only
+  # together with an isFlagEnabled() call site.
 
   # Phase J remainder (docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md
   # §6 J.4.2). Owner decision: ADR 2026-09-03-control-plane-owner-decisions.md
@@ -168,7 +103,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-22"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -209,7 +144,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -288,7 +223,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -407,7 +342,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -460,7 +395,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -502,7 +437,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -568,7 +503,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -600,7 +535,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -625,12 +560,17 @@ flags:
       Runs the five CoachHelm insight-angle generators under
       src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy,
       bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss
-      compass) in every analyzePlayer pass. On: each writes at most one
+      compass) and the Slice 5b counted families (par-3 tee shots, strokes
+      gained per approach in three bands, lag leave, breaking-putt low-side
+      misses) in every analyzePlayer pass. On: each writes at most one
       golf_coach_insights row per player when its own floors and its
       one-sided z >= 1.645 gate pass, so coaches and players can see these
-      new reads. Off: the orchestrator call site (insightAngleGenerators)
-      returns no entries, and each angle generator's run() returns before
-      any read, write or sweep, so nothing is read, written or archived.
+      new reads; the approach-miss bands also leave out par-3 tee shots,
+      composites C6 and C8 read the counted rows instead of an estimated
+      3-putt rate and a 22 ft target, and no composite is written as urgent.
+      Off: the orchestrator call site (insightAngleGenerators) returns no
+      entries, each angle generator's run() returns before any read, write
+      or sweep, and approach-miss and the composites behave as before.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -647,7 +587,8 @@ flags:
       off stops new angle rows; rows already written stay until the
       lifecycle cron archives them (archive them by signature prefix
       v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:,
-      v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate
+      v3:tee_miss_cost:, v3:approach_miss_compass:, v3:par3_tee:,
+      v3:approach_sg:, v3:lag_leave:, v3:under_reading: for an immediate
       rollback). If coaches keep the angles through one season, remove the
       flag and the run() flag check in angle-generator.ts; if rejected, delete the
       insight-angles directory, its orchestrator call site and its metric
@@ -665,7 +606,7 @@ flags:
     type: experiment
     status: active
     created_at: "2026-09-23"
-    expires_at: null
+    expires_at: "2027-01-05"
     default: false
     environment:
       production: false
@@ -797,6 +738,38 @@ flags:
       for a season without a privacy or accuracy complaint, delete the flag
       check in team-pool/attach.ts and this entry in the same change; if the
       team line is rejected, turn it off and remove team-pool/ instead.
+
+  # CoachHelm supercharge Slice 8a (the one-tap data-gap prompt). Created OFF
+  # on main; turning it on is the owner's call. Only shows anything once
+  # coachhelm_root_cause_diagnosis has written a putt miss_direction data_gap.
+  - feature_id: coachhelm_data_gap_prompt_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the one-tap data-gap prompt in Fairway shot entry
+      (FairwayDataGapPrompt, loaded by lib/coachhelm/data-gap/load-asks.ts
+      from the round entry pages). When on, the New Round and Continue Round
+      pages read the player's visible v3 reads that carry a putt
+      miss_direction evidence.data_gap, and after a missed first putt from
+      that distance band with no miss tag the shot screen shows one row of
+      chips (Short, Long, High, Low) with a counter ("4 of 10 for your 5-10
+      ft putt read"); one tap sets that shot's miss tag exactly as the
+      existing optional miss chips do, and the row disappears at the
+      target. When off,
+      the pages read nothing extra and shot entry is exactly what it was.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Remove the flag once the prompt has run in production for a season
+      and players are not skipping it more than they tap it; if players
+      find it noisy, turn it off and remove the prompt and its loader.
 
   # CoachHelm supercharge Slice 7b (team pattern, same-day field). Created OFF
   # on main; turning it on is the owner's call.

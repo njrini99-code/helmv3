@@ -90,7 +90,12 @@ export function buildPrescriptionFromRead(input: BuildPrescriptionInput): Prescr
 }
 
 /** The row patch, without the in-memory reason. */
-export function toColumnPatch(patch: PrescriptionPatch): Record<string, unknown> {
+/** The focus-area columns a {@link PrescriptionPatch} writes (everything but the reason). */
+export type PrescriptionColumns =
+  | ({ assigned_by: AssignedBy } & PrescriptionFields)
+  | { assigned_by: AssignedBy; check_after_rounds: number };
+
+export function toColumnPatch(patch: PrescriptionPatch): PrescriptionColumns {
   const { criterionReason: _reason, ...columns } = patch;
   return columns;
 }

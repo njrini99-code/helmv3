@@ -1,4 +1,5 @@
 import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
 
 /**
@@ -144,6 +145,12 @@ export interface ChInsight {
    * Board leaves it out of its open reads and counts it among the reads in the Deep dive, which lists it. Absent is false.
    */
   measuredZero?: boolean;
+  /**
+   * What the engine now knows about the read, each part behind the flag that writes it (`coachhelm-engine-shape.ts`): the claim
+   * ladder, the cause state, Cleared / Contradicted / Under review, the verdict on its focus area and the audit lines. Absent with
+   * every flag off and on rows written before the engine wrote them, so the card is exactly what it was.
+   */
+  engine?: ChReadEngine;
 }
 
 /** A focus area a coach proposed, waiting for this player to accept or decline it (`golf_player_focus_areas.status = 'proposed'`; Q-77). */
@@ -197,6 +204,8 @@ export interface ChPlayerHelm {
   roundsToGo?: number | null;
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
+  /** Reads the recheck found cleared, one line each (04 example 5; `coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: string[];
 }
 
 export type ChPulseIcon = 'calendar-x' | 'trending-up' | 'trending-down' | 'rsvp' | 'practice' | 'focus' | 'tasks' | 'roster' | 'flag';
@@ -217,6 +226,8 @@ export interface ChCoachPlayer {
   count: number;
   /** The player's top-ranked insight: the row's line and the focus card. */
   top: ChInsight;
+  /** This player's reads the recheck found cleared, one line each (`coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: string[];
 }
 
 /**

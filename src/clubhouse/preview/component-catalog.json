@@ -214,6 +214,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/preview/PreviewPushAsk.tsx",
+      "group": "preview",
+      "exports": [
+        "PreviewPushAsk"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/PreviewQualifiers.tsx",
       "group": "preview",
       "exports": [
@@ -1282,6 +1292,26 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/EngineState.tsx",
+      "group": "screens",
+      "exports": [
+        "ClearedLines",
+        "EngineState",
+        "WhyAudit"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5060,6 +5090,17 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/PushAsk.tsx",
+      "group": "shell",
+      "exports": [
+        "PushAsk",
+        "PushAskSheet"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/RailTip.tsx",
       "group": "shell",
       "exports": [
@@ -7997,43 +8038,43 @@
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-meas",
-          "line": 335
+          "line": 337
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-meas.is-good",
-          "line": 341
+          "line": 343
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-meas.is-warn",
-          "line": 344
+          "line": 346
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hd-tr",
-          "line": 381
+          "line": 383
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hd-tr li.is-good",
-          "line": 402
+          "line": 404
         },
         {
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn",
-          "line": 405
+          "line": 407
         },
         {
           "name": "--ch-hd-ink",
           "value": "var(--ch-champagne-300)",
           "scope": ":where(html[data-fw-theme='dark']) .ch-hd-it.is-medium",
-          "line": 1315
+          "line": 1317
         }
       ]
     },
@@ -8380,11 +8421,14 @@
         "ch-ask-tabs",
         "ch-btn",
         "ch-hl",
+        "ch-hl-audit",
+        "ch-hl-audit__l",
         "ch-hl-bars",
         "ch-hl-bars__t",
         "ch-hl-cact",
         "ch-hl-cact__m",
         "ch-hl-cgrid",
+        "ch-hl-cleared",
         "ch-hl-cmain",
         "ch-hl-conf",
         "ch-hl-conf__d",
@@ -8393,6 +8437,9 @@
         "ch-hl-drill",
         "ch-hl-drill__k",
         "ch-hl-drill__t",
+        "ch-hl-eng",
+        "ch-hl-eng__l",
+        "ch-hl-eng__w",
         "ch-hl-ev",
         "ch-hl-ev__f",
         "ch-hl-ev__l",
@@ -11564,8 +11611,6 @@
         "ch-rzcost__t",
         "ch-rzdot",
         "ch-rzdot__halo",
-        "ch-rzdots",
-        "ch-rzfill",
         "ch-rzhit",
         "ch-rzhit__c",
         "ch-rzline",
@@ -11618,289 +11663,277 @@
           "name": "--ch-rd-under-a",
           "value": "#ff9d8e",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3744
+          "line": 3708
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#d0574a",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3745
+          "line": 3709
         },
         {
           "name": "--ch-rd-over-a",
           "value": "rgb(244 238 221 / 0.36)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3746
+          "line": 3710
         },
         {
           "name": "--ch-rd-over-b",
           "value": "rgb(244 238 221 / 0.9)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3747
+          "line": 3711
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-stage-ink)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3748
+          "line": 3712
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-stage-ink-soft)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3749
+          "line": 3713
         },
         {
           "name": "--ch-rd-rule",
           "value": "var(--ch-stage-rule)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3750
+          "line": 3714
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(244 238 221 / 0.58)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3751
+          "line": 3715
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3752
+          "line": 3716
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3753
+          "line": 3717
         },
         {
           "name": "--ch-rd-chip",
           "value": "rgb(231 184 102 / 0.16)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3754
+          "line": 3718
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(231 184 102 / 0.5)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3755
+          "line": 3719
         },
         {
           "name": "--ch-rd-under-ink",
           "value": "var(--ch-stage-red)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3756
-        },
-        {
-          "name": "--ch-rd-delay",
-          "value": "min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal))",
-          "scope": ".ch-rd .ch-rd-rib__bar",
-          "line": 3889
+          "line": 3720
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#d9665a",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3969
+          "line": 3917
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#a8372b",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3970
+          "line": 3918
         },
         {
           "name": "--ch-rd-over-a",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3971
+          "line": 3919
         },
         {
           "name": "--ch-rd-over-b",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3972
+          "line": 3920
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3973
+          "line": 3921
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3974
+          "line": 3922
         },
         {
           "name": "--ch-rd-rule",
           "value": "rgb(110 98 62 / 0.14)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3975
+          "line": 3923
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(28 27 24 / 0.5)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3976
+          "line": 3924
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3977
+          "line": 3925
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-green-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3978
+          "line": 3926
         },
         {
           "name": "--ch-rd-chip",
           "value": "var(--ch-green-50)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3979
+          "line": 3927
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3980
-        },
-        {
-          "name": "--ch-rd-delay",
-          "value": "0s",
-          "scope": "@media (prefers-reduced-motion: reduce) → .ch-rd .ch-rd-rib__bar",
-          "line": 4212
+          "line": 3928
         },
         {
           "name": "--ch-rcard-lab",
           "value": "56px",
           "scope": ".ch-rcard",
-          "line": 4229
+          "line": 4168
         },
         {
           "name": "--ch-rcard-sub",
           "value": "54px",
           "scope": ".ch-rcard",
-          "line": 4230
+          "line": 4169
         },
         {
           "name": "--ch-rcard-mk",
           "value": "22px",
           "scope": ".ch-rcard",
-          "line": 4231
+          "line": 4170
         },
         {
           "name": "--ch-rcard-lab",
           "value": "40px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4239
+          "line": 4178
         },
         {
           "name": "--ch-rcard-sub",
           "value": "38px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4240
+          "line": 4179
         },
         {
           "name": "--ch-rcard-mk",
           "value": "20px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4241
+          "line": 4180
         },
         {
           "name": "--ch-sheet-bg",
           "value": "white",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4618
+          "line": 4557
         },
         {
           "name": "--ch-text-primary",
           "value": "black",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4619
+          "line": 4558
         },
         {
           "name": "--ch-text-secondary",
           "value": "dimgray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4620
+          "line": 4559
         },
         {
           "name": "--ch-text-tertiary",
           "value": "dimgray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4621
+          "line": 4560
         },
         {
           "name": "--ch-score-under",
           "value": "firebrick",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4622
+          "line": 4561
         },
         {
           "name": "--ch-chart-gain",
           "value": "darkgreen",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4623
+          "line": 4562
         },
         {
           "name": "--ch-chart-loss",
           "value": "sienna",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4624
+          "line": 4563
         },
         {
           "name": "--ch-chart-loss-on-tint",
           "value": "sienna",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4625
+          "line": 4564
         },
         {
           "name": "--ch-ledger-rule",
           "value": "gray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4626
+          "line": 4565
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "silver",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4627
+          "line": 4566
         },
         {
           "name": "--ch-ledger-row-hover",
           "value": "whitesmoke",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4628
+          "line": 4567
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double gray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4629
+          "line": 4568
         },
         {
           "name": "--ch-rcard-lab",
           "value": "40px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4651
+          "line": 4590
         },
         {
           "name": "--ch-rcard-sub",
           "value": "38px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4652
+          "line": 4591
         },
         {
           "name": "--ch-rcard-mk",
           "value": "18px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4653
+          "line": 4592
         }
       ]
     },
