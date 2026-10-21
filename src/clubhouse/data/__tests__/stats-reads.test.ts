@@ -120,6 +120,14 @@ describe('the coach’s reads: the scope first, then the counts', () => {
     expect(visible()).not.toHaveBeenCalled();
   });
 
+  it('a Tour baseline that does not load is failed: cohort comparisons would read as findings and the counts would be wrong', async () => {
+    const scope = await okScope();
+    world({ golf_pga_standards: { error: { message: 'boom' } } });
+    expect(await loadStatsReads({ role: 'coach', scope })).toEqual({ status: 'failed' });
+    world({ golf_pga_standards: { error: { message: 'boom' } }, golf_team_members: { data: { team_id: TEAM, golf_teams: { gender: 'mens' } } } });
+    expect(await loadStatsReads({ role: 'player', playerId: PID })).toEqual({ status: 'failed' });
+  });
+
   it('visible reads that fail are failed, never "no reads"; so are newest rounds that fail', async () => {
     const scope = await okScope();
     world({ golf_coach_insights: { error: { message: 'boom' } } });
