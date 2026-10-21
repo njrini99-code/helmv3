@@ -24,14 +24,15 @@
  * It renders no portrait carousel: the schedule is the content of the
  * calendar home, not the roster. Selection state is parent-owned.
  *
- * `tintFor` — a person's deterministic identity tint — still lives here
+ * `tintFor` — a person's deterministic identity tint — is re-exported here
  * because the roster, month grid and agenda row all share it.
  * ========================================================================== */
 
 import * as React from 'react';
-import { ChevronDown, Users, UserSearch } from 'lucide-react';
+import { ChevronDown, ChevronRight, Users, UserSearch } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarGroup, Button, PopoverPanel, PressTarget } from '@/components/fairway';
+import { tintFor } from '@/components/fairway/controls/identity-tint';
 import type { TeamMember } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { PLAYER_COLORS } from '@/lib/calendar/player-colors';
 import { CalendarPeoplePicker, type PeoplePickerPerson } from './people/CalendarPeoplePicker';
@@ -49,19 +50,22 @@ function fullName(m: TeamMember): string {
   return `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || 'Team member';
 }
 
-// Soft, warm-friendly tints for the initials fallback so unselected avatars
-// read like real profile avatars (not flat gray) when a member has no photo.
-// Deterministic per member id, so a person keeps the same color every render.
-//
-// THEME-AWARE BY INDIRECTION: consumers apply these as INLINE styles, which no
-// `.dark` rule can reach — returning `var()` references lets design-tokens.css
-// flip the palette. Keep them as var() references.
-const AVATAR_TINT_COUNT = 8;
-export function tintFor(seed: string): { bg: string; text: string } {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  const i = (h % AVATAR_TINT_COUNT) + 1;
-  return { bg: `var(--fw-tint-${i}-bg)`, text: `var(--fw-tint-${i}-ink)` };
+// The person -> `--fw-tint-N` hash lives in controls/identity-tint.ts so the
+// Avatar `identity` tone shares it; re-exported here because the roster, month
+// grid and agenda row all import it from this module.
+export { tintFor };
+
+/** A menu row in the People panel: green-washed on hover, never yellow. */
+const MENU_ROW_CLASS =
+  'group gap-3 px-2.5 text-body-sm [@media(hover:hover)]:hover:bg-accent-50 active:bg-accent-50 focus-visible:ring-offset-surface';
+
+/** The small green disc an action row leads with. */
+function MenuGlyph({ children }: { children: React.ReactNode }) {
+  return (
+    <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-100 text-accent-700">
+      {children}
+    </span>
+  );
 }
 
 export function FairwayCalendarMemberRail({
@@ -118,8 +122,13 @@ export function FairwayCalendarMemberRail({
           onOpenChange={setMenuOpen}
           side="bottom"
           align="start"
-          width="md"
+          width="lg"
+          surface="matte"
           ariaLabel="People"
+          // Matte cream body under a sunken header (owner 2026-09-27: the glass
+          // read yellow and the rows ran together; 2026-09-28: no green bands,
+          // contrast comes from the surface step and the rule under it).
+          className="overflow-hidden bg-surface p-0"
           trigger={
             <PressTarget
               aria-label="People"
@@ -130,7 +139,7 @@ export function FairwayCalendarMemberRail({
             >
               <AvatarGroup size="sm" max={2} ring="ring-surface" className="shrink-0">
                 {previewMembers.map((m) => (
-                  <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} size="sm" decorative />
+                  <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} identityKey={m.id} size="sm" decorative />
                 ))}
               </AvatarGroup>
               <span className="min-w-0 flex-1">
@@ -145,53 +154,79 @@ export function FairwayCalendarMemberRail({
             </PressTarget>
           }
         >
-          <PopoverPanel.Header>Availability</PopoverPanel.Header>
-          {/* Everyone: overlays every roster member (bypassing the palette
-              cap); pressing it again returns to the plain team schedule. */}
-          <PopoverPanel.Item
-            aria-pressed={isAllSelected}
-            onClick={() => {
-              setMenuOpen(false);
-              onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id));
-            }}
-          >
-            <span className="flex items-center gap-2.5">
-              <Users className="h-4 w-4 text-text-tertiary" aria-hidden />
-              {isAllSelected ? 'Stop comparing everyone' : 'Everyone'}
+          {/* Header: whose calendar this is, at a glance, one surface step down
+              with a strong rule closing it. */}
+          <div className="flex items-center gap-3 border-b border-border-strong bg-surface-sunken px-4 py-3">
+            <span className="min-w-0 flex-1">
+              <span className="block font-fw-sans text-caption font-semibold text-text-tertiary">People</span>
+              <span className="block truncate font-fw-sans text-body font-semibold text-text-primary">{statusTitle}</span>
+              <span className="block truncate font-fw-sans text-caption text-text-secondary">{statusDetail}</span>
             </span>
-          </PopoverPanel.Item>
-          {onOpenPerson ? (
+            <AvatarGroup size="sm" max={4} ring="ring-surface" className="shrink-0">
+              {previewMembers.map((m) => (
+                <Avatar key={m.id} src={m.avatar_url ?? undefined} name={fullName(m)} identityKey={m.id} size="sm" decorative />
+              ))}
+            </AvatarGroup>
+          </div>
+
+          <div className="p-2">
+            <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-text-secondary">Availability</PopoverPanel.Header>
+            {/* Everyone: overlays every roster member (bypassing the palette
+                cap); pressing it again returns to the plain team schedule. */}
             <PopoverPanel.Item
+              aria-pressed={isAllSelected}
+              className={MENU_ROW_CLASS}
               onClick={() => {
                 setMenuOpen(false);
-                setPickerOpen(true);
+                onSelect(isAllSelected ? [] : teamMembers.map((m) => m.id));
               }}
             >
-              <span className="flex items-center gap-2.5">
-                <UserSearch className="h-4 w-4 text-text-tertiary" aria-hidden />
-                Compare schedules…
-              </span>
+              <MenuGlyph>
+                <Users className="h-4 w-4" aria-hidden />
+              </MenuGlyph>
+              <span className="min-w-0 flex-1 font-medium">{isAllSelected ? 'Stop comparing everyone' : 'Everyone'}</span>
+              <span aria-hidden className="shrink-0 font-fw-sans text-caption tabular-nums text-text-tertiary">{teamMembers.length}</span>
             </PopoverPanel.Item>
-          ) : null}
+            {onOpenPerson ? (
+              <PopoverPanel.Item
+                className={MENU_ROW_CLASS}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setPickerOpen(true);
+                }}
+              >
+                <MenuGlyph>
+                  <UserSearch className="h-4 w-4" aria-hidden />
+                </MenuGlyph>
+                <span className="min-w-0 flex-1 font-medium">Compare schedules…</span>
+              </PopoverPanel.Item>
+            ) : null}
+          </div>
           {onOpenPerson ? (
             <>
-              <PopoverPanel.Separator />
-              <PopoverPanel.Header>Open a schedule</PopoverPanel.Header>
-              <div className="max-h-64 overflow-y-auto">
-                {teamMembers.map((m) => (
-                  <PopoverPanel.Item
-                    key={m.id}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onOpenPerson(m.id);
-                    }}
-                  >
-                    <span className="flex min-w-0 items-center gap-2.5">
-                      <Avatar src={m.avatar_url ?? undefined} name={fullName(m)} size="xs" decorative />
-                      <span className="min-w-0 truncate">{fullName(m)}</span>
-                    </span>
-                  </PopoverPanel.Item>
-                ))}
+              <PopoverPanel.Separator className="my-0" />
+              <div className="p-2">
+                <PopoverPanel.Header className="px-2 pb-1.5 pt-1.5 font-semibold text-text-secondary">Open a schedule</PopoverPanel.Header>
+                {/* Hairlines between people so a long roster never runs together. */}
+                <div className="max-h-72 overflow-y-auto [&>*+*]:border-t [&>*+*]:border-border-subtle">
+                  {teamMembers.map((m) => (
+                    <PopoverPanel.Item
+                      key={m.id}
+                      className={cn(MENU_ROW_CLASS, 'rounded-none first:rounded-t-fw-sm last:rounded-b-fw-sm')}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenPerson(m.id);
+                      }}
+                    >
+                      <Avatar src={m.avatar_url ?? undefined} name={fullName(m)} identityKey={m.id} size="sm" decorative />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-fw-sans text-body-sm font-semibold text-text-primary">{fullName(m)}</span>
+                        <span className="block font-fw-sans text-caption text-text-tertiary">{m.role === 'coach' ? 'Coach' : 'Player'}</span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary transition-transform [@media(hover:hover)]:group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />
+                    </PopoverPanel.Item>
+                  ))}
+                </div>
               </div>
             </>
           ) : null}

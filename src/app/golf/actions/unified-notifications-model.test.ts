@@ -154,6 +154,10 @@ describe('categorizeCalendarNotificationRow', () => {
   it('categorizes chat message rows (golf-message-fanout) as messages', () => {
     expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'message' }))).toBe('messages');
   });
+
+  it('categorizes message rows as messages', () => {
+    expect(categorizeCalendarNotificationRow(calRow({ notification_type: 'message' }))).toBe('messages');
+  });
 });
 
 // ── normalization ────────────────────────────────────────────────────────────
