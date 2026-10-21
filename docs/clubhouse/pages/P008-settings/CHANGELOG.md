@@ -1,5 +1,22 @@
 # P008 — Settings: changelog
 
+## 2026-10-21 — Settings boxes use the shared hydration guard
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-login-hydration)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `Field` and `FieldRow` take their read-only-until-hydrated props from
+  `useHydrationGuard` (`lib/use-hydration-guard.ts`), shared with sign in.
+  No change on screen.
+
 ## 2026-10-21 — Text typed before the page hydrates is no longer lost
 
 ```text

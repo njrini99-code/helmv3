@@ -7,6 +7,7 @@ import { requestPasswordResetAction } from '@/app/golf/actions/auth';
 import { logError } from '@/lib/error-logging';
 import { haptic } from '../../lib/haptics';
 import { useChReducedMotion } from '../../lib/reduced-motion';
+import { useHydrationGuard } from '../../lib/use-hydration-guard';
 import { AuthKeyLabel } from './AuthKey';
 import { AuthNotice } from './AuthNotice';
 import { RESET_UNEXPECTED_MESSAGE, normalizeResetEmail, resetEmailProblem } from './forgot-state';
@@ -71,6 +72,8 @@ export function ResetForm({
   const keyRowRef = useRef<HTMLDivElement>(null);
   const altRef = useRef<HTMLParagraphElement>(null);
   const reduced = useChReducedMotion();
+  // Read-only until React has hydrated the box, so a fast typist's address is not reset (see use-hydration-guard).
+  const guard = useHydrationGuard();
   const anchor = stageRef ?? formRef;
   // CH-15608: a refusal arriving or clearing moves the key and the way back; they glide there.
   const gliders = useMemo<Glider[]>(() => [{ ref: anchor }, { ref: keyRowRef, within: anchor }, { ref: altRef, within: anchor }], [anchor]);
@@ -158,6 +161,7 @@ export function ResetForm({
             <input
               ref={emailRef}
               id="golf-forgot-email"
+              {...guard}
               type="email"
               inputMode="email"
               autoComplete="username"

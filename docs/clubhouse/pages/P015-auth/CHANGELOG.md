@@ -1,5 +1,31 @@
 # P015 — Auth: changelog
 
+## 2026-10-21 — Sign-in boxes wait for hydration
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-login-hydration)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The sign-in email and password boxes (`SignInForm`), the reset email box
+  (`ForgotPassword`) and every `GateInput` (reset password, staff invitation,
+  demo entry) are read-only until React has hydrated them, through the shared
+  `useHydrationGuard` (`lib/use-hydration-guard.ts`). The boxes look the same
+  while they wait.
+
+### Why
+
+Text typed into server HTML before hydration is reset when the controlled
+value is applied, and WebKit drops the first-typed box: a wiped email or
+password at sign in. The submit button was already held until hydration;
+the boxes now are too. The mount-time adoption of values stays as it was.
+
 ## 2026-10-19 — The new-coach guard reads its errors
 
 ```text
