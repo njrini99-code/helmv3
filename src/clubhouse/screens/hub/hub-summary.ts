@@ -1,8 +1,9 @@
-import type { ChHubAnnouncement, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
+import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 
 /**
- * What Team Hub says about itself in one line under its title, and the one thing its first tab leads with (the band).
+ * What Team Hub says about itself in one line under its title, and the rules behind Home's widgets (the player's queue,
+ * the week's first day, Waiting on's order).
  * Pure: everything is read from what the page already loaded, so the server render and the client agree, and a unit test
  * can pin the rules. Figures that are zero drop out; a figure whose read failed is left out, never shown as zero.
  */
@@ -68,103 +69,66 @@ export function tabAttention(i: StripInput): Partial<Record<ChHubTab, number>> {
   return { ann: n('acks'), tasks: i.tasks.filter((t) => !i.isDone(t) && t.status === 'overdue').length };
 }
 
-// ── The band ────────────────────────────────────────────────────────────────
+// ── Home's widgets ──────────────────────────────────────────────────────────
 
-export type BandAction =
-  | { kind: 'link'; label: string; href: string }
-  | { kind: 'jump'; label: string; target: string }
-  | { kind: 'edit-trip'; label: string; trip: ChHubTrip };
-
-export interface BandFact {
-  label: string;
-  value?: string;
-  /** Late or short of replies: the amber on green, never red. */
-  warn?: boolean;
-}
-
-export interface Band {
-  /** What decided it, for the test and the data attribute. */
-  kind: 'trip-soon' | 'event' | 'trip' | 'none';
-  eyebrow: string;
-  title: string;
-  body: string | null;
-  facts: BandFact[];
-  action: BandAction | null;
-}
-
-const departs = (days: number) => (days <= 0 ? 'departs today' : days === 1 ? 'departs tomorrow' : `departs in ${days} days`);
-
-function tripBand(t: ChHubTrip, role: ChTeamHub['role'], kind: 'trip-soon' | 'trip'): Band {
-  const facts = ([
-    t.depart ? { label: 'Departs', value: t.depart } : null,
-    t.hotel ? { label: 'Stay', value: t.hotel } : { label: 'Stay', value: 'not set' },
-    t.back ? { label: 'Home', value: t.back } : null,
-    role === 'player' ? { label: 'You', value: t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling' } : t.travelerCount != null ? { label: 'Travelers', value: String(t.travelerCount) } : null,
-  ] as Array<BandFact | null>).filter((f): f is BandFact => !!f);
-  return {
-    kind,
-    eyebrow: `Next trip · ${t.inDays != null ? departs(t.inDays) : t.dates}`,
-    title: t.name,
-    body: [t.destination, t.dates].filter(Boolean).join(' · ') || null,
-    facts,
-    action: role === 'coach' ? { kind: 'edit-trip', label: 'Edit trip', trip: t } : null,
-  };
-}
-
-export interface BandInput {
-  role: ChTeamHub['role'];
-  rsvps: ChHubRsvp[];
-  replies: ReadonlyMap<string, ChRsvp>;
-  /** Trips still to come, soonest first. */
-  upcoming: ChHubTrip[];
-  /** Every trip, for the last one when nothing is ahead. */
-  trips: ChHubTrip[];
-}
+/** What a player owes, as one list: the replies, posts and tasks the page loaded as open, soonest and latest first. */
+export type QueueItem = { kind: 'reply'; key: string; r: ChHubRsvp } | { kind: 'post'; key: string; a: ChHubAnnouncement } | { kind: 'task'; key: string; t: ChHubTask };
 
 /**
- * Home's band is decided in data, never in layout, so two things never compete for the page's one dark surface:
- * a trip leaving within two days; then the next event that takes replies (a player's first one that still needs theirs);
- * then the next trip; then a quiet page that says so and names its next step.
+ * The player's queue is decided from what loaded, not from this visit's answers, so a row stays where it is once it is
+ * answered (it shows the answer) instead of jumping out from under the pointer; `left` counts what is still open now.
+ * Late tasks lead the tasks, then the soonest due.
  */
-export function homeBand(i: BandInput): Band {
-  const coach = i.role === 'coach';
-  const trip = i.upcoming[0] ?? null;
-  if (trip && trip.inDays != null && trip.inDays <= 2) return tripBand(trip, i.role, 'trip-soon');
-  const owed = (r: ChHubRsvp) => (i.replies.get(r.eventId) ?? r.mine ?? 'pending') === 'pending';
-  // A player is led to the soonest event that still needs their reply; a coach, or a player all caught up, to the soonest.
-  const ev = (!coach && i.rsvps.find(owed)) || i.rsvps[0];
-  if (ev) {
-    const answer = i.replies.get(ev.eventId) ?? ev.mine ?? 'pending';
-    const c = ev.counts;
-    const waiting = !coach && answer === 'pending';
-    return {
-      kind: 'event',
-      eyebrow: `${waiting ? 'Needs your reply' : 'Next up'} · ${ev.weekday} ${ev.day}`,
-      title: ev.title,
-      body: ev.meta || null,
-      facts: coach && c
-        ? [
-            { label: 'going', value: String(c.going) },
-            { label: 'maybe', value: String(c.maybe) },
-            { label: 'can’t', value: String(c.no) },
-            { label: 'no reply', value: String(c.none), warn: c.none > 0 },
-          ]
-        : [],
-      action: waiting
-        ? { kind: 'jump', label: 'Reply below', target: 'ch-hb-rsvp' }
-        : { kind: 'link', label: 'Open event', href: `/golf/dashboard/calendar?date=${ev.date}&event=${ev.eventId}` },
-    };
-  }
-  if (trip) return tripBand(trip, i.role, 'trip');
-  const last = [...i.trips].reverse().find((t) => !t.upcoming);
-  return {
-    kind: 'none',
-    eyebrow: 'Next up',
-    title: coach ? 'Nothing on the calendar' : 'Nothing scheduled yet',
-    body: coach ? 'Add an event with replies on and players answer here, so you see who is coming before you set out.' : 'New events and trips from your coaches show here as soon as they are planned.',
-    facts: last ? [{ label: 'Last trip', value: `${last.name} · ${last.dates}` }] : [],
-    action: coach ? { kind: 'link', label: 'Create event', href: '/golf/dashboard/calendar?new=1' } : null,
-  };
+export function queueOf(
+  i: Pick<StripInput, 'rsvps' | 'replies' | 'announcements' | 'isAcked' | 'tasks' | 'isDone'> & {
+    loadedAcked: (a: ChHubAnnouncement) => boolean;
+    /** The post Home's post tile already shows with its Got it: not asked twice. */
+    shownPost?: string | null;
+  },
+): { items: QueueItem[]; left: number } {
+  const replies: QueueItem[] = i.rsvps.filter((r) => (r.mine ?? 'pending') === 'pending').map((r) => ({ kind: 'reply', key: `r:${r.eventId}`, r }));
+  const posts: QueueItem[] = i.announcements.filter((a) => a.needAck && !i.loadedAcked(a) && a.id !== i.shownPost).map((a) => ({ kind: 'post', key: `a:${a.id}`, a }));
+  const rank = (t: ChHubTask) => (t.status === 'overdue' ? 0 : 1);
+  const tasks: QueueItem[] = i.tasks
+    .filter((t) => t.status !== 'completed')
+    .sort((a, b) => rank(a) - rank(b) || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
+    .map((t) => ({ kind: 'task', key: `t:${t.id}`, t }));
+  const items = [...replies, ...posts, ...tasks];
+  const open = (q: QueueItem) =>
+    q.kind === 'reply' ? (i.replies.get(q.r.eventId) ?? q.r.mine ?? 'pending') === 'pending' : q.kind === 'post' ? !i.isAcked(q.a) : !i.isDone(q.t);
+  return { items, left: items.filter(open).length };
+}
+
+/** The week tile opens on the first day with something on it (today when today has), else today. */
+export function firstBusyDay(days: ChHubDay[]): number {
+  const i = days.findIndex((d) => d.events.length > 0 || d.trip);
+  return i < 0 ? 0 : i;
+}
+
+export type LedgerKey = 'owed' | 'name' | 'replies' | 'posts' | 'tasks' | 'rounds';
+
+/** Everything a player owes; a list that didn't load counts nothing (its cell says so). */
+export const owedBy = (r: ChHubLedgerRow) => (r.replies?.length ?? 0) + (r.posts?.length ?? 0) + (r.tasks?.length ?? 0);
+const lateBy = (r: ChHubLedgerRow) => r.tasks?.filter((t) => t.late).length ?? 0;
+
+/**
+ * Waiting on's order. The default puts whoever owes the most first (late tasks break a tie); a column sorts by its own
+ * figure, most first, and a second press turns it round. A column that didn't load sorts last either way. Rounds sort
+ * fewest first by default: the player who hasn't played is the one to ask about.
+ */
+export function ledgerSorted(rows: ChHubLedgerRow[], key: LedgerKey, flipped = false): ChHubLedgerRow[] {
+  const byName = (a: ChHubLedgerRow, b: ChHubLedgerRow) => a.name.localeCompare(b.name);
+  if (key === 'name') return [...rows].sort((a, b) => (flipped ? -1 : 1) * byName(a, b));
+  const value = (r: ChHubLedgerRow): number | null =>
+    key === 'owed' ? owedBy(r) : key === 'rounds' ? (r.rounds ? r.rounds.n : null) : (r[key]?.length ?? null);
+  // Most first, except rounds (fewest first); flipped turns either round.
+  const sign = (key === 'rounds' ? 1 : -1) * (flipped ? -1 : 1);
+  return [...rows].sort((a, b) => {
+    const va = value(a);
+    const vb = value(b);
+    if (va == null || vb == null) return va == null && vb == null ? byName(a, b) : va == null ? 1 : -1;
+    return sign * (va - vb) || lateBy(b) - lateBy(a) || byName(a, b);
+  });
 }
 
 /** The Tasks board's figures, from the per-task completion the coach's read already carries. */

@@ -1,5 +1,12 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Team Hub Home is widgets
+
+Team Hub's Home is a twelve-column bento of tiles (`screens/hub/widgets.tsx`,
+`.ch-hw*` in `styles/hub.css`). `ReplyChoices`, `Acknowledgement`,
+`repliesLine` and a new `useTaskSave` are exported from `screens/hub/parts.tsx`
+so a tile acts as the tabs do; `Rsvps`, `HubBand` and `homeBand` are removed.
+
 ## 2026-10-21 — A coach's Team Hub item has a badge
 
 `CH_NAV_COACH`'s Team Hub item is `badge: 'hub'`, and `badgeCount` adds the

@@ -1,5 +1,51 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-21 — Home as widgets, not RSVPs
+
+```text
+Design package: Team Hub widgets mock (artifact 6L4BaAFz56ry5mSMAqHCne)
+PR/commit:      PR #2287 from claude/project-thread-ya6ije
+Contract IDs:   100101 reworded (Home's widgets), catalog CH-10201/10301/10303
+Actions:        none (the tiles call the writes Home already had)
+Data impact:    one coach read added to the hub load (this week's events);
+                the ledger reuses reads the loader already made
+Held items:     none
+```
+
+### Changed
+
+- Owner: "Don't center around RSVPs … more like widgets or cool interactive
+  components." Home is now a bento of tiles, each answering one question and
+  acting in place. The band and the RSVP section are gone from Home.
+- Next trip (the one dark tile): days to go, the plan as a rail (leaves,
+  stays, home), who is traveling, Edit trip for a coach; a pager steps to the
+  trip after it. With no trip ahead it counts down to the week's next event.
+- This week: seven days to step through (arrow keys too), a dot an event, gold
+  a day on the road. The chosen day lists its events; one that takes replies
+  shows "5 of 6 replied" to a coach and the reply choices to a player. Later
+  this week lists what follows, a press opening its day.
+- Waiting on (coach): one row a player with replies owed, posts not
+  acknowledged, open tasks (late in amber) and rounds in 30 days. Opens on who
+  owes the most; a heading sorts, again to turn it round; a name opens what
+  they owe by title. On a phone it is a list whose rows open.
+- Latest post: a coach sees the acknowledged count, a track and a disc for each
+  player not yet acknowledged (press one to name them); a player reads it and
+  says Got it here.
+- Tasks (coach): done, left, overdue, a track and the three soonest open tasks,
+  each opening on the Tasks tab.
+- Your queue (player): replies, posts and tasks in one list, answered in place.
+  An answered row stays, showing its answer; four show until Show all.
+- Files (player): the newest four, opened with a press. Updates as before.
+
+### Verification
+
+- hub.test and hub-redesign tests moved onto the tiles; new widget tests (trip
+  pager, week keys and reply, queue, Waiting on sort and open, failed tile) and
+  rule tests (`queueOf`, `firstBusyDay`, `ledgerSorted`).
+- Dev preview in Chromium at 1440, 1100 and 390, light and dark, populated,
+  empty and failed. Gold trip text measured 2.8:1, so the words take text ink
+  and only the plane is gold; amber on the tile 5.7:1.
+
 ## 2026-10-21 — Redesign: contrast, a summary strip, players' Tasks
 
 ```text
@@ -22,8 +68,8 @@ Held items:     coach nav badge (audit par-24): new read on every shell load
   never shown as zero.
 - Home leads with a band (desktop): a trip leaving within two days, else the
   next event that takes replies (a player's first one still owed), else the next
-  trip, else a quiet line with its next step. A coach's event band shows going,
-  maybe, can't and no reply.
+  trip, else a quiet line with its next step. Replaced the same day by Home's
+  widgets (entry above).
 - Announcements: the lead post is the dark surface. Travel: the next pass is,
   with a days-to-go count.
 - Tabs show a count when a post waits to be acknowledged or a task is late.

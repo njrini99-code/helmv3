@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, CalendarCheck, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -37,7 +37,7 @@ const REPLIES: Array<[Exclude<ChRsvp, 'pending'>, string]> = [
 ];
 
 /** The phone's reply line names only what is there ("4 going · 1 no reply", the board's); desktop spells out every count. */
-function repliesLine(c: { going: number; maybe: number; no: number; none: number }, compact: boolean): string {
+export function repliesLine(c: { going: number; maybe: number; no: number; none: number }, compact: boolean): string {
   if (!compact) return `${c.going} going · ${c.maybe} maybe · ${c.no} can’t · ${c.none} no reply`;
   const terms = [
     [c.going, 'going'],
@@ -49,97 +49,8 @@ function repliesLine(c: { going: number; maybe: number; no: number; none: number
   return said.length ? said.join(' · ') : 'No one invited yet';
 }
 
-export function Rsvps({
-  role,
-  data,
-  replies,
-  isPending,
-  onReply,
-  compact = false,
-  covered = false,
-}: {
-  role: ChTeamHub['role'];
-  data: ChTeamHub['rsvps'];
-  replies: Map<string, ChRsvp>;
-  isPending: (r: ChHubRsvp) => boolean;
-  onReply: (r: ChHubRsvp, status: Exclude<ChRsvp, 'pending'>) => Promise<ServerResult>;
-  /** The phone build: a reply line that leaves out the counts that are zero. */
-  compact?: boolean;
-  /** The page's notice carries the one Try again (CH-1209): this section keeps only its title under the heading. */
-  covered?: boolean;
-}) {
-  const coach = role === 'coach';
-  const mine = (r: ChHubRsvp) => replies.get(r.eventId) ?? r.mine ?? 'pending';
-  const open = data.rows.filter((r) => mine(r) === 'pending').length;
-  return (
-    <section className="ch-hb-card ch-hb-rsvp" aria-labelledby="ch-hb-rsvp">
-      <div className="ch-hb-card__h">
-        <h2 id="ch-hb-rsvp">{coach ? 'RSVPs' : 'Your RSVPs'}</h2>
-        {!data.error && data.rows.length > 0 && <span className="ch-hb-muted">{coach ? 'This week' : open === 0 ? 'All answered' : `${open} need${open === 1 ? 's' : ''} a reply`}</span>}
-      </div>
-      {data.error ? (
-        <RefreshNotice code="CH-10201" title={coach ? "This week’s replies didn’t load." : "Your events didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
-      ) : !data.rows.length ? (
-        <EmptyState
-          compact
-          code="CH-10301"
-          icon={CalendarCheck}
-          title={coach ? 'No events need RSVPs' : 'You’re all caught up'}
-          body={coach ? 'Events you create with RSVP on show their replies here.' : 'New team events that need a reply show here.'}
-          action={
-            coach ? (
-              <Button size="sm" href="/golf/dashboard/calendar?new=1">
-                Create event
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <ol className="ch-hb-rsvp__list">
-          {data.rows.map((r) => (
-            <li key={r.eventId}>
-              <span className="ch-hb-rsvp__d" aria-hidden="true">
-                <em>{r.weekday}</em>
-                <b className="ch-num">{r.day}</b>
-              </span>
-              <Link className="ch-hb-rsvp__b" href={`/golf/dashboard/calendar?date=${r.date}&event=${r.eventId}`}>
-                <b>
-                  {r.title}
-                  {r.mandatory && <span className="ch-hb-req">Required</span>}
-                </b>
-                {/* P010 D9: the date tile says the day; the line keeps time and place, the date only for a screen reader. */}
-                <span className="ch-num">
-                  <span className="ch-sr-only">
-                    {r.weekday} {r.day} ·{' '}
-                  </span>
-                  {r.meta}
-                </span>
-              </Link>
-              {coach ? (
-                r.counts ? (
-                  <span className="ch-hb-rsvp__c">
-                    {/* No bar over nothing: with no one invited it was an empty grey track (F-53). */}
-                    {r.counts.going + r.counts.maybe + r.counts.no + r.counts.none > 0 && <span className="ch-hb-rsvp__bar" aria-hidden="true">
-                      {(['going', 'maybe', 'no', 'none'] as const).map((k) => (r.counts![k] ? <i key={k} className={`is-${k}`} style={{ flex: r.counts![k] }} /> : null))}
-                    </span>}
-                    <em className="ch-num">{repliesLine(r.counts, compact)}</em>
-                  </span>
-                ) : (
-                  <span className="ch-hb-muted">Replies didn’t load</span>
-                )
-              ) : (
-                <ReplyChoices r={r} mine={mine(r)} pending={isPending(r)} onReply={onReply} />
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
-  );
-}
-
 /** The optimistic selection remains visible but is explicitly pending until this event's write answers. */
-function ReplyChoices({ r, mine, pending, onReply }: {
+export function ReplyChoices({ r, mine, pending, onReply }: {
   r: ChHubRsvp;
   mine: ChRsvp;
   pending: boolean;
@@ -166,7 +77,7 @@ function ReplyChoices({ r, mine, pending, onReply }: {
   );
 }
 
-function Acknowledgement({ a, acked, pending, onAck }: {
+export function Acknowledgement({ a, acked, pending, onAck }: {
   a: ChHubAnnouncement;
   acked: boolean;
   pending: boolean;
@@ -644,6 +555,20 @@ export function Tasks({
   );
 }
 
+/** Ticking or unticking a task, with its toast (shared by the Tasks list and Home's queue). */
+export function useTaskSave(d: boolean, onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>) {
+  return useAction(
+    d ? 'hub.uncompleteTask' : 'hub.completeTask',
+    onToggle,
+    (task, nextDone) => ({
+      done: nextDone ? `${task.title} done` : `${task.title} is open again`,
+      failed: nextDone ? `Couldn’t mark ${task.title} done` : `Couldn’t reopen ${task.title}`,
+      code: nextDone ? 'CH-10003' : 'CH-10011',
+    }),
+    quietBusy,
+  );
+}
+
 /** One gate per task, shared by completing and reopening it; other tasks remain usable. */
 function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFocused }: {
   t: ChHubTask;
@@ -675,16 +600,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
     el.addEventListener('animationend', done);
     return () => el.removeEventListener('animationend', done);
   }, [lit, reduced]);
-  const save = useAction(
-    d ? 'hub.uncompleteTask' : 'hub.completeTask',
-    onToggle,
-    (task, nextDone) => ({
-      done: nextDone ? `${task.title} done` : `${task.title} is open again`,
-      failed: nextDone ? `Couldn’t mark ${task.title} done` : `Couldn’t reopen ${task.title}`,
-      code: nextDone ? 'CH-10003' : 'CH-10011',
-    }),
-    quietBusy,
-  );
+  const save = useTaskSave(d, onToggle);
   return (
     <div
       ref={row}

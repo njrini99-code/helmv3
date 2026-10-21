@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { ChHubAnnouncement, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp } from '../../../data/hub';
-import { homeBand, hubStrip, tabAttention, taskFigures, type BandInput, type StripInput } from '../hub-summary';
+import type { ChHubAnnouncement, ChHubDay, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp } from '../../../data/hub';
+import { firstBusyDay, hubStrip, ledgerSorted, owedBy, queueOf, tabAttention, taskFigures, type StripInput } from '../hub-summary';
 
 const rsvp = (over: Partial<ChHubRsvp> = {}): ChHubRsvp => ({
   eventId: 'e1',
@@ -111,69 +111,64 @@ describe('tabAttention', () => {
   });
 });
 
-const band = (over: Partial<BandInput> = {}): BandInput => ({ role: 'coach', rsvps: [], replies: new Map<string, ChRsvp>(), upcoming: [], trips: [], ...over });
+const row = (over: Partial<ChHubLedgerRow> = {}): ChHubLedgerRow => ({ id: 'p', name: 'Pat', replies: [], posts: [], tasks: [], rounds: { n: 5, recent: true }, ...over });
+const day = (date: string, events = 0, tripName: string | null = null): ChHubDay => ({
+  date,
+  weekday: 'Tue',
+  day: Number(date.slice(8)),
+  trip: tripName,
+  events: Array.from({ length: events }, (_, i) => ({ id: `${date}-${i}`, title: 'Practice', time: '3:30 PM', place: null, kind: 'practice' })),
+});
 
-describe('homeBand', () => {
-  it('a trip leaving within two days beats an event, and says when it leaves', () => {
-    const b = homeBand(band({ rsvps: [rsvp()], upcoming: [trip({ inDays: 1 })] }));
-    expect(b).toMatchObject({ kind: 'trip-soon', title: 'Carolina Fall Invitational', eyebrow: 'Next trip · departs tomorrow' });
-    expect(b.action).toMatchObject({ kind: 'edit-trip' });
-    expect(homeBand(band({ upcoming: [trip({ inDays: 0 })] })).eyebrow).toBe('Next trip · departs today');
-    expect(homeBand(band({ upcoming: [trip({ inDays: 2 })] })).kind).toBe('trip-soon');
+describe('queueOf', () => {
+  const base = { rsvps: [], replies: new Map<string, ChRsvp>(), announcements: [], isAcked: (a: ChHubAnnouncement) => a.acked, loadedAcked: (a: ChHubAnnouncement) => a.acked, tasks: [], isDone: (t: ChHubTask) => t.status === 'completed' };
+  it('lists the replies owed, the posts to acknowledge and the open tasks, late tasks first then the soonest due', () => {
+    const q = queueOf({
+      ...base,
+      rsvps: [rsvp(), rsvp({ eventId: 'e2', mine: 'accepted' })],
+      announcements: [ann(), ann({ id: 'a2', needAck: false }), ann({ id: 'a3', acked: true })],
+      tasks: [task({ id: 'soon', dueDate: '2026-10-15' }), task({ id: 'late', status: 'overdue', dueDate: '2026-10-20' }), task({ id: 'done', status: 'completed' }), task({ id: 'none', dueDate: null })],
+    });
+    expect(q.items.map((x) => x.key)).toEqual(['r:e1', 'a:a1', 't:late', 't:soon', 't:none']);
+    expect(q.left).toBe(5);
   });
 
-  it('an event beats a trip that is further out, and a coach sees the replies as figures', () => {
-    const b = homeBand(band({ rsvps: [rsvp({ counts: { going: 4, maybe: 1, no: 0, none: 1 } })], upcoming: [trip({ inDays: 3 })] }));
-    expect(b.kind).toBe('event');
-    expect(b.facts).toEqual([
-      { label: 'going', value: '4' },
-      { label: 'maybe', value: '1' },
-      { label: 'can’t', value: '0' },
-      { label: 'no reply', value: '1', warn: true },
-    ]);
-    expect(b.action).toEqual({ kind: 'link', label: 'Open event', href: '/golf/dashboard/calendar?date=2026-10-16&event=e1' });
+  it('an answer given this visit keeps its row and leaves the count', () => {
+    const q = queueOf({ ...base, rsvps: [rsvp()], replies: new Map<string, ChRsvp>([['e1', 'accepted']]), announcements: [ann()], isAcked: () => true, tasks: [task()], isDone: () => true });
+    expect(q.items).toHaveLength(3);
+    expect(q.left).toBe(0);
   });
+});
 
-  it('a player whose reply is still owed is sent to the reply, and one who answered to the event', () => {
-    const owed = homeBand(band({ role: 'player', rsvps: [rsvp()] }));
-    expect(owed.eyebrow).toBe('Needs your reply · Thu 16');
-    expect(owed.action).toEqual({ kind: 'jump', label: 'Reply below', target: 'ch-hb-rsvp' });
-    expect(owed.facts).toEqual([]);
-    const answered = homeBand(band({ role: 'player', rsvps: [rsvp()], replies: new Map<string, ChRsvp>([['e1', 'accepted']]) }));
-    expect(answered.eyebrow).toBe('Next up · Thu 16');
-    expect(answered.action).toMatchObject({ kind: 'link' });
+describe('firstBusyDay', () => {
+  it('opens on the first day with an event or a trip, else today', () => {
+    expect(firstBusyDay([day('2026-10-14'), day('2026-10-15', 2), day('2026-10-16', 1)])).toBe(1);
+    expect(firstBusyDay([day('2026-10-14'), day('2026-10-15', 0, 'Carolina Fall Invitational')])).toBe(1);
+    expect(firstBusyDay([day('2026-10-14'), day('2026-10-15')])).toBe(0);
   });
+});
 
-  it('a player is led to the soonest event still owed a reply, even when an earlier one is answered', () => {
-    const b = homeBand(band({ role: 'player', rsvps: [rsvp({ eventId: 'e1', mine: 'accepted' }), rsvp({ eventId: 'e2', title: 'Recovery nine', weekday: 'Fri', day: 17 })] }));
-    expect(b).toMatchObject({ title: 'Recovery nine', eyebrow: 'Needs your reply · Fri 17' });
-    // A coach, and a player with nothing owed, get the soonest.
-    expect(homeBand(band({ rsvps: [rsvp({ eventId: 'e1', mine: 'accepted' }), rsvp({ eventId: 'e2' })] })).title).toBe('Team dinner');
-    expect(homeBand(band({ role: 'player', rsvps: [rsvp({ mine: 'accepted', title: 'First' }), rsvp({ eventId: 'e2', mine: 'declined', title: 'Second' })] })).title).toBe('First');
+describe('ledgerSorted', () => {
+  const rows = [
+    row({ id: 'a', name: 'Ava', tasks: [{ id: 't', title: 'Form', late: true }] }),
+    row({ id: 'j', name: 'Jonah', replies: [{ id: 'r', title: 'Dinner' }], posts: [{ id: 'p', title: 'Pairings' }], rounds: { n: 0, recent: false } }),
+    row({ id: 'e', name: 'Eli', tasks: [{ id: 't', title: 'Form', late: false }] }),
+    row({ id: 'x', name: 'Xan', replies: null, posts: null, tasks: null, rounds: null }),
+  ];
+  const ids = (r: ChHubLedgerRow[]) => r.map((x) => x.id).join('');
+  it('opens on whoever owes the most, a late task breaking a tie', () => {
+    expect(ids(ledgerSorted(rows, 'owed'))).toBe('jaex');
+    expect(owedBy(rows[1]!)).toBe(2);
   });
-
-  it('with no event the next trip leads, a player has no edit, and the facts are the plan', () => {
-    const b = homeBand(band({ role: 'player', upcoming: [trip()], trips: [trip()] }));
-    expect(b.kind).toBe('trip');
-    expect(b.action).toBeNull();
-    expect(b.facts).toEqual([
-      { label: 'Departs', value: 'Mon · 12:00 PM' },
-      { label: 'Stay', value: 'Mid Pines Inn' },
-      { label: 'Home', value: 'Wed · 5:00 PM' },
-      { label: 'You', value: 'Traveling' },
-    ]);
+  it('a column sorts most first and turns round on a second press; one that did not load sorts last both ways', () => {
+    expect(ids(ledgerSorted(rows, 'replies'))).toBe('jaex');
+    expect(ids(ledgerSorted(rows, 'replies', true))).toBe('aejx');
+    expect(ids(ledgerSorted(rows, 'name'))).toBe('aejx');
+    expect(ids(ledgerSorted(rows, 'name', true))).toBe('xjea');
   });
-
-  it('a stay that is not set says so rather than dropping the row', () => {
-    expect(homeBand(band({ upcoming: [trip({ hotel: null })] })).facts).toContainEqual({ label: 'Stay', value: 'not set' });
-  });
-
-  it('a quiet page says so, names its next step for a coach, and recalls the last trip', () => {
-    const coach = homeBand(band({ trips: [trip({ upcoming: false, inDays: null })] }));
-    expect(coach).toMatchObject({ kind: 'none', title: 'Nothing on the calendar', action: { kind: 'link', label: 'Create event' } });
-    expect(coach.facts).toEqual([{ label: 'Last trip', value: 'Carolina Fall Invitational · Mon 3 – Wed 5 Nov' }]);
-    const player = homeBand(band({ role: 'player' }));
-    expect(player).toMatchObject({ kind: 'none', title: 'Nothing scheduled yet', action: null, facts: [] });
+  it('rounds sort fewest first, so the player who has not played leads', () => {
+    expect(ids(ledgerSorted(rows, 'rounds'))[0]).toBe('j');
+    expect(ids(ledgerSorted(rows, 'rounds')).at(-1)).toBe('x');
   });
 });
 

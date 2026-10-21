@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 /**
- * Team Hub's summary surfaces (the strip, Home's band, the coach's task board) and the player's Tasks tab, on the preview
+ * Team Hub's summary surfaces (the strip, Home's widgets, the coach's task board) and the player's Tasks tab, on the preview
  * fixtures. The rules behind them are pinned in hub-summary.test.ts; this is what the page does with them.
  */
 
@@ -91,43 +91,70 @@ describe('100101 Team Hub · the strip under the title', () => {
   });
 });
 
-describe('100101 Team Hub · Home’s band', () => {
-  it('leads with the next event and, for a coach, who has replied', () => {
-    show(PREVIEW_HUB_COACH);
-    const band = screen.getByRole('region', { name: 'Course prep · 9 holes' });
-    expect(band.getAttribute('data-band')).toBe('event');
-    expect(within(band).getByText('4')).toBeTruthy();
-    expect(band.querySelector('.is-warn dd')?.textContent).toBe('1');
-    expect(within(band).getByRole('link', { name: 'Open event' }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-15&event=r1');
+describe('100101 Team Hub · Home’s widgets', () => {
+  it('the trip tile counts down to the next trip, pages to the one after, and offers a coach Edit trip', async () => {
+    const { user } = show(PREVIEW_HUB_COACH);
+    const trip = screen.getByRole('region', { name: 'Next trip' });
+    expect(trip.classList.contains('ch-hw--dark')).toBe(true);
+    expect(within(trip).getByText('20')).toBeTruthy();
+    expect(within(trip).getByRole('button', { name: 'Edit trip' })).toBeTruthy();
+    expect(within(trip).getByRole('button', { name: 'Previous trip' })).toBeDisabled();
+    await user.click(within(trip).getByRole('button', { name: 'Next trip' }));
+    const later = screen.getByRole('region', { name: 'Later trip' });
+    expect(within(later).getByText('31')).toBeTruthy();
+    expect(within(later).getByText('2 of 2')).toBeTruthy();
   });
 
-  it('a trip leaving within two days takes the band, and the trip is not said a second time below it', () => {
+  it('says a trip leaving tomorrow in words, not as a figure of one', () => {
     const [first, ...rest] = PREVIEW_HUB_COACH.trips.rows;
     show({ ...PREVIEW_HUB_COACH, trips: { rows: [{ ...first!, inDays: 1 }, ...rest], error: false } });
-    const band = screen.getByRole('region', { name: 'Carolina Fall Invitational' });
-    expect(band.getAttribute('data-band')).toBe('trip-soon');
-    expect(within(band).getByRole('button', { name: 'Edit trip' })).toBeTruthy();
-    expect(document.querySelector('.ch-hb-home .ch-hb-pass')).toBeNull();
+    expect(within(screen.getByRole('region', { name: 'Next trip' })).getByText('Tomorrow')).toBeTruthy();
   });
 
-  it('a player who owes a reply is sent to the soonest one that needs it', () => {
-    show(PREVIEW_HUB_PLAYER);
-    // Course prep is answered; Team dinner is the first still owed.
-    const band = screen.getByRole('region', { name: 'Team dinner' });
-    expect(band.getAttribute('data-band')).toBe('event');
-    expect(within(band).getByRole('button', { name: 'Reply below' })).toBeTruthy();
+  it('with no trip ahead, the dark tile is the week’s next event, and a coach can plan a trip', () => {
+    show({ ...PREVIEW_HUB_COACH, trips: { rows: [], error: false } });
+    const next = screen.getByRole('region', { name: 'Next up' });
+    expect(within(next).getByText('Short-game block')).toBeTruthy();
+    expect(within(next).getByText('Today')).toBeTruthy();
+    expect(within(next).getByRole('button', { name: 'Plan a trip' })).toBeTruthy();
   });
 
-  it('is withheld while a read it leans on is down, so a failure is never a quiet calendar', () => {
-    show({ ...PREVIEW_HUB_COACH, rsvps: { rows: [], error: true } });
-    expect(document.querySelector('.ch-hb-band')).toBeNull();
+  it('the week steps by day with the arrow keys, and an event that takes replies lets a player answer in place', async () => {
+    const { user, w } = show(PREVIEW_HUB_PLAYER);
+    const week = screen.getByRole('region', { name: 'This week' });
+    const today = within(week).getByRole('button', { name: /^Today, Tue 14/ });
+    expect(today.getAttribute('aria-pressed')).toBe('true');
+    today.focus();
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    const thu = within(week).getByRole('button', { name: 'Thu 16: 2 events' });
+    expect(thu.getAttribute('aria-pressed')).toBe('true');
+    expect(document.activeElement).toBe(thu);
+    expect(within(week).getByText('Fall qualifier · round 1')).toBeTruthy();
+    const dinner = within(week).getByRole('radiogroup', { name: 'Your reply for Team dinner' });
+    await user.click(within(dinner).getByRole('radio', { name: 'Going' }));
+    expect(w.reply).toHaveBeenCalledWith('r2', 'accepted');
+    // Later this week opens its day.
+    await user.click(within(week).getByRole('button', { name: /Recovery nine/ }));
+    expect(within(week).getByRole('button', { name: 'Fri 17: 1 event' }).getAttribute('aria-pressed')).toBe('true');
   });
 
-  it('says so when there is nothing to lead with', () => {
-    show({ ...PREVIEW_HUB_COACH, rsvps: { rows: [], error: false }, trips: { rows: [], error: false } });
-    const band = document.querySelector('.ch-hb-band')!;
-    expect(band.getAttribute('data-band')).toBe('none');
-    expect(within(band as HTMLElement).getByRole('link', { name: 'Create event' })).toBeTruthy();
+  it('a player’s queue keeps an answered row in place and counts what is left; the rest is a press away', async () => {
+    const { user } = show(PREVIEW_HUB_PLAYER);
+    const queue = screen.getByRole('region', { name: 'Your queue' });
+    expect(within(queue).getByText('5 to do')).toBeTruthy();
+    await user.click(within(queue).getByRole('button', { name: 'Post two practice rounds' }));
+    expect(within(queue).getByRole('button', { name: 'Post two practice rounds, done' })).toBeTruthy();
+    expect(within(queue).getByText('4 to do')).toBeTruthy();
+    expect(within(queue).queryByText('Sign travel waiver')).toBeNull();
+    await user.click(within(queue).getByRole('button', { name: 'Show all 5' }));
+    expect(within(queue).getByText('Sign travel waiver')).toBeTruthy();
+  });
+
+  it('a read that failed says so in its own tile, never as an empty one', () => {
+    show({ ...PREVIEW_HUB_COACH, week: { days: [], error: true } });
+    expect(within(screen.getByRole('region', { name: 'This week' })).getByText(/This week didn’t load/)).toBeTruthy();
+    // The rest of Home still stands.
+    expect(screen.getByRole('region', { name: 'Waiting on' })).toBeTruthy();
   });
 });
 

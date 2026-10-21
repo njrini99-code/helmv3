@@ -20,9 +20,10 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { HubBand, HubStrip, TaskBoard } from './band';
-import { homeBand, hubStrip, tabAttention, taskFigures } from './hub-summary';
-import { Announcement, Documents, NewAnnouncementLine, Rsvps, Tasks, TripPass, Updates } from './parts';
+import { HubStrip, TaskBoard } from './band';
+import { hubStrip, queueOf, tabAttention, taskFigures } from './hub-summary';
+import { Announcement, Documents, NewAnnouncementLine, Tasks, TripPass, Updates } from './parts';
+import { FilesTile, PostTile, QueueTile, TasksTile, TripTile, WaitingOn, WeekTile } from './widgets';
 import { AssignSheet, ComposeSheet, ConfirmDelete, TripSheet, type ChAnnouncementEdit } from './sheets';
 import { TripEditSheet } from './trip-edit';
 import { uploadRefusal } from './upload-rules';
@@ -391,8 +392,9 @@ export function TeamHub({
   const tasks = useMemo(() => ({ ...data.tasks, rows: data.tasks.rows.filter((t) => !gone.has(t.id)) }), [data.tasks, gone]);
   const docs = useMemo(() => ({ ...data.documents, folders: data.documents.folders.map((f) => ({ ...f, files: f.files.filter((d) => !gone.has(d.id)) })).filter((f) => f.files.length) }), [data.documents, gone]);
   const isAcked = (a: ChHubAnnouncement) => a.acked || acked.has(a.id);
-  // The Home card: the newest post still waiting on this player, else the newest (no pinned posts yet, Q-70).
-  const featured = anns.find((a) => !coach && a.needAck && (ackPending(a) || !isAcked(a))) ?? anns[0] ?? null;
+  // Home's post: the newest that loaded still waiting on this player, else the newest (no pinned posts yet, Q-70). It is
+  // read from what loaded, so a Got it this visit leaves the post in place (acknowledged) instead of swapping in another.
+  const featured = anns.find((a) => !coach && a.needAck && !a.acked) ?? anns[0] ?? null;
   const upcoming = tripRows.filter((t) => t.upcoming);
   const nextTrip = upcoming[0] ?? null;
   // The strip, the tab figures and Home's band read what the page already holds. A read that failed contributes nothing
@@ -411,8 +413,6 @@ export function TeamHub({
   };
   const strip = hubStrip(summary);
   const attention = tabAttention(summary);
-  const band = !phone && !data.rsvps.error && !data.trips.error ? homeBand({ role: data.role, rsvps: data.rsvps.rows, replies, upcoming, trips: tripRows }) : null;
-  const bandIsTrip = band?.kind === 'trip' || band?.kind === 'trip-soon';
   const figures = coach && !data.tasks.error ? taskFigures(tasks.rows, taskDone) : null;
   // The page is empty only when every read answered and every one was empty: a failed read (updates included) shows its
   // own notice, and an update to read is something to show.
@@ -430,7 +430,8 @@ export function TeamHub({
   // More than one read failed: the page says so once under its head, with one Try again for all of them (CH-1209), and
   // each failed section keeps its heading with a covered notice marking the gap. One failure keeps its own notice.
   const failedParts = [
-    data.rsvps.error && (coach ? 'this week’s replies' : 'your events'),
+    // The week and its replies are one part to name: the week tile carries both.
+    (data.week.error || data.rsvps.error) && (data.week.error ? 'this week' : coach ? 'this week’s replies' : 'your events'),
     data.announcements.error && 'announcements',
     data.trips.error && 'travel',
     data.updates.error && 'updates',
@@ -478,10 +479,39 @@ export function TeamHub({
           ? { label: 'Assign a task', icon: Plus, run: () => setAssign(true) }
           : null;
 
-  const yourTasks = (
-    <SectionBoundary surface="hub.tasks" label="Your tasks" code="CH-10205">
-      <Tasks role={data.role} data={tasks} isDone={taskDone} isPending={taskPending} onToggle={onToggle} focusTask={taskToFocus} onFocused={taskFocused} covered={covered} />
-    </SectionBoundary>
+  const planTrip = () => {
+    setTab('travel');
+    setTripOpen(true);
+  };
+  // A player's queue: what loaded as owed, each row showing this visit's answer (hub-summary queueOf).
+  const queue = coach
+    ? null
+    : queueOf({
+        rsvps: data.rsvps.error ? [] : data.rsvps.rows,
+        replies,
+        announcements: data.announcements.error ? [] : anns,
+        isAcked,
+        loadedAcked: (a) => a.acked,
+        shownPost: data.announcements.error ? null : (featured?.id ?? null),
+        tasks: data.tasks.error ? [] : tasks.rows,
+        isDone: taskDone,
+      });
+  const queueTile = queue && (
+    <QueueTile
+      items={queue.items}
+      left={queue.left}
+      failed={{ replies: data.rsvps.error, posts: data.announcements.error, tasks: data.tasks.error }}
+      covered={covered}
+      replies={replies}
+      isPending={replyPending}
+      onReply={onReply}
+      isAcked={isAcked}
+      ackPending={ackPending}
+      onAck={onAck}
+      isDone={taskDone}
+      taskPending={taskPending}
+      onToggle={onToggle}
+    />
   );
 
   return (
@@ -549,7 +579,7 @@ export function TeamHub({
       <Swap swapKey={shownTab}>
         <div role="tabpanel" id={`ch-hb-panel-${shownTab}`} aria-labelledby={`ch-hb-tab-${shownTab}`} className="ch-hb-panel">
           {shownTab === 'home' &&
-            (nothing && data.rsvps.rows.length === 0 && !data.rsvps.error ? (
+            (nothing && !data.week.error && data.week.days.every((d) => !d.events.length) ? (
               <EmptyState
                 size="page"
                 code={coach ? 'CH-10305' : 'CH-10306'}
@@ -562,10 +592,7 @@ export function TeamHub({
                   coach ? (
                     <Button
                       leftIcon={Plane}
-                      onClick={() => {
-                        setTab('travel');
-                        setTripOpen(true);
-                      }}
+                      onClick={planTrip}
                     >
                       Plan a trip
                     </Button>
@@ -573,44 +600,70 @@ export function TeamHub({
                 }
               />
             ) : (
-              <>
-              {band && <HubBand band={band} onEditTrip={setEditingTrip} />}
-              <div className="ch-hb-home">
-                <div className="ch-hb-col">
-                  <SectionBoundary surface="hub.rsvps" label="RSVPs" code="CH-10205">
-                    <Rsvps role={data.role} data={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} compact={phone} covered={covered} />
+              <div className="ch-hb-bento" data-role={data.role}>
+                <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
+                  <TripTile
+                    trips={upcoming}
+                    role={data.role}
+                    days={data.week.error ? [] : data.week.days}
+                    error={data.trips.error}
+                    covered={covered}
+                    onEdit={coach ? setEditingTrip : undefined}
+                    onPlan={coach ? planTrip : undefined}
+                    onOpenTravel={() => pick('travel')}
+                  />
+                </SectionBoundary>
+                {!coach && <SectionBoundary surface="hub.queue" label="Your queue" code="CH-10205">{queueTile}</SectionBoundary>}
+                <SectionBoundary surface="hub.week" label="This week" code="CH-10205">
+                  <WeekTile week={data.week} role={data.role} rsvps={data.rsvps} replies={replies} isPending={replyPending} onReply={onReply} covered={covered} span={coach ? 5 : 7} />
+                </SectionBoundary>
+                {coach && (
+                  <SectionBoundary surface="hub.waiting" label="Waiting on" code="CH-10205">
+                    <WaitingOn rows={data.ledger ?? []} pulse={data.pulse ?? null} playersError={data.playersError} onOpen={pick} />
                   </SectionBoundary>
-                  <SectionBoundary surface="hub.announcement" label="The latest announcement" code="CH-10205">
-                    {data.announcements.error ? (
-                      // The latest post and the next trip have no heading of their own: a failed one stands on its own
-                      // rule, so its line never reads as a part of the RSVPs above it.
-                      <div className="ch-hb-part">
-                        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
-                      </div>
-                    ) : featured ? (
-                      <Announcement key={featured.id} a={featured} role={data.role} featured acked={isAcked(featured)} pending={ackPending(featured)} onAck={onAck} onEdit={setEditing} onDelete={(a) => askDelete({ kind: 'ann', a })} files={attachments} />
-                    ) : null}
+                )}
+                <SectionBoundary surface="hub.announcement" label="The latest announcement" code="CH-10205">
+                  <PostTile
+                    a={featured}
+                    role={data.role}
+                    error={data.announcements.error}
+                    covered={covered}
+                    acked={featured ? isAcked(featured) : false}
+                    pending={featured ? ackPending(featured) : false}
+                    onAck={onAck}
+                    onOpenPosts={() => pick('ann')}
+                  />
+                </SectionBoundary>
+                {coach && (
+                  <SectionBoundary surface="hub.tasks" label="Tasks" code="CH-10205">
+                    <TasksTile
+                      data={tasks}
+                      figures={figures}
+                      isDone={taskDone}
+                      covered={covered}
+                      onAssign={() => {
+                        setTab('tasks');
+                        setAssign(true);
+                      }}
+                      onFocus={(t) => {
+                        setTaskToFocus(t.id);
+                        pick('tasks');
+                      }}
+                      onOpenTasks={() => pick('tasks')}
+                    />
                   </SectionBoundary>
-                  <SectionBoundary surface="hub.trip" label="The next trip" code="CH-10205">
-                    {data.trips.error ? (
-                      <div className="ch-hb-part">
-                        <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
-                      </div>
-                    ) : nextTrip && !bandIsTrip ? (
-                      <TripPass t={nextTrip} role={data.role} {...tripActions} />
-                    ) : null}
-                  </SectionBoundary>
-                </div>
-                <div className="ch-hb-col">
-                  {/* A player's phone puts their tasks before Updates: the column stacks under the first, and Updates ran long enough to hide them (wave 7). */}
-                  {!coach && phone && yourTasks}
-                  <SectionBoundary surface="hub.updates" label="Updates" code="CH-10205">
+                )}
+                <SectionBoundary surface="hub.updates" label="Updates" code="CH-10205">
+                  <div className="ch-hw ch-hw--feed" style={{ '--ch-hw-span': 7 } as CSSProperties}>
                     <Updates data={data.updates} covered={covered} read={readUpdates} onOpen={onOpenUpdate} />
+                  </div>
+                </SectionBoundary>
+                {!coach && (
+                  <SectionBoundary surface="hub.files" label="Files" code="CH-10205">
+                    <FilesTile data={docs} opening={opening} covered={covered} onOpen={onOpen} onOpenDocs={() => pick('docs')} />
                   </SectionBoundary>
-                  {!coach && !phone && yourTasks}
-                </div>
+                )}
               </div>
-              </>
             ))}
 
           {shownTab === 'ann' && (

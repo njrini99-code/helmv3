@@ -1,9 +1,10 @@
+import type { CSSProperties } from 'react';
 import { Skeleton, SkelLine, SkelRows } from '../../ui/States';
 import { HubSkeletonAction, HubSkeletonChip, HubSkeletonStrip, HubSkeletonTop } from './HubSkeletonTop';
 import '../../styles/hub.css';
 
 /**
- * Route loading for Team Hub (CH-10405): the header, the tab strip and the two Home columns, in place. On a phone the
+ * Route loading for Team Hub (CH-10405): the header, the tab strip and Home's first widgets, in place. On a phone the
  * opening and the tabs take the signed-in role's shape from the shell (HubSkeletonTop); the desktop draws the shape
  * both roles share.
  */
@@ -25,26 +26,25 @@ export function HubSkeleton() {
           <Skeleton key={i} width={w} height={14} />
         ))}
       </div>
-      <div className="ch-hb-home">
-        <div className="ch-hb-col">
-          <div className="ch-hb-card" style={{ display: 'grid', gap: 14 }}>
-            <Skeleton width={110} height={16} />
-            <Skeleton width="100%" height={48} radius={10} />
-            <Skeleton width="100%" height={48} radius={10} />
-          </div>
-          <div className="ch-hb-card" style={{ display: 'grid', gap: 12 }}>
-            <Skeleton width="70%" height={22} radius={8} />
-            <Skeleton width="100%" height={13} />
-            <Skeleton width="85%" height={13} />
-          </div>
+      {/* Home's widgets in place: the trip and the week, then the second row, on the loaded tiles' own spans. */}
+      <div className="ch-hb-bento">
+        <div className="ch-hw ch-hw--dark" style={{ '--ch-hw-span': 7, minHeight: 364 } as CSSProperties} />
+        <div className="ch-hw" style={{ '--ch-hw-span': 5, minHeight: 364 } as CSSProperties}>
+          <Skeleton width={90} height={14} />
+          <Skeleton width="100%" height={60} radius={10} />
+          <Skeleton width="80%" height={14} />
+          <Skeleton width="60%" height={14} />
         </div>
-        <div className="ch-hb-col">
-          <div className="ch-hb-card" style={{ display: 'grid', gap: 12 }}>
-            <Skeleton width={90} height={16} />
-            <Skeleton width="100%" height={36} radius={8} />
-            <Skeleton width="100%" height={36} radius={8} />
-            <Skeleton width="100%" height={36} radius={8} />
-          </div>
+        <div className="ch-hw" style={{ '--ch-hw-span': 8, minHeight: 300 } as CSSProperties}>
+          <Skeleton width={90} height={14} />
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} width="100%" height={28} radius={6} />
+          ))}
+        </div>
+        <div className="ch-hw" style={{ '--ch-hw-span': 4, minHeight: 300 } as CSSProperties}>
+          <Skeleton width={90} height={14} />
+          <Skeleton width="85%" height={18} />
+          <Skeleton width={60} height={34} radius={8} />
         </div>
       </div>
       {/* The phone's shape (hub.css), in the loaded page's own classes so it lands in place: the opening on its double
