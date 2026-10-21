@@ -1,6 +1,7 @@
 'use client';
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { gameSectionFromHash } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -9,6 +10,8 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { holeCoverage } from '../../data/round-scope';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
 import type { ChHoles } from '../../data/stats-filter';
+import type { ChReadArea } from '../../data/coachhelm-classify';
+import type { ChStatsReads } from '../../data/stats-reads';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
@@ -21,6 +24,7 @@ import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
+import { readsLineParts, READS_FAILED } from './reads-line';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
@@ -36,6 +40,28 @@ const SECTIONS = [
   ['short', 'Short game'],
   ['putting', 'Putting'],
 ] as const;
+
+/**
+ * "CoachHelm sees…" under a section's rule (spec D build A): how many current reads in this area are costing strokes and how many
+ * are working, and the Deep dive, as one link. Nothing when the reads are off, failed (one line under the chips says so) or none.
+ */
+function ReadsLine({ reads, area }: { reads: ChStatsReads | undefined; area: ChReadArea }) {
+  const r = reads?.status === 'ready' ? reads.byArea[area] : undefined;
+  const parts = r ? readsLineParts(area, r) : null;
+  if (!r || !parts) return null;
+  return (
+    <p className="ch-gm__reads">
+      <Link href={r.href} className="ch-gm__reads-a">
+        <span>
+          {parts.map((part, i) => (typeof part === 'number' ? <span key={i} className="ch-num">{part}</span> : part))}{' '}
+          <span className="ch-gm__reads-go">
+            Deep dive <span aria-hidden="true">→</span>
+          </span>
+        </span>
+      </Link>
+    </p>
+  );
+}
 
 /** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
 const NONE_REASON: Record<string, string> = {
@@ -71,6 +97,7 @@ function Sec({
   figs,
   rule,
   how,
+  reads,
   more,
   children,
 }: {
@@ -86,6 +113,8 @@ function Sec({
   rule: string;
   /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
   how?: string;
+  /** "CoachHelm sees…" for this section, under its rule. */
+  reads?: ReactNode;
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
@@ -117,6 +146,7 @@ function Sec({
           })}
         </dl>
         <Rule how={how}>{rule}</Rule>
+        {reads}
       </div>
       <div className="ch-gm__vis">
         <div className="ch-gm__body">{children}</div>
@@ -144,6 +174,7 @@ export function GameDetail({
   basis,
   holes = '18',
   puttBands: shotBands = null,
+  reads,
   onRetry,
   phone = false,
 }: {
@@ -161,6 +192,8 @@ export function GameDetail({
   holes?: ChHoles;
   /** Make rate by distance from the window's putts in the six bands the Tour grades, for the lead sentence and the Tour table. */
   puttBands?: ChPuttBand[] | null;
+  /** What CoachHelm sees in each section (data/stats-reads.ts); absent or off draws nothing. */
+  reads?: ChStatsReads;
   onRetry?: () => void;
   phone?: boolean;
 }) {
@@ -340,6 +373,11 @@ export function GameDetail({
         ))}
         <span className="ch-gd__src">{sample} logged</span>
       </nav>
+      {reads?.status === 'failed' && (
+        <p className="ch-gx-rule" data-ch-code="CH-5214">
+          {READS_FAILED}
+        </p>
+      )}
       {x.truncated && (
         <p className="ch-gx-rule" data-ch-code="CH-5319">
           This window has more rounds than the shot-level figures read, so they cover the newest 100.
@@ -349,6 +387,7 @@ export function GameDetail({
       <Sec
         id="scoring"
         hide={!show('scoring')}
+        reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
@@ -388,6 +427,7 @@ export function GameDetail({
       <Sec
         id="tee"
         hide={!show('tee')}
+        reads={<ReadsLine reads={reads} area="tee" />}
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
@@ -434,6 +474,7 @@ export function GameDetail({
       <Sec
         id="approach"
         hide={!show('approach')}
+        reads={<ReadsLine reads={reads} area="approach" />}
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
@@ -531,6 +572,7 @@ export function GameDetail({
       <Sec
         id="short"
         hide={!show('short')}
+        reads={<ReadsLine reads={reads} area="short" />}
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
@@ -582,6 +624,7 @@ export function GameDetail({
       <Sec
         id="putting"
         hide={!show('putting')}
+        reads={<ReadsLine reads={reads} area="putting" />}
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}
