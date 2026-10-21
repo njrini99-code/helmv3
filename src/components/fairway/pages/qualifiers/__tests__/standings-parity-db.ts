@@ -71,7 +71,7 @@ let db: Record<string, Row[]> = {};
 
 /** Load a fixture into the fake database. The player's name is their id, so name order is id order everywhere. */
 export function seed(fx: ParityFixture): void {
-  const player = (id: string) => ({ id, first_name: id, last_name: '', graduation_year: null, avatar_url: null });
+  const player = (id: string) => ({ id, user_id: null, first_name: id, last_name: '', graduation_year: null, avatar_url: null, handicap: null, handicap_index: null });
   const entries = fx.entries.map((e, i) => ({
     id: `entry-${i.toString().padStart(4, '0')}`,
     qualifier_id: fx.qualifier.id,
@@ -106,6 +106,8 @@ export function seed(fx: ParityFixture): void {
       },
     ],
     golf_qualifier_entries: entries,
+    // Every pipeline reads the entrants' names through the golf_player_profiles function (security review S4).
+    golf_players: entries.map((e) => e.player),
     golf_rounds: fx.rounds.map((r) => ({ course_name: null, ...r })),
     golf_qualifier_selections: (fx.selections ?? []).map((s) => ({
       qualifier_id: fx.qualifier.id,
@@ -177,8 +179,16 @@ export function parityClient() {
   };
   return {
     from: (table: string) => query(table),
-    // No selection-reasons function: the reader falls back to the column, as before the D-35 migration.
-    rpc: async (name: string) => ({ data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } }),
+    // golf_player_profiles answers from the seeded players (the fixtures have one team: its roster is every player), by id
+    // or by team. No selection-reasons function: the reader falls back to the column, as before the D-35 migration.
+    rpc: async (name: string, args?: { p_player_ids?: string[]; p_team_ids?: string[] }) => {
+      if (name === 'golf_player_profiles') {
+        const ids = args?.p_player_ids;
+        const players = db['golf_players'] ?? [];
+        return { data: ids ? players.filter((p) => ids.includes(p['id'] as string)) : players, error: null };
+      }
+      return { data: null, error: { code: 'PGRST202', message: `Could not find the function public.${name}` } };
+    },
     channel: () => channel,
     removeChannel: () => undefined,
     auth: { getUser: async () => ({ data: { user: { id: 'coach-user' } }, error: null }) },

@@ -184,9 +184,15 @@ describe('G-33 — the member list has data underneath it', () => {
     expect(hookCode).toContain('creator_id?: string | null;');
   });
 
-  it('the participant join selects the two columns D-03a needs, and only those', () => {
+  it('the participant join reads coaches by four columns and players through the profile function', () => {
     expect(pageCode).toContain("select('user_id, full_name, avatar_url, title')");
-    expect(pageCode).toContain("select('user_id, first_name, last_name, avatar_url, graduation_year')");
+    // Players come through golf_player_profiles (security review S4): the page
+    // names no golf_players columns, and the reader exposes display columns only.
+    expect(pageCode).toContain('readGolfPlayerProfiles(supabase, { userIds })');
+    expect(pageCode).not.toMatch(/from\('golf_players'\)[\s\S]{0,120}select\('user_id, first_name/);
+    const profiles = strip(read('src/lib/golf/player-profiles.ts'));
+    expect(profiles).toContain('user_id, first_name, last_name, avatar_url, graduation_year');
+    expect(profiles).not.toMatch(/GOLF_PLAYER_PROFILE_COLUMNS\s*=\s*[^;]*\b(email|phone)\b/);
   });
 
   it('derives the subtitle per role, with NO placeholder when the column is empty', () => {

@@ -168,6 +168,15 @@ Player Team Hub
 - Files attached to an announcement must be the team's own documents, checked
   before the announcement is written; a post whose file links fail reports
   `attachmentsError` beside the id (`announcements.ts`).
+- A player reads a teammate's display columns (name, avatar, class year,
+  handicap) only through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`,
+  the player-profiles database function), never a `golf_players` table read or
+  embed: email, phone, gpa, school, hometown and state are for the player and
+  their coaches (security review S4). Until `20261017004000` is applied the
+  reader falls back to the table, so the app ships before the migration;
+  `20261017005000` (which removes the teammate branch of `golf_players_select`)
+  stays held until every teammate read is confirmed to use the function
+  (`supabase/migrations/HELD.md`).
 - Travel expense split support is incomplete; do not assume per-player split logic exists.
 
 ## UI Contract

@@ -108,9 +108,15 @@ async function getCoachTeamId(
  * is nothing to read.
  *
  * Denying when the check cannot run is correct and is kept. Only the sentence
- * changes. The authorization RULES are unchanged, deliberately, including the
- * dual coach/player case where a coach not staffed on this team is still let
- * through if they also hold a player profile.
+ * changes.
+ *
+ * `viaCoach` means "a coach authorized for THIS team", and nothing looser:
+ * callers take the role from it (the list action below no longer trusts the
+ * isCoach / playerId it is handed, security review S5, 2026-10-16). A coach
+ * who is not staffed here but also holds a player profile used to come back
+ * `viaCoach: true` with no membership check at all; they now go through the
+ * player path, so they read this team only if they are an active member of it,
+ * and only as a player.
  */
 const ANNOUNCEMENT_AUTHZ_UNREADABLE =
   "Couldn't verify your access to this team's announcements. Please try again.";
@@ -156,10 +162,9 @@ async function resolveTeamAnnouncementViewer(
     const coachAuthorized = await validateCoachTeamAccess(
       supabase, coachCheck.id, teamId, coachCheck.organization_id,
     );
-    if (!coachAuthorized && !playerCheck) {
-      return { ok: false, error: NOT_AUTHORIZED_FOR_TEAM };
-    }
-    return { ok: true, player: playerCheck, viaCoach: true };
+    if (coachAuthorized) return { ok: true, player: playerCheck, viaCoach: true };
+    if (!playerCheck) return { ok: false, error: NOT_AUTHORIZED_FOR_TEAM };
+    // Not this team's coach, but also a player: decided by membership below.
   }
 
   if (playerCheck) {
@@ -751,8 +756,8 @@ export async function createEnrichedAnnouncement(input: {
 async function getAnnouncementsWithMetaImpl(
   teamId: string,
   _userId: string,
-  isCoach: boolean,
-  playerId?: string | null,
+  _isCoach: boolean,
+  _playerId?: string | null,
 ): Promise<ActionResult<GolfAnnouncementMeta[]>> {
   try {
     const supabase = await createClient();
@@ -764,6 +769,15 @@ async function getAnnouncementsWithMetaImpl(
       supabase, user.id, teamId, 'getAnnouncementsWithMeta',
     );
     if (!viewer.ok) return { success: false, error: viewer.error };
+
+    // The role and the player come from the session, never from the caller.
+    // Both used to be arguments: a player who passed isCoach=true got the coach
+    // view (every targeted announcement, teammates' acknowledgements with
+    // names), and a playerId of someone else got that player's view (security
+    // review S5, 2026-10-16). The arguments are kept so callers compile, and
+    // ignored.
+    const isCoach = viewer.viaCoach;
+    const playerId = isCoach ? null : (viewer.player?.id ?? null);
 
     // Fetch the most-recent announcements for this team. Bounded (P275): an
     // unbounded select silently truncates at PostgREST's 1000-row cap in
@@ -973,13 +987,18 @@ const observedGetAnnouncementsWithMeta = withAdminObserved(
   getAnnouncementsWithMetaImpl,
 );
 
+/**
+ * The team's announcements as the signed-in person may read them. `_userId`,
+ * `_isCoach` and `_playerId` are ignored: the role and the player are resolved
+ * from the session (resolveTeamAnnouncementViewer).
+ */
 export async function getAnnouncementsWithMeta(
   teamId: string,
   _userId: string,
-  isCoach: boolean,
-  playerId?: string | null,
+  _isCoach: boolean,
+  _playerId?: string | null,
 ): Promise<ActionResult<GolfAnnouncementMeta[]>> {
-  return observedGetAnnouncementsWithMeta(teamId, _userId, isCoach, playerId);
+  return observedGetAnnouncementsWithMeta(teamId, _userId, _isCoach, _playerId);
 }
 
 // ============================================================================

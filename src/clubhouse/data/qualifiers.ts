@@ -2,6 +2,7 @@ import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { readQualifierSelectionReasons } from '@/lib/golf/qualifier-selection-reasons';
 import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import type { QualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/types';
@@ -212,15 +213,32 @@ export interface ChQFormData {
 function entrantOf(p: PlayerCols, now: Date): ChQEntrant {
   return { playerId: p.id, name: fullName(p), classYear: classYearLabel(p.graduation_year, now) };
 }
-const ENTRY_SELECT = 'qualifier_id, player_id, player:golf_players(id, first_name, last_name, graduation_year)';
+const ENTRY_SELECT = 'qualifier_id, player_id';
 const ROUND_SELECT = 'id, qualifier_id, player_id, qualifier_round_number, total_score, score_to_par, round_date, course_name, holes_played, status, is_test';
 
-async function readEntries(supabase: Supabase, qualifierIds: string[], surface: string): Promise<{ rows: EntryRow[]; error: boolean }> {
-  const rows: EntryRow[] = [];
+/**
+ * The entries of the team's qualifiers, each with its entrant's name. The names come through golf_player_profiles (the
+ * team's roster, read beside the entries, so no extra round trip), not an embed: a player may no longer read a
+ * teammate's golf_players row (security review S4). An entrant no longer on the roster has no name, as before (the
+ * policy only ever admitted active members).
+ */
+async function readEntries(supabase: Supabase, qualifierIds: string[], teamId: string, surface: string): Promise<{ rows: EntryRow[]; error: boolean }> {
+  const [entries, profiles] = await Promise.all([readEntryRows(supabase, qualifierIds, surface), readGolfPlayerProfiles(supabase, { teamIds: [teamId] })]);
+  if (entries.error) return { rows: [], error: true };
+  if (profiles.error) {
+    chLogServer(surface, 'entrantNames', profiles.error, 'qualifiers');
+    return { rows: [], error: true };
+  }
+  const byId = profilesById(profiles.data);
+  return { rows: entries.rows.map((r) => ({ ...r, player: byId.get(r.player_id) ?? null })), error: false };
+}
+
+async function readEntryRows(supabase: Supabase, qualifierIds: string[], surface: string): Promise<{ rows: Array<Omit<EntryRow, 'player'>>; error: boolean }> {
+  const rows: Array<Omit<EntryRow, 'player'>> = [];
   for (const chunk of chunkIds(qualifierIds)) {
-    const { data, error } = await fetchAllRowsResult<EntryRow>((from, to) =>
+    const { data, error } = await fetchAllRowsResult<Omit<EntryRow, 'player'>>((from, to) =>
       supabase.from('golf_qualifier_entries').select(ENTRY_SELECT).in('qualifier_id', chunk).order('id', { ascending: true }).range(from, to) as unknown as PromiseLike<{
-        data: EntryRow[] | null;
+        data: Array<Omit<EntryRow, 'player'>> | null;
         error: { message: string } | null;
       }>,
     );
@@ -311,7 +329,7 @@ export async function loadQualifierList(input: { role: Role; teamId: string; pla
   const playerId = input.role === 'player' ? input.playerId : null;
   // A player's own squad results and the live qualifiers' round courses read beside the standings (wave 7).
   const [entries, rounds, mySquad, nextCourses] = await Promise.all([
-    ids.length ? readEntries(supabase, ids, 'qualifiers') : { rows: [], error: false },
+    ids.length ? readEntries(supabase, ids, input.teamId, 'qualifiers') : { rows: [], error: false },
     ids.length ? readRounds(supabase, ids, 'qualifiers') : { rows: [] as RoundRow[], error: false },
     playerId ? readOwnSelections(supabase, qs, playerId) : null,
     playerId ? readRoundCourses(supabase, qs.filter((q) => parseStatus(q.status) === 'in_progress').map((q) => q.id)) : null,
@@ -445,7 +463,7 @@ export async function loadQualifierDetail(input: { role: Role; teamId: string; p
   const selectionState = parseSelectionState(q.selection_state);
   // Every read of the page starts here, together. Each is started once, as a promise, because the core and the secondary both wait on
   // some of them (a query builder would read again for every `then`).
-  const entriesRead = readEntries(supabase, [q.id], 'qualifiers');
+  const entriesRead = readEntries(supabase, [q.id], q.team_id, 'qualifiers');
   const roundsRead = readRounds(supabase, [q.id], 'qualifiers');
   const coursesRead = Promise.resolve(
     supabase.from('golf_qualifier_round_courses').select('round_number, course_name, tee_id').eq('qualifier_id', q.id).order('round_number', { ascending: true }),
@@ -630,7 +648,7 @@ export async function loadQualifierForm(input: { teamId: string; qualifierId: st
   if (!q || q.team_id !== input.teamId || q.is_test) return null;
 
   const [entries, usedRes, placedRes, coursesRes] = await Promise.all([
-    readEntries(supabase, [q.id], 'qualifiers'),
+    readEntries(supabase, [q.id], q.team_id, 'qualifiers'),
     // Any round counts, started or not: an entrant with one can't be removed (setQualifierEntrants), and its slot can't be cut.
     supabase.from('golf_rounds').select('player_id, qualifier_round_number').eq('qualifier_id', q.id).limit(1000),
     // So does a selection row, confirmed or not (setQualifierEntrants refuses both).
