@@ -7,6 +7,7 @@ import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/c
 import { getCoachChatContext, getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { isCountableRound } from '@/lib/golf/round-countable';
+import { isCoursePlanEnabled } from '@/lib/coachhelm/course-plan/flag';
 import { getPlayerSignalSettings } from '@/lib/golf/player-signal-settings';
 import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
@@ -595,7 +596,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   const withoutNames = roster.filter((p) => !heads.get(p.id)?.[0] && p.name !== NO_NAME).map((p) => p.name);
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, withoutNames, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}) };
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, withoutNames, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}) };
 }
 
 /**
