@@ -3,7 +3,8 @@
 # Read by .github/workflows/detect-changes.yml (the reusable "Detect changes"
 # job ci.yml and codeql.yml call) AND, since 2026-09-23, by each heavy ci.yml
 # job's own first steps (`Unit tests`, `Next build`, `Supabase lint + RLS
-# tests`) and, since 2026-10-07, `Static checks` for `knowledge`, which decide
+# tests`) and, since 2026-10-07, the `World Model` job (inside `Static checks`
+# until 2026-10-21) for `knowledge`, which decide
 # for themselves instead of queueing behind detect-changes for a second runner
 # slot. One file, so they can never disagree about what "code" means. Editing
 # this file counts as a code change (it is in `code`).
