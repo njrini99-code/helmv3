@@ -37,6 +37,17 @@ result after a migration or deploy and know how you would roll it back.
 5. The final report says what changed, where it is, what was verified, and what
    was left untouched or unverified.
 
+## Builders and fixers
+
+Work is split into two roles (`docs/operations/PR_PIPELINE.md`). A builder
+implements a slice on a task branch, keeps the PR a draft, runs targeted checks
+only, fills the PR's Handoff section and hands off. A fixer takes the PR, gets it
+green, updates the docs, checks correctness and lands it. Neither role runs
+`npm run build` or the full gates repeatedly, pushes to chase CI, or waits for an
+answer: take the recommended default, record it, and ask the coordinator.
+`npm run pr:status -- <n>` is the one-call view of a PR's CI state. Only deploys,
+production database writes, held migrations and flag flips wait on the owner.
+
 ## Workspace and Git
 
 Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with

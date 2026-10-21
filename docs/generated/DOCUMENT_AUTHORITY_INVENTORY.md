@@ -34,7 +34,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Category | Files | Routed | Claims authority | Dead refs |
 | --- | --- | --- | --- | --- |
-| `POLICY` | 16 | 3 | 6 | 0 |
+| `POLICY` | 16 | 3 | 6 | 1 |
 | `AGENT_SKILL` | 131 | 0 | 8 | 0 |
 | `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
 | `REFERENCE` | 52 | 15 | 20 | 0 |
@@ -69,7 +69,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `.claude/rules/integrations.md` | current | - | - | - | - |
 | `.claude/rules/quality-gates.md` | current | - | - | - | - |
 | `.claude/rules/shipping.md` | current | - | - | - | - |
-| `AGENTS.md` | current | yes | - | yes | - |
+| `AGENTS.md` | current | yes | - | yes | 1 |
 | `CLAUDE.md` | current | yes | - | yes | - |
 | `CONTRIBUTING.md` | current | - | - | yes | - |
 | `README.md` | current | - | - | - | - |
