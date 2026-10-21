@@ -93,7 +93,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   multi-player reads, the verdict job, the coach corrections action) reads the
   flag as off during a canary, which is today's production state. A team read
   that fails also reads as off. To widen, add ids; to finish, unset the
-  variable. Never used for auth, RLS or `golf_clubhouse_ui`.
+  variable. Never used for auth, RLS or the Clubhouse release flag.
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
   player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
