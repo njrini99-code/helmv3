@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+
+## 2026-10-21 — The player peek opens CoachHelm
+
+The player peek (CH-1832, `ui/PlayerPeek.tsx`) adds a fourth action,
+CoachHelm, opening the player's deep dive
+(`/golf/dashboard/coachhelm?view=deep-dive&player=`, `coachHelmPlayerHref`);
+it is not drawn while CoachHelm isn't rebuilt for coaches. Every page that
+wraps a name in `PlayerPeek` gets it (Coach Home spec B §3).
+
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until
