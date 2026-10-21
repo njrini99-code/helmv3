@@ -29,6 +29,8 @@
  * metrics is a follow-up RPC; the PGA green-hit anchors below are APPROXIMATE.
  */
 
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { INSIGHT_ANGLES_FLAG } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import { staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { wilsonInterval, rateIntervalText, type RateInterval } from '@/lib/coachhelm/v3/stats/interval';
 import { missedGreenCost, rateGapStrokes } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
@@ -121,6 +123,17 @@ const MIN_GREENS_FOR_PROXIMITY = 3;
  *  Exported (additive — same behavior, just visible) so
  *  `context/adapters/shot-source-adapter.test.ts` can reuse the exact
  *  predicate instead of forking a copy that could drift from this one. */
+/**
+ * Slice 5b (`01` row 3): with `coachhelm_insight_angles_v1` on, approach
+ * bands leave out every approach from the tee (par-3 tee shots, recorded as
+ * `shot_type='approach'` with `lie_before='tee'`); par-3 tee shots are their
+ * own family (`insight-angles/approach-sg.ts`). Off: unchanged. Pure.
+ */
+export function bandApproachShots(shots: readonly ApproachShot[], splitPar3Tee: boolean): ApproachShot[] {
+  if (!splitPar3Tee) return [...shots];
+  return shots.filter((s) => (s.lie_before ?? '').toLowerCase() !== 'tee');
+}
+
 export function reachedGreen(s: ApproachShot): boolean {
   return approachFoundGreen(s);
 }
@@ -392,7 +405,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   }
 
   async aggregate(): Promise<ApproachMissAggregate | null> {
-    const shots = await loadApproachShots(this.playerId);
+    const shots = bandApproachShots(await loadApproachShots(this.playerId), isFlagEnabled(INSIGHT_ANGLES_FLAG));
     const inBucket = shots.filter(
       (s) => bucketApproachDistance(s.distance_to_hole_before, s.distance_unit_before) === this.bucket,
     );

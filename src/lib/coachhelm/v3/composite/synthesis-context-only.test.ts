@@ -40,7 +40,6 @@ function ctx(partial: Partial<CompositeContext>): CompositeContext {
   return {
     hole_scores: [],
     short_game_shots: [],
-    flyer_lie_shots: [],
     ...partial,
   };
 }

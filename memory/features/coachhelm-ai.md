@@ -664,6 +664,29 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   on; the flag's `cleanup_plan` lists the signature prefixes to archive.
   Tests: `insight-angles/__tests__/` (`contract.ts` asserts the family
   contract on every composed row).
+- **Counted families (Slice 5b, 2026-10-21), same flag, off.** Six more
+  angle families join `ANGLE_FAMILIES` and `insightAngleGenerators`:
+  par-3 tee shots (`par3_tee`), strokes gained per approach in three
+  bands (`approach_sg_50_125`, `approach_sg_125_175`,
+  `approach_sg_175_plus`), lag leave (`lag_leave`, first putts from 30+ ft
+  finishing inside 5 ft) and under-reading (`under_reading`, low-side
+  share of side-tagged misses on breaking putts). With the flag on, par-3
+  tee shots (`lie_before = 'tee'`) also leave the legacy approach-miss
+  bands (`bandApproachShots`). The SG families and lag leave compare to a
+  team pool (`counted-shots.ts`: teammates with 3+ countable rounds,
+  newest 40 rounds each, 5+ teammates, 100+ pooled attempts, the player
+  never in their own pool, all priced at the player's SG scale) with a
+  Welch test; no Tour fallback. Lag leave is `rough_estimate` and feeds the
+  three-putt chain's lag line (`detail.lag_leave`). Under-reading is
+  `unsized` (no strokes; support keeps it with the coach) and writes
+  nothing unless 60%+ (and 20+) of breaking-putt misses carry a low/high
+  tag. Composites, flag on (`ctx.counted_families`): C6 needs the
+  `three_putts_per_18` and `lag_leave` rows; C8 reads the 50-125 yd SG row
+  plus weak scrambling; `urgent` maps to `high`. Composite C4 (flyer lie)
+  is deleted outright (it never fired), leaving 8 rules. Support families
+  for all six live in `support/families.ts`. Tests:
+  `insight-angles/__tests__/counted-families.test.ts`,
+  `composite/__tests__/counted-composites.test.ts`.
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,

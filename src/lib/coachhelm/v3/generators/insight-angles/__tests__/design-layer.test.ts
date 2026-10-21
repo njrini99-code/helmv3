@@ -31,6 +31,9 @@ import { angleReadFamilyKey } from '../angle-generator';
 import { FAMILY_FLOORS, evaluateReadFloor } from '@/lib/coachhelm/v3/engine/read-floors';
 import { familyFor } from '@/lib/coachhelm/v3/support/families';
 import { createAngleLoaders } from '../load-angle-data';
+import { ApproachSgGenerator, Par3TeeGenerator } from '../approach-sg';
+import { LagLeaveGenerator } from '../lag-leave';
+import { UnderReadingGenerator } from '../under-reading';
 import { ApproachMissCompassGenerator } from '../approach-miss-compass';
 import { BadDayFloorGenerator } from '../bad-day-floor';
 import { LieApproachGenerator } from '../lie-approach';
@@ -189,7 +192,7 @@ describe('insightAngleGenerators (the one orchestrator call site)', () => {
     expect(createAngleLoaders).not.toHaveBeenCalled();
   });
 
-  it('returns the five angle generators when the flag is on, sharing one set of loaders for the call', () => {
+  it('returns every angle generator when the flag is on, sharing one set of loaders for the call', () => {
     flag.on = true;
     const entries = insightAngleGenerators('p1');
     expect(createAngleLoaders).toHaveBeenCalledTimes(1);
@@ -200,6 +203,12 @@ describe('insightAngleGenerators (the one orchestrator call site)', () => {
       'v3.angles.threePuttChain',
       'v3.angles.teeMissCost',
       'v3.angles.approachMissCompass',
+      'v3.angles.par3Tee',
+      'v3.angles.approachSg50to125',
+      'v3.angles.approachSg125to175',
+      'v3.angles.approachSg175plus',
+      'v3.angles.lagLeave',
+      'v3.angles.underReading',
     ]);
     flag.on = false;
   });
@@ -219,11 +228,17 @@ describe('AngleGenerator.run with the flag off (no read, no write, no sweep)', (
       new ThreePuttChainGenerator(PLAYER, loaders),
       new TeeMissCostGenerator(PLAYER, loaders),
       new ApproachMissCompassGenerator(PLAYER, loaders),
+      new Par3TeeGenerator(PLAYER, loaders),
+      new ApproachSgGenerator(PLAYER, loaders, '50_125'),
+      new ApproachSgGenerator(PLAYER, loaders, '125_175'),
+      new ApproachSgGenerator(PLAYER, loaders, '175_plus'),
+      new LagLeaveGenerator(PLAYER, loaders),
+      new UnderReadingGenerator(PLAYER, loaders),
     ];
     for (const g of gens) {
       await expect(g.run()).resolves.toEqual({ id: null, gated: true, status: 'gated', retracted: 0 });
     }
-    expect(loaders.calls).toEqual({ data: 0, teamRounds: 0, tourThreePutt: 0 });
+    expect(loaders.calls).toEqual({ data: 0, teamRounds: 0, tourThreePutt: 0, teamShots: 0 });
     expect(createAdminClient).not.toHaveBeenCalled();
   });
 

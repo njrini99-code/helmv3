@@ -70,3 +70,24 @@ describe('shotSgForRound (port of calculate_round_strokes_gained)', () => {
     expect(shotSgForRound([row({ distance_to_hole_before: 0 })], PARS, 1)).toHaveLength(0);
   });
 });
+
+describe('shotSgForRound endpoint option (20260930150000 nx rule)', () => {
+  const E = (lie: string, yd: number) => (lie === 'green' ? getExpectedStrokes('green', yd, yd * 3, 1) : getExpectedStrokes(lie, yd, undefined, 1));
+
+  it('next_shot_start prices a shot to the next non-penalty start, skipping penalty rows; the default keeps its own finish', () => {
+    const appr = row({ shot_number: 1, distance_to_hole_after: 20, distance_unit_after: 'feet', lie_after: 'green' });
+    const pen = row({ shot_number: 2, shot_type: 'penalty', is_penalty: true, lie_before: 'rough', distance_to_hole_before: 30 });
+    const chip = row({ shot_number: 3, shot_type: 'around_green', lie_before: 'rough', distance_to_hole_before: 12, lie_after: 'green', distance_to_hole_after: 6, distance_unit_after: 'feet' });
+    const shots = [appr, pen, chip];
+    const own = shotSgForRound(shots, PARS, 1).find((x) => x.shotId === appr.id)!;
+    expect(own.sg).toBeCloseTo(E('fairway', 150) - E('green', 20 / 3) - 1, 6);
+    const nx = shotSgForRound(shots, PARS, 1, { endpoint: 'next_shot_start' }).find((x) => x.shotId === appr.id)!;
+    expect(nx.sg).toBeCloseTo(E('fairway', 150) - E('rough', 12) - 1, 6);
+  });
+
+  it('next_shot_start falls back to the own finish on the last shot of a hole', () => {
+    const last = row({ distance_to_hole_after: 30, distance_unit_after: 'feet', lie_after: 'green' });
+    const [s] = shotSgForRound([last], PARS, 1, { endpoint: 'next_shot_start' });
+    expect(s!.sg).toBeCloseTo(E('fairway', 150) - E('green', 10) - 1, 6);
+  });
+});

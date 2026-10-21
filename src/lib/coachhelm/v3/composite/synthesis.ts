@@ -29,6 +29,8 @@ import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeContext, CompositeMatch, CompositeRule, EvidenceInsight } from './types';
 import { enforcePriorityConfidenceGate } from '@/lib/coachhelm/v3/engine/generator-base';
 import { describeError } from '@/lib/utils/describe-error';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { INSIGHT_ANGLES_FLAG } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
 import { compositeFamilyKey, sampleUnitFor } from '@/lib/coachhelm/v3/engine/read-floors';
 import type { InsightSampleUnit } from '@/lib/coachhelm/v2/insights/types';
@@ -58,7 +60,7 @@ const INFERRED_CONFIDENCE_CEILING = 0.6;
  * Diagnostic `strokes_impact` backfill for composites (tee-strat-1/lag3putt-3).
  *
  * Composite rules that don't compute their own leverage hard-code
- * `strokes_impact: 0` (bunker-miss-side, flyer-lie, lag-distance,
+ * `strokes_impact: 0` (bunker-miss-side, lag-distance,
  * short-side-scrambling-chain, short-approach-proximity-gap).
  * They never run through the generator-base counterfactual backfill, so they
  * ship `strokes_impact = 0` and rank LAST on every flat surface (Hub card,
@@ -150,7 +152,6 @@ const CTX_SOURCE_BY_RULE: Readonly<Record<string, keyof CompositeContext>> = {
   front_9_starter: 'hole_scores',
   doubles_after_bogey: 'hole_scores',
   short_side_scrambling_chain: 'short_game_shots',
-  flyer_lie_over_the_green: 'flyer_lie_shots',
 };
 
 /**
@@ -288,8 +289,8 @@ export function normalizeCompositeEvidence(
  * another composite that fired already covers exactly these source insights.
  *
  * The `length > 0` guard is load-bearing: ctx-driven composites (closing-hole-
- * fatigue, doubles-after-bogey, front-9-starter, short-side-scrambling-chain,
- * flyer-lie-over-the-green) read raw round/shot data and carry
+ * fatigue, doubles-after-bogey, front-9-starter, short-side-scrambling-chain)
+ * read raw round/shot data and carry
  * `source_insight_ids: []`. An empty array `.every()`s as a vacuous subset of
  * every set, so without this guard a single insight-driven composite would
  * suppress ALL ctx composites — silently deleting correct insights (and whole
@@ -401,6 +402,19 @@ export function gatedCompositePriority(
   return enforcePriorityConfidenceGate(rulePriority, confidence) ?? rulePriority;
 }
 
+/**
+ * Slice 5b (`02` §10.5): no composite is urgent by construction; urgency is
+ * strokes at stake × support, as for any read. With the angles flag on an
+ * `urgent` rule writes `high` (still under the confidence gate); off, the
+ * rule's own priority stands. Pure.
+ */
+export function compositeRulePriority(
+  rulePriority: CompositeRule['priority'],
+  countedFamilies: boolean,
+): CompositeRule['priority'] {
+  return countedFamilies && rulePriority === 'urgent' ? 'high' : rulePriority;
+}
+
 export async function synthesizeForPlayer(playerId: string): Promise<SynthesisResult> {
   const result: SynthesisResult = {
     player_id: playerId,
@@ -435,7 +449,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
   // that need raw data (closing-hole fatigue, doubles-after-bogey, etc.)
   // don't each hit the DB. Failure-isolated — empty arrays on error so
   // those rules quietly no-op.
-  let ctx;
+  let ctx: CompositeContext;
   try {
     ctx = await loadCompositeContext(playerId);
   } catch (err) {
@@ -443,8 +457,12 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       `synthesizeForPlayer: ctx load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.ctx' },
     );
-    ctx = { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
+    ctx = { hole_scores: [], short_game_shots: [] };
   }
+  // Slice 5b: with the angles flag on, C6 and C8 read the counted families
+  // and no composite is urgent by construction (02 §10.5).
+  const countedFamilies = isFlagEnabled(INSIGHT_ANGLES_FLAG);
+  ctx = { ...ctx, counted_families: countedFamilies };
 
   // Pass 1: collect all matches with their owning rule.
   const matches: Array<{ rule: CompositeRule; match: CompositeMatch }> = [];
@@ -566,7 +584,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         signature: `v3:${sig}`,
         title: composed.title,
         content: composed.content,
-        priority: gatedCompositePriority(rule.priority, calibrated.confidence),
+        priority: gatedCompositePriority(compositeRulePriority(rule.priority, countedFamilies), calibrated.confidence),
         evidence: evidence as typeof composed.evidence,
       });
       if (upsertResult !== GATED_OUT) {
