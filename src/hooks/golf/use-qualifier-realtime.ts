@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { observeRealtimeChannel } from '@/lib/observability/supabase/realtime';
 
 /**
@@ -112,17 +113,20 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
       const fetchedCoursePar = qualifierDetails.course?.par ?? null;
       setCoursePar(fetchedCoursePar);
 
-      // Fetch leaderboard entries with player info
+      // Fetch leaderboard entries, then the entrants' names through
+      // golf_player_profiles: a player may no longer read a teammate's
+      // golf_players row (security review S4).
       const { data: entriesData, error: entriesError } = await supabase
         .from('golf_qualifier_entries')
-        .select(`
-          *,
-          player:golf_players(id, first_name, last_name)
-        `)
+        .select('*')
         .eq('qualifier_id', qualifierId)
         .order('position', { ascending: true, nullsFirst: false });
 
       if (entriesError) throw entriesError;
+
+      const entrantProfiles = await readGolfPlayerProfiles(supabase, { playerIds: (entriesData || []).map((e) => e.player_id) });
+      if (entrantProfiles.error) throw entrantProfiles.error;
+      const entrantById = profilesById(entrantProfiles.data);
 
       // The rounds that count, the rule the selection workspace confirms from
       // and Clubhouse draws (docs/clubhouse/pages/P009-qualifiers/WIRING.md,
@@ -175,7 +179,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
       // Cast entry to Record to access columns that may not be in generated types yet
       const transformedEntries: QualifierLeaderboardEntry[] = (entriesData || []).map((entry) => {
         const raw = entry as Record<string, unknown>;
-        const player = entry.player as { id: string; first_name: string | null; last_name: string | null } | null;
+        const player = entrantById.get(entry.player_id) ?? null;
         const roundAgg = playerRoundAggregates.get(entry.player_id);
 
         // The counted rounds only. The stored entry aggregate is never a

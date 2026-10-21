@@ -30,6 +30,7 @@ import { Check, Users, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { escapeLikePattern } from '@/lib/utils/escape-like';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Sheet } from '@/components/fairway/overlays/Sheet';
 import { Input } from '@/components/fairway/forms/Input';
@@ -228,24 +229,21 @@ export function FairwayNewMessageSheet({
           let teammateResults: SearchResult[] = [];
 
           if (playerIds.length > 0) {
-            let playerQuery = supabase
-              .from('golf_players')
-              .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
-              .in('id', playerIds);
-
-            if (currentUser) {
-              playerQuery = playerQuery.neq('user_id', currentUser.id);
+            // Teammates through golf_player_profiles: a player may no longer
+            // read a teammate's golf_players row (security review S4). The
+            // roster is one team, so the name filter runs here.
+            const { data: profiles, error: profilesError } = await readGolfPlayerProfiles(supabase, { playerIds });
+            if (profilesError) {
+              console.warn('[new message] teammate names read failed:', profilesError.message);
+              setSearchFailed(true);
             }
+            const needle = query.trim().toLowerCase();
+            const teammates = (profiles ?? [])
+              .filter((p) => !currentUser || p.user_id !== currentUser.id)
+              .filter((p) => !needle || [p.first_name, p.last_name].some((n) => (n ?? '').toLowerCase().includes(needle)))
+              .slice(0, 20);
 
-            if (query.trim()) {
-              playerQuery = playerQuery.or(
-                `first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`,
-              );
-            }
-
-            const { data: teammates } = await playerQuery.limit(20);
-
-            teammateResults = (teammates || [])
+            teammateResults = teammates
               .filter((p) => p.user_id)
               .map((p) => ({
                 id: p.id,

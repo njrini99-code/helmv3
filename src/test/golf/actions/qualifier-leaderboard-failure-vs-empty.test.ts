@@ -31,7 +31,9 @@ const ok = (data: unknown): Outcome => ({ data, error: null });
 const fails = (message: string, code = '08006'): Outcome => ({ data: null, error: { message, code } });
 
 const QUALIFIER = { id: 'q1', name: 'Fall Qualifier', description: null, course_name: null, start_date: null, end_date: null, status: 'in_progress', spots_available: null, entry_deadline: null, rules: null };
-const ENTRY = { player_id: 'p1', player: { id: 'p1', first_name: 'Ada', last_name: 'Byron', avatar_url: null } };
+const ENTRY = { player_id: 'p1' };
+// Names come through the golf_player_profiles function, not an embed on the entries (security review S4).
+const PROFILE = { id: 'p1', user_id: 'u-p1', first_name: 'Ada', last_name: 'Byron', avatar_url: null, graduation_year: null, handicap: null, handicap_index: null };
 
 function tableChain(table: string) {
   const settle = () => outcomes.get(table) ?? ok([]);
@@ -56,6 +58,7 @@ vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     auth: { getUser: async () => ({ data: { user: { id: 'u1' } }, error: null }) },
     from: (table: string) => tableChain(table),
+    rpc: async (name: string) => outcomes.get(`rpc:${name}`) ?? ok([]),
   }),
 }));
 
@@ -78,6 +81,7 @@ describe('getQualifierLeaderboard — a failed read is not an empty field', () =
     outcomes.set('golf_qualifiers', ok(QUALIFIER));
     outcomes.set('golf_players', ok({ id: 'p1' }));
     outcomes.set('golf_qualifier_entries', ok([ENTRY]));
+    outcomes.set('rpc:golf_player_profiles', ok([PROFILE]));
     outcomes.set('golf_rounds', ok([{ player_id: 'p1', qualifier_round_number: 1, total_score: 74, score_to_par: 2 }]));
   });
 
@@ -106,6 +110,14 @@ describe('getQualifierLeaderboard — a failed read is not an empty field', () =
 
     expect(result.success).toBe(false);
     expect(logged().some((message) => /entries read failed/.test(message))).toBe(true);
+  });
+
+  it('fails loudly when the entrants\' names cannot be read, instead of showing nameless rows', async () => {
+    outcomes.set('rpc:golf_player_profiles', fails('connection terminated'));
+
+    const result = await leaderboard();
+
+    expect(result.success).toBe(false);
   });
 
   it('fails loudly when the ROUNDS read fails, instead of showing a scoreless leaderboard', async () => {
