@@ -50,22 +50,24 @@ rebuilt it opens the peek instead. The peek opens from a Needs a look chip. The
 phone is unchanged: a row pushes its own profile.
 
 Availability (2026-10-21, spec C) is whether a player can play: Available,
-Injured or Away (`golf_team_members.availability`, with a coach-only note of up
-to 280 characters and when it changed). It is display only, on the coach's
-roster: it never changes team access, which is the status (Active or Inactive,
-Mark inactive). The two never share a phrase, and the control's caption says
-so: "Shows on your roster only. It never changes their team access; Mark
-inactive does." The row menu (kebab, right-click and a face's menu, one list)
-offers the two states the player is not in after the links, then Mark
+Injured or Away (`golf_team_members.availability`, and when it changed). It is
+the word only: there is no note, because golf_team_members_select_v5 lets every
+teammate read every column of their team's rows, so `availability_note` is never
+read or written until a coach-only store exists (a held migration; see
+docs/clubhouse/held/data/roster-availability.md). It is display only, on the
+coach's roster: it never changes team access, which is the status (Active or
+Inactive, Mark inactive). The two never share a phrase, and the control's
+caption says so: "Shows on your roster only. It never changes their team access;
+Mark inactive does." The row menu (kebab, right-click and a face's menu, one
+list) offers the two states the player is not in after the links, then Mark
 inactive or active and Remove; no confirm. The list's line under the name, a
-face's note slot and the phone row read "Injured · wrist" in plain ink; the
-desktop panel and phone profile add the word to the identity line and an
-Availability section (Segmented, and a note for injured or away that saves on
-blur) above the coach's note. The head counts "· 1 injured · 1 away" among the
-active players. Needs a look leaves out a player who is out; rankings, the
-strip and the team average are unchanged. The export adds Availability and
-Availability note after Status. Players see none of it in v1: their roster
-reads `player_id` only, since teammates may read every column of a team's rows.
+face's note slot and the phone row read "Injured" in plain ink; the desktop
+panel and phone profile add the word to the identity line and an Availability
+section (Segmented) above the coach's note. The head counts "· 1 injured · 1
+away" among the active players. Needs a look leaves out a player who is out;
+rankings, the strip and the team average are unchanged. The export adds
+Availability after Status. Players see none of it in v1: their roster reads
+`player_id` only, since teammates may read every column of a team's rows.
 `?state=availability` in the preview shows Ava injured and Luca away.
 
 | Bridge ID | Code | Name | Meaning |
@@ -124,26 +126,24 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 
 Status: DEFINED
 
-Two inputs have a limit: the coach's note (30501, 2,000 characters; the counter
-appears in the last 200 and typing stops at the limit) and the availability note
-(30503, 280 characters, the column's CHECK; the counter appears in the last 40,
-and `setPlayerAvailability` refuses more with "Keep the note under 280
-characters"). The search box takes any text. Nothing else is typed into a form:
+One input has a limit: the coach's note (30501, 2,000 characters; the counter
+appears in the last 200 and typing stops at the limit). There is no
+availability note (30503 is retired with CH-3102; `setPlayerAvailability`
+refuses a note). The search box takes any text. Nothing else is typed into a form:
 players join by code, and the server checks who may decide a request (30803).
-What players and coaches typed comes out safely: the export writes a name or an
-availability note that could be read as a formula as text (30502).
+What players and coaches typed comes out safely: the export writes a name that
+could be read as a formula as text (30502).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30501 | CH-3101 | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | A coach's note is within 200 characters of its 2,000 limit |
-| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name, or the coach's availability note, that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability and Availability note follow Status. |
-| 30503 | CH-3102 | `AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS` | An availability note is within 40 characters of its 280 limit |
+| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Every change has its own toast (30601 to 30607, 30619 to 30621) naming what
+Every change has its own toast (30601 to 30607, 30619 and 30620) naming what
 failed and what to do, and every read that fails to load has its own notice with
 Try again (30608 to 30610, 30614 to 30616). A crash stays in its section (30611
 to 30613, SectionBoundary). Try again refreshes the whole page (31402). A
@@ -172,7 +172,6 @@ refused change shows the server's own sentence when it is short and readable
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 | 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
 | 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
-| 30621 | CH-3010 | `THE_AVAILABILITY_NOTE_DOESNT_SAVE` | The availability note doesn't save (on leaving the field) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -356,7 +355,7 @@ CH-1842, 11825 CH-1816.
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
-| 31809 | CH-3809 | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | Availability is said in words, never a colour: "Injured" or "Away" (with the coach's note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
+| 31809 | CH-3809 | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

@@ -45,11 +45,11 @@ export interface ChRosterPlayer {
   attention: { tone: 'warning' | 'positive'; text: string } | null;
   /**
    * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
-   * access, which is `status` (Mark inactive). Inactive players can carry it too.
+   * access, which is `status` (Mark inactive). Inactive players can carry it too. The word only: there is no note,
+   * because teammates can read every column of their team's rows (golf_team_members_select_v5), so availability_note
+   * is never selected until a coach-only store exists (docs/clubhouse/held/data/roster-availability.md).
    */
   availability: ChAvailability;
-  /** The coach's few words on it ("wrist · back Nov 2"), ≤280; null when available. Only coaches see it. */
-  availabilityNote: string | null;
   /** When availability last changed (ISO), for "Updated 3 days ago". */
   availabilityUpdated: string | null;
 }
@@ -126,7 +126,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
-      .select('status, jersey_number, joined_at, availability, availability_note, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
+      .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
       .eq('team_id', input.teamId)
       .in('status', ['active', 'inactive']),
     getTeamJoinRequests().catch((e: unknown) => ({ success: false as const, error: e instanceof Error ? e.message : String(e), data: undefined })),
@@ -152,7 +152,6 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     jersey_number: string | number | null;
     joined_at: string | null;
     availability: string | null;
-    availability_note: string | null;
     availability_updated_at: string | null;
     player: P | null;
   };
@@ -210,7 +209,6 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       coachNote: notes.notes.get(p.id) ?? null,
       attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability) : null,
       availability,
-      availabilityNote: availability === 'available' ? null : m.availability_note?.trim() || null,
       availabilityUpdated: m.availability_updated_at,
     };
   });

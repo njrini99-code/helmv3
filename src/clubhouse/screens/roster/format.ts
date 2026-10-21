@@ -55,11 +55,10 @@ export const AVAILABILITY_WORD: Record<ChAvailability, string> = {
   away: 'Away',
 };
 
-/** "Injured · wrist", or null for an available player: the line that stands for them on the roster (P003, availability). */
-export function availabilityLine(p: Pick<ChRosterPlayer, 'availability' | 'availabilityNote'>): string | null {
+/** "Injured" or "Away", or null for an available player: the word that stands for them on the roster (P003, availability). */
+export function availabilityLine(p: Pick<ChRosterPlayer, 'availability'>): string | null {
   const a = p.availability ?? 'available';
-  if (a === 'available') return null;
-  return [AVAILABILITY_WORD[a], p.availabilityNote?.trim() || null].filter(Boolean).join(' \u00b7 ');
+  return a === 'available' ? null : AVAILABILITY_WORD[a];
 }
 
 const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
@@ -70,8 +69,8 @@ const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
 };
 
 /**
- * The note under a player's name: their availability line when they are injured or away ("Injured · wrist", plain ink:
- * no colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
+ * The note under a player's name: their availability word when they are injured or away ("Injured", plain ink: no
+ * colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
  * otherwise their form in a word. The form is left out when season stats didn't load, so a missing read never looks
  * like "no rounds".
  */

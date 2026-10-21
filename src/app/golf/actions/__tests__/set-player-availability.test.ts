@@ -1,8 +1,9 @@
 /**
  * @vitest-environment node
  *
- * P003 availability. setPlayerAvailability writes golf_team_members.availability (available | injured | away), its
- * note (≤280) and when it changed, for a player on the signed-in coach's team. It follows updatePlayerStatus: the
+ * P003 availability. setPlayerAvailability writes golf_team_members.availability (available | injured | away) and
+ * when it changed, for a player on the signed-in coach's team. No note: teammates can read every column of their team's
+ * rows (select_v5), so the action never touches availability_note and refuses a note. It follows updatePlayerStatus: the
  * coach's golf_coaches row, the cookie-aware team, the membership on that team, then the write. Display only: it never
  * touches `status`. A write RLS hides (count 0) is not a save.
  */
@@ -72,15 +73,15 @@ beforeEach(() => {
 });
 
 describe('setPlayerAvailability', () => {
-  it('writes the availability, the trimmed note and when it changed, on the coach’s team only, then refreshes the roster', async () => {
-    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'injured', note: '  wrist · back Nov 2  ' })).toEqual({ success: true });
+  it('writes the availability and when it changed, on the coach’s team only, then refreshes the roster', async () => {
+    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'injured' })).toEqual({ success: true });
     const membership = state.calls.find((c) => c.table === 'golf_team_members' && c.op === 'select')!;
     expect(membership.filters).toEqual([
       ['player_id', 'p-1'],
       ['team_id', 'team-1'],
     ]);
     const [write] = updates();
-    expect(write!.payload).toEqual({ availability: 'injured', availability_note: 'wrist · back Nov 2', availability_updated_at: expect.any(String), updated_at: expect.any(String) });
+    expect(write!.payload).toEqual({ availability: 'injured', availability_updated_at: expect.any(String), updated_at: expect.any(String) });
     // Display only: team access (status) is never part of the write.
     expect(write!.payload).not.toHaveProperty('status');
     expect(write!.options).toEqual({ count: 'exact' });
@@ -113,20 +114,20 @@ describe('setPlayerAvailability', () => {
     expect(updates()).toHaveLength(0);
   });
 
-  it('refuses a note over 280 characters, and keeps one of exactly 280', async () => {
-    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'injured', note: 'x'.repeat(281) })).toEqual({ success: false, error: 'Keep the note under 280 characters' });
+  it('refuses a note (teammates could read it), writes nothing, and never names availability_note', async () => {
+    for (const note of ['wrist · back Nov 2', '', null]) {
+      const res = await setPlayerAvailability({ playerId: 'p-1', availability: 'injured', note } as never);
+      expect(res).toEqual({ success: false, error: 'Availability notes are not saved' });
+    }
     expect(updates()).toHaveLength(0);
-    expect((await setPlayerAvailability({ playerId: 'p-1', availability: 'injured', note: 'x'.repeat(280) })).success).toBe(true);
-    expect((updates()[0]!.payload as { availability_note: string }).availability_note).toHaveLength(280);
-  });
-
-  it('available clears the note; a blank note clears it; no note leaves it as it is', async () => {
-    await setPlayerAvailability({ playerId: 'p-1', availability: 'available', note: 'still sore' });
-    expect(updates()[0]!.payload).toMatchObject({ availability: 'available', availability_note: null });
-    await setPlayerAvailability({ playerId: 'p-1', availability: 'away', note: '   ' });
-    expect(updates()[1]!.payload).toMatchObject({ availability: 'away', availability_note: null });
-    await setPlayerAvailability({ playerId: 'p-1', availability: 'away' });
-    expect(updates()[2]!.payload).not.toHaveProperty('availability_note');
+    for (const availability of ['available', 'injured', 'away'] as const) {
+      await setPlayerAvailability({ playerId: 'p-1', availability });
+    }
+    expect(updates()).toHaveLength(3);
+    for (const c of state.calls) {
+      expect(c.payload ?? {}).not.toHaveProperty('availability_note');
+      expect(JSON.stringify(c.payload ?? '')).not.toContain('availability_note');
+    }
   });
 
   it('a write that changes no row (RLS hid it) fails, and refreshes nothing', async () => {

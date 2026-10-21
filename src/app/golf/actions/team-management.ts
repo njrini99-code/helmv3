@@ -282,22 +282,28 @@ export async function updatePlayerStatus(
 
 /**
  * Whether a player can play right now: available, injured or away. Display only, on the coach's roster: it never changes
- * team access (that is `status`, Mark inactive). golf_team_members.availability is CHECKed to these three values and
- * availability_note to 280 characters; the write policy is golf_team_members_update_coach (head or assistant coach of
- * the team). Players have no UPDATE policy, so there is no self-report.
+ * team access (that is `status`, Mark inactive). golf_team_members.availability is CHECKed to these three values; the
+ * write policy is golf_team_members_update_coach (head or assistant coach of the team). Players have no UPDATE policy,
+ * so there is no self-report.
+ *
+ * No note: golf_team_members_select_v5 lets every teammate read every column of their team's rows, so a free-text
+ * reason (health-adjacent) cannot live in availability_note until a coach-only store exists (a held migration;
+ * docs/clubhouse/held/data/roster-availability.md). This action never reads or writes that column, and refuses a note.
  */
 export type PlayerAvailability = 'available' | 'injured' | 'away';
 const AVAILABILITY_VALUES: readonly PlayerAvailability[] = ['available', 'injured', 'away'];
-// Not exported: a 'use server' file exports async functions only. The client keeps its own copy (RosterPeek AVAILABILITY_NOTE_MAX).
-const AVAILABILITY_NOTE_MAX = 280;
 
 async function setPlayerAvailabilityImpl(input: {
   playerId: string;
   availability: PlayerAvailability;
-  /** Left out: the note stays as it is (Mark away from the menu keeps an injured note). Blank clears it. */
-  note?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   try {
+    // A server action takes whatever the caller sends. A note would be readable by teammates, so it is refused, not
+    // dropped silently: nothing is written.
+    if (input && typeof input === 'object' && 'note' in input) {
+      return { success: false, error: 'Availability notes are not saved' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -323,12 +329,6 @@ async function setPlayerAvailabilityImpl(input: {
     if (!AVAILABILITY_VALUES.includes(input.availability)) {
       return { success: false, error: 'Choose available, injured or away' };
     }
-    let note: string | null | undefined = input.note === undefined ? undefined : (input.note ?? '').trim() || null;
-    if (note && note.length > AVAILABILITY_NOTE_MAX) {
-      return { success: false, error: `Keep the note under ${AVAILABILITY_NOTE_MAX} characters` };
-    }
-    // Available has nothing to explain: marking a player available clears the note.
-    if (input.availability === 'available') note = null;
 
     const { data: membership } = await supabase
       .from('golf_team_members')
@@ -347,7 +347,6 @@ async function setPlayerAvailabilityImpl(input: {
       .update(
         {
           availability: input.availability,
-          ...(note === undefined ? {} : { availability_note: note }),
           availability_updated_at: now,
           updated_at: now,
         },
@@ -392,7 +391,6 @@ const observedSetPlayerAvailability = withAdminObserved(
 export async function setPlayerAvailability(input: {
   playerId: string;
   availability: PlayerAvailability;
-  note?: string | null;
 }): Promise<{ success: boolean; error?: string }> {
   return observedSetPlayerAvailability(input);
 }

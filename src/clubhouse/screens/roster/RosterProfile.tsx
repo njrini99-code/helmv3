@@ -33,7 +33,7 @@ export function RosterProfile({
   availability: AvailabilityControl;
 }) {
   // The trend's legend is about form: availability has the identity line and its own panel here, so it is left out.
-  const note = rowNote({ ...p, availability: 'available', availabilityNote: null }, statsError);
+  const note = rowNote({ ...p, availability: 'available' }, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
