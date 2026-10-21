@@ -24,33 +24,17 @@ merge conflict on this file for every other open PR touching the same docs —
 the main CI-throughput bottleneck as of 2026-09-23. Run `npm run docs:refs` for
 the same counts computed fresh, printed to stdout, never committed.
 
+There is deliberately no summary table either (2026-10-21): its per-category
+totals changed whenever any document was added, so two open PRs adding a
+document of the same kind always conflicted here. Run
+`npm run knowledge:doc-inventory -- --summary` for the same table computed fresh,
+printed to stdout, never committed.
+
 There is deliberately no last-touch-SHA column: this file is tracked, so the
 commit recording every other file's SHA would change them and a `--check`
 gate would fail on its own commit. For per-file staleness use the rule
 `.claude/rules/shipping.md` already sets — record an anchor SHA in the
 document and run `git rev-list --count <sha>..HEAD -- <path>`.
-
-## Summary
-
-| Category | Files | Routed | Claims authority | Dead refs |
-| --- | --- | --- | --- | --- |
-| `POLICY` | 16 | 3 | 6 | 0 |
-| `AGENT_SKILL` | 131 | 0 | 8 | 0 |
-| `CURRENT_FEATURE` | 27 | 27 | 14 | 0 |
-| `REFERENCE` | 52 | 15 | 20 | 0 |
-| `GENERATED_TRUTH` | 41 | 3 | 22 | 4 |
-| `PROCESS_CONTRACT` | 8 | 4 | 7 | 0 |
-| `RUNBOOK` | 5 | 2 | 1 | 0 |
-| `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
-| `PLAN` | 44 | 5 | 17 | 63 |
-| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
-| `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
-| `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
-| `INCIDENT` | 56 | 15 | 2 | 4 |
-| `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 28 | 2 | 12 | 5 |
-| `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 349 | 13 | 71 | 92 |
 
 ## Files
 
@@ -472,7 +456,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | - |
 | `docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md` | current | - | - | - | 2 |
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | 1 |
-| `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 |
+| `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 2 |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
 | `docs/clubhouse/AESTHETIC_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/ALL_PAGE_AUDIT.md` | current | - | - | - | - |
@@ -609,6 +593,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/incidents/golf_round_lifecycle/INC-2026-08-30-account-deletion-still-cascades-golf-history.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-16-course-state-two-letter-rejection.md` | current | - | - | - | - |
 | `memory/incidents/golf_round_lifecycle/INC-2026-09-25-player-lookup-pgrst116.md` | current | - | - | - | - |
+| `memory/incidents/golf_round_lifecycle/INC-2026-10-20-round-start-retypes-empty-shell.md` | current | - | - | - | - |
 | `memory/incidents/observability_sentry/INC-2026-09-27-webkit-stale-chunk-route-boundary.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-13-lock-incidents-never-end.md` | current | - | - | - | - |
 | `memory/incidents/observability_supabase/INC-2026-10-15-health-probe-stalled-connection.md` | current | - | - | - | - |
@@ -657,6 +642,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `scripts/README.md` | current | - | - | yes | - |
 | `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
+| `src/clubhouse/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
 | `src/lib/coachhelm/README.md` | current | - | - | yes | - |
@@ -861,7 +847,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
@@ -918,6 +904,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/push-opt-in.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |
@@ -953,6 +940,7 @@ them would bury everything above.
 | `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
+| `docs/design/taste-memory.md` | current | - | - | - | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | - |
@@ -999,6 +987,7 @@ them would bury everything above.
 | `docs/operations/N8N_MAC_MINI_SETUP.md` | current | - | - | - | - |
 | `docs/operations/N8N_WORKFLOW_SPECS.md` | current | - | - | - | - |
 | `docs/operations/PARTNER_INTAKE_TO_PR_PIPELINE.md` | current | - | - | - | - |
+| `docs/operations/PR_PIPELINE.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |
@@ -1021,6 +1010,8 @@ them would bury everything above.
 | `src/app/golf/actions/ACTIONS.md` | current | - | - | - | - |
 | `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |

@@ -572,6 +572,12 @@ describe('CoachHelm for the player, on screen', () => {
     await expectCode('CH-13301', /CoachHelm reads the rounds you post\. After 4 rounds, one thing to work on this week shows up here\./);
   });
 
+  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', async () => {
+    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] });
+    await expectCode('CH-13302');
+    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
+  });
+
   it('CH-13302 rounds posted but no insight yet: it says how many, that CoachHelm needs enough to find a pattern, and no threshold', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_EMPTY);
     await expectCode('CH-13302', /No insights yet.*You’ve posted 3 rounds\. CoachHelm needs enough rounds to find a pattern worth acting on/);
@@ -878,6 +884,17 @@ describe('CoachHelm proposals, on the player’s board', () => {
 describe('CoachHelm for the coach, on screen', () => {
   const user = () => userEvent.setup();
   const pick = (u: ReturnType<typeof userEvent.setup>, name: string) => u.click(screen.getByRole('button', { name: new RegExp(name) }));
+
+  it('CH-13969 the Track record link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
+    showCoach();
+    expect(code('CH-13969')).toBeNull();
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(within(code('CH-13969') as HTMLElement).getByRole('link', { name: 'Track record' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=track-record');
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(code('CH-13969')).toBeNull();
+  });
 
   it('CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs, in its own words', () => {
     showCoach();

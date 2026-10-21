@@ -7,7 +7,7 @@
  *   which is right for a team toggle but wrong for a release flag: turning
  *   the flag off must not retract anything by itself.)
  * - The reads are injected (`AngleLoaders`), one lazy load per
- *   `insightAngleGenerators(playerId)` call, shared by the five generators of
+ *   `insightAngleGenerators(playerId)` call, shared by the angle generators of
  *   that call and never cached across calls.
  * - Slice 0b judges a read against `FAMILY_FLOORS` by family key. The
  *   angles' insight types (`tee`, `putting`, ...) are shared with other
@@ -18,8 +18,9 @@
  */
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import type { ComposedContent, GeneratorAggregate, RunResult } from '@/lib/coachhelm/v3/engine/types';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { INSIGHT_ANGLES_FLAG, type AngleData, type PeerRound, type TourThreePutt } from './angle-data';
+import type { TeamShotData } from './counted-shots';
 
 /** The Slice 0b family key an angle read is stamped and judged under. */
 export function angleReadFamilyKey(composed: Pick<ComposedContent, 'evidence'>, fallback: string): string {
@@ -34,6 +35,11 @@ export interface AngleLoaders {
   teamRounds(teamId: string): Promise<PeerRound[]>;
   /** The Tour three-putt figure for the player's tour, or null when none is stored. */
   tourThreePutt(): Promise<TourThreePutt | null>;
+  /**
+   * Slice 5b: the teammates' countable rounds, holes and approach / putting /
+   * penalty shots on a team (the player excluded), for the pooled team lines.
+   */
+  teamShots(teamId: string): Promise<TeamShotData>;
 }
 
 export abstract class AngleGenerator<A extends GeneratorAggregate> extends BaseGenerator<A> {
@@ -49,7 +55,7 @@ export abstract class AngleGenerator<A extends GeneratorAggregate> extends BaseG
   }
 
   override async run(): Promise<RunResult> {
-    if (!isFlagEnabled(INSIGHT_ANGLES_FLAG)) return { id: null, gated: true, status: 'gated', retracted: 0 };
+    if (!isCoachHelmFlagEnabled(INSIGHT_ANGLES_FLAG)) return { id: null, gated: true, status: 'gated', retracted: 0 };
     return super.run();
   }
 }

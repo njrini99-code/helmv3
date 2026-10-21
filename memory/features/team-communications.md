@@ -150,7 +150,7 @@ loopback data, not a claim about physical-device frame timing.
   remembers the 42703 answer for five minutes and answers false without a read
   (2026-10-16, Q8); after the apply, the column is found on the first probe past
   the expiry. Only the missing-column answer is kept. Tests:
-  `src/test/actions/hide-golf-conversation.test.ts`.
+  `src/app/golf/actions/__tests__/hide-golf-conversation.test.ts`.
 - `src/app/golf/actions/announcements.ts`
 - `src/app/golf/actions/communication.ts`
 

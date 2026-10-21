@@ -1,0 +1,175 @@
+/* The coach's CoachHelm Track record (P013 `?view=track-record`, flag coachhelm_track_record_v1). Spec
+   docs/clubhouse/pages/P013-coachhelm/CONTRACT.md and supercharge 02 §9, 03 §7.3. Words and counts; the bar is the same count drawn,
+   with the target as a thin line. */
+
+.ch-htr-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  justify-self: start;
+  min-height: 32px;
+  color: var(--ch-green-700);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  text-decoration: none;
+}
+.ch-htr-back:hover {
+  text-decoration: underline;
+}
+.ch-htr-back:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-xs);
+}
+
+.ch-htr-body {
+  display: grid;
+  gap: 16px;
+}
+
+.ch-htr-prog {
+  max-width: 64ch;
+  font: 500 calc(17 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-htr-note,
+.ch-htr-corr {
+  max-width: 64ch;
+  font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-htr-note {
+  margin-top: 8px;
+  color: var(--ch-text-tertiary);
+}
+
+/* The five-level strip: word, the count line, the bar with its target, and what the line stands on. */
+.ch-htr-rungs,
+.ch-htr-fams {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-htr-rung {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 8rem) minmax(0, 1fr);
+  grid-template-areas:
+    'w l bar'
+    'w s s';
+  column-gap: 16px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-htr-rung:first-child {
+  border-top: 0;
+}
+.ch-htr-rung__w {
+  grid-area: w;
+  align-self: start;
+  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-htr-rung__l {
+  grid-area: l;
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-htr-rung.is-plain .ch-htr-rung__l {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-htr-rung__s {
+  grid-area: s;
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-htr-rung.is-warn .ch-htr-rung__s {
+  color: var(--ch-warning-600);
+}
+
+.ch-htr-bar {
+  grid-area: bar;
+  position: relative;
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ch-border-subtle);
+}
+.ch-htr-bar__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--ch-green-500);
+}
+.ch-htr-rung.is-warn .ch-htr-bar__fill {
+  background: var(--ch-chart-loss);
+}
+.ch-htr-rung.is-plain .ch-htr-bar__fill {
+  background: var(--ch-ink-400);
+}
+/* The target: a thin line across the bar, standing a little proud of it. */
+.ch-htr-bar__target {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--ch-text-primary);
+}
+
+/* One row per family: name and count line, the counts under them. */
+.ch-htr-fam {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  row-gap: 2px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-htr-fam:first-child {
+  border-top: 0;
+}
+.ch-htr-fam__n {
+  font: 600 calc(14.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-htr-fam__l {
+  font: 600 calc(14.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  text-align: right;
+}
+.ch-htr-fam__s {
+  grid-column: 1 / -1;
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+
+/* The coach board's link here, under the board. */
+.ch-htr-link {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Phone: the strip stacks (word and line, then the bar, then the basis). */
+@container chhl (max-width: 640px) {
+  .ch-htr-body {
+    gap: 12px;
+  }
+  .ch-htr-prog {
+    font-size: calc(16 * var(--ch-type-k));
+  }
+  .ch-htr-rung {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'w l'
+      'bar bar'
+      's s';
+    row-gap: 8px;
+  }
+  .ch-htr-rung__l {
+    text-align: right;
+  }
+}

@@ -4,18 +4,14 @@
  * eligible, suppressed by which rule, and how they fell on the ladder.
  *
  * The table comes from migration 20261020114500_golf_coachhelm_run_log.sql,
- * which is HELD (supabase/migrations/HELD.md) until the owner applies it. Main
- * can be deployed before that, so a missing table (Postgres 42P01, PostgREST
- * PGRST205) means "run log not available": the writer returns
- * `'unavailable'` and never throws. Every other failure is logged and
- * swallowed: the run log must never fail an engine run.
- *
- * The table is not in the generated types until `db:types` is regenerated
- * after the apply, so the insert goes through `fromUntyped` (the repo's
- * escape hatch for unapplied tables).
+ * now applied and in the generated types, so the insert uses the typed
+ * client. The writer still treats a missing table (Postgres 42P01, PostgREST
+ * PGRST205) as "run log not available": it returns `'unavailable'` and never
+ * throws. Every other failure is logged and swallowed: the run log must never
+ * fail an engine run.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import type { Database } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
 import { toDbErrorMetadata } from '@/lib/utils/describe-error';
 import type { RunSummary } from './evaluate';
@@ -105,12 +101,11 @@ export function buildRunLogRow(args: {
 export type RunLogWriteResult = 'written' | 'unavailable' | 'failed';
 
 export async function writeRunLog(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: SupabaseClient<any>,
+  supabase: SupabaseClient<Database>,
   row: RunLogRow,
 ): Promise<RunLogWriteResult> {
   try {
-    const { error } = await fromUntyped(supabase, RUN_LOG_TABLE).insert(row);
+    const { error } = await supabase.from(RUN_LOG_TABLE).insert(row);
     if (!error) return 'written';
     if (isMissingTableError(error)) return 'unavailable';
     await logServerError(

@@ -397,6 +397,17 @@
     ]
   },
   {
+    "id": 10804,
+    "page": "P001",
+    "category": 8,
+    "item": 4,
+    "name": "IN_THE_IPHONE_APP_ONCE_A_LAUNCH",
+    "chCode": "CH-1911",
+    "meaning": "In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/shell.md"
+  },
+  {
     "id": 10901,
     "page": "P001",
     "category": 9,
@@ -7673,6 +7684,28 @@
     "tests": [
       "src/clubhouse/__tests__/settings-server.test.tsx"
     ]
+  },
+  {
+    "id": 80809,
+    "page": "P008",
+    "category": 8,
+    "item": 9,
+    "name": "IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE",
+    "chCode": "CH-8902",
+    "meaning": "In the iPhone app, Notifications › This device before iOS has asked about push (blocker 12)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80810,
+    "page": "P008",
+    "category": 8,
+    "item": 10,
+    "name": "IN_THE_IPHONE_APP_NOTIFICATIONS_THIS_DEVICE_2",
+    "chCode": "CH-8903",
+    "meaning": "In the iPhone app, Notifications › This device after iOS has answered: allowed, or turned off (only the phone's Settings app changes either)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
   },
   {
     "id": 80901,
@@ -15255,6 +15288,171 @@
     "name": "PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED",
     "chCode": "CH-13912",
     "meaning": "Player: a proposed focus area is declined (wave 7, decision C)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130724,
+    "page": "P013",
+    "category": 7,
+    "item": 24,
+    "name": "COACH_PLAYER_WHAT_THE_ENGINE_KNOWS_ABOUT",
+    "chCode": "CH-13990",
+    "meaning": "Coach, player: what the engine knows about a read",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130725,
+    "page": "P013",
+    "category": 7,
+    "item": 25,
+    "name": "COACH_PLAYER_WHY_DO_YOU_THINK_SO",
+    "chCode": "CH-13991",
+    "meaning": "Coach, player: why do you think so",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130726,
+    "page": "P013",
+    "category": 7,
+    "item": 26,
+    "name": "COACH_PLAYER_READS_THE_RECHECK_CLEARED",
+    "chCode": "CH-13992",
+    "meaning": "Coach, player: reads the recheck cleared",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130727,
+    "page": "P013",
+    "category": 7,
+    "item": 27,
+    "name": "DEEP_DIVE_THE_READS_WHY_LINE_FROM",
+    "chCode": "CH-13993",
+    "meaning": "Deep dive: the Read's Why line from the cause state",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130728,
+    "page": "P013",
+    "category": 7,
+    "item": 28,
+    "name": "COACH_TEAM_PATTERNS",
+    "chCode": "CH-13995",
+    "meaning": "Coach: Team patterns (flag `coachhelm_team_pattern_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130729,
+    "page": "P013",
+    "category": 7,
+    "item": 29,
+    "name": "COACH_THE_TRACK_RECORD",
+    "chCode": "CH-13960",
+    "meaning": "Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130730,
+    "page": "P013",
+    "category": 7,
+    "item": 30,
+    "name": "TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED",
+    "chCode": "CH-13961",
+    "meaning": "Track record: a level with enough rechecked reads (10 or more)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130731,
+    "page": "P013",
+    "category": 7,
+    "item": 31,
+    "name": "TRACK_RECORD_A_LEVEL_OR_A_FAMILY",
+    "chCode": "CH-13962",
+    "meaning": "Track record: a level or a family with fewer than 10 rechecked reads",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130732,
+    "page": "P013",
+    "category": 7,
+    "item": 32,
+    "name": "TRACK_RECORD_THE_STAFFS_CORRECTIONS",
+    "chCode": "CH-13963",
+    "meaning": "Track record: the staff's corrections",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130733,
+    "page": "P013",
+    "category": 7,
+    "item": 33,
+    "name": "TRACK_RECORD_ONE_ROW_PER_FAMILY",
+    "chCode": "CH-13964",
+    "meaning": "Track record: one row per family",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130734,
+    "page": "P013",
+    "category": 7,
+    "item": 34,
+    "name": "TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE",
+    "chCode": "CH-13965",
+    "meaning": "Track record: CoachHelm is off for the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130735,
+    "page": "P013",
+    "category": 7,
+    "item": 35,
+    "name": "TRACK_RECORD_A_READ_IT_IS_MADE",
+    "chCode": "CH-13966",
+    "meaning": "Track record: a read it is made from failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130736,
+    "page": "P013",
+    "category": 7,
+    "item": 36,
+    "name": "TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET",
+    "chCode": "CH-13967",
+    "meaning": "Track record: the database cannot answer yet (its function is not applied)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130737,
+    "page": "P013",
+    "category": 7,
+    "item": 37,
+    "name": "TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON",
+    "chCode": "CH-13968",
+    "meaning": "Track record: nothing shown since the season start",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130738,
+    "page": "P013",
+    "category": 7,
+    "item": 38,
+    "name": "COACH_BOARD_THE_LINK_TO_THE_TRACK",
+    "chCode": "CH-13969",
+    "meaning": "Coach board: the link to the Track record",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

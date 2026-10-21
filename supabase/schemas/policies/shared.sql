@@ -358,13 +358,7 @@ CREATE POLICY "notifications_select_own" ON "public"."notifications" FOR SELECT 
 
 CREATE POLICY "notifications_update_own" ON "public"."notifications" FOR UPDATE USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
-CREATE POLICY "organizations_delete_own_coach" ON "public"."organizations" FOR DELETE USING (((EXISTS ( SELECT 1
-   FROM "public"."golf_coaches"
-  WHERE (("golf_coaches"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("golf_coaches"."organization_id" = "organizations"."id")))) OR ((NOT (EXISTS ( SELECT 1
-   FROM "public"."golf_coaches"
-  WHERE ("golf_coaches"."organization_id" = "organizations"."id")))) AND (NOT (EXISTS ( SELECT 1
-   FROM "public"."baseball_coaches"
-  WHERE ("baseball_coaches"."organization_id" = "organizations"."id")))) AND ("created_at" > ("now"() - '00:05:00'::interval)))));
+CREATE POLICY "organizations_delete_own_coach" ON "public"."organizations" FOR DELETE TO "authenticated" USING ("public"."can_delete_organization"("id"));
 
 CREATE POLICY "organizations_insert_coaches" ON "public"."organizations" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."users"

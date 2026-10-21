@@ -933,9 +933,6 @@ features:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
       routes:
-        - src/app/golf/(dashboard)/dashboard/alerts/**
-        - src/app/golf/(dashboard)/dashboard/patterns/**
-        - src/app/golf/(dashboard)/dashboard/insights/**
         - src/app/golf/(dashboard)/dashboard/intelligence/**
         - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
         - src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**
@@ -1019,9 +1016,7 @@ features:
     code:
       routes:
         - src/app/golf/(dashboard)/dashboard/coachhelm/**
-        - src/app/golf/(dashboard)/dashboard/my-insights/**
         - src/app/golf/(dashboard)/dashboard/my-development/**
-        - src/app/golf/(dashboard)/dashboard/development/**
         - src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**
       components:
         - src/components/golf/coachhelm/player/**
@@ -1029,7 +1024,6 @@ features:
         - src/components/golf/coachhelm/insight-card/**
         - src/components/golf/coachhelm/v3/GoalCreationModal/**
         - src/components/golf/coachhelm/v3/StandingBar/**
-        - src/app/golf/(dashboard)/dashboard/my-standing/page.tsx
         - src/components/fairway/pages/coachhelm/**
       api:
         - src/app/api/coachhelm/v3/**
@@ -1157,7 +1151,7 @@ features:
         - src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts
         - src/test/actions/send-message-duplicate-key-equivalence.test.ts
         - src/test/actions/send-message-quoted-reply.test.ts
-        - src/test/actions/hide-golf-conversation.test.ts
+        - src/app/golf/actions/__tests__/hide-golf-conversation.test.ts
         - src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts
         - src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx
         - src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx
@@ -1200,7 +1194,6 @@ features:
         - src/app/golf/(dashboard)/dashboard/tasks/**
         - src/app/golf/(dashboard)/dashboard/documents/**
         - src/app/golf/(dashboard)/dashboard/travel/**
-        - src/app/golf/(dashboard)/dashboard/hub/**
         - src/app/golf/(dashboard)/dashboard/team-hub/**
       components:
         - src/components/fairway/pages/tasks/**
@@ -1500,8 +1493,7 @@ features:
       incidents:
         - docs/operations/2026-05-17-p0-runbook.md
     code:
-      routes:
-        - src/app/golf/(dashboard)/dashboard/hub/**
+      routes: []  # /golf/dashboard/hub is a next.config.mjs redirect now (page deleted in plan phase 7b)
       components: []
       api:
         - src/components/fairway/pages/hub/**
@@ -2164,6 +2156,7 @@ features:
         - supabase/migrations/*staff_capabilities*.sql
         - supabase/migrations/*staff_roles_scope_audit*.sql
         - supabase/migrations/*staff_display*.sql
+        - supabase/migrations/*coach_organization_pin*.sql
         - supabase/schemas/**
         - supabase/tests/rls/*.sql
       tests:

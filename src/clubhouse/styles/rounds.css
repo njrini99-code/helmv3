@@ -3475,22 +3475,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 
 /* Micro motion on the round review. Every duration is a token, so Animations off and reduced motion make each of these instant; a
-   delay is zeroed for reduced motion below. The line draws once, the first time its stage is seen. */
+   delay is zeroed for reduced motion below. Nothing draws in at first paint (Q-139). */
 .ch-rv .ch-rzline {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  transition: stroke-dashoffset var(--ch-dur-reveal) var(--ch-ease-io);
-}
-.ch-rv .ch-rzstage:not(.is-in) .ch-rzline {
-  stroke-dashoffset: 1;
-}
-.ch-rv .ch-rzfill,
-.ch-rv .ch-rzdots {
-  transition: opacity var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6);
-}
-.ch-rv .ch-rzstage:not(.is-in) .ch-rzfill,
-.ch-rv .ch-rzstage:not(.is-in) .ch-rzdots {
-  opacity: 0;
 }
 .ch-rv .ch-rzdot {
   transform-box: view-box;
@@ -3518,28 +3506,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   translate: calc(var(--ch-rz-x, 0) * 1cqw) 0;
 }
 
-/* a hole's shots draw in the order they were hit */
-@keyframes ch-rz-draw {
-  from {
-    stroke-dashoffset: 1;
-  }
-}
-@keyframes ch-rz-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-}
+/* a hole's shots are shown at once, in the order they were hit */
 .ch-rv .ch-rzshot__arc {
   stroke-dasharray: 1;
-  animation: ch-rz-draw var(--ch-dur-reveal) var(--ch-ease-io) backwards;
-  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick));
 }
 .ch-rv .ch-rzshot__dot {
   transform-box: fill-box;
   transform-origin: center;
-  animation: ch-rz-pop var(--ch-dur-base) var(--ch-ease-spring) backwards;
-  animation-delay: calc(var(--ch-i, 0) * var(--ch-dur-quick) + var(--ch-dur-reveal) * 0.7);
 }
 
 /* values that change under the pointer or the filter glide to their new length, on transform (the scoring distribution's
@@ -3581,15 +3554,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   transition:
     background var(--ch-dur-quick) var(--ch-ease),
     color var(--ch-dur-quick) var(--ch-ease);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ch-rv .ch-rzfill,
-  .ch-rv .ch-rzdots,
-  .ch-rv .ch-rzshot__arc,
-  .ch-rv .ch-rzshot__dot {
-    transition-delay: 0s;
-    animation-delay: 0s;
-  }
 }
 
 /* ==========================================================================================================================
@@ -3886,31 +3850,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   pointer-events: all;
 }
 .ch-rd .ch-rd-rib__bar {
-  --ch-rd-delay: min(calc(var(--ch-i, 0) * var(--ch-dur-press) / 3), var(--ch-dur-reveal));
   transform-box: fill-box;
   transform-origin: 50% 100%;
   transition:
-    transform var(--ch-dur-reveal) var(--ch-ease) var(--ch-rd-delay),
+    transform var(--ch-dur-base) var(--ch-ease),
     opacity var(--ch-dur-quick) var(--ch-ease),
     filter var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-rd .ch-rd-rib__bar.is-down {
   transform-origin: 50% 0%;
-}
-/* The bars rise from the par line the first time the stage is seen; their scores come in as the last of them lands. */
-.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__bar {
-  transform: scaleY(0);
-}
-.ch-rd .ch-rd-stage:not(.is-in) .ch-rd-rib__v {
-  opacity: 0;
-}
-@keyframes ch-rd-fade {
-  from {
-    opacity: 0;
-  }
-}
-.ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
-  animation: ch-rd-fade var(--ch-dur-base) var(--ch-ease) calc(var(--ch-dur-reveal) * 0.6) backwards;
 }
 .ch-rd .ch-rd-rib__v {
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
@@ -4205,15 +4153,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd.is-phone .ch-rd-grp__h {
   align-items: center;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ch-rd .ch-rd-rib__bar {
-    --ch-rd-delay: 0s;
-  }
-  .ch-rd .ch-rd-stage.is-in .ch-rd-rib__v {
-    animation-delay: 0s;
-  }
 }
 
 /* -- The round card (P011; docs/clubhouse/phone/round-card.md) --------------------------------------------------------

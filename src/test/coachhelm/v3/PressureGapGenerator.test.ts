@@ -45,6 +45,13 @@ vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({
   loadPlayerCohort: vi.fn(async () => ({ gender: teamGender })),
 }));
 
+// Slice 7b: the same-day field context, behind coachhelm_team_pattern_v1 (off unless a test turns it on).
+let patternOn = false;
+vi.mock('@/lib/coachhelm/v3/team-pattern/flag', () => ({ teamPatternEnabled: () => patternOn }));
+let fieldRows: Array<Record<string, unknown>> | null = null;
+const loadTeamFieldRounds = vi.fn(async () => fieldRows);
+vi.mock('@/lib/coachhelm/v3/field-day/loader', () => ({ loadTeamFieldRounds: (...a: unknown[]) => loadTeamFieldRounds(...(a as [])) }));
+
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
 import { computeMeasuredFactors } from '@/lib/coachhelm/v3/engine/generator-base';
 
@@ -430,5 +437,58 @@ describe('audit row 14 — pressure gap accuracy', () => {
     expect(agg!.tour_gap).toBe(0.5);
     const c = new PressureGapGenerator(PLAYER_ID).composeContent(agg!);
     expect(c.content).toContain('The LPGA Tour gap is ~0.5 strokes.');
+  });
+});
+
+describe('same-day field context (Slice 7b)', () => {
+  const withTeam = (rows: Row[]) => rows.map((r) => ({ ...r, team_id: 'team-1' }));
+  /** Each of the player's rounds sits in a field with two teammates on the same course. */
+  const fieldOf = (rows: Row[], teammateToPar: (r: Row) => number) =>
+    rows.flatMap((r) => [
+      { round_id: r.id, player_id: PLAYER_ID, team_id: 'team-1', date: r.round_date, course_id: `c-${String(r.id)}`, score_to_par: r.score_to_par, holes: 18 },
+      { round_id: `${String(r.id)}-a`, player_id: 'mate-a', team_id: 'team-1', date: r.round_date, course_id: `c-${String(r.id)}`, score_to_par: teammateToPar(r), holes: 18 },
+      { round_id: `${String(r.id)}-b`, player_id: 'mate-b', team_id: 'team-1', date: r.round_date, course_id: `c-${String(r.id)}`, score_to_par: teammateToPar(r), holes: 18 },
+    ]);
+
+  beforeEach(() => {
+    holeRows = [];
+    teamGender = null;
+    loadTeamFieldRounds.mockClear();
+  });
+
+  it('flag off: no field read, no field detail', async () => {
+    patternOn = false;
+    roundRows = withTeam([...rounds('practice', 4, 1), ...rounds('tournament', 4, 7)]);
+    const agg = await new PressureGapGenerator(PLAYER_ID).aggregate();
+    expect(agg).not.toBeNull();
+    expect(loadTeamFieldRounds).not.toHaveBeenCalled();
+    expect((agg as unknown as Record<string, unknown>).field_day).toBeUndefined();
+  });
+
+  it('flag on: records each side relative to the team on the day; the gap and gate are unchanged', async () => {
+    patternOn = true;
+    roundRows = withTeam([...rounds('practice', 4, 1), ...rounds('tournament', 4, 7)]);
+    // Tournament days were hard for everyone (teammates +6), practice days were not (teammates +1).
+    fieldRows = fieldOf(roundRows, (r) => (r.round_type === 'tournament' ? 6 : 1));
+    const agg = (await new PressureGapGenerator(PLAYER_ID).aggregate()) as unknown as Record<string, unknown>;
+    expect(loadTeamFieldRounds).toHaveBeenCalledTimes(1);
+    expect(agg.playerValue).toBe(6);
+    const field = agg.field_day as { label: string; practice: { n: number }; pressure: { n: number }; gap: number };
+    expect(field.label).toBe('Relative to the team on the day');
+    expect(field.practice.n).toBe(4);
+    expect(field.pressure.n).toBe(4);
+    // Practice: 1 vs mean 1 = 0; tournament: 7 vs mean 6.33 = +0.67 → gap net of the day ≈ 0.67.
+    expect(field.gap).toBeCloseTo(0.67, 2);
+    patternOn = false;
+  });
+
+  it('flag on but the field read fails: the read stands without a field context', async () => {
+    patternOn = true;
+    roundRows = withTeam([...rounds('practice', 4, 1), ...rounds('tournament', 4, 7)]);
+    fieldRows = null;
+    const agg = (await new PressureGapGenerator(PLAYER_ID).aggregate()) as unknown as Record<string, unknown>;
+    expect(agg.playerValue).toBe(6);
+    expect(agg.field_day).toBeUndefined();
+    patternOn = false;
   });
 });

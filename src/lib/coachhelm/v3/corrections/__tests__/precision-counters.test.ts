@@ -44,7 +44,7 @@ describe('rollupPrecision', () => {
   it('is all zeros on no input', () => {
     expect(rollupPrecision({ exposures: [] })).toEqual({
       cells: [],
-      totals: { shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0 },
+      totals: { shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0, confirm: 0 },
     });
   });
 
@@ -57,7 +57,7 @@ describe('rollupPrecision', () => {
     ];
     const { cells, totals } = rollupPrecision({ exposures: rows });
     expect(cells).toEqual([
-      { family: 'putt_distance', rung: 'observed', shown: 2, held: 0, cleared: 0, contradicted: 0, not_this: 0 },
+      { family: 'putt_distance', rung: 'observed', shown: 2, held: 0, cleared: 0, contradicted: 0, not_this: 0, confirm: 0 },
     ]);
     expect(totals.shown).toBe(2);
   });
@@ -114,8 +114,9 @@ describe('rollupPrecision', () => {
         correction('r9', 'not_this', '2026-10-02T00:00:00Z'),
       ],
     });
-    expect(cells[0]).toMatchObject({ rung: 'likely', shown: 3, not_this: 1 });
+    expect(cells[0]).toMatchObject({ rung: 'likely', shown: 3, not_this: 1, confirm: 1 });
     expect(totals.not_this).toBe(1);
+    expect(totals.confirm).toBe(1);
   });
 
   it('sorts cells by family, then by rung strength', () => {

@@ -217,6 +217,11 @@ export function useCoachHelmChat(options: UseCoachHelmChatOptions = {}): UseCoac
     setContext([]);
     turnKey.current = newKey();
     chat.setMessages([]);
+    // The old thread's failure must not follow the coach into the new one: it
+    // would keep the composer in its "failed" state and mask the next failure's
+    // restore-the-draft transition. This is also what "Start a new chat" under
+    // a lost-conversation error relies on.
+    chat.clearError();
   }, [chat]);
 
   const addContext = React.useCallback((chip: ChatContextChip) => {

@@ -24,7 +24,9 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
-import { isCorrectionsEnabled } from '@/lib/coachhelm/v3/corrections/flag';
+import { CORRECTIONS_FLAG, isCorrectionsEnabled } from '@/lib/coachhelm/v3/corrections/flag';
+import { coachhelmTeamAllowlist, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { isFlagEnabled } from '@/lib/flags';
 import {
   parseCorrectionInput,
   type CorrectionInput,
@@ -114,7 +116,14 @@ async function failedLookup(userId: string, what: string): Promise<CorrectionRes
 }
 
 async function recordCoachHelmCorrectionImpl(input: CorrectionInput): Promise<CorrectionResult> {
-  if (!isCorrectionsEnabled()) return { status: 'not_available', reason: 'flag_off' };
+  // HELM_COACHHELM_TEAMS canary: with a team list the flag is decided below,
+  // in the player's team scope, once the read and its teams are known. Here
+  // only the global flag can turn the action away. Unset: the same check as
+  // before, before anything is read.
+  const canary = coachhelmTeamAllowlist() !== null;
+  if (!(canary ? isFlagEnabled(CORRECTIONS_FLAG) : isCorrectionsEnabled())) {
+    return { status: 'not_available', reason: 'flag_off' };
+  }
 
   const parsed = parseCorrectionInput(input);
   if (!parsed.ok) return { status: 'invalid', error: parsed.error };
@@ -155,6 +164,9 @@ async function recordCoachHelmCorrectionImpl(input: CorrectionInput): Promise<Co
   const teams = await callerTeamsForPlayer(supabase, user.id, playerId);
   if (!teams) return failedLookup(user.id, 'team lookup failed');
   const { coachTeams, playerTeams } = teams;
+  if (canary && !runWithCoachHelmTeams(playerTeams, isCorrectionsEnabled)) {
+    return { status: 'not_available', reason: 'flag_off' };
+  }
   if (coachTeams.length > 0) {
     authorRole = 'coach';
     teamId = insight.team_id && coachTeams.includes(insight.team_id) ? insight.team_id : (coachTeams[0] ?? null);

@@ -1,5 +1,6 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import type { ChInsight } from './coachhelm-shape';
 import type { ChViewer } from './coachhelm-voice';
 
@@ -50,7 +51,7 @@ export interface ChRead {
     value: string;
     /** "18 of 31 putts" when the stored rate times its sample is that count, else the sample ("75 putts"); null with none. */
     sample: string | null;
-    /** "Compared with the Tour 0.3": a named comparison, never a bare number; null when the card draws none. */
+    /** "Compared with the Tour 0.3", or the team line "Team pool 72% (240 putts)": never a bare number; null when the card draws none. */
     benchmark: string | null;
     /** Null when the row carries no real stroke estimate, or it rounds to zero: never "0.0 strokes". */
     strokes: ChReadStrokes | null;
@@ -150,8 +151,14 @@ export function writeUpFor(text: string, traced: boolean): string | null {
   return kept.join(' ').trim() || null;
 }
 
-/** "Compared with the Tour 0.3": the comparison the card draws (the gauge's, or the slope read's own label), only when it has a name. */
+/**
+ * "Compared with the Tour 0.3": the comparison the card draws (the gauge's, or the slope read's own label), only when it has a name.
+ * A read carrying a team pool as its primary comparison (written only with `coachhelm_team_pool_v1` on) says the team line instead,
+ * "Team pool 72% (240 putts)": one pooled number and its count, never a teammate.
+ */
 function benchmarkOf(raw: EvidenceInsight, base: ChInsight, say: (t: string) => string): string | null {
+  const team = teamPoolLine(raw.evidence);
+  if (team) return team;
   const g = base.evidence.gauge;
   const parts = g ? [g.cmp, g.sec].filter((x): x is string => !!x && /[a-z]/i.test(x)) : base.evidence.bars ? [say(raw.evidence.comparison_label ?? '').trim()].filter((x) => /[a-z]/i.test(x)) : [];
   if (parts.length === 0) return null;
