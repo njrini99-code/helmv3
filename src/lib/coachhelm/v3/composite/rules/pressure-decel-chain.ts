@@ -11,6 +11,7 @@
  */
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** A cascade needs >=5 rounds of BOTH signals; below that it's noise. */
 const MIN_SOURCE_N = 5;
@@ -89,16 +90,18 @@ const rule: CompositeRule = {
     // pressure putt or a deceleration. The prose says what was observed, what
     // to check, and what to do; it does not name the mechanism as fact.
     return {
-      title: `Pressure gap and short-putt weakness overlap`,
-      content:
-        `You're playing +${pressureDelta.toFixed(1)} strokes worse in ` +
-        `tournaments vs practice AND making only ${shortPuttPct}% from ${bucket}. ` +
-        `These are two separate stats; whether the short putts are where the ` +
-        `tournament strokes go is not measured here. Short putts are where a ` +
-        `pressure gap tends to show first (Research doc §9), so check: compare ` +
-        `make rate from ${bucket} in tournament rounds vs practice rounds. ` +
-        `Recommended: practice the routine, not the stroke: same alignment, ` +
-        `same number of looks, same trigger.`,
+      ...inBothVoices((v) => ({
+        title: `Pressure gap and short-putt weakness overlap`,
+        content:
+          `${v.pick("You're", 'The player is')} playing +${pressureDelta.toFixed(1)} strokes worse in ` +
+          `tournaments vs practice AND making only ${shortPuttPct}% from ${bucket}. ` +
+          `These are two separate stats; whether the short putts are where the ` +
+          `tournament strokes go is not measured here. Short putts are where a ` +
+          `pressure gap tends to show first (Research doc §9), so check: compare ` +
+          `make rate from ${bucket} in tournament rounds vs practice rounds. ` +
+          `Recommended: practice the routine, not the stroke: same alignment, ` +
+          `same number of looks, same trigger.`,
+      })),
       signature: `pressure_decel:${bucket.replace('-', '_').replace(' ft', 'ft')}`,
       evidence: {
         metric: 'practice_tournament_delta',

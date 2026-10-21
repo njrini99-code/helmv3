@@ -44,6 +44,7 @@ import {
   type DistanceBand,
 } from '@/lib/coachhelm/v3/stats/proportion-test';
 import { rateGapStrokes } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** Window for the shot-level putt-break read (days), completed rounds only. */
 const WINDOW_DAYS = 90;
@@ -347,15 +348,17 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
       const rtl = agg.rtl_pct ?? null;
       const cells = agg.testable_cells ?? 0;
       const ratesKnown = ltr !== null && rtl !== null;
-      const pooled = ratesKnown
-        ? ` Over the ${cells} distance-and-slope group${cells === 1 ? '' : 's'} with enough putts to test, you made ` +
+      const pooled = (v: Voice) => ratesKnown
+        ? ` Over the ${cells} distance-and-slope group${cells === 1 ? '' : 's'} with enough putts to test, ${v.you} made ` +
           `${Math.round(ltr)}% of left-to-right breaks (n=${agg.ltr_n ?? 0}) and ${Math.round(rtl)}% of right-to-left (n=${agg.rtl_n ?? 0}).`
         : '';
       return {
-        title: 'Putting break check: no directional bias detected',
+        ...inBothVoices((v) => ({
+          title: 'Putting break check: no directional bias detected',
+          content: `Across ${v.players} last ${agg.rounds_played} rounds, no break direction stands out once distance and slope are controlled for.${pooled(v)} ${v.pick('Keep working', 'Have them keep working')} both ways on the practice green.`,
+        })),
         // No bias is the verdict, whichever side's raw rate is lower.
         framing: 'neutral',
-        content: `Across your last ${agg.rounds_played} rounds, no break direction stands out once distance and slope are controlled for.${pooled} Keep working both ways on the practice green.`,
         priority: 'low',
         signature: 'putt_bias:balanced',
         evidence: {
@@ -397,18 +400,20 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const strongDisp = `${Math.round(agg.strong_pct)}%`;
     const gap = Math.round(agg.gap_pp);
     const slopeText = agg.slope ? `, ${agg.slope}` : '';
-    const action =
-      agg.weakest_direction === 'left'
-        ? `Start your read higher on the left edge and commit to playing more break. Your makes drop on left-to-right putts, the classic under-read.`
-        : `Start your read higher on the right edge and commit to playing more break. Your makes drop on right-to-left putts, the classic under-read.`;
-    const slopeAction = agg.slope
-      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
+    const edge = agg.weakest_direction === 'left' ? 'left' : 'right';
+    const action = (v: Voice) =>
+      `${v.pick('Start your read', 'Have the player start their read')} higher on the ${edge} edge and commit to playing more break. ` +
+      `${v.Your} makes drop on ${breakLabel} putts, the classic under-read.`;
+    const slopeAction = (v: Voice) => agg.slope
+      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so ${v.pick('rehearse', 'have them rehearse')} that exact look.`
       : '';
 
     return {
-      title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
+      ...inBothVoices((v) => ({
+        title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
+        content: `On ${agg.band}${slopeText} putts ${v.pick("you're", 'the player is')} making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action(v)}${slopeAction(v)}`,
+      })),
       framing: 'leak',
-      content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,
       evidence: {

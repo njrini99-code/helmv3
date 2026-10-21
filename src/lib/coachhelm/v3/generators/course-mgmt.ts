@@ -20,6 +20,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { TOUR_STANDARDS, tourFor } from '@/lib/golf/benchmarks/tour';
 import { loadCompletedHoles, LIFETIME_WINDOW_DAYS, proximateCause } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
@@ -270,9 +271,9 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         ? ` (${excludedRounds} round${excludedRounds === 1 ? '' : 's'} without a course on file ` +
           `${excludedRounds === 1 ? 'is' : 'are'} not in this ranking)`
         : '';
-    const worstClause =
+    const worstClause = (v: Voice) =>
       agg.worst_holes.length > 0
-        ? ` Your highest-scoring holes: ` +
+        ? ` ${v.Your} highest-scoring holes: ` +
           agg.worst_holes
             .map(
               (w) =>
@@ -283,40 +284,43 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           `${excludedNote}.`
         : '';
     // Dominant proximate cause among the double-plus holes.
-    const causes: Array<{ key: string; pct: number; rank: number }> = [
+    type CauseKey = 'three_putt' | 'penalty' | 'missed_gir_no_scramble';
+    const causes = ([
       { key: 'three_putt', pct: agg.cause_three_putt_pct, rank: 0 },
       { key: 'penalty', pct: agg.cause_penalty_pct, rank: 1 },
       { key: 'missed_gir_no_scramble', pct: agg.cause_missed_gir_pct, rank: 2 },
       // Deterministic tiebreak on a stable rank so equal shares don't flip the
       // named dominant cause across engines (mirrors the worst-holes tiebreak).
-    ].sort((a, b) => b.pct - a.pct || a.rank - b.rank);
+    ] satisfies Array<{ key: CauseKey; pct: number; rank: number }>).sort((a, b) => b.pct - a.pct || a.rank - b.rank);
     const top = causes[0];
-    const CAUSE_LABEL: Record<string, string> = {
-      three_putt: '3-putts',
-      penalty: 'penalties',
-      missed_gir_no_scramble: 'missed greens you couldn’t get up-and-down',
+    const CAUSE_LABEL: Record<CauseKey, (v: Voice) => string> = {
+      three_putt: () => '3-putts',
+      penalty: () => 'penalties',
+      missed_gir_no_scramble: (v) => `missed greens ${v.you} couldn’t get up-and-down`,
     };
-    const CAUSE_ACTION: Record<string, string> = {
-      three_putt: 'lag-putt drills from 25+ ft are the fastest fix for these',
-      penalty: 'pick a conservative line / bail-out target off the tee on these holes',
-      missed_gir_no_scramble: 'short-game reps from the typical miss-side will stop the bleed',
+    const CAUSE_ACTION: Record<CauseKey, (v: Voice) => string> = {
+      three_putt: () => 'lag-putt drills from 25+ ft are the fastest fix for these',
+      penalty: (v) => `${v.pick('pick', 'have them pick')} a conservative line / bail-out target off the tee on these holes`,
+      missed_gir_no_scramble: () => 'short-game reps from the typical miss-side will stop the bleed',
     };
-    const causeClause =
+    const causeClause = (v: Voice) =>
       top && top.pct > 0
-        ? ` ${r1(top.pct)}% of your double-or-worse holes trace to ${CAUSE_LABEL[top.key]}: ${CAUSE_ACTION[top.key]}.`
+        ? ` ${r1(top.pct)}% of ${v.your} double-or-worse holes trace to ${CAUSE_LABEL[top.key](v)}: ${CAUSE_ACTION[top.key](v)}.`
         : '';
 
     if (agg.variant === 'penalty') {
       const valueDisp = agg.metric_value.toFixed(1);
       const anchorClause = `The ${agg.anchor_label} averages ~${agg.anchor_value.toFixed(1)}`;
       return {
-        title: `Penalty strokes: ${valueDisp} per round`,
-        content:
-          `Across all ${agg.rounds_played} rounds on file you're averaging ` +
-          `${valueDisp} penalty strokes per round. ${anchorClause}.` +
-          causeClause + worstClause +
-          ` Every penalty avoided is worth ~1.5 strokes per round.` +
-          staleDataSuffix(agg.last_round_date),
+        ...inBothVoices((v) => ({
+          title: `Penalty strokes: ${valueDisp} per round`,
+          content:
+            `Across all ${agg.rounds_played} rounds on file ${v.pick("you're", 'the player is')} averaging ` +
+            `${valueDisp} penalty strokes per round. ${anchorClause}.` +
+            causeClause(v) + worstClause(v) +
+            ` Every penalty avoided is worth ~1.5 strokes per round.` +
+            staleDataSuffix(agg.last_round_date),
+        })),
         // >0.3 over the Tour is high, over it at all is medium, at/under low.
         priority: this.anchoredPriority(agg, 0, 0.3),
         signature: `course_management:penalty_rate`,
@@ -352,12 +356,14 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     const valueDisp = `${agg.metric_value.toFixed(1)}%`;
     const anchorClause = `The ${agg.anchor_label} is ~${agg.anchor_value.toFixed(1)}%`;
     return {
-      title: `Double bogey-or-worse rate: ${valueDisp}`,
-      content:
-        `Across all ${agg.rounds_played} rounds on file, ${valueDisp} of holes ` +
-        `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
-        `this is the #1 separator between 70s and 80s rounds.` +
-        causeClause + worstClause + staleDataSuffix(agg.last_round_date),
+      ...inBothVoices((v) => ({
+        title: `Double bogey-or-worse rate: ${valueDisp}`,
+        content:
+          `Across all ${agg.rounds_played} rounds on file, ${valueDisp} of ${v.pick('holes', "the player's holes")} ` +
+          `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
+          `this is the #1 separator between 70s and 80s rounds.` +
+          causeClause(v) + worstClause(v) + staleDataSuffix(agg.last_round_date),
+      })),
       // >2pp over the Tour is high, over it at all is medium, at/under low.
       priority: this.anchoredPriority(agg, 0, 2),
       signature: `course_management:big_number`,
