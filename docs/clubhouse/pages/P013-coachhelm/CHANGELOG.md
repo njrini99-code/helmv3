@@ -1,5 +1,456 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: the Track record (flag off)
+
+```text
+Design package: none (supercharge 02 section 9, 03 section 7.3; design call)
+PR/commit:      see git log (claude/coachhelm-track-record)
+Contract IDs:   CH-13960 to CH-13969
+Actions:        none (read only)
+Data impact:    none written; reads golf_insight_exposure through the held
+                function golf_coachhelm_shown_reads (20261021090000)
+Held items:     20261021090000_golf_coachhelm_shown_reads.sql
+```
+
+### Added
+
+- `?view=track-record` for a coach, behind `coachhelm_track_record_v1`
+  (off): since Aug 1, how many reads CoachHelm showed the team and how many
+  held, cleared on their own or were contradicted when rechecked; By level
+  (the five claim levels, "Seen repeatedly · 12 of 14 held", a bar of the
+  same count with the target as a thin line); Your corrections; By family.
+  Below 10 rechecked reads a level or family says "Not enough yet" with its
+  count. Words and counts only, never a percent.
+- The coach board gets a "Track record" button under it, only with the flag
+  on and CoachHelm on (CH-13969).
+- States: CoachHelm off (CH-13965), a read failed (CH-13966), the function
+  not applied yet (CH-13967), nothing shown since Aug 1 (CH-13968).
+- Preview: `/clubhouse-preview/coachhelm-track` with `?state=early | empty |
+  unavailable | failed | off | loading`, built from synthetic reads through
+  the page's own counting.
+
+### Why
+
+- The engine grades itself in public (02 section 9): a coach sees how often
+  each level of claim held on the next rounds before trusting it.
+
+### Verification
+
+- `coachhelm-track-record.test.tsx` (words, states, loader) and
+  `coachhelm.test.tsx` (CH-13969). Phone screenshots at 390 x 844 from the
+  preview are in the PR description. No owner board exists for this view;
+  the phone draft is in `docs/clubhouse/phone/coachhelm.md`.
+
+## 2026-10-21 — Course plan on the coach's board (flag off)
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7c, 04 Example 10)
+PR/commit:      see git log (claude/coachhelm-course-plan)
+Contract IDs:   none
+Actions:        none (read-only server actions)
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/CoursePlan.tsx`: under the chosen player's card, a
+  Course plan button lists the player's courses with three or more
+  rounds; picking one shows at most three plan lines from their own
+  history there, the thin-history line below six rounds, and the
+  player's version to copy. Targets and sides only, never a club.
+- Shown only when `coachhelm_course_plan_v1` is on (off everywhere).
+  Preview: `/clubhouse-preview/coachhelm?state=courseplan`,
+  `courseplannone`, `courseplanfailed`.
+
+### Why
+
+- Supercharge 03 row 8 and 04 Example 10: a course plan from the
+  player's own rounds, on the coach's request (no event carries a course).
+
+## 2026-10-21 — Coach board: Team patterns
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7b; 03 §5.1, 04 Layout 4)
+PR/commit:      see git log (claude/coachhelm-team-pattern)
+Contract IDs:   CH-13995 (the Team patterns card)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pattern_v1 is on)
+Held items:     none
+```
+
+### Added
+
+- `screens/coachhelm/TeamPatterns.tsx` under the program pulse: up to four
+  rows, each a family shared by at least 3 players and 30% of the players
+  with enough rounds ("Wedges 50–125 yd · finishing short", "3 of 5
+  players with enough rounds · about 1.1 strokes a round across the
+  team"), opening to the practice block and each member's number and
+  ladder word. A counted line says how many more reads are shared by too
+  few players. Coach only; the player board never reads it.
+- `data/coachhelm-team-pattern.ts` maps `computeTeamPatterns`
+  (`lib/coachhelm/v3/team-pattern/pattern.ts`) to the card. The loader
+  reads it only with the flag on; a failed read draws no card.
+- Preview: `/clubhouse-preview/coachhelm?state=patterns`.
+
+### Verified
+
+- `coachhelm-team-pattern.test.tsx` (fixture runs the real computation).
+- Phone screenshot (390 × 844) of the preview state.
+
+## 2026-10-21 — What the engine knows, on the coach and player surfaces
+
+```text
+Design package: none (CoachHelm supercharge 04 section 3 examples 2, 3,
+                5, 7, 11 and 12, section 4, section 6 layouts 2, 5, 6)
+PR/commit:      see git log (claude/coachhelm-surfaces-a)
+Contract IDs:   CH-13990 to CH-13993 (new)
+Actions:        none
+Data impact:    none (read-only; one new read of golf_player_focus_areas
+                behind coachhelm_verdicts_v1)
+Held items:     the verdict columns arrive with the held migration
+                20261020120000_golf_focus_area_prescription.sql
+```
+
+### Changed
+
+- The coach's card, the player's Board and the Deep dive draw what the
+  engine slices store, each behind the flag that writes it. With every flag
+  off (production today) nothing changes:
+  - `coachhelm_support_v1`: How sure (Seen repeatedly, Observed, Likely,
+    Working hypothesis, Not enough yet), the 95% range in words in the gap's
+    own unit, and the Watching count-down for a read held back. Coach only:
+    the player feed drops the support fields.
+  - `coachhelm_root_cause_diagnosis`: the cause state (Counted, Likely from
+    the totals for a coach, Not traced yet, Data gap) with its counts. On
+    the Deep dive it is the Read's Why line.
+  - `coachhelm_recheck_v1`: Cleared reads leave the list for a Cleared
+    section, a Contradicted pair is one item, Under review marks a read.
+    Contradicted reaches the player a day after the coach.
+  - `coachhelm_verdicts_v1`: the verdict on the focus area made from a read
+    (Worked, Moved, Did not move, Got worse, Too early, Can't tell) in the
+    Slice 4 copy, with its target. Got worse reaches the player a day after
+    the coach.
+  - `coachhelm_support_v1`: "Why do you think so?", a disclosure with the
+    read's audit lines (counted, rounds, compared with, and for a coach the
+    test and how sure).
+- The Read's Next line keeps a wrapping drill name as one run of text above
+  its description.
+- Review fixes: a `pct_points` range is said as stored (the engine already
+  works in points, so no rescale); the Deep dive counts only the reads it
+  draws after the lifecycle shaping as shown (`drawnLater`, as the Board);
+  the Board and the Deep dive keep the Cleared section when every read has
+  cleared.
+
+### Verification
+
+- `coachhelm-engine.test.tsx` (flags off draw nothing; older rows draw
+  nothing; each state in each voice). Preview `?state=engine` on
+  `coachhelm`, `coachhelm-player` and the Deep dive; 390 x 844 shots are in
+  the PR, none in git.
+
+## 2026-10-20 — Deep dive: the Read says the team pool when there is one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 7a; 02 §3, 03 §5.2)
+PR/commit:      see git log (claude/coachhelm-team-pool)
+Contract IDs:   none (the Read's What line; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_team_pool_v1 is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-read-shape.ts` `benchmarkOf`: a read whose
+  `evidence.comparison.primary` is a team pool says that line in place of
+  "Compared with …", e.g. "Team pool 0.6 a round (212 rounds)."
+  (`lib/coachhelm/reads/team-pool-line.ts`). One pooled number and its
+  count; never a teammate. Every other line is unchanged, and a row without
+  the field reads exactly as before. Only the engine writes the field, and
+  only with `coachhelm_team_pool_v1` on.
+- Preview: `?view=deep-dive&state=teampool&insight=in-pen`.
+
+### Verified
+
+- `coachhelm-read-team-pool.test.ts`: the team line replaces only the
+  comparison, in both voices, and a row without it reads as before.
+- Phone screenshot (390 × 844) of the preview state.
+
+## 2026-10-20 — Board and Deep dive keep the reads past the feed cap
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0 delivery)
+PR/commit:      see git log (claude/coachhelm-delivery)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm.ts` (the player Board) and `data/coachhelm-dive.ts` (the
+  Deep dive) read the feed with `includeMore: true`. Nothing is drawn
+  differently: with the flag `coachhelm_reads_v1_copy` off (everywhere
+  today) the option does nothing.
+
+### Why
+
+- With that flag on, `getInsightsForPlayer` holds each player's feed to 3
+  open reads and 1 strength, the same 3 + 1 the Board draws. The Board
+  already caps itself and counts the rest into the Deep dive, and the Deep
+  dive lists every read, so both ask for the whole list. Overlapping reads
+  (driver with penalties, for example) still fold into one for them, as on
+  every other surface.
+
+### Verification
+
+- `coachhelm.test.tsx`, `coachhelm-reads.test.ts` and
+  `coachhelm-dive.test.tsx` check the Board and the Deep dive ask for the
+  whole list. No screenshot: nothing is drawn differently.
+
+## 2026-10-20 — Player board: three reads and one strength; no zero strokes
+
+```text
+Design package: none (supercharge 03 section 2, 09 and 10; design call)
+PR/commit:      see git log (claude/coachhelm-board-caps)
+Contract IDs:   130101, 130102 (meaning reworded)
+Actions:        none
+Data impact:    none (read-only; no engine, generator or schema change)
+Held items:     none
+```
+
+### Changed
+
+- The player's Board shows at most three reads that need work (the focus and
+  two in Also worth knowing) and one in What's working, in the feed's own
+  order (`NEEDS_MAX`, `WORKING_MAX` in `coachhelm-shape.ts`; it was five and
+  five, cut with no word of the rest).
+- The reads it leaves out are counted in one ghost button under the lists,
+  "8 more reads in the Deep dive", which opens the Deep dive the way the view
+  switch does. It is not drawn when the Board shows every read. The Deep dive
+  still lists every read.
+- A measured zero (a strokes-gained baseline whose `strokes_impact` prints as
+  0.0: 36 of 95 live `sg_baseline` rows, all approach proximity) is left out
+  of the Board's open reads and counted in that line. Any other zero (a peer
+  delta or rough estimate that was never estimated) keeps its read.
+- The v2 miner's own "Projected impact: ~0.00 strokes per round." sentence
+  in a read's text (the lede or Why we think this) is not drawn when its
+  figure is zero or the row has no estimate (`withoutZeroImpact` in
+  `coachhelm-strokes.ts`, at render; the stored row is untouched). A real
+  figure on a row that carries one ("~0.80 strokes per round played here")
+  stays. Production had no live zero sentence on 2026-10-20 (11 live rows
+  carry the sentence, 0.80 to 3.20).
+- `strokesAtStake` gives a strokes-a-round figure only for a non-zero
+  `sg_baseline` or `peer_delta` value, never "0.0 strokes", for any line
+  that states `strokes_impact`; none on this page did before.
+- CH-13303 names What's working only when that list is drawn.
+- An out-of-date read still sorts after the current ones, so the cap cuts it
+  first; it is counted in the Deep dive line like any other.
+
+### Why
+
+- Production has a median of nine reads a player and up to nineteen; three
+  and one is what a player can hold. 364 of 710 live v3 reads carry a zero
+  `strokes_impact`, and most are legitimate reads with no estimate.
+
+### Verification
+
+- `coachhelm-board-caps.test.ts`: each strokes case (sg_baseline non-zero and
+  zero, peer_delta non-zero and zero, rough estimate, missing), the Projected
+  impact sentence (zero, real, no estimate, in the lede and in Why), and the
+  caps (0, 2, 3 and 9 findings with 0, 1 and 3 strengths; the counts add
+  up).
+- `coachhelm.test.tsx`: the Board with nine and three, the button and its
+  route, and a measured zero alone.
+- Looked at on a phone (390 px) with the preview fixtures
+  (`?state=many|zero`). The "more reads" button is a small ghost button
+  (30 px), so on touch it keeps a 44 px target (`pointer: coarse`).
+- Review fix (CH13-21): the Board counts as shown only the reads it draws
+  (the focus, up to two more and one strength). The player feed takes a
+  `drawnLater` callback: the loader says which ids it drew once it has
+  shaped the rows, and only those are written to `golf_insight_exposure`.
+  Before, every read past the caps was recorded as a Board exposure.
+
+## 2026-10-20 — A not-traced cause is not drawn as a likely one
+
+```text
+Design package: none (CoachHelm supercharge, Slice 2; 00 open question 3)
+PR/commit:      see git log (claude/coachhelm-root-cause)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; inert until coachhelm_root_cause_diagnosis is on)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a row whose
+  `evidence.cause.state` is `not_traced` gets no diagnosis, as the
+  placeholder does. The engine writes that state only with
+  `coachhelm_root_cause_diagnosis` on (off everywhere), so nothing changes
+  today. The mapping of the three cause states onto the existing level:
+  counted (`observed_sequence`) is `observed`; likely from the totals
+  (`inferred_hypothesis`) is `hypothesis`, which a player never sees; not
+  traced is no diagnosis.
+
+### Why
+
+- A not-traced sentence ("Not traced yet. Needs 10 missed greens over 3
+  rounds; 6 so far.") is a count-down or a data gap, not a cause. Drawn in
+  the "Likely, not measured" box it would read as a guess.
+
+### Verification
+
+- `coachhelm-dive.test.tsx`: not traced gets no diagnosis; counted and
+  likely keep `observed` and `hypothesis`. No screenshot: no layout change.
+
+## 2026-10-20 — Deep dive: each read opens with What, Why, Next and When
+
+```text
+Design package: CoachHelm supercharge, Slice 0 (the Read, output only)
+PR/commit:      see git log (claude/coachhelm-read-lines)
+Contract IDs:   130716 (CH-13982: coach only now), CH-13903 (When line)
+Actions:        none
+Data impact:    none (no new read, no engine or generator change)
+Held items:     none
+```
+
+### Changed
+
+- The player's Deep dive opens each read with four lines under its title
+  (`data/coachhelm-read-shape.ts`, drawn by `Read` in `views/DeepDive.tsx`):
+  What (the metric, the value and its sample, the comparison by name, strokes
+  a round only when the row estimates them, the confidence word), Why (a cause
+  seen in the shots, marked "Measured in your shots", with its counts; else
+  "Not traced yet: the record does not say why."), Next (the drill, or the
+  row's own action, or "No drill assigned." for the generators' placeholder)
+  and When ("Through" the newest round in the read, and "Out of date: ..."
+  when a newer round is not in it).
+- A player never sees an inferred cause (the owner's default for supercharge
+  open question 3, "hide"): no cause sentence and no "Likely, not measured"
+  marker on the Why line or in "Why CoachHelm thinks so"; the Why line reads
+  "Not traced yet". A coach's rendering (`toChDeepInsight(..., say, 'coach')`)
+  keeps "Likely, not measured" and the cause. The role is the viewer the loader
+  already maps the card for. The generators' stock reason "sample adequate"
+  is no longer drawn; the drivers and their counts still are.
+- Folded, not repeated: the lede under the title (it is the start of the full
+  write-up now), the out-of-date note under the title (the When line), the
+  cause and its marker in "Why CoachHelm thinks so" (the Why line; the section
+  keeps the drivers, the reason and the write-up), the "This week" block (the
+  Next line) and the stroke sentence under the measured number (the What
+  line, said once).
+- New styles under `.ch-hd-read` in `coachhelm-dive.css`, `--ch-*` tokens only.
+
+### Why
+
+- Supercharge Slice 0: one read is one claim in four fixed lines, from fields
+  that exist today. A zero or unestimated stroke figure is never said, a
+  benchmark always has a name, and a cause the row does not state is "not
+  traced yet", never made up. After PR #2213 the generators' placeholder cause
+  maps to no diagnosis, so those rows read "Not traced yet".
+
+### Verification
+
+- `coachhelm-read.test.ts` (new): a real cause, no cause, the placeholder
+  action, zero and unestimated strokes, a measured `sg_baseline` figure, an
+  out-of-date row, the same numbers in the coach's and the player's voice, and
+  an inferred cause hidden from the player but shown to a coach (an observed
+  one shown to both). `coachhelm-dive.test.tsx` updated on purpose for the
+  folded parts and the hidden hypothesis.
+- Looked at on a phone (390 px) and a desktop width with the preview
+  fixtures (`?state=many|stale|zero`). On a phone the four lines sit in the
+  green dossier head, so they take its on-green inks there
+  (`--ch-on-green-ink*`); the first pass used the card inks and was too
+  dark to read.
+- The open read's category over its title ("Around the green") was field
+  green on the green phone head, a rule from before this change; it takes the
+  on-green ink there now.
+- Review fixes: a count ("18 of 31 putts") is never derived from a sample
+  that counts both arms of a comparison (putt-bias and putt-slope-bias store
+  both sides' putts), and when the Why line is not traced for the viewer the
+  full write-up leaves out the generator's sentences that guess a cause
+  ("consistent with a pace-control pattern"), so a player never reads the
+  cause the Why line holds back.
+
+## 2026-10-20 — The Deep dive stops drawing the placeholder cause
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0a; recommendation in /mnt/project-files/coachhelm/supercharge)
+PR/commit:      see git log (claude/project-thread-hrav6r)
+Contract IDs:   CH-13982 (the diagnosis block; no id added)
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm-dive-shape.ts` `diagnosisFor`: a diagnosis whose cause is
+  the generators' placeholder ("<metric> is off its benchmark. Likely cause
+  inferred from the aggregate, not a measured shot sequence", written by
+  `buildDiagnosis` on every single-metric v3 row) is no diagnosis. The
+  "Likely, not measured" box, its cause line, its "sample adequate" reason
+  and the driver the evidence block already shows are not drawn for it. A
+  measured or hand-written cause draws exactly as before.
+- The placeholder test is `src/lib/coachhelm/reads/placeholder-cause.ts`,
+  shared and pure.
+
+### Why
+
+- A read-only production count on 2026-10-20 found the placeholder on 545 of
+  the 710 visible v3 reads (77%), in two spellings: 314 rows with a full
+  stop and 441 older rows with a dash and a lower-case "likely" (both
+  counts include archived rows). Printed as a diagnosis it taught coaches
+  to skip the why line, and a Deep dive section headed "Why CoachHelm
+  thinks so" held only that sentence.
+
+### Verification
+
+- `placeholder-cause.test.ts` (both production spellings) and
+  `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
+  observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule
+  changed.
+
+## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- No coloured side rails (the owner's standing rule): Standing's projection
+  lines, the early-read lines on Standing and Game profile, the drill card,
+  the phone chat's error notice and the coach board's selected-player
+  stripe. Tone is a dot, a tint or the ink.
+- Ask: Board | Ask sits at the right of its strip, where the Board's header
+  draws it, and spans the strip on the phone, as on the Board.
+- Coach board: the selected player's count is no longer clipped; the
+  gauge's legend sits beside the number instead of "Tour 0.3" at the
+  track's far end, away from its tick.
+- Standing (desktop): the You / Tour / Team key is drawn once per group, on
+  its first row; later rows keep the words for a screen reader.
+- Deep dive: the hero's three count tiles have their gap back.
+- Game profile: on a wide canvas the green board is two columns, headline
+  and what stands out, instead of a half-width panel under the headline; a
+  lone "With a read" heading is drawn only beside "Still filling in"; the
+  headline's dots never start a line.
+- The worth-closing dot takes its chip's gilt; champagne-300 all but
+  vanished on the parchment.
+
+### Verified
+
+WebKit at 390 and 1280 (coach Board and Ask, player Board, Game profile,
+Standing, Deep dive); no sideways scroll at 834 to 1440 in the default,
+empty, early and partial states.
+
 ## 2026-10-19 — CoachHelm on an iPad: the views head, the Ask cards and the evidence side sheet
 
 ```text
@@ -13,16 +464,25 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and `coachhelm-ask.css`): a player's views head puts the view switch under the sentence when the page holds under 781px, where the sentence had a 56px column and ran a word to a line.
-- Ask: the "Since you were last here" cards take as many columns as fit (three at 1180, one at 834), their title no longer wraps to three lines, the chats panel is 216px on a canvas under 781px, and the evidence panel lays over the conversation as a side sheet there instead of taking a third column.
+- Tablet tier (821 to 1180px, end blocks of `coachhelm.css` and
+  `coachhelm-ask.css`): a player's views head puts the view switch under the
+  sentence when the page holds under 781px, where the sentence had a 56px column
+  and ran a word to a line.
+- Ask: the "Since you were last here" cards take as many columns as fit (three
+  at 1180, one at 834), their title no longer wraps to three lines, the chats
+  panel is 216px on a canvas under 781px, and the evidence panel lays over the
+  conversation as a side sheet there instead of taking a third column.
 
 ### Why
 
-- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation 338px and the cards 70px each.
+- The canvas is 618px at 834 with the sidebar open; Ask gave the conversation
+  338px and the cards 70px each.
 
 ### Verification
 
-- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)` media query.
+- WebKit, touch: 834 and 1024 before and after looked at (profile, ask home, ask
+  answer, ask with evidence); the rules sit in a `screen and (821px to 1180px)`
+  media query.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
@@ -37,18 +497,35 @@ Held items:     none
 
 ### Changed (coachhelm.css, coachhelm-ask.css, coachhelm-dive.css, coachhelm-profile.css, coachhelm-standing.css, coachhelm-thread.css, coachhelm-views.css)
 
-- Figures and labels still in pixels (the dive hero and measure values, the standing "you" figures, the focus and bars values, the thread's bar and rank values) follow the iPhone's text size. The thread's chart axis and reference labels keep theirs (SVG text).
+- Figures and labels still in pixels (the dive hero and measure values, the
+  standing "you" figures, the focus and bars values, the thread's bar and rank
+  values) follow the iPhone's text size. The thread's chart axis and reference
+  labels keep theirs (SVG text).
 - Radii on the 5, 7, 10, 14, 20 scale.
-- The phone's chat header keys, history keys and rows, question pills, composer chips, the thread's copy key, pills, chips and the "View as table" toggle reach 44px; the toggle, the work row, "Why we think this", the profile measure disclosure and the ask finder link have a hover state.
-- The thread's bar and rank values, and the profile's measure, standing and score figures, use tabular numerals.
+- The phone's chat header keys, history keys and rows, question pills, composer
+  chips, the thread's copy key, pills, chips and the "View as table" toggle
+  reach 44px; the toggle, the work row, "Why we think this", the profile measure
+  disclosure and the ask finder link have a hover state.
+- The thread's bar and rank values, and the profile's measure, standing and
+  score figures, use tabular numerals.
 
 ### Why
 
-- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20
+  scale, some phone controls were under 44px, some clickable things did not
+  answer a pointer, and the font shorthand had dropped tabular figures from
+  figures that sit in columns.
 
 ### Verification
 
-- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up,
+  sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the
+  phone with `--ch-type-scale: 1.4` scales text with no sideways overflow
+  (scrollWidth equals clientWidth). Touch reach was measured with
+  `elementFromPoint` 21px beyond each short control; hover was measured by
+  comparing computed styles under the pointer; figures were measured by computed
+  `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing
+  shadows in `auth.css` (lines 1809 and 1872).
 
 ## 2026-10-19 — In-flight actions are busy; one spinner; icon buttons have tooltips; chip and player rows fade a clipped edge
 
@@ -63,9 +540,12 @@ Held items:     none
 
 ### Changed
 
-- Accept, Decline, Assign as focus, Dismiss, Undo and a chat action's Confirm are busy while they run; only the one pressed shows the ring and its neighbours stay disabled.
+- Accept, Decline, Assign as focus, Dismiss, Undo and a chat action's Confirm
+  are busy while they run; only the one pressed shows the ring and its
+  neighbours stay disabled.
 - The thread's working step draws the shared `Spinner`.
-- Chats, New chat, Add to your question, Send, Stop, Mention, Copy and Close evidence show their name on hover and focus.
+- Chats, New chat, Add to your question, Send, Stop, Mention, Copy and Close
+  evidence show their name on hover and focus.
 - The phone's view chips and the player list fade only the clipped edge.
 
 ### Why
@@ -964,6 +1444,7 @@ mention interaction tests and the popup browser audit on PR #2155.
 Physical VoiceOver acceptance remains open.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Streaming follow-scroll is scheduled once per browser frame and canceled

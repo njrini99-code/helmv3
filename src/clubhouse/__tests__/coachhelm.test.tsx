@@ -393,14 +393,15 @@ describe('Which insight leads, and who is most pressing', () => {
     expect(partitionInsights(only)).toMatchObject({ focus: null, also: [], working: only });
   });
 
-  it('the lists and the pulse are capped: five to look at, five working, six pulse rows', () => {
+  it('the lists and the pulse are capped: three that need work (the focus among them), one working, six pulse rows', () => {
     const finding = list[0]!;
     const strength = list[3]!;
     const many = [...Array.from({ length: 9 }, (_, n) => ({ ...finding, id: `f${n}` })), ...Array.from({ length: 8 }, (_, n) => ({ ...strength, id: `s${n}` }))];
-    const { focus, also, working } = partitionInsights(many);
+    const { focus, also, working, more } = partitionInsights(many);
     expect(focus?.id).toBe('f0');
-    expect(also.map((i) => i.id)).toEqual(['f1', 'f2', 'f3', 'f4', 'f5']);
-    expect(working.map((i) => i.id)).toEqual(['s0', 's1', 's2', 's3', 's4']);
+    expect(also.map((i) => i.id)).toEqual(['f1', 'f2']);
+    expect(working.map((i) => i.id)).toEqual(['s0']);
+    expect(more).toBe(13);
     const items = Array.from({ length: 9 }, (_, n) => ({ id: `rsvp-${n}`, headline: 'A headline', evidence: 'Some evidence', tone: 'neutral' as const }));
     expect(pulseRows(items).map((r) => r.id)).toEqual(['rsvp-0', 'rsvp-1', 'rsvp-2', 'rsvp-3', 'rsvp-4', 'rsvp-5']);
   });
@@ -571,6 +572,12 @@ describe('CoachHelm for the player, on screen', () => {
     await expectCode('CH-13301', /CoachHelm reads the rounds you post\. After 4 rounds, one thing to work on this week shows up here\./);
   });
 
+  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', async () => {
+    showPlayer({ ...PREVIEW_HELM_PLAYER_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] });
+    await expectCode('CH-13302');
+    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
+  });
+
   it('CH-13302 rounds posted but no insight yet: it says how many, that CoachHelm needs enough to find a pattern, and no threshold', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_EMPTY);
     await expectCode('CH-13302', /No insights yet.*You’ve posted 3 rounds\. CoachHelm needs enough rounds to find a pattern worth acting on/);
@@ -596,6 +603,36 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')).toBeNull();
     // Nothing else to look at, so that list isn't drawn empty.
     expect(screen.queryByRole('region', { name: 'Also worth knowing' })).toBeNull();
+  });
+
+  it('CH-13303 the only read is a measured zero: nothing needs work, no list is promised, and the read is a tap away in the Deep dive', async () => {
+    const user = userEvent.setup();
+    const zero = { ...PREVIEW_HELM_PLAYER.insights.list[1]!, measuredZero: true };
+    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list: [zero], error: false } });
+    await expectCode('CH-13303', /^Nothing needs work right now/);
+    expect(code('CH-13303')!.textContent).not.toMatch(/What is working/);
+    router.push.mockClear();
+    await user.click(screen.getByRole('button', { name: '1 more read in the Deep dive' }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
+  });
+
+  it('nine that need work and three working: three and one on the board, and the other eight counted, a tap from the Deep dive', async () => {
+    const user = userEvent.setup();
+    const [finding, , , strength] = PREVIEW_HELM_PLAYER.insights.list;
+    const list = [...Array.from({ length: 9 }, (_, n) => ({ ...finding!, id: `f${n}` })), ...Array.from({ length: 3 }, (_, n) => ({ ...strength!, id: `s${n}` }))];
+    showPlayer({ ...PREVIEW_HELM_PLAYER, insights: { list, error: false } });
+    expect(document.querySelectorAll('.ch-hl-focus')).toHaveLength(1);
+    expect(inList('Also worth knowing').getAllByRole('button')).toHaveLength(2);
+    expect(inList('What’s working').getAllByRole('button')).toHaveLength(1);
+    router.push.mockClear();
+    await user.click(screen.getByRole('button', { name: '8 more reads in the Deep dive' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
+  });
+
+  it('a board that shows every read says nothing about more', () => {
+    showPlayer(PREVIEW_HELM_PLAYER);
+    expect(screen.queryByRole('button', { name: /more reads? in the Deep dive/ })).toBeNull();
   });
 
   it('CH-13701 on the phone, choosing an insight brings the focus into view; on a wider screen the page stays where it is', async () => {
@@ -847,6 +884,17 @@ describe('CoachHelm proposals, on the player’s board', () => {
 describe('CoachHelm for the coach, on screen', () => {
   const user = () => userEvent.setup();
   const pick = (u: ReturnType<typeof userEvent.setup>, name: string) => u.click(screen.getByRole('button', { name: new RegExp(name) }));
+
+  it('CH-13969 the Track record link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
+    showCoach();
+    expect(code('CH-13969')).toBeNull();
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(within(code('CH-13969') as HTMLElement).getByRole('link', { name: 'Track record' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=track-record');
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} trackRecordHref="/golf/dashboard/coachhelm?view=track-record" />));
+    expect(code('CH-13969')).toBeNull();
+  });
 
   it('CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs, in its own words', () => {
     showCoach();
@@ -1298,11 +1346,27 @@ describe('CoachHelm loaders', () => {
       vi.mocked(getInsightsForPlayer).mockResolvedValue([slope(p1), bigNumber(p1)]);
       tables.current = { golf_drills: { data: [{ id: 'dr-ladder', description: 'Start 2 ft below the hole.' }] } };
       const d = await loadPlayerCoachHelm({ playerId: p1 });
-      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30, drawn: expect.any(Function) }); // CH13-21: only drawn cards count as shown
+      expect(getInsightsForPlayer).toHaveBeenCalledWith(p1, { limit: 30, drawnLater: expect.any(Function), includeMore: true }); // CH13-21: only drawn cards count as shown
       expect(d.off).toBeNull();
       expect(d.insights.error).toBe(false);
       expect(d.insights.list.map((i) => i.id)).toEqual(['in-slope', 'in-dbl']);
       expect(d.insights.list[0]!.week).toEqual({ title: 'Downhill ladder', text: 'Start 2\u00a0ft below the hole.', meta: '12 min · intermediate' });
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!([])).resolves.toEqual(['in-slope', 'in-dbl']);
+    });
+
+    it('CH13-21 only the reads the Board draws are counted as shown: the focus and two more, not the other nine', async () => {
+      const feed = Array.from({ length: 12 }, (_, n) => ({ ...slope(p1), id: `f${n}` }));
+      vi.mocked(getInsightsForPlayer).mockResolvedValue(feed);
+      const d = await loadPlayerCoachHelm({ playerId: p1 });
+      expect(d.insights.list).toHaveLength(12);
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!(feed)).resolves.toEqual(['f0', 'f1', 'f2']);
+    });
+
+    it('CH13-21 a Board with nothing drawn counts nothing as shown', async () => {
+      vi.mocked(getInsightsForPlayer).mockResolvedValue([]);
+      tables.current = { golf_coach_insights: { data: [] }, golf_insight_player_feedback: { data: [] } };
+      await loadPlayerCoachHelm({ playerId: p1 });
+      await expect(vi.mocked(getInsightsForPlayer).mock.calls.at(-1)![1]!.drawnLater!([])).resolves.toEqual([]);
     });
 
     it('a failed drill read keeps the drill’s name and length, and is logged', async () => {
@@ -1867,7 +1931,7 @@ describe('CoachHelm route', () => {
     expect(screen.queryByRole('region', { name: 'By player' })).toBeNull();
     expect(screen.queryByRole('button', { name: /Assign|Dismiss/ })).toBeNull();
     expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
-    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function) });
+    expect(getInsightsForPlayer).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
   });
 
   it('CH-1301 no CoachHelm address says "hasn’t been rebuilt yet" any more: ?view=deep-dive is the Deep dive (coachhelm-dive.test), ?view=insights is the board', async () => {

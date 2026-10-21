@@ -15,6 +15,12 @@ describe('liveCounterfactual', () => {
     expect(liveCounterfactual(row('p', 'putting', null).evidence)).toBeNull();
     expect(liveCounterfactual(null)).toBeNull();
   });
+
+  it('never counts a rough estimate (evidence.estimated), even with a live projection', () => {
+    const ev = { ...row('p', 'tee', 0.9).evidence, estimated: true };
+    expect(liveCounterfactual(ev)).toBeNull();
+    expect(teamStrokesAvailable([{ player_id: 'p', category: 'tee', evidence: ev }], 'tee', new Set(['p']))).toBeNull();
+  });
 });
 
 describe('teamStrokesAvailable', () => {

@@ -4,8 +4,10 @@ import { confidenceLabel, confidenceTier, type ConfidenceTier } from '@/lib/coac
 import { buildInsightUnit, fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { MINUS } from '../lib/format';
 import { COLLEGE_NO_TOUR, COLLEGE_SOURCES, dayOf, drawnComparison, kindOf, refreshedDay, staleSince } from './coachhelm-classify';
+import { isMeasuredZero, withoutZeroImpact } from './coachhelm-strokes';
 import { TOUR_LABEL, type ChHelmAssigned, type ChHelmBar, type ChHelmEvidence, type ChHelmGauge, type ChHelmLifecycle, type ChHelmPri, type ChHelmWeek, type ChInsight, type ChKind, type ChStale, type ChTourBaseline } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
+import { anyEngineFlag, auditOf, causeOf, isEmptyEngine, supportOf, verdictOf, type ChEngineFlags, type ChEngineLifecycle, type ChReadEngine, type ChVerdictRow } from './coachhelm-engine-shape';
 
 /**
  * Generator output to what the CoachHelm screens draw (Clubhouse P013). Pure:
@@ -292,7 +294,7 @@ const LIFECYCLES: readonly string[] = ['detected', 'matured', 'addressed', 'reso
  */
 export function toChInsight(
   ins: EvidenceInsight,
-  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer } = {},
+  extra: { drillText?: string | null; assigned?: ChHelmAssigned | null; declined?: boolean; tour?: ChTourBaseline | null; newestRound?: string | null; viewer?: ChViewer; engine?: ChEngineInputs } = {},
 ): ChInsight {
   const ev = ins.evidence;
   const unit = buildInsightUnit(ins);
@@ -303,8 +305,11 @@ export function toChInsight(
   const kind = kindOf(ins, tour);
   const staleDay = staleSince(ins, extra.newestRound ?? null);
   const stale: ChStale | null = staleDay ? { newestRound: fmtShortDate(staleDay) ?? staleDay } : null;
-  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(ins.content, ev.metric)));
+  // A "Projected impact: ~0.00 strokes per round." sentence says nothing, so it is not drawn (coachhelm-strokes.ts).
+  const { lede, why } = splitContent(withoutCollegeAverage(withoutSampleAside(withoutZeroImpact(ins.content, ev), ev.metric)));
   const claim = lede || ev.diagnosis?.symptom?.trim() || '';
+  const evidence = evidenceFor(ins, kind, tour, say);
+  const engine = kind === 'note' ? null : engineFor(ins, evidence, extra.engine, extra.engine?.viewer ?? extra.viewer);
   return {
     id: ins.id,
     playerId: ins.player_id,
@@ -322,7 +327,7 @@ export function toChInsight(
     // A note has no number of its own: the par card's value is one of three standings under a title for all of them.
     value: kind === 'note' ? '' : ev.your_value_display?.trim() || (you != null ? formatComparison(you, ev.unit) : ''),
     valueUnit: kind === 'note' ? null : valueUnitFor(ev),
-    evidence: evidenceFor(ins, kind, tour, say),
+    evidence,
     week: kind === 'note' ? null : weekFor(ins, unit, extra.drillText, say),
     lifecycle: (LIFECYCLES.includes(ins.lifecycle_state) ? ins.lifecycle_state : 'detected') as ChHelmLifecycle,
     metric: ev.metric,
@@ -330,5 +335,48 @@ export function toChInsight(
     areaType: areaTypeFor(ins.category),
     assigned: extra.assigned ?? null,
     declined: !extra.assigned && (extra.declined ?? false),
+    // Set only when true, so every other card is the shape it was.
+    ...(isMeasuredZero(ev) ? { measuredZero: true } : {}),
+    // Absent unless an engine flag is on and the row carries what it draws (coachhelm-engine-shape.ts).
+    ...(engine ? { engine } : {}),
   };
+}
+
+/** What the loader read beside a row for the engine's states: the flags (server-side), its lifecycle item and its focus area. */
+export interface ChEngineInputs {
+  flags: ChEngineFlags;
+  lifecycle?: ChEngineLifecycle | null;
+  /** The focus area made from this read, with its prescription and verdict columns (read only with the verdicts flag on). */
+  focus?: ChVerdictRow | null;
+  /** ISO now, for the coach-first day; the loader's clock. */
+  now: string;
+  /** Whose surface it is, when the text's voice is not told (a coach's card for a player with no name on file). */
+  viewer?: ChViewer;
+}
+
+/** The card's engine states, each behind its flag; null when none applies (the card is then exactly what it was). */
+function engineFor(ins: EvidenceInsight, evidence: ChHelmEvidence, inputs: ChEngineInputs | undefined, viewer: ChViewer | undefined): ChReadEngine | null {
+  if (!inputs || !anyEngineFlag(inputs.flags)) return null;
+  const { flags } = inputs;
+  const ev = ins.evidence;
+  const out: ChReadEngine = {};
+  const cause = flags.cause ? causeOf(ev, viewer) : null;
+  if (flags.support) {
+    const s = supportOf(ev, viewer);
+    if (s) out.support = s;
+  }
+  if (cause) out.cause = cause;
+  if (flags.recheck && inputs.lifecycle) out.lifecycle = inputs.lifecycle;
+  if (flags.verdicts) {
+    const label = evidence.label || ev.metric_label || ins.title;
+    const noun = (ev.sample_unit ?? 'attempts').replace(/_/g, ' ');
+    const v = verdictOf(inputs.focus, label, noun, viewer, inputs.now);
+    if (v) out.verdict = v;
+  }
+  if (flags.support) {
+    const comparison = evidence.gauge?.cmp ?? (ev.comparison_label?.trim() || null);
+    const audit = auditOf(ev, viewer, { sample: evidence.sample || null, comparison, cause });
+    if (audit.length > 0) out.audit = audit;
+  }
+  return isEmptyEngine(out) ? null : out;
 }

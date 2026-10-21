@@ -6,8 +6,7 @@ import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, typ
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import type { ChWindow } from '../../data/stats-common';
-import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
+import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -125,7 +124,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     setLoading(next);
     go(data.id, next);
   };
-  const changeWindow = (win: ChWindow) => changeFilter(withWindow(data.filter, win));
+  const changeWindow = (r: ChRange) => changeFilter(withScope(data.filter, r));
   const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
   // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
@@ -175,7 +174,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             initialTab={initialTab}
             playerHref={href(data.id, data.filter)}
             messageHref={messageHref}
-            windowShown={(loading ?? data.filter).window}
+            windowShown={rangeOf(loading ?? data.filter)}
             onWindow={changeWindow}
             onFilter={changeFilter}
             onBackToTeam={() => go(null, data.filter)}
@@ -281,7 +280,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             ))}
           </div>
           {/* The switch moves on the tap: the window being loaded, not the one whose figures are still showing (F-55). */}
-          <WindowSwitch value={(loading ?? data.filter).window} onChange={changeWindow} custom={hasRange(data.filter)} />
+          <WindowSwitch value={rangeOf(loading ?? data.filter)} onChange={changeWindow} custom={hasRange(data.filter)} />
         </div>
 
         {showFilter && <StatsFilter filter={data.filter} options={data.filterOptions} count={w.rounds} onChange={changeFilter} codes={filterCodes} />}

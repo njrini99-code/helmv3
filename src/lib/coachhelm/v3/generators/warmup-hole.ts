@@ -66,6 +66,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
   readonly insightType = 'warmup_hole';
   readonly category: InsightCategory = 'pressure';
   readonly minSampleN = 5; // rounds with a hole-1 entry
+  /** Reads the last 90 days ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = 90;
 
   readonly metricId: MetricId = 'opening_hole_delta';
 
@@ -150,6 +152,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
 
     return {
       sampleN: hole1Rounds.size,
+      // Slice 0b: the rounds whose opening hole fed the read stamp its window.
+      windowRoundIds: [...hole1Rounds],
       last_round_date: lastRoundDate,
       playerValue: delta,
       hole1_avg: hole1Avg,
@@ -197,6 +201,9 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
 
     return {
       title,
+      // Opening-hole tax in strokes: at or under 0 is a strength, up to the
+      // ~0.1 PGA tax is normal, beyond it is a leak (matches `priority`).
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.1 ? 'neutral' : 'leak',
       content,
       // Opening-hole gap vs the ~0.1 PGA tax: at/under is fine; a large opener tax escalates.
       priority: agg.playerValue <= 0.1 ? 'low' : agg.playerValue <= 0.4 ? 'medium' : 'high',

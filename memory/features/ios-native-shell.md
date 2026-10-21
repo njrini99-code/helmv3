@@ -37,7 +37,13 @@ Native surface today:
 - **Push**: `src/lib/utils/push-registration.ts` park-then-flush token state
   machine (persistence deferred until an authenticated session), value-first
   pre-prompt `src/components/golf/PushPermissionSoftAsk.tsx`, deep links
-  validated by `isSafeInternalPath`.
+  validated by `isSafeInternalPath`. Clubhouse has its own ask
+  (`src/clubhouse/shell/PushAsk.tsx`, CH-1911) on the same shared functions
+  and the same stored answer, and a Settings row for the app's push
+  (`useNativePush`, CH-8902/CH-8903) that reads `nativePushPermission` and
+  opens the app's page in iOS Settings (`openNativeAppSettings`,
+  `app-settings:`, which Capacitor's navigation handler passes to iOS).
+  Spec: `docs/clubhouse/phone/push-opt-in.md`.
 - **Theme/status bar**: `CapacitorProvider.tsx` syncs the native status bar
   to the app theme reactively.
 
@@ -105,7 +111,10 @@ offline page. `src/test/proxy-middleware.test.ts` pins the exemption.
 - The iOS keyboard accessory bar is hidden except while a numeric, decimal or
   tel input has focus (`installNumericAccessoryBar` in
   `src/lib/utils/capacitor.ts`, installed once from `initCapacitor`), so number
-  pads get a Done key. Test: `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts`.
+  pads get a Done key. A surface can hold the bar up for every field while it
+  is mounted (`pinKeyboardAccessoryBar`; Clubhouse round entry does, through
+  `useRoundDoneKey`), which sets it before any focus instead of at focus time.
+  Test: `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts`.
 - Edge swipe-back (`allowsBackForwardNavigationGestures`) is on, except on
   the round-entry routes (`/golf/dashboard/rounds/new`, `/rounds/continue`)
   and while the page reports an open sheet or dialog through the `helmNav`

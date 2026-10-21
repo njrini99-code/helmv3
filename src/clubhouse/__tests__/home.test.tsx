@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -401,14 +401,25 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
     expect(screen.getByRole('link', { name: /1:1 with Jonah/ }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a2');
   });
 
-  it('the team form: gains green, losses amber (D-42), and a text equivalent for the line', () => {
+  it('the team form: a change green or amber only when it clears its standard error (Q4, D-42), and a text equivalent for the line', () => {
+    // The preview's changes are inside their standard errors: the numbers stay, in plain ink, and the average says so.
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    const form = document.querySelector('.ch-hm-form')!;
+    let form = document.querySelector('.ch-hm-form')!;
     expect(form.textContent).toMatch(/73\.4/);
-    expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
-    // Putts up 0.3 is worse.
-    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
+    expect(form.querySelector('.ch-hm-delta')!.className).not.toMatch(/is-gain|is-loss/);
+    expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('No clear change vs previous 10');
+    expect(form.querySelectorAll('dd.is-gain, dd.is-loss')).toHaveLength(0);
     expect(screen.getByRole('img', { name: /Team scoring, the team’s average on each of its last \d+ round days/ })).toBeTruthy();
+    cleanup();
+    // Measured tighter, the same changes clear it: the average down 0.9 is better, putts up 0.3 is worse.
+    const f = PREVIEW_HOME.phone.form!;
+    const sharp = { ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: { ...f, deltaSe: 0.5, gir: { ...f.gir, se: 4 }, putts: { ...f.putts, se: 0.2 } } } };
+    wrap(<CoachHome data={sharp} now={PREVIEW_HOME_NOW} />);
+    form = document.querySelector('.ch-hm-form')!;
+    expect(form.querySelector('.ch-hm-delta')!.className).toMatch(/is-gain/);
+    expect(form.querySelector('.ch-hm-delta em')!.textContent).toBe('Better than previous 10');
+    expect([...form.querySelectorAll('dd.is-loss')].map((d) => d.textContent)).toEqual(['+0.3']);
+    expect(form.querySelectorAll('dd.is-gain')).toHaveLength(0);
   });
 
   it('CH-2701 20103 21703 a latest round opens its card in a sheet: the figures, both nines, Message and the player’s stats', async () => {
@@ -633,6 +644,21 @@ describe('Home · the team’s form (teamForm)', () => {
     expect(f.roundsThisWeek).toBe(3);
     // One point a day: the team's average on each of the last ten round days the average rests on, oldest to newest.
     expect(f.line).toEqual(Array(10).fill(72));
+  });
+  it('carries each change’s standard error, and reads putts as Stats does: a round written 0 putts has none (stats visuals 7.1)', () => {
+    // Identical rounds measure no spread: the score falls back on the pooled 3.6, greens and putts (no pooled spread) have none.
+    const f = teamForm(newestFirst(20, (i) => (i < 10 ? r(72, 12, 29, { back: i }) : r(74, 9, 31, { back: i }))), 3)!;
+    expect(f.deltaSe).toBeCloseTo(Math.sqrt(3.6 ** 2 / 10 + 3.6 ** 2 / 10), 6);
+    expect(f.gir.se).toBeNull();
+    expect(f.putts.se).toBeNull();
+    // With a spread of their own (five rounds or more in each ten), putts have a standard error too.
+    const spread = teamForm(newestFirst(20, (i) => r(72, 10, (i < 10 ? 28 : 30) + (i % 5), { back: i })), 0)!;
+    expect(spread.putts.delta).toBe(-2);
+    expect(spread.putts.se).toBeCloseTo(Math.sqrt(2 * (20 / 9 / 10)), 6);
+    // Three rounds written 0 putts are not rounds holed in no putts: the mean leaves them out, and the basis counts the rest.
+    const zeros = teamForm(newestFirst(10, (i) => r(72, 10, i < 3 ? 0 : 30, { back: i })), 0)!;
+    expect(zeros.putts.avg).toBe(30);
+    expect(zeros.basis.puttsRounds).toBe(7);
   });
   it('draws the line as the team’s average on each round day, the last ten days, not a point a round', () => {
     // Three players on each of twelve days: thirty-six rounds, but one point a day, and each player's newest ten reach back to day 2.

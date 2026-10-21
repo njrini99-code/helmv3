@@ -91,4 +91,29 @@ describe('getInsightsForPlayer — exposure follows what the surface draws (CH13
     expect(out.map((i) => i.id).sort()).toEqual(['a', 'b']);
     expect(exposedIds()).toEqual(['a']);
   });
+
+  it('with `drawnLater`, nothing is recorded until the surface says what it drew, then only those rows, in its order', async () => {
+    let drew: (ids: readonly string[]) => void = () => {};
+    const later = new Promise<readonly string[]>((resolve) => {
+      drew = resolve;
+    });
+    const out = await getInsightsForPlayer('p1', { limit: 10, drawnLater: () => later }, makeClient([row('a', 'm1'), row('b', 'm2'), row('c', 'm3')]));
+    expect(out).toHaveLength(3);
+    expect(recordInsightExposure).not.toHaveBeenCalled();
+    drew(['c', 'a', 'gone']);
+    await later;
+    await Promise.resolve();
+    const rows = recordInsightExposure.mock.calls.flatMap(([r]) => r as Array<{ insight_id: string; rank_position: number }>);
+    expect(rows.map((r) => [r.insight_id, r.rank_position])).toEqual([
+      ['c', 0],
+      ['a', 1],
+    ]);
+  });
+
+  it('with `drawnLater`, a surface that fails to say records nothing', async () => {
+    await getInsightsForPlayer('p1', { limit: 10, drawnLater: () => Promise.reject(new Error('no')) }, makeClient([row('a', 'm1')]));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(recordInsightExposure).not.toHaveBeenCalled();
+  });
 });

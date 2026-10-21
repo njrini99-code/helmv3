@@ -21,8 +21,10 @@
  * B's source_insight_ids ⊆ rule A's source_insight_ids and A fires, B is
  * suppressed (implemented in `synthesis.ts`).
  *
- * 9 of 11 implementable rules ship here (per Part IX.2 amended for the
- * 3-bucket club model). Rule #3 "Tee-club mismatch" still needs hole-level
+ * 8 rules ship here (per Part IX.2 amended for the 3-bucket club model).
+ * `flyer_lie_over_the_green` (C4) was deleted 2026-10-21 (CoachHelm Slice
+ * 5b, `01` row 9): its loader filtered on `lie_before='light_rough'`, which
+ * the `golf_shots` CHECK forbids, so it never fired (`RULE_ENABLED = false`). Rule #3 "Tee-club mismatch" still needs hole-level
  * outcome joining and stays deferred. `long_approach_3putt_cascade` (W28)
  * was deleted 2026-08-21 (#1475, #1502) — its trigger intersection never
  * fired in production (0 rows ever), it duplicated `lag_distance_3putt`
@@ -42,7 +44,6 @@ import closingHoleFatigue from './rules/closing-hole-fatigue';
 import front9Starter from './rules/front-9-starter';
 import doublesAfterBogey from './rules/doubles-after-bogey';
 import shortSideScrambling from './rules/short-side-scrambling-chain';
-import flyerLieOverGreen from './rules/flyer-lie-over-the-green';
 import type { CompositeRule } from './types';
 
 export const COMPOSITE_RULES: readonly CompositeRule[] = [
@@ -54,7 +55,6 @@ export const COMPOSITE_RULES: readonly CompositeRule[] = [
   bunkerMissSide,
   shortApproachGap,
   shortSideScrambling,
-  flyerLieOverGreen,
   closingHoleFatigue,
   front9Starter,
 ];

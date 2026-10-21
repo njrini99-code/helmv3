@@ -141,6 +141,16 @@ loopback data, not a claim about physical-device frame timing.
 
 - `src/app/golf/actions/messages.ts`
 - `src/app/golf/actions/message-attachments.ts`
+- `src/app/golf/actions/conversation-hide.ts`: Clubhouse's "Delete
+  conversation", a per-person hide stamped on the caller's own
+  `golf_conversation_participants.hidden_at`. The column comes with the HELD
+  migration `20261008160000_golf_conversation_hidden_at.sql`; until it is
+  applied, `canHideGolfConversations` is false and Messages offers no Delete.
+  That probe reads the column, so while it is missing each server instance
+  remembers the 42703 answer for five minutes and answers false without a read
+  (2026-10-16, Q8); after the apply, the column is found on the first probe past
+  the expiry. Only the missing-column answer is kept. Tests:
+  `src/app/golf/actions/__tests__/hide-golf-conversation.test.ts`.
 - `src/app/golf/actions/announcements.ts`
 - `src/app/golf/actions/communication.ts`
 

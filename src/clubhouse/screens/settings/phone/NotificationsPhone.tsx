@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
-import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from '../model';
+import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChNativePush, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from '../hooks';
 import { DELIVERY_GROUPS } from '../Notifications';
 import { EmailPaused, ReadFailed, ReadsFailed } from '../parts';
 import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
-import { ActionRow, Group, NavRow, SwitchRow } from './ui';
+import { ActionRow, Group, InfoRow, NavRow, SwitchRow } from './ui';
 
 /**
  * Notifications on the phone: the notification matrix becomes one row per kind of update, which opens a sheet with
@@ -67,6 +67,9 @@ function DeliveryPhone({
   const [kind, setKind] = useState<string | null>(null);
   const open = DELIVERY_GROUPS.find((g) => g.id === kind);
   const denied = push.status === 'denied';
+  const native = device.nativePush;
+  // Push is off on this device: the app's own push in the iOS app, the browser's elsewhere.
+  const offHere = native ? native.status !== 'granted' : push.status !== 'unsupported' && push.status !== 'subscribed';
   const silenced = (exempt: boolean) => quiet && !exempt;
   const summary = (g: (typeof DELIVERY_GROUPS)[number]) => {
     if (silenced(g.quietExempt)) return 'Paused';
@@ -81,7 +84,9 @@ function DeliveryPhone({
         <SwitchRow label="Quiet mode" checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Group>
 
-      {push.status !== 'unsupported' && (
+      {native ? (
+        <NativePushGroup push={native} />
+      ) : push.status !== 'unsupported' && (
         <Group title="This device">
           <SwitchRow
             label="Push on this device"
@@ -96,7 +101,7 @@ function DeliveryPhone({
         </Group>
       )}
 
-      <Group title="Email and push" note={push.status !== 'unsupported' && push.status !== 'subscribed' ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
+      <Group title="Email and push" note={offHere ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
         {DELIVERY_GROUPS.map((g) => (
           <NavRow key={g.id} label={g.label} value={summary(g)} onClick={() => setKind(g.id)} />
         ))}
@@ -159,6 +164,38 @@ function DeliveryPhone({
         )}
       </ListSheet>
     </>
+  );
+}
+
+/**
+ * This device in the iOS app (CH-8902, CH-8903; docs/clubhouse/phone/push-opt-in.md): before iOS has asked, a switch
+ * that shows its prompt; after, what iOS says, which only its Settings app changes, and the way there. No "Send a
+ * test": the test route sends web push only.
+ */
+function NativePushGroup({ push }: { push: ChNativePush }) {
+  if (push.status === 'granted' || push.status === 'denied') {
+    const on = push.status === 'granted';
+    return (
+      <Group title="This device" code="CH-8903">
+        <InfoRow
+          label="Push on this device"
+          value={on ? 'On' : 'Off'}
+          help={on ? 'Turn it off in iOS Settings.' : 'Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.'}
+        />
+        {push.openSettings && <ActionRow label="Open iOS Settings" onClick={push.openSettings} />}
+      </Group>
+    );
+  }
+  return (
+    <Group title="This device" code="CH-8902">
+      <SwitchRow
+        label="Push on this device"
+        checked={false}
+        disabled={push.status === 'checking'}
+        busy={push.pending || push.status === 'checking'}
+        onChange={(v) => v && void push.turnOn()}
+      />
+    </Group>
   );
 }
 

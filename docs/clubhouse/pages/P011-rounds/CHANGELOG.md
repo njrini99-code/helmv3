@@ -1,5 +1,149 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — Season bars and the round review are drawn at once
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The season ribbon's bars no longer rise from the par line with a stagger,
+their scores no longer wait 0.6 x the reveal, and the round review's scoring
+line, fill, dots and shot arcs are shown at first paint (`parts.tsx`,
+`RoundZones.tsx`, `rounds.css`; Q-153). A bar still moves if its round
+changes. Motion report 2026-10-20-rounds.md box 3.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 7)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (display basis only; no query or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The season ribbon reads better as up: under-par bars rise from the par
+  line, over-par bars hang below it, and the ticks keep their real values
+  (−2, −1, Par, +1 ...). The stage's note starts "↑ Lower is better".
+- The month sparks follow: the lowest month is the tallest bar.
+- Putts use one basis: a round's putts count only when recorded (more than
+  zero), the same rounds the cached putts average reads, and a totals-only
+  round no longer counts in the season's putts average.
+
+## 2026-10-20 — Round-entry preview: banners in the shot screen
+
+```text
+Design package: none (dev preview only; nothing a player sees changes)
+PR/commit:      see git log (claude/clubhouse-a11y-rounds, b8920a4)
+Contract IDs:   111809 (the axe scan)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `/clubhouse-preview/entry` draws its Reload and error banners through
+  RoundTracking's `statusSlot`, inside the shot screen above the hole strip,
+  where RoundRuntime draws them on a real round. Its row of preview switches
+  follows the shot screen instead of leading it. `PreviewTracking` takes a
+  `statusSlot` and passes it on.
+
+### Why
+
+- The banners and switches above the shot screen pushed its full-height phone
+  layout 265px down at 390x844, so the entry card started below the fold and
+  the sticky action bar, which can rise only to the top of its panel, sat over
+  the card's first row of Shot result choices. axe's target-size failed it
+  (Fairway, "partially obscured, 108.7px by 13px") on `?state=reload` and
+  `?state=error`, light and dark. It surfaced after #2202 moved the bar's hint
+  into its button: the shorter bar no longer covered the row whole, which axe
+  does not report.
+
+### Verification
+
+- `clubhouse:a11y -- rounds`, Chromium, reduced motion, 1280 and 390: before,
+  exit 1 with those two pages failing in light and in dark; after, exit 0,
+  36 of 36 clean in each scheme. Measurements, screenshots and the new jsdom
+  test (`preview-entry-layout.test.tsx`) are in VERIFY.md (2026-10-20).
+
+## 2026-10-20 — The number pad has a Done key in the app
+
+```text
+Design package: none (release blocker 19; no owner board; phone draft
+                docs/clubhouse/phone/rounds.md)
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   112001 (wording; status unchanged)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Round entry's number fields (the shot screen's distance, setup's yardages,
+  Add a course's rating and slope, the edit-shot sheet's distances) open the iOS
+  number pad, which has no return key, and the app's WebView hides the
+  keyboard's accessory bar, so the pad could only be put away by tapping
+  elsewhere. A focus-time toggle already asked for the bar on numeric fields,
+  but its plugin call races the keyboard and was never seen on a device.
+- Now `NewRound` and `ContinueRound` hold the system's own accessory bar
+  (‹ › Done) up from mount to unmount (`useRoundDoneKey`, through the new
+  `pinKeyboardAccessoryBar` in `src/lib/utils/capacitor.ts`), before any field
+  is focused. It is iOS's bar, so it sits over the sheets too, and the
+  `--keyboard-height` the app publishes includes it. While a round is open,
+  text fields (course search, a course's name) get the bar as well, as they do
+  in Mobile Safari. On the web nothing changes: Mobile Safari draws the bar
+  itself. It uses `Keyboard.setAccessoryBarVisible`, which today's binary has.
+
+### Why
+
+- A player must always be able to put the number pad away mid-round.
+
+### Verification
+
+- `use-done-key.test.tsx` and `capacitor-accessory-bar.test.ts` (pin, release,
+  hand-over without flicker, a pin before the plugin loads). Native UIKit, so
+  the iPad tier (CSS, and the app is iPhone-only) and Dynamic Type
+  (`--ch-type-k`) do not touch it. Not yet seen on a device (VERIFY).
+
+## 2026-10-20 — "No data lost" reaches Exit's Discard and the round engine
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   110702, 111201, 111202 (more tests; still implemented)
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tests only, no visible or behaviour change. Exit's Discard is forced offline
+  (`round-entry-wiring.test`); a library discard whose request never lands keeps
+  the device copy (`rounds.test`); and the engine both renderers share is driven
+  through a dropped connection on start, on a hole's save and on discard
+  (`use-new-round-session.preservation.test`).
+
+### Why
+
+- Release review blocker 2. `rounds-contracts.test.tsx` covers the screens;
+  these cover the paths it does not reach.
+
+### Verification
+
+- VERIFY.md "No data lost: Exit's Discard offline, and the engine under a
+  dropped connection": each new test failed against a deliberate break.
+
 ## 2026-10-19 — Discarding another player's round says no
 
 ```text

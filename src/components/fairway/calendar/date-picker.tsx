@@ -90,6 +90,18 @@ interface DatePickerBaseProps<M extends CalendarMode> {
   name?: string;
   /** aria-label for the trigger when there's no visible label. */
   'aria-label'?: string;
+  /**
+   * Ids of the help or error text that describes the trigger. A picker is not
+   * a Base UI Field control, so a caller that renders its own message row
+   * wires it here.
+   */
+  'aria-describedby'?: string;
+  /**
+   * The month the grid opens on while NOTHING is selected, e.g. an end-date
+   * field opening on its start date's month instead of today's. Ignored once a
+   * value is set: the grid then opens on the selected date (CalendarSurface).
+   */
+  defaultMonth?: Date;
   /** Class for the trigger button. Merged last-wins via cn(). */
   className?: string;
   /** Class for the popover panel. */
@@ -175,6 +187,8 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
     id,
     name,
     'aria-label': ariaLabel,
+    'aria-describedby': ariaDescribedBy,
+    defaultMonth,
     className,
     contentClassName,
     disabledDays,
@@ -222,6 +236,14 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
     renderLabel?.(value as ValueForMode<M>) ??
     defaultLabel(mode, value, fmt, locale);
   const hasValue = label != null && label !== '';
+  // Read from the value itself, not the label: a `renderLabel` may return its
+  // placeholder text for an empty value.
+  const firstSelected =
+    value instanceof Date
+      ? value
+      : Array.isArray(value)
+        ? value[0]
+        : (value as DateRange | undefined)?.from;
 
   // react-day-picker's selection props are a per-mode discriminated union; the
   // public typing above is sound, so we build the mode-specific block once and
@@ -239,6 +261,11 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
     size,
     glass: true,
     autoFocus: true,
+    // Only when set and nothing is selected. CalendarSurface renders
+    // `defaultMonth={seedMonth()} {...props}`, so even an explicit
+    // `defaultMonth: undefined` here would wipe its open-on-the-selected-month
+    // seed for every caller.
+    ...(defaultMonth && !firstSelected ? { defaultMonth } : {}),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 
@@ -250,6 +277,7 @@ function DatePickerInner<M extends CalendarMode = 'single'>(
         type="button"
         disabled={disabled}
         aria-label={ariaLabel ?? (hasValue ? undefined : placeholder)}
+        aria-describedby={ariaDescribedBy}
         data-slot="date-picker-trigger"
         data-empty={hasValue ? undefined : ''}
         className={cn(

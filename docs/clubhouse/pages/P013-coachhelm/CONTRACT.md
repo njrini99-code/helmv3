@@ -53,8 +53,8 @@ One address, `/golf/dashboard/coachhelm`, is the coach's board for a coach and t
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 130101 | — | `COACHHELM_OPENS_FOR_THE_ROLE` | One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (up to five), Working (up to five) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint. |
-| 130102 | — | `THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING` | The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; Also worth knowing keeps at most five findings and Working at most five strengths; with only strengths there is no focus and CH-13303 says nothing needs work. On the coach's board the focus is the chosen player's top insight. |
+| 130101 | — | `COACHHELM_OPENS_FOR_THE_ROLE` | One address gives a coach the coach's board and a player the player's, from the session (a coach who also has a player profile is a coach here). A player's page is the header (the Player chip, CoachHelm, one line), one focus card, Also worth knowing (at most two findings, three with the focus), Working (at most one strength), a count of the reads left to the Deep dive ("6 more reads in the Deep dive", a tap that opens it; not drawn when the board shows every read) and a closing note (reads update as rounds are posted, and coaches see the same insights). A coach's page is the header (the Coach chip and the count of players with an open signal), the program pulse (up to six rows), By player, the chosen player's focus with Assign as focus and Dismiss, and a count of players with no insight yet. Everything is read on the server before first paint. |
+| 130102 | — | `THE_FOCUS_IS_THE_TOP_INSIGHT_THAT_IS_NOT_WORKING` | The player's focus card is the insight the person picked or, without a pick, the top-ranked finding that is current (a read older than the newest round, and a card that states no finding, do not lead), in the delivery feed's own order. The picked insight leaves both lists and the one it replaced joins them; the board holds at most three findings (the focus counted when it is one, so Also worth knowing has at most two) and one strength (a picked strength is that one), in the feed's own order, never re-ranked (NEEDS_MAX, WORKING_MAX). A measured zero (a strokes-gained baseline whose strokes_impact prints as 0.0, coachhelm-strokes.ts) is not one of the board's open reads; any other zero is no estimate and the read stays. Every read the board does not show (past the caps, or a measured zero) is counted in the line that opens the Deep dive, which lists them all, so the count and the lists add up to the Deep dive's reads (a note is in neither). No strokes-a-round figure is drawn from strokes_impact unless it is a real estimate (sg_baseline or peer_delta, non-zero at one decimal: strokesAtStake), and the miner's own "Projected impact: ~0.00 strokes per round." sentence is not drawn when its figure is zero or the row has no estimate (withoutZeroImpact; the stored text is untouched). With only strengths there is no focus and CH-13303 says nothing needs work, and names What's working only when it is drawn. On the coach's board the focus is the chosen player's top insight. |
 | 130103 | — | `PLAYERS_ARE_ORDERED_MOST_PRESSING_FIRST` | The coach's By player list is ordered by how pressing each player's top insight is (Priority, then Worth closing, then Minor; a strength last, whatever its own priority), then by how many open signals the player has, then by name. A strength, and a top read that is out of date, come after the findings, and a card that states no finding comes last. The first player's focus is open when the page opens, and picking a player (a toggle, aria-pressed) shows that player's focus. |
 | 130104 | — | `FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT` | The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says "not rebuilt yet" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for). |
 | 130105 | — | `OPEN_SIGNALS_FOLLOW_DISMISSALS` | The header counts the players with an open signal ("4 players have an open signal."): the board draws one card per player, so it never counts the rows behind them. A player's open signals are their visible findings whose read is current, and each row shows that count: a strength, a card that states no finding and a read older than the player's newest completed round are not open signals, and a player with only those has none. Dismissing a player's top insight here takes one off that player's count when the card was one of their open signals, and a player left with none leaves the count of players; Undo puts both back. The row reads Dismissed while the notice is up. |
@@ -223,6 +223,21 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130721 | CH-13911 | `COACH_PLAYER_COMING_BACK_TO_THE_PAGE` | Coach, player: coming back to the page (Back, a reload, a link) after leaving it |
 | 130722 | CH-13924 | `ASK_COMING_BACK_TO_THE_PAGE_AFTER` | Ask: coming back to the page after leaving it |
 | 130723 | CH-13912 | `PLAYER_A_PROPOSED_FOCUS_AREA_IS_DECLINED` | Player: a proposed focus area is declined (wave 7, decision C) |
+| 130724 | CH-13990 | `COACH_PLAYER_WHAT_THE_ENGINE_KNOWS_ABOUT` | Coach, player: what the engine knows about a read |
+| 130725 | CH-13991 | `COACH_PLAYER_WHY_DO_YOU_THINK_SO` | Coach, player: why do you think so |
+| 130726 | CH-13992 | `COACH_PLAYER_READS_THE_RECHECK_CLEARED` | Coach, player: reads the recheck cleared |
+| 130727 | CH-13993 | `DEEP_DIVE_THE_READS_WHY_LINE_FROM` | Deep dive: the Read's Why line from the cause state |
+| 130728 | CH-13995 | `COACH_TEAM_PATTERNS` | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) |
+| 130729 | CH-13960 | `COACH_THE_TRACK_RECORD` | Coach: the Track record (`?view=track-record`, flag `coachhelm_track_record_v1`) |
+| 130730 | CH-13961 | `TRACK_RECORD_A_LEVEL_WITH_ENOUGH_RECHECKED` | Track record: a level with enough rechecked reads (10 or more) |
+| 130731 | CH-13962 | `TRACK_RECORD_A_LEVEL_OR_A_FAMILY` | Track record: a level or a family with fewer than 10 rechecked reads |
+| 130732 | CH-13963 | `TRACK_RECORD_THE_STAFFS_CORRECTIONS` | Track record: the staff's corrections |
+| 130733 | CH-13964 | `TRACK_RECORD_ONE_ROW_PER_FAMILY` | Track record: one row per family |
+| 130734 | CH-13965 | `TRACK_RECORD_COACHHELM_IS_OFF_FOR_THE` | Track record: CoachHelm is off for the team |
+| 130735 | CH-13966 | `TRACK_RECORD_A_READ_IT_IS_MADE` | Track record: a read it is made from failed |
+| 130736 | CH-13967 | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | Track record: the database cannot answer yet (its function is not applied) |
+| 130737 | CH-13968 | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | Track record: nothing shown since the season start |
+| 130738 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
 
 ## 08 — Permission / authorization
 
@@ -239,7 +254,8 @@ Who may open the page: a coach or a player with `golf_clubhouse_ui` on; anyone e
 | 130805 | — | `THE_PAGE_GIVES_CLUBHOUSE_ONLY_BEHIND_THE_FLAG` | With golf_clubhouse_ui on, a signed-in coach or player gets the Clubhouse route, drawn in place with no redirect, and ?view= is handed to it. With it off, everyone keeps the Fairway page (a coach gets its pointer to the Brief), and no session goes to sign in. |
 | 130806 | — | `ASSIGN_IS_OFFERED_ONLY_FOR_AN_INSIGHT_NOT_YET_MADE` | Assign as focus is offered when no focus has been made from the chosen player's top insight. One that is working (a strength) is offered too, as a keep-doing focus, as the board draws it on Theo's card (Q-80); it can also be dismissed. One with a proposed, active, in-progress or paused focus already made from it opens as the Assigned chip (CH-13601): the loader reads only those statuses, so a declined or completed focus no longer blocks Assign, and a failed focus-area read leaves Assign available (the server's duplicate guard still holds). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -320,7 +336,11 @@ only). Everything else is the shell's (D-64).
 | 131603 | CH-13620 | `ASK_HIDE_CHATS` | Ask: Hide chats |
 | 131604 | CH-13621 | `ASK_THE_PHONE_DRAWER_IS_DRAGGED` | Ask: The phone drawer is dragged |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -338,7 +358,9 @@ On the v2 grammar (D-70): selection for choosing a player or an insight (CH-1370
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -373,7 +395,12 @@ CH-1842, 11825 CH-1816.
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

@@ -27,6 +27,9 @@ import {
   dedupeBySubject,
   type RawInsightRowForRanking,
 } from '@/app/golf/actions/insight-delivery-ranking';
+import { deliverReads, READS_V1_FLAG } from '@/app/golf/actions/insight-delivery-reads';
+import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
@@ -923,7 +926,19 @@ export async function getPlayerInsights(
     loadActiveGoals(player.id).catch(() => []),
   ]);
   const ranked = await rankEvidenceInsights(rankable, weights, goals, sb);
-  const deduped = dedupeBySubject(collapseParScoring(ranked));
+  // CoachHelm Slice 0 (flag off by default): the same fold as the coach feed
+  // (insight-delivery-reads.ts), with the reads a live focus came from kept
+  // unfolded, so a read the chat names is one the feed shows. No 3 + 1 cap:
+  // the coach asked about this player, so the chat lists every read, the way
+  // the feed's `includeMore` does.
+  const readsV1 = isCoachHelmFlagEnabled(READS_V1_FLAG);
+  // null: the focus-area read failed (logged by the loader); fold without pins.
+  const pinned = readsV1 ? await loadPinnedReadIds(sb, [player.id]) : null;
+  const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), {
+    fold: readsV1,
+    cap: false,
+    pinned: pinned ?? undefined,
+  });
   const rows = deduped.slice(0, Math.min(Math.max(input.limit, 1), 10));
 
   return {

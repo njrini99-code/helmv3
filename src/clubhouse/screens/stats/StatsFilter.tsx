@@ -21,12 +21,13 @@ import {
   withPick,
   withRange,
   withTypes,
-  withWindow,
+  rangeOf,
+  withScope,
   type ChFilter,
   type ChFilterOptions,
   type ChHoles,
   type ChRoundKind,
-  type ChWindow,
+  type ChRange,
 } from '../../data/stats-filter';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
@@ -263,10 +264,10 @@ function FilterSheet({
     haptic('select');
     setDraft((d) => (k === 'all' ? withTypes(d, []) : withTypes(d, d.types.includes(k) ? d.types.filter((x) => x !== k) : [...d.types, k])));
   };
-  const setWindow = (w: ChWindow) => {
+  const setWindow = (w: ChRange) => {
     setFrom('');
     setTo('');
-    setDraft((d) => withWindow(d, w));
+    setDraft((d) => withScope(d, w));
   };
   const toggleCourse = (name: string, on: boolean) => setDraft((d) => withCourses(d, on ? [...d.courses, name] : d.courses.filter((c) => c !== name)));
   const toggleRound = (id: string, on: boolean) =>
@@ -360,7 +361,7 @@ function FilterSheet({
 
         <div className="ch-sf-sec" role="group" aria-labelledby={`${uid}-time`}>
           <h3 id={`${uid}-time`}>Time</h3>
-          <WindowSwitch value={draft.window} onChange={setWindow} custom={hasRange(withRange(draft, from || null, to || null)) && !badRange} />
+          <WindowSwitch value={rangeOf(draft)} onChange={setWindow} custom={hasRange(withRange(draft, from || null, to || null)) && !badRange} />
           <div className="ch-sf-range">
             <label className="ch-field" htmlFor={`${uid}-from`}>
               <span className="ch-field__label">From</span>

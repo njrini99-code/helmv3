@@ -5,6 +5,7 @@ import type { ChProfileExtra } from '../../data/stats-player';
 import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
+import { ScoreMixBar } from './ScoreMixBar';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
 
 /**
@@ -86,34 +87,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
                 <span className="ch-num">
                   {d.avgToPar == null ? NO_DATA : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
                 </span>
-                <div className="ch-mix">
-                  <div className="ch-mix__bar" role="img" aria-label={`Par ${p}: birdie or better ${d.eagle + d.birdie}, par ${d.par}, bogey ${d.bogey}, double or worse ${d.doublePlus}, of ${d.total} holes`}>
-                    {(
-                      [
-                        ['is-birdie', d.eagle + d.birdie],
-                        ['is-par', d.par],
-                        ['is-bogey', d.bogey],
-                        ['is-double', d.doublePlus],
-                      ] as const
-                    ).map(([c, v]) => (v > 0 ? <span key={c} className={`ch-mix__s ${c}`} style={{ flex: v }} /> : null))}
-                  </div>
-                  <div className="ch-mix__k">
-                    {(
-                      [
-                        ['is-birdie', 'Birdie+', d.eagle + d.birdie],
-                        ['is-par', 'Par', d.par],
-                        ['is-bogey', 'Bogey', d.bogey],
-                        ['is-double', 'Double+', d.doublePlus],
-                      ] as const
-                    ).map(([c, l, v]) => (
-                      <span key={l}>
-                        <i className={c} />
-                        <b className="ch-num">{Math.round((v / d.total) * 100)}%</b>
-                        {l}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <ScoreMixBar counts={{ eagle: d.eagle, birdie: d.birdie, par: d.par, bogey: d.bogey, double: d.doublePlus }} label={`Par ${p}s`} compact />
               </div>
             ),
           )}

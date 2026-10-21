@@ -1,4 +1,5 @@
 import 'server-only';
+import * as Sentry from '@sentry/nextjs';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { resolveClubhouseTeam } from './routes/team';
@@ -7,8 +8,9 @@ import { resolveClubhouseTeam } from './routes/team';
  * Teams Clubhouse is limited to while it is rolled out (owner, Q-131): a comma-separated list of golf_teams ids in
  * `HELM_CLUBHOUSE_TEAMS`. Unset or empty means no limit, so the flag alone decides, as before. `*` also means no limit,
  * written on purpose: scripts/check-required-env.mjs requires the variable to be set while a clubhouse flag is on in
- * production, and `*` is how that setting says "every team". A server-only env value, so the canary is a configuration
- * change, not a code change.
+ * production, and `*` is how that setting says "every team". A server-only env value, so the list itself is not in
+ * code. Changing it is still a deploy: Vercel binds env values to a deployment, so a canary change takes a redeploy,
+ * not a hot toggle.
  */
 export function clubhouseTeamAllowlist(): Set<string> | null {
   const ids = (process.env.HELM_CLUBHOUSE_TEAMS ?? '')
@@ -17,6 +19,22 @@ export function clubhouseTeamAllowlist(): Set<string> | null {
     .filter(Boolean);
   if (ids.includes('*')) return null;
   return ids.length ? new Set(ids) : null;
+}
+
+/**
+ * Tag the request's server events `ui=clubhouse`, the tag the browser sets for the whole session (`chTagSession`,
+ * lib/track.ts). Without it a server error during a canary could not be told from Fairway's. The isolation scope is
+ * the request's on the server, so the tag covers every event the request sends after the decision and no other
+ * request. Telemetry never decides the screen: a failure here is ignored.
+ */
+function tagServerRequest(clubhouse: boolean): boolean {
+  if (!clubhouse) return false;
+  try {
+    Sentry.getIsolationScope().setTag('ui', 'clubhouse');
+  } catch {
+    /* best effort */
+  }
+  return true;
 }
 
 /**
@@ -29,16 +47,17 @@ export function clubhouseTeamAllowlist(): Set<string> | null {
  * Clubhouse; a user whose team cannot be read gets Fairway (fail closed to the
  * screens every team already uses). The session and team reads are
  * request-cached, so calling this from a layout and its page costs one read.
+ * A yes also tags the request's server events `ui=clubhouse` (above).
  */
 export async function isClubhouseFor(role: 'coach' | 'player' | null | undefined): Promise<boolean> {
   if (!(role === 'coach' || role === 'player') || !isFlagEnabled('golf_clubhouse_ui')) return false;
   const allow = clubhouseTeamAllowlist();
-  if (!allow) return true;
+  if (!allow) return tagServerRequest(true);
   try {
     const session = await getGolfSessionProfile();
     if (!session) return false;
     const team = await resolveClubhouseTeam(session);
-    return team != null && team.role === role && allow.has(team.teamId);
+    return tagServerRequest(team != null && team.role === role && allow.has(team.teamId));
   } catch {
     return false;
   }

@@ -23,6 +23,11 @@ vi.mock('@/lib/coachhelm/v3/goals/loader', () => ({ loadActiveGoals: goals.activ
 vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn(), isCoachHelmEnabledForCoach: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/chat/request-cache', () => ({ getCoachProgramPulse: vi.fn(), getCoachChatContext: async () => ({ roster: [] }) }));
 /** Whether the screens a link would lead to (a round's review, Stats' Development) are rebuilt for a player. */
+const flags = vi.hoisted(() => ({ recheck: false }));
+vi.mock('@/lib/flags/is-enabled', async (orig) => {
+  const real = await orig<typeof import('@/lib/flags/is-enabled')>();
+  return { ...real, isFlagEnabled: (id: string, ...rest: unknown[]) => (id === 'coachhelm_recheck_v1' && flags.recheck) || (real.isFlagEnabled as (...a: unknown[]) => boolean)(id, ...rest) };
+});
 const nav = vi.hoisted(() => ({ rebuilt: true }));
 vi.mock('../shell/nav', async (orig) => ({ ...(await orig<typeof import('../shell/nav')>()), rebuiltHref: (href: string) => (nav.rebuilt ? href : null) }));
 
@@ -37,14 +42,17 @@ import {
   orderDive,
   roundIdsToRead,
   themesByCategory,
+  toChDeepInsight,
   type ChDeepDive,
   type ChDeepInsight,
   type DiveRoundRow,
 } from '../data/coachhelm-dive-shape';
 import { toChInsight } from '../data/coachhelm-map';
+import { speak } from '../data/coachhelm-voice';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { DiveSkeleton } from '../screens/coachhelm/views/Skeletons';
-import { puttBalanced } from '../preview/fixtures-coachhelm';
+import { PREVIEW_TOUR, puttBalanced } from '../preview/fixtures-coachhelm';
+import { ENGINE_CLEARED } from '../preview/fixtures-coachhelm-engine';
 import {
   deep,
   DIVE_BIG,
@@ -163,6 +171,27 @@ describe('the deep dive as the page draws it', () => {
     expect(by(PREVIEW_DIVE, 'in-brk').diagnosis).toBeNull();
     const blank: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: '  ' } } };
     expect(deep(blank, FULL_INPUTS).diagnosis).toBeNull();
+    // The generators' placeholder ("is off its benchmark, cause inferred from the aggregate") states no cause, so it is no diagnosis either.
+    const placeholder: EvidenceInsight = {
+      ...DIVE_SLOPE,
+      evidence: {
+        ...DIVE_SLOPE.evidence,
+        diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: 'Penalties per Round is off its benchmark. Likely cause inferred from the aggregate, not a measured shot sequence', confidence_reason: 'sample adequate' },
+      },
+    };
+    expect(deep(placeholder, FULL_INPUTS).diagnosis).toBeNull();
+    // Slice 2: a not-traced cause (a count-down or a data gap) is not a cause either; counted and likely keep their levels.
+    const withCause = (state: string, causality: 'observed_sequence' | 'inferred_hypothesis'): EvidenceInsight => ({
+      ...DIVE_SLOPE,
+      evidence: {
+        ...DIVE_SLOPE.evidence,
+        cause: { state } as never,
+        diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, root_cause: 'Not traced yet. Needs 10 missed first putts from 5–10 ft over 3 rounds; 6 so far over 2 rounds.', causality_level: causality },
+      },
+    });
+    expect(deep(withCause('not_traced', 'inferred_hypothesis'), FULL_INPUTS).diagnosis).toBeNull();
+    expect(deep(withCause('inferred_hypothesis', 'inferred_hypothesis'), FULL_INPUTS).diagnosis?.level).toBe('hypothesis');
+    expect(deep(withCause('observed_sequence', 'observed_sequence'), FULL_INPUTS).diagnosis?.level).toBe('observed');
   });
 
   it('what closing the gap is worth comes only from a cascade cause that has a number, and says what it is closed to: the team’s average, or the Tour when there was no team average to anchor on', () => {
@@ -304,7 +333,7 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
 
   it('ready: the delivery feed, the category reads and both goal reads for the player id it was given, and only that id', async () => {
     const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
-    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawn: expect.any(Function) });
+    expect(delivery.insights).toHaveBeenCalledWith('pl-jonah', { limit: 30, drawnLater: expect.any(Function), includeMore: true });
     expect(delivery.themes).toHaveBeenCalledWith('pl-jonah');
     expect(goals.active).toHaveBeenCalledWith('pl-jonah');
     expect(goals.achieved).toHaveBeenCalledWith('pl-jonah');
@@ -355,6 +384,28 @@ describe('the loader reads the signed-in player’s own deep dive, and says what
     const none = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
     if (none.status !== 'ready') throw new Error('not ready');
     expect(none.data.tour).toBe('Tour');
+  });
+
+  it('CH13-21 only the reads the page draws count as shown: with coachhelm_recheck_v1 on, a Cleared read is not one of them', async () => {
+    flags.recheck = true;
+    try {
+      const cleared = ENGINE_CLEARED('pl-jonah');
+      delivery.insights.mockResolvedValue([DIVE_SLOPE, cleared, puttBalanced('pl-jonah')]);
+      const out = await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+      if (out.status !== 'ready') throw new Error('not ready');
+      expect(out.data.list.map((i) => i.base.id)).toEqual(['in-slope']);
+      expect(out.data.cleared).toHaveLength(1);
+      const later = delivery.insights.mock.calls.at(-1)![1]!.drawnLater as (rows: EvidenceInsight[]) => Promise<readonly string[]>;
+      await expect(later([])).resolves.toEqual(['in-slope']);
+    } finally {
+      flags.recheck = false;
+    }
+  });
+
+  it('CH13-21 a page with nothing drawn, or one that failed, counts nothing as shown', async () => {
+    delivery.insights.mockResolvedValue([puttBalanced('pl-jonah')]);
+    await loadPlayerDeepDive({ playerId: 'pl-jonah' });
+    await expect(delivery.insights.mock.calls.at(-1)![1]!.drawnLater([])).resolves.toEqual([]);
   });
 
   it('a card that states no finding is not drawn, as on the Board', async () => {
@@ -467,6 +518,8 @@ describe('the Deep dive screen', () => {
   const show = (load = diveLoad(PREVIEW_DIVE), initialId: string | null = null) => render(wrap(<DeepDive load={load} initialId={initialId} />));
   const article = () => screen.getByRole('article');
   const rail = () => screen.getByRole('navigation', { name: 'Your insights' });
+  /** One of the read's four lines, by its label. */
+  const line = (k: 'What' | 'Why' | 'Next' | 'When') => within(article()).getByText(k, { selector: '.ch-hd-read dt' }).nextElementSibling as HTMLElement;
 
   it('CH-13890 the page is labelled by CoachHelm; the summary, each group and each part of the read are labelled regions; the read is an article named by its title', () => {
     show();
@@ -542,10 +595,34 @@ describe('the Deep dive screen', () => {
     expect(within(part).getByText('Solid read')).toBeTruthy();
   });
 
+  it('the read in four lines heads the read: What, Why, Next and When, in that order, under the title', () => {
+    show();
+    const lines = article().querySelector('.ch-hd-dos__h dl.ch-hd-read')!;
+    expect([...lines.querySelectorAll('dt')].map((t) => t.textContent)).toEqual(['What', 'Why', 'Next', 'When']);
+    expect(line('What').textContent).toBe('Make rate, downhill vs level, same distance: 23 pts gap (75 putts). Compared with no downhill penalty (your level putts 81%, downhill 58%). Solid read.');
+    // An inferred cause is never the player's (supercharge open question 3, "hide").
+    expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
+    expect(line('Next').textContent).toMatch(/^Downhill ladder · 12 min · intermediate Rehearse a downhill-only ladder: start 2\sft below the hole/);
+    expect(line('When').textContent).toBe('Through Sep 28.');
+    // The generator's first sentence is not said twice: the What line says it in numbers, and the write-up keeps it whole.
+    expect(article().querySelector('.ch-hd-dos__h .ch-hl-lede')).toBeNull();
+    expect(within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' }).textContent).toContain('From 4–6 ft, you’re making 58% of downhill putts vs 81% of level putts');
+  });
+
+  it('Why: a read that states no cause is not traced yet, and Next says no drill is assigned rather than drawing the placeholder', async () => {
+    show(diveLoad(PREVIEW_DIVE), 'in-brk');
+    expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
+    expect(line('Why').querySelector('[data-ch-code="CH-13982"]')).toBeNull();
+    expect(line('Next').textContent).toBe('No drill assigned.');
+    expect(line('When').textContent).toBe('—');
+    expect(article().textContent).not.toMatch(/in the next practice block|0\.0+ strokes/);
+  });
+
   it('a gap worth closing is said in strokes a round, to the team’s average, never as strokes being lost', async () => {
     show(diveLoad(PREVIEW_DIVE), 'in-pen');
-    const part = within(article()).getByRole('region', { name: 'What was measured' });
-    expect(part.textContent).toContain('Closing the gap to your team’s average is worth about 0.9 strokes a round.');
+    expect(line('What').textContent).toContain('Closing the gap to your team’s average is worth about 0.9 strokes a round.');
+    // Said once: the What line carries it, not the measured part as well.
+    expect(article().textContent!.split('strokes a round').length - 1).toBe(1);
     expect(article().textContent).not.toMatch(/\blosing\b|\bloses?\b/i);
   });
 
@@ -555,10 +632,10 @@ describe('the Deep dive screen', () => {
       return diveLoad(diveOf([deep(DIVE_PENALTIES, { ...FULL_INPUTS, themes })], { tour }));
     };
     show(onTour('Tour'));
-    expect(within(article()).getByRole('region', { name: 'What was measured' }).textContent).toContain('Closing the gap to the Tour is worth about 1.4 strokes a round.');
+    expect(line('What').textContent).toContain('Closing the gap to the Tour is worth about 1.4 strokes a round.');
     cleanup();
     show(onTour('LPGA Tour'));
-    expect(within(article()).getByRole('region', { name: 'What was measured' }).textContent).toContain('Closing the gap to the LPGA Tour is worth about 1.4 strokes a round.');
+    expect(line('What').textContent).toContain('Closing the gap to the LPGA Tour is worth about 1.4 strokes a round.');
     expect(article().textContent).not.toMatch(/your team’s average/);
   });
 
@@ -621,24 +698,44 @@ describe('the Deep dive screen', () => {
     expect(code('CH-13382')!.textContent).toMatch(/made from 14 rounds, but none of them can be listed here/);
   });
 
-  it('CH-13982 why: a hypothesis is marked "Likely, not measured" and a seen cause "Measured in your shots"; the drivers carry their counts, then the full write-up', async () => {
+  it('CH-13982 why: a hypothesis is never shown to the player (no cause, no "Likely, not measured"); a seen cause is "Measured in your shots"; the drivers carry their counts, then the full write-up', async () => {
     show();
     const part = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
-    expect(code('CH-13982')!.textContent).toBe('Likely, not measured');
+    // The owner's decided default (supercharge open question 3, "hide"): the player's Why line is not traced yet.
+    expect(code('CH-13982')).toBeNull();
+    expect(article().textContent).not.toContain('Likely, not measured');
+    expect(line('Why').textContent).toBe('Not traced yet: the record does not say why.');
+    expect(part.textContent).not.toContain('pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed (');
+    // Nor in the full write-up: the generator's own sentence guessing that cause is left out for the player.
+    expect(article().textContent).not.toMatch(/pace-control/);
     expect(part.textContent).toContain('Downhill make rate, 4-6 ft');
     expect(part.textContent).toContain('31 counted');
     expect(part.textContent).toContain('Both groups have enough putts to compare');
     expect(within(part).getByText('The full write-up')).toBeTruthy();
     await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
     expect(code('CH-13982')!.textContent).toBe('Measured in your shots');
+    expect(line('Why').contains(code('CH-13982'))).toBe(true);
+    expect(line('Why').textContent).toContain('Most of them come off the tee with the driver');
   });
 
-  it('this week’s drill is the Board’s own, in its own block, only when there is one', async () => {
+  it('the generators’ stock confidence reason ("sample adequate") is not drawn; the drivers it counted still are', () => {
+    const stock: EvidenceInsight = { ...DIVE_SLOPE, evidence: { ...DIVE_SLOPE.evidence, diagnosis: { ...DIVE_SLOPE.evidence.diagnosis!, confidence_reason: 'sample adequate' } } };
+    show(diveLoad({ ...PREVIEW_DIVE, list: [deep(stock, FULL_INPUTS)] }));
+    const part = within(article()).getByRole('region', { name: 'Why CoachHelm thinks so' });
+    expect(part.textContent).not.toMatch(/sample adequate/i);
+    expect(part.textContent).toContain('31 counted');
+  });
+
+  it('this week’s drill is the Board’s own, on the read’s Next line and nowhere else; the row’s own action stands in when there is no drill', async () => {
     show();
-    expect(within(article()).getByText('This week')).toBeTruthy();
-    expect(within(article()).getByText('Downhill ladder')).toBeTruthy();
-    await userEvent.click(within(rail()).getByRole('button', { name: /Putting break/ }));
+    expect(within(line('Next')).getByText('Downhill ladder')).toBeTruthy();
+    expect(within(article()).getAllByText('Downhill ladder')).toHaveLength(1);
+    // The Next line is the drill: there is no separate "This week" block repeating it.
     expect(within(article()).queryByText('This week')).toBeNull();
+    await userEvent.click(within(rail()).getByRole('button', { name: /Penalty strokes/ }));
+    expect(line('Next').textContent).toBe('Play to the wide side off the tee.');
+    await userEvent.click(within(rail()).getByRole('button', { name: /Putting break/ }));
+    expect(line('Next').textContent).toBe('No drill assigned.');
   });
 
   it('where this goes: the focus area or goal it belongs to, in its state, linking to Development', () => {
@@ -669,10 +766,15 @@ describe('the Deep dive screen', () => {
     expect(within(code('CH-13384') as HTMLElement).queryByRole('button')).toBeNull();
   });
 
-  it('CH-13903 a read from before the newest round says so, beside the claim', () => {
-    const old: ChDeepInsight = { ...by(PREVIEW_DIVE, 'in-slope'), base: { ...by(PREVIEW_DIVE, 'in-slope').base, stale: { newestRound: 'Sep 28' } }, stance: { cls: 'stale', word: 'Out of date' } };
+  it('CH-13903 a read from before the newest round says so on its When line, after the newest round in it', () => {
+    // Refreshed Sep 20, and a round was played Oct 3: the mapper marks it out of date, as the loader would.
+    const raw: EvidenceInsight = { ...DIVE_SLOPE, metadata: { ...DIVE_SLOPE.metadata, last_refreshed_at: '2026-09-20T08:00:00Z' } };
+    const player = { role: 'player' } as const;
+    const old = toChDeepInsight(raw, toChInsight(raw, { tour: PREVIEW_TOUR, newestRound: '2026-10-03', viewer: player }), FULL_INPUTS, (t) => speak(t, player));
     show(diveLoad({ ...PREVIEW_DIVE, list: [old] }));
-    expect(code('CH-13903')!.textContent).toMatch(/A round played Sep 28 isn’t in this read yet/);
+    expect(code('CH-13903')!.textContent).toBe('Out of date: a round played Oct 3 isn’t in this read yet, so it may not match the rounds posted since.');
+    expect(code('CH-13903')!.getAttribute('role')).toBe('note');
+    expect(line('When').textContent).toBe('Through Sep 28. Out of date: a round played Oct 3 isn’t in this read yet, so it may not match the rounds posted since.');
     expect(within(article()).getByText('Out of date')).toBeTruthy();
   });
 
@@ -728,6 +830,12 @@ describe('the Deep dive screen', () => {
     show(diveLoad({ ...PREVIEW_DIVE_EMPTY, rounds: null }));
     expect(code('CH-13381')!.textContent).toMatch(/None is yet\. It checks again as you post more\./);
     expect(code('CH-13380')).toBeNull();
+  });
+
+  it('CH-13992 every read cleared: the Cleared lines still show beside the empty state, for their two more checks', () => {
+    show(diveLoad({ ...PREVIEW_DIVE_EMPTY, cleared: ['4–6 ft putts · Cleared — 22 of your last 29 (76%).'] }));
+    expect(code('CH-13381')).not.toBeNull();
+    expect(screen.getByRole('region', { name: 'Cleared' })).toHaveTextContent('4–6 ft putts · Cleared');
   });
 
   it('CH-13304 CoachHelm off for them: the board’s own page and no sub-navigation', () => {

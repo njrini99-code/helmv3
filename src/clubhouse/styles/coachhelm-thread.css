@@ -985,13 +985,12 @@ a.ch-th-rank__name::after {
 }
 
 /* The Mobile clubhouse pass (2026-10-08): on the phone a failed answer is a flush notice like every other one, the
-   danger rule at its left and the title in the danger ink, no fill; Try again sits under the words, at their edge. */
+   title in the danger ink, no fill and no rule at its edge (no side rails, 2026-10-19); Try again sits under the words. */
 @media (max-width: 820px) {
   .ch-th--phone .ch-th-error {
     align-items: flex-start;
     gap: 10px 12px;
-    padding: 1px 0 1px 14px;
-    border-left: 2px solid var(--ch-danger-600);
+    padding: 0;
     border-radius: 0;
     background: none;
   }

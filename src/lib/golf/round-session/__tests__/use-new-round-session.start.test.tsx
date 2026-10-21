@@ -182,6 +182,26 @@ describe('start(form)', () => {
     expect(hook.result.current.savedRoundIdRef.current).toBe('round-1');
   });
 
+  it('keeps the course the server linked at the start (a typed name the library matched), apart from the device link', async () => {
+    // CoachHelm Slice 8b: the course nudge must not say a round has no course when savePartialRound's resolveCourseId
+    // linked the typed name. The device ref stays as it was, so the library contributions after a start are unchanged.
+    mocks.savePartialRound.mockResolvedValueOnce({ success: true, data: { roundId: 'round-1', courseId: 'lib-course' } });
+    const hook = render();
+    expect(hook.result.current.startLinkedCourseId).toBeNull();
+    await act(async () => {
+      await hook.result.current.start(form({ courseId: null, teeId: null }));
+    });
+    expect(hook.result.current.startLinkedCourseId).toBe('lib-course');
+    expect(hook.result.current.resolvedCourseIdRef.current).toBeNull();
+
+    // A start the server could not link leaves it null.
+    const plain = render();
+    await act(async () => {
+      await plain.result.current.start(form({ courseId: null, teeId: null }));
+    });
+    expect(plain.result.current.startLinkedCourseId).toBeNull();
+  });
+
   it('numbers a back nine 1..9, as the legacy hole editor does, whatever the form calls its holes', async () => {
     const hook = render();
     await act(async () => {

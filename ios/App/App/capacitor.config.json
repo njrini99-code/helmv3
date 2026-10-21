@@ -25,7 +25,7 @@
 		"appendUserAgent": "HelmSportsLabsApp",
 		"allowMixedContent": false,
 		"webContentsDebuggingEnabled": false,
-		"backgroundColor": "#EDE0C8"
+		"backgroundColor": "#F2E6D2"
 	},
 	"plugins": {
 		"Keyboard": {

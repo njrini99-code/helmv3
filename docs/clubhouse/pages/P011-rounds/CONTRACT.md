@@ -1,6 +1,7 @@
 # P011 — Rounds: page contract
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 7 mapped actions. Existing
@@ -206,16 +207,21 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 
 Status: DEFINED
 
-Discard and Start refuse while offline before anything is sent, with the shell's toast naming what did not happen, and
-Try again on a hole that did not save only warns while offline (110702, tested in `rounds-contracts.test.tsx`). The
-shot screen's background save says "Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line beside the distance readout
-(CH-11901); the engine retries on its own. Setup's course, tee and scorecard reads that fail, offline or not, say they
-did not load, with Try again (CH-11208 to CH-11210).
+Discard and Start refuse while offline before anything is sent, with the shell's
+toast naming what did not happen, and Try again on a hole that did not save only
+warns while offline (110702, tested in `rounds-contracts.test.tsx`; Exit's
+Discard offline in `round-entry-wiring.test`, and a discard whose request never
+lands keeps the device copy in `rounds.test` and
+`use-new-round-session.preservation.test`). The shot screen's background save
+says "Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line
+beside the distance readout (CH-11901); the engine retries on its own. Setup's
+course, tee and scorecard reads that fail, offline or not, say they did not
+load, with Try again (CH-11208 to CH-11210).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 110701 | CH-11901 | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | The round saves in the background |
-| 110702 | — | `WRITES_REFUSE_OFFLINE` | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. The shell's tests cover useAction's refusal. |
+| 110702 | — | `WRITES_REFUSE_OFFLINE` | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. Exit's Discard is forced offline in round-entry-wiring.test (nothing is sent and a hole that exists only on the device keeps its device copy). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | The round changed on another device and this one stopped saving |
 | 110704 | CH-11903 | `THE_ENGINE_REPORTS_THAT_AUTO_SAVE_IS` | The engine reports that auto-save is having trouble ("Auto-save is having trouble. …", both engines) |
 | 110705 | CH-11904 | `THE_DEVICE_COULDNT_KEEP_ITS_QUICK_LOCAL` | The device couldn't keep its quick local backup |
@@ -234,7 +240,8 @@ did not load, with Try again (CH-11208 to CH-11210).
 | 110718 | CH-11923 | `SHARING_THE_CARD_FAILS` | Sharing the card fails (not closing the share sheet, not a refused share) |
 | 110719 | CH-11924 | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | The review is opened straight from Post round (`?just=submitted`) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -258,7 +265,8 @@ keeps the legacy message. `/rounds/recover` is not rebuilt, so nothing links to 
 | 110804 | — | `DISCARD_IS_CHECKED_AGAIN_BY_ITS_SERVER_ACTION` | Discard is checked again by deleteInProgressRound, whatever the screen shows: it refuses an invalid id, a caller who is not signed in, a caller with no player profile, and a round that is not the caller's or is no longer in progress (it deletes by round, player and in-progress status, and tells a delete that matched nothing from a real one). Run in rounds-actions-contracts.test.ts: an invalid id, a caller who is not signed in, a caller with no player profile, a round that is no longer in progress and another player's round the caller can see are refused and nothing is deleted. In production a player reads every round on their team (golf_rounds_select), so a teammate's round is refused; a round on another team is hidden by RLS, cannot be told from a gone one, and is answered with success (a discard is idempotent). Nothing is deleted either way. |
 | 110805 | — | `A_CLOSED_QUALIFIER_CANT_BE_CHOSEN` | A qualifier with no round the player can still enter is listed but cannot be chosen, and its row says why; only one with a round open is offered above Round details (closed means closed, D-31). Choosing the Qualifier type with none open says "No qualifier is open for you right now" (CH-11312), and a qualifiers read that failed says so (CH-11211). |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -347,15 +355,20 @@ unchanged when the flag is off.
 
 Status: DEFINED
 
-The library keeps its search and grouping while the page is open, and the review keeps the picked hole; neither is in the
-address, so a reload starts again from By month with no search, and on the first hole over par. A Start that fails leaves
-the setup as it was (111201), and a hole that does not save keeps its shots on the review with Try again
-(111202); both are tested in `rounds-contracts.test.tsx`.
+The library keeps its search and grouping while the page is open, and the review
+keeps the picked hole; neither is in the address, so a reload starts again from
+By month with no search, and on the first hole over par. A Start that fails
+leaves the setup as it was (111201), and a hole that does not save keeps its
+shots on the review with Try again (111202); both are tested in
+`rounds-contracts.test.tsx`, and on the engine both renderers share
+(`use-new-round-session.preservation.test`: a start that never lands adopts
+nothing, and a hole that never saves keeps its device copy until Try again
+lands).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 111201 | — | `SETUP_KEPT_WHEN_START_FAILS` | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup. |
-| 111202 | — | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole. |
+| 111201 | — | `SETUP_KEPT_WHEN_START_FAILS` | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup. use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload. |
+| 111202 | — | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole. use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands. |
 
 ## 13 — Optimistic UI
 
@@ -422,7 +435,11 @@ shell's. Nothing counts up.
 | 111603 | CH-11603 | `SUBMITTING_THE_ROUND` | Submitting the round |
 | 111604 | CH-11604 | `STEPPING_THROUGH_A_ROUNDS_HOLES` | Stepping through a round's holes |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -448,7 +465,9 @@ success once the hole it holed is saved (CH-11710).
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 | 111710 | CH-11710 | `TAP_IN_IS_TAPPED` | Tap in is tapped (CH-11913) |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -481,7 +500,12 @@ CH-1842, 11825 CH-1816.
 | 111810 | — | `THE_SCORECARD_SCROLLS_IN_A_FOCUSABLE_REGION` | The scorecard on the shot screen's sheets (Scorecard and Round complete) scrolls sideways inside a labelled, focusable region (role region, tabIndex 0, "Scorecard"), so the keyboard can scroll it (axe scrollable-region-focusable). Found and fixed on 2026-09-30 by clubhouse:a11y; rounds-contracts.test.tsx asserts the region on both sheets. |
 | 111811 | — | `FIGURES_ARE_DEFINITION_LISTS` | The season and review figures are description lists in which a term is followed by its value and then its sub-line as a second description (label, figure, then "avg · +1.9 to par" or "+1"), never a bare span inside the list (axe definition-list). |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -505,13 +529,17 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-Every control on the page is a native button, link or input in the tab order, and every sheet closes on Esc with focus back on
-its opener (112001, tested in `rounds-contracts.test.tsx`). Not built: arrow keys inside the radio groups (each choice is a Tab
-stop), and the iOS number pad's Done bar on the distance box. No shortcuts of its own.
+Every control on the page is a native button, link or input in the tab order,
+and every sheet closes on Esc with focus back on its opener (112001, tested in
+`rounds-contracts.test.tsx`). In the app every keyboard in round entry has a
+Done key: the round holds the native accessory bar up from setup to submit
+(`useRoundDoneKey`, blocker 19; Mobile Safari draws the bar itself). Not built:
+arrow keys inside the radio groups (each choice is a Tab stop). No shortcuts of
+its own.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 112001 | — | `SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS` | Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. Not built: arrow keys inside the radio groups (each choice is its own Tab stop) and the iOS number pad's Done bar. |
+| 112001 | — | `SHEETS_CLOSE_ON_ESC_AND_FOCUS_RETURNS` | Every sheet and question on the page (Discard, the course picker, Add a course, Penalty, Change a shot, Leave this shot, Exit, Scorecard, Round complete) is the shell's Modal on the native dialog: Esc closes it and focus goes back to the button that opened it. Tested in rounds-contracts.test.tsx: Esc (the dialog's cancel event) closes each of the nine and focus returns to the opener, except Add a course, which returns to the course picker it was opened from. In the app the keyboard keeps its Done key for the whole round, setup and sheets included: round entry holds the native accessory bar up (`useRoundDoneKey`; Mobile Safari draws it itself). Not built: arrow keys inside the radio groups (each choice is its own Tab stop). |
 
 From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 

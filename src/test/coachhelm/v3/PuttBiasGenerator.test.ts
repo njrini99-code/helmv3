@@ -139,6 +139,8 @@ describe('PuttBiasGenerator.aggregate (F2+F3 L-vs-R distance-controlled)', () =>
     expect(c.evidence.sample_n).toBe(40);
     expect(c.content).toContain('25% of left-to-right breaks (n=20)');
     expect(c.evidence.strokes_impact).toBe(0);
+    // 25% vs 30% would read as a leak by the scalars; the verdict is "no bias".
+    expect(c.framing).toBe('neutral');
   });
 
   it('a directional row carries a measured impact: weak-side putts/round × gap', async () => {

@@ -153,10 +153,12 @@ and one migration (film), written and not applied.
 - Delete asks first and says that notes and documents go with the prospect; it
   does not ask for the name. Removing a document asks too.
 - A new prospect starts at Watched (the boards' Add dialog). An Add carries one
-  request id, kept across Retry, and `createRecruit` inserts under it: a repeat
-  after a lost reply finds the prospect it added (read back as this coach's, on
-  this team, with this name) instead of adding a second. The current page sends
-  no id and is unchanged.
+  request id per prospect being added (the name, spacing and capitals aside),
+  kept across Retry and across a corrected field, and `createRecruit` inserts
+  under it: a repeat after a lost reply finds the prospect it added (read back
+  as this coach's, on this team, with this name) instead of adding a second,
+  and writes the corrected fields to it while nobody has edited it since it was
+  added. The current page sends no id and is unchanged.
 - The upload dialog asks for a title and a category and refuses, before sending,
   a file over its limit (25 MB; film, meaning MP4, MOV or M4V, 100 MB) or of a
   type the bucket does not take. On desktop a file can be dropped on a
@@ -166,6 +168,12 @@ and one migration (film), written and not applied.
   film, or a project-wide upload limit below 100 MB) is said in the dialog, not
   as a generic failure. The project's upload limit could not be read when this
   was written: confirm it is at least 100 MB before applying the migration.
+- Film is hidden until that migration is applied (owner default, 2026-10-16):
+  `RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` is false,
+  so the dialog offers no Film category, the picker takes no video, a video is
+  refused before sending (CH-14106) and the copy names no film. A row already
+  filed as Film keeps its tag. After the apply, set it to true; nothing else
+  changes. The server actions are unchanged (Storage refuses video until then).
 - Email and Call are `mailto:` and `tel:` links; nothing is sent from GolfHelm.
 - Premium pass (2026-10-08). The pipeline no longer draws each stage's share.
   A landed move to Committed plays one gilt-rule moment and its success haptic
@@ -204,7 +212,9 @@ and one migration (film), written and not applied.
 - `src/clubhouse/__tests__/recruiting.test.tsx` (the Clubhouse screen: rules,
   loader, route and page, every write and its failure, the phone) and
   `recruiting-upload.test.tsx` (film, the file drop, the transfer, an Add that
-  cannot repeat); `src/test/golf/actions/recruit-document-upload.test.ts` and
+  cannot repeat), both with film on; `recruiting-film-off.test.tsx` (the default
+  until the film migration is applied);
+  `src/test/golf/actions/recruit-document-upload.test.ts` and
   `recruiting-create.test.ts` for the server side
 - `src/components/fairway/pages/recruiting/FairwayRecruitingPage.test.tsx`
 - `src/components/fairway/pages/recruiting/FairwayRecruitDocuments.test.tsx`

@@ -28,7 +28,7 @@
  * for the reduced-motion assertions.
  * ========================================================================== */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { ScrollTrigger, gsap } from '@/lib/motion/gsap/register';
 import { dockScene } from '../dockScene';
 import type { SceneContext } from '@/lib/motion/gsap/useScene';
@@ -87,6 +87,13 @@ describe('dockScene — the qualifier card renders complete', () => {
     document.body.replaceChildren();
     vi.restoreAllMocks();
   });
+
+  // Registering ScrollTrigger starts a 250ms sync interval and an
+  // animation-frame loop that outlive the file and call the global
+  // `requestAnimationFrame`, which jsdom teardown deletes: a tick in that gap
+  // is an unhandled error that fails CI although every test passed (see
+  // sections/__tests__/TeamManagement.test.tsx). `disable()` clears both.
+  afterAll(() => ScrollTrigger.disable());
 
   it('reduced motion: all 5 standing rows render, exactly one cut-line divider, no orphan dash', () => {
     const root = buildBoard();

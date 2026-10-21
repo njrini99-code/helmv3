@@ -12,7 +12,7 @@ import { speak } from '../data/coachhelm-voice';
 import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from '../data/coachhelm-standing-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
-import { bigNumber, breakBias, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
+import { bigNumber, breakBias, MANY_FINDINGS, MANY_NEWEST_ROUND, MANY_STALE, MANY_STRENGTHS, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
 
 /**
  * Sample data for the player's CoachHelm views (Game profile, Standing, Deep dive). Each fixture is the stored shape the loader reads
@@ -280,5 +280,29 @@ export const PREVIEW_DIVE_PARTS_FAILED: ChDeepDive = diveOf([deep(DIVE_SLOPE, FA
 export const PREVIEW_DIVE_YOUNG: ChDeepDive = diveOf([deep(DIVE_BREAK, BARE_INPUTS), deep(DIVE_BIG, BARE_INPUTS)], { themes: {} });
 export const PREVIEW_DIVE_EMPTY: ChDeepDive = diveOf([], { rounds: 14, themes: {} });
 export const PREVIEW_DIVE_NO_ROUNDS: ChDeepDive = diveOf([], { rounds: 0, themes: {} });
+
+/**
+ * The penalties read with a team pool as its primary comparison (Slice 7a, written only with `coachhelm_team_pool_v1` on): the
+ * Read's What line says the team line instead of the Tour. Synthetic numbers. `?view=deep-dive&state=teampool&insight=in-pen`.
+ */
+const TEAM_LINE = { source: 'team_pool', label: 'Team pool', value: 0.6, n: 212, unit: 'count', n_unit: 'rounds', n_noun: 'rounds', players: 8, window_start: null, window_end: '2026-09-28' } as const;
+export const DIVE_PENALTIES_TEAM: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
+  comparison: {
+    primary: TEAM_LINE,
+    lines: [TEAM_LINE, { source: 'tour', label: DIVE_PENALTIES.evidence.comparison_label, value: DIVE_PENALTIES.evidence.comparison_value, n: null, unit: 'count' }],
+  },
+});
+export const PREVIEW_DIVE_TEAM_POOL: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_TEAM, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+
+/** The same crowded player as `PREVIEW_HELM_PLAYER_MANY`, on the Deep dive. `?state=many`. */
+export const PREVIEW_DIVE_MANY: ChDeepDive = diveOf([
+  deep(DIVE_SLOPE, FULL_INPUTS, DRILL),
+  deep(DIVE_PENALTIES, FULL_INPUTS),
+  ...MANY_FINDINGS.map((r) => deep({ ...r, evidence: { ...r.evidence, source_round_ids: DIVE_ROUND_ROWS.slice(0, 8).map((x) => x.id), window_start: '2026-07-05', window_end: '2026-10-01' } }, FULL_INPUTS)),
+  deep(DIVE_BREAK, FULL_INPUTS),
+  toChDeepInsight(MANY_STALE, toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: { role: 'player' }, newestRound: MANY_NEWEST_ROUND }), FULL_INPUTS, diveSay),
+  deep(DIVE_BIG, FULL_INPUTS),
+  ...MANY_STRENGTHS.map((r) => deep(r, FULL_INPUTS)),
+]);
 
 export const diveLoad = (data: ChDeepDive): ChViewLoad<ChDeepDive> => ({ status: 'ready', data });
