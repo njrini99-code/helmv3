@@ -1422,7 +1422,7 @@ async function savePartialRoundImpl(
       } else if (resolvedCourseId) {
         let existingRoundQuery = supabase
           .from('golf_rounds')
-          .select('id, updated_at')
+          .select('id, updated_at, round_type')
           .eq('player_id', player.id)
           .eq('status', 'in_progress')
           .eq('course_id', resolvedCourseId)
@@ -1476,7 +1476,17 @@ async function savePartialRoundImpl(
         // lost-id-on-a-fresh-round case) or the caller explicitly passed
         // recovery/reuse intent — set by the restore flows in New Round and
         // FairwayRecoverRound, never by persistRoundStart.
-        if (candidateRound && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
+        //
+        // c449552f (2026-10-20): a match of a DIFFERENT round_type is never a
+        // reuse target, empty or not. The lifecycle trigger refuses a direct
+        // round_type change on an unfinished round (55000), so reusing an
+        // empty tournament shell for a practice start failed the start with
+        // "Failed to save round"; and keeping the shell's type instead would
+        // silently turn the player's practice round into a tournament one.
+        // With startIntent the mismatch falls to the conflict prompt below;
+        // without it, this save inserts its own round.
+        const candidateSameType = candidateRound?.round_type === data.roundType;
+        if (candidateRound && candidateSameType && (options?.allowReuse || await isEmptyShellRound(candidateRound.id))) {
           existingRound = candidateRound;
         } else if (candidateRound && options?.startIntent && !options?.confirmSeparateRound) {
           // R8: `persistRoundStart` — a brand-new "start a round" action —

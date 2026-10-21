@@ -296,6 +296,12 @@ Use `memory/context/golfhelm-database.md` for exact columns.
   mechanics live in `memory/features/shot-tracking.md`'s save/submit result
   contract, since the RPCs and TypeScript guards this touches are shared with
   shot tracking, not lifecycle-specific.
+  - **A match of a different `round_type` is never reused (2026-10-20,
+    c449552f).** The lifecycle trigger refuses a direct `round_type` change on
+    an unfinished round (55000), so reusing an empty tournament shell for a
+    practice start failed the start. The match must agree on `round_type` as
+    well as course/date/qualifier; a mismatch goes to `in_progress_exists`
+    with `startIntent`, and otherwise the save inserts its own round.
   - **A non-empty course/date match was previously an insert-fresh silent
     orphan, not a resume (R8, 2026-09-22).** Measured against production: 10
     of 54 `in_progress` rounds were abandoned duplicates of a `completed`
