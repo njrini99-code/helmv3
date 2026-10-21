@@ -15,6 +15,7 @@ import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
 import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
+import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { speak } from './coachhelm-voice';
 import { boardMissing, firstName, partitionInsights, pulseItemsThatStand, pulseMissing, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPlayerHelm, type ChProposal, type ChPulse, type ChPulseResult, type ChTourBaseline } from './coachhelm-shape';
@@ -427,7 +428,7 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   const now = new Date().toISOString();
   const viewer = { role: 'player' } as const;
   const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
-  const [drills, proposals, assigned, newest, focus] = await Promise.all([
+  const [drills, proposals, assigned, newest, focus, corrections] = await Promise.all([
     drillTextByInsight(supabase, drawn),
     proposalsOf(feed),
     assignedByInsight(
@@ -440,6 +441,8 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
       shaped.kept.map((i) => i.id),
       flags.verdicts,
     ),
+    // The player's own Not this / Good read on their reads (coachhelm_corrections_v1; null with it off or the table missing).
+    readCorrections(supabase, { role: 'player', teamIds: team.teamId ? [team.teamId] : [], reads: shaped.kept.map((i) => ({ id: i.id, playerId: input.playerId })) }),
   ]);
   const newestRound = newest.days.get(input.playerId) ?? null;
   const list = shaped.kept.map((i) =>
@@ -449,7 +452,7 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
       tour: team.tour,
       newestRound,
       viewer,
-      engine: { flags, lifecycle: shaped.byId.get(i.id) ?? null, focus: focus.get(i.id) ?? null, now },
+      engine: { flags, lifecycle: shaped.byId.get(i.id) ?? null, focus: focus.get(i.id) ?? null, now, corrections: corrections?.get(i.id) ?? null },
     }),
   );
   // A read beside the cards that failed leaves them drawn without it, and the board says so (never "not assigned", "not out of date").
@@ -578,11 +581,15 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // The engine's states on each player's one card, each behind its flag (surfaces A). The lifecycle shapes each player's visible
   // reads, so a Contradicted pair finds its other read and the Cleared ones are listed under the card.
   const now = new Date().toISOString();
-  const focus = await readFocusVerdicts(
-    supabase,
-    top.map((i) => i.id),
-    flags.verdicts,
-  );
+  const [focus, corrections] = await Promise.all([
+    readFocusVerdicts(
+      supabase,
+      top.map((i) => i.id),
+      flags.verdicts,
+    ),
+    // The coach's chips on each player's card: their own team's players only (the route checked the staff row).
+    readCorrections(supabase, { role: 'coach', teamIds: [input.teamId], reads: top.map((i) => ({ id: i.id, playerId: i.player_id })) }),
+  ]);
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
   // newest round are not signals, and a player whose top card is one of those has none (the old floor of one counted them).
   const counts = new Map<string, number>();
@@ -605,7 +612,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
       newestRound,
       // The text is written to the player: by their first name on the coach's board (a player with no name keeps it as written).
       viewer: p.name === NO_NAME ? undefined : { role: 'coach', first: firstName(p.name) },
-      engine: { flags, lifecycle: shaped?.byId.get(head.id) ?? null, focus: focus.get(head.id) ?? null, now, viewer: coach },
+      engine: { flags, lifecycle: shaped?.byId.get(head.id) ?? null, focus: focus.get(head.id) ?? null, now, viewer: coach, corrections: corrections?.get(head.id) ?? null },
     });
     // The top card is a signal the board draws, so it counts even where the visible read deduped another copy of it away.
     const cleared = shaped?.cleared ?? [];

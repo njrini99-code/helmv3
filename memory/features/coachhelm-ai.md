@@ -473,8 +473,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   family x rung, `shown` (distinct reads, rung of the newest exposure's
   `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
   `contradicted` (newest recheck outcome; Slice 3 supplies them),
-  `not_this`, and `confirm` (Good read, added by Slice 6b). No surface
-  renders the chips yet.
+  `not_this`, and `confirm` (Good read, added by Slice 6b).
+  The chips (2026-10-21, same flag): the Clubhouse coach card draws all five
+  under "Why do you think so?" (`screens/coachhelm/Corrections.tsx`); the
+  player's Board and Deep dive draw Not this and Good read on their own
+  reads. `data/coachhelm-corrections.ts` reads the viewer's own last answer
+  per read (`selectOwnCorrections`); flag off it reads nothing, and a missing
+  table draws no chips. Optimistic with rollback; no Undo (append-only), so
+  Change records a new answer. Show later holds the read back for
+  `SNOOZE_CHECKPOINTS` (2) rounds posted after the answer, counted on load.
 - Track record (Slice 6b, 2026-10-21, flag `coachhelm_track_record_v1`,
   off; 02 §9, 03 §7.3). Clubhouse coach view
   `/golf/dashboard/coachhelm?view=track-record`, linked from the coach

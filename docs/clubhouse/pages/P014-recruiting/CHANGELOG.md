@@ -1,5 +1,23 @@
 # P014 — Recruiting: changelog
 
+## 2026-10-21 — Film uploads on
+
+```text
+Design package: none (audit row doc-42)
+PR/commit:      see git log (claude/clubhouse-recruit-film)
+Contract IDs:   CH-14106, CH-14305
+Actions:        none
+Data impact:    none (the bucket change is already applied)
+Held items:     none (20260930140000 applied 2026-10-21)
+```
+
+Film uploads are on. The migration that lets the recruit-documents bucket take
+MP4, MOV and M4V (100 MB) was applied to production on 2026-10-21, so
+`RECRUIT_FILM_ENABLED` in `src/clubhouse/data/recruiting-film.ts` is now true:
+the Film category, video types in the picker and drop, and film in the copy
+show. Setting it false hides film again. `recruiting-film-off.test.tsx` now
+mocks the switch off to keep the off branch tested.
+
 ## 2026-10-20 — A corrected Add after a lost reply adds the prospect once
 
 ```text

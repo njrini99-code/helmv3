@@ -235,10 +235,13 @@ Every write refuses while offline before anything is sent, with the shell's toas
 | 130736 | CH-13967 | `TRACK_RECORD_THE_DATABASE_CANNOT_ANSWER_YET` | Track record: the database cannot answer yet (its function is not applied) |
 | 130737 | CH-13968 | `TRACK_RECORD_NOTHING_SHOWN_SINCE_THE_SEASON` | Track record: nothing shown since the season start |
 | 130738 | CH-13969 | `COACH_BOARD_THE_LINK_TO_THE_TRACK` | Coach board: the link to the Track record |
-| 130739 | CH-13940 | `COACH_PLAYER_THE_PATH_LINE` | Coach, player: the path line (design call D2) |
-| 130740 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
-| 130741 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
-| 130742 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
+| 130739 | CH-13970 | `COACH_PLAYER_CORRECTION_CHIPS` | Coach, player: correction chips |
+| 130740 | CH-13971 | `COACH_PLAYER_ANSWER_RECORDED` | Coach, player: answer recorded |
+| 130741 | CH-13972 | `COACH_READ_HELD_BACK` | Coach: read held back |
+| 130742 | CH-13940 | `COACH_PLAYER_THE_PATH_LINE` | Coach, player: the path line (design call D2) |
+| 130743 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
+| 130744 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
+| 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
 
 ## 08 — Permission / authorization
 
