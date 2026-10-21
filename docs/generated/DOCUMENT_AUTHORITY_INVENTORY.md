@@ -43,14 +43,14 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `RUNBOOK` | 5 | 2 | 1 | 0 |
 | `DESIGN_SPEC` | 7 | 0 | 6 | 0 |
 | `PLAN` | 44 | 5 | 17 | 63 |
-| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 35 |
+| `AUDIT_SNAPSHOT` | 69 | 6 | 35 | 36 |
 | `STATE_SNAPSHOT` | 8 | 2 | 6 | 0 |
 | `HISTORY_LEDGER` | 41 | 0 | 7 | 19 |
 | `INCIDENT` | 57 | 15 | 2 | 4 |
 | `ADR` | 6 | 0 | 3 | 2 |
-| `INDEX` | 28 | 2 | 12 | 5 |
+| `INDEX` | 29 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 351 | 13 | 71 | 92 |
+| `UNKNOWN` | 352 | 13 | 71 | 93 |
 
 ## Files
 
@@ -472,7 +472,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/audits/RLS_SECURITY_AUDIT.md` | current | - | - | - | - |
 | `docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md` | current | - | - | - | 2 |
 | `docs/audits/SHOT_TRACKING_TRACE_FINDINGS_2026-08-25.md` | current | - | - | - | 1 |
-| `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 1 |
+| `docs/audits/UNREACHABLE_CAPABILITY_2026-08-15.md` | current | - | - | yes | 2 |
 | `docs/audits/coaching_universe_audit.md` | current | - | - | - | - |
 | `docs/clubhouse/AESTHETIC_AUDIT.md` | current | - | - | yes | - |
 | `docs/clubhouse/ALL_PAGE_AUDIT.md` | current | - | - | - | - |
@@ -658,6 +658,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `scripts/README.md` | current | - | - | yes | - |
 | `scripts/phone/README.md` | current | - | - | - | - |
 | `src/app/golf/README.md` | current | - | - | - | - |
+| `src/clubhouse/README.md` | current | - | - | - | - |
 | `src/components/baseball/living-annual/README.md` | current | - | - | - | - |
 | `src/contracts/baseball/README.md` | current | - | - | yes | - |
 | `src/lib/coachhelm/README.md` | current | - | - | yes | - |
@@ -862,7 +863,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | - |
+| `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
@@ -919,6 +920,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/push-opt-in.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |
