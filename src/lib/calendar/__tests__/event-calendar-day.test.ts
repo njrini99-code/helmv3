@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { format } from 'date-fns';
-import { eventCalendarDay, eventDaySpan, zonedMidnight } from '../timezone';
+import { eventCalendarDay, eventDaySpan, eventRunsOnDay, zonedMidnight } from '../timezone';
 
 /**
  * All-day events landed one day early on the month grid.
@@ -209,5 +209,92 @@ describe('eventDaySpan', () => {
     );
     expect(format(span!.first, 'yyyy-MM-dd')).toBe('2026-09-03');
     expect(format(span!.last, 'yyyy-MM-dd')).toBe('2026-09-06');
+  });
+});
+
+/**
+ * All-day rows written as the TEAM's local day edges (2026-09-27).
+ *
+ * The seeded Fall Invitational is stored as midnight ET to 11:59 PM ET:
+ * start `2026-10-02T04:00:00Z`, end `2026-10-04T03:59:00Z`. Read as literal
+ * UTC dates the end spilled onto Oct 4, so a two-day tournament drew three
+ * cells on the month grid, and the dashboard Today panel would have listed it
+ * on Oct 4. The UTC-midnight convention the app itself writes is pinned by the
+ * blocks above and must not move.
+ */
+describe('eventDaySpan: team-local day edges', () => {
+  const TZ = 'America/New_York';
+  const day = (d: Date) => format(d, 'yyyy-MM-dd');
+
+  it('spans the seeded Fall Invitational over Oct 2 and Oct 3 only', () => {
+    const span = eventDaySpan(
+      { start_time: '2026-10-02T04:00:00+00:00', end_time: '2026-10-04T03:59:00+00:00', all_day: true },
+      TZ,
+    );
+    expect(day(span!.first)).toBe('2026-10-02');
+    expect(day(span!.last)).toBe('2026-10-03');
+  });
+
+  it('gives the same span when the page also hands the normalized start_date/end_date', () => {
+    // The calendar page keeps the raw times AND adds zone-less dates built from
+    // the UTC prefix ("2026-10-04T00:00:00" for the end), exactly like this.
+    const span = eventDaySpan(
+      {
+        start_date: '2026-10-02T00:00:00',
+        end_date: '2026-10-04T00:00:00',
+        start_time: '2026-10-02T04:00:00+00:00',
+        end_time: '2026-10-04T03:59:00+00:00',
+        all_day: true,
+      },
+      TZ,
+    );
+    expect(day(span!.first)).toBe('2026-10-02');
+    expect(day(span!.last)).toBe('2026-10-03');
+  });
+
+  it('reads an end on local midnight as exclusive', () => {
+    const span = eventDaySpan(
+      { start_time: '2026-10-02T04:00:00+00:00', end_time: '2026-10-04T04:00:00+00:00', all_day: true },
+      TZ,
+    );
+    expect(day(span!.first)).toBe('2026-10-02');
+    expect(day(span!.last)).toBe('2026-10-03');
+  });
+
+  it('keeps a one-day local-edge event on its one day', () => {
+    const span = eventDaySpan(
+      { start_time: '2026-10-02T04:00:00+00:00', end_time: '2026-10-03T04:00:00+00:00', all_day: true },
+      TZ,
+    );
+    expect(day(span!.first)).toBe('2026-10-02');
+    expect(day(span!.last)).toBe('2026-10-02');
+  });
+
+  it('answers the dashboard Today question for each day of the seeded tournament', () => {
+    const fallInvitational = {
+      start_time: '2026-10-02T04:00:00+00:00',
+      end_time: '2026-10-04T03:59:00+00:00',
+      all_day: true,
+    };
+    expect(eventRunsOnDay(fallInvitational, TZ, '2026-10-01')).toBe(false);
+    expect(eventRunsOnDay(fallInvitational, TZ, '2026-10-02')).toBe(true);
+    expect(eventRunsOnDay(fallInvitational, TZ, '2026-10-03')).toBe(true);
+    expect(eventRunsOnDay(fallInvitational, TZ, '2026-10-04')).toBe(false);
+  });
+
+  it('leaves the app\'s own UTC-midnight rows inclusive, in every team zone', () => {
+    for (const tz of ['Pacific/Honolulu', TZ, 'UTC', 'Asia/Tokyo']) {
+      const span = eventDaySpan(
+        { start_time: '2026-09-03T00:00:00+00:00', end_time: '2026-09-06T00:00:00+00:00', all_day: true },
+        tz,
+      );
+      expect(day(span!.first)).toBe('2026-09-03');
+      expect(day(span!.last)).toBe('2026-09-06');
+    }
+  });
+
+  it('keeps a mid-evening all-day instant on its literal UTC date', () => {
+    // 00:30Z is 8:30 PM ET: not a local day edge, so the literal reading holds.
+    expect(format(eventCalendarDay('2026-09-04T00:30:00+00:00', true, TZ), 'yyyy-MM-dd')).toBe('2026-09-04');
   });
 });

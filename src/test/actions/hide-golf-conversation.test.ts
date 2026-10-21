@@ -13,10 +13,13 @@ interface Options {
   noColumn?: boolean;
   /** The caller has no participant row: the update matches nothing. */
   notMember?: boolean;
+  /** The probe fails for a reason other than the missing column (a timeout). */
+  probeFails?: boolean;
 }
 
 function harness(options: Options = {}) {
   const updates: Array<{ table: string; row: Record<string, unknown>; filters: Record<string, unknown> }> = [];
+  const reads = { probes: 0 };
   const missing = { code: '42703', message: 'column golf_conversation_participants.hidden_at does not exist' };
   const client = {
     auth: { getUser: async () => ({ data: { user: options.signedIn === false ? null : { id: USER } } }) },
@@ -52,14 +55,16 @@ function harness(options: Options = {}) {
             return resolve({ data: options.notMember ? [] : [{ id: 'participant' }], error: null });
           }
           // The probe: a select of hidden_at on the caller's rows.
+          if (fields.includes('hidden_at')) reads.probes += 1;
           if (fields.includes('hidden_at') && options.noColumn) return resolve({ data: null, error: missing });
+          if (fields.includes('hidden_at') && options.probeFails) return resolve({ data: null, error: { code: '57014', message: 'canceling statement due to statement timeout' } });
           return resolve({ data: [], error: null });
         },
       };
       return chain;
     },
   };
-  return { client, updates };
+  return { client, updates, reads };
 }
 
 let current: ReturnType<typeof harness>;
@@ -107,6 +112,51 @@ describe('CH-7503 · hideGolfConversation', () => {
     const { hideGolfConversation, canHideGolfConversations } = await load();
     expect(await hideGolfConversation(CONVERSATION)).toEqual({ success: false, error: 'Deleting a conversation isn’t available yet', unavailable: true });
     expect(await canHideGolfConversations()).toBe(false);
+  });
+
+  it('Q8 runs the failing probe at most once per server instance while the column is missing, and picks the column up after the expiry', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    try {
+      current = harness({ noColumn: true });
+      const { canHideGolfConversations } = await load();
+      expect(await canHideGolfConversations()).toBe(false);
+      expect(await canHideGolfConversations()).toBe(false);
+      expect(await canHideGolfConversations()).toBe(false);
+      expect(current.reads.probes).toBe(1);
+
+      // The migration is applied: within the expiry nothing is read, after it the column is found.
+      current = harness();
+      now.mockReturnValue(1_000_000 + 5 * 60_000 - 1);
+      expect(await canHideGolfConversations()).toBe(false);
+      expect(current.reads.probes).toBe(0);
+      now.mockReturnValue(1_000_000 + 5 * 60_000);
+      expect(await canHideGolfConversations()).toBe(true);
+      expect(await canHideGolfConversations()).toBe(true);
+      expect(current.reads.probes).toBe(2);
+    } finally {
+      now.mockRestore();
+    }
+  });
+
+  it('Q8 remembers only a missing column: a probe that failed otherwise, or a signed-out caller, is asked again', async () => {
+    current = harness({ probeFails: true });
+    const { canHideGolfConversations } = await load();
+    expect(await canHideGolfConversations()).toBe(false);
+    expect(await canHideGolfConversations()).toBe(false);
+    expect(current.reads.probes).toBe(2);
+
+    current = harness({ signedIn: false });
+    expect(await canHideGolfConversations()).toBe(false);
+    current = harness();
+    expect(await canHideGolfConversations()).toBe(true);
+  });
+
+  it('Q8 a hide that meets the missing column stops the probe too', async () => {
+    current = harness({ noColumn: true });
+    const { hideGolfConversation, canHideGolfConversations } = await load();
+    expect(await hideGolfConversation(CONVERSATION)).toMatchObject({ unavailable: true });
+    expect(await canHideGolfConversations()).toBe(false);
+    expect(current.reads.probes).toBe(0);
   });
 
   it('reports the feature available once the column exists', async () => {

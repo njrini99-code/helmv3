@@ -1099,6 +1099,7 @@ features:
         - src/app/actions/messages.ts
         - src/app/golf/actions/messages.ts
         - src/app/golf/actions/message-attachments.ts
+        - src/app/golf/actions/conversation-hide.ts
         - src/app/golf/actions/announcements.ts
         - src/app/golf/actions/calendar-notifications.ts
         - src/app/golf/actions/team-management.ts
@@ -1155,6 +1156,7 @@ features:
         - src/app/golf/actions/__tests__/message-attachments-idempotency.test.ts
         - src/test/actions/send-message-duplicate-key-equivalence.test.ts
         - src/test/actions/send-message-quoted-reply.test.ts
+        - src/test/actions/hide-golf-conversation.test.ts
         - src/hooks/golf/__tests__/use-golf-messages.send-integrity.test.ts
         - src/hooks/golf/__tests__/use-golf-messages.quoted-reply.test.tsx
         - src/hooks/golf/__tests__/use-golf-conversations.warm-start.test.tsx
