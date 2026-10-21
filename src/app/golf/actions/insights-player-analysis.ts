@@ -271,6 +271,7 @@ async function analyzePlayerImpl(
       includeTrajectory: options?.includeTrajectory ?? false,
       depth: options?.depth ?? 'standard',
       verbosity,
+      runTrigger: 'manual',
     });
 
     if (!analysis) {
@@ -343,6 +344,7 @@ async function generatePlayerInsightImpl(playerId: string): Promise<{
       includePredictions: true,
       depth: 'standard',
       verbosity,
+      runTrigger: 'manual',
     });
 
     if (!analysis) {
@@ -422,6 +424,7 @@ async function generatePracticeRecommendationsImpl(playerId: string): Promise<{
       includeCausal: true,
       includePredictions: false,
       depth: 'standard',
+      runTrigger: 'manual',
     });
 
     if (!analysis) {

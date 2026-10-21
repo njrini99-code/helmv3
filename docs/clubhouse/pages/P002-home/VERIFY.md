@@ -214,6 +214,13 @@ before, after, baseline or evidence.
 | `P002__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P002__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P002__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P002__team-form__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 1440px, default, before: team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 1440px, default, after: team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__leaderboard__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | leaderboard (coach), 1440px, default, before: leaderboard form words and form lines; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__leaderboard__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | leaderboard (coach), 1440px, default, after: leaderboard form words and form lines; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 390px, default, before: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 390px, default, after: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__player-scoring__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | player-scoring (player), 390px, default, after: player home scoring caption; /clubhouse-preview/home-player; synthetic preview, captured in the cloud container (Chromium) |
 
 ## Historical verification gaps
 

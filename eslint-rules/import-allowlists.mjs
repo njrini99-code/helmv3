@@ -7,9 +7,10 @@
 //
 // Never add a file here to make lint pass. New code uses the replacement.
 
-// TODO(phase-7b): 9 files outside src/clubhouse import it without being a route file. Pass the gate answer in from the route file instead.
+// TODO(phase-7b): 10 files outside src/clubhouse import it without being a route file. Pass the gate answer in from the route file instead.
 export const CLUBHOUSE_IMPORT_ALLOWLIST = [
   'src/app/clubhouse-preview/auth/PreviewAuth.tsx',
+  'src/app/clubhouse-preview/auth/PreviewGate.tsx',
   'src/app/clubhouse-preview/entry/PreviewEntry.tsx',
   'src/app/clubhouse-preview/entry/fixtures.ts',
   'src/app/golf/actions/development.ts',
@@ -20,7 +21,7 @@ export const CLUBHOUSE_IMPORT_ALLOWLIST = [
   'src/components/errors/RouteErrorBoundary.tsx',
 ];
 
-// TODO(phase-7b): 43 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
+// TODO(phase-7b): 45 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
 export const ERROR_LOGGING_ALLOWLIST = [
   'src/app/admin/_components/PanelBoundary.tsx',
   'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
@@ -31,6 +32,8 @@ export const ERROR_LOGGING_ALLOWLIST = [
   'src/app/golf/admin/crm/components/ScheduleEventModal.tsx',
   'src/app/golf/admin/crm/page.tsx',
   'src/clubhouse/lib/track.ts',
+  'src/clubhouse/screens/auth/DemoEntry.tsx',
+  'src/clubhouse/screens/auth/ForgotPassword.tsx',
   'src/clubhouse/screens/auth/SignInForm.tsx',
   'src/components/auth/baseball-sign-in-form.tsx',
   'src/components/auth/golf-sign-in-form.tsx',

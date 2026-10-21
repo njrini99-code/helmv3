@@ -5,6 +5,7 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
+import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
 
 /**
@@ -118,15 +119,16 @@ export function isFull18(r: ChRound): boolean {
 
 export type ChForm = 'improving' | 'steady' | 'slipping' | 'early';
 
-/** Recent form: the newer half of the trend against the older half, in strokes. */
+/**
+ * Recent form: the newer half of the trend against the older half, in strokes. It is a change only when it clears that change's
+ * standard error (`halvesChange`, `deltaTone`; stats visuals Q4): three scores a half on the pooled 3.6 a round need about three
+ * strokes, so most players read steady, as the form line beside the word does.
+ */
 export function formStatus(trend: number[]): ChForm {
-  if (trend.length < 3) return 'early';
-  const half = Math.floor(trend.length / 2);
-  const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const change = m(trend.slice(trend.length - half)) - m(trend.slice(0, half));
-  if (change <= -0.5) return 'improving';
-  if (change >= 0.5) return 'slipping';
-  return 'steady';
+  const half = halvesChange(trend);
+  if (!half) return 'early';
+  const tone = deltaTone(half.delta, half.se, true);
+  return tone === 'is-gain' ? 'improving' : tone === 'is-loss' ? 'slipping' : 'steady';
 }
 
 export function mean(xs: number[]): number | null {
