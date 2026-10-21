@@ -11,6 +11,11 @@
  *      (falls back to a hardcoded list if that API call is unavailable —
  *      see DEFAULT_REQUIRED_CONTEXTS below) and refuses unless every one of
  *      them is green on the PR's head commit.
+ *   1b. Refuses unless one CI run of that head ran the whole unit suite: every
+ *      "Unit tests (n)" job's "Unit tests (shard n/5)" step concluded success
+ *      on all five shards (see evaluateUnitShards). A follow-up push runs only
+ *      the related tests on shard 1 and skips shards 2-5, so the required
+ *      contexts can be green without the suite having run.
  *   2. Refuses a PR whose branch is not `agent/*`, unless --any-branch is
  *      passed — this tool is for the agent-worktree workflow, not for
  *      landing arbitrary branches on someone's behalf.
@@ -110,6 +115,79 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
     else if (state !== 'SUCCESS') failing.push(`${name}=${state}`);
   }
   return { ok: missing.length === 0 && failing.length === 0, missing, failing };
+}
+
+/**
+ * Why the required contexts are not enough. On a follow-up push (`synchronize`) CI runs only the tests related to the diff, on shard 1,
+ * and shards 2-5 skip their test step, yet their jobs finish green and so do "CI aggregate" and the rest. Landing on that evidence merged
+ * a change that broke a test no shard ran (#2269, main's Unit tests shard 5, 2026-10-21). So the guard reads the steps, not the jobs.
+ */
+export const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
+export const UNIT_SHARDS = [1, 2, 3, 4, 5];
+const SCOPE_STEP = 'Decide test scope';
+
+/**
+ * One shard's verdict from its job. `job` is the Actions API job (`{ steps: [{ name, conclusion }] }`), or undefined when the run has no
+ * such job. A shard whose scope step was skipped had nothing to test: the in-job path gate found no code-relevant change in the PR
+ * (docs and config only), which is the one legitimate way for the test step to be absent.
+ *
+ * @returns {{ok: boolean, why: string}}
+ */
+export function unitShardVerdict(job, shard, total = UNIT_SHARDS.length) {
+  if (!job) return { ok: false, why: `no "Unit tests (${shard})" job in the run` };
+  const steps = job.steps ?? [];
+  const step = steps.find((s) => s.name === `Unit tests (shard ${shard}/${total})`);
+  if (step?.conclusion === 'success') return { ok: true, why: 'ran' };
+  if (steps.find((s) => s.name === SCOPE_STEP)?.conclusion === 'skipped') return { ok: true, why: 'no code-relevant change' };
+  if (!step) return { ok: false, why: `job ${job.conclusion ?? job.status ?? 'unfinished'}, no "Unit tests (shard ${shard}/${total})" step` };
+  const c = step.conclusion ?? 'not finished';
+  return { ok: false, why: c === 'skipped' ? 'skipped (a follow-up push runs only the related tests, on shard 1)' : `step ${c}` };
+}
+
+/**
+ * Whether ONE CI run of the head commit ran all five shards. Pure: `runs` is `[{ id, jobs }]`, the CI workflow's runs for the head SHA
+ * with their latest-attempt jobs. The shards must all pass inside the same run, so a scoped follow-up run plus an old full run cannot
+ * be mixed. With no passing run, the report names the best run's shortfalls (most shards passing, then the newest).
+ *
+ * @returns {{ok: boolean, runId: number|null, problems: string[]}}
+ */
+export function evaluateUnitShards(runs, shards = UNIT_SHARDS) {
+  if (!runs || runs.length === 0) return { ok: false, runId: null, problems: ['no CI run found for this head commit'] };
+  let best = null;
+  for (const run of runs) {
+    const verdicts = shards.map((n) => ({ n, ...unitShardVerdict((run.jobs ?? []).find((j) => j.name === `Unit tests (${n})`), n, shards.length) }));
+    const passing = verdicts.filter((v) => v.ok).length;
+    if (passing === shards.length) return { ok: true, runId: run.id, problems: [] };
+    if (!best || passing > best.passing || (passing === best.passing && run.id > best.run.id)) best = { run, passing, verdicts };
+  }
+  return { ok: false, runId: best.run.id, problems: best.verdicts.filter((v) => !v.ok).map((v) => `shard ${v.n}/${shards.length}: ${v.why}`) };
+}
+
+/**
+ * Reads the CI workflow's runs for `sha` and their jobs through `run(args)` (gh), then judges them with evaluateUnitShards. Fails closed:
+ * a read that errors is a refusal, never a pass.
+ *
+ * @returns {{ok: boolean, runId: number|null, problems: string[]}}
+ */
+export function checkUnitShards({ repo, sha, run }) {
+  const readJson = (args) => {
+    const r = run(args);
+    if (!r.ok) return null;
+    try {
+      return JSON.parse(r.stdout);
+    } catch {
+      return null;
+    }
+  };
+  const listed = readJson(['api', `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`]);
+  if (!listed || !Array.isArray(listed.workflow_runs)) return { ok: false, runId: null, problems: ['could not read the CI runs for this head commit'] };
+  const runs = [];
+  for (const wr of listed.workflow_runs.filter((w) => w.path === CI_WORKFLOW_PATH && w.head_sha === sha)) {
+    const jobs = readJson(['api', `repos/${repo}/actions/runs/${wr.id}/jobs?filter=latest&per_page=100`]);
+    if (!jobs || !Array.isArray(jobs.jobs)) return { ok: false, runId: wr.id, problems: [`could not read the jobs of CI run ${wr.id}`] };
+    runs.push({ id: wr.id, jobs: jobs.jobs });
+  }
+  return evaluateUnitShards(runs);
 }
 
 /**
@@ -353,9 +431,23 @@ async function main(argv) {
     return 1;
   }
 
-  process.stdout.write(`pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) — merging\n`);
-  // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
   const repo = ghJson(['repo', 'view', '--json', 'nameWithOwner'], canonicalRoot)?.nameWithOwner;
+  const shards = repo && pr.headRefOid
+    ? checkUnitShards({ repo, sha: pr.headRefOid, run: (a) => exec('gh', a, { cwd: canonicalRoot }) })
+    : { ok: false, runId: null, problems: ['could not resolve the repository or the head commit'] };
+  if (!shards.ok) {
+    process.stderr.write(
+      `pr-land: PR #${args.prNumber} is green on its required contexts, but the whole unit suite has not run on ${String(pr.headRefOid ?? '').slice(0, 9)}:\n` +
+        shards.problems.map((p) => `  ${p}\n`).join('') +
+        'A follow-up push runs only the tests related to its diff. Flip the PR to draft and back to ready to get a full run, then land it again.\n',
+    );
+    return 1;
+  }
+
+  process.stdout.write(
+    `pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) and CI run ${shards.runId} ran all ${UNIT_SHARDS.length} unit shards — merging\n`,
+  );
+  // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
   let mergedVia = 'async merge API (squash, pinned to the checked head)';
   let merge;
   if (repo && pr.headRefOid) {
