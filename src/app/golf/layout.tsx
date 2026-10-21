@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
+import { AvatarToneProvider } from '@/components/fairway/controls/avatar';
 
 /**
- * GolfHelm segment layout. It only sets the document-title template.
+ * GolfHelm segment layout. It sets the document-title template and the
+ * golf avatar tone.
  *
  * Every golf route used to carry its own brand suffix ("| Helm Golf",
  * "| Helm Sports", "| GolfHelm", "| CoachHelm"), and the root template then
@@ -18,5 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default function GolfLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  // Photo-less golf avatars get the roster card's pastel identity tint
+  // (--fw-tint-N, seeded by the person's id via Avatar `identityKey`).
+  return <AvatarToneProvider tone="identity">{children}</AvatarToneProvider>;
 }

@@ -253,7 +253,9 @@ export const ViewHeader = React.forwardRef<HTMLElement, ViewHeaderProps>(
       compact ? "gap-3" : "gap-4",
       plinth &&
         cn(
-          "rounded-fw-lg bg-surface-tint",
+          // Owner 2026-09-27: the plinth is a DEEP GREEN band with cream ink
+          // (tokens re-scoped by `.fw-plinth-green` in globals.css).
+          "fw-plinth-green rounded-fw-lg",
           // The plinth is a DESKTOP cover treatment — a warm band with generous
           // air around an editorial masthead. Its padding was fixed, so on a
           // phone it spent 56px of vertical space and 64px of horizontal on
