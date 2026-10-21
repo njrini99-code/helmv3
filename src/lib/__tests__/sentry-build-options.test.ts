@@ -51,6 +51,14 @@ describe('buildSentryBuildOptions — a single merged options object', () => {
     expect(opts.reactComponentAnnotation).toEqual({ enabled: true });
   });
 
+  it('annotates React components under Turbopack too (the SDK reads a separate key there)', () => {
+    // `reactComponentAnnotation` only reaches the webpack path; a Turbopack
+    // build (`npm run build`) reads `_experimental.turbopackReactComponentAnnotation`
+    // (@sentry/nextjs config/turbopack/constructTurbopackConfig.js).
+    const opts = asFn(baseParams);
+    expect(opts._experimental).toEqual({ turbopackReactComponentAnnotation: { enabled: true } });
+  });
+
   it('sets automaticVercelMonitors to false — cron-monitors.ts is the single Cron Monitor authority', () => {
     // Deliberately false, not a leftover default: the installed SDK's own
     // build-time source (vercelCronsMonitoring.js /

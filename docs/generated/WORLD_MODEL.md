@@ -76,7 +76,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 29 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 30 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 3
@@ -98,7 +98,7 @@ Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** none
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
@@ -108,7 +108,7 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`
+- **RPCs:** `golf_coachhelm_shown_reads`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
@@ -168,7 +168,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
-- **RPCs:** `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
+- **RPCs:** `golf_event_attendance_counts`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
@@ -276,7 +276,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 4
@@ -398,6 +398,7 @@ Team Operations · active · criticality high · owner product
 | `auth_onboarding_join` | `golf_round_lifecycle` | import_graph (weak) |
 | `auth_onboarding_join` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `roster_team` | import_graph (weak) |
+| `auth_onboarding_join` | `shot_tracking` | import_graph (weak) |
 | `auth_onboarding_join` | `team_communications` | import_graph (weak) |
 | `baseball_core` | `admin_platform` | import_graph (weak) |
 | `baseball_core` | `auth_onboarding_join` | import_graph (weak) |

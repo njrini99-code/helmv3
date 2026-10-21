@@ -1824,6 +1824,11 @@
         "category": "services"
       },
       {
+        "id": "services:e2e/clubhouse-quality.setup.ts",
+        "pattern": "e2e/clubhouse-quality.setup.ts",
+        "category": "services"
+      },
+      {
         "id": "services:memory/journeys/**",
         "pattern": "memory/journeys/**",
         "category": "services"
@@ -1836,6 +1841,11 @@
       {
         "id": "services:package.json",
         "pattern": "package.json",
+        "category": "services"
+      },
+      {
+        "id": "services:playwright.clubhouse-journeys.config.ts",
+        "pattern": "playwright.clubhouse-journeys.config.ts",
         "category": "services"
       },
       {
@@ -9090,6 +9100,18 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "shot_tracking",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/auth/session-activity.ts",
+          "anchor": "src/lib/offline/private-caches"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "team_communications",
       "kind": "feature_relation",
       "evidence": [
@@ -12563,18 +12585,6 @@
     },
     {
       "source": "calendar_events",
-      "target": "golf_event_attendance_counts",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/app/golf/actions/calendar-events.ts",
-          "anchor": "golf_event_attendance_counts"
-        }
-      ]
-    },
-    {
-      "source": "calendar_events",
       "target": "golf_insight_action",
       "kind": "feature_table",
       "evidence": [
@@ -12611,6 +12621,11 @@
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/calendar-events.ts",
+          "anchor": "src/lib/golf/attendance-counts-rpc"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/calendar-feeds.ts",
@@ -12796,18 +12811,6 @@
           "kind": "rpc_call",
           "path": "src/clubhouse/data/coachhelm-track-record.ts",
           "anchor": "golf_coachhelm_shown_reads"
-        }
-      ]
-    },
-    {
-      "source": "clubhouse",
-      "target": "golf_event_attendance_counts",
-      "kind": "feature_rpc",
-      "evidence": [
-        {
-          "kind": "rpc_call",
-          "path": "src/clubhouse/data/attendance-counts.ts",
-          "anchor": "golf_event_attendance_counts"
         }
       ]
     },
@@ -16189,6 +16192,18 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:e2e/clubhouse-quality.setup.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "e2e/clubhouse-quality.setup.ts"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:memory/journeys/**",
       "kind": "feature_service",
       "evidence": [
@@ -16220,6 +16235,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "package.json"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:playwright.clubhouse-journeys.config.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "playwright.clubhouse-journeys.config.ts"
         }
       ]
     },
@@ -17271,6 +17298,18 @@
         {
           "kind": "migration_schema",
           "path": "supabase/migrations/20260611000000_create_golf_demo_sessions.sql"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "golf_event_attendance_counts",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/lib/golf/attendance-counts-rpc.ts",
+          "anchor": "golf_event_attendance_counts"
         }
       ]
     },
