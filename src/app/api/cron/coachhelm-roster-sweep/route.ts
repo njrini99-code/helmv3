@@ -243,8 +243,7 @@ async function decideSweep(
   nowMs: number,
 ): Promise<SweepDecision> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: latestRound, error: latestRoundError } = await (supabase as any)
+    const { data: latestRound, error: latestRoundError } = await supabase
       .from('golf_rounds')
       .select('coachhelm_analyzed_at')
       .eq('player_id', playerId)
@@ -299,8 +298,7 @@ async function engineRanRecently(
   nowMs: number,
 ): Promise<boolean | null> {
   const since = new Date(nowMs - FRESHNESS_COOLDOWN_DAYS * 86_400_000).toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('golf_insight_generation_log')
     .select('id')
     .eq('player_id', playerId)

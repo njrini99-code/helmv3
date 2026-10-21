@@ -57,9 +57,6 @@ export type UntypedTable =
   | 'organizations_public_profile'
   | 'baseball_teams_public_profile'
   | 'baseball_team_coach_staff_public'
-  // CoachHelm Slice 1 run log (held:
-  // supabase/migrations/20261020114500_golf_coachhelm_run_log.sql)
-  | 'golf_coachhelm_run_log'
   // fallback: any other table not yet in generated types
   | (string & Record<never, never>);
 

@@ -16,7 +16,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 
@@ -55,16 +54,12 @@ export async function isGeneratorEnabledForPlayer(
 
     if (!membership?.team_id) return true;
 
-    // Read the team's preference blob. The `preferences` JSONB column
-    // exists per migration 031 but isn't on the generated Database types
-    // — go via fromUntyped (same pattern used elsewhere in v3 code).
-    const { data: settings } = await fromUntyped(admin, 'golf_team_coachhelm_settings')
+    // Read the team's preference blob (the `preferences` JSONB column).
+    const { data: settings } = await admin
+      .from('golf_team_coachhelm_settings')
       .select('preferences')
       .eq('team_id', membership.team_id)
-      .maybeSingle() as {
-        data: { preferences: Record<string, unknown> | null } | null;
-        error: { message: string } | null;
-      };
+      .maybeSingle();
 
     const prefs = (settings?.preferences ?? {}) as Record<string, unknown>;
     // Default true — only explicit false disables.

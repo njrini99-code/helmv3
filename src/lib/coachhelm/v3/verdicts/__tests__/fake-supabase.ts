@@ -26,6 +26,9 @@ export function fakeSupabase(respond: (call: FakeCall) => FakeResponse) {
         return builder;
       };
     }
+    // postgrest-js's overrideTypes() is a type-only cast that returns the
+    // builder unchanged at runtime; it adds nothing to the query.
+    builder.overrideTypes = () => builder;
     builder.update = (payload: unknown) => {
       call.op = 'update';
       call.payload = payload;

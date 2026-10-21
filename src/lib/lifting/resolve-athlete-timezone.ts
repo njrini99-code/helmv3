@@ -30,7 +30,6 @@
 import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { resolveTeamTimezone } from '@/lib/baseball/daily-contract/contract-day';
 
 const DEFAULT_TZ = 'America/New_York';
@@ -47,10 +46,11 @@ export async function resolveLiftingAthleteTimezone(athleteId: string): Promise<
 
   const supabase = await createClient();
 
-  const { data: athlete } = await fromUntyped(supabase, 'helm_lifting_athletes')
+  const { data: athlete } = await supabase
+    .from('helm_lifting_athletes')
     .select('sport, sport_player_id')
     .eq('id', athleteId)
-    .maybeSingle() as { data: { sport: string | null; sport_player_id: string | null } | null };
+    .maybeSingle();
 
   if (!athlete?.sport_player_id) return DEFAULT_TZ;
 

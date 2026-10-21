@@ -100,7 +100,7 @@ export interface SupportEvidencePatch {
   stability?: { split_half: ReturnType<typeof splitHalfStability>; checkpoints_held: number };
 }
 
-export interface WatchingEntry {
+export type WatchingEntry = {
   family: string;
   unit: string;
   have_n: number;
@@ -109,7 +109,7 @@ export interface WatchingEntry {
   rounds_need: number;
   /** Arms of a two-arm contrast still short of their floor (a missing count is null). */
   arms?: Array<{ key: string; have: number | null; need: number }>;
-}
+};
 
 export interface RunSummary {
   candidates: number;
