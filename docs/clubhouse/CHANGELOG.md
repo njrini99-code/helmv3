@@ -1,5 +1,10 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Goals styles
+
+`styles/goals.css` holds the Set a goal sheet's form, the suggested-goals rail and a goal's state line and coach
+controls (P005). It is imported by the components that use it, not by `stats.css`.
+
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until

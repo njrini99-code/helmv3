@@ -1,5 +1,19 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — Goals on the player's Development tab (see P005)
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none (P005's)
+Actions:        none (P005's)
+Data impact:    none
+Held items:     none
+```
+
+`screens/stats/` gained `GoalSheet`, `Goals` and `goal-words`, used by the player profile only. Nothing on Team stats
+changed. Logged on P005.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text

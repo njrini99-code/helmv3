@@ -143,6 +143,14 @@ export interface ChProfileExtra {
   triplePlus?: number | null;
 }
 
+/** A goal CoachHelm suggests: the stat (a metric id), the target it proposes and how many days the goal would run. */
+export interface ChGoalSuggestion {
+  id: string;
+  metric: string;
+  target: number | null;
+  days: number;
+}
+
 export interface ChPlayerProfile {
   viewer: ChViewer;
   window: ChWindow;
@@ -180,6 +188,10 @@ export interface ChPlayerProfile {
   bench: Record<string, number>;
   focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
   goals: Array<{ id: string; title: string; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
+  /** The goals CoachHelm suggests to the player, newest first (the player's own view only; none for a coach). */
+  goalSuggestions?: ChGoalSuggestion[];
+  /** The suggestions read failed: they are missing, not absent. */
+  goalSuggestionsError?: boolean;
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
@@ -247,6 +259,19 @@ export async function loadPlayerProfile(input: {
       .order('created_at', { ascending: false })
       .limit(20),
   );
+  // The player's pending suggested goals (par-19), their own view only; the table's policy shows a coach none.
+  const suggestionsRead = coach
+    ? null
+    : Promise.resolve(
+        supabase
+          .from('golf_goal_suggestions')
+          .select('id, metric_id, suggested_target_value, suggested_window_days')
+          .eq('player_id', input.playerId)
+          .eq('state', 'pending')
+          .gt('expires_at', now.toISOString())
+          .order('suggested_at', { ascending: false })
+          .limit(3),
+      );
   // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
   const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, tourForGender(t.data?.gender), 'stats')));
   const sharedContext = statsActionContext(supabase, input.playerId);
@@ -270,6 +295,7 @@ export async function loadPlayerProfile(input: {
 
   // These are awaited a little later; a rejection in the meantime is theirs to raise there, not an unhandled one here.
   for (const pending of [ownRoundsRead, othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, sharedContext]) pending.catch(() => undefined);
+  suggestionsRead?.catch(() => undefined);
 
   const [teamRes, playerRes, memberRes] = await Promise.all([teamRead, playerRead, memberRead]);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
@@ -310,10 +336,11 @@ export async function loadPlayerProfile(input: {
     loadApproachShots(supabase, scopeIds),
     scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
   ]);
-  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead]);
+  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
   const bench = benchRes ?? new Map<string, number>();
   if (focusRes.error) chLogServer('stats', 'focusAreas', focusRes.error, 'development');
   if (goalsRes.error) chLogServer('stats', 'goals', goalsRes.error, 'development');
+  if (suggestionsRes?.error) chLogServer('stats', 'goalSuggestions', suggestionsRes.error, 'development');
   // One failed rounds read (the player's or a teammate's) is a failed read: no rounds, flagged, and nothing read for them, as one combined
   // read always was. (A round is one row: a round both reads returned is counted once.)
   const roundsFailed = ownRes.error || othersRes.error;
@@ -574,6 +601,14 @@ export async function loadPlayerProfile(input: {
       target: g.target_value,
       baseline: g.baseline_value,
     })),
+    ...(suggestionsRes
+      ? {
+          goalSuggestions: suggestionsRes.error
+            ? []
+            : (suggestionsRes.data ?? []).map((g) => ({ id: g.id, metric: g.metric_id, target: g.suggested_target_value, days: g.suggested_window_days })),
+          goalSuggestionsError: !!suggestionsRes.error,
+        }
+      : {}),
     devError: !!focusRes.error || !!goalsRes.error,
     nav,
     roundsError: seasonRes.error,

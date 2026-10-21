@@ -1,5 +1,32 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — Goals: set one, answer a suggestion, and a coach's pause and abandon
+
+```text
+Design package: none (the Development tab's own Ledger rows and the Add a focus area sheet)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   CH-5006 to CH-5009, CH-5103, CH-5214, CH-5325, CH-5405, CH-5406, CH-5501
+Actions:        ACT-P005-SET-GOAL, ACT-P005-ANSWER-GOAL-SUGGESTION, ACT-P005-CHANGE-GOAL
+Data impact:    writes golf_goals (createGoal) and golf_goal_suggestions (accept, dismiss), reads pending suggestions; no migration
+Held items:     none
+```
+
+### Added
+
+- A player's Development tab has a Set a goal button (`GoalSheet`): a stat that can be measured round by round, how
+  long (1 week to 90 days), a target filled in from where they are now (halfway to the college average, or to the Tour
+  once past it; `suggestGoalTarget`), and whether to share it with the coach. The server measures the starting point
+  itself (`createGoal`), and refuses a target that is not better than it. A target is required: a goal with none has
+  nothing to track.
+- Above the goals, the goals CoachHelm suggests, each with Accept and Dismiss (`GoalSuggestions`, up to three, pending
+  and not expired). Nothing is drawn when there are none, and a failed read says so (CH-5214).
+- Under each goal, its state when it is not simply in progress (Paused, Abandoned, Not reached, Partly reached,
+  Waiting for a first round), and for the coach Pause, Resume and Abandon, which asks first (`GoalStatus`). The player
+  has no controls, as on the Fairway goal card.
+
+Not done here: a coach assigning a goal to a player (no Fairway screen does it either; `createGoal` and `createTeamGoal`
+support it). The Goals empty-state copy is draft PR #2281's.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text

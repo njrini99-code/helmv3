@@ -36,6 +36,7 @@ import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
@@ -550,10 +551,12 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                 <span>
                   <b>this season</b>
                 </span>
+                {!coach && <GoalSetButton />}
               </div>
             </>
           }
         >
+          {!coach && <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />}
           {data.goals.length === 0 ? (
             <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
           ) : (
@@ -571,7 +574,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                     target={g.target}
                     metric={devMetric(g.title)}
                     done={done}
-                    extra={<span className="ch-sr-only">{done ? 'Achieved' : 'In progress'}</span>}
+                    extra={<GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />}
                   />
                 );
               })}

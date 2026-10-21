@@ -79,6 +79,8 @@ The route's loading state is the Stats skeleton (CH-4401, Bridge 40201 on Team s
 | --- | --- | --- | --- |
 | 50201 | CH-5403 | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | A player's stats are loading: their own, or a coach's `?player=` |
 | 50202 | CH-5404 | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | A player's answer to a proposed focus area is being sent |
+| 50203 | CH-5405 | `A_GOAL_IS_BEING_STARTED_A_SUGGESTION` | A goal is being started, a suggestion answered, or a goal changed |
+| 50204 | CH-5406 | `SET_A_GOAL_THE_STARTING_POINT_FOR` | Set a goal: the starting point for the chosen stat is being looked up |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -123,6 +125,7 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50420 | CH-5322 | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | The sheet's round list is cut at 200 rounds |
 | 50421 | CH-5323 | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
 | 50422 | CH-5324 | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | No round of the default length (18 holes), but this player has 9-hole rounds in this window |
+| 50423 | CH-5325 | `SET_A_GOAL_NO_STARTING_POINT_TO` | Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed) |
 
 ## 05 — Validation
 
@@ -134,6 +137,7 @@ The one form is Add focus area: a name of at least three characters, checked bef
 | --- | --- | --- | --- |
 | 50501 | CH-5101 | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | A focus area with a name under three characters |
 | 50502 | CH-5102 | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | The filter's date range starts after it ends, and Done is tapped |
+| 50503 | CH-5103 | `SET_A_GOAL_THE_TARGET_IS_EMPTY` | Set a goal: the target is empty or not a number |
 
 ## 06 — Server / system error
 
@@ -162,6 +166,11 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
 | 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 | 50619 | CH-5005 | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | Sharing a personal-best card fails (the share sheet or the download is blocked) |
+| 50620 | CH-5006 | `STARTING_A_GOAL_FAILS` | Starting a goal fails (Set a goal) |
+| 50621 | CH-5007 | `ACCEPTING_A_SUGGESTED_GOAL_FAILS` | Accepting a suggested goal fails |
+| 50622 | CH-5008 | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | Dismissing a suggested goal fails |
+| 50623 | CH-5009 | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | A coach pauses, resumes or abandons a goal and it fails |
+| 50624 | CH-5214 | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
 
 ## 07 — Network / offline
 
@@ -233,7 +242,13 @@ Status: N/A — A profile warns about nothing: a small sample is an early read, 
 
 ## 11 — Destructive
 
-Status: N/A — Nothing on a profile deletes or removes anything; a focus area can only be proposed here, and the player accepts it in their own app.
+Status: DEFINED
+
+Only a coach can end a goal: Abandon asks first (a dialog naming the goal, Keep it or Abandon goal) and the goal stays in the list marked Abandoned. Nothing else on a profile deletes anything; a focus area can only be proposed here, and the player accepts it in their own app.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 51101 | CH-5501 | `A_COACH_PRESSES_ABANDON_ON_A_GOAL` | A coach presses Abandon on a goal |
 
 ## 12 — State preservation
 
