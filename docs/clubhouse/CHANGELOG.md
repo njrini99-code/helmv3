@@ -21,6 +21,22 @@ page's sections where the plain rule (1.2:1) lets the page read flat. It is
 decorative, not a 3:1 boundary. Team Hub uses it first (P010). `HUB_TABS.player`
 now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks` opens for a player.
 
+## 2026-10-21 — Name the rollback deployment (doc-45)
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-rollback-named
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `STATUS.md` names today's production deployment and its promote-back
+  target, and says to re-read both on the day of turn-on.
+
 ## 2026-10-21 — One hydration guard for text boxes
 
 `useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until
