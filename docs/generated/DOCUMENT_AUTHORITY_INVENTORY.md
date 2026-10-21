@@ -747,8 +747,6 @@ them would bury everything above.
 | `docs/baseball/ui-migration-map.md` | current | - | - | - | 2 |
 | `docs/clubhouse/CATALOG_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
-| `docs/clubhouse/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/CHECKLIST_TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/CLICKABLES.md` | current | - | - | - | - |
 | `docs/clubhouse/HANDOFF.md` | current | - | - | - | - |
