@@ -193,6 +193,26 @@ describe('bar scale', () => {
     expect(key).toContain('±3');
   });
 
+  it('a team grid figure opens that player\'s Game detail for its leg, and the row still opens the profile (Q12)', () => {
+    showTeam(team({ grid: [{ ...PREVIEW_TEAM_STATS.grid[0]!, id: 'p1', name: 'Cole Bennett', legs: [1.9, -1.6, null, -4.9] }] }));
+    const cells = [...document.querySelectorAll('.ch-lg__r:not(.ch-lg__r--h) .ch-lg__cell')];
+    const hrefs = cells.map((c) => c.querySelector('a.ch-lg__cl')?.getAttribute('href') ?? null);
+    expect(hrefs[0]).toContain('player=p1');
+    expect(hrefs[0]).toContain('tab=game');
+    expect(hrefs[0]!.endsWith('#gm-tee')).toBe(true);
+    expect(hrefs[1]!.endsWith('#gm-approach')).toBe(true);
+    expect(hrefs[2]).toBeNull();
+    expect(hrefs[3]!.endsWith('#gm-putting')).toBe(true);
+    expect(cells[1]!.querySelector('a.ch-lg__cl')!.getAttribute('aria-label')).toBe('Cole Bennett, approach −1.6: open game detail');
+    expect(document.querySelectorAll('a.ch-lg__a')).toHaveLength(1);
+  });
+
+  it('a coach on a player\'s stats can open that player\'s CoachHelm reads', () => {
+    showPlayer(player({ viewer: 'coach', id: 'p9' }));
+    const link = screen.getByRole('link', { name: /CoachHelm/ });
+    expect(link.getAttribute('href')).toContain('coachhelm?player=p9');
+  });
+
   it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {
     const win = { ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach: -2.6, around: 0.1, putting: -1.9 } };
     showPlayer(player({ win }));

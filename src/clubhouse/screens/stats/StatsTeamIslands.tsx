@@ -30,7 +30,7 @@ import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
-import { gridPeek, teamPlayerHref } from './links';
+import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
@@ -773,6 +773,8 @@ function LegGrid({
                   const med = medians[i];
                   return (
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
+                      {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
+                      {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
                       <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
                         {v != null && <i className={'ch-lg__bar ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={bar(v)} />}

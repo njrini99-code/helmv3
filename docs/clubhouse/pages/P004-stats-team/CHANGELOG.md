@@ -28,6 +28,21 @@ Held items:     none
   it. Other peeks are unchanged.
 - Preview: `/clubhouse-preview/stats?state=demo` shows the Demo University
   fixture.
+- Missing-work audit rows (par-17, chs-56, par-19, doc-13):
+  - A coach's player Stats page has a CoachHelm button next to Message and
+    Schedule 1:1 (`coachhelm?player=`), the same page Roster's View insights
+    opens.
+  - Each leg figure on the team grid opens that player's Game detail on the
+    matching section (`?player=&tab=game#gm-tee`, `-approach`, `-short`,
+    `-putting`); the name still opens the profile. On a player's Overview, a
+    pinned leg offers "See approach in game detail" (decisions Q12). The page
+    scrolls to the section once the Game detail tab is in.
+  - The goals empty state no longer sends a player to a page that loops back
+    ("Goals you and your coach set show here"; a coach reads "{name} has no
+    goals yet"). Setting goals is still Fairway-only.
+  - Team stats already printed (the audit row missed `@media print` at the foot
+    of stats.css); the leg grid's 760px minimum cut Total and Trend off the
+    sheet, so it now narrows on paper. The new key prints; the cell links do not.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
