@@ -15459,6 +15459,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130739,
+    "page": "P013",
+    "category": 7,
+    "item": 39,
+    "name": "COACH_PLAYER_CORRECTION_CHIPS",
+    "chCode": "CH-13970",
+    "meaning": "Coach, player: correction chips",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130740,
+    "page": "P013",
+    "category": 7,
+    "item": 40,
+    "name": "COACH_PLAYER_ANSWER_RECORDED",
+    "chCode": "CH-13971",
+    "meaning": "Coach, player: answer recorded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130741,
+    "page": "P013",
+    "category": 7,
+    "item": 41,
+    "name": "COACH_READ_HELD_BACK",
+    "chCode": "CH-13972",
+    "meaning": "Coach: read held back",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,

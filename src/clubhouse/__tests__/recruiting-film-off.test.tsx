@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 /**
- * Recruiting (P014) with film off, the default while supabase/migrations/20260930140000_recruit_documents_film.sql is
- * held (data/recruiting-film.ts): no Film category to pick, no video in the picker, a video refused before anything is
+ * Recruiting (P014) with film switched off (data/recruiting-film.ts; film is on now that
+ * supabase/migrations/20260930140000_recruit_documents_film.sql is applied, and this is the kill switch): no Film category to pick, no video in the picker, a video refused before anything is
  * sent, and no film in the page's copy; a document already filed as Film keeps its tag, and the rest of Documents
  * works as before. Film on (the state after the apply) is recruiting-upload.test.tsx and recruiting.test.tsx.
  */
@@ -21,6 +21,7 @@ vi.mock('@/app/golf/actions/recruit-documents', () => ({
   prepareRecruitDocumentUpload: vi.fn(),
   completeRecruitDocumentUpload: vi.fn(),
 }));
+vi.mock('../data/recruiting-film', () => ({ RECRUIT_FILM_ENABLED: false }));
 vi.mock('@/lib/utils/capacitor', () => ({ isNativeApp: () => false, openExternalUrl: vi.fn() }));
 
 import { RECRUIT_FILM_ENABLED } from '../data/recruiting-film';
@@ -89,9 +90,11 @@ const drag = (files: File[]) => ({
   dataTransfer: { types: ['Files'], files, items: files.map(() => ({ kind: 'file', webkitGetAsEntry: () => ({ isDirectory: false }) })), dropEffect: 'none' },
 });
 
-describe('Recruiting · film off until its migration is applied · the rules', () => {
-  it('is off by default: one constant turns it on', () => {
+describe('Recruiting · film switched off · the rules', () => {
+  it('this file runs with the switch off (mocked); the shipped default is on', async () => {
     expect(RECRUIT_FILM_ENABLED).toBe(false);
+    const real = await vi.importActual<typeof import('../data/recruiting-film')>('../data/recruiting-film');
+    expect(real.RECRUIT_FILM_ENABLED).toBe(true);
   });
 
   it('CH-14106 the picker offers no video, and a video is refused as a type the page does not take, before anything is sent', () => {
@@ -119,7 +122,7 @@ describe('Recruiting · film off until its migration is applied · the rules', (
   });
 });
 
-describe('Recruiting · film off until its migration is applied · the page', () => {
+describe('Recruiting · film switched off · the page', () => {
   it('a chosen document opens the dialog with no Film category, and uploads as before', async () => {
     const user = userEvent.setup();
     const w = wrap();

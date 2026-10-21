@@ -1309,6 +1309,28 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/Corrections.tsx",
+      "group": "screens",
+      "exports": [
+        "CORRECTION_LABEL",
+        "CorrectionChips",
+        "CorrectionWritesProvider",
+        "ReadLater"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/CoursePlan.tsx",
       "group": "screens",
       "exports": [
@@ -8633,6 +8655,14 @@
         "ch-hl-cmain",
         "ch-hl-conf",
         "ch-hl-conf__d",
+        "ch-hl-cx",
+        "ch-hl-cx__c",
+        "ch-hl-cx__chg",
+        "ch-hl-cx__chips",
+        "ch-hl-cx__done",
+        "ch-hl-cx__err",
+        "ch-hl-cx__k",
+        "ch-hl-cx__why",
         "ch-hl-dis",
         "ch-hl-done",
         "ch-hl-drill",
@@ -8658,6 +8688,7 @@
         "ch-hl-h",
         "ch-hl-h__aside",
         "ch-hl-h__t",
+        "ch-hl-later",
         "ch-hl-lede",
         "ch-hl-more",
         "ch-hl-note",
