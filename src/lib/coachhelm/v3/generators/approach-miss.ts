@@ -45,6 +45,7 @@ import {
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
+  approachFoundGreen,
   bucketApproachDistance,
   type ApproachBucket,
   type ApproachShot,
@@ -134,9 +135,7 @@ export function bandApproachShots(shots: readonly ApproachShot[], splitPar3Tee: 
 }
 
 export function reachedGreen(s: ApproachShot): boolean {
-  const r = (s.result ?? '').toLowerCase();
-  if (r === 'green' || r === 'hole' || r === 'gir') return true;
-  return (s.lie_after ?? '').toLowerCase() === 'green';
+  return approachFoundGreen(s);
 }
 
 /** On-green finish → feet. On-green rows are stored in feet; the ×3 only converts the

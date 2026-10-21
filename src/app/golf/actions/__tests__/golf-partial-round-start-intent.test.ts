@@ -84,7 +84,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -109,7 +109,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -214,7 +214,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -240,7 +240,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -257,7 +257,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -332,7 +332,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     tables.golf_rounds.push(
       {
         id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
         qualifier_id: null, qualifier_round_number: null,
         updated_at: '2026-09-02T02:00:00Z',
       },

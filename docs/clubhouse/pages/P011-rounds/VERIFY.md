@@ -1,6 +1,7 @@
 # P011 — Rounds: verification
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current release evidence — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.
@@ -346,6 +347,30 @@ migration `20260820170000`, not re-proved; no pgTAP ran), the line on a
 phone, and `e2e/golf-round.spec.ts` (its offline case still has no
 assertions).
 
+## The number pad's Done key (2026-10-20, release blocker 19)
+
+Source and unit tests only; nothing changes in a browser, so there are no
+screenshots for it.
+
+- What: in the app, `NewRound` and `ContinueRound` call `useRoundDoneKey`, which
+  pins the native keyboard accessory bar (`pinKeyboardAccessoryBar` in
+  `src/lib/utils/capacitor.ts`) from mount to unmount. The plugin call is
+  `Keyboard.setAccessoryBarVisible`, which the shipped binary already has
+  (`@capacitor/keyboard` 8, in `ios/App/CapApp-SPM/Package.swift`), so no new
+  binary is needed.
+- Tests: `src/clubhouse/screens/rounds/entry/__tests__/use-done-key.test.tsx`
+  (pins on mount, releases on unmount, nothing on the web, both entry screens
+  hold it) and `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts` (a pin
+  survives text fields and blurs, the last release falls back to the focused
+  field, a hand-over does not flicker, a pin taken before the plugin loads shows
+  the bar on install, a failing plugin call keeps the count).
+- Not verified: on a device or the Simulator (the original change's machine had
+  no working `simctl`; this replay ran on Linux). The device pass should open a
+  new round and a continued one, focus the distance box, a yardage, Add a
+  course's rating and slope, and the edit-shot sheet's distances, and see ‹ ›
+  Done over each keyboard, Done closing it. Pair it with the Fairway ledger's
+  RE-F3.
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -605,3 +630,36 @@ measure. Not run: WebKit, motion on, other widths and heights, an iPhone.
 Checks on b8920a4: `npm run check:changed` exit 0 (eslint, tsgo, the new test
 and its related tests), `npm run clubhouse:check` exit 0,
 `clubhouse:shots -- check` exit 0.
+
+**Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
+rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
+"no test covers this"; they now say where the test is.
+
+## 2026-10-20 — No data lost: Exit's Discard offline, and the engine under a dropped connection
+
+Replayed from draft PR #2207 (release review blocker 2). The screen-level cases
+that `rounds-contracts.test.tsx` already forces (above) were not replayed; these
+add what it does not reach. No implementation file changed.
+
+- 110702: Exit's Discard offline after a hole whose save was refused (the hole
+  exists only on the device): CH-1903, nothing sent, no navigation, the device
+  copy unchanged (`round-entry-wiring.test`; pass).
+- 110702: the library's live discard whose request throws: the device copy is
+  not cleared and the round is not marked discarded (`rounds.test`; pass).
+- 110702: the engine's discard whose request throws: the device copy, the queued
+  entry and the round stay, and the round keeps saving
+  (`use-new-round-session.preservation.test`; pass).
+- 111201: the engine's create throws: no round id is adopted, the start guard is
+  released, and the next start sends the same payload
+  (`use-new-round-session.preservation.test`; pass).
+- 111202: every attempt of a hole's checkpoint throws: the device copy holds the
+  hole's score, putts and shots; Try again sends that hole and only then is the
+  copy cleared (`use-new-round-session.preservation.test`; pass).
+
+Each guard was broken on purpose and the new test failed: the library's discard
+clearing the device copy before the request (`rounds.test` failed), Exit's
+Discard ignoring offline (`round-entry-wiring.test` failed), and the engine's
+thrown discard leaving the round marked discarded
+(`use-new-round-session.preservation.test` failed); the code was restored after
+each. Run: `npm run test:file` on the three files, exit 0, 98 tests. Not
+covered: a real device going offline, and the app killed with a hole unsaved.

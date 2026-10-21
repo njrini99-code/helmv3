@@ -25,9 +25,37 @@
  * of the bug.
  * ========================================================================== */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { TeamManagement } from '../TeamManagement';
+
+// This file asserts static markup; the dock animation is covered by
+// scenes/__tests__/dockScene.test.ts. Importing the real `register.ts` runs
+// `gsap.registerPlugin(ScrollTrigger)`, and ScrollTrigger starts two timers
+// at registration that live as long as the worker process: a 250ms
+// `setInterval(_sync)` and a `_rafBugFix` animation-frame loop, both calling
+// the GLOBAL `requestAnimationFrame`. Vitest deletes that global when it tears
+// the jsdom environment down, so a tick landing between teardown and worker
+// exit throws "requestAnimationFrame is not defined" — an unhandled error that
+// failed main CI at 22e542657 although both tests passed. Whether a tick lands
+// in that window is timing, hence the flake. Mocking the one registration
+// module (same pattern as src/test/landing/pricing-email-required.test.tsx)
+// means ScrollTrigger is never registered, so no timer exists.
+vi.mock('@/lib/motion/gsap/register', () => {
+  const noop = () => {};
+  return {
+    gsap: {
+      matchMedia: () => ({ add: noop, revert: noop }),
+      set: noop,
+      utils: { selector: () => () => [] },
+      context: () => ({ revert: noop }),
+      registerPlugin: noop,
+    },
+    ScrollTrigger: { refresh: noop, update: noop, getAll: () => [], create: noop, addEventListener: noop },
+    SplitText: class {},
+    Flip: {},
+  };
+});
 
 describe('TeamManagement — the flagship tile never clips its own content', () => {
   it('renders the qualifying & travel tile without overflow:hidden on the Flip-resized outer box', () => {

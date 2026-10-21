@@ -12,6 +12,7 @@ import { QualifierRoundSheet } from './QualifierRoundSheet';
 import { roundTypeFailure, ROUND_TYPE_LABEL, sameChoice, savedLine, type ChRoundTypeChoice, type ChRoundTypeCurrent, type ChRoundTypeOptions } from './round-type';
 import { RoundTypeSheet } from './RoundTypeSheet';
 import { RecoveryHost, RoundRuntime, type RoundRuntimeRoutes } from './RoundRuntime';
+import { useRoundDoneKey } from './use-done-key';
 import { ENGINE_ROUTES } from './routes';
 import { roundHeading, trackingRound, type ChRoundSession } from './session';
 
@@ -42,6 +43,8 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
   const { ports, capture } = useRoundPorts();
   const connection = useConnectionStatus();
   const engine = useContinueRoundSession({ ...props, ports, routes: ENGINE_ROUTES });
+  // A Done key over the number pad for the whole round, setup to submit, sheets included (use-done-key.ts).
+  useRoundDoneKey();
   // What an action calls is the latest engine, never the one a retrying toast was made under.
   const latest = useRef(engine);
   latest.current = engine;
