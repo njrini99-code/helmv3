@@ -562,15 +562,15 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
   });
 
-  it('CH-5214 CoachHelm’s reads do not load: Game detail says so once under the section chips and draws no count line', () => {
+  it('CH-5215 CoachHelm’s reads do not load: Game detail says so once under the section chips and draws no count line', () => {
     wrap(
       <PhoneChromeProvider>
         <SlotHost />
         <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={PREVIEW_READS_FAILED} />
       </PhoneChromeProvider>,
     );
-    expect(code('CH-5214')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
-    expect(document.querySelectorAll('[data-ch-code="CH-5214"]')).toHaveLength(1);
+    expect(code('CH-5215')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
     expect(document.querySelector('.ch-gm__reads')).toBeNull();
   });
 

@@ -207,6 +207,39 @@ Q-130 (2026-10-01: the player's roster, read-only), Q-1 (a separate availability
 desktop only), D-58 (Inactive), D-66 (navigation), D-70 (haptics), D-71 (page
 empty state).
 
+## CoachHelm block and strokes-by-leg line (2026-10-21, spec D build B)
+
+Design package: none (spec D, the roster detail bridge; Q3 in the spec: no
+Email or Call in the roster menu). Existing classes and tokens only, no new
+colour and no new motion.
+
+- **Panel (desktop):** after Development, before Availability, a section
+  headed "CoachHelm" / "What it reads in Jonah’s rounds". The figure line, on
+  `.ch-rs-peek__dev`: "**3** costing strokes · **1** working", then "View
+  insights →" to the coach's Deep dive of the player. With no current read:
+  "No reads yet" and the link. Off for the coach: not drawn. Not loaded:
+  "— costing strokes · — working" (CH-3212) and "Didn’t load. Refresh to try
+  again." The counts are `countReads`, as the Board and the coach's Game
+  profile count them.
+- **Strokes by leg:** one caption under the figures: the leg that loses the
+  most ("Loses most putting, −1.1 a round") or, with none losing, "Gains in
+  every leg; most on approach, +0.4" ("Gains most on approach, +0.4" when a leg
+  has too few rounds to say every). Leg words: off the tee, on approach, around
+  the green, putting. Only with a season's strokes gained; nothing when every
+  leg is empty. The figure takes the loss ink (`--ch-chart-loss`, 6.0, dark
+  7.9) or the gain ink (`--ch-chart-gain`, 7.9, dark 7.2); red stays under par
+  only.
+- **Development:** the focus area and goal counts are a link to the player's
+  Development tab (`stats?player=<id>&tab=dev`).
+- **Phone profile:** a `ch-rsm-panel` after Recent rounds with the same counts
+  on the panel's seam and View insights as its 44px `.ch-rsm-panel__link`; the
+  legs caption sits under `ch-rsm-figs`.
+- **Old links:** `/roster/[id]` opens this page as `roster?player=<id>`: the
+  phone opens that player's profile; desktop ignores the param and shows the
+  list (30102 unchanged), so a desktop coach then opens the panel themselves
+  (30806).
+- Contrast: `.ch-num` ink-900 16.5; ink-700 11.2; the link green-700 9.9.
+
 ## Explicit non-goals
 
 Invite by email, an availability writer, captain and major, birthdays (minors'

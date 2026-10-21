@@ -28,5 +28,5 @@ export function readsLine(area: ChReadArea, c: ChReadCount): string | null {
   return parts ? parts.join('') : null;
 }
 
-/** What the line says when the reads did not load (CH-5214). */
+/** What the line says when the reads did not load (CH-5215). */
 export const READS_FAILED = 'CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.';

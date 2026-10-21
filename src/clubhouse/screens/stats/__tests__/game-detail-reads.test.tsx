@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * Game detail's "CoachHelm sees…" line (P005, spec D build A): one line per section that has current reads, under its rule, in the
- * same third-person words for a coach and a player, linking to the Deep dive; nothing at zero or off; one CH-5214 line on failure.
+ * same third-person words for a coach and a player, linking to the Deep dive; nothing at zero or off; one CH-5215 line on failure.
  */
 
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
@@ -74,15 +74,15 @@ describe('off and failed', () => {
   it('off, or no reads handed in, draws nothing', () => {
     draw({ status: 'off' });
     expect(lines()).toHaveLength(0);
-    expect(document.querySelector('[data-ch-code="CH-5214"]')).toBeNull();
+    expect(document.querySelector('[data-ch-code="CH-5215"]')).toBeNull();
     cleanup();
     draw(undefined);
     expect(lines()).toHaveLength(0);
   });
 
-  it('failed draws one CH-5214 line under the section chips, and no section line', () => {
+  it('failed draws one CH-5215 line under the section chips, and no section line', () => {
     draw(PREVIEW_READS_FAILED);
-    const failed = document.querySelectorAll('[data-ch-code="CH-5214"]');
+    const failed = document.querySelectorAll('[data-ch-code="CH-5215"]');
     expect(failed).toHaveLength(1);
     expect(failed[0]!.className).toBe('ch-gx-rule');
     expect(failed[0]!.previousElementSibling?.className).toBe('ch-gd__nav');

@@ -172,6 +172,7 @@ refused change shows the server's own sentence when it is short and readable
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 | 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
 | 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
+| 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,

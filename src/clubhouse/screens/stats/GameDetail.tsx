@@ -374,7 +374,7 @@ export function GameDetail({
         <span className="ch-gd__src">{sample} logged</span>
       </nav>
       {reads?.status === 'failed' && (
-        <p className="ch-gx-rule" data-ch-code="CH-5214">
+        <p className="ch-gx-rule" data-ch-code="CH-5215">
           {READS_FAILED}
         </p>
       )}
