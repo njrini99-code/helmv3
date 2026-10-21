@@ -36,6 +36,8 @@ Held items:     none
 - Your queue (player): replies, posts and tasks in one list, answered in place.
   An answered row stays, showing its answer; four show until Show all.
 - Files (player): the newest four, opened with a press. Updates as before.
+- A task link with no tab (an older notification's `?task=`) opens the Tasks
+  tab and lights the row there, since Home's tiles hold no task rows.
 
 ### Verification
 

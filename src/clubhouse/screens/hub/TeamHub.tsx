@@ -128,7 +128,8 @@ export function TeamHub({
   const router = useRouter();
   const phone = useChPhone();
   const coach = data.role === 'coach';
-  const [tab, setTab] = useState<ChHubTab>(initialTab ?? 'home');
+  // A task named without a tab (an older notification's `?task=`) opens Tasks: Home's tiles hold no task rows to light.
+  const [tab, setTab] = useState<ChHubTab>(initialTab ?? (focusTask ? 'tasks' : 'home'));
   // Consumed by the row on its first paint, so a later toggle, refresh or tab switch never scrolls back to it.
   const [taskToFocus, setTaskToFocus] = useState<string | null>(focusTask ?? null);
   // A new address on the same page (a notification's ?tab=tasks&task= while Team Hub is open) re-renders the route
@@ -138,6 +139,7 @@ export function TeamHub({
   if (seenAddress.initialTab !== initialTab || seenAddress.focusTask !== focusTask || seenAddress.focusTrip !== focusTrip) {
     setSeenAddress({ initialTab, focusTask, focusTrip });
     if (initialTab && initialTab !== seenAddress.initialTab) setTab(initialTab);
+    else if (!initialTab && focusTask && focusTask !== seenAddress.focusTask) setTab('tasks');
     if (focusTask && focusTask !== seenAddress.focusTask) setTaskToFocus(focusTask);
     if (focusTrip && focusTrip !== seenAddress.focusTrip) setTripToFocus(focusTrip);
   }
