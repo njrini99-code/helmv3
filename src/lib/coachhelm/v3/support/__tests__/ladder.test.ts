@@ -34,8 +34,12 @@ describe('assignLadder: the five rungs (02 §6)', () => {
 
   it('Seen repeatedly with a counted path needs the path to lead in both halves', () => {
     const base = { ...clear, stabilityAgrees: true, why: 'observed_sequence' as const };
-    expect(assignLadder(base).ladder).toBe('observed');
-    expect(assignLadder({ ...base, whyLeadsBothHalves: true }).ladder).toBe('seen_repeatedly');
+    // No evidence carries per-half paths yet, so the worded read stops at
+    // Observed while the WHAT alone may still be Seen repeatedly.
+    const r = assignLadder(base);
+    expect(r.ladder).toBe('observed');
+    expect(r.what_ladder).toBe('seen_repeatedly');
+    expect(r.reasons).toContain('cause_path_one_window');
   });
 
   it('Likely: supported but the range includes 0', () => {
@@ -88,6 +92,24 @@ describe('assignLadder: the five rungs (02 §6)', () => {
     expect(r.what_ladder).toBe('not_enough_yet');
     expect(r.clear).toBe(false);
     expect(r.reasons).toContain(reason);
+  });
+
+  it('holds a two-arm contrast to every arm floor, a missing arm count included', () => {
+    expect(assignLadder({ ...clear, arms: [{ have: 6, need: 6 }, { have: 7, need: 6 }] }).ladder).not.toBe('not_enough_yet');
+    const short = assignLadder({ ...clear, arms: [{ have: 5, need: 6 }, { have: 30, need: 6 }] });
+    expect(short.ladder).toBe('not_enough_yet');
+    expect(short.reasons).toEqual(['below_arm_floor']);
+    expect(assignLadder({ ...clear, arms: [{ have: null, need: 6 }] }).reasons).toEqual(['below_arm_floor']);
+  });
+
+  it('puts the binding reason first, not the first check in a fixed order', () => {
+    // 19 of 20 attempts is nearly there; 1 of 8 rounds is the real hold-up.
+    const r = assignLadder({ ...clear, n: 19, roundsN: 1, roundFloor: 8, q: 0.3 });
+    expect(r.reasons).toEqual(['below_round_floor', 'below_attempt_floor', 'not_supported']);
+    const flipped = assignLadder({ ...clear, n: 2, roundsN: 7, roundFloor: 8 });
+    expect(flipped.reasons[0]).toBe('below_attempt_floor');
+    // Untestable always leads.
+    expect(assignLadder({ ...clear, q: null, roundsN: null }).reasons).toEqual(['untestable', 'rounds_unknown']);
   });
 
   it('respects a family round floor above 3', () => {

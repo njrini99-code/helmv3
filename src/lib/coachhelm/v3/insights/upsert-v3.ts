@@ -20,11 +20,16 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   upsertInsight as v2UpsertInsight,
   GATED_OUT,
+  isEvidenceRefusal,
 } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightInput } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
-import { recordRunInsightId } from '@/lib/coachhelm/v3/support/run-collector';
+import {
+  recordRunGatedOut,
+  recordRunInsightId,
+  recordRunRefused,
+} from '@/lib/coachhelm/v3/support/run-collector';
 
 const V3_SIGNATURE_PREFIX = 'v3:';
 
@@ -47,10 +52,21 @@ export async function upsertInsightV3(
     );
   }
 
-  const result = await v2UpsertInsight(supabase, input);
-  if (result === GATED_OUT) return result;
-  // Slice 1: the support pass runs BH over exactly the rows this run wrote.
-  // No-op unless the orchestrator opened a collector (flag on).
+  // Slice 1: the support pass runs BH over every hypothesis this run formed:
+  // the rows it wrote, the rows the philosophy gate held back and the rows
+  // upsertInsight refused. Each record is a no-op unless the orchestrator
+  // opened a collector (flag on).
+  let result: string | typeof GATED_OUT;
+  try {
+    result = await v2UpsertInsight(supabase, input);
+  } catch (err) {
+    if (isEvidenceRefusal(err)) recordRunRefused(input.signature);
+    throw err;
+  }
+  if (result === GATED_OUT) {
+    recordRunGatedOut({ signature: input.signature, insight_type: input.insight_type ?? null, evidence: input.evidence });
+    return result;
+  }
   recordRunInsightId(result);
 
   // Stamp engine_version. Best-effort — a stamp failure should NOT

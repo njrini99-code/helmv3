@@ -91,6 +91,20 @@ export function PreviewEntry({ state }: { state?: string }) {
 
   return (
     <>
+      {/* The shot screen comes first and its banners go where RoundRuntime draws them, in its status slot above the
+          hole strip; the preview's own switches follow it. Drawn above the shot screen, they pushed its full-height
+          phone layout past the fold, and the sticky action bar sat over the entry card's first row of choices (axe
+          target-size, 2026-10-20). */}
+      <PreviewTracking
+        state="approach"
+        statusSlot={
+          banner === 'reload' ? (
+            <ReloadBanner reloading={reloading} onReload={reload} />
+          ) : banner === 'error' ? (
+            <RoundErrorBanner message="Hole 4 didn’t save. Your shots are kept on this device; try again to move on." onDismiss={() => setBanner(null)} />
+          ) : undefined
+        }
+      />
       <div style={strip}>
         <span>Round entry</span>
         <Button size="sm" onClick={() => setSheet('recovery')}>
@@ -118,17 +132,6 @@ export function PreviewEntry({ state }: { state?: string }) {
           Round updated
         </Button>
       </div>
-      {banner === 'reload' && (
-        <div style={strip}>
-          <ReloadBanner reloading={reloading} onReload={reload} />
-        </div>
-      )}
-      {banner === 'error' && (
-        <div style={strip}>
-          <RoundErrorBanner message="Hole 4 didn’t save. Your shots are kept on this device; try again to move on." onDismiss={() => setBanner(null)} />
-        </div>
-      )}
-      <PreviewTracking state="approach" />
       <RecoveryDialog
         open={sheet === 'recovery'}
         {...PREVIEW_RECOVERY}

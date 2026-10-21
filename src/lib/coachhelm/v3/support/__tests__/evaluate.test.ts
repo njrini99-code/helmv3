@@ -77,21 +77,25 @@ const composite: SupportRow = {
   evidence: { metric: 'lag_3putt', unit: 'percent', your_value: 9, sample_n: 40, estimated: true },
 };
 
+// A within-player contrast with no strokes estimate of its own. (This was a
+// tee_strategy row with strokes 0; Slice 1b reads a tee row without the
+// laggy strokes estimate as "no claim", finding 3, so the contrast without
+// strokes is now the downhill-putt row.)
 const tee: SupportRow = {
   id: 'tee',
-  insight_type: 'tee_strategy',
+  insight_type: 'putt_bias',
   evidence: {
-    metric: 'fairway_pct_driver',
+    metric: 'putt_slope_downhill_penalty_pct',
     unit: 'percent',
-    polarity: 'higher_better',
-    your_value: 40,
+    polarity: 'lower_better',
+    your_value: 30,
     sample_n: 60,
-    comparison_value: 70,
+    comparison_value: 0,
     comparison_source: 'your_baseline',
     strokes_impact: 0,
-    strokes_impact_method: 'rough_estimate',
+    strokes_impact_method: 'peer_delta',
     rounds_n: 8,
-    detail: { driver_n: 60, non_driver_n: 30, driver_fairway_hits: 24, non_driver_fairway_hits: 21 },
+    detail: { downhill_n: 30, level_n: 30, downhill_pct: 40, level_pct: 70 },
   },
 };
 
@@ -123,7 +127,7 @@ describe('families', () => {
 describe('buildCandidate', () => {
   it('tests a putt band against the team line when the team has >= 4 players', () => {
     const c = buildCandidate(puttDistance());
-    expect(c.benchmark).toEqual({ source: 'team', value: 80 });
+    expect(c.benchmark).toEqual({ source: 'team', value: 80, basis: 'team_incl_player' });
     expect(c.gapInput).toMatchObject({ kind: 'proportion', k: 48, n: 80, benchmark: 0.8 });
     expect(c.roundsN).toBe(10);
     expect(c.why).toBe('not_traced');
@@ -131,9 +135,9 @@ describe('buildCandidate', () => {
 
   it('falls back to the cohort, then to the row comparison', () => {
     expect(buildCandidate(puttDistance({ standing: { team_avg: 80, team_n: 2, level_avg: 78, level_n: 40 } })).benchmark)
-      .toEqual({ source: 'cohort', value: 78 });
+      .toEqual({ source: 'cohort', value: 78, basis: 'cohort' });
     const tour = buildCandidate(puttDistance({ standing: null }));
-    expect(tour.benchmark).toEqual({ source: 'tour', value: 96 });
+    expect(tour.benchmark).toEqual({ source: 'tour', value: 96, basis: 'row_comparison' });
     expect(tour.cap).toBe('working_hypothesis');
     expect(tour.capReasons).toContain('tour_benchmark_only');
   });

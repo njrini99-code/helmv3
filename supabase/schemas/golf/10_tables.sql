@@ -435,6 +435,22 @@ CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_llm_calls" (
 
 ALTER TABLE "public"."golf_coachhelm_llm_calls" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_player_state" (
+    "player_id" "uuid" NOT NULL,
+    "last_checkpoint_round_id" "uuid",
+    "last_checkpoint_at" timestamp with time zone,
+    "checkpoint_count" bigint DEFAULT 0 NOT NULL,
+    "rounds_since" bigint DEFAULT 0 NOT NULL,
+    "attempts_since" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "golf_coachhelm_player_state_attempts_since_check" CHECK (("jsonb_typeof"("attempts_since") = 'object'::"text")),
+    CONSTRAINT "golf_coachhelm_player_state_checkpoint_count_check" CHECK (("checkpoint_count" >= 0)),
+    CONSTRAINT "golf_coachhelm_player_state_rounds_since_check" CHECK (("rounds_since" >= 0))
+);
+
+ALTER TABLE "public"."golf_coachhelm_player_state" OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_coachhelm_settings" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "coach_id" "uuid" NOT NULL,

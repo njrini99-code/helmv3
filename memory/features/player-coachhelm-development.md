@@ -106,6 +106,39 @@ Player opens round review
   - Standing: `applyTeamFloor` (loader finalize chain) blanks `team_avg`/`team_pct` below 3 measured players. A 90-day standing alongside lifetime needs a new RPC (not built).
   - Distance profile (flag off): par-5 175+ lay-up intent comes from the leave distance (`v3/metrics/layup-intent.ts`, 50 yd cut), not from the miss; unknown leave → `layup_intent_unknown` exclusion.
 
+- Closed loop, CoachHelm Slice 4 (2026-10-20, flag `coachhelm_verdicts_v1`,
+  off; migration `20261020120000_golf_focus_area_prescription.sql` HELD).
+  Code in `src/lib/coachhelm/v3/verdicts/`.
+  - Prescription: a focus area created from a read (`createFocusArea` with
+    `from_insight_id`, `createFocusAreaFromInsightV2`,
+    `createFocusAreaFromInsight`) gets `assigned_by` and
+    `check_after_rounds` (3) and, when the read's metric has a verdict
+    source and a team prior (`standing.team_avg`, `team_n` ≥ 4),
+    `baseline_n`, `baseline_shrunk` = (n·y + κ·μ)/(n + κ) (κ 30 attempts),
+    `criterion` and `horizon`, in a second best-effort write after the
+    insert. Threshold = shrunk + max(0.5 × gap to team, 5 points), rounded
+    to a whole percent; a coach target on the improving side wins. Horizon
+    = attempts at which a post rate at the threshold separates from the
+    shrunk baseline at one-sided 90%, rounded up to 5 and held between the
+    family's say and Clear floors (putts 20 / 40). Rates are proportions.
+  - Verdict sources: putt bands `putts_made_*ft_pct` from `golf_shots`
+    (banded like `update_player_putt_make_pct`), and `fairways_hit_pct`,
+    `gir_pct`, `scrambling_pct`, `sand_save_pct` / `scrambling_pct_sand`
+    from `golf_round_stats_cache` counts. Anything else has no criterion
+    and no verdict.
+  - Verdict: the lifecycle cron (`coachhelm-insight-lifecycle`) counts whole
+    non-test rounds from `started_at` until the horizon is reached and
+    writes `verdict` once (worked, moved, did not move, got worse) from the
+    one-sided 90% bound vs `baseline_shrunk`; short of the horizon nothing
+    is written. `status` and `outcome_status` are never written. "Got
+    worse" puts one in-app bell row in front of the area's coach (no push,
+    nothing to the player).
+  - Missing columns (42703 / 42P01 / PGRST204 / PGRST205) read as "not
+    available"; flag off, nothing is read or written and the create
+    inserts exactly as before. A guard trigger in the migration lets only
+    a coach on the player's team change the prescription columns and
+    nobody but the service role change `verdict`.
+
 ## UI Contract
 
 - Player CoachHelm should explain what changed, why it matters, and what action to take next.

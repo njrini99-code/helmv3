@@ -4,7 +4,8 @@
  * | Rung               | Gate (all must hold)                                                 |
  * | ------------------ | -------------------------------------------------------------------- |
  * | Seen repeatedly    | Observed and (split-half agrees or >= 2 checkpoints held); a printed  |
- * |                    | WHY path must lead in both halves                                     |
+ * |                    | WHY path must lead in both halves (no evidence carries that yet, so  |
+ * |                    | a read worded with a counted path stops at Observed)                 |
  * | Observed           | q <= 0.10, 95% range excludes 0, n >= 2 × floor, >= 3 rounds,         |
  * |                    | S >= 0.3; a printed WHY is a counted sequence that meets its floors   |
  * | Likely             | q <= 0.10, >= 3 rounds, S >= 0.3, but range includes 0 or             |
@@ -27,6 +28,11 @@
  *     at Working hypothesis (coach only) instead of reaching a player.
  *   - Below the practical floor with a real estimate is Not enough yet ("not a
  *     read", 02 §2).
+ *   - Reasons come out BINDING first: an untestable read first; then the floor
+ *     shortfall furthest from passing (smallest have / need; rounds unknown
+ *     counts as 0); then "not supported"; then the practical floor. The run
+ *     log counts the first reason, so it names what is actually holding a
+ *     read back rather than whichever check ran first.
  *
  * Pure.
  */
@@ -74,11 +80,11 @@ export interface LadderInput {
   roundsN: number | null;
   /** Round floor for this family (>= {@link ROUND_FLOOR}). */
   roundFloor?: number;
+  /** Per-arm floors of a two-arm contrast (have / need); empty or absent for one sample. */
+  arms?: ReadonlyArray<{ have: number | null; need: number }>;
   /** Raw strokes a round at stake in the read's direction; null when never estimated. */
   strokes: number | null;
   why: WhyState;
-  /** Counted WHY path leads the failure list in both halves (Seen repeatedly with a path). */
-  whyLeadsBothHalves?: boolean;
   /** Split-half agreement; null when the halves were not computed. */
   stabilityAgrees: boolean | null;
   checkpointsHeld?: number;
@@ -91,7 +97,7 @@ export interface LadderResult {
   what_ladder: LadderRung;
   /** Clear support: q <= 0.10, range excludes 0, n >= 2 × floor. */
   clear: boolean;
-  /** Machine-readable reasons, strongest constraint first. */
+  /** Machine-readable reasons, the binding constraint first. */
   reasons: string[];
 }
 
@@ -109,15 +115,29 @@ export function rungAtLeast(a: LadderRung, b: LadderRung): boolean {
   return rank(a) >= rank(b);
 }
 
+function ratio(have: number | null, need: number): number {
+  if (have === null || !Number.isFinite(have)) return 0;
+  return need > 0 ? Math.max(0, have) / need : 1;
+}
+
 export function assignLadder(input: LadderInput): LadderResult {
   const reasons: string[] = [];
   const roundFloor = Math.max(ROUND_FLOOR, input.roundFloor ?? ROUND_FLOOR);
   const floor = Math.max(1, input.floor);
 
+  // Floor shortfalls, ordered by how far each is from passing (stable).
+  const shortfalls: Array<{ reason: string; ratio: number }> = [];
+  if (input.roundsN === null) shortfalls.push({ reason: 'rounds_unknown', ratio: 0 });
+  else if (input.roundsN < roundFloor) shortfalls.push({ reason: 'below_round_floor', ratio: ratio(input.roundsN, roundFloor) });
+  if (!(input.n >= floor)) shortfalls.push({ reason: 'below_attempt_floor', ratio: ratio(input.n, floor) });
+  const armRatios = (input.arms ?? [])
+    .filter((a) => !(a.have !== null && a.have >= a.need))
+    .map((a) => ratio(a.have, a.need));
+  if (armRatios.length > 0) shortfalls.push({ reason: 'below_arm_floor', ratio: Math.min(...armRatios) });
+  shortfalls.sort((a, b) => a.ratio - b.ratio);
+
   if (input.q === null) reasons.push('untestable');
-  if (input.roundsN === null) reasons.push('rounds_unknown');
-  else if (input.roundsN < roundFloor) reasons.push('below_round_floor');
-  if (!(input.n >= floor)) reasons.push('below_attempt_floor');
+  for (const f of shortfalls) reasons.push(f.reason);
   if (input.q !== null && !(input.q <= BH_Q)) reasons.push('not_supported');
   if (input.strokes !== null && !(input.strokes >= STROKES_FLOOR)) reasons.push('below_strokes_floor');
 
@@ -158,7 +178,9 @@ export function assignLadder(input: LadderInput): LadderResult {
       if (rank(what) > rank('likely')) reasons.push('cause_inferred_from_totals');
       break;
     case 'observed_sequence':
-      if (worded === 'seen_repeatedly' && input.whyLeadsBothHalves !== true) {
+      // The path would have to lead the failure list in both halves; no
+      // evidence carries per-half paths yet, so the worded read stops here.
+      if (worded === 'seen_repeatedly') {
         worded = 'observed';
         reasons.push('cause_path_one_window');
       }

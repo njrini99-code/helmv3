@@ -28,8 +28,8 @@ import {
 } from './stats-common';
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, type ChFilter, type ChFilterOptions } from './stats-filter';
-import { effectiveCount, effectiveRounds, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
-import { changeSe } from '../lib/stats-signal';
+import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
+import { changeSe, meanSe, type SpreadKind } from '../lib/stats-signal';
 
 /**
  * Team Stats (Clubhouse). Trends and strokes gained first; the owner removed
@@ -73,6 +73,19 @@ export interface ChFigure {
   gauge?: ChGauge;
 }
 
+/** One figure's sample: whole rounds (a nine-hole round is half) and the standard error of the mean; null with no round values. */
+export interface ChRankSample {
+  n: number;
+  se: number | null;
+}
+
+/** A grid row's samples: strokes gained total, each leg in `LEGS` order, and the scoring average. */
+export interface ChRankSpread {
+  sg: ChRankSample;
+  legs: ChRankSample[];
+  score: ChRankSample;
+}
+
 export type ChGauge =
   | { kind: 'sg' }
   | { kind: 'par'; toPar: number | null }
@@ -105,7 +118,22 @@ export interface ChTeamStats {
   team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null };
   players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
-  grid: Array<{ id: string; name: string; rounds: number; legs: Array<number | null>; total: number | null; change: number | null; /** Scoring average over the window's rounds, per 18 holes (the phone's player list). */ avg: number | null }>;
+  grid: Array<{
+    id: string;
+    name: string;
+    rounds: number;
+    legs: Array<number | null>;
+    total: number | null;
+    change: number | null;
+    /** Scoring average over the window's rounds, per 18 holes (the phone's player list). */
+    avg: number | null;
+    /**
+     * How sure each of the row's figures is, for the ranked dot plot (TeamRank): the whole rounds behind it and the standard error
+     * of its mean, from the player's own per-18 round values (their spread from five rounds, the pooled one below). Absent on a
+     * row built elsewhere; the plot then falls back on the pooled spread over `rounds`.
+     */
+    spread?: ChRankSpread;
+  }>;
   /** The team's strokes gained per round in each leg over the window, against the baseline; null with no strokes gained (the phone's leg bars). */
   legTotals: Array<number | null>;
   putting: { bands: Array<{ label: string; made: number; attempts: number; bench: number | null }>; putts: number } | null;
@@ -320,7 +348,17 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       const half = Math.floor(sgMine.length / 2);
       const sgOf = (r: ChRound) => r.strokes_gained_total;
       const change = effectiveCount(sgMine, sgOf) >= 4 ? (weightedMean(sgMine.slice(sgMine.length - half), sgOf) ?? 0) - (weightedMean(sgMine.slice(0, half), sgOf) ?? 0) : null;
-      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg };
+      // The ranked dot plot's whiskers: each figure's own round values from the rounds it reads (no new read).
+      const sample = (rs: ChRound[], pick: (r: ChRound) => number | null, kind: SpreadKind): ChRankSample => {
+        const v = roundValues(rs, pick);
+        return { n: v.n, se: meanSe(v.values, kind, v.n) };
+      };
+      const spread: ChRankSpread = {
+        sg: sample(mineHoles, sgOf, 'sg'),
+        legs: LEGS.map((_, i) => sample(mineHoles, (r) => sgLegs(r)[i] ?? null, 'sg')),
+        score: sample(mine.filter((r) => r.total_score != null), (r) => r.total_score, 'score'),
+      };
+      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread };
     })
     .filter((g) => g.rounds > 0);
 

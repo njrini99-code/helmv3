@@ -1,5 +1,45 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-20 — Team ranking dot plot (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, spec 4.5, decision Q10)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   40101, 42001 (wording)
+Actions:        none
+Data impact:    grid rows gain spread (from rounds already read)
+Held items:     none
+```
+
+### Changed
+
+- New "Who gains and loses" section (`TeamRank`) after the figures and the
+  trend, before the leg cards and the grid: a ranked dot plot, one row per
+  player, one figure at a time from a compact menu (strokes gained, each leg,
+  scoring). Each dot is the player's mean with a whisker of one standard
+  error ("likely range"); a dashed line is the team's mean; zero is the
+  stronger grid line on strokes gained.
+- Rows are in order of the dot. A player closer than one standard error of
+  the difference to the head of the run above shares its rank ("T3") and
+  keeps their order (`rankWithTies`; a chain of near neighbors does not stretch
+  a tie). Better is to the right for every figure; the scoring
+  average runs the other way and says "lower is better" once in the caption.
+- Floors follow `sampleState`: an early read is a hollow dot with no gain or
+  loss color and a note naming who; under the show floor a player's row sits
+  below the axis with "Needs 3 rounds" (5 for around the green and putting)
+  and no dot or rank.
+- A pointer, a tap or the arrow keys read a player in the line above
+  ("Sofia Alvarez · +1.2 a round · T1 of 6 · 10 rounds · likely range +0.5
+  to +1.9 · team −0.5"); a tap or a key pins and announces it and shows
+  "Open player"; a second tap on the pinned row, or Enter, opens the player.
+- Phone: the same plot as an inset panel between strokes gained by leg and
+  Players, with 44px rows, short names ("Theo M.") and the native menu.
+- The grid ledger stays as the table view and the CSV export.
+- Data: each grid row carries `spread` (whole rounds and the standard error
+  of the mean for strokes gained, each leg and the scoring average) from the
+  player's per-18 round values in rounds the loader already reads; the
+  pooled spread under five rounds. No query, table or migration change.
+
 ## 2026-10-20 — No visible change (stats visuals 6)
 
 ```text

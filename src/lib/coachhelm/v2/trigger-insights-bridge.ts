@@ -89,7 +89,7 @@ export interface TriggerPlayerInsightsResult {
 /**
  * Per-call options. `runTrigger` labels the engine run in the CoachHelm run
  * log (Slice 1, flag `coachhelm_support_v1`): 'round' after a submitted round,
- * 'checkpoint' for the safety-net cron's re-run of a round whose analysis did
+ * 'safety_net' for the safety-net cron's re-run of a round whose analysis did
  * not finish, 'sweep' for the roster sweep, 'manual' for a coach refresh.
  */
 export interface TriggerPlayerInsightsOptions {
