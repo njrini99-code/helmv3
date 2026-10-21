@@ -3,7 +3,10 @@
  *
  * Walks every non-terminal insight and applies the four rules from the
  * design contract at docs/superpowers/plans/2026-04-22-insight-quality/
- * 00-design-contract.md:
+ * 00-design-contract.md. With `coachhelm_recheck_v1` on (CoachHelm Slice 3,
+ * off by default), Rules 2 and 3 skip v3 reads: the round-based lifecycle
+ * step (`runCheckpointLifecycle`, src/lib/coachhelm/v3/lifecycle/job.ts),
+ * which runs after the scan, archives them instead. Flag off: unchanged.
  *
  *   1. addressed → resolved when `evidence.your_value` is in the healthy band
  *      for 2 consecutive evaluation cycles. "Healthy" is DIRECTION-AWARE
@@ -55,6 +58,11 @@
  *      write carrying freshly recomputed evidence may (see
  *      v2/insights/lifecycle-policy.ts).
  *
+ * After the rollups, the Slice 4 verdict step (`runFocusAreaVerdicts`,
+ * src/lib/coachhelm/v3/verdicts/verdict-job.ts) judges focus areas that have
+ * reached their horizon. It is behind `coachhelm_verdicts_v1` (off) and
+ * returns without a query while the flag is off.
+ *
  * Schedule: `0 4 * * *` (see vercel.json).
  * Auth:     Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
@@ -69,6 +77,9 @@ import { notifyInsightResolved } from '@/lib/notifications/insight-notifier';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { isNegativePolarityMetric } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import { runFocusAreaVerdicts } from '@/lib/coachhelm/v3/verdicts/verdict-job';
+import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
+import { runCheckpointLifecycle } from '@/lib/coachhelm/v3/lifecycle/job';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -95,6 +106,7 @@ interface InsightRow {
   id: string;
   player_id: string | null;
   category: string | null;
+  engine_version?: string | null;
   lifecycle_state: InsightLifecycleState | null;
   evidence: InsightEvidence | null;
   metadata: JsonRecord | null;
@@ -164,6 +176,8 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
   const now = Date.now();
   const staleBeforeIso = new Date(now - STALE_EVALUATION_MS).toISOString();
   let cursor = parseCursor(req.nextUrl.searchParams.get('cursor'));
+  // Slice 3: with the flag on, v3 reads leave the age rules (2, 3).
+  const roundBasedArchive = isRecheckEnabled();
 
   type EvaluatedRow = {
     id: string;
@@ -188,7 +202,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     const limit = Math.min(PAGE_SIZE, remaining);
     let query = supabase
       .from('golf_coach_insights')
-      .select('id, player_id, category, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at, updated_at')
+      .select('id, player_id, category, engine_version, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at, updated_at')
       .in('lifecycle_state', ['tentative', 'detected', 'matured', 'addressed'])
       .lt('updated_at', staleBeforeIso)
       .order('updated_at', { ascending: true })
@@ -242,7 +256,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     const evaluated: EvaluatedRow[] = [];
     for (const row of page) {
       try {
-        const patch = evaluateRow(row, now, nowIso);
+        const patch = evaluateRow(row, now, nowIso, roundBasedArchive);
         if (!patch) continue;
         evaluated.push({
           id: row.id,
@@ -354,6 +368,22 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     reachedRunLimit = scannedCount >= MAX_ROWS_PER_RUN;
   }
 
+  // Slice 3 (coachhelm_recheck_v1, off: returns without a query):
+  // checkpoints, recheck, Contradicted pairing, Under review and round-based
+  // archive for v3 reads. After the scan (its writes bump updated_at, which
+  // the scan's 6-hour staleness filter would otherwise trip over tonight)
+  // and before the rollups and verdicts. A failure must not mask the scan.
+  let checkpointResult: Awaited<ReturnType<typeof runCheckpointLifecycle>> | null = null;
+  try {
+    checkpointResult = await runCheckpointLifecycle(supabase);
+  } catch (err) {
+    await logServerError(
+      `cron.insight_lifecycle.checkpoint_lifecycle failed: ${describeError(err)}`,
+      { action: 'cron.coachhelm.insight_lifecycle.checkpoint_lifecycle', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+
   // After lifecycle progression, run the analytics rollups so
   // golf_insight_effectiveness and golf_prediction_model_performance fill.
   // Failures here MUST NOT mask lifecycle progression success.
@@ -378,8 +408,22 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Slice 4 verdicts (coachhelm_verdicts_v1, off: returns without a query).
+  // A failure here, like the rollups', must not mask lifecycle progression.
+  let verdictResult: Awaited<ReturnType<typeof runFocusAreaVerdicts>> | null = null;
+  try {
+    verdictResult = await runFocusAreaVerdicts(supabase);
+  } catch (err) {
+    await logServerError(
+      `cron.insight_lifecycle.focus_area_verdicts failed: ${describeError(err)}`,
+      { action: 'cron.coachhelm.insight_lifecycle.focus_area_verdicts', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+
   return NextResponse.json({
     success: true,
+    checkpoint_lifecycle: checkpointResult,
     total: scannedCount,
     stale_before: staleBeforeIso,
     max_rows_per_run: MAX_ROWS_PER_RUN,
@@ -393,6 +437,7 @@ async function handleLifecycle(req: NextRequest): Promise<NextResponse> {
     lost_cas_race: lostCasRaceCount,
     effectiveness_rollup: effectivenessResult,
     prediction_rollup: predictionResult,
+    focus_area_verdicts: verdictResult,
   });
 }
 
@@ -422,7 +467,12 @@ function healthyCycleEvidenceKey(evidence: InsightEvidence): string {
  * change is needed. Exported-for-test would be nice but keeping private
  * since the cron is exercised end-to-end.
  */
-function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatch | null {
+function evaluateRow(
+  row: InsightRow,
+  nowMs: number,
+  nowIso: string,
+  roundBasedArchive = false,
+): UpdatePatch | null {
   const patch: UpdatePatch = { updated_at: nowIso };
   let changed = false;
 
@@ -443,9 +493,12 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
     parseMetadataMs(metadata.redetected_at),
   );
   const staleDays = Math.max(0, (nowMs - lastAliveMs) / MS_PER_DAY);
+  // Slice 3: a v3 read under the round-based lifecycle never archives on age.
+  const ageArchiveApplies = !(roundBasedArchive && row.engine_version === 'v3');
 
   // --- Rule 3: hard archive at >90d stale if not matured and not addressed ---
   const isHardArchivable =
+    ageArchiveApplies &&
     staleDays > ARCHIVE_HARD_AGE_DAYS &&
     lifecycle !== 'matured' &&
     lifecycle !== 'addressed';
@@ -474,6 +527,7 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
     ? (metadata.movement_count as number)
     : 0;
   const isSoftArchivable =
+    ageArchiveApplies &&
     lifecycle === 'detected' &&
     staleDays > ARCHIVE_DETECTED_AGE_DAYS &&
     movementCount === 0 &&

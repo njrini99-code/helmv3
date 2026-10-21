@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildCandidate, teamPoolPriorOf } from '../candidate';
+import { buildCandidate, teamPoolLineOf } from '../candidate';
 import { evaluatePlayerRun, type SupportRow } from '../evaluate';
 
-// Slice 7a: with coachhelm_team_pool_v1 on, the shrink prior is the team
-// pool the row carries (evidence.comparison.primary), else Slice 1's prior.
-// Synthetic rows only.
+// Slice 7a: with coachhelm_team_pool_v1 on, a row carrying a team pool line
+// (evidence.comparison.primary) is tested against the pool with its exact
+// pooled count and shrinks toward it; off, or without the line, Slice 1b's
+// leave-one-out team mean stands. Synthetic rows only.
 
 const TEAM_POOL_LINE = {
   source: 'team_pool',
@@ -31,7 +32,7 @@ function puttDistance(withPool: boolean): SupportRow {
       strokes_impact: 0.8,
       strokes_impact_method: 'peer_delta',
       detail: { band_attempts: 80, rounds_played: 10 },
-      standing: { team_avg: 80, team_n: 8 },
+      standing: { team_avg: 80, team_n: 8, player_value: 60 },
       ...(withPool
         ? { comparison: { primary: TEAM_POOL_LINE, lines: [TEAM_POOL_LINE] } }
         : {}),
@@ -59,39 +60,62 @@ function penalty(withPool: boolean): SupportRow {
   };
 }
 
-describe('team pool as the shrink prior (Slice 7a)', () => {
+describe('team pool benchmark and prior (Slice 7a on Slice 1b)', () => {
   it('reads the team pool line only when it is a usable team_pool primary', () => {
-    expect(teamPoolPriorOf({ comparison: { primary: TEAM_POOL_LINE } })).toEqual({ source: 'team_pool', value: 72 });
-    expect(teamPoolPriorOf({})).toBeNull();
-    expect(teamPoolPriorOf({ comparison: { primary: { ...TEAM_POOL_LINE, source: 'tour' } } })).toBeNull();
-    expect(teamPoolPriorOf({ comparison: { primary: { ...TEAM_POOL_LINE, n: 0 } } })).toBeNull();
-    expect(teamPoolPriorOf({ comparison: { primary: { ...TEAM_POOL_LINE, value: null } } })).toBeNull();
+    expect(teamPoolLineOf({ comparison: { primary: TEAM_POOL_LINE } })).toEqual({ value: 72, n: 240, players: 6 });
+    expect(teamPoolLineOf({})).toBeNull();
+    expect(teamPoolLineOf({ comparison: { primary: { ...TEAM_POOL_LINE, source: 'tour' } } })).toBeNull();
+    expect(teamPoolLineOf({ comparison: { primary: { ...TEAM_POOL_LINE, n: 0 } } })).toBeNull();
+    expect(teamPoolLineOf({ comparison: { primary: { ...TEAM_POOL_LINE, value: null } } })).toBeNull();
+    // A Slice 5a angle's own team_pool primary (a teammates' median, n = players) is not a pool.
+    expect(
+      teamPoolLineOf({ comparison: { primary: { source: 'team_pool', label: "Teammates' median", value: 62, n: 6 } } }),
+    ).toBeNull();
+    expect(teamPoolLineOf({ comparison: { primary: { ...TEAM_POOL_LINE, players: undefined } } })).toBeNull();
   });
 
-  it('shrinks toward the team pool with the option on', () => {
-    const pd = evaluatePlayerRun([puttDistance(true)], { teamPoolPrior: true }).rows[0].patch;
-    expect(pd.shrink).toMatchObject({ prior_source: 'team_pool', prior_value: 72 });
-    // The gap test still runs against Slice 1's benchmark: only the prior moved.
-    expect(pd.support.benchmark).toMatchObject({ source: 'team', value: 80 });
+  it('tests against the pool with its exact pooled count and shrinks toward it (flag on)', () => {
+    const c = buildCandidate(puttDistance(true), { teamPool: true });
+    expect(c.benchmark).toEqual({ source: 'team', value: 72, basis: 'team_pool', pool_n: 6, pooled_n: 240 });
+    // The pooled putts, not 1b's "each teammate putted as often as you" (80 × 7).
+    expect(c.gapInput).toMatchObject({ kind: 'proportion', k: 48, n: 80, benchmark: 0.72, benchmarkN: 240 });
+    expect(c.prior).toEqual({ source: 'team_pool', value: 72 });
+
+    const patch = evaluatePlayerRun([puttDistance(true)], { teamPool: true }).rows[0]!.patch;
+    expect(patch.shrink).toMatchObject({ prior_source: 'team_pool', prior_value: 72 });
+    expect(patch.support.benchmark).toEqual({ source: 'team', value: 72 });
+    expect(patch.support.benchmark_basis).toBe('team_pool');
+    expect(patch.support.benchmark_variance).toBe(true);
   });
 
-  it('keeps Slice 1 prior when the option is off, even with a pool on the row', () => {
-    const on = evaluatePlayerRun([puttDistance(true)]).rows[0].patch;
-    const plain = evaluatePlayerRun([puttDistance(false)]).rows[0].patch;
-    expect(on.shrink).toMatchObject({ prior_source: 'team', prior_value: 80 });
+  it('is exactly Slice 1b with the flag off, even with a pool on the row', () => {
+    const on = evaluatePlayerRun([puttDistance(true)]).rows[0]!.patch;
+    const plain = evaluatePlayerRun([puttDistance(false)]).rows[0]!.patch;
     expect(on).toEqual(plain);
+    expect(on.support.benchmark_basis).toBe('team_loo');
+    expect(on.shrink).toMatchObject({ prior_source: 'team' });
+    expect(buildCandidate(puttDistance(true)).gapInput).toMatchObject({ benchmarkN: 80 * 7 });
   });
 
-  it('falls back to Slice 1 prior when the row has no pool line', () => {
-    const pd = evaluatePlayerRun([puttDistance(false)], { teamPoolPrior: true }).rows[0].patch;
-    const off = evaluatePlayerRun([puttDistance(false)]).rows[0].patch;
-    expect(pd).toEqual(off);
-    expect(pd.shrink).toMatchObject({ prior_source: 'team', prior_value: 80 });
+  it('falls back to Slice 1b when the row has no pool line', () => {
+    const on = evaluatePlayerRun([puttDistance(false)], { teamPool: true }).rows[0]!.patch;
+    const off = evaluatePlayerRun([puttDistance(false)]).rows[0]!.patch;
+    expect(on).toEqual(off);
+    expect(on.support.benchmark_basis).toBe('team_loo');
   });
 
-  it('uses the per-round pool for a rate read', () => {
-    const c = buildCandidate(penalty(true), { teamPoolPrior: true });
+  it('uses the pooled rounds for a per-round rate', () => {
+    const c = buildCandidate(penalty(true), { teamPool: true });
     expect(c.prior).toEqual({ source: 'team_pool', value: 0.6 });
-    expect(buildCandidate(penalty(true)).prior).toEqual(buildCandidate(penalty(false)).prior);
+    expect(c.benchmark).toMatchObject({ basis: 'team_pool', value: 0.6, pooled_n: 212 });
+    expect(c.gapInput).toMatchObject({ kind: 'rate_per_round', benchmark: 0.6, benchmarkRounds: 212 });
+    expect(buildCandidate(penalty(true))).toEqual(buildCandidate(penalty(false)));
+  });
+
+  it('applies to gated rows too, so BH sees the same tests', () => {
+    const run = evaluatePlayerRun([puttDistance(true)], { teamPool: true, gated: [penalty(true)] });
+    const off = evaluatePlayerRun([puttDistance(true)], { gated: [penalty(true)] });
+    expect(run.rows[0]!.patch.support.m_basis).toMatchObject({ m_gated: 1 });
+    expect(run.rows[0]!.patch.support.p_bh).not.toEqual(off.rows[0]!.patch.support.p_bh);
   });
 });

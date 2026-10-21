@@ -23,13 +23,14 @@
  * Failure-isolated: every error is logged and swallowed; the engine run that
  * called it is never failed by it.
  */
+import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import type { Database, Json } from '@/lib/types/database';
-import { evaluatePlayerRun, SUPPORT_VERSION, type RunSummary } from './evaluate';
+import { evaluatePlayerRun, SUPPORT_VERSION, type RunSummary, type SupportRow } from './evaluate';
 import { isSupportPassEnabled } from './flag';
 import { teamPoolEnabled } from '@/lib/coachhelm/v3/team-pool/flag';
 import { buildRunLogRow, writeRunLog, type RunLogWriteResult, type RunTrigger } from './run-log';
@@ -48,6 +49,10 @@ export interface SupportPassOptions {
   /** The insight ids this run's generators and composites upserted
    *  (`createRunInsightCollector().ids()`). BH runs over exactly these. */
   insightIds: readonly string[];
+  /** Rows the philosophy gate held back this run (`collector.gated()`): in BH's m, never written. */
+  gated?: readonly SupportRow[];
+  /** Writes `upsertInsight` refused this run (`collector.refused()`): in BH's m at p = 1. */
+  refused?: number;
   trigger?: RunTrigger;
   /** Test seams. */
   supabase?: SupabaseClient<Database>;
@@ -59,6 +64,10 @@ export interface SupportPassOptions {
 const NEWEST_ROUND_SCAN = 20;
 /** PostgREST `.in()` chunk: keeps the request URL well under its limit. */
 const ID_CHUNK = 100;
+/** Evidence updates in flight at once. Each is a compare-and-set on its own
+ *  row's `updated_at`, so they cannot be folded into one upsert without
+ *  losing that guard; a bounded fan-out keeps the guard and the pool small. */
+const UPDATE_CONCURRENCY = 8;
 
 async function newestCountableRoundId(supabase: SupabaseClient<Database>, playerId: string): Promise<string | null> {
   const { data, error } = await supabase
@@ -69,7 +78,15 @@ async function newestCountableRoundId(supabase: SupabaseClient<Database>, player
     .eq('status', 'completed')
     .order('round_date', { ascending: false })
     .limit(NEWEST_ROUND_SCAN);
-  if (error || !data) return null;
+  if (error) {
+    await logServerEvent(
+      `coachhelm support pass newest-round query failed for player=${playerId}`,
+      { action: 'coachhelm.support.newestRound', featureArea: 'coachhelm', playerId, metadata: { dbError: toDbErrorMetadata(error) } },
+      'warning',
+    );
+    return null;
+  }
+  if (!data) return null;
   // The one countable-round rule (src/lib/golf/round-countable.ts): complete,
   // non-test, a supported length, fully recorded and plausible.
   return data.find((r) => isCountableRound(r))?.id ?? null;
@@ -115,15 +132,25 @@ export async function runSupportPass(opts: SupportPassOptions): Promise<SupportP
       return null;
     }
     const list = rows;
-    // Slice 7a: shrink toward the team pool (prior_source 'team_pool') when the row carries one and the flag is on.
-    const evaluation = evaluatePlayerRun(list, { teamPoolPrior: teamPoolEnabled() });
+    // The run-log row's id is minted here so every row this pass writes can
+    // carry it (`support.run_id`) next to `support.run_at` (finding 9).
+    const runAt = new Date().toISOString();
+    const runId = randomUUID();
+    // Slice 7a: test and shrink against a row's team pool line when the flag is on.
+    const evaluation = evaluatePlayerRun(list, {
+      gated: opts.gated,
+      refused: opts.refused,
+      runAt,
+      runId,
+      teamPool: teamPoolEnabled(),
+    });
 
     let rowsUpdated = 0;
     let rowsSkipped = 0;
     const byId = new Map(list.map((r) => [r.id, r]));
-    for (const evaluated of evaluation.rows) {
+    const writeOne = async (evaluated: (typeof evaluation.rows)[number]): Promise<void> => {
       const row = byId.get(evaluated.id);
-      if (!row) continue;
+      if (!row) return;
       const base =
         row.evidence && typeof row.evidence === 'object' && !Array.isArray(row.evidence)
           ? (row.evidence as Record<string, unknown>)
@@ -139,20 +166,24 @@ export async function runSupportPass(opts: SupportPassOptions): Promise<SupportP
           { action: 'coachhelm.support.pass', featureArea: 'coachhelm', playerId, metadata: { dbError: toDbErrorMetadata(updateError) } },
           'warning',
         );
-        continue;
+        return;
       }
       // Zero rows: a newer write landed between the read and this update; its
       // own run's pass will stamp it.
       if (!updated || updated.length === 0) rowsSkipped += 1;
       else rowsUpdated += 1;
+    };
+    for (let i = 0; i < evaluation.rows.length; i += UPDATE_CONCURRENCY) {
+      await Promise.all(evaluation.rows.slice(i, i + UPDATE_CONCURRENCY).map(writeOne));
     }
 
     const newestRoundId = await newestCountableRoundId(supabase, playerId);
     const runLog = await writeRunLog(
       supabase,
       buildRunLogRow({
+        id: runId,
         playerId,
-        runAt: new Date().toISOString(),
+        runAt,
         trigger: opts.trigger ?? 'unspecified',
         newestRoundId,
         summary: evaluation.summary,

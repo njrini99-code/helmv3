@@ -114,4 +114,45 @@ describe('attachTeamPool', () => {
     // No round falls in Oct 1-20.
     expect(out).toBe(evidence);
   });
+
+  describe('a read that composed its own comparison (Slice 5a angle shape)', () => {
+    const angleComparison = {
+      primary: { source: 'tour', label: 'PGA Tour average', value: 0.9, n: null },
+      lines: [
+        { source: 'tour', label: 'PGA Tour average', value: 0.9, n: null },
+        { source: 'self_other', label: 'Your other holes', value: 0.4, n: 120 },
+      ],
+    };
+
+    it('an angle family no pool measures: unchanged and nothing read', async () => {
+      flag.on = true;
+      const angle = {
+        ...evidence,
+        metric: 'three_putts_per_18',
+        comparison: angleComparison,
+      } as unknown as InsightEvidence;
+      const out = await attachTeamPool({ supabase, playerId: 'me', insightType: 'putting', evidence: angle });
+      expect(out).toBe(angle);
+      expect(resolvePlayerTeam).not.toHaveBeenCalled();
+    });
+
+    it('a pooled family: keeps the primary and every composed line, adds the team line last', async () => {
+      flag.on = true;
+      const composed = { ...evidence, comparison: angleComparison } as unknown as InsightEvidence;
+      const out = await attachTeamPool({ supabase, playerId: 'me', insightType: 'putt_distance', evidence: composed });
+      expect(out.comparison?.primary).toEqual(angleComparison.primary);
+      expect(out.comparison?.lines.slice(0, 2)).toEqual(angleComparison.lines);
+      expect(out.comparison?.lines.map((l) => l.source)).toEqual(['tour', 'self_other', 'team_pool']);
+      expect(out.comparison?.lines[2]).toMatchObject({ source: 'team_pool', value: 70, n: 200 });
+      // The input is not mutated.
+      expect(angleComparison.lines).toHaveLength(2);
+    });
+
+    it('never adds a second team line', async () => {
+      flag.on = true;
+      const once = await attachTeamPool({ supabase, playerId: 'me', insightType: 'putt_distance', evidence });
+      const twice = await attachTeamPool({ supabase, playerId: 'me', insightType: 'putt_distance', evidence: once });
+      expect(twice).toBe(once);
+    });
+  });
 });

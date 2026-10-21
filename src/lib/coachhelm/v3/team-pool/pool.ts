@@ -413,9 +413,21 @@ export function teamPoolLine(pool: TeamPool): ComparisonLine {
  * Nothing else changes: the flat `comparison_*` fields, the standing block and
  * the strokes arithmetic stay on the Tour (`02` §3: "Strokes use the Tour
  * baseline; words use your team").
+ *
+ * A read that already composed its own `comparison` (the Slice 5a insight
+ * angles write `{ primary, lines }` matched to their own test) keeps it: its
+ * primary and every one of its lines stay, and the team line is added as a
+ * further line unless one is already there. The angle's words and its gap
+ * test then still agree.
  */
 export function withTeamComparison<E extends InsightEvidence>(evidence: E, pool: TeamPool): E {
   const team = teamPoolLine(pool);
+  const composed = evidence.comparison;
+  if (composed && typeof composed === 'object' && composed.primary) {
+    const existing = Array.isArray(composed.lines) ? composed.lines : [composed.primary];
+    if (existing.some((l) => l?.source === 'team_pool')) return evidence;
+    return { ...evidence, comparison: { ...composed, lines: [...existing, team] } };
+  }
   const lines: ComparisonLine[] = [team];
   if (evidence.comparison_source === 'pga_baseline' && Number.isFinite(evidence.comparison_value)) {
     lines.push({

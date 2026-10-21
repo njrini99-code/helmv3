@@ -14,7 +14,10 @@ import type { ComparisonLine, InsightEvidence } from '@/lib/coachhelm/v2/insight
  */
 export function teamPoolLine(ev: Pick<InsightEvidence, 'comparison'> | null | undefined): string | null {
   const p = ev?.comparison?.primary;
-  if (!p || p.source !== 'team_pool') return null;
+  // Only the 7a pooled shape (it says what `n` counts and how many teammates
+  // are in it); a Slice 5a angle's own `team_pool` median keeps its own words.
+  if (!p || p.source !== 'team_pool' || typeof p.n_unit !== 'string') return null;
+  if (typeof p.players !== 'number' || !(p.players > 0)) return null;
   if (typeof p.value !== 'number' || !Number.isFinite(p.value)) return null;
   if (typeof p.n !== 'number' || !Number.isFinite(p.n) || p.n <= 0) return null;
   const noun = p.n_noun ?? p.n_unit ?? '';

@@ -28,6 +28,39 @@ Held items:     none
   comparison, in both voices, and a row without it reads as before.
 - Phone screenshot (390 × 844) of the preview state.
 
+## 2026-10-20 — Board and Deep dive keep the reads past the feed cap
+
+```text
+Design package: none (CoachHelm supercharge, Slice 0 delivery)
+PR/commit:      see git log (claude/coachhelm-delivery)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (read-only; no stored row changes)
+Held items:     none
+```
+
+### Changed
+
+- `data/coachhelm.ts` (the player Board) and `data/coachhelm-dive.ts` (the
+  Deep dive) read the feed with `includeMore: true`. Nothing is drawn
+  differently: with the flag `coachhelm_reads_v1_copy` off (everywhere
+  today) the option does nothing.
+
+### Why
+
+- With that flag on, `getInsightsForPlayer` holds each player's feed to 3
+  open reads and 1 strength, the same 3 + 1 the Board draws. The Board
+  already caps itself and counts the rest into the Deep dive, and the Deep
+  dive lists every read, so both ask for the whole list. Overlapping reads
+  (driver with penalties, for example) still fold into one for them, as on
+  every other surface.
+
+### Verification
+
+- `coachhelm.test.tsx`, `coachhelm-reads.test.ts` and
+  `coachhelm-dive.test.tsx` check the Board and the Deep dive ask for the
+  whole list. No screenshot: nothing is drawn differently.
+
 ## 2026-10-20 — Player board: three reads and one strength; no zero strokes
 
 ```text

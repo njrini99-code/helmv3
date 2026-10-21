@@ -19,6 +19,8 @@ import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
 import { describeWrongWayTarget } from '@/lib/coachhelm/focus-areas/direction';
+import { stampPrescriptionFromRead } from '@/lib/coachhelm/v3/verdicts/stamp-prescription';
+import { isVerdictsEnabled } from '@/lib/coachhelm/v3/verdicts/flag';
 
 // ============================================================================
 // TYPES
@@ -443,7 +445,10 @@ async function createFocusAreaImpl(
 
   // The team the focus area belongs to is the coach's own team the player was just confirmed on: the player's CoachHelm
   // reads their proposals by team. The coach is the authenticated caller, never the id the browser sent.
-  const { error } = await fromUntyped(supabase, 'golf_player_focus_areas').insert({
+  // Slice 4: a create linked to a read gets its prescription stamped after the
+  // insert, which needs the new id. Flag off, the insert is exactly as before.
+  const stampFromRead = !!data.from_insight_id && isVerdictsEnabled();
+  const insertQuery = fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
     team_id: verifiedTeamId,
     coach_id: coach.id,
@@ -465,10 +470,22 @@ async function createFocusAreaImpl(
     from_insight_id: data.from_insight_id ?? null,
     ...normalizeTimeframe(data),
   });
+  const { data: inserted, error } = stampFromRead ? await insertQuery.select('id').single() : await insertQuery;
 
   if (error) {
     await logServerError(`Failed to create focus area: ${describeError(error)}`, { action: 'development.createFocusArea' });
     return { success: false, error: 'Failed to create focus area. Please try again.' };
+  }
+
+  if (stampFromRead && data.from_insight_id && inserted?.id) {
+    await stampPrescriptionFromRead(supabase, {
+      focusAreaId: inserted.id,
+      insightId: data.from_insight_id,
+      playerId: data.player_id,
+      targetMetric: canonicalMetric ?? null,
+      targetValue: data.target_value ?? null,
+      assignedBy: 'coach',
+    });
   }
 
   // Notify the player (fire-and-forget)
@@ -1653,6 +1670,17 @@ async function createFocusAreaFromInsightV2Impl(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
+  // Slice 4 (coachhelm_verdicts_v1, off: no read, no write): stamp the
+  // prescription fields from the read in a second, best-effort write.
+  await stampPrescriptionFromRead(writeClient, {
+    focusAreaId: row.id,
+    insightId: args.insightId,
+    playerId: args.playerId,
+    targetMetric: canonicalMetric,
+    targetValue: args.targetValue ?? null,
+    assignedBy: isCoachPromoting ? 'coach' : 'player',
+  });
+
   // CH13-24: a coach's prescription tells the player, as createFocusArea does.
   if (isCoachPromoting) {
     // The coach's name only signs the notice; a failed read sends it as "Your Coach".
@@ -1927,6 +1955,16 @@ async function createFocusAreaFromInsightImpl(
     await logServerError(`Failed to create focus area from insight: ${describeError(insertError)}`, { action: 'development.createFocusAreaFromInsight' });
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
+
+  // Slice 4 (coachhelm_verdicts_v1, off: no read, no write).
+  await stampPrescriptionFromRead(supabase, {
+    focusAreaId: focusArea.id,
+    insightId: data.insight_id,
+    playerId: data.player_id,
+    targetMetric: canonicalMetric,
+    targetValue: data.target_value ?? null,
+    assignedBy: 'coach',
+  });
 
   // Acknowledge the insight (mark as "acknowledged" since action was taken).
   // Scope by team_id from the fetched insight so a malformed insight_id

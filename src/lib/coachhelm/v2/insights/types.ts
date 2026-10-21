@@ -294,8 +294,9 @@ export interface ComparisonLine {
   value: number;
   /** What the line counts (pooled putts, holes, rounds); null for an anchor. */
   n: number | null;
-  /** The read's value unit (`evidence.unit`). */
-  unit: InsightUnit;
+  /** The read's value unit (`evidence.unit`). Optional: a Slice 5a angle's
+   *  lines omit it and are in the read's own unit. The team line always has it. */
+  unit?: InsightUnit;
   /** What `n` counts. */
   n_unit?: InsightSampleUnit;
   /** The word for `n` when the unit is not enough ("bunker holes"). */

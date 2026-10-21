@@ -33,6 +33,12 @@ describe('teamPoolLine', () => {
     expect(teamPoolLine(ev(line({ value: Number.NaN })))).toBeNull();
   });
 
+  it("leaves a Slice 5a angle's own team_pool median to its own words", () => {
+    const angle = { source: 'team_pool', label: "Teammates' median fairways hit %", value: 62, n: 6 } as unknown as ComparisonLine;
+    expect(teamPoolLine(ev(angle))).toBeNull();
+    expect(teamPoolLine(ev(line({ players: undefined })))).toBeNull();
+  });
+
   it('never carries a teammate: one number, one count', () => {
     const text = teamPoolLine(ev(line())) ?? '';
     expect(text.match(/\d[\d,.]*/g)).toEqual(['72', '240']);

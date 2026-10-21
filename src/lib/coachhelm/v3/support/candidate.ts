@@ -8,7 +8,9 @@
  * Pure: JSON in, plain object out.
  */
 import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
-import type { GapInput, Polarity } from './gap';
+import type { InsightFraming } from '@/lib/coachhelm/v3/engine/root-cause';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { Direction, DirectionBasis, GapInput, Polarity } from './gap';
 import { familyFor, type CountUnit, type FamilyDef } from './families';
 import { minRung, type LadderRung, type WhyState } from './ladder';
 
@@ -25,6 +27,30 @@ export const TEAM_MIN_N = 4;
 
 export type BenchmarkSource = 'team' | 'cohort' | 'tour' | 'target' | 'self';
 
+/**
+ * What the benchmark value is (post-merge review, finding 5):
+ *   - `team_loo`: the team mean with this player left out, rebuilt from
+ *     `standing.team_avg`, `team_n` and the player's own `standing.player_value`;
+ *   - `team_incl_player`: `standing.team_avg` as stored (the player is in it),
+ *     used only when the leave-one-out inputs are missing;
+ *   - `team_pool` (Slice 7a, `coachhelm_team_pool_v1` on): the pooled attempts
+ *     of the player's teammates in the read's window (`evidence.comparison.
+ *     primary`, the player excluded), with the pooled count, so the
+ *     benchmark's own variance is exact rather than assumed;
+ *   - `cohort`, `row_comparison` (the row's own comparison line), `self` (the
+ *     player's other side in a within-player contrast).
+ */
+export type BenchmarkBasis = 'team_loo' | 'team_incl_player' | 'team_pool' | 'cohort' | 'row_comparison' | 'self';
+
+export interface CandidateBenchmark {
+  source: BenchmarkSource;
+  value: number;
+  basis: BenchmarkBasis;
+  /** Teammates behind a leave-one-out team value or a team pool. */
+  pool_n?: number;
+  /** Pooled attempts (rounds for a per-round rate) behind a team pool value. */
+  pooled_n?: number;
+}
 export interface SupportCandidate {
   id: string;
   family: string;
@@ -36,17 +62,24 @@ export interface SupportCandidate {
   roundsN: number | null;
   /** Raw strokes a round from the row, magnitude; null when never estimated. */
   strokesRaw: number | null;
-  benchmark: { source: BenchmarkSource; value: number } | null;
+  benchmark: CandidateBenchmark | null;
   /**
-   * Shrinkage prior: the team pool when the row carries one and the Slice 7a flag is on (`team_pool`), else the team (or
-   * cohort) line when it is comparable, else the benchmark.
+   * Shrinkage prior: the benchmark value, labelled with the benchmark's own
+   * source (so a Tour benchmark is a `tour` prior, never "the team"), or "no
+   * difference" for a within-player contrast. With `coachhelm_team_pool_v1`
+   * on and a team pool line on the row, the pool (`team_pool`, 02 §4).
    */
   prior: { source: BenchmarkSource | 'team_pool' | 'no_difference'; value: number } | null;
+  /** The side the row's own words claim; null when the row claims nothing or is untestable. */
+  direction: Direction | null;
+  /** `data` when the generator picked that side from the same comparison (BH gets the two-sided p). */
+  directionBasis: DirectionBasis | null;
+  /** Per-arm counts of a two-arm contrast against their floors (finding 4). */
+  arms: Array<{ key: string; have: number | null; need: number }>;
   why: WhyState;
   /** Family cap, lowered for a Tour-only benchmark or an estimated value. */
   cap: LadderRung;
   capReasons: string[];
-  stabilityAgrees: boolean | null;
   splitHalf: { gap_old: number; gap_new: number; n_old: number; n_new: number } | null;
   checkpointsHeld: number;
 }
@@ -155,10 +188,22 @@ function strokesOf(evidence: Obj): number | null {
   return Math.abs(s);
 }
 
+/**
+ * The team mean without this player: `(team_avg · team_n − player) /
+ * (team_n − 1)`. `standing.team_avg` averages every player on the team, this
+ * one included, so testing a player against it pulls the benchmark toward
+ * them and shrinks every gap (finding 5). Null when an input is missing.
+ */
+export function leaveOneOutMean(teamAvg: number, teamN: number, playerValue: number | null): number | null {
+  if (playerValue === null || !(teamN >= 2) || !Number.isInteger(teamN)) return null;
+  const loo = (teamAvg * teamN - playerValue) / (teamN - 1);
+  return Number.isFinite(loo) ? loo : null;
+}
+
 function benchmarkFor(
   evidence: Obj,
   def: FamilyDef,
-): { benchmark: SupportCandidate['benchmark']; prior: SupportCandidate['prior'] } {
+): { benchmark: CandidateBenchmark | null; prior: SupportCandidate['prior'] } {
   const standing = obj(evidence.standing);
   const teamAvg = num(standing?.team_avg);
   const teamN = num(standing?.team_n) ?? 0;
@@ -166,14 +211,74 @@ function benchmarkFor(
   const levelN = num(standing?.level_n) ?? 0;
   const own = num(evidence.comparison_value);
   if (def.teamBenchmark && teamAvg !== null && teamN >= TEAM_MIN_N) {
-    return { benchmark: { source: 'team', value: teamAvg }, prior: { source: 'team', value: teamAvg } };
+    const loo = leaveOneOutMean(teamAvg, teamN, num(standing?.player_value));
+    const benchmark: CandidateBenchmark =
+      loo !== null
+        ? { source: 'team', value: loo, basis: 'team_loo', pool_n: teamN - 1 }
+        : { source: 'team', value: teamAvg, basis: 'team_incl_player' };
+    return { benchmark, prior: { source: 'team', value: benchmark.value } };
   }
   if (def.teamBenchmark && levelAvg !== null && levelN >= TEAM_MIN_N) {
-    return { benchmark: { source: 'cohort', value: levelAvg }, prior: { source: 'cohort', value: levelAvg } };
+    return { benchmark: { source: 'cohort', value: levelAvg, basis: 'cohort' }, prior: { source: 'cohort', value: levelAvg } };
   }
   if (own === null) return { benchmark: null, prior: null };
   const source = mapComparisonSource(evidence.comparison_source);
-  return { benchmark: { source, value: own }, prior: { source, value: own } };
+  return { benchmark: { source, value: own, basis: 'row_comparison' }, prior: { source, value: own } };
+}
+
+/**
+ * The side the row claims (blocker 1 and finding 3). Generators that declare
+ * their own framing do it from fields this reader can see again:
+ *   - putt_bias "balanced" (no directional bias, `putt-bias.ts`): the only
+ *     branch that writes `detail.testable_cells`; neutral;
+ *   - tee_strategy: only the "laggy" pattern carries a strokes estimate
+ *     (`laggyDiagnosticStrokesImpact`, > 0 whenever laggy fires); "sharp" and
+ *     "inconclusive" make no cost claim, neutral;
+ *   - pressure_gap: at or under 0 a strength, up to 0.5 neutral, else a leak;
+ *   - opening hole: at or under 0 a strength, up to 0.1 neutral, else a leak.
+ * Everything else resolves as the engine does (`resolveInsightFraming` in
+ * `engine/root-cause.ts`, mirrored in {@link valueFraming} so this module stays
+ * free of that file's server-only imports).
+ */
+export function framingOf(evidence: Obj, def: FamilyDef): InsightFraming {
+  const detail = obj(evidence.detail);
+  const value = num(evidence.your_value);
+  switch (def.family) {
+    case 'putt_break':
+      return detail && detail.testable_cells !== undefined ? 'neutral' : 'leak';
+    case 'tee_strategy': {
+      const s = num(evidence.strokes_impact);
+      return s !== null && s > 0 ? 'leak' : 'neutral';
+    }
+    case 'pressure_gap':
+      if (value === null) return 'leak';
+      return value <= 0 ? 'strength' : value <= 0.5 ? 'neutral' : 'leak';
+    case 'opening_hole':
+      if (value === null) return 'leak';
+      return value <= 0 ? 'strength' : value <= 0.1 ? 'neutral' : 'leak';
+    default:
+      return valueFraming(evidence);
+  }
+}
+
+/**
+ * `resolveInsightFraming` with no declared framing: your_value against
+ * comparison_value in the trusted direction (the row's polarity, else the
+ * registry's when its unit matches); untrustworthy → leak.
+ */
+function valueFraming(evidence: Obj): InsightFraming {
+  let direction: Polarity | null =
+    evidence.polarity === 'higher_better' || evidence.polarity === 'lower_better' ? evidence.polarity : null;
+  if (!direction && typeof evidence.metric === 'string') {
+    const cfg = getMetricRenderConfig(evidence.metric);
+    if (cfg && cfg.unit === evidence.unit) direction = cfg.direction;
+  }
+  if (!direction) return 'leak';
+  const you = Number(evidence.your_value);
+  const ref = Number(evidence.comparison_value);
+  if (!Number.isFinite(you) || !Number.isFinite(ref)) return 'leak';
+  const worse = direction === 'higher_better' ? you < ref : you > ref;
+  return worse ? 'leak' : 'strength';
 }
 
 function polarityOf(evidence: Obj, fallback: Polarity): Polarity {
@@ -194,20 +299,32 @@ function readSplitHalf(evidence: Obj): SupportCandidate['splitHalf'] {
 }
 
 /**
- * The team pool line the row carries (`evidence.comparison.primary`, Slice 7a), in the row's own scale; null when there is
- * none. Written by the engine only with `coachhelm_team_pool_v1` on.
+ * The team pool line the row carries (`evidence.comparison.primary`, Slice
+ * 7a), in the row's own scale; null when there is none. The engine writes it
+ * only with `coachhelm_team_pool_v1` on and only above the pool's floors.
+ *
+ * Only the 7a pooled shape counts: it says what `n` counts (`n_unit`) and how
+ * many teammates are in it (`players`). A Slice 5a angle may label its own
+ * primary `team_pool` with a teammates' median and `n` = players; that is not
+ * a pooled count and is never read as one.
  */
-export function teamPoolPriorOf(evidence: Obj): { source: 'team_pool'; value: number } | null {
+export function teamPoolLineOf(evidence: Obj): { value: number; n: number; players: number } | null {
   const primary = obj(obj(evidence.comparison)?.primary);
-  if (!primary || primary.source !== 'team_pool') return null;
+  if (!primary || primary.source !== 'team_pool' || typeof primary.n_unit !== 'string') return null;
   const value = num(primary.value);
   const n = num(primary.n);
-  return value !== null && n !== null && n > 0 ? { source: 'team_pool', value } : null;
+  const players = num(primary.players);
+  if (value === null || n === null || !(n > 0) || players === null || !(players > 0)) return null;
+  return { value, n, players };
 }
 
 export interface CandidateOptions {
-  /** Slice 7a (`coachhelm_team_pool_v1`): shrink toward the row's team pool when it carries one. */
-  teamPoolPrior?: boolean;
+  /**
+   * Slice 7a (`coachhelm_team_pool_v1`): a row carrying a team pool line is
+   * tested against the pool with its exact pooled count and shrinks toward
+   * it. Off (the default): exactly the pre-7a behaviour.
+   */
+  teamPool?: boolean;
 }
 
 export function buildCandidate(
@@ -227,11 +344,32 @@ export function buildCandidate(
   let untestableReason: string | null = def.shape === 'untestable' ? def.untestableReason ?? 'untestable' : null;
   let n = sampleN ?? 0;
   const { benchmark, prior: benchPrior } = benchmarkFor(evidence, def);
-  // 02 §4: μ is the team pool for the metric when the pool meets its floor
-  // (the line exists only then); otherwise the prior this pass used before.
-  // A within-player contrast still shrinks toward "no difference" (below).
-  let prior: SupportCandidate['prior'] = (options.teamPoolPrior ? teamPoolPriorOf(evidence) : null) ?? benchPrior;
+  let prior: SupportCandidate['prior'] = benchPrior;
   let usedBenchmark = benchmark;
+  // Slice 7a (02 §3, §4): with the flag on and a team pool on the row, μ is the
+  // pool. The pool measures the read's own metric in the read's own scale
+  // (`familyForRead` matches it by type and metric), so for a one-sample test
+  // it is also the benchmark, with its pooled count: the benchmark's variance
+  // is then exact instead of the equal-size assumption below. A within-player
+  // contrast still shrinks toward "no difference" (below).
+  const teamPool = options.teamPool ? teamPoolLineOf(evidence) : null;
+  if (teamPool) {
+    prior = { source: 'team_pool', value: teamPool.value };
+    if (def.shape === 'proportion' || def.shape === 'rate_per_round') {
+      usedBenchmark = {
+        source: 'team',
+        value: teamPool.value,
+        basis: 'team_pool',
+        pool_n: teamPool.players,
+        pooled_n: teamPool.n,
+      };
+    }
+  }
+  const pooledN = usedBenchmark?.basis === 'team_pool' ? usedBenchmark.pooled_n ?? 0 : 0;
+  // A leave-one-out team value is itself an estimate from the teammates'
+  // samples. The row does not carry their counts, so each teammate is taken
+  // to have a sample the size of this player's (documented default, finding 5).
+  const pool = usedBenchmark?.basis === 'team_loo' ? usedBenchmark.pool_n ?? 0 : 0;
 
   switch (def.shape) {
     case 'proportion': {
@@ -260,6 +398,7 @@ export function buildCandidate(
         k,
         n: total,
         benchmark: usedBenchmark.value / 100,
+        ...(pooledN > 0 ? { benchmarkN: pooledN } : pool > 0 ? { benchmarkN: total * pool } : {}),
         polarity: polarityOf(evidence, 'higher_better'),
       };
       if (!(usedBenchmark.value > 0 && usedBenchmark.value < 100)) {
@@ -299,7 +438,7 @@ export function buildCandidate(
       }
       n = Math.min(nA, nB);
       gapInput = { kind: 'two_proportion', kA, nA, kB, nB, polarity: 'higher_better' };
-      usedBenchmark = { source: 'self', value: (kB / nB) * 100 };
+      usedBenchmark = { source: 'self', value: (kB / nB) * 100, basis: 'self' };
       prior = { source: 'no_difference', value: 0 };
       break;
     }
@@ -329,6 +468,7 @@ export function buildCandidate(
         se,
         df,
         benchmark: usedBenchmark.value,
+        ...(pool > 0 ? { benchmarkSe: se / Math.sqrt(pool) } : {}),
         polarity: polarityOf(evidence, 'lower_better'),
       };
       break;
@@ -344,6 +484,7 @@ export function buildCandidate(
         events: Math.round(yourValue * rounds),
         rounds,
         benchmark: usedBenchmark.value,
+        ...(pooledN > 0 ? { benchmarkRounds: pooledN } : pool > 0 ? { benchmarkRounds: rounds * pool } : {}),
         polarity: polarityOf(evidence, 'lower_better'),
       };
       n = rounds;
@@ -351,6 +492,20 @@ export function buildCandidate(
     }
     case 'untestable':
       break;
+  }
+
+  // A row that claims nothing (a neutral verdict, or a strength row in a
+  // family that only ever claims the weak side) is not a hypothesis: it is
+  // never tested as a weakness (finding 3).
+  const framing = framingOf(evidence, def);
+  let direction: Direction | null = null;
+  if (gapInput) {
+    if (framing === 'neutral' || (framing === 'strength' && !def.allowStrength)) {
+      gapInput = null;
+      untestableReason = 'no_claim';
+    } else {
+      direction = framing === 'strength' ? 'strength' : 'weakness';
+    }
   }
 
   if (gapInput && usedBenchmark?.source === 'tour') {
@@ -369,6 +524,7 @@ export function buildCandidate(
   }
 
   const splitHalf = readSplitHalf(evidence);
+  const arms = (def.arms ?? []).map((a) => ({ key: a.key, have: num(detail?.[a.key]), need: a.min }));
   return {
     id: row.id,
     family: def.family,
@@ -381,10 +537,12 @@ export function buildCandidate(
     strokesRaw: strokesOf(evidence),
     benchmark: gapInput ? usedBenchmark : null,
     prior: gapInput ? prior : null,
+    direction,
+    directionBasis: direction === null ? null : def.allowStrength ? 'data' : 'declared',
+    arms,
     why: whyStateOf(evidence),
     cap,
     capReasons,
-    stabilityAgrees: null,
     splitHalf,
     checkpointsHeld: num(obj(evidence.stability)?.checkpoints_held) ?? 0,
   };
