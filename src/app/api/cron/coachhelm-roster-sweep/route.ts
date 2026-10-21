@@ -38,6 +38,7 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { freshnessReadsEnabled } from '@/lib/coachhelm/v3/engine/read-floors';
+import { coachhelmTeamAllowlist, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { loadPlayerRoundIndex, newestCountableRound } from '@/lib/coachhelm/v3/engine/read-window';
 import {
   FRESHNESS_COOLDOWN_DAYS,
@@ -117,16 +118,31 @@ async function handleRosterSweep(): Promise<NextResponse> {
   // SUCCEEDED because their newest countable round was newer than their
   // newest read.
   let freshnessRefreshed = 0;
-  const freshnessOn = freshnessReadsEnabled();
+  // HELM_COACHHELM_TEAMS canary: with a team list, each player's decision
+  // (and its flag read) runs in that player's team scope, from the roster
+  // already loaded above. Unset: one global read, as before.
+  const canary = coachhelmTeamAllowlist() !== null;
+  const teamsByPlayer = new Map<string, string[]>();
+  if (canary) {
+    for (const m of memberships ?? []) {
+      if (!m.player_id || !m.team_id) continue;
+      teamsByPlayer.set(m.player_id, [...(teamsByPlayer.get(m.player_id) ?? []), m.team_id]);
+    }
+  }
+  const freshnessOn = canary ? false : freshnessReadsEnabled();
   const startedAt = Date.now();
+  const decide = (playerId: string): Promise<SweepDecision> =>
+    canary
+      ? runWithCoachHelmTeams(teamsByPlayer.get(playerId) ?? [], () =>
+          decideSweep(supabase, playerId, freshnessReadsEnabled(), startedAt),
+        )
+      : decideSweep(supabase, playerId, freshnessOn, startedAt);
 
   // Phase 1: decide per player (cheap reads only), in small batches.
   const decisions: SweepDecision[] = [];
   for (let i = 0; i < uniquePlayerIds.length; i += CONCURRENCY) {
     const batch = uniquePlayerIds.slice(i, i + CONCURRENCY);
-    decisions.push(
-      ...(await Promise.all(batch.map((playerId) => decideSweep(supabase, playerId, freshnessOn, startedAt)))),
-    );
+    decisions.push(...(await Promise.all(batch.map(decide))));
   }
 
   // Phase 2: run every unanalyzed-latest-round player (as before), then the
@@ -243,8 +259,7 @@ async function decideSweep(
   nowMs: number,
 ): Promise<SweepDecision> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: latestRound, error: latestRoundError } = await (supabase as any)
+    const { data: latestRound, error: latestRoundError } = await supabase
       .from('golf_rounds')
       .select('coachhelm_analyzed_at')
       .eq('player_id', playerId)
@@ -299,8 +314,7 @@ async function engineRanRecently(
   nowMs: number,
 ): Promise<boolean | null> {
   const since = new Date(nowMs - FRESHNESS_COOLDOWN_DAYS * 86_400_000).toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('golf_insight_generation_log')
     .select('id')
     .eq('player_id', playerId)

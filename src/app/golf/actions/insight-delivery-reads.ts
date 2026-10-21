@@ -48,6 +48,11 @@ export interface ReadsDeliveryPlan {
    * are never folded away: someone already acted on them.
    */
   pinned?: ReadonlySet<string>;
+  /**
+   * HELM_COACHHELM_TEAMS canary only: the players the plan applies to. Reads
+   * of any other player pass through unchanged. Absent: every player.
+   */
+  players?: ReadonlySet<string>;
 }
 
 export type ReadKind = 'finding' | 'strength' | 'note';
@@ -327,6 +332,26 @@ export function capReadsPerPlayer<T extends RankableEvidenceInsight>(
  * a player's own view) their dismissals: fold, then cap, as the plan says.
  */
 export function deliverReads<T extends RankableEvidenceInsight>(ranked: readonly T[], plan: ReadsDeliveryPlan): T[] {
+  const players = plan.players;
+  if (players) {
+    // Fold and cap work within one player and keep order, so the plan's
+    // players are delivered on their own and put back in their places;
+    // everyone else's reads pass through as they came.
+    const delivered = deliverReads(
+      ranked.filter((r) => players.has(r.player_id)),
+      { fold: plan.fold, cap: plan.cap, pinned: plan.pinned },
+    );
+    const byId = new Map(delivered.map((r) => [r.id, r]));
+    const out: T[] = [];
+    for (const r of ranked) {
+      if (!players.has(r.player_id)) out.push(r);
+      else {
+        const kept = byId.get(r.id);
+        if (kept) out.push(kept);
+      }
+    }
+    return out;
+  }
   const folded = plan.fold ? foldOverlappingReads(ranked, plan.pinned) : [...ranked];
   return plan.cap ? capReadsPerPlayer(folded).shown : folded;
 }

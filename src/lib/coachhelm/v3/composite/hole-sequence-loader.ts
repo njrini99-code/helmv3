@@ -16,7 +16,6 @@ import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import type {
-  ApproachShotWithLie,
   CompositeContext,
   HoleScore,
   ShortGameShot,
@@ -147,53 +146,8 @@ export async function loadShortGameShots(
   );
 }
 
-/**
- * Approach shots from flyer-prone lies (light rough). The classic
- * flyer-lie failure mode is the ball coming out hot and ending up
- * past the green — `distance_to_hole_after` is on the long side.
- */
-export async function loadFlyerLieShots(
-  playerId: string,
-  windowDays = DEFAULT_WINDOW_DAYS,
-): Promise<ApproachShotWithLie[]> {
-  const supabase = createAdminClient();
-  const roundIds = await recentCompletedRoundIds(supabase, playerId, windowDays);
-  if (roundIds.length === 0) return [];
-
-  const { data, error } = await fromUntyped(supabase, 'golf_shots')
-    .select(
-      'round_id, hole_number, lie_before, distance_to_hole_before, distance_to_hole_after',
-    )
-    .in('round_id', roundIds)
-    .eq('shot_type', 'approach')
-    .eq('lie_before', 'light_rough') as {
-      data: ApproachShotWithLie[] | null;
-      error: { message: string } | null;
-    };
-  if (error || !data) {
-    if (error) {
-      await logServerError(
-        `hole-sequence-loader.loadFlyerLieShots query failed: ${describeError(error)}`,
-        { action: 'coachhelm.holeSequenceLoader.loadFlyerLieShots', metadata: { playerId } },
-      );
-    }
-    // See loadHoleScores above — same documented "no-op gracefully" policy.
-    return [];
-  }
-
-  return data.filter(
-    (s) =>
-      typeof s.distance_to_hole_before === 'number' &&
-      typeof s.distance_to_hole_after === 'number',
-  );
-}
-
-/** Load all three supplemental sources in parallel. */
+/** Load both supplemental sources in parallel. */
 export async function loadCompositeContext(playerId: string): Promise<CompositeContext> {
-  const [hole_scores, short_game_shots, flyer_lie_shots] = await Promise.all([
-    loadHoleScores(playerId),
-    loadShortGameShots(playerId),
-    loadFlyerLieShots(playerId),
-  ]);
-  return { hole_scores, short_game_shots, flyer_lie_shots };
+  const [hole_scores, short_game_shots] = await Promise.all([loadHoleScores(playerId), loadShortGameShots(playerId)]);
+  return { hole_scores, short_game_shots };
 }

@@ -4,7 +4,7 @@
  * whose latest round is analyzed is still refreshed when their newest
  * countable round is newer than their newest visible read. Synthetic data.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createFakeSupabase, type FakeSupabase } from '@/test/fixtures/fake-supabase';
 
 let fake: FakeSupabase;
@@ -199,6 +199,31 @@ describe('roster sweep — Slice 0b freshness predicate', () => {
     ];
     await callGet();
     expect(triggerMock.mock.calls.map((c) => c[0]).sort()).toEqual(['player-A', 'player-C']);
+  });
+
+  describe('HELM_COACHHELM_TEAMS canary', () => {
+    afterEach(() => {
+      delete process.env.HELM_COACHHELM_TEAMS;
+    });
+
+    it('decides freshness per player, in that player’s team scope', async () => {
+      flagMock.mockReturnValue(true);
+      // A moves to the listed team; X0 is just as far behind on an unlisted one.
+      tables.golf_team_members!.find((m) => m.player_id === 'player-A')!.team_id = 't2';
+      addBehindPlayers(1);
+      process.env.HELM_COACHHELM_TEAMS = 't2';
+      const body = await callGet();
+      expect(triggerMock.mock.calls.map((c) => c[0]).sort()).toEqual(['player-A', 'player-C']);
+      expect(body).toMatchObject({ freshnessRefreshed: 1 });
+    });
+
+    it('no player on a listed team: the legacy rule only', async () => {
+      flagMock.mockReturnValue(true);
+      process.env.HELM_COACHHELM_TEAMS = 't9';
+      const body = await callGet();
+      expect(triggerMock.mock.calls.map((c) => c[0])).toEqual(['player-C']);
+      expect(body).toMatchObject({ freshnessRefreshed: 0 });
+    });
   });
 
   function addBehindPlayers(n: number) {

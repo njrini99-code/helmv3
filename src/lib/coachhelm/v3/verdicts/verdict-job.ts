@@ -21,14 +21,16 @@ import 'server-only';
  * 42P01 / PGRST204 / PGRST205): `schema_missing`, nothing thrown.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fromUntyped } from '@/lib/supabase/untyped';
+import type { Database } from '@/lib/types/database';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { recordInAppNotification } from '@/lib/notifications/in-app';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-metric';
-import { isVerdictsEnabled } from './flag';
+import { isFlagEnabled } from '@/lib/flags';
+import { loadCanaryPlayerTeams, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { VERDICTS_FLAG, isVerdictsEnabled } from './flag';
 import type { Criterion, Horizon } from './criterion';
 import { verdictMetricFor, type VerdictMetricDef, type RoundCacheCountColumn } from './metrics';
 import { countCacheByRound, countPuttsByRound, type PuttShotRow, type RoundCacheRow, type RoundCounts } from './post-counts';
@@ -64,7 +66,7 @@ interface CandidateArea {
   horizon: Horizon | null;
 }
 
-type AnyClient = SupabaseClient<any, any, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Client = SupabaseClient<Database>;
 
 const emptySummary = (): VerdictJobSummary => ({
   ran: true,
@@ -76,19 +78,33 @@ const emptySummary = (): VerdictJobSummary => ({
   coach_notices: 0,
 });
 
-export async function runFocusAreaVerdicts(supabase: AnyClient, now: Date = new Date()): Promise<VerdictJobSummary> {
-  if (!isVerdictsEnabled()) return { ...emptySummary(), ran: false, reason: 'flag_off' };
+export async function runFocusAreaVerdicts(supabase: Client, now: Date = new Date()): Promise<VerdictJobSummary> {
+  // HELM_COACHHELM_TEAMS canary: with a team list the job runs only for the
+  // players on a listed team, each read in its teams' scope (one roster read).
+  // Unset: null, no read, and the flag alone decides as before.
+  if (!isFlagEnabled(VERDICTS_FLAG)) return { ...emptySummary(), ran: false, reason: 'flag_off' };
+  const canaryTeams = await loadCanaryPlayerTeams(supabase);
+  const inCanary = (playerId: string): boolean => {
+    const teams = canaryTeams?.get(playerId);
+    return teams !== undefined && runWithCoachHelmTeams(teams, isVerdictsEnabled);
+  };
+  const enabled = canaryTeams ? [...canaryTeams.keys()].some(inCanary) : isVerdictsEnabled();
+  if (!enabled) return { ...emptySummary(), ran: false, reason: 'flag_off' };
   const summary = emptySummary();
 
   const { data: areaRows, error: areaError } = await fetchAllRowsResult<CandidateArea>((from, to) =>
-    fromUntyped(supabase, 'golf_player_focus_areas')
+    supabase
+      .from('golf_player_focus_areas')
       .select('id, player_id, coach_id, title, target_metric, started_at, baseline_shrunk, criterion, horizon')
       .is('verdict', null)
       .not('criterion', 'is', null)
       .not('started_at', 'is', null)
       .in('status', STARTED_STATUSES)
       .order('id', { ascending: true })
-      .range(from, to),
+      .range(from, to)
+      // criterion/horizon are jsonb (Json) written by the prescription stamp;
+      // started_at is non-null by the filter above.
+      .overrideTypes<CandidateArea[], { merge: false }>(),
   );
   if (areaError) {
     if (isMissingSchemaError(areaError)) {
@@ -102,6 +118,7 @@ export async function runFocusAreaVerdicts(supabase: AnyClient, now: Date = new 
   // Keep only areas whose stored prescription is complete and whose metric has a count source.
   const work: Array<{ area: CandidateArea; def: VerdictMetricDef; horizonAttempts: number; start: string }> = [];
   for (const area of areaRows ?? []) {
+    if (canaryTeams && !inCanary(area.player_id)) continue;
     summary.candidates += 1;
     const def = verdictMetricFor(resolveFocusTargetMetric(area.target_metric) ?? area.target_metric);
     const horizonAttempts = area.horizon?.attempts;
@@ -179,7 +196,8 @@ export async function runFocusAreaVerdicts(supabase: AnyClient, now: Date = new 
       continue;
     }
 
-    const { data: written, error: writeError } = await fromUntyped(supabase, 'golf_player_focus_areas')
+    const { data: written, error: writeError } = await supabase
+      .from('golf_player_focus_areas')
       .update({ verdict }) // nosemgrep: helmv3-action-missing-revalidate -- cron writer, no cached route
       .eq('id', area.id)
       .is('verdict', null)
@@ -207,11 +225,12 @@ interface RoundRow {
   round_date: string;
 }
 
-async function loadRounds(supabase: AnyClient, playerIds: string[], sinceDate: string): Promise<RoundRow[] | null> {
+async function loadRounds(supabase: Client, playerIds: string[], sinceDate: string): Promise<RoundRow[] | null> {
   const out: RoundRow[] = [];
   for (const batch of chunkIds(playerIds)) {
     const { data, error } = await fetchAllRowsResult<RoundRow>((from, to) =>
-      fromUntyped(supabase, 'golf_rounds')
+      supabase
+        .from('golf_rounds')
         .select('id, player_id, round_date')
         .in('player_id', batch)
         .eq('status', 'completed')
@@ -231,11 +250,12 @@ async function loadRounds(supabase: AnyClient, playerIds: string[], sinceDate: s
   return out;
 }
 
-async function loadPutts(supabase: AnyClient, roundIds: string[]): Promise<PuttShotRow[] | null> {
+async function loadPutts(supabase: Client, roundIds: string[]): Promise<PuttShotRow[] | null> {
   const out: PuttShotRow[] = [];
   for (const batch of chunkIds(roundIds)) {
     const { data, error } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
-      fromUntyped(supabase, 'golf_shots')
+      supabase
+        .from('golf_shots')
         .select('round_id, distance_to_hole_before, result, putt_made')
         .in('round_id', batch)
         .ilike('shot_type', 'putting')
@@ -252,15 +272,18 @@ async function loadPutts(supabase: AnyClient, roundIds: string[]): Promise<PuttS
   return out;
 }
 
-async function loadCache(supabase: AnyClient, roundIds: string[], columns: RoundCacheCountColumn[]): Promise<RoundCacheRow[] | null> {
+async function loadCache(supabase: Client, roundIds: string[], columns: RoundCacheCountColumn[]): Promise<RoundCacheRow[] | null> {
   const out: RoundCacheRow[] = [];
   for (const batch of chunkIds(roundIds)) {
     const { data, error } = await fetchAllRowsResult<RoundCacheRow>((from, to) =>
-      fromUntyped(supabase, 'golf_round_stats_cache')
+      supabase
+        .from('golf_round_stats_cache')
         .select(['round_id', ...columns].join(', '))
         .in('round_id', batch)
         .order('id', { ascending: true })
-        .range(from, to),
+        .range(from, to)
+        // A runtime column list: the typed client cannot parse it.
+        .overrideTypes<RoundCacheRow[], { merge: false }>(),
     );
     if (error) {
       await logServerError(`${ACTION}: stats cache load failed: ${describeError(error)}`, { action: ACTION, featureArea: 'coachhelm' });
@@ -275,10 +298,11 @@ async function loadCache(supabase: AnyClient, roundIds: string[], columns: Round
  * One in-app bell row for the area's coach. Copy names no number (the bell
  * is a pointer; the verdict view prints the counts). Never throws.
  */
-async function noticeCoachGotWorse(supabase: AnyClient, area: CandidateArea): Promise<boolean> {
+async function noticeCoachGotWorse(supabase: Client, area: CandidateArea): Promise<boolean> {
   if (!area.coach_id) return false;
   try {
-    const { data: coach, error } = await fromUntyped(supabase, 'golf_coaches')
+    const { data: coach, error } = await supabase
+      .from('golf_coaches')
       .select('user_id')
       .eq('id', area.coach_id)
       .maybeSingle();

@@ -17,7 +17,7 @@
  *
  * Gated by `coachhelm_reads_v1_copy` (off). Pure apart from the flag read.
  */
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import type { InsightEvidence, InsightSampleUnit } from '@/lib/coachhelm/v2/insights/types';
 import { FAMILY_FLOORS, MIN_ROUNDS_PER_READ } from './read-floor-table';
 
@@ -26,7 +26,7 @@ export const READS_V1_FLAG = 'coachhelm_reads_v1_copy';
 
 /** True when the Slice 0b behavior (floors, revision key, sweep) is on. */
 export function freshnessReadsEnabled(): boolean {
-  return isFlagEnabled(READS_V1_FLAG);
+  return isCoachHelmFlagEnabled(READS_V1_FLAG);
 }
 
 export { FAMILY_FLOORS, MIN_ROUNDS_PER_READ, type FamilyFloor } from './read-floor-table';

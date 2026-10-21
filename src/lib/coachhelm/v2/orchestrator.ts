@@ -12,6 +12,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { withPlayerCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 // W25 cutover: 6 v2 generator imports below are unused by the orchestrator
@@ -349,6 +350,15 @@ class CoachHelmIntelligence {
   async analyzePlayer(
     playerId: string,
     options: AnalysisOptions = {}
+  ): Promise<PlayerAnalysis | null> {
+    // HELM_COACHHELM_TEAMS canary: the generators, the support pass and every
+    // upsert run in the player's team scope (no read when the variable is unset).
+    return withPlayerCoachHelmTeams(playerId, createAdminClient, () => this.analyzePlayerInScope(playerId, options));
+  }
+
+  private async analyzePlayerInScope(
+    playerId: string,
+    options: AnalysisOptions
   ): Promise<PlayerAnalysis | null> {
     await this.ensureCalibrationBootstrapped();
 

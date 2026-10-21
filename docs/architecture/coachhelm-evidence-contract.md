@@ -2249,6 +2249,55 @@ missed greens, which no single-metric read carries today.
   mean, cohort or the row's comparison), and a within-player contrast still
   shrinks toward no difference.
 
+## Team pattern and same-day field (supercharge Slice 7b, 2026-10-21)
+
+Behind `coachhelm_team_pattern_v1` (OFF). With the flag off nothing new is
+read or written.
+
+- **Team pattern** (`v3/team-pattern/pattern.ts`, pure, computed at
+  delivery, no table). The family key is `support.family` (else
+  `familyFor`), the read's metric (its band) and `detail.worse_side` when
+  the read names one. A member is a player with 3 or more countable rounds
+  whose read is a weakness at `ladder` Likely, Observed or Seen
+  repeatedly. A pattern needs at least 3 members AND at least 30% of those
+  players (`04` Example 8: "5 ≥ 3 and 5/6 ≥ 30%"). Row (`04` §1.6):
+  `team_id`, `family`, `window_end`, `members`, `roster_with_reads`,
+  `roster_total`, `strokes_sum` (sum of the members' `strokes_shrunk`),
+  `common_next` (the `diagnosis.recommended_action` most members share),
+  `computed_at`. At most 4 rows, most strokes first; the rest, and every
+  family with 2 or more members under the threshold, are counted
+  (`below_threshold`). The Clubhouse coach board draws it
+  (`TeamPatterns.tsx`); no player surface reads it.
+- **Same-day field** (`v3/field-day/field.ts`, pure, computed on read).
+  Rounds grouped by (team, `round_date`, `course_id`) with 3 or more
+  distinct players form a field; each round gets its per-18 score to par
+  minus the field mean (`relative`; positive = worse than the team that
+  day). Rounds without a course or score cannot join.
+  - Bad-day floor: `detail.field_day` (`bad_rounds_in_field`,
+    `bad_mean_relative`, `middle_rounds_in_field`, `middle_mean_relative`,
+    `bad_shared_with_field`, `explained_by_field`). When at least 2 bad
+    rounds, and more than half of them, sat in a field at or better than
+    the team's mean, the floor is the field's, not the player's, and the
+    read does not fire. The field comes from the team rounds the read
+    already loads (no new query).
+  - Pressure gap: `detail.field_day` (`practice`, `pressure`: field rounds
+    and mean relative score; `gap`: pressure minus practice, each relative
+    to the team on the day, with 3 or more field rounds a side). Audit
+    detail only; the gap, its noise band and the gate are unchanged. One
+    extra read of the team's rounds over the read's 90 days
+    (`v3/field-day/loader.ts`); a failed read leaves no context.
+  - Both carry `label: 'Relative to the team on the day'` for the audit
+    view (`03` §5.2).
+- **LPGA approach anchors.** Production `golf_pga_standards` (read
+  2026-10-21) has `tour = 'lpga'` rows for `approach_proximity_50_125ft`,
+  `_125_175ft`, `_175_plus_ft`, `gir_pct` and `sg_approach`, each with a
+  source; `TOUR_STANDARDS.lpga.approachProximityFt` mirrors them. There is
+  no LPGA green-hit-by-band figure, which is what the approach read is
+  built on, so `greenHitAnchor(band, 'womens')` stays null: a women's team
+  gets no approach read and its standing omits the Tour marker
+  (`pga_omitted`). No PGA number is ever used for a women's read, and no
+  rows were seeded.
+
 ## How to add a new comparison source
 
 1. Append to `InsightComparisonSource` and `COMPARISON_SOURCES` in `types.ts`.
@@ -2484,3 +2533,55 @@ Slice 4's verdicts now import `KAPPA`, `shrinkToward` and `keptShare` from
 The formula is the same one-sample shrink (`(n·y + κ·μ)/(n + κ)`), so every
 verdict number is unchanged (04 Example 11: 18 of 31 shrinks to 0.635 at
 κ 30).
+
+## Counted families (Slice 5b, 2026-10-21)
+
+Behind `coachhelm_insight_angles_v1` (off). With the flag off nothing
+below runs and the legacy generators and composites are unchanged.
+
+Each family's contract (`ANGLE_FAMILIES`):
+
+- `par3_tee` writes `par3_tee_sg_per_shot`: tee shots, floor 20 over 4+
+  rounds, mean gap, `sg_baseline` impact, team pool, capped at observed.
+- `approach_sg_50_125`, `approach_sg_125_175` and `approach_sg_175_plus`
+  write `approach_sg_per_shot_<band>`: approaches, floor 20 over 4+ rounds,
+  mean gap, `sg_baseline` impact, team pool, capped at seen repeatedly.
+- `lag_leave` writes `lag_leave_inside_5ft_pct`: putts, floor 20 over 3+
+  rounds, proportion gap, `rough_estimate` impact, team pool, capped at
+  likely.
+- `under_reading` writes `putt_break_low_side_miss_pct`: putts, floor 20
+  over 3+ rounds, proportion gap, `unsized` impact, an even split (50%) as
+  the benchmark, capped at observed.
+
+- **Per-attempt SG.** A shot's SG (the `shotSgForRound` port) plus the
+  penalty rows that follow it, and for a par-3 tee shot any re-tee. A
+  par-3 tee shot is the hole's first shot, from the tee, on a par 3. The
+  approach bands drop every `lie_before = 'tee'` row, so the two families
+  never share a shot.
+- **Team pool** (`counted-shots.ts`, `poolTeammates`). Teammates on the
+  player's primary team with 3+ countable rounds, newest 40 rounds each,
+  read once per call (`AngleLoaders.teamShots`). The pool needs 5+
+  teammates and 100+ pooled attempts, never includes the player, and is
+  priced at the player's SG scale. Below the floors there is no comparison
+  and no row; there is no Tour fallback (a Tour line is printed beside the
+  team line where one exists, as context).
+- **Test.** `detail.gap_input` is a `mean` with the Welch SE of the
+  player-minus-pool difference (SG families) or a `proportion` against the
+  pooled rate (lag leave) or 0.5 (under-reading). Rows need one-sided
+  z ≥ 1.645 and, where sized, 0.3+ strokes a round.
+- **Stability.** SG rows write `evidence.stability.split_half` (older and
+  newer half of the rounds, positive = worse) for the support pass.
+- **Lag leave** strokes = gap × lag putts per 18 × the three-putt rate
+  difference between leaves outside and inside 5 ft (the player's own when
+  each side has 10+ putts, else the team's), so it is `estimated: true`.
+  The three-putt chain prints the lag line and stores `detail.lag_leave`.
+- **Under-reading** writes nothing unless side-tagged misses are 60%+ of
+  breaking-putt misses and 20+. `strokes_impact` is 0 with
+  `peer_delta`, which the support pass reads as no estimate.
+- **Composites** (`ctx.counted_families`, flag on): C6 lag-to-3-putt needs
+  a `three_putts_per_18` row above its benchmark and a `lag_leave` row
+  below the team (metric `three_putt_lag_chain`, not estimated); C8 needs
+  the 50-125 yd SG row below the team plus weak scrambling (metric
+  `short_approach_sg_scramble_chain`, `team_avg`, no 22 ft target). No
+  composite is `urgent` (`compositeRulePriority` maps it to `high`). C4
+  flyer lie is deleted in every mode (it never fired); 8 rules remain.

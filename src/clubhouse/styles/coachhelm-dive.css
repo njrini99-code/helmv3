@@ -286,13 +286,15 @@
   margin-right: 4px;
   vertical-align: 1px;
 }
+/* The drill on its own line above its description, as one run of text: a name that wraps never splits into two columns. */
 .ch-hd-read__drill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
+  margin-bottom: 2px;
 }
 .ch-hd-read__drill svg {
-  flex: none;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: -2px;
   color: var(--ch-green-700);
 }
 .ch-hd-read__drill b {

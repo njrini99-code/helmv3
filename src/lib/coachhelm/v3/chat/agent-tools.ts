@@ -75,6 +75,7 @@ import {
 } from './practice-planner';
 import type { ActionProposal, ActionReceipt, RecurringPracticePlan } from './action-types';
 import { claimForExecution, recordOutcome, recordProposal } from './action-runs';
+import { runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 import {
   ActionPlanError,
   planAnnouncement,
@@ -232,7 +233,9 @@ export function buildCoachTools({ sb, ctx, conversationId, writer, collect }: Bu
     <I extends Record<string, unknown>>(name: string, run: (input: I) => Promise<ToolEnvelope>) =>
     async (input: I) => {
       progress(name, input);
-      const envelope = await guarded(() => run(input), collect, name, ctx);
+      // HELM_COACHHELM_TEAMS canary: every roster player is on ctx.team_id, so
+      // the chat's team is the scope (no read).
+      const envelope = await guarded(() => runWithCoachHelmTeams([ctx.team_id], () => run(input)), collect, name, ctx);
       evidence(name, envelope);
       return envelope;
     };

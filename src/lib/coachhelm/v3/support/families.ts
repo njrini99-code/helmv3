@@ -17,8 +17,8 @@
  * which is the proportion test's own (`MIN_PUTTS_PER_SIDE`, 02 §7 #7). Every
  * two-arm contrast also needs at least {@link MIN_ARM} in each arm.
  *
- * The six Slice 5a insight angles (Slice 1c) are matched by metric before any
- * insight-type match, and take their floors, κ and cap from the angle
+ * The Slice 5a and 5b insight angles (Slices 1c, 5b) are matched by metric
+ * before any insight-type match, and take their floors, κ and cap from the angle
  * registry (`ANGLE_FAMILIES`), never from `FAMILY_FLOORS` (see
  * {@link angleDef}).
  *
@@ -209,7 +209,7 @@ function angleArm(id: AngleFamilyId): number {
   return Math.max(MIN_ARM, ANGLE_FAMILIES[id].per_side_floor ?? MIN_ARM);
 }
 
-/** The six angle families (Slice 5a, #2229), ahead of every insight-type match. */
+/** The angle families (Slice 5a #2229, Slice 5b), ahead of every insight-type match. */
 const ANGLE_DEFS: readonly MatchedDef[] = [
   angleDef('three_putt_chain'),
   angleDef('bad_day_floor'),
@@ -242,6 +242,15 @@ const ANGLE_DEFS: readonly MatchedDef[] = [
     sidePickedFromData: true,
     shrinkByArms: true,
   }),
+  // Slice 5b counted families: one-sample reads against the team pool (or,
+  // for under-reading, an even split of low and high misses); the weak side
+  // is declared, never picked from the data.
+  angleDef('par3_tee'),
+  angleDef('approach_sg_50_125'),
+  angleDef('approach_sg_125_175'),
+  angleDef('approach_sg_175_plus'),
+  angleDef('lag_leave'),
+  angleDef('under_reading'),
 ];
 
 const DEFS: readonly MatchedDef[] = [

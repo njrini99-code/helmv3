@@ -21,6 +21,7 @@ import { resolveFocusTargetMetric } from '@/lib/coachhelm/focus-areas/target-met
 import { describeWrongWayTarget } from '@/lib/coachhelm/focus-areas/direction';
 import { stampPrescriptionFromRead } from '@/lib/coachhelm/v3/verdicts/stamp-prescription';
 import { isVerdictsEnabled } from '@/lib/coachhelm/v3/verdicts/flag';
+import { runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
 
 // ============================================================================
 // TYPES
@@ -447,7 +448,9 @@ async function createFocusAreaImpl(
   // reads their proposals by team. The coach is the authenticated caller, never the id the browser sent.
   // Slice 4: a create linked to a read gets its prescription stamped after the
   // insert, which needs the new id. Flag off, the insert is exactly as before.
-  const stampFromRead = !!data.from_insight_id && isVerdictsEnabled();
+  // The flag is read in the focus area's team scope (HELM_COACHHELM_TEAMS
+  // canary; unset, the scope changes nothing).
+  const stampFromRead = !!data.from_insight_id && runWithCoachHelmTeams([verifiedTeamId], isVerdictsEnabled);
   const insertQuery = fromUntyped(supabase, 'golf_player_focus_areas').insert({
     player_id: data.player_id,
     team_id: verifiedTeamId,

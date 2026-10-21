@@ -29,7 +29,7 @@ import {
 } from '@/app/golf/actions/insight-delivery-ranking';
 import { deliverReads, READS_V1_FLAG } from '@/app/golf/actions/insight-delivery-reads';
 import { loadPinnedReadIds } from '@/lib/coachhelm/delivery/pinned-reads';
-import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import { loadCoachWeightsForPlayer } from '@/lib/coachhelm/v3/ranking/score';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import {
@@ -931,7 +931,7 @@ export async function getPlayerInsights(
   // unfolded, so a read the chat names is one the feed shows. No 3 + 1 cap:
   // the coach asked about this player, so the chat lists every read, the way
   // the feed's `includeMore` does.
-  const readsV1 = isFlagEnabled(READS_V1_FLAG);
+  const readsV1 = isCoachHelmFlagEnabled(READS_V1_FLAG);
   // null: the focus-area read failed (logged by the loader); fold without pins.
   const pinned = readsV1 ? await loadPinnedReadIds(sb, [player.id]) : null;
   const deduped = deliverReads(dedupeBySubject(collapseParScoring(ranked)), {

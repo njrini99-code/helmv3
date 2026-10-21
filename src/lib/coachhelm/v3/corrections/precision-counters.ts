@@ -23,6 +23,8 @@
  *     read, in that read's cell. A read never rechecked counts in none.
  *   - not_this: a shown read on which at least one author's newest
  *     correction is "Not this" (one per read, however many authors).
+ *   - confirm: the same, for "Good read" (Slice 6b). A read two authors
+ *     disagree on counts once in each.
  *   - Outcomes and corrections on reads with no exposure are ignored: the
  *     counters are precision OF WHAT WAS SHOWN.
  *
@@ -77,6 +79,7 @@ export interface PrecisionCell {
   cleared: number;
   contradicted: number;
   not_this: number;
+  confirm: number;
 }
 
 export interface PrecisionRollup {
@@ -118,8 +121,10 @@ export function rollupPrecision(input: {
   const newestOutcome = newestBy(input.outcomes ?? [], (o) => o.insight_id, (o) => o.at);
 
   const notThisReads = new Set<string>();
+  const confirmReads = new Set<string>();
   for (const c of latestPerRead(input.corrections ?? [])) {
     if (c.kind === 'not_this') notThisReads.add(c.insight_id);
+    if (c.kind === 'confirm') confirmReads.add(c.insight_id);
   }
 
   const cells = new Map<string, PrecisionCell>();
@@ -128,26 +133,28 @@ export function rollupPrecision(input: {
     const key = `${exposure.family}\u0000${rung}`;
     let cell = cells.get(key);
     if (!cell) {
-      cell = { family: exposure.family, rung, shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0 };
+      cell = { family: exposure.family, rung, shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0, confirm: 0 };
       cells.set(key, cell);
     }
     cell.shown += 1;
     const outcome = newestOutcome.get(insightId)?.outcome;
     if (outcome) cell[outcome] += 1;
     if (notThisReads.has(insightId)) cell.not_this += 1;
+    if (confirmReads.has(insightId)) cell.confirm += 1;
   }
 
   const sorted = [...cells.values()].sort(
     (a, b) =>
       a.family.localeCompare(b.family) || (RUNG_ORDER.get(a.rung) ?? 0) - (RUNG_ORDER.get(b.rung) ?? 0),
   );
-  const totals = { shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0 };
+  const totals = { shown: 0, held: 0, cleared: 0, contradicted: 0, not_this: 0, confirm: 0 };
   for (const c of sorted) {
     totals.shown += c.shown;
     totals.held += c.held;
     totals.cleared += c.cleared;
     totals.contradicted += c.contradicted;
     totals.not_this += c.not_this;
+    totals.confirm += c.confirm;
   }
   return { cells: sorted, totals };
 }

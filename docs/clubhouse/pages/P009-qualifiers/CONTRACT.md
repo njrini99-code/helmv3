@@ -42,7 +42,8 @@ Every screen opens final on first paint, read on the server in one pass. The lis
 | 90106 | — | `MY_QUALIFIERS_ARE_THE_PLAYERS_OWN` | /my-qualifiers lists only the qualifiers the player is entered in, /qualifiers puts a player's own first with where they stand, and a coach who is given /my-qualifiers gets the whole list (the Clubhouse frame does not offer it to coaches: the shell shows its not-rebuilt page there). |
 | 90107 | — | `SELECTION_ADDRESS_OUTSIDE_THE_CLUBHOUSE` | With the Clubhouse off, /qualifiers/[id]/selection sends a coach to the CoachHelm qualifying workspace and a player to the qualifier, and a signed-out visitor to login; with it on, the route gets the address. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
+10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -190,7 +191,8 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | 90705 | CH-09906 | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | `PLAYER_THE_SQUAD_IS_CONFIRMED` | Player: the squad is confirmed |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -221,7 +223,8 @@ Not covered by a test here (read in this pass, not run): `createGolfQualifier` s
 | 90811 | — | `SETUP_ACTIONS_RECHECK_THE_COACH` | The squad-size and entrants actions behind Edit check that the caller coaches the qualifier's team before any write, and refuse a signed-out caller and a malformed id. |
 | 90812 | — | `STATUS_ACTION_RECHECKS_THE_COACH` | Close and Reopen check on the server that the caller's organisation owns the qualifier's team, so a player or another organisation's coach is refused as Unauthorized before anything is updated. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -333,7 +336,11 @@ Everything uses the v2 tokens (D-64).
 | 91602 | CH-09602 | `OPENING_A_LEADERBOARD_ROW` | Opening a leaderboard row |
 | 91603 | CH-09603 | `CHOOSING_A_ROUND_IN_A_PLAYERS_ROUNDS` | Choosing a round in a player's rounds sheet (phone) |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -347,7 +354,9 @@ Qualifiers' own haptics (91701 to 91703) on the v2 grammar (D-70): select for a 
 | 91702 | CH-09702 | `CLOSE_QUALIFIER_DISCARD` | Close qualifier, Discard |
 | 91703 | CH-09703 | `START_SELECTING_CONFIRM_SQUAD_REMOVE_A_PICK` | Start selecting, Confirm squad, Remove a pick |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -368,7 +377,12 @@ CH-1842, 11825 CH-1816.
 | 91803 | CH-09803 | `A_LIVE_UPDATE_TO_THE_STANDINGS_IS` | A live update to the standings is announced |
 | 91804 | — | `FIELD_PROBLEMS_ARE_ALERTS` | Each problem in the form or the pick dialog is an alert tied to its field by aria-describedby, the field is marked aria-invalid, and a field with no problem is not. |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

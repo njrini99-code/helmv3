@@ -145,6 +145,8 @@ export interface ChDeepDive {
   counts: { insights: number; needs: number; working: number; inPlan: number };
   /** What the reads were drawn without because a read beside them failed (the Tour's values, the drills, which are Assigned, which are out of date). */
   missing?: ChBoardMissing;
+  /** Reads the recheck found cleared, one line each (04 example 5; `coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: string[];
 }
 
 /** What the loader reads for the parts beside the insights. */

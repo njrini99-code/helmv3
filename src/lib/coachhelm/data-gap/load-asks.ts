@@ -15,7 +15,7 @@ import 'server-only';
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { isFlagEnabled } from '@/lib/flags';
+import { isCoachHelmFlagEnabled, withPlayerCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { logServerError } from '@/lib/server-error-logger';
 import {
@@ -44,7 +44,7 @@ export async function loadDataGapAsks(
   playerId: string,
   opts: { flagEnabled?: boolean } = {},
 ): Promise<DataGapAsk[]> {
-  const enabled = opts.flagEnabled ?? isFlagEnabled(DATA_GAP_PROMPT_FLAG);
+  const enabled = opts.flagEnabled ?? isCoachHelmFlagEnabled(DATA_GAP_PROMPT_FLAG);
   if (!enabled) return [];
 
   const fail = (what: string, message: string): DataGapAsk[] => {
@@ -121,9 +121,12 @@ export async function loadDataGapAsks(
  * Never throws: round entry must open whatever this read does.
  */
 export async function dataGapAsksForShotEntry(playerId: string): Promise<DataGapAsk[] | undefined> {
-  if (!isFlagEnabled(DATA_GAP_PROMPT_FLAG)) return undefined;
   try {
-    return await loadDataGapAsks(await createClient(), playerId, { flagEnabled: true });
+    // HELM_COACHHELM_TEAMS canary: in the player's team scope (no read when unset).
+    return await withPlayerCoachHelmTeams(playerId, createClient, async () => {
+      if (!isCoachHelmFlagEnabled(DATA_GAP_PROMPT_FLAG)) return undefined;
+      return loadDataGapAsks(await createClient(), playerId, { flagEnabled: true });
+    });
   } catch (error) {
     void logServerError(
       `[data-gap prompt] load threw; shot entry shows no prompt: ${error instanceof Error ? error.message : String(error)}`,

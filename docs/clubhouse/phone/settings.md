@@ -29,6 +29,7 @@ The native pattern: a grouped list that pushes to each section, like the iOS Set
 - Cards become grouped lists: a Switch row is the whole row (tap anywhere toggles, 52px), a picker row opens a bottom sheet of options instead of a dropdown, and a slider row keeps the slider full width under its label.
 - Edit cards (profile, team details, golf details, password) open as a full-height sheet with Cancel and Save in the sheet bar; Save stays disabled until something changes. Swiping the sheet down with unsaved changes asks first.
 - The notification matrix becomes one row per kind of update that opens a sheet with Email and Push (and In app for CoachHelm updates) switches, with the current state summarised on the row ("Email, Push").
+- In the iPhone app, This device is the app's own push, not the browser's (which the app's WebView lacks): a switch that shows iOS's prompt before iOS has asked, then what iOS says with Open iOS Settings (CH-8902, CH-8903; docs/clubhouse/phone/push-opt-in.md).
 - The priority ranker uses the native reorder handle (long-press and drag), with a selection haptic on each step. With a keyboard the handle's arrows move a place and save, or space picks the row up and puts it down (dnd-kit's keyboard sensor), with Escape to put it back.
 
 ## Destructive
