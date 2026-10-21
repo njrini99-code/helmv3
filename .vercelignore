@@ -186,6 +186,13 @@ supabase/.temp/
 .dev-screenshots/
 .helm/
 .codex/
+# 2026-10-21: a CLI deploy from a scripts/new-worktree.sh worktree failed on Vercel
+# with ".codex/config.toml is not a valid symlink": shared-workspace-runtime.mjs links
+# that file to an absolute path on the Mac and the tarball packed the link even
+# though `.codex/` is listed above. File-level entries too, in case the CLI's
+# archive walk tests file paths without the directory pattern.
+.codex/config.toml
+.codex/**
 .design-sync/
 .ultracode/
 .vscode/
