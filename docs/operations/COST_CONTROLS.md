@@ -76,9 +76,12 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 
 ### Scheduled browser jobs
 
-| Workflow | Runs when | What it costs |
-|----------|-----------|---------------|
-| **`Clubhouse journeys`** (`.github/workflows/clubhouse-journeys.yml`, added 2026-10-16) | Nightly at 09:47 UTC and `workflow_dispatch`; never on a PR or a push | One runner for up to 80 minutes: a local Supabase stack, `next dev` (no build), the Clubhouse write journeys in Chromium and WebKit, then the Clubhouse accessibility scan in light and dark. Reports kept 7 days |
+- **`Clubhouse journeys`** (`.github/workflows/clubhouse-journeys.yml`, added
+  2026-10-16) runs nightly at 09:47 UTC and on `workflow_dispatch`; never on a
+  PR or a push. It costs one runner for up to 80 minutes: a local Supabase
+  stack, one `next build --webpack` plus `next start` for the write journeys
+  and the round spec in Chromium and WebKit, then `next dev` for the Clubhouse
+  accessibility scan in light and dark. Reports are kept 7 days.
 
 ### Manual full browser CI
 
