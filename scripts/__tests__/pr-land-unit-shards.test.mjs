@@ -1,7 +1,7 @@
 // scripts/pr-land.mjs refuses to land unless one CI run of the head commit ran all five unit shards. A follow-up push runs only the
 // related tests on shard 1 and skips shards 2-5, so every required context can be green without the suite having run (#2269 / #2270).
 import { describe, expect, it } from 'vitest';
-import { checkUnitShards, evaluateUnitShards, unitShardVerdict } from '../pr-land.mjs';
+import { checkUnitShards, evaluateUnitShards, newestAttempts, unitShardVerdict } from '../pr-land.mjs';
 
 const SHA = 'a'.repeat(40);
 
@@ -106,7 +106,7 @@ describe('checkUnitShards (gh faked)', () => {
     const gh = fakeGh({ runs: { workflow_runs: [wr(1)] }, jobsByRun: { 1: fullRun(1).jobs } });
     expect(checkUnitShards({ repo: 'o/r', sha: SHA, run: gh.run })).toEqual({ ok: true, runId: 1, problems: [] });
     expect(gh.calls[0][1]).toBe(`repos/o/r/actions/runs?head_sha=${SHA}&per_page=100`);
-    expect(gh.calls[1][1]).toBe('repos/o/r/actions/runs/1/jobs?filter=latest&per_page=100');
+    expect(gh.calls[1][1]).toBe('repos/o/r/actions/runs/1/jobs?filter=all&per_page=100&page=1');
   });
   it('ignores other workflows (CodeQL, Clubhouse journeys) and runs of other SHAs', () => {
     const gh = fakeGh({
@@ -131,5 +131,35 @@ describe('checkUnitShards (gh faked)', () => {
   it('a head with no CI run at all is a refusal', () => {
     const r = checkUnitShards({ repo: 'o/r', sha: SHA, run: fakeGh({ runs: { workflow_runs: [] }, jobsByRun: {} }).run });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe('newestAttempts — a failed-jobs rerun keeps the shards that already passed', () => {
+  const at = (j, run_attempt, id) => ({ ...j, run_attempt, id });
+  it('keeps an attempt-1 pass that was not rerun and takes the attempt-2 result of one that was', () => {
+    const jobs = [
+      ...[1, 2, 3, 4].map((n, i) => at(job(n, { test: 'success' }), 1, 10 + i)),
+      at(job(5, { test: 'failure' }), 1, 14),
+      at(job(5, { test: 'success' }), 2, 20),
+    ];
+    expect(evaluateUnitShards([{ id: 7, jobs: newestAttempts(jobs) }])).toMatchObject({ ok: true, runId: 7 });
+  });
+  it('a shard that passed in attempt 1 but failed when rerun in attempt 2 is a failure', () => {
+    const jobs = [at(job(5, { test: 'success' }), 1, 14), at(job(5, { test: 'failure' }), 2, 20)];
+    const picked = newestAttempts(jobs);
+    expect(picked).toHaveLength(1);
+    expect(picked[0].run_attempt).toBe(2);
+  });
+  it('checkUnitShards reads every attempt and pages past 100 jobs', () => {
+    const first = Array.from({ length: 100 }, (_, i) => ({ name: `Other ${i}`, id: i, run_attempt: 1, steps: [] }));
+    const second = [1, 2, 3, 4, 5].map((n) => ({ ...job(n, { test: 'success' }), run_attempt: 1, id: 200 + n }));
+    const calls = [];
+    const run = (args) => {
+      calls.push(args[1]);
+      if (args[1].includes('/actions/runs?')) return { ok: true, stdout: JSON.stringify({ workflow_runs: [{ id: 9, path: '.github/workflows/ci.yml', head_sha: SHA }] }) };
+      return { ok: true, stdout: JSON.stringify({ jobs: args[1].endsWith('page=1') ? first : second }) };
+    };
+    expect(checkUnitShards({ repo: 'o/r', sha: SHA, run })).toEqual({ ok: true, runId: 9, problems: [] });
+    expect(calls.filter((c) => c.includes('/jobs?')).length).toBe(2);
   });
 });

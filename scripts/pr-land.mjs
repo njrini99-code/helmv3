@@ -164,6 +164,19 @@ export function evaluateUnitShards(runs, shards = UNIT_SHARDS) {
 }
 
 /**
+ * Of a run's jobs across all attempts, the newest attempt of each job name (then the highest job id). A shard that passed in attempt 1
+ * and was not rerun still counts; a shard rerun in attempt 2 counts by its attempt-2 result, pass or fail. Pure.
+ */
+export function newestAttempts(jobs) {
+  const byName = new Map();
+  for (const j of jobs ?? []) {
+    const cur = byName.get(j.name);
+    if (!cur || (j.run_attempt ?? 1) > (cur.run_attempt ?? 1) || ((j.run_attempt ?? 1) === (cur.run_attempt ?? 1) && j.id > cur.id)) byName.set(j.name, j);
+  }
+  return [...byName.values()];
+}
+
+/**
  * Reads the CI workflow's runs for `sha` and their jobs through `run(args)` (gh), then judges them with evaluateUnitShards. Fails closed:
  * a read that errors is a refusal, never a pass.
  *
@@ -179,13 +192,25 @@ export function checkUnitShards({ repo, sha, run }) {
       return null;
     }
   };
+  // Every attempt, not `filter=latest`: a rerun of only the failed jobs leaves the jobs that already passed in attempt 1, and `latest`
+  // would drop them, so a run whose five shards all passed would read as missing some.
+  const readAllJobs = (runId) => {
+    const all = [];
+    for (let page = 1; page <= 5; page += 1) {
+      const r = readJson(['api', `repos/${repo}/actions/runs/${runId}/jobs?filter=all&per_page=100&page=${page}`]);
+      if (!r || !Array.isArray(r.jobs)) return null;
+      all.push(...r.jobs);
+      if (r.jobs.length < 100) return all;
+    }
+    return all;
+  };
   const listed = readJson(['api', `repos/${repo}/actions/runs?head_sha=${sha}&per_page=100`]);
   if (!listed || !Array.isArray(listed.workflow_runs)) return { ok: false, runId: null, problems: ['could not read the CI runs for this head commit'] };
   const runs = [];
   for (const wr of listed.workflow_runs.filter((w) => w.path === CI_WORKFLOW_PATH && w.head_sha === sha)) {
-    const jobs = readJson(['api', `repos/${repo}/actions/runs/${wr.id}/jobs?filter=latest&per_page=100`]);
-    if (!jobs || !Array.isArray(jobs.jobs)) return { ok: false, runId: wr.id, problems: [`could not read the jobs of CI run ${wr.id}`] };
-    runs.push({ id: wr.id, jobs: jobs.jobs });
+    const jobs = readAllJobs(wr.id);
+    if (!jobs) return { ok: false, runId: wr.id, problems: [`could not read the jobs of CI run ${wr.id}`] };
+    runs.push({ id: wr.id, jobs: newestAttempts(jobs) });
   }
   return evaluateUnitShards(runs);
 }
