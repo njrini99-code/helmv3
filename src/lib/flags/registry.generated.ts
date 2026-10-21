@@ -338,7 +338,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_stale_refresh_v1",
     owner: "golf/coachhelm",
-    purpose: "Adds an idle-player pass to the nightly roster sweep: an analyzed player whose newest analysis (newest visible-read refresh stamp or engine run) is 14 or more days old, who still has an open read and a completed round inside the engine's 90-day window, is re-analyzed with the same deterministic engine run the sweep already uses (no model calls), at most 6 players a night, oldest first, after the freshness picks and under the same time budget. Reads through the HELM_COACHHELM_TEAMS canary. Off: the sweep runs exactly as before.",
+    purpose: "Adds an idle-player pass to the nightly roster sweep: an analyzed player whose newest analysis (newest visible-read refresh stamp or engine run) is 14 or more days old, who still has an open read and a completed round inside the engine's 90-day window, is re-analyzed with the same deterministic engine run the sweep already uses (no model calls), at most 6 players a night in a rotation through the stale players (oldest first), after the freshness picks and under the same time budget. Reads through the HELM_COACHHELM_TEAMS canary. Off: the sweep runs exactly as before.",
     type: "release",
     status: "active",
     created_at: "2026-10-21",
