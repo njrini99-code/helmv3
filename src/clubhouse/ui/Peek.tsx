@@ -41,7 +41,15 @@ export const PEEK_FOCUS_MS = 600;
 const SLOP_PX = 8;
 const HOVER_GRACE_MS = 160;
 const CARD_W = 328;
-const FIT_MIN_W = 288;
+
+/**
+ * The hover card's width. A fitted card (a table's name cell) is the anchor's width up to the usual 328px and never
+ * wider: a floor above the anchor's own width would push the excess over the figures in the next column, which is what
+ * fitting is for. A narrow cell wraps the card's content and its keys instead.
+ */
+export function hoverCardWidth(fit: boolean, anchorWidth: number): number {
+  return fit ? Math.min(CARD_W, Math.max(0, Math.floor(anchorWidth))) : CARD_W;
+}
 
 type Mode = { kind: 'press' | 'hover'; rect: DOMRect } | null;
 
@@ -57,7 +65,7 @@ export function PeekTarget({
   label: string;
   /**
    * A selector for the closest ancestor the hover card stays under (for a table's name cell: '[role="cell"]'). The
-   * card then opens below that box, no wider than it (never under 288px), so it can't cover the figures beside it.
+   * card then opens below that box, no wider than it (a narrow cell wraps the card instead), so it can't cover the figures beside it.
    */
   within?: string;
   /** Drawn only while open. */
@@ -262,7 +270,7 @@ function HoverCard({
   const card = useRef<HTMLDivElement>(null);
   const reduced = useChReducedMotion();
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
-  const w = fit ? Math.min(CARD_W, Math.max(FIT_MIN_W, rect.width)) : CARD_W;
+  const w = hoverCardWidth(fit, rect.width);
   useLayoutEffect(() => {
     const h = card.current?.offsetHeight ?? 200;
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - w - 8));

@@ -30,7 +30,7 @@ import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
-import { LEGS_LIST, LEG_SECTION } from './legs';
+import { gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
@@ -89,11 +89,16 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     wantSection.current = `gm-${id}`;
     setTab('game');
   };
+  // On the phone the hash picks the section Game detail draws (GameDetail reads it itself), so this scroll is the desktop's.
   useEffect(() => {
-    if (!wantSection.current && typeof window !== 'undefined' && window.location.hash.startsWith('#gm-')) wantSection.current = window.location.hash.slice(1);
-  }, []);
+    if (!wantSection.current && !phone && gameSectionFromHash(window.location.hash)) wantSection.current = window.location.hash.slice(1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
   useEffect(() => {
     const id = wantSection.current;
+    if (phone) {
+      wantSection.current = null;
+      return;
+    }
     if (!id || shownTab !== 'game') return;
     const el = document.getElementById(id);
     if (!el) return;

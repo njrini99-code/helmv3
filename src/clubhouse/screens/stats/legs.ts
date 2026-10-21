@@ -10,3 +10,13 @@ export const LEG_SECTION: Readonly<Record<ChLeg, 'tee' | 'approach' | 'short' | 
   'Around green': 'short',
   Putting: 'putting',
 };
+
+/** The Game detail sections an address can name (`#gm-<id>`), in page order. */
+export const GAME_SECTION_IDS = ['scoring', 'tee', 'approach', 'short', 'putting'] as const;
+export type GameSectionId = (typeof GAME_SECTION_IDS)[number];
+
+/** The section a `#gm-<id>` hash names, or null for any other hash (a section that does not exist is not one). */
+export function gameSectionFromHash(hash: string): GameSectionId | null {
+  const id = /^#gm-([a-z]+)$/.exec(hash)?.[1];
+  return GAME_SECTION_IDS.find((s) => s === id) ?? null;
+}

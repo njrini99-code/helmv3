@@ -23,9 +23,11 @@ Held items:     none
   light and dark.
 - The player hover card on the grid read "Last round —" for every player: the
   grid rows never carried a last round. They now do, and the card shows it.
-- On the grid the hover card opens under the player's name cell, 288px wide
-  (`within` on `PlayerPeek`), so it no longer covers the numbers or bars beside
-  it. Other peeks are unchanged.
+- On the grid the hover card opens under the player's name cell and is never
+  wider than it (`within` on `PlayerPeek`; up to the usual 328px), so it does
+  not cover the numbers or bars beside it, even in the 200px player column the
+  grid allows at its 760px minimum. In a narrow cell its keys wrap onto a
+  second row. Other peeks are unchanged.
 - Preview: `/clubhouse-preview/stats?state=demo` shows the Demo University
   fixture.
 - Missing-work audit rows (par-17, chs-56, par-19, doc-13):
@@ -35,8 +37,10 @@ Held items:     none
   - Each leg figure on the team grid opens that player's Game detail on the
     matching section (`?player=&tab=game#gm-tee`, `-approach`, `-short`,
     `-putting`); the name still opens the profile. On a player's Overview, a
-    pinned leg offers "See approach in game detail" (decisions Q12). The page
-    scrolls to the section once the Game detail tab is in.
+    pinned leg offers "See approach in game detail" (decisions Q12). On a
+    desktop the page scrolls to the section once the Game detail tab is in; on
+    the phone, which draws one section at a time, the address picks that
+    section and scrolls to it (see P005).
   - The goals empty state no longer sends a player to a page that loops back
     ("Goals you and your coach set show here"; a coach reads "{name} has no
     goals yet"). Setting goals is still Fairway-only.

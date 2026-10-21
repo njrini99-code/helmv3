@@ -2,6 +2,7 @@
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { gameSectionFromHash } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
@@ -189,6 +190,29 @@ export function GameDetail({
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, [phone]);
+
+  // An address that ends `#gm-<section>` (the team grid's leg figures) names the phone's section: it is chosen, then scrolled
+  // to once it is in the page, since the phone draws only the chosen one. A new request each time, so the same hash twice scrolls twice.
+  const [asked, setAsked] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    if (!phone) return;
+    const read = () => {
+      const id = gameSectionFromHash(window.location.hash);
+      if (!id) return;
+      setChosen(id);
+      setAsked({ id });
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, [phone, setChosen]);
+  useEffect(() => {
+    if (!phone || !asked || on !== asked.id) return;
+    const el = document.getElementById(`gm-${asked.id}`);
+    if (!el) return;
+    setAsked(null);
+    el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+  }, [phone, asked, on, reduced]);
 
   const jump = (id: string) => {
     if (phone && id === on) return;
