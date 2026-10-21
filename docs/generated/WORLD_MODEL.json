@@ -3605,6 +3605,10 @@
         "definedIn": "supabase/migrations/20260607200000_per_team_sg_baseline.sql"
       },
       {
+        "id": "can_delete_organization",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
         "id": "can_insert_baseball_team_member",
         "definedIn": "supabase/migrations/20260630233000_baseball_team_join_policy_rls.sql"
       },
@@ -3631,6 +3635,10 @@
       {
         "id": "claim_round_recap_lock",
         "definedIn": "supabase/migrations/20260923100000_round_recap_single_flight_lock.sql"
+      },
+      {
+        "id": "coach_organization_is_claimable",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
       },
       {
         "id": "find_baseball_player_by_email_for_roster",
@@ -3821,6 +3829,18 @@
         "definedIn": "supabase/migrations/20260907160000_golf_team_chat_membership_management.sql"
       },
       {
+        "id": "guard_baseball_team_organization_id",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "guard_coach_organization_id",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "guard_lifting_coach_self_update",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
         "id": "guard_users_role_self_change",
         "definedIn": "supabase/migrations/20260703210000_admin_rollup_consistent_super_admin_gate.sql"
       },
@@ -3955,6 +3975,10 @@
       {
         "id": "helm_lifting_can_edit_org",
         "definedIn": "supabase/migrations/20260625000000_helm_lifting_identity.sql"
+      },
+      {
+        "id": "helm_lifting_can_invite_coach",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
       },
       {
         "id": "helm_lifting_can_view_org",
@@ -4171,6 +4195,10 @@
       {
         "id": "shares_my_golf_organization",
         "definedIn": "supabase/migrations/20260803120000_golf_coaches_scope_select.sql"
+      },
+      {
+        "id": "stamp_organization_creator",
+        "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
       },
       {
         "id": "submit_round_atomic",

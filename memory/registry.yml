@@ -2163,6 +2163,7 @@ features:
         - supabase/migrations/*staff_capabilities*.sql
         - supabase/migrations/*staff_roles_scope_audit*.sql
         - supabase/migrations/*staff_display*.sql
+        - supabase/migrations/*coach_organization_pin*.sql
         - supabase/schemas/**
         - supabase/tests/rls/*.sql
       tests:

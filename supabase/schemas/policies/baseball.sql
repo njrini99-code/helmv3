@@ -878,8 +878,8 @@ CREATE POLICY "baseball_team_members_update_coach" ON "public"."baseball_team_me
 CREATE POLICY "baseball_teams_delete" ON "public"."baseball_teams" FOR DELETE TO "authenticated" USING ("public"."is_baseball_primary_coach"("id"));
 
 CREATE POLICY "baseball_teams_insert_coaches" ON "public"."baseball_teams" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
-   FROM "public"."baseball_coaches"
-  WHERE ("baseball_coaches"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+   FROM "public"."baseball_coaches" "bc"
+  WHERE (("bc"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (("baseball_teams"."organization_id" IS NULL) OR ("bc"."organization_id" = "baseball_teams"."organization_id"))))));
 
 CREATE POLICY "baseball_teams_select" ON "public"."baseball_teams" FOR SELECT TO "authenticated" USING (("public"."is_baseball_team_staff"("id") OR "public"."has_any_baseball_team_membership"("id")));
 
