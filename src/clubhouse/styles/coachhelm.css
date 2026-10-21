@@ -1986,3 +1986,95 @@ html:not([data-fw-theme='dark']) .ch-hl {
 :where(html[data-fw-theme='dark']) .ch-hl-eng__w.is-mid {
   color: var(--ch-champagne-300);
 }
+
+/* Slice 7c: the coach's course plan for the chosen player, on request (coachhelm_course_plan_v1, off). */
+.ch-hl-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ch-hl-plan__h {
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-hl-plan__start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.ch-hl-plan__start .ch-hl-note {
+  flex: 1 1 220px;
+}
+.ch-hl-plan__courses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-hl-plan__c {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 1px solid var(--ch-border-control);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-bg-surface);
+  color: var(--ch-text-primary);
+  text-align: start;
+  cursor: pointer;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-hl-plan__c b {
+  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+}
+.ch-hl-plan__c em {
+  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-plan__c.is-on {
+  background: var(--ch-bg-selected);
+  border-color: var(--ch-green-700);
+}
+.ch-hl-plan__c:disabled {
+  cursor: progress;
+}
+.ch-hl-plan__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-inline-start: 18px;
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-hl-plan__thin {
+  margin-top: 10px;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-plan__player {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ch-border-subtle);
+}
+.ch-hl-plan__player h4 {
+  font: 600 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-plan__pt {
+  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+@media (pointer: coarse) {
+  .ch-hl-plan .ch-btn {
+    min-height: 44px;
+  }
+}

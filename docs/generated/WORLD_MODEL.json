@@ -14110,6 +14110,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-course-plan.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -14217,6 +14222,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/course-plan/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
         },
         {
           "kind": "import_graph",
@@ -14338,6 +14348,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-corrections.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-course-plan.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-course-plan.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -14875,6 +14895,11 @@
       "target": "golf_round_lifecycle",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-course-plan.ts",
+          "anchor": "src/lib/golf/round-countable"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-data.ts",
