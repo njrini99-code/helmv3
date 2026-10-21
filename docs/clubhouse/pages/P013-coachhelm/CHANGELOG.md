@@ -1,5 +1,44 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Standing: Where strokes go replaces Most to gain
+
+```text
+Design package: clubhouse-coachhelm-design-call.md (Standing); review
+                2026-10-19 section 7.4
+PR/commit:      see git log (claude/coachhelm-strokes-ladder)
+Contract IDs:   CH-13273, CH-13374 (new); CH-13271, CH-13371, CH-13470,
+                CH-13880 reworded
+Actions:        none (read only)
+Data impact:    none written; reads the player's visible golf_coach_insights
+                rows (the Board's own read) beside the standing
+Held items:     none
+```
+
+### Changed
+
+- The hero names the part of the round that loses the most against the Tour,
+  once, with no number ("Your approach shots cost you the most strokes
+  against the Tour"). With no losing part it keeps the old count headline.
+- "Most to gain" is gone. Under the hero, "Where strokes go": four flush rows
+  (Off the tee, Approach, Around the green, Putting), each the strokes a round
+  against the Tour from the player's strokes-gained rows, two decimals with a
+  true minus, a thin bar against the largest (losses amber, gains green).
+- "Because" opens the open reads in that part in place (one row at a time,
+  height and opacity on the base duration), each with its firmness words
+  ("Solid read · Counted") and the counted sequence or why it is not traced
+  yet, linking to the read in the Deep dive.
+- A part with no figure says why in words (CH-13374). Reads that did not load
+  are said once under the ladder, and nothing opens (CH-13273).
+- The groups with You / Tour / Team are unchanged. The loading shape follows
+  the shorter card.
+- Preview: `/clubhouse-preview/coachhelm-views?view=standing` with
+  `&state=thin` and `&state=readsfailed`.
+
+### Why
+
+- The design call: the hero, Most to gain and the group rows drew the same top
+  gap three times on one screen.
+
 ## 2026-10-21 — useHydrated moved to the shared lib
 
 No visible change. `screens/coachhelm/use-hydrated.ts` re-exports

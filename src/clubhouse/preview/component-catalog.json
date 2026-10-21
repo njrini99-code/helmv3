@@ -8251,12 +8251,20 @@
         "ch-hs-g",
         "ch-hs-g__h",
         "ch-hs-g__t",
-        "ch-hs-gaps",
-        "ch-hs-gaps__v",
         "ch-hs-hero",
         "ch-hs-hero__k",
         "ch-hs-hero__main",
         "ch-hs-hero__sub",
+        "ch-hs-ld__b",
+        "ch-hs-ld__bar",
+        "ch-hs-ld__fail",
+        "ch-hs-ld__h",
+        "ch-hs-ld__miss",
+        "ch-hs-ld__n",
+        "ch-hs-ld__none",
+        "ch-hs-ld__r",
+        "ch-hs-ld__v",
+        "ch-hs-ld__why",
         "ch-hs-note",
         "ch-hs-pct",
         "ch-hs-proj",
@@ -8284,43 +8292,61 @@
           "name": "--ch-hs-tone",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-hs-r",
-          "line": 167
+          "line": 108
         },
         {
           "name": "--ch-hs-ink",
           "value": "var(--ch-ink-700)",
           "scope": ".ch-hs-r",
-          "line": 168
+          "line": 109
         },
         {
           "name": "--ch-hs-tone",
           "value": "var(--ch-green-600)",
           "scope": ".ch-hs-r.is-ahead",
-          "line": 178
+          "line": 119
         },
         {
           "name": "--ch-hs-ink",
           "value": "var(--ch-green-700)",
           "scope": ".ch-hs-r.is-ahead",
-          "line": 179
+          "line": 120
         },
         {
           "name": "--ch-hs-tone",
           "value": "var(--ch-chart-loss)",
           "scope": ".ch-hs-r.is-behind",
-          "line": 182
+          "line": 123
         },
         {
           "name": "--ch-hs-ink",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hs-r.is-behind",
-          "line": 183
+          "line": 124
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-ink-500)",
+          "scope": ".ch-hs-ld__r",
+          "line": 532
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-chart-loss)",
+          "scope": ".ch-hs-ld__r.is-loss",
+          "line": 543
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-green-fill-600)",
+          "scope": ".ch-hs-ld__r.is-gain",
+          "line": 546
         },
         {
           "name": "--ch-hs-tone",
           "value": "var(--ch-green-fill-600)",
           "scope": ".ch-hs-r.is-ahead",
-          "line": 772
+          "line": 805
         }
       ]
     },

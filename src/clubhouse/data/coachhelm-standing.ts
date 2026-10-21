@@ -4,6 +4,12 @@ import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohor
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { chLogServer } from '../lib/track-server';
+import { earliestStaleFloor, loadPlayerDismissed, loadVisible, newestRounds, playerTeam } from './coachhelm';
+import { isOpenFinding } from './coachhelm-classify';
+import { readEngineFlags } from './coachhelm-engine';
+import { shapeReadsLifecycle } from './coachhelm-engine-shape';
+import type { ChLadderReads } from './coachhelm-ladder-shape';
+import { toChInsight } from './coachhelm-map';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from './coachhelm-standing-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
 
@@ -69,6 +75,41 @@ async function readCohort(playerId: string): Promise<{ failed: boolean }> {
 }
 
 /**
+ * The player's open reads for the ladder's "Because" (`coachhelm-ladder-shape.ts`): the Board's visible rows through the session's
+ * client (RLS scopes them to this player as well), less the ones they dismissed, kept to current findings by the Board's own
+ * `isOpenFinding`, each mapped by the Board's mapper in their own voice. Never `getInsightsForPlayer`: that records the reads as
+ * shown, and this page shows only their titles. A read that fails is `failed`, which the ladder says, and the strokes still draw.
+ */
+async function readLadderReads(supabase: Supabase, playerId: string): Promise<ChLadderReads> {
+  try {
+    const [visible, dismissed, team] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId), playerTeam(supabase, playerId)]);
+    if (visible.error || dismissed.error) return { status: 'failed' };
+    const mine = visible.rows.filter((r) => r.player_id === playerId && !dismissed.ids.has(r.id));
+    const newest = await newestRounds(supabase, [playerId], earliestStaleFloor(mine));
+    const newestRound = newest.days.get(playerId) ?? null;
+    const flags = readEngineFlags();
+    const now = new Date().toISOString();
+    const viewer = { role: 'player' } as const;
+    // With the recheck on, a cleared or retired read is not open (the Deep dive's own shaping); with it off this keeps them all.
+    const kept = shapeReadsLifecycle(
+      mine.filter((r) => isOpenFinding(r, team.tour, newestRound)),
+      flags.recheck,
+      viewer,
+      now,
+    ).kept;
+    const list = kept.map((r) => {
+      const card = toChInsight(r, { tour: team.tour, newestRound, viewer, engine: { flags, lifecycle: null, focus: null, now } });
+      const cause = card.engine?.cause;
+      return { id: r.id, category: r.category, title: card.title, priority: card.priority, word: card.evidence.read?.word ?? null, cause: cause ? { word: cause.word, line: cause.line } : null };
+    });
+    return { status: 'ok', list };
+  } catch (err) {
+    log('standing.reads', err);
+    return { status: 'failed' };
+  }
+}
+
+/**
  * The player's Standing (`?view=standing`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
  * never an address's: `loadPlayerStandingMap` reads `golf_player_standing` through the service client (that table is written by
  * the nightly refresh and has no per-player policy to lean on), so the id it is given is the only thing scoping it.
@@ -79,7 +120,7 @@ async function readCohort(playerId: string): Promise<{ failed: boolean }> {
 export async function loadPlayerStanding(input: { playerId: string }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
-    const [map, baseline, cohort] = await Promise.all([
+    const [map, baseline, cohort, reads] = await Promise.all([
       loadPlayerStandingMap(input.playerId).then(
         // The map is this player's already; a row that is anyone else's is never drawn, whatever the loader returned.
         (m) => ({ ok: true as const, rows: [...m.values()].filter((r) => r.player_id === input.playerId) }),
@@ -90,9 +131,10 @@ export async function loadPlayerStanding(input: { playerId: string }): Promise<C
       ),
       readBaseline(supabase, input.playerId),
       readCohort(input.playerId),
+      readLadderReads(supabase, input.playerId),
     ]);
     if (!map.ok) return { status: 'failed' };
-    return { status: 'ready', data: { ...toChStanding(map.rows, baseline), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
+    return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

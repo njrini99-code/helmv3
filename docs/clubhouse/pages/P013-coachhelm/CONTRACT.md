@@ -65,7 +65,10 @@ One address, `/golf/dashboard/coachhelm`, is the coach's board for a coach and t
 
 Status: DEFINED
 
-The route skeleton is a Clubhouse one inside the shell and Fairway's outside it, in the signed-in role's shape (130204); a write in flight says so on its button (Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its own after the server render, so there are no section skeletons.
+The route skeleton is a Clubhouse one inside the shell and Fairway's outside it,
+in the signed-in role's shape (130204); a write in flight says so on its button
+(Assigning, Dismissing, Undoing: CH-13403). CoachHelm loads no section on its
+own after the server render, so there are no section skeletons.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -135,6 +138,7 @@ filter, so it has no filtered empty state.
 | 130427 | CH-13382 | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | Deep dive: a read names no rounds, or none of them can be listed |
 | 130428 | CH-13383 | `DEEP_DIVE_A_READ_HAS_NO_TREND` | Deep dive: a read has no trend |
 | 130429 | CH-13384 | `DEEP_DIVE_A_READ_IS_NOT_PART` | Deep dive: a read is not part of a plan |
+| 130430 | CH-13374 | `STANDING_A_PART_OF_THE_ROUND_ON` | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
 
 ## 05 — Validation
 
@@ -191,6 +195,7 @@ Every write has its own toast naming what failed and what to do, with Retry (CH-
 | 130635 | CH-13226 | `ASK_A_READ_THE_PULSE_IS_MADE` | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
+| 130638 | CH-13273 | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | Standing: the open reads behind Where strokes go don't load |
 
 ## 07 — Network / offline
 
