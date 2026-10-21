@@ -462,8 +462,8 @@ Held items:     none
 
 - `placeholder-cause.test.ts` (both production spellings) and
   `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
-  observed and hypothesis cases are unchanged). No screenshot: the card loses one block and no layout rule
-  changed.
+  observed and hypothesis cases are unchanged). No screenshot: the card loses
+  one block and no layout rule changed.
 
 ## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
 
@@ -621,18 +621,31 @@ Held items:     none
 
 ### Changed
 
-- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
-- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
-- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
+- CoachHelm turned off for a player, or off for everyone for a coach, is the
+  restricted state: a lock and who can change it, with no action that would
+  fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence;
+  the coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan)
+  use the shared compact state; `.ch-hd-none` is gone.
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
 ### Why
 
-- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+- Every empty page was one template: a green tile, a headline, a sentence and
+  a button in blank space. The waiting form draws the shape of what will fill
+  the space (rules, rings, a baseline; no bars, no fake text) under one
+  sentence that names what fills it and who does it, and a filter that hides
+  everything is told apart from a first run, a lock and a failed read.
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone
+  unchanged) and this page's tests; captured at 390 and 1280, light and dark,
+  before and after, on `/clubhouse-preview/coachhelm?state=empty` and
+  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the
+  restricted state) was captured after only, phone, light. The Deep dive
+  empties have unit tests but no capture.
 
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 

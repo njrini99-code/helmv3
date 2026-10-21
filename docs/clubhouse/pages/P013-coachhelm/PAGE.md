@@ -154,8 +154,9 @@ have no insights yet, and Roster's View insights (the Deep dive).
 
 ### Exits to
 
-Roster, from Invite players (its invite sheet) and View roster (a coach), and CoachHelm settings, from
-Open CoachHelm settings (`/golf/dashboard/settings/coaching-intelligence`);
+Roster, from Invite players (its invite sheet) and View roster (a coach), and
+CoachHelm settings, from Open CoachHelm settings
+(`/golf/dashboard/settings/coaching-intelligence`);
 Rounds, from Open Rounds or Start a round (a player). A control whose target is
 not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'
 Development tab, from the player's sub-navigation and from `?view=development`

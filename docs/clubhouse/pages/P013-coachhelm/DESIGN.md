@@ -126,9 +126,10 @@ v2 grammar (D-70): selection for choosing a player or an insight; the light
 press on Assign as focus, with success when it lands and error when it does not;
 the warning before Dismiss; Accept carries the light press, and is the primary
 button for a lone proposal and secondary when there are more (one primary per
-screen, P013 D10), and Decline is silent, each with success or error from `useAction` (CH-13704);
-choosing a view in the sub-navigation, a read in the Deep dive's list and a
-round or a plan link under it are selections (CH-13780); other taps are silent.
+screen, P013 D10), and Decline is silent, each with success or error from
+`useAction` (CH-13704); choosing a view in the sub-navigation, a read in the
+Deep dive's list and a round or a plan link under it are selections
+(CH-13780); other taps are silent.
 
 ## Desktop
 
