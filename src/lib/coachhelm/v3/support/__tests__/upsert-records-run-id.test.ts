@@ -4,6 +4,7 @@ const { v2Upsert } = vi.hoisted(() => ({ v2Upsert: vi.fn() }));
 vi.mock('@/lib/coachhelm/v2/insights/upsert', () => ({
   upsertInsight: v2Upsert,
   GATED_OUT: Symbol.for('test.gated_out'),
+  isEvidenceRefusal: (err: unknown) => (err as { code?: unknown })?.code === 'test_refusal',
 }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(), logServerEvent: vi.fn() }));
 
@@ -34,10 +35,25 @@ describe('upsertInsightV3 and the run collector', () => {
     expect(c.ids()).toEqual(['insight-1']);
   });
 
-  it('records nothing for a philosophy-gated write', async () => {
+  it('records no id for a philosophy-gated write, but keeps it as a gated hypothesis', async () => {
     v2Upsert.mockResolvedValue(GATED_OUT);
     const c = createRunInsightCollector();
-    await c.run(() => upsertInsightV3(stampClient(), input));
+    const gatedInput = { ...input, insight_type: 'putt_distance', evidence: { metric: 'm' } } as typeof input;
+    await c.run(() => upsertInsightV3(stampClient(), gatedInput));
     expect(c.ids()).toEqual([]);
+    expect(c.gated()).toEqual([{ signature: 'v3:test:sig', insight_type: 'putt_distance', evidence: { metric: 'm' } }]);
+    expect(c.refused()).toBe(0);
+  });
+
+  it('counts a refused write and still throws it', async () => {
+    v2Upsert.mockRejectedValue(Object.assign(new Error('sample_n < 5'), { code: 'test_refusal' }));
+    const c = createRunInsightCollector();
+    await expect(c.run(() => upsertInsightV3(stampClient(), input))).rejects.toThrow('sample_n < 5');
+    expect(c.refused()).toBe(1);
+
+    // Any other failure is not a refusal.
+    v2Upsert.mockRejectedValue(new Error('network'));
+    await expect(c.run(() => upsertInsightV3(stampClient(), { ...input, signature: 'v3:other' }))).rejects.toThrow('network');
+    expect(c.refused()).toBe(1);
   });
 });
