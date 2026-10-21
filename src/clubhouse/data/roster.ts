@@ -271,7 +271,8 @@ async function loadHelm(supabase: Supabase, input: { teamId: string; coachId: st
     if (gate.status === 'off') return { status: 'off' };
     if (ids.length === 0) return { status: 'on', byPlayer: {} };
     const [visible, tour] = await Promise.all([loadVisible(supabase, ids), coachTour(supabase, input.teamId)]);
-    if (visible.error) return { status: 'failed' };
+    // A missing Tour reads cohort comparisons as findings, so the counts would be wrong: fail rather than count (as the Board does).
+    if (visible.error || tour.error) return { status: 'failed' };
     const members = new Set(ids);
     const rows = visible.rows.filter((r) => members.has(r.player_id));
     const newest = await newestRounds(supabase, ids, earliestStaleFloor(rows));

@@ -65,7 +65,8 @@ export function readsByArea(rows: ReadonlyArray<ClassifiableInsight & { id: stri
 async function coachReads(scope: ChCoachPlayerScope): Promise<ChStatsReads> {
   const supabase = await createClient();
   const [visible, tour] = await Promise.all([loadVisible(supabase, [scope.playerId]), coachTour(supabase, scope.teamId)]);
-  if (visible.error) return FAILED;
+  // A missing Tour reads cohort comparisons as findings, so the counts would be wrong: fail rather than count (as the Board does).
+  if (visible.error || tour.error) return FAILED;
   const rows = visible.rows.filter((r) => r.player_id === scope.playerId);
   const newest = await newestRounds(supabase, [scope.playerId], earliestStaleFloor(rows));
   if (newest.error) return FAILED;
@@ -81,7 +82,7 @@ async function playerReads(playerId: string): Promise<ChStatsReads> {
   if (gate.status === 'off') return { status: 'off' };
   const supabase = await createClient();
   const [visible, dismissed, team] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId), playerTeam(supabase, playerId)]);
-  if (visible.error || dismissed.error) return FAILED;
+  if (visible.error || dismissed.error || team.error || team.tourError) return FAILED;
   const rows = visible.rows.filter((r) => r.player_id === playerId && !dismissed.ids.has(r.id));
   const newest = await newestRounds(supabase, [playerId], earliestStaleFloor(rows));
   if (newest.error) return FAILED;
