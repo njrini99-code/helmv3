@@ -466,10 +466,14 @@ async function main(argv) {
     ? checkUnitShards({ repo, sha: pr.headRefOid, run: (a) => exec('gh', a, { cwd: canonicalRoot }) })
     : { ok: false, runId: null, problems: ['could not resolve the repository or the head commit'] };
   if (!shards.ok) {
+    // Follow-up pushes run the quick tier (ci.yml), so the full suite runs once, here, on the head about to merge.
+    const dispatched = exec('gh', ['workflow', 'run', 'ci.yml', '--ref', String(pr.headRefName)], { cwd: canonicalRoot });
     process.stderr.write(
       `pr-land: PR #${args.prNumber} is green on its required contexts, but the whole unit suite has not run on ${String(pr.headRefOid ?? '').slice(0, 9)}:\n` +
         shards.problems.map((p) => `  ${p}\n`).join('') +
-        'A follow-up push runs only the tests related to its diff. Flip the PR to draft and back to ready to get a full run, then land it again.\n',
+        (dispatched.ok
+          ? `Started the full CI run on ${pr.headRefName} (gh workflow run ci.yml). Land it again when that run is green.\n`
+          : `Could not start the full CI run (${String(dispatched.stderr ?? '').trim()}). Run \`gh workflow run ci.yml --ref ${pr.headRefName}\`, then land it again.\n`),
     );
     return 1;
   }
