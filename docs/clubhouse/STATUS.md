@@ -274,8 +274,8 @@ a new production deploy.
       routes for a full weekday (the `ui:clubhouse` search in Monitoring,
       against its baseline).
 - [ ] After the canary deploy: zero rounds completed with zero holes
-      (read-only SQL; zero in the seven days to 2026-10-17 with the flag off).
-      (the read-only SQL in Monitoring).
+      (the read-only SQL in Monitoring; zero in the seven days to 2026-10-17
+      with the flag off).
 
 ## Monitoring
 

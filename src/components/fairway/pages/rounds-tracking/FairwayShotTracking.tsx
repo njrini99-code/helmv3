@@ -30,11 +30,23 @@ import { FairwayCompletedHole } from './FairwayCompletedHole';
 import { FairwayEditShotModal } from './FairwayEditShotModal';
 import { FairwayPenaltyModal } from './FairwayPenaltyModal';
 import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
+import { FairwayDataGapPrompt } from './FairwayDataGapPrompt';
+import { useDataGapPrompt } from './useDataGapPrompt';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 
 // The logic lives in useShotTracking (shared with Clubhouse); this file draws it.
 export { resolveDistanceAfterShot, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 
-export default function FairwayShotTracking(props: ShotTrackingProps) {
+export interface FairwayShotTrackingProps extends ShotTrackingProps {
+  /**
+   * Open one-tap data-gap asks (CoachHelm Slice 8a, `loadDataGapAsks`). The
+   * round entry pages pass them only with `coachhelm_data_gap_prompt_v1` on;
+   * absent or empty, the screen draws nothing for them.
+   */
+  dataGapAsks?: readonly DataGapAsk[];
+}
+
+export default function FairwayShotTracking({ dataGapAsks, ...props }: FairwayShotTrackingProps) {
   const {
     safeAreaHandledAbove = false,
     statusSlot,
@@ -100,7 +112,15 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
     handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
+    handleTagPuttMiss,
   } = useShotTracking(props, { haptic });
+
+  const dataGapPrompt = useDataGapPrompt({
+    asks: dataGapAsks,
+    holeNumber: currentHole?.number,
+    shotHistory,
+    onTag: handleTagPuttMiss,
+  });
 
 
   // ── D-HOLESWIPE (owner decision): swipe between holes ─────────────────────
@@ -254,6 +274,7 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
 
             {/* Live entry / completed review */}
             <div className="min-w-0">
+          <FairwayDataGapPrompt prompt={dataGapPrompt} />
           {isHoleComplete ? (
             <FairwayCompletedHole
               shotHistory={shotHistory}

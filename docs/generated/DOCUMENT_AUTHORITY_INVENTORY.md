@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 350 | 13 | 71 | 92 |
+| `UNKNOWN` | 351 | 13 | 71 | 92 |
 
 ## Files
 
@@ -954,6 +954,7 @@ them would bury everything above.
 | `docs/clubhouse/templates/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/WIRING.md` | current | - | - | - | - |
 | `docs/design/DESIGN-SYSTEM.md` | current | - | - | yes | - |
+| `docs/design/taste-memory.md` | current | - | - | - | - |
 | `docs/design/team-level-insights-are-dark.md` | current | - | - | - | - |
 | `docs/fairway-coachhelm-insight-rebuild.md` | current | - | - | yes | 1 |
 | `docs/guides/SENTRY_SETUP_GUIDE.md` | current | - | - | - | - |

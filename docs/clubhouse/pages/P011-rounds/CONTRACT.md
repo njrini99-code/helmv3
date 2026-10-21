@@ -1,6 +1,7 @@
 # P011 — Rounds: page contract
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current contract audit — 2026-10-06
 
 The manifest reports complete contract coverage and 7 mapped actions. Existing
@@ -208,11 +209,13 @@ Status: DEFINED
 
 Discard and Start refuse while offline before anything is sent, with the shell's
 toast naming what did not happen, and Try again on a hole that did not save only
-warns while offline (110702: the library's Discard, round entry's Start, Save
-for later and Exit's Discard, and the hole's Try again are each forced offline
-in a test, `rounds-contracts.test.tsx` among them, and a discard whose request
-never lands keeps the device copy). The shot screen's background save says
-"Saving round", "Round saved" or "Not synced yet, retrying" in a quiet line
+warns while offline (110702, tested in `rounds-contracts.test.tsx`; the
+library's Discard offline in `rounds.test`, Start, Save for later and Exit's
+Discard offline in `round-entry-wiring.test`, the hole's Try again offline in
+`round-tracking.test`, and a discard whose request never lands keeps the device
+copy in `rounds.test` and `use-new-round-session.preservation.test`). The shot
+screen's background save says "Saving round", "Round saved" or "Not synced yet,
+retrying" in a quiet line
 beside the distance readout (CH-11901); the engine retries on its own. Setup's
 course, tee and scorecard reads that fail, offline or not, say they did not
 load, with Try again (CH-11208 to CH-11210).
@@ -220,7 +223,7 @@ load, with Try again (CH-11208 to CH-11210).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 110701 | CH-11901 | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | The round saves in the background |
-| 110702 | — | `WRITES_REFUSE_OFFLINE` | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Each is forced offline in a test: the library's Discard (rounds.test: nothing sent, the card stays, and Retry once back online discards it), round entry's Start, Save for later and Exit's Discard (round-entry-wiring.test, CH-1903: nothing is sent, Exit's Discard keeps a hole that exists only on the device, and a browser that says offline but reaches the server goes ahead), and the hole's Try again (round-tracking.test); the library's Discard, setup's Start and the hole's Try again are also driven offline (the browser's own flag) in rounds-contracts.test.tsx. A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
+| 110702 | — | `WRITES_REFUSE_OFFLINE` | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. Exit's Discard is forced offline in round-entry-wiring.test (nothing is sent and a hole that exists only on the device keeps its device copy). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | The round changed on another device and this one stopped saving |
 | 110704 | CH-11903 | `THE_ENGINE_REPORTS_THAT_AUTO_SAVE_IS` | The engine reports that auto-save is having trouble ("Auto-save is having trouble. …", both engines) |
 | 110705 | CH-11904 | `THE_DEVICE_COULDNT_KEEP_ITS_QUICK_LOCAL` | The device couldn't keep its quick local backup |
@@ -355,16 +358,17 @@ Status: DEFINED
 The library keeps its search and grouping while the page is open, and the review
 keeps the picked hole; neither is in the address, so a reload starts again from
 By month with no search, and on the first hole over par. A Start that fails
-leaves the setup as it was and Start sends the same form again (111201), and a
-hole that does not save keeps its shots on the review and on the device with Try
-again, and the device copy is cleared only once the save lands (111202). Both
-are tested on the screen (`rounds-contracts.test.tsx` among them) and on the
-engine (`use-new-round-session.preservation.test`).
+leaves the setup as it was and Start sends the same form again (111201), and a hole that does not save keeps its
+shots on the review with Try again (111202); both are tested in
+`rounds-contracts.test.tsx` (and in `round-setup.test` and `round-tracking.test`), and on the engine both renderers share
+(`use-new-round-session.preservation.test`: a start that never lands adopts
+nothing, and a hole that never saves keeps its device copy until Try again
+lands).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 111201 | — | `SETUP_KEPT_WHEN_START_FAILS` | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. round-setup.test fails a start and checks every field and the dock, then presses Start again and checks the same form is sent; rounds-contracts.test.tsx checks that after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and that pressing Start again or Retry sends the same setup; use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload. |
-| 111202 | — | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). round-tracking.test and rounds-contracts.test.tsx check the shots, the words, that the round stays on the hole and that Try again sends the same hole; use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands. |
+| 111201 | — | `SETUP_KEPT_WHEN_START_FAILS` | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup. use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload. |
+| 111202 | — | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole. use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands. |
 
 ## 13 — Optimistic UI
 

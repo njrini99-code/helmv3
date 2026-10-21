@@ -2138,6 +2138,30 @@ tell a likely cause from a not-traced one.
   sign of `your_value − comparison_value` declare `ComposedContent.framing`
   (`tee-strategy`, `putt-bias`, `pressure-gap`, `warmup-hole`); the others
   fall back to comparing the two values by polarity.
+
+## The one-tap data-gap prompt (supercharge Slice 8a, 2026-10-20)
+
+Behind `coachhelm_data_gap_prompt_v1` (OFF). It reads `evidence.data_gap`;
+it writes nothing new to a read. With the flag off the round entry pages
+read nothing extra and shot entry is unchanged.
+
+- **What is asked.** Only `field: 'miss_direction'` with the putt filter
+  Slice 2 writes, `{ shot_type: 'putting', first_putt: true, distance_feet:
+  [min, max), holed: false }` (`max` null is open). Other gaps (the putt
+  leave, approach and tee misses) are not asked; the tee `other` lie and the
+  club chip wait for data that does not exist yet.
+- **Matching.** `matchesGap` in `src/lib/coachhelm/data-gap/asks.ts`: the
+  hole's first non-penalty putt, its distance before in feet from its own
+  unit, inside the band, not holed. An unknown filter key never matches.
+- **Counter.** `target_count` counts the NEXT failures that must be tagged,
+  so progress is the matching failures already tagged in rounds dated after
+  the read's `window_end` (`loadDataGapAsks`, newest 20 rounds) plus the
+  taps in this entry session: "4 of 10 for your 5–10 ft putt read". The row
+  disappears at the target; the read is rechecked at the next engine run.
+- **Write.** One tap sets that putt's `puttMissTags` and `miss_direction`
+  (the same values the optional miss chips write) through the round's own
+  autosave, so it is offline-safe and retried like any shot. No new column,
+  table or migration.
 - **`evidence.coach_copy`** (title and content in a coach's third-person
   voice) is typed and stamped from `ComposedContent.coach`; no generator sets
   it yet.

@@ -1,6 +1,7 @@
 # P014 — Recruiting: verification
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current release evidence — 2026-10-06
 
 Recruiting list/detail, stage picker, forms and document upload.

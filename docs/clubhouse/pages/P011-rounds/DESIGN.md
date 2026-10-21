@@ -1,6 +1,7 @@
 # P011 — Rounds: design handoff
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current implementation audit — 2026-10-06
 
 Check narrow shot controls, nested sheets, keyboard entry, offline
@@ -156,15 +157,8 @@ top bar is "Round" with "‹ Rounds" ("‹ Stats" for a coach). A new round and 
 shot screen hide the tab bar (`usePhoneTabsHidden`), with the dock above the
 home indicator and the distance box at 76px; sheets (penalty, change a shot,
 leave this shot, exit, scorecard, round complete, the picker, Add a course) are
-bottom sheets that drag to close. Not yet: the iOS number pad's Done bar, and an
-iPhone pass. Approved spec `docs/clubhouse/phone/rounds.md`, from `Player -
-Rounds - Mobile.html`. The library is the tab root ("Rounds", no back link); the
-review's top bar is "Round" with "‹ Rounds" ("‹ Stats" for a coach). A new round
-and the shot screen hide the tab bar (`usePhoneTabsHidden`), with the dock above
-the home indicator and the distance box at 76px; sheets (penalty, change a shot,
-leave this shot, exit, scorecard, round complete, the picker, Add a course) are
 bottom sheets that drag to close. In the app the keyboard keeps the system's
-Done bar for the whole round (`useRoundDoneKey`, 2026-10-16), not yet felt on a
+Done bar for the whole round (`useRoundDoneKey`, 2026-10-20), not yet felt on a
 device. Not yet: an iPhone pass.
 
 **The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe
