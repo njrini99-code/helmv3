@@ -11637,6 +11637,8 @@
         "ch-rv-card__h",
         "ch-rv-cardw",
         "ch-rv-cols",
+        "ch-rv-debrief__l",
+        "ch-rv-debrief__why",
         "ch-rv-dist",
         "ch-rv-dist__r",
         "ch-rv-dist__t",
@@ -11715,295 +11717,295 @@
           "name": "--ch-notice-ink",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1686
+          "line": 1726
         },
         {
           "name": "--ch-notice-icon",
           "value": "var(--ch-notice-on-green-ink)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1687
+          "line": 1727
         },
         {
           "name": "--ch-notice-body",
           "value": "var(--ch-notice-on-green-body)",
           "scope": "@media (max-width: 820px) → .ch-rd.is-phone .ch-rd-unf .ch-notice--danger",
-          "line": 1688
+          "line": 1728
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#ff9d8e",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3708
+          "line": 3773
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#d0574a",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3709
+          "line": 3774
         },
         {
           "name": "--ch-rd-over-a",
           "value": "rgb(244 238 221 / 0.36)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3710
+          "line": 3775
         },
         {
           "name": "--ch-rd-over-b",
           "value": "rgb(244 238 221 / 0.9)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3711
+          "line": 3776
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-stage-ink)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3712
+          "line": 3777
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-stage-ink-soft)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3713
+          "line": 3778
         },
         {
           "name": "--ch-rd-rule",
           "value": "var(--ch-stage-rule)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3714
+          "line": 3779
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(244 238 221 / 0.58)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3715
+          "line": 3780
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3716
+          "line": 3781
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-stage-gold)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3717
+          "line": 3782
         },
         {
           "name": "--ch-rd-chip",
           "value": "rgb(231 184 102 / 0.16)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3718
+          "line": 3783
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(231 184 102 / 0.5)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3719
+          "line": 3784
         },
         {
           "name": "--ch-rd-under-ink",
           "value": "var(--ch-stage-red)",
           "scope": ".ch-rd .ch-rd-stage",
-          "line": 3720
+          "line": 3785
         },
         {
           "name": "--ch-rd-under-a",
           "value": "#d9665a",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3917
+          "line": 3982
         },
         {
           "name": "--ch-rd-under-b",
           "value": "#a8372b",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3918
+          "line": 3983
         },
         {
           "name": "--ch-rd-over-a",
           "value": "var(--ch-ink-400)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3919
+          "line": 3984
         },
         {
           "name": "--ch-rd-over-b",
           "value": "var(--ch-ink-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3920
+          "line": 3985
         },
         {
           "name": "--ch-rd-ink",
           "value": "var(--ch-text-primary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3921
+          "line": 3986
         },
         {
           "name": "--ch-rd-soft",
           "value": "var(--ch-text-secondary)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3922
+          "line": 3987
         },
         {
           "name": "--ch-rd-rule",
           "value": "rgb(110 98 62 / 0.14)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3923
+          "line": 3988
         },
         {
           "name": "--ch-rd-par",
           "value": "rgb(28 27 24 / 0.5)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3924
+          "line": 3989
         },
         {
           "name": "--ch-rd-gold",
           "value": "var(--ch-champagne-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3925
+          "line": 3990
         },
         {
           "name": "--ch-rd-avg-ink",
           "value": "var(--ch-green-500)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3926
+          "line": 3991
         },
         {
           "name": "--ch-rd-chip",
           "value": "var(--ch-green-50)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3927
+          "line": 3992
         },
         {
           "name": "--ch-rd-chip-ring",
           "value": "rgb(21 90 57 / 0.25)",
           "scope": ".ch-rd.is-phone .ch-rd-stage",
-          "line": 3928
+          "line": 3993
         },
         {
           "name": "--ch-rcard-lab",
           "value": "56px",
           "scope": ".ch-rcard",
-          "line": 4168
+          "line": 4233
         },
         {
           "name": "--ch-rcard-sub",
           "value": "54px",
           "scope": ".ch-rcard",
-          "line": 4169
+          "line": 4234
         },
         {
           "name": "--ch-rcard-mk",
           "value": "22px",
           "scope": ".ch-rcard",
-          "line": 4170
+          "line": 4235
         },
         {
           "name": "--ch-rcard-lab",
           "value": "40px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4178
+          "line": 4243
         },
         {
           "name": "--ch-rcard-sub",
           "value": "38px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4179
+          "line": 4244
         },
         {
           "name": "--ch-rcard-mk",
           "value": "20px",
           "scope": ".ch-rcard.is-phone",
-          "line": 4180
+          "line": 4245
         },
         {
           "name": "--ch-sheet-bg",
           "value": "white",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4557
+          "line": 4622
         },
         {
           "name": "--ch-text-primary",
           "value": "black",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4558
+          "line": 4623
         },
         {
           "name": "--ch-text-secondary",
           "value": "dimgray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4559
+          "line": 4624
         },
         {
           "name": "--ch-text-tertiary",
           "value": "dimgray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4560
+          "line": 4625
         },
         {
           "name": "--ch-score-under",
           "value": "firebrick",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4561
+          "line": 4626
         },
         {
           "name": "--ch-chart-gain",
           "value": "darkgreen",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4562
+          "line": 4627
         },
         {
           "name": "--ch-chart-loss",
           "value": "sienna",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4563
+          "line": 4628
         },
         {
           "name": "--ch-chart-loss-on-tint",
           "value": "sienna",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4564
+          "line": 4629
         },
         {
           "name": "--ch-ledger-rule",
           "value": "gray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4565
+          "line": 4630
         },
         {
           "name": "--ch-ledger-rule-soft",
           "value": "silver",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4566
+          "line": 4631
         },
         {
           "name": "--ch-ledger-row-hover",
           "value": "whitesmoke",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4567
+          "line": 4632
         },
         {
           "name": "--ch-ledger-rule-double",
           "value": "3px double gray",
           "scope": "@media print → .ch-rprint-keep .ch-rcard",
-          "line": 4568
+          "line": 4633
         },
         {
           "name": "--ch-rcard-lab",
           "value": "40px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4590
+          "line": 4655
         },
         {
           "name": "--ch-rcard-sub",
           "value": "38px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4591
+          "line": 4656
         },
         {
           "name": "--ch-rcard-mk",
           "value": "18px",
           "scope": "@media screen and (min-width: 821px) and (max-width: 1180px) → @container (max-width: 760px) → .ch-rcard:not(.is-phone)",
-          "line": 4592
+          "line": 4657
         }
       ]
     },

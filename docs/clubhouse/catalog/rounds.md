@@ -67,7 +67,8 @@ Where things live:
   device scan and the three writes)
 - Preview: `/clubhouse-preview/rounds`
   (`?state=idle|many|empty|noseason|failed|unfinished-failed|failwrites`)
-  `/clubhouse-preview/round` (`?state=coach|noshots|noholes|total|holebyhole`)
+  `/clubhouse-preview/round`
+  (`?state=coach|noshots|noholes|total|holebyhole|nosg|debrief|debrief-thin`)
   `/clubhouse-preview/setup`
   (`?state=failcourses|failtees|failholes|failstart|noqualifiers|qualifiersfailed`)
   and `/clubhouse-preview/track`
