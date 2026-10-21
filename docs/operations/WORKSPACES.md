@@ -30,9 +30,11 @@ prevents a new task branch from inheriting `origin/main` as its upstream.
 The marker records the task, base, branch, environment, and cleanup policy.
 The default `parkPolicy` is `PARK_IF_REPRODUCIBLE`; `--keep` selects `KEEP`.
 
-`npm run dev` uses Webpack, matching production. Turbopack's worktree-local
+`npm run dev` uses Webpack. Production builds with Turbopack (`npm run build`),
+so dev and production use different bundlers. Turbopack's worktree-local
 filesystem root rejects the shared `node_modules` symlink, so the default dev
-command must support that shared dependency layout.
+command must support that shared dependency layout; for the same reason a
+production build in such a worktree may need `npm run build:webpack`.
 
 `npm run dev` (scripts/dev.mjs) picks the port from the worktree directory name,
 in 3001..3099, so several worktrees can run a dev server at once; the canonical

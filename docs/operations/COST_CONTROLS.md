@@ -74,6 +74,15 @@ These branches must **not** trigger automatic Vercel preview builds. With the po
 | **`CI`** | Full fast path (unchanged) |
 | **`Playwright E2E`** | Smoke build, full Chromium suite, BaseballHelm mandatory smoke, advisory baseball-stats smoke |
 
+### Scheduled browser jobs
+
+- **`Clubhouse journeys`** (`.github/workflows/clubhouse-journeys.yml`, added
+  2026-10-16) runs nightly at 09:47 UTC and on `workflow_dispatch`; never on a
+  PR or a push. It costs one runner for up to 80 minutes: a local Supabase
+  stack, one `next build --webpack` plus `next start` for the write journeys
+  and the round spec in Chromium and WebKit, then `next dev` for the Clubhouse
+  accessibility scan in light and dark. Reports are kept 7 days.
+
 ### Manual full browser CI
 
 **Actions → Playwright E2E → Run workflow** with inputs:

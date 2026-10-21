@@ -14,6 +14,8 @@ if (visual && !process.env.CH_VISUAL_BASELINES) {
 export default defineConfig({
   testDir: './e2e',
   testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts'],
+  // Compiles every route the suite opens before the first test (see the setup file); the server keeps them compiled.
+  globalSetup: './e2e/clubhouse-quality.setup.ts',
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -45,6 +47,7 @@ export default defineConfig({
     timeout: 180_000,
     env: {
       NEXT_TELEMETRY_DISABLED: '1',
+      HELM_DEV_KEEP_ROUTES: '1',
       NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'local-presentation-fixture-only',
       NEXT_PUBLIC_SUPABASE_ANON_KEY: 'local-presentation-fixture-only',
