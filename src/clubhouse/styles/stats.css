@@ -3224,6 +3224,59 @@
   }
 }
 
+/* "CoachHelm sees…" under a section's rule (spec D build A): one caption line, the counts as figures in the primary ink, and the
+   Deep dive in the text-link green. The whole line is one link. */
+.ch-gm__reads {
+  margin: 0;
+  padding: 6px 24px 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-gm__reads-a {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+.ch-gm__reads-a .ch-num {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-gm__reads-go {
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ch-green-700);
+}
+@media (hover: hover) {
+  .ch-gm__reads-a:hover .ch-gm__reads-go {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-gm__reads-a:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm .ch-gm__reads {
+  padding: 0;
+}
+@media (max-width: 820px) {
+  .ch-gm__reads {
+    padding: 6px 14px 0;
+  }
+  /* The phone: a 44px reach, the sentence wrapping to two caption lines under the rule's short line. */
+  .ch-gd.is-phone .ch-gm__reads {
+    padding: 2px 16px 0;
+  }
+  .ch-stm .ch-gd.is-phone .ch-gm__reads {
+    padding: 2px 0 0;
+  }
+  .ch-gd.is-phone .ch-gm__reads-a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 /* Band rows (BandRows): the phone's distance chart, one row per band (a column chart of seven bands is cramped at 390px and
    its labels wrap): the band, a bar on a track, the exact value and, where the source keeps it, the shots. */
 .ch-brows__axis {
