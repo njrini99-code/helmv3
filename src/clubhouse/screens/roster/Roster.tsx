@@ -1,12 +1,12 @@
 'use client';
 
-import { BarChart3, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { Bandage, BarChart3, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
-import { updatePlayerStatus } from '@/app/golf/actions/team-management';
-import type { ChRoster, ChRosterPlayer } from '../../data/roster';
+import { setPlayerAvailability, updatePlayerStatus } from '@/app/golf/actions/team-management';
+import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -32,12 +32,12 @@ import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
-import { RosterPeek } from './RosterPeek';
+import { availabilityCopy, RosterPeek, type AvailabilityControl } from './RosterPeek';
 import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
-import { earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
@@ -175,6 +175,9 @@ export function Roster({ data }: { data: ChRoster }) {
 
   const active = useMemo(() => players.filter((p) => p.status === 'active'), [players]);
   const inactiveCount = players.length - active.length;
+  // Injured and away are counted among the active players: availability never changes who is on the active roster.
+  const injuredCount = active.filter((p) => p.availability === 'injured').length;
+  const awayCount = active.filter((p) => p.availability === 'away').length;
   const teamAvg = useMemo(() => {
     const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
     return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
@@ -266,11 +269,71 @@ export function Roster({ data }: { data: ChRoster }) {
     (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, coachNote: note } : x))),
     [],
   );
+  // Availability (display only; it never changes team access). Optimistic: the word appears at once and a failure puts
+  // the player back. Both happen inside the action, so the toast's Retry applies the change again and finishes the job.
+  const [noteFocus, setNoteFocus] = useState<string | null>(null);
+  const setAvailability = useAction(
+    'roster.setAvailability',
+    async (p: ChRosterPlayer, to: ChAvailability, _from: 'menu' | 'panel' = 'panel') => {
+      const before = { availability: p.availability, availabilityNote: p.availabilityNote, availabilityUpdated: p.availabilityUpdated, attention: p.attention };
+      const stamp = new Date().toISOString();
+      setPlayers((ps) =>
+        ps.map((x) =>
+          x.id === p.id
+            ? // Mark available clears the note; injured or away keeps any note and drops a Needs a look reason.
+              { ...x, availability: to, availabilityNote: to === 'available' ? null : x.availabilityNote, availabilityUpdated: stamp, attention: to === 'available' ? x.attention : null }
+            : x,
+        ),
+      );
+      const res = await setPlayerAvailability({ playerId: p.id, availability: to });
+      if (!res.success) setPlayers((ps) => ps.map((x) => (x.id === p.id ? { ...x, ...before } : x)));
+      return res;
+    },
+    (p, to, from) =>
+      availabilityCopy(
+        p.name,
+        to,
+        // From the row menu the toast offers "Add a note": the panel opens on the player with the note focused.
+        from === 'menu'
+          ? () => {
+              setSel(p.id);
+              setNoteFocus(p.id);
+            }
+          : undefined,
+      ),
+  );
+  const availabilityNoteSaved = useCallback(
+    (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, availabilityNote: note } : x))),
+    [],
+  );
+  const runAvailability = setAvailability.run;
+  const clearNoteFocus = useCallback(() => setNoteFocus(null), []);
+  const availability: AvailabilityControl = useMemo(
+    () => ({
+      set: (p, to) => void runAvailability(p, to, 'panel'),
+      pending: setAvailability.pending,
+      onNoteSaved: availabilityNoteSaved,
+      focusNote: noteFocus,
+      onNoteFocused: clearNoteFocus,
+    }),
+    [runAvailability, setAvailability.pending, availabilityNoteSaved, noteFocus, clearNoteFocus],
+  );
 
   const exportCsv = () => {
-    const head = ['Player', 'Class', 'Status', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
+    const head = ['Player', 'Class', 'Status', 'Availability', 'Availability note', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
     const lines = rows.map((p) =>
-      [asText(p.name), p.classYear ?? '', p.status, p.rounds, p.avg?.toFixed(1) ?? '', p.sgPerRound?.toFixed(2) ?? '', p.handicap ?? '']
+      [
+        asText(p.name),
+        p.classYear ?? '',
+        p.status,
+        AVAILABILITY_WORD[p.availability ?? 'available'],
+        // The coach types the note, so it is written as text like a name (30502).
+        asText(p.availabilityNote ?? ''),
+        p.rounds,
+        p.avg?.toFixed(1) ?? '',
+        p.sgPerRound?.toFixed(2) ?? '',
+        p.handicap ?? '',
+      ]
         .map((v) => `"${String(v).replace(/"/g, '""')}"`)
         .join(','),
     );
@@ -301,6 +364,13 @@ export function Roster({ data }: { data: ChRoster }) {
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
+    // Availability: the two states the player is not in, written at once with no confirm (it never changes team access).
+    const markAvailable: MenuItem = { label: 'Mark available', icon: CircleCheck, onSelect: () => void setAvailability.run(p, 'available', 'menu') };
+    const markInjured: MenuItem = { label: 'Mark injured', icon: Bandage, onSelect: () => void setAvailability.run(p, 'injured', 'menu') };
+    const markAway: MenuItem = { label: 'Mark away', icon: Plane, onSelect: () => void setAvailability.run(p, 'away', 'menu') };
+    const now = p.availability ?? 'available';
+    items.push(...(now === 'available' ? [markInjured, markAway] : now === 'injured' ? [markAvailable, markAway] : [markAvailable, markInjured]));
+    items.push({ kind: 'separator' });
     items.push(
       p.status === 'active'
         ? { label: 'Mark inactive', icon: UserX, onSelect: () => setRestatus(p) }
@@ -378,6 +448,7 @@ export function Roster({ data }: { data: ChRoster }) {
         onRemove={setRemoving}
         onStatus={setRestatus}
         onNoteSaved={noteSaved}
+        availability={availability}
         onRetry={() => router.refresh()}
       >
         {dialogs}
@@ -400,7 +471,20 @@ export function Roster({ data }: { data: ChRoster }) {
           {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
-              <span className="ch-num">{active.length}</span> active.
+              <span className="ch-num">{active.length}</span> active
+              {injuredCount > 0 && (
+                <>
+                  {' '}
+                  &middot; <span className="ch-num">{injuredCount}</span> injured
+                </>
+              )}
+              {awayCount > 0 && (
+                <>
+                  {' '}
+                  &middot; <span className="ch-num">{awayCount}</span> away
+                </>
+              )}
+              .
               {teamAvg != null && (
                 <>
                   {' '}
@@ -562,7 +646,7 @@ export function Roster({ data }: { data: ChRoster }) {
               </Swap>
             </SectionBoundary>
             <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} />
+              <RosterPeek p={cur} notesLocked={data.notesError} onClose={() => setSel(null)} onNoteSaved={noteSaved} availability={availability} />
             </SectionBoundary>
           </div>
         </>
@@ -640,7 +724,14 @@ function RosterList({
                 <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
               </span>
               <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
-              {p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>}
+              {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
+              {availabilityLine(p) ? (
+                <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
+                  {availabilityLine(p)}
+                </span>
+              ) : (
+                p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
+              )}
             </button>
           ))}
         </div>
@@ -675,7 +766,7 @@ function RosterList({
                   <Avatar name={p.name} size={40} />
                   <span>
                     <b>{p.name}</b>
-                    <span className="ch-rs-who__m">{[p.classYear, p.hometown].filter(Boolean).join(' · ')}</span>
+                    <RowMeta p={p} />
                   </span>
                 </button>
               </span>
@@ -858,9 +949,32 @@ function FaceFigures({
   );
 }
 
-/** A card's name for VoiceOver: the player and one figure, not every number on it (P003 #13). */
+/** A card's name for VoiceOver: the player and one figure, not every number on it (P003 #13), then injured or away. */
 function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
-  if (p.avg == null) return p.name;
+  const out = p.availability && p.availability !== 'available' ? `, ${p.availability}` : '';
+  if (p.avg == null) return `${p.name}${out}`;
   const place = standing && standing.of > 1 ? `, ${standing.place} of ${standing.of}` : '';
-  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}`;
+  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}${out}`;
+}
+
+/**
+ * The list row's line under the name: availability first when they are injured or away ("Injured · wrist · Sophomore ·
+ * Charlotte, NC"), the word in secondary ink and the rest tertiary, on one line with the whole of it in the title.
+ */
+function RowMeta({ p }: { p: ChRosterPlayer }) {
+  const line = availabilityLine(p);
+  const rest = [p.classYear, p.hometown].filter(Boolean).join(' · ');
+  const full = [line, rest || null].filter(Boolean).join(' · ');
+  return (
+    <span className="ch-rs-who__m" title={line ? full : undefined}>
+      {line ? (
+        <>
+          <span className="ch-rs-who__avail">{AVAILABILITY_WORD[p.availability]}</span>
+          {full.slice(AVAILABILITY_WORD[p.availability].length)}
+        </>
+      ) : (
+        rest
+      )}
+    </span>
+  );
 }

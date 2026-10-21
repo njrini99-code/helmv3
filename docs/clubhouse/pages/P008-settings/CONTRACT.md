@@ -41,6 +41,8 @@ Status: DEFINED
 
 The page opens on Account, or on the section the address names, with a header (role, team and email), the rail of this role's sections and the section's cards. It needs no team. A section is linkable with ?section= (80102), and the two old links open theirs.
 
+Account › Profile (2026-10-21, spec C): a coach's card pairs Full name with Title (`golf_coaches.title`, up to 100 characters, placeholder "Assistant coach", help "With your name in Messages, on announcements and in Team settings."); on the phone the Profile sheet has a Title row under Full name. The title is saved with the name and photo in the coach's own-row write (`golf_coaches_update_own`), trimmed, and a blank one is cleared to null. Players have no title: their card and sheet show none and their write never names it. There is no separate coaching-profile section: bio and phone have no reader, and a phone would be readable by players in the same organization, so neither is collected. The player roster's coaches list keeps showing "Head coach" for the head coach.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 80101 | — | `SETTINGS_READY` | Settings is open: a header naming the role, team and email, the rail of the sections this role has, and the opened section (Account by default) with its cards; the page needs no team. |
@@ -129,7 +131,7 @@ are the shell's (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 80601 | CH-8001 | `SAVING_THE_PROFILE_FAILS` | Saving the profile (name or photo) fails |
+| 80601 | CH-8001 | `SAVING_THE_PROFILE_FAILS` | Saving the profile (name, a coach's title, or photo) fails |
 | 80602 | CH-8002 | `A_PHOTO_CANT_BE_UPLOADED_WRONG_TYPE` | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails |
 | 80603 | CH-8003 | `SENDING_THE_EMAIL_CHANGE_CONFIRMATION_FAILS` | Sending the email-change confirmation fails |
 | 80604 | CH-8004 | `CHANGING_THE_PASSWORD_FAILS_INCLUDING_A_WRONG` | Changing the password fails, including a wrong current password |

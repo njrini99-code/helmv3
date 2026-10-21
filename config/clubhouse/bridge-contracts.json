@@ -1956,6 +1956,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30203,
+    "page": "P003",
+    "category": 2,
+    "item": 3,
+    "name": "AN_AVAILABILITY_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-3405",
+    "meaning": "An availability change is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30301,
     "page": "P003",
     "category": 3,
@@ -2106,12 +2117,23 @@
     "category": 5,
     "item": 2,
     "name": "EXPORT_CELLS_ARE_TEXT",
-    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers.",
+    "meaning": "The CSV export writes a player's name, or the coach's availability note, that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability and Availability note follow Status.",
     "status": "implemented",
     "where": "src/clubhouse/screens/roster/Roster.tsx#exportCsv, asText",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
     ]
+  },
+  {
+    "id": 30503,
+    "page": "P003",
+    "category": 5,
+    "item": 3,
+    "name": "AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS",
+    "chCode": "CH-3102",
+    "meaning": "An availability note is within 40 characters of its 280 limit",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
     "id": 30601,
@@ -2319,6 +2341,28 @@
     "name": "CHANGING_A_PLAYERS_STATUS_FAILS",
     "chCode": "CH-3008",
     "meaning": "Changing a player's status (Active or Inactive) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30620,
+    "page": "P003",
+    "category": 6,
+    "item": 20,
+    "name": "MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY",
+    "chCode": "CH-3009",
+    "meaning": "Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30621,
+    "page": "P003",
+    "category": 6,
+    "item": 21,
+    "name": "THE_AVAILABILITY_NOTE_DOESNT_SAVE",
+    "chCode": "CH-3010",
+    "meaning": "The availability note doesn't save (on leaving the field)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2714,6 +2758,17 @@
     "name": "THE_PLAYERS_ROSTER_NAMES_THE_COACHES",
     "chCode": "CH-3808",
     "meaning": "The player's roster names the coaches (wave 7, decision D): a \"Coaches\" group above the players: name and role (\"Head coach\" first, else their title, else \"Coach\"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then \"Players\". Left out when the staff read failed (logged `playerCoaches`) or none is on record",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31809,
+    "page": "P003",
+    "category": 18,
+    "item": 9,
+    "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
+    "chCode": "CH-3809",
+    "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (with the coach's note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -7100,7 +7155,7 @@
     "item": 1,
     "name": "SAVING_THE_PROFILE_FAILS",
     "chCode": "CH-8001",
-    "meaning": "Saving the profile (name or photo) fails",
+    "meaning": "Saving the profile (name, a coach's title, or photo) fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },

@@ -109,7 +109,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
-| P003 | 2 | 2 | 3 | 9 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
+| P003 | 2 | 3 | 3 | 9 | 3 | 21 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
@@ -308,6 +308,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30102 |  | 01 Default / core UI | `DEEP_LINK_OPENS_PROFILE` | implemented | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. The bell's join-request link (?tab=requests) opens the phone's requests sheet once when a request is waiting, and ?invite=1 (Home's first-run Invite players) opens the invite sheet once on desktop and the phone; each param is dropped, closing the sheet spends it, and only the coach's roster reads them. |
 | 30201 | CH-3401 | 02 Initial loading / skeleton | `ROSTER_IS_LOADING` | implemented | Roster is loading |
 | 30202 | CH-3404 | 02 Initial loading / skeleton | `A_STATUS_CHANGE_IS_IN_FLIGHT` | implemented | A status change is in flight |
+| 30203 | CH-3405 | 02 Initial loading / skeleton | `AN_AVAILABILITY_CHANGE_IS_IN_FLIGHT` | implemented | An availability change is in flight |
 | 30301 | CH-3402 | 03 Background loading / refresh | `A_REMOVE_IS_IN_FLIGHT` | implemented | A remove is in flight |
 | 30302 | CH-3403 | 03 Background loading / refresh | `APPROVE_ALL_IS_IN_FLIGHT` | implemented | Approve all is in flight (phone join requests sheet, D-55) |
 | 30303 |  | 03 Background loading / refresh | `ROSTER_FOLLOWS_A_REFRESH` | implemented | When the server sends the page again (Try again, or the page a write revalidated), the players and join requests on screen become the new ones: an approved player appears, and a read that failed and now succeeds shows the players, never No players yet. |
@@ -321,7 +322,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30408 | CH-3308 | 04 Empty | `A_PLAYER_SIGNED_IN_WITH_NO_ACTIVE` | implemented | A player signed in with no active team |
 | 30409 | CH-3309 | 04 Empty | `A_PLAYER_ALONE_ON_THEIR_TEAMS_ROSTER` | implemented | A player alone on their team's roster (they are always on it once joined, so this is a new team's first run) |
 | 30501 | CH-3101 | 05 Validation | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | implemented | A coach's note is within 200 characters of its 2,000 limit |
-| 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
+| 30502 |  | 05 Validation | `EXPORT_CELLS_ARE_TEXT` | implemented | The CSV export writes a player's name, or the coach's availability note, that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability and Availability note follow Status. |
+| 30503 | CH-3102 | 05 Validation | `AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS` | implemented | An availability note is within 40 characters of its 280 limit |
 | 30601 | CH-3001 | 06 Server / system error | `REMOVING_A_PLAYER_FAILS` | implemented | Removing a player fails |
 | 30602 | CH-3002 | 06 Server / system error | `APPROVING_A_JOIN_REQUEST_FAILS` | implemented | Approving a join request fails |
 | 30603 | CH-3003 | 06 Server / system error | `DECLINING_A_JOIN_REQUEST_FAILS` | implemented | Declining a join request fails |
@@ -341,6 +343,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30617 | CH-3210 | 06 Server / system error | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | implemented | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | 06 Server / system error | `THE_PLAYERS_ROSTER_LIST_CRASHES` | implemented | The player's roster list crashes |
 | 30619 | CH-3008 | 06 Server / system error | `CHANGING_A_PLAYERS_STATUS_FAILS` | implemented | Changing a player's status (Active or Inactive) fails |
+| 30620 | CH-3009 | 06 Server / system error | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | implemented | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
+| 30621 | CH-3010 | 06 Server / system error | `THE_AVAILABILITY_NOTE_DOESNT_SAVE` | implemented | The availability note doesn't save (on leaving the field) |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
@@ -374,6 +378,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 31806 | CH-3806 | 18 Accessibility | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | implemented | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | 18 Accessibility | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | implemented | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | 18 Accessibility | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | implemented | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
+| 31809 | CH-3809 | 18 Accessibility | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | implemented | Availability is said in words, never a colour: "Injured" or "Away" (with the coach's note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
 | 31901 |  | 19 Responsive layout | `PHONE_LIST_AND_PROFILE` | implemented | At 820px and below Roster is the phone screen: a top bar with the back link to More and Invite players, the join requests banner, the sorted list, and each player as a pushed profile that is a history entry, so the edge swipe and Back return to the list. |
 | 32001 |  | 20 Keyboard / input | `NOTE_SAVES_ON_LEAVING_THE_FIELD` | implemented | The coach's note saves when the field loses focus, only if its trimmed text changed, and an emptied note saves as no note. |
 | 32101 |  | 21 Performance | `LOADER_NEVER_THROWS` | implemented | loadRoster reads the team, the members and the join requests in one parallel round, then rounds, focus areas, goals and this coach's notes in a second (it needs the member ids); every failed read is logged through chLogServer and flagged, never thrown, and a failed read is never shown as empty. |
@@ -781,7 +786,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 80513 | CH-8113 | 05 Validation | `HANDICAP_INDEX_OUTSIDE_10_TO_54` | implemented | Handicap index outside −10 to 54 |
 | 80514 | CH-8114 | 05 Validation | `GRADUATION_YEAR_NOT_2000_2100` | implemented | Graduation year not 2000–2100 |
 | 80515 | CH-8115 | 05 Validation | `PLAYER_STATE_ISNT_TWO_LETTERS` | implemented | Player state isn't two letters |
-| 80601 | CH-8001 | 06 Server / system error | `SAVING_THE_PROFILE_FAILS` | implemented | Saving the profile (name or photo) fails |
+| 80601 | CH-8001 | 06 Server / system error | `SAVING_THE_PROFILE_FAILS` | implemented | Saving the profile (name, a coach's title, or photo) fails |
 | 80602 | CH-8002 | 06 Server / system error | `A_PHOTO_CANT_BE_UPLOADED_WRONG_TYPE` | implemented | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails |
 | 80603 | CH-8003 | 06 Server / system error | `SENDING_THE_EMAIL_CHANGE_CONFIRMATION_FAILS` | implemented | Sending the email-change confirmation fails |
 | 80604 | CH-8004 | 06 Server / system error | `CHANGING_THE_PASSWORD_FAILS_INCLUDING_A_WRONG` | implemented | Changing the password fails, including a wrong current password |

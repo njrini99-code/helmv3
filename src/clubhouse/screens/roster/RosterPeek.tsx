@@ -4,17 +4,19 @@ import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, S
 import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
-import type { ChRosterPlayer } from '../../data/roster';
+import { setPlayerAvailability } from '@/app/golf/actions/team-management';
+import type { ChAvailability, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
-import { useAction } from '../../lib/use-action';
+import { Segmented } from '../../ui/Segmented';
+import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { formatHcp } from './format';
+import { AVAILABILITY_WORD, formatHcp, relativeAgo } from './format';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -29,11 +31,14 @@ export function RosterPeek({
   notesLocked,
   onClose,
   onNoteSaved,
+  availability,
 }: {
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
   onClose: () => void;
   onNoteSaved: NoteSaved;
+  /** Roster's availability write, shared with the row menu so one change at a time is in flight. */
+  availability: AvailabilityControl;
 }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
@@ -64,14 +69,26 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} />
         </m.aside>
       )}
     </AnimatePresence>
   );
 }
 
-function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void; onNoteSaved: NoteSaved }) {
+function PeekBody({
+  p,
+  notesLocked,
+  onClose,
+  onNoteSaved,
+  availability,
+}: {
+  p: ChRosterPlayer;
+  notesLocked: boolean;
+  onClose: () => void;
+  onNoteSaved: NoteSaved;
+  availability: AvailabilityControl;
+}) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
@@ -104,7 +121,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         </span>
         <h2 className="ch-display">{p.name}</h2>
         <span className="ch-rs-peek__sub">
-          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null].filter(Boolean).join(' · ') || 'Player'}
+          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
+            'Player'}
         </span>
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
@@ -192,6 +210,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         </div>
       </div>
 
+      <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />
+
       <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
 
       {profileHref && (
@@ -274,6 +294,146 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
           </span>
         )
       )}
+    </div>
+  );
+}
+
+/** golf_team_members.availability_note is CHECKed to this length (setPlayerAvailability refuses more). */
+export const AVAILABILITY_NOTE_MAX = 280;
+/** The note's counter appears when this many characters are left (CH-3102). */
+const AVAILABILITY_NOTE_WARN = 40;
+
+/** What Roster hands the panel: its availability write, whether one is in flight, and the player whose note to focus. */
+export interface AvailabilityControl {
+  set: (p: ChRosterPlayer, to: ChAvailability) => void;
+  pending: boolean;
+  /** Tells the list that a note is stored, so the player reads back with it. */
+  onNoteSaved: (playerId: string, note: string | null) => void;
+  /** The toast's "Add a note" opened the panel for this player: their note takes focus once. */
+  focusNote?: string | null;
+  onNoteFocused?: () => void;
+}
+
+/** What `useAction('roster.setAvailability')` says (CH-3009 on failure). From the row menu the toast offers "Add a note". */
+export function availabilityCopy(name: string, to: ChAvailability, addNote?: () => void): ActionCopy {
+  const word = AVAILABILITY_WORD[to].toLowerCase();
+  return {
+    done: `${name} marked ${word}`,
+    failed: `Couldn’t mark ${name} ${word}`,
+    hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
+    code: 'CH-3009',
+    ...(addNote && to !== 'available' ? { doneAction: { label: 'Add a note', run: addNote } } : {}),
+  };
+}
+
+const AVAILABILITY_OPTIONS: ReadonlyArray<{ value: ChAvailability; label: string }> = [
+  { value: 'available', label: 'Available' },
+  { value: 'injured', label: 'Injured' },
+  { value: 'away', label: 'Away' },
+];
+
+/**
+ * Can they play: Available, Injured or Away, and for the last two a short note. Display only, on the coach's roster; it
+ * never changes team access, which Mark inactive does (the caption says so where the control is). Shared by the desktop
+ * panel and the phone profile. The choice is written at once (optimistic, Roster's `roster.setAvailability`); the note
+ * saves when the field loses focus, like the coach's note.
+ */
+export function AvailabilityPanel({ p, control, block = false }: { p: ChRosterPlayer; control: AvailabilityControl; block?: boolean }) {
+  const [saved, setSaved] = useState(p.availabilityNote ?? '');
+  const [draft, setDraft] = useState(p.availabilityNote ?? '');
+  // A note the list changed under the panel (Mark available cleared it, a refresh brought another) replaces the field.
+  const [seen, setSeen] = useState(p.availabilityNote);
+  if (p.availabilityNote !== seen) {
+    setSeen(p.availabilityNote);
+    setSaved(p.availabilityNote ?? '');
+    setDraft(p.availabilityNote ?? '');
+  }
+  const { onNoteSaved } = control;
+  const save = useAction(
+    'roster.availabilityNote',
+    async (note: string) => {
+      const res = await setPlayerAvailability({ playerId: p.id, availability: p.availability, note: note || null });
+      // Inside the action, so the toast's Retry marks the note saved as well (31403).
+      if (res.success) {
+        setSaved(note);
+        setSeen(note || null);
+        onNoteSaved(p.id, note || null);
+      }
+      return res;
+    },
+    {
+      done: `Availability note saved for ${p.firstName}`,
+      failed: `Couldn’t save the availability note for ${p.firstName}`,
+      hint: 'Your text is still in the field. Try again in a moment.',
+      code: 'CH-3010',
+    },
+  );
+  const field = useRef<HTMLTextAreaElement>(null);
+  const { focusNote, onNoteFocused } = control;
+  const out = p.availability !== 'available';
+  useEffect(() => {
+    if (!out || focusNote !== p.id) return;
+    field.current?.focus();
+    onNoteFocused?.();
+  }, [out, focusNote, p.id, onNoteFocused]);
+  const left = AVAILABILITY_NOTE_MAX - draft.length;
+  const id = `avail-${p.id}`;
+  const [now] = useState(() => new Date());
+  return (
+    <div className="ch-rs-peek__sec ch-rs-avail">
+      <div className="ch-rs-peek__l">
+        <b id={`${id}-l`}>Availability</b>
+        {p.availabilityUpdated && <span>Updated {relativeAgo(p.availabilityUpdated, now)}</span>}
+      </div>
+      {/* CH-3405: while a change is in flight the control says so and refuses another for this player. */}
+      <div className="ch-rs-avail__seg" aria-busy={control.pending || undefined} data-ch-code={control.pending ? 'CH-3405' : undefined}>
+        <Segmented<ChAvailability>
+          size="sm"
+          block={block}
+          label={`Availability for ${p.name}`}
+          value={p.availability}
+          options={AVAILABILITY_OPTIONS}
+          onChange={(to) => {
+            if (control.pending) return;
+            control.set(p, to);
+          }}
+        />
+      </div>
+      {out && (
+        <div className="ch-field ch-rs-avail__note">
+          <label className="ch-field__label" htmlFor={id}>
+            Note
+          </label>
+          <textarea
+            ref={field}
+            id={id}
+            className="ch-textarea ch-rs-peek__memo"
+            rows={2}
+            value={draft}
+            maxLength={AVAILABILITY_NOTE_MAX}
+            placeholder="What, and until when"
+            aria-describedby={`${id}-h`}
+            aria-busy={save.pending || undefined}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={async () => {
+              const next = draft.trim();
+              if (next === saved.trim()) return;
+              await save.run(next);
+            }}
+          />
+          <span id={`${id}-h`} className="ch-field__help">
+            Only coaches see this.
+            {/* CH-3102: the counter is read politely, within the last 40 characters. */}
+            {left <= AVAILABILITY_NOTE_WARN && (
+              <span className="ch-num" data-ch-code="CH-3102" aria-live="polite">
+                {' '}
+                {left === 0 ? 'That’s the limit: 280 characters.' : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+      <p className="ch-rs-avail__cap">Shows on your roster only. It never changes their team access; Mark inactive does.</p>
     </div>
   );
 }

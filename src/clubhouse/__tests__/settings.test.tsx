@@ -1011,6 +1011,34 @@ describe('Settings · saving', () => {
   });
 });
 
+describe('Settings · Account › Profile · the coach’s title (P008)', () => {
+  it('80806 a coach’s Profile shows Title beside Full name, with the saved value and what it is for', () => {
+    setup();
+    const title = within(card('Profile')).getByLabelText('Title');
+    expect(title).toHaveValue('Head coach');
+    expect(title).toHaveAttribute('maxLength', '100');
+    expect(title).toHaveAttribute('autoComplete', 'organization-title');
+    expect(title).toHaveAttribute('placeholder', 'Assistant coach');
+    expect(title).toHaveAccessibleDescription('With your name in Messages, on announcements and in Team settings.');
+  });
+
+  it('80806 Save sends the name, photo and title together, as typed (the write trims it)', async () => {
+    const { user, writes } = setup();
+    const title = within(card('Profile')).getByLabelText('Title');
+    await user.clear(title);
+    await user.type(title, ' Assistant coach ');
+    await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(writes.saveProfile).toHaveBeenCalledTimes(1));
+    expect(writes.saveProfile).toHaveBeenCalledWith({ firstName: 'Maya', lastName: 'Reyes', fullName: 'Maya Reyes', avatarUrl: null, title: ' Assistant coach ' });
+  });
+
+  it('80806 a player’s Profile has no Title', () => {
+    setup({ data: playerData(true) });
+    expect(within(card('Profile')).queryByLabelText('Title')).toBeNull();
+    expect(within(card('Profile')).getByLabelText('First name')).toBeTruthy();
+  });
+});
+
 describe('Settings · what the person is told about standing conditions', () => {
   it.each([
     ['notifications', 'Tasks by push', 'setDelivery'],
@@ -1960,6 +1988,24 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(hapticSpy).toHaveBeenCalledWith('success');
       expect(writes.refresh).toHaveBeenCalled();
       expect(screen.getByText('Profile saved')).toBeTruthy();
+    });
+
+    it('81901 the coach’s profile sheet has Title under Full name, and Save sends it (P008)', async () => {
+      const { user, writes } = phone();
+      const sheet = await openProfile(user);
+      const title = within(sheet).getByLabelText('Title');
+      expect(title).toHaveValue('Head coach');
+      expect(title).toHaveAttribute('maxLength', '100');
+      await user.clear(title);
+      await user.type(title, 'Associate head coach');
+      await user.click(within(sheet).getByRole('button', { name: 'Save' }));
+      await waitFor(() => expect(writes.saveProfile).toHaveBeenCalledWith(expect.objectContaining({ fullName: 'Maya Reyes', title: 'Associate head coach' })));
+    });
+
+    it('81901 a player’s profile sheet has no Title', async () => {
+      const { user } = phone({ data: playerData(true) });
+      await user.click(screen.getByRole('button', { name: /^Jonah Okafor/ }));
+      expect(within(dialog('Profile')).queryByLabelText('Title')).toBeNull();
     });
 
     it('81901 CH-8001 CH-8102 a save that fails keeps the sheet open with what was typed; a cleared name keeps Save off', async () => {
