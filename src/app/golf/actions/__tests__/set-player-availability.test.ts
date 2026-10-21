@@ -17,6 +17,7 @@ const state = vi.hoisted(() => ({
   coach: { id: 'coach-1', organization_id: 'org-1' } as { id: string; organization_id: string } | null,
   teamId: 'team-1' as string | null,
   membership: { id: 'm-1' } as { id: string } | null,
+  readError: null as { message: string } | null,
   update: { error: null as { message: string } | null, count: 1 as number | null },
   calls: [] as Call[],
 }));
@@ -40,7 +41,7 @@ vi.mock('@/lib/supabase/server', () => ({
       select: (cols: string) => {
         const call: Call = { table, op: 'select', payload: cols, filters: [] };
         state.calls.push(call);
-        return chain(call, () => ({ data: table === 'golf_coaches' ? state.coach : state.membership, error: null }));
+        return chain(call, () => ({ data: table === 'golf_coaches' ? state.coach : state.membership, error: state.readError }));
       },
       update: (payload: unknown, options: unknown) => {
         const call: Call = { table, op: 'update', payload, options, filters: [] };
@@ -65,6 +66,7 @@ beforeEach(() => {
   state.coach = { id: 'coach-1', organization_id: 'org-1' };
   state.teamId = 'team-1';
   state.membership = { id: 'm-1' };
+  state.readError = null;
   state.update = { error: null, count: 1 };
   state.calls = [];
   cache.revalidatePath.mockClear();
@@ -128,6 +130,16 @@ describe('setPlayerAvailability', () => {
       expect(c.payload ?? {}).not.toHaveProperty('availability_note');
       expect(JSON.stringify(c.payload ?? '')).not.toContain('availability_note');
     }
+  });
+
+  it('a read that fails is logged and says so, rather than reading as "not a coach" or "not on your team"', async () => {
+    state.readError = { message: 'connection reset' };
+    expect(await setPlayerAvailability({ playerId: 'p-1', availability: 'injured' })).toEqual({
+      success: false,
+      error: 'Failed to update player availability',
+    });
+    expect(logger.logServerError).toHaveBeenCalledWith(expect.stringContaining('read failed: connection reset'), expect.anything());
+    expect(updates()).toHaveLength(0);
   });
 
   it('a write that changes no row (RLS hid it) fails, and refreshes nothing', async () => {
