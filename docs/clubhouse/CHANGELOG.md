@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Settings boxes wait for hydration (WebKit journeys)
+
+Text typed into a Settings box before React hydrated it was wiped when the
+controlled value was applied, so a name typed straight after load was lost
+(the nightly WebKit journey). Settings `Field` and `FieldRow` are read-only
+until hydrated, and look normal meanwhile (`styles/controls.css`,
+`data-ch-hydrating`). `useHydrated` moved to `lib/use-hydrated.ts`.
+
 ## 2026-10-21 — Teammates read through the profile function (S4)
 
 No visible change. From the 2026-10-16 security review. A player could read a
