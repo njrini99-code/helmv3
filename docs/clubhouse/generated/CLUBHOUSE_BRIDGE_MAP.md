@@ -119,7 +119,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 14 |  | 23 | 11 | 44 | 19 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 201 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 12 |  | 29 | 1 | 37 | 38 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 173 |
+| P013 | 7 | 14 |  | 32 | 1 | 40 | 38 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 181 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -1451,6 +1451,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
+| 130213 | CH-13430 | 02 Initial loading / skeleton | `WHATS_NEW_IS_ON_ITS_WAY` | implemented | What’s new is on its way |
+| 130214 | CH-13431 | 02 Initial loading / skeleton | `WHATS_NEW_READS_AGAIN` | implemented | What’s new reads again (Try again, or the page refreshes) |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1480,6 +1482,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130427 | CH-13382 | 04 Empty | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | implemented | Deep dive: a read names no rounds, or none of them can be listed |
 | 130428 | CH-13383 | 04 Empty | `DEEP_DIVE_A_READ_HAS_NO_TREND` | implemented | Deep dive: a read has no trend |
 | 130429 | CH-13384 | 04 Empty | `DEEP_DIVE_A_READ_IS_NOT_PART` | implemented | Deep dive: a read is not part of a plan |
+| 130430 | CH-13330 | 04 Empty | `WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN` | implemented | What’s new: nothing in the past seven days |
+| 130431 | CH-13331 | 04 Empty | `WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING` | implemented | What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week |
+| 130432 | CH-13332 | 04 Empty | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | implemented | What’s new: a category came back at its row ceiling (200) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1518,6 +1523,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | implemented | Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed |
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | implemented | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
+| 130638 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
+| 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
+| 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |

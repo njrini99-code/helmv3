@@ -1,5 +1,20 @@
 # P001 — Shell: changelog
 
+## 2026-10-21 — A coach's What's new in the palette
+
+```text
+Design package: none (P013's What's new)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`shell/nav.ts`: `/golf/dashboard/whats-new` is a rebuilt coach route and moves from the alias list to the
+"rebuilt for one role, moved for the other" one (a player's address still opens Home). `command/commands.ts`: the coach's
+palette offers "What’s new" (under CoachHelm), as the old page was reached from the palette. Logged on P013.
+
 ## 2026-10-21 — A coach's Rounds in the sidebar
 
 ```text

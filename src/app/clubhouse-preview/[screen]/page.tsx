@@ -16,6 +16,9 @@ import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_RO
 import '@/clubhouse/styles/rounds.css';
 import { TeamRounds } from '@/clubhouse/screens/rounds/TeamRounds';
 import { TeamRoundsSkeleton } from '@/clubhouse/screens/rounds/TeamRoundsSkeleton';
+import { WhatsNew } from '@/clubhouse/screens/whats-new/WhatsNew';
+import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
+import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_FAILED, PREVIEW_WHATS_NEW_TRUNCATED } from '@/clubhouse/preview/fixtures-whats-new';
 import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAILED, PREVIEW_TEAM_ROUNDS_NO_ROSTER, PREVIEW_TEAM_ROUNDS_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-team-rounds';
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
 import { ClassesNoTeam } from '@/clubhouse/screens/classes/ClassesNoTeam';
@@ -303,6 +306,10 @@ export default async function ClubhousePreview({
             data={{ empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
           />
         ),
+    },
+    'whats-new': {
+      path: '/golf/dashboard/whats-new',
+      node: state === 'loading' ? <WhatsNewSkeleton /> : <WhatsNew data={{ empty: PREVIEW_WHATS_NEW_EMPTY, failed: PREVIEW_WHATS_NEW_FAILED, truncated: PREVIEW_WHATS_NEW_TRUNCATED }[state ?? ''] ?? PREVIEW_WHATS_NEW} />,
     },
     roster: {
       path: '/golf/dashboard/roster',

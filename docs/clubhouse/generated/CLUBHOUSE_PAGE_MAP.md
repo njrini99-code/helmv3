@@ -18,7 +18,7 @@ Every registered page: identity, routes, roles, semantic features and status. Th
 | P010 | Team Hub | `/golf/dashboard/team-hub` | coach, player | player_hub, team_communications, team_operations | approved | in_progress | complete | reserved | existing | partial | current |
 | P011 | Rounds | `/golf/dashboard/rounds`<br>`/golf/dashboard/rounds/[id]`<br>`/golf/dashboard/rounds/new`<br>`/golf/dashboard/rounds/continue/[id]` | coach, player | golf_round_lifecycle | approved | in_progress | complete | reserved | existing | partial | current |
 | P012 | Classes | `/golf/dashboard/classes` | player | calendar_events | approved | in_progress | complete | reserved | existing | partial | current |
-| P013 | CoachHelm | `/golf/dashboard/coachhelm` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | complete | reserved | existing | partial | current |
+| P013 | CoachHelm | `/golf/dashboard/coachhelm`<br>`/golf/dashboard/whats-new` | coach, player | coachhelm_ai, player_coachhelm_development, coach_intelligence_triage | approved | in_progress | complete | reserved | existing | partial | current |
 | P014 | Recruiting | `/golf/dashboard/recruiting` | coach | recruiting | approved | in_progress | complete | reserved | existing | partial | current |
 | P015 | Auth | `/golf/login`<br>`/golf/welcome`<br>`/golf/signup`<br>`/golf/player`<br>`/golf/reset-password`<br>`/golf/coach`<br>`/golf/coach/pending`<br>`/golf/demo` | signed out | auth_onboarding_join | approved | in_progress | partial | reserved | existing | partial | current |
 

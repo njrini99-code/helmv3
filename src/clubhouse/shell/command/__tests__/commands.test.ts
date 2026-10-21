@@ -10,9 +10,9 @@ describe('what each role is offered', () => {
   it('a coach is never offered a player action, and a player never a coach one', () => {
     const coach = ids(actionsFor('coach'));
     const player = ids(actionsFor('player'));
-    expect(coach).toEqual(['action:new-event', 'action:new-message', 'action:post-announcement', 'action:new-qualifier']);
+    expect(coach).toEqual(['action:new-event', 'action:new-message', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']);
     expect(player).toEqual(['action:new-round', 'action:new-message', 'action:add-class']);
-    for (const coachOnly of ['action:new-event', 'action:post-announcement', 'action:new-qualifier']) expect(player).not.toContain(coachOnly);
+    for (const coachOnly of ['action:new-event', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']) expect(player).not.toContain(coachOnly);
     for (const playerOnly of ['action:new-round', 'action:add-class']) expect(coach).not.toContain(playerOnly);
   });
 

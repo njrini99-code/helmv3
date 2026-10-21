@@ -53,7 +53,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of one round: grade, scoring mix, 18-hole filmstrip
 - [ ] **Courses** `/courses` — Course library: courses, tee sets, home courses
 - [ ] **Team info** `/team` — Team details, settings and roster information
-- [ ] **What's New** `/whats-new` — The team's activity over the past 7 days (search palette only)
+- [x] **What's New** `/whats-new` — The team's activity over the past 7 days (search palette only)
 
 ## Players
 

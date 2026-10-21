@@ -1,5 +1,38 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: What's new
+
+```text
+Design package: none (Fairway's What's New feed in Clubhouse's Ledger kit; design call)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   CH-13230 to CH-13232, CH-13330 to CH-13332, CH-13430, CH-13431
+Actions:        none (read only)
+Data impact:    none written; reads through getWhatsNewForCoach (golf_player_insights,
+                golf_validated_patterns, golf_player_focus_areas, 7 days)
+Held items:     none
+```
+
+### Added
+
+- `/golf/dashboard/whats-new` is a Clubhouse screen for a coach instead of a redirect to Home: the team's CoachHelm
+  activity of the past seven days (insights detected, matured and resolved, patterns validated, focus areas started and
+  finished), newest first, grouped by day in the team's own time zone. A row names the player and what happened, shows
+  the insight's or focus area's own words (three lines at most), and opens that player's Stats (a focus area opens
+  their Development tab). A filter narrows to Insights, Patterns or Focus areas, with the counts.
+- Reached from the command palette ("What’s new", under CoachHelm), as the old page was; it is not a sidebar section.
+- A failed feed says so (CH-13231) and never reads as a quiet week; a refresh that fails keeps the week on screen and
+  says it may be out of date (CH-13230); a category at its row ceiling says older updates may be missing (CH-13332).
+
+### Fixed
+
+- Every day label and time is made on the server in the team's zone, so the first paint cannot disagree with hydration
+  (the Fairway feed threw React #418 on exactly that).
+
+### Notes
+
+A player's `/whats-new` still opens Home (a coach-only feature in Fairway too). Reads one action, the Fairway page's own,
+so the visibility rules on insights are the same in both UIs.
+
 ## 2026-10-21 — useHydrated moved to the shared lib
 
 No visible change. `screens/coachhelm/use-hydrated.ts` re-exports
