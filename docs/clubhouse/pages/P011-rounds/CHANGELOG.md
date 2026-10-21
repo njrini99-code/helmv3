@@ -1,5 +1,30 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — Team rounds for coaches, and the coach's note on a round
+
+```text
+Design package: none (the player Rounds library's Ledger kit, owner direction 2026-10-20: less cards)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   CH-11023, CH-11219 to CH-11222, CH-11317 to CH-11322, CH-11412, CH-11413, CH-11523
+Actions:        ACT-P011-COACH-NOTE (saveRoundCoachNote)
+Data impact:    writes golf_round_reviews.coach_notes (upsert on round_id); reads the same column and the team's completed rounds; no migration
+Held items:     none
+```
+
+A coach's Rounds (`/golf/dashboard/rounds`) is now a Clubhouse screen, Team rounds (`TeamRounds`, `loadTeamRounds`),
+and no longer a redirect to Team stats. Four figures since 1 August (rounds, average, under par, low round), a search,
+a player filter, and every posted round by month or by player; a row opens the round's review and the review's back link
+returns to the list. The same rounds and the same one-total rule as the player's library (`toLibraryRound`).
+
+The round review has a Coach note card (`CoachNote`, zone "In words"). A player reads "From your coach" and sees nothing
+when there is none; a coach of the player's team adds or edits the note in place. `saveRoundCoachNote` upserts the round's
+`golf_round_reviews` row on `round_id` and writes only `coach_notes` and `updated_at`, so a generated review is never
+changed and a round with no review yet (465 of 823 completed rounds on 2026-10-21) can still carry a note; it tells the
+player (`notifyCoachCommented`). Q-72f's "coach notes" gap is closed for the write side.
+
+Known edge: a note on a round with no CoachHelm review leaves a row with only the note. Fairway's review flow reads that
+row as "a review exists"; Clubhouse is off in production, so nothing sees it until the flag turns on.
+
 ## 2026-10-21 — Season bars and the round review are drawn at once
 
 ```text

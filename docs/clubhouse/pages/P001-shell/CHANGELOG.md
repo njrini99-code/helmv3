@@ -1,5 +1,20 @@
 # P001 — Shell: changelog
 
+## 2026-10-21 — A coach's Rounds in the sidebar
+
+```text
+Design package: none (P011's Team rounds)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`shell/nav.ts`: the coach's nav has Rounds (Team section, after Stats, shortcut G then O as the player's), and
+`/golf/dashboard/rounds` is a rebuilt coach route instead of an alias to Team stats. The coach's Round review still
+goes back to Stats unless it was opened from Team rounds. Logged on P011.
+
 ## 2026-10-21 — The shell marks `.ch-root` hydrated for the a11y scan
 
 ```text

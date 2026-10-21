@@ -49,7 +49,7 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 - [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked from Calendar events
 - [ ] **Tasks** `/tasks` — Assign tasks to players and track completion live
 - [ ] **Documents** `/documents` — Team files and resources (Calendar can already attach them)
-- [ ] **Rounds** `/rounds` — Every team round: scores and per-round stats (with `/rounds/[id]`)
+- [x] **Rounds** `/rounds` — Every team round: scores and per-round stats, by month or by player (`TeamRounds`; opens `/rounds/[id]`, whose review has the coach's note)
 - [ ] **Round review** `/rounds/[id]/review` — AI analysis of one round: grade, scoring mix, 18-hole filmstrip
 - [ ] **Courses** `/courses` — Course library: courses, tee sets, home courses
 - [ ] **Team info** `/team` — Team details, settings and roster information

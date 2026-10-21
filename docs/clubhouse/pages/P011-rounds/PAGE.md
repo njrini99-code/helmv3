@@ -57,7 +57,8 @@ production.
 
 | Surface | Address | Who | State today | Code | Preview |
 | --- | --- | --- | --- | --- | --- |
-| Library | `/golf/dashboard/rounds` | player (a coach keeps the Fairway page) | **routed** through `ClubhouseRoundsRoute` | `RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton` | `/clubhouse-preview/rounds` |
+| Library | `/golf/dashboard/rounds` | player | **routed** through `ClubhouseRoundsRoute` | `RoundsLibrary`, `parts`, `writes`, `RoundsSkeleton` | `/clubhouse-preview/rounds` |
+| Team rounds | `/golf/dashboard/rounds` | coach | **routed** through `ClubhouseTeamRoundsRoute` (`loadTeamRounds`) | `TeamRounds`, `TeamRoundsSkeleton` | `/clubhouse-preview/team-rounds` |
 | Review | `/golf/dashboard/rounds/[id]` | the player who played it, a coach of their team | **routed** through `ClubhouseRoundReviewRoute` | `RoundReview`, `ReviewLoadFailed` | `/clubhouse-preview/round` |
 | Setup | `/golf/dashboard/rounds/new` | player | **routed** through `ClubhouseNewRoundRoute` (`NewRound` over `useNewRoundSession`); it draws against `ChSetupPorts`, which `entry/setup-reads.ts` and the engine's `start(form)` supply | `setup/` (`RoundSetup`, `CoursePicker`, `AddCourseSheet`, `HoleConfig`, `shape`), `entry/` (`NewRound`, `setup-reads`) | `/clubhouse-preview/setup` |
 | Shot screen | the tracking phase of `/rounds/new`, and `/rounds/continue/[id]` | player | **routed** through `NewRound` and `ClubhouseContinueRoundRoute` (`ContinueRound` over `useContinueRoundSession`); built on `useShotTracking` and `shot-entry-rules`, the Fairway screen's own logic moved unchanged; the round's sheets (Exit, Scorecard, Round complete, Submitting, the closed-qualifier sheets) are driven by `RoundRuntime` | `track/` (`RoundTracking`, `ShotEntry`, `HoleReview`, `sheets`, `round-sheets`, `parts`, `labels`), `entry/` (`RoundRuntime`, `ports`, `session`, `QualifierRoundSheet`) | `/clubhouse-preview/track` |

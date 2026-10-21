@@ -82,6 +82,8 @@ course library (CH-11403), a course's tees (CH-11404), the scorecard (CH-11405),
 | 110210 | CH-11409 | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | Reading the device for saved rounds |
 | 110211 | CH-11410 | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | The Rounds library is refreshing (a Try again is running) with the page on screen |
 | 110212 | CH-11411 | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | A round-type change is in flight |
+| 110213 | CH-11412 | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | Team rounds is refreshing (a Try again is running) with the page on screen |
+| 110214 | CH-11413 | `TEAM_ROUNDS_IS_LOADING` | Team rounds is loading |
 
 ## 03 — Background loading / refresh
 
@@ -119,6 +121,12 @@ empty (110413). A test covers 110413.
 | 110415 | CH-11314 | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | Nothing on this device to recover |
 | 110416 | CH-11315 | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | Completed rounds with no score at all (no total and no nines) |
 | 110417 | CH-11316 | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | Change round type: there is no qualifier to choose |
+| 110418 | CH-11317 | `TEAM_ROUNDS_NO_PLAYERS_ON_THE_TEAM` | Team rounds: no players on the team yet |
+| 110419 | CH-11318 | `TEAM_ROUNDS_A_COACH_WITH_NO_TEAM` | Team rounds: a coach with no team |
+| 110420 | CH-11319 | `TEAM_ROUNDS_THE_SEASON_FIGURES` | Team rounds: the season figures |
+| 110421 | CH-11320 | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | Team rounds: no round posted by anyone |
+| 110422 | CH-11321 | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | Team rounds: the search or player filter matches nothing |
+| 110423 | CH-11322 | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | Team rounds: completed rounds with no score at all |
 
 ## 05 — Validation
 
@@ -202,6 +210,11 @@ never "no team" (shared with every page, `routes/team.ts`; not tested here). Nei
 | 110637 | CH-11213 | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
 | 110638 | CH-11020 | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | Changing a round's type fails (Continue round, or a submitted round's review, CH-11522) |
 | 110639 | CH-11218 | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load |
+| 110640 | CH-11023 | `SAVING_THE_COACHS_NOTE_ON_A_ROUND` | Saving the coach's note on a round fails (the review's Coach note card) |
+| 110641 | CH-11219 | `A_REFRESH_OF_TEAM_ROUNDS_FAILS_WHILE` | A refresh of Team rounds fails while the page already shows rounds |
+| 110642 | CH-11220 | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | Team rounds: the roster doesn't load |
+| 110643 | CH-11221 | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | Team rounds: the posted rounds don't load |
+| 110644 | CH-11222 | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
 
 ## 07 — Network / offline
 
@@ -350,6 +363,7 @@ unchanged when the flag is off.
 | 111120 | CH-11520 | `DISCARD_ON_A_SAVED_ROUND` | Discard on a saved round (Recover) |
 | 111121 | CH-11521 | `CHANGE_ROUND_TYPE` | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
 | 111122 | CH-11522 | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
+| 111123 | CH-11523 | `THE_COACH_NOTE_CARD_ON_A_ROUNDS` | The Coach note card on a round's review |
 
 ## 12 — State preservation
 
