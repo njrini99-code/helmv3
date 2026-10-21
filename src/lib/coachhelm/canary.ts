@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isFlagEnabled } from '@/lib/flags';
 import { logServerError } from '@/lib/server-error-logger';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
 
 /**
  * CoachHelm's one-team canary (turn-on plan: each wave runs on one team
@@ -58,10 +59,11 @@ export function isCoachHelmFlagEnabled(featureId: string): boolean {
 }
 
 /**
- * The player's active golf_teams ids. A read error returns [] so the gate
- * fails closed (the flag reads as off for this player).
+ * The player's active golf_teams ids, or null when the read failed (logged).
+ * Callers treat null as no team, so the gate fails closed (the flag reads as
+ * off for this player).
  */
-export async function loadPlayerTeamIds(supabase: AnyClient, playerId: string): Promise<string[]> {
+export async function loadPlayerTeamIds(supabase: AnyClient, playerId: string): Promise<string[] | null> {
   try {
     const { data, error } = await supabase
       .from('golf_team_members')
@@ -73,8 +75,7 @@ export async function loadPlayerTeamIds(supabase: AnyClient, playerId: string): 
         action: 'coachhelm.canary.loadPlayerTeamIds',
         featureArea: 'coachhelm',
       }, 'warning');
-      // eslint-disable-next-line helm/no-empty-collection-on-error -- [] fails CLOSED: no team means every canary flag reads as off.
-      return [];
+      return null;
     }
     return ((data ?? []) as Array<{ team_id: string | null }>)
       .map((r) => r.team_id)
@@ -85,7 +86,7 @@ export async function loadPlayerTeamIds(supabase: AnyClient, playerId: string): 
       { action: 'coachhelm.canary.loadPlayerTeamIds', featureArea: 'coachhelm' },
       'warning',
     );
-    return [];
+    return null;
   }
 }
 
@@ -102,7 +103,8 @@ export async function withPlayerCoachHelmTeams<T>(
   if (!coachhelmTeamAllowlist()) return fn();
   let teamIds: string[];
   try {
-    teamIds = await loadPlayerTeamIds(await getClient(), playerId);
+    // A failed read is no team: every canary flag reads as off (fail closed).
+    teamIds = (await loadPlayerTeamIds(await getClient(), playerId)) ?? [];
   } catch {
     teamIds = [];
   }
@@ -141,6 +143,51 @@ export async function loadCanaryPlayerTeams(supabase: AnyClient): Promise<Map<st
       { action: 'coachhelm.canary.loadCanaryPlayerTeams', featureArea: 'coachhelm' },
       'warning',
     );
+  }
+  return out;
+}
+
+/**
+ * For a feed over a known set of players (a coach's team sweep) during a
+ * canary (`allow` is `coachhelmTeamAllowlist()`): player id → the listed teams
+ * that player is active on. The ids go in slices of `ID_CHUNK_SIZE`, each well
+ * under the 1,000-row response cap. Null when any slice fails (logged):
+ * callers read every player as off (fail closed) rather than half the feed.
+ */
+export async function loadCanaryTeamsForPlayers(
+  supabase: AnyClient,
+  playerIds: readonly string[],
+  allow: ReadonlySet<string>,
+): Promise<Map<string, string[]> | null> {
+  const out = new Map<string, string[]>();
+  const ids = [...new Set(playerIds.filter(Boolean))];
+  try {
+    for (const chunk of chunkIds(ids)) {
+      const { data, error } = await supabase
+        .from('golf_team_members')
+        .select('player_id, team_id')
+        .in('player_id', chunk)
+        .in('team_id', [...allow])
+        .eq('status', 'active');
+      if (error) {
+        void logServerError(`[coachhelm canary] player team read failed; flags read as off: ${error.message}`, {
+          action: 'coachhelm.canary.loadCanaryTeamsForPlayers',
+          featureArea: 'coachhelm',
+        }, 'warning');
+        return null;
+      }
+      for (const row of (data ?? []) as Array<{ player_id: string | null; team_id: string | null }>) {
+        if (!row.player_id || !row.team_id) continue;
+        out.set(row.player_id, [...(out.get(row.player_id) ?? []), row.team_id]);
+      }
+    }
+  } catch (err) {
+    void logServerError(
+      `[coachhelm canary] player team read threw; flags read as off: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'coachhelm.canary.loadCanaryTeamsForPlayers', featureArea: 'coachhelm' },
+      'warning',
+    );
+    return null;
   }
   return out;
 }

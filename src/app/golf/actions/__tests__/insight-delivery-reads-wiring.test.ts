@@ -8,7 +8,7 @@
  * Synthetic fixtures only.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 vi.mock('@/lib/server-error-logger', () => ({
@@ -125,6 +125,10 @@ interface ClientTables {
   focus?: unknown[];
   /** The `golf_rounds` row a `.maybeSingle()` returns. */
   round?: unknown;
+  /** `golf_team_members` rows (the HELM_COACHHELM_TEAMS canary's team read). */
+  members?: unknown[];
+  /** Fail the `golf_team_members` read. */
+  membersError?: boolean;
 }
 
 /** Every builder call on `golf_coach_insights`, as [method, ...args]. */
@@ -132,7 +136,10 @@ let insightCalls: unknown[][] = [];
 
 function makeClient(insightRows: unknown[], tables: ClientTables = {}) {
   const make = (table: string, data: unknown[]) => {
-    const terminal = { data, error: null };
+    const terminal =
+      table === 'golf_team_members' && tables.membersError
+        ? { data: null, error: { message: 'boom' } }
+        : { data, error: null };
     const b: Record<string, unknown> = {};
     for (const m of ['select', 'not', 'or', 'in', 'eq', 'neq', 'gte', 'lte', 'is', 'order', 'limit', 'range', 'abortSignal']) {
       b[m] = vi.fn((...args: unknown[]) => {
@@ -148,6 +155,7 @@ function makeClient(insightRows: unknown[], tables: ClientTables = {}) {
     if (table === 'golf_coach_insights') return insightRows;
     if (table === 'golf_insight_player_feedback') return tables.feedback ?? [];
     if (table === 'golf_player_focus_areas') return tables.focus ?? [];
+    if (table === 'golf_team_members') return tables.members ?? [];
     return [];
   };
   return {
@@ -361,5 +369,42 @@ describe('delivery with the flag on', () => {
     const listed = (env.detail as { insights: Array<{ insight_id: string; content: string }> }).insights;
     expect(listed.map((i) => i.insight_id)).toEqual(kept);
     expect(listed.find((i) => i.insight_id === leader)?.content).toContain(FOLDED_TITLE[folded]);
+  });
+});
+
+describe('HELM_COACHHELM_TEAMS canary: the delivery plan is decided per player', () => {
+  const other = ROWS.map((r) => ({ ...r, id: `q-${r.id}`, player_id: 'p2' }));
+  const members = [{ player_id: 'p1', team_id: 't1' }];
+
+  beforeEach(() => {
+    flagOn.value = true;
+    process.env.HELM_COACHHELM_TEAMS = 't1';
+  });
+  afterEach(() => {
+    delete process.env.HELM_COACHHELM_TEAMS;
+  });
+
+  it('the coach team sweep folds and caps the listed team’s player and leaves the other as it was', async () => {
+    const res = await getInsightsForCoachWithMeta('coach-1', { limit: 100 }, makeClient([...ROWS, ...other], { members }));
+    expect(res.ok && res.data.filter((i) => i.player_id === 'p1').length).toBe(4);
+    expect(res.ok && res.data.filter((i) => i.player_id === 'p2').length).toBe(ROWS.length);
+    expect(res.ok && res.data.filter((i) => i.player_id === 'p2').every((i) => i.also === undefined)).toBe(true);
+  });
+
+  it('the roster sweep does the same, player by player', async () => {
+    const { kept } = expectedKept(await offOrder());
+    flagOn.value = true;
+    const roster = await getTopInsightsForPlayers(['p1', 'p2'], { limit: 20 }, makeClient([...ROWS, ...other], { members }));
+    expect(ids(roster.get('p1') ?? [])).toEqual(kept);
+    expect(roster.get('p2')?.length).toBe(ROWS.length);
+  });
+
+  it('a failed team read: every player as it was (fail closed)', async () => {
+    const res = await getInsightsForCoachWithMeta(
+      'coach-1',
+      { limit: 100 },
+      makeClient([...ROWS, ...other], { members, membersError: true }),
+    );
+    expect(res.ok && res.data.length).toBe(ROWS.length * 2);
   });
 });

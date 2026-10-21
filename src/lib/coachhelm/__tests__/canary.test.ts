@@ -10,6 +10,7 @@ import {
   currentCoachHelmTeams,
   isCoachHelmFlagEnabled,
   loadCanaryPlayerTeams,
+  loadCanaryTeamsForPlayers,
   loadPlayerTeamIds,
   runWithCoachHelmTeams,
   withPlayerCoachHelmTeams,
@@ -110,7 +111,8 @@ describe('with a team list', () => {
 
   it('a team read error fails closed', async () => {
     const sb = client({ data: null, error: { message: 'boom' } });
-    await expect(loadPlayerTeamIds(sb, 'p1')).resolves.toEqual([]);
+    // null (not []): the caller, not the loader, decides a failed read means no team.
+    await expect(loadPlayerTeamIds(sb, 'p1')).resolves.toBeNull();
     await expect(withPlayerCoachHelmTeams('p1', () => sb, async () => isCoachHelmFlagEnabled(FLAG))).resolves.toBe(false);
     expect(logServerError).toHaveBeenCalled();
   });
@@ -125,5 +127,21 @@ describe('with a team list', () => {
     await expect(loadCanaryPlayerTeams(ok)).resolves.toEqual(new Map([['p1', ['team-a', 'team-b']]]));
     const bad = client({ data: null, error: { message: 'boom' } });
     await expect(loadCanaryPlayerTeams(bad)).resolves.toEqual(new Map());
+  });
+});
+
+describe('loadCanaryTeamsForPlayers (coach feeds)', () => {
+  it('maps each player to the listed teams they are on, in id slices of 200', async () => {
+    const sb = client({ data: [{ player_id: 'p1', team_id: 'team-a' }], error: null });
+    const ids = Array.from({ length: 450 }, (_, i) => `p${i}`);
+    const out = await loadCanaryTeamsForPlayers(sb, ids, new Set(['team-a']));
+    expect(out?.get('p1')).toEqual(['team-a', 'team-a', 'team-a']);
+    expect((sb as { from: ReturnType<typeof vi.fn> }).from).toHaveBeenCalledTimes(3);
+  });
+
+  it('a failed read returns null and logs (callers read every player as off)', async () => {
+    const sb = client({ data: null, error: { message: 'boom' } });
+    await expect(loadCanaryTeamsForPlayers(sb, ['p1'], new Set(['team-a']))).resolves.toBeNull();
+    expect(logServerError).toHaveBeenCalled();
   });
 });

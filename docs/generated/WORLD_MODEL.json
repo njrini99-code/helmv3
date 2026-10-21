@@ -14115,6 +14115,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/coachhelm-corrections.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/coachhelm-course-plan.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -14147,6 +14152,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/insight-delivery.ts",
           "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/insight-delivery.ts",
+          "anchor": "src/lib/flags"
         },
         {
           "kind": "import_graph",
@@ -14558,6 +14568,11 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/v3/team-practice-rx.ts",
           "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/canary.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
         },
         {
           "kind": "import_graph",
@@ -19707,6 +19722,16 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/team-pattern/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/stamp-prescription.ts",
+          "anchor": "src/lib/flags"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/flags"
         }
       ]
     },
@@ -20277,6 +20302,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/development.ts",
+          "anchor": "src/lib/coachhelm/canary"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/brief/assemble.test.ts",
           "anchor": "src/app/golf/actions/insight-delivery"
         },
@@ -20407,8 +20437,18 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/stamp-prescription.ts",
+          "anchor": "src/lib/coachhelm/canary"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
           "anchor": "src/lib/coachhelm/focus-areas/target-metric"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/verdicts/verdict-job.ts",
+          "anchor": "src/lib/coachhelm/canary"
         }
       ]
     },

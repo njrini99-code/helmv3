@@ -88,11 +88,18 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   upserts), the player feed reads in `insight-delivery.ts`
   (`getInsightsForPlayer`, `getTopInsightForPlayer`,
   `getRoundTakeawayInsight`), the coach chat read tools (the chat's team), the
-  shot-entry ask loader, and the lifecycle cron (checkpoint job per player and
-  the scan's round-based archive rule). Anything outside a scope (coach feeds,
-  multi-player reads, the verdict job, the coach corrections action) reads the
-  flag as off during a canary, which is today's production state. A team read
-  that fails also reads as off. To widen, add ids; to finish, unset the
+  shot-entry ask loader, the lifecycle cron (checkpoint job per player, the
+  scan's round-based archive rule, and the verdict job, which judges only
+  listed players' focus areas), the roster sweep (each player's freshness
+  decision in their teams' scope, from the roster it already loads), the
+  corrections action (after the read and the player's teams load), the
+  prescription stamp on every focus-area create path (the player's teams;
+  `createFocusArea` also reads the flag in the focus area's team), and the
+  coach feeds (`getInsightsForCoach`, `getInsightsForCoachWithMeta`,
+  `getTopInsightsForPlayers`), whose fold and 3 + 1 cap are decided per player
+  from one batched team read, so a mixed feed folds only the listed players.
+  Anything else outside a scope reads the flag as off during a canary, which
+  is today's production state. A team read that fails also reads as off. To widen, add ids; to finish, unset the
   variable. Never used for auth, RLS or the Clubhouse release flag.
 - Support and the claim ladder (Slice 1, 2026-10-20, flag
   `coachhelm_support_v1`, off): after the generators and composites write a
