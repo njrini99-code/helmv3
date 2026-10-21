@@ -282,6 +282,10 @@ CREATE INDEX "idx_golf_coaches_org_id" ON "public"."golf_coaches" USING "btree" 
 
 CREATE INDEX "idx_golf_coaches_user_id" ON "public"."golf_coaches" USING "btree" ("user_id");
 
+CREATE INDEX "idx_golf_coachhelm_player_state_checkpoint_round" ON "public"."golf_coachhelm_player_state" USING "btree" ("last_checkpoint_round_id") WHERE ("last_checkpoint_round_id" IS NOT NULL);
+
+CREATE INDEX "idx_golf_coachhelm_player_state_updated_at" ON "public"."golf_coachhelm_player_state" USING "btree" ("updated_at");
+
 CREATE INDEX "idx_golf_coachhelm_settings_coach_id" ON "public"."golf_coachhelm_settings" USING "btree" ("coach_id");
 
 CREATE INDEX "idx_golf_coachhelm_settings_user_id" ON "public"."golf_coachhelm_settings" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);

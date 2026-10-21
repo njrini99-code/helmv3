@@ -615,6 +615,44 @@ flags:
       remove the section and its wiring if the review asks for a
       different surface/placement instead.
 
+  # CoachHelm supercharge Slice 5a (design: the CoachHelm supercharge
+  # design set, "07 System Architecture" §4 row 5; the contract as built is
+  # in memory/features/coachhelm-ai.md): the PR #2073 insight angles, ported
+  # to main. Owner: Nick. Created off; turning it on is the owner's decision.
+  - feature_id: coachhelm_insight_angles_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Runs the five CoachHelm insight-angle generators under
+      src/lib/coachhelm/v3/generators/insight-angles/ (three-putt autopsy,
+      bad-day floor, lie-adjusted approach, tee-miss cost, approach-miss
+      compass) in every analyzePlayer pass. On: each writes at most one
+      golf_coach_insights row per player when its own floors and its
+      one-sided z >= 1.645 gate pass, so coaches and players can see these
+      new reads. Off: the orchestrator call site (insightAngleGenerators)
+      returns no entries, and each angle generator's run() returns before
+      any read, write or sweep, so nothing is read, written or archived.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: "2027-01-31"
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      The owner turns it on (development, preview, then production) after
+      reviewing the production reach numbers in the Slice 5a PR. Turning it
+      off stops new angle rows; rows already written stay until the
+      lifecycle cron archives them (archive them by signature prefix
+      v3:three_putt_chain:, v3:bad_day_floor:, v3:lie_approach:,
+      v3:tee_miss_cost:, v3:approach_miss_compass: for an immediate
+      rollback). If coaches keep the angles through one season, remove the
+      flag and the run() flag check in angle-generator.ts; if rejected, delete the
+      insight-angles directory, its orchestrator call site and its metric
+      aliases, then archive this flag.
+
   - feature_id: coachhelm_a4_sequence_attribution_surface
     owner: golf/coachhelm
     purpose: >-
@@ -638,6 +676,90 @@ flags:
       Either promote to a permanent `release` flag once the section has
       been reviewed, or remove the section and its wiring if the review
       asks for a different surface/placement instead.
+
+  # CoachHelm supercharge, Slice 0 and 0b (design in the owner's
+  # coachhelm/supercharge folder, 07 section 4). One flag for every Slice 0
+  # change a live coach or player would see; whichever of the delivery PR and
+  # the freshness PR merges second extends this one entry, never adds a
+  # second. Owner: Nick. Delivery (Slice 0): overlapping reads fold into one
+  # and each insight feed that runs deliverReads holds 3 open reads + 1
+  # strength per player (src/app/golf/actions/insight-delivery-reads.ts).
+  # Freshness (Slice 0b):
+  # floors, revision key, displayed window bounds and the freshness sweep
+  # (src/lib/coachhelm/v3/engine/read-window.ts, read-floors.ts,
+  # sweep-freshness.ts). Writing each read's newest round, rounds and sample
+  # unit is NOT behind it (no surface shows them). Off: everything is what it
+  # was.
+  - feature_id: coachhelm_reads_v1_copy
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the CoachHelm Slice 0 output changes. Delivery: overlapping reads
+      fold into one at delivery and each player's feeds hold 3 open reads
+      plus 1 strength. Freshness: a new or refreshed read needs at least 3
+      countable rounds and its family's attempt floor or it is held back as
+      Watching with a count-down; a new evidence revision is a new newest
+      round in the window (or a moved window), not a changed sample count;
+      empty window dates are filled from the rounds read; and the nightly
+      roster sweep re-analyzes players whose newest countable round is newer
+      than their newest read (deterministic generators only, no LLM). Off
+      until the owner reviews the shorter feeds and the Watching counts.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      When the owner turns production on and the 3 + 1 feeds and the floors
+      have held for an observation window, make fold and cap the only
+      behavior in insight-delivery.ts, delete the legacy branches the
+      freshness part guards (revision-key.ts legacy key, the floor and bounds
+      branches in read-window.ts, the sweep's legacy-only path), and delete
+      this flag in the same change. Turning it off restores the old gates,
+      key and sweep for every later write; reads already archived or matured
+      while it was on stay as they are until their next refresh.
+
+  # CoachHelm supercharge Slice 2 (honest root cause, ported from PR #2073).
+  # Created OFF on main; turning it on is the owner's call. Independent of
+  # coachhelm_a4_sequence_attribution_surface (the Round Review section).
+  - feature_id: coachhelm_root_cause_diagnosis
+    owner: golf/coachhelm
+    purpose: >-
+      Gates the shot-based root cause on v3 CoachHelm insights
+      (v3/engine/root-cause.ts, run from BaseGenerator.run()). When on, every
+      leak row gets evidence.cause in one of three states: a counted shot
+      sequence (a recorded path on at least 4 of at least 10 failures over 3
+      rounds, at least 30% of them, across at least 2 rounds; never for tee
+      shots or opening holes), likely from the totals (one par x length
+      context with both arms printed, lift at least 1.25, 10 per arm, Newcombe
+      lower bound above 0 after a Bonferroni widening over the slices tried),
+      or not traced (a count-down to the
+      floor, a data gap naming the missing field, or the reason nothing was
+      checked); diagnosis.root_cause is the sentence for that state and the
+      "is off its benchmark" template is never written; strength and neutral
+      rows get no cause. When off, the engine writes exactly what it wrote
+      before this flag existed.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: >-
+      Off: the next analysis run rewrites each row's diagnosis with the old
+      template and drops evidence.cause (the update path replaces evidence).
+    cleanup_plan: >-
+      Remove the flag and the template branch in generator-base.ts once the
+      root cause has run in production for a season without a wording or
+      accuracy complaint; if coaches reject it, turn it off and remove the
+      cause path instead.
 
   # Clubhouse: the from-scratch GolfHelm UI (src/clubhouse/) for coaches and
   # players (isClubhouseFor). Parallel to Fairway, never layered on it.
@@ -697,3 +819,119 @@ flags:
       When the owner turns production on and the old entrance pages are
       retired, delete them, the layout branch that chooses between them, and
       this flag in the same change.
+
+  # CoachHelm supercharge Slice 1: support and the claim ladder
+  # (/mnt/project-files/coachhelm/supercharge/02-accuracy-standard.md §2-§6,
+  # 04 §1.1 and §1.5). Off everywhere until the owner applies the held run-log
+  # migration and the back-test clears the 02 §8 bars.
+  - feature_id: coachhelm_support_v1
+    owner: golf/coachhelm
+    purpose: >-
+      After the insight generators write a player's rows for a run, computes
+      each row's support (the gap to the benchmark with a 95% range, a
+      one-sided p and a Benjamini-Hochberg q across every candidate of the
+      run, q <= 0.10), the shrunk estimate and the five-rung claim ladder,
+      and merges them into the row's evidence (support, ladder, what_ladder,
+      ladder_reasons, strokes_shrunk, shrink); writes one
+      golf_coachhelm_run_log row per run; and records rank_factors on
+      golf_insight_exposure. Turning it on changes no title, content,
+      confidence, priority or lifecycle: no surface reads the ladder yet, so
+      coaches and players see nothing different until a renderer PR does.
+      Off: nothing is read or written by this code.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on (development, preview, production) only after the owner
+      applies 20261020114500_golf_coachhelm_run_log.sql (HELD.md row; the
+      writer treats the missing table as not available, so order is not a
+      correctness issue) and the support back-test
+      (scripts/coachhelm/support-backtest.ts) meets the 02 §8 acceptance
+      bars. Remove the flag and the isSupportPassEnabled branches once the
+      ladder renderers ship and the pass has run stably for a month.
+
+  # CoachHelm supercharge Slice 3: lifecycle (checkpoints, recheck,
+  # Contradicted, Under review, archive rules).
+  # /mnt/project-files/coachhelm/supercharge/07-system-architecture.md §2 D,
+  # 02-accuracy-standard.md §5 and §7, 04-output-specs-and-examples.md §1.1
+  # and Examples 5 and 7. Off everywhere until the owner applies the held
+  # migration.
+  - feature_id: coachhelm_recheck_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Adds a checkpoint step to the nightly insight-lifecycle cron: a
+      per-player counter (golf_coachhelm_player_state) fires a checkpoint at
+      3 new countable rounds or 20 new attempts in a shot family; at a
+      checkpoint, putt-distance and par-scoring reads are rechecked on the
+      newest 15 countable rounds (or 90 days, whichever has more attempts),
+      opposing reads are paired as Contradicted, and coach corrections or a
+      hole-total mismatch mark a read Under review until the next checkpoint.
+      It writes evidence.recheck / conflict / under_review on v3 reads and
+      replaces the age-based archive rules for v3 reads with round-based ones
+      (Cleared after 2 more checkpoints, Contradicted-and-retired, Out of
+      date for 3 checkpoints). The insight upsert stops resurrecting a read
+      this step retired as Cleared or Contradicted. No screen reads the new
+      fields yet. Off: nothing is read or written by this code and the age
+      rules (30 / 90 days) run exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on only after the owner applies
+      20261020122000_golf_coachhelm_player_state.sql (HELD.md row; the code
+      treats the missing table as not available, so the order is not a
+      correctness issue) and runs npm run test:rls. Remove the flag, the age
+      rules for v3 reads and the flag checks once the Cleared / Contradicted
+      / Under review lines render in Clubhouse and the step has run stably
+      for a month.
+
+  # CoachHelm supercharge Slice 4: the closed loop (prescription fields,
+  # criterion, verdicts). /mnt/project-files/coachhelm/supercharge/
+  # 04-output-specs-and-examples.md §1.3 and Example 11, 03 §4.2-§4.3,
+  # 07 §2 D. Off everywhere until the owner applies the held migration.
+  - feature_id: coachhelm_verdicts_v1
+    owner: golf/coachhelm
+    purpose: >-
+      When a focus area is created from a CoachHelm read, stamps its
+      prescription on golf_player_focus_areas (baseline_n, the shrunk
+      baseline, a measurable criterion, the horizon in attempts,
+      check_after_rounds 3, assigned_by) in a second, best-effort write; and
+      adds a verdict step to the nightly insight-lifecycle cron that, once a
+      focus area reaches its horizon, writes verdict (worked, moved, did not
+      move, got worse) from a one-sided 90% bound against the shrunk
+      baseline, and puts one in-app bell row in front of the area's coach on
+      "got worse" (no push, nothing to the player). Turning it on changes no
+      screen: no surface reads the new columns yet, and status and
+      outcome_status are never written. Off: nothing is read or written by
+      this code and the focus-area create inserts exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-20"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on only after the owner applies
+      20261020120000_golf_focus_area_prescription.sql (HELD.md row; the code
+      treats the missing columns as not available, so the order is not a
+      correctness issue) and runs npm run test:rls. Remove the flag and its
+      checks once the Layout 5 verdict view ships and the verdict job has run
+      stably for a month.

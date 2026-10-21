@@ -27,12 +27,14 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -198,6 +200,11 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
       {/* The other figures sit under the trend as one open tape (server-rendered, passed in so the island keeps its focus state). */}
       {tape}
 
+      {/* Who gains and who loses (spec 4.5): after the figures and the trend, before the legs and the grid, its table view. */}
+      <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+        <TeamRank data={data} />
+      </SectionBoundary>
+
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
         <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
         <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
@@ -317,8 +324,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
   const leadValue = lead?.value ?? null;
   const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : leadValue.toFixed(lead!.digits);
-  const leadFlat = lead?.delta != null && Math.abs(lead.delta) < 0.05;
-  const leadGood = lead?.delta != null && !leadFlat && (lead.lowerIsBetter ? lead.delta < 0 : lead.delta > 0);
+  // Coloured only when the change clears its standard error (Q4); otherwise neutral ink and "No clear change", the number kept.
+  const leadTone = lead ? deltaTone(lead.delta, lead.se, lead.lowerIsBetter) : '';
   const uid = useId().replace(/:/g, '');
   // The scrubber: a pointer on the plot reads the week under it (mouse and pen; a finger scrolls the page).
   const [scrub, setScrub] = useState<number | null>(null);
@@ -361,10 +368,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               </span>
             )}
             {lead?.delta != null && (
-              <span className={`ch-sgt__chg ch-num ${leadFlat ? 'is-flat' : leadGood ? 'is-good' : 'is-bad'}`}>
-                <Icon icon={leadFlat ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+              <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' ? 'is-good' : leadTone === 'is-loss' ? 'is-bad' : 'is-flat'}`}>
+                <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
                 {formatSigned(lead.delta, lead.digits)}
-                <em>{lead.context}</em>
+                <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>
               </span>
             )}
           </span>

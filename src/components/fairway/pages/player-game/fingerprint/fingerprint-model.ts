@@ -345,6 +345,15 @@ export function shownStrokesImpact(raw: unknown): number | null {
   return Number.isFinite(n) && Math.abs(n) >= 0.05 ? n : null;
 }
 
+/**
+ * " (rough estimate)" for a `rough_estimate` strokes figure, else "". The
+ * figure is a heuristic, not a measured counterfactual, so screen and paper
+ * say so after it, in the evidence panel's own words ("Rough estimate").
+ */
+export function roughEstimateNote(method: unknown): string {
+  return method === 'rough_estimate' ? ' (rough estimate)' : '';
+}
+
 const UNIT_SUFFIX: Record<string, string> = {
   percent: '%',
   feet: ' ft',
@@ -415,9 +424,10 @@ export function buildClaim(insight: EvidenceInsight): ClaimView {
 
   const n = typeof ev.sample_n === 'number' && Number.isFinite(ev.sample_n) ? ev.sample_n : null;
   const impactRaw = shownStrokesImpact(ev.strokes_impact);
+  // A `rough_estimate` figure is not measured: say so (`roughEstimateNote`).
   const impact =
     impactRaw != null
-      ? `Worth about ${Math.abs(impactRaw).toFixed(1)} ${Math.abs(impactRaw).toFixed(1) === '1.0' ? 'stroke' : 'strokes'} a round`
+      ? `Worth about ${Math.abs(impactRaw).toFixed(1)} ${Math.abs(impactRaw).toFixed(1) === '1.0' ? 'stroke' : 'strokes'} a round${roughEstimateNote(ev.strokes_impact_method)}`
       : null;
 
   const tags: string[] = [];

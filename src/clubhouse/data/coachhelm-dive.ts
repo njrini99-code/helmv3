@@ -99,8 +99,9 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {
-      // CH13-21: only the cards this page draws count as shown.
-      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
+      // CH13-21: only the cards this page draws count as shown. includeMore: the Deep dive lists every read, the ones past
+      // the Board's 3 + 1 included (coachhelm_reads_v1_copy; no effect with the flag off).
+      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i), includeMore: true });
     } catch (err) {
       log('dive.feed', err);
       return { status: 'failed' };
@@ -128,10 +129,12 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
       themesRead,
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
-    const say = (t: string) => speak(t, { role: 'player' });
+    // One viewer for the card, the words and the Read: the signed-in player (a player never sees an inferred cause).
+    const viewer = { role: 'player' } as const;
+    const say = (t: string) => speak(t, viewer);
     const list = orderDive(drawn.map((raw) => {
-      const base = toChInsight(raw, { drillText: drills.texts.get(raw.id) ?? null, assigned: assigned.byInsight.get(raw.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } });
-      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say);
+      const base = toChInsight(raw, { drillText: drills.texts.get(raw.id) ?? null, assigned: assigned.byInsight.get(raw.id) ?? null, tour: team.tour, newestRound, viewer });
+      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
     }));
     // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });

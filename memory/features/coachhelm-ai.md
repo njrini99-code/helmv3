@@ -75,6 +75,45 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
 
 ## Business Rules
 
+- Support and the claim ladder (Slice 1, 2026-10-20, flag
+  `coachhelm_support_v1`, off): after the generators and composites write a
+  player's rows for a run, `v3/support/run-pass.ts` adds `support` (gap to the
+  benchmark, 95% range, one-sided p, Benjamini-Hochberg q across every
+  candidate of the run at q <= 0.10), `ladder` / `what_ladder` (Seen
+  repeatedly / Observed / Likely / Working hypothesis / Not enough yet),
+  `ladder_reasons`, `strokes_shrunk` and `shrink` to `evidence`, writes one
+  `golf_coachhelm_run_log` row (held migration 20261020114500; a missing
+  table is "not available"), and records `rank_factors` on exposures. With the
+  flag on nothing else on the row changes (confidence, copy, priority,
+  lifecycle), and no surface reads the ladder yet. Contract and the back-test
+  numbers: "Support and the claim ladder" in
+  `docs/architecture/coachhelm-evidence-contract.md`. Slice 1b fixed the
+  tested direction (the row's claim; two-sided p to BH when the side follows
+  the data), one BH m for gated and ungated callers (written + gated out +
+  refused), shared floors with per-arm minimums, a leave-one-out team
+  benchmark with its variance, `support.run_at` / `run_id`, and strips the
+  ladder keys from the player feed ("Slice 1b fixes" in that section).
+  <!-- schema-drift-absent: golf_coachhelm_run_log -->
+- Honest root cause (supercharge Slice 2, 2026-10-20), behind
+  `coachhelm_root_cause_diagnosis` (OFF; off writes the old template
+  unchanged):
+  - A leak read's cause is counted (a recorded path on ≥ 4 and ≥ 30% of ≥ 10
+    failing events over ≥ 3 rounds, seen in ≥ 2 rounds), likely from totals
+    (one par × length slice against the rest, both arms ≥ 10 and printed,
+    lift ≥ 1.25, interval above zero after Bonferroni widening over the
+    slices tried) or not traced (a count-down, or a data gap naming the one
+    missing shot field). Contract:
+    `docs/architecture/coachhelm-evidence-contract.md`.
+  - Paths with an unrecorded step, no costly shot, or the ordinary putt miss
+    are not patterns. Tee (`sg_ott`) and opening-hole reads stop at likely; a
+    repeated path there is `pattern_only`.
+  - Counted maps to diagnosis level "observed", likely to "hypothesis". A
+    not-traced read is never drawn as a cause (`reads/cause-state.ts`); the
+    coach `DiagnosisPanel` shows it with no chip and no "Likely because".
+  - No stamped window (or a zero-day one) means nothing is traced; there is
+    no one-year fallback. Rolling generators load their own N-day window.
+- `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
+  staff lookup keeps failing, instead of writing the row with no owner.
 - Wave 6 (2026-10-18):
   - Persona (`v3/genome/persona.ts`): `driver_usage` and `miss_side_bias` are
     style dims, never strengths or watch-outs; they only feed the course
@@ -131,6 +170,36 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `tone-derivation.ts`): a player at least as good as the comparison is always
   healthy regardless of gap size; only the adverse direction is gated by the 20%
   closeness bar.
+<!-- schema-drift-absent: golf_coachhelm_player_state -->
+- Checkpoint lifecycle (Slice 3, `src/lib/coachhelm/v3/lifecycle/`), behind
+  `coachhelm_recheck_v1` (default off) and the held table
+  `golf_coachhelm_player_state` (migration on HOLD in
+  `supabase/migrations/HELD.md`; not in production). With the flag off the cron and upsert behave
+  as before and the job makes no query; a missing table or corrections table
+  (42P01 / PGRST205) means "not available". With it on, the cron runs
+  `runCheckpointLifecycle` after its age scan and before the rollups:
+  - A player checkpoint is 3 countable rounds since the last one; a family
+    checkpoint is each 20 attempts in one shot family. The first run only
+    sets a baseline.
+  - At a covering checkpoint, weakness `putt_distance` and `par_scoring`
+    reads are rechecked over the newest 15 countable rounds (or 90 days when
+    that has more attempts): Cleared when the point is at or past the
+    benchmark and the 90% bound beats the old point. The record goes on
+    `evidence.recheck`.
+  - Opposing supported reads on one subject pair as Contradicted (newest wins
+    and the older is retired); a driver read plus a penalty read with a
+    counted driver-to-penalty link pair as one strategy item.
+  - A `wrong_cause` or `not_this(wrong)` correction, or a round whose hole sum
+    does not match `total_score`, sets Under review until the next checkpoint.
+  - v3 reads stop using the 30/90-day age rules and archive instead when
+    Cleared for 2 more checkpoints, Contradicted-and-retired, or Out of date
+    for 3 checkpoints (`metadata.archived_by = 'coachhelm-lifecycle'`).
+    `addressed` reads never archive here. The lifecycle state lives in
+    `metadata.coachhelm_lifecycle` and is mirrored onto evidence, because a
+    generator re-emit replaces evidence; upsert does not resurrect a row
+    retired by `engine-recheck` or `engine-contradiction`.
+  - `delivery-shape.ts` turns these into Cleared / Contradicted / Under review
+    lines; no surface renders it yet.
 - Honest-mode confidence (`factors_measured=false`) is `sample_adequacy × freshness` (`honest_v2`); it is a support score, never a probability, and can never rise as evidence ages.
 - Citations, evidence, and baseline comparisons are part of the trust contract. Do not emit fabricated comparisons or uncited claims.
 - Claim honesty (2026-09-12, repair plan Package 2): prose states what was
@@ -229,6 +298,34 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `src/test/coachhelm/v3/cross-surface-topn-agreement.test.ts` for the test
   proving the feed, the Hub/PracticeRx pick, and the chat tool now agree on
   the same leading insight from one shared fixture.
+- Duplicates, folds and caps at delivery (CoachHelm Slice 0, 2026-10-20).
+  `dedupeBySubject` (`insight-delivery-ranking.ts`) keeps the NEWEST copy of
+  one read (same subject key, same `insight_type`): stored `updated_at`, then
+  `evidence.window_end`, then `created_at`, compared as instants, at the
+  survivor's own rank position (ported from PR #2073). A row another
+  generator wrote on the same subject still loses to the higher-ranked row,
+  as before. Unflagged: it only changes which of two copies is shown.
+  Behind `coachhelm_reads_v1_copy` (off everywhere), `deliverReads`
+  (`insight-delivery-reads.ts`, pure) runs after collapse, dedupe and the
+  player's dismissals on the player feed, the coach feed and team sweep,
+  the Hub pick, the round-review takeaway, the roster sweep and the coach
+  chat tool: overlapping reads fold into one (`FOLD_PAIRS`: driver with
+  penalties, penalties with big numbers, three-putts with 25+ ft putts, and
+  one metric across categories). The one that stays is the group's
+  highest-ranked finding, else strength, else note; it names the others in
+  `also` and in one added sentence. A read someone acted on (acknowledged,
+  addressed, rated by the player, or the source of a live focus area,
+  `src/lib/coachhelm/delivery/pinned-reads.ts`) never folds. Then each
+  player holds 3 open
+  reads and 1 strength (a note or a measured zero is never an open read;
+  same classification as the Clubhouse Board). `includeMore: true` on
+  `getInsightsForPlayer` or `getInsightsForCoachWithMeta` skips the cap: the
+  Clubhouse Board (caps itself), the Deep dive, the game Fingerprint and the
+  Scouting report pass it, and the chat tool never caps. This flag writes
+  no `rank_factors`; that column is Slice 1's (`coachhelm_support_v1`).
+  Paths that read insights without `deliverReads` are
+  unchanged: `insights-coachhelm.ts` `loadEvidenceBackedInsights`,
+  `signal-groups.ts`, `insights-feed.ts`, `intelligence-dashboard.ts`.
 - Budget-sensitive LLM behavior should use team settings and persisted usage, not hardcoded token math.
 - The enable gate (`src/lib/coachhelm/v2/gate.ts`) fails closed: a failed read
   of the coach or player row (LIVE-17), the coach's settings, staffed teams, a
@@ -458,6 +555,51 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   the data keeps accumulating for whenever an owner flips the flag with
   evidence to support it. Resetting the 4 existing rows (built from the v1
   formula) is a separate owner decision, not made here.
+- **Insight angles (Slice 5a, 2026-10-20) are wired but flagged off.**
+  Five deterministic generators in
+  `src/lib/coachhelm/v3/generators/insight-angles/` (lie approach, bad-day floor, three-putt chain, tee-miss
+  cost, approach-miss compass) join the tier-1 run at one call site,
+  `insightAngleGenerators(playerId)` in `v2/orchestrator.ts`, which returns
+  no entries while `coachhelm_insight_angles_v1` is off (default, every
+  environment); each generator's `run()` (`angle-generator.ts`) also
+  returns before any read, write or sweep while it is off. With it on, the
+  five share one lazy set of reads per call (`createAngleLoaders`), never
+  cached across calls. Contract per family lives in `ANGLE_FAMILIES`
+  (`angle-data.ts`): metric (each its own id, never an existing one: the
+  three-putt angle writes `three_putts_per_18`, while `three_putt_chain`
+  stays composite C6's), insight type, sample unit, floor and per-side
+  floor, round floor, Slice 1 gap kind, impact kind, benchmark (and
+  fallbacks), κ in the gap input's unit, and ladder cap, each citing
+  `docs/v3-research-golf-domain.md`. Every row writes `sample_unit`,
+  `rounds_n`, `newest_round_id`, `source_round_ids` (the rounds counted,
+  so it matches `rounds_n`), `comparison.primary`, `detail.gap_input` (the
+  Slice 1 `GapInput` shape) and `detail.test` (its z gate) over the newest
+  40 countable rounds. Those three round fields survive the Slice 0b window
+  stamp (`keepComposedRounds` in `engine/source-rounds.ts`), and each angle
+  is stamped and judged under its own family key `angle:<family>`
+  (`AngleGenerator.readFamilyKey`), so no 0b floor keyed by a shared
+  insight type can hold it back; its own floors apply. Slice 1's
+  `support/families.ts` has no angle entry yet, so the support pass treats
+  every angle row as `unknown` (untestable). Team benchmarks need 5+
+  teammates (the `07` §6 privacy floor); below that there is no comparison
+  and no read. The three-putt benchmark follows owner rule Q-88: the Tour
+  figure from
+  `golf_pga_standards` (PGA or LPGA by the player's cohort) when one is
+  stored, else the teammates' median, else nothing; no GolfHelm-wide pool
+  number. Tee-miss cost, fairway exposure and the bad-day floor are
+  `rough_estimate` (`estimated: true`, worded as a rough estimate, never as
+  a measured saving) and carry no counterfactual; the Team Brief and the
+  strokes-available roll-up also skip any `estimated` row. The bad-day row
+  always files under `scoring` (its SG area split stays in
+  `detail.driver_area`). Without the player's SG scale
+  (`sg_scale_for_player` error, logged) the SG-based angles say nothing.
+  The cause stays `inferred_hypothesis`, and counted shot sequences go to
+  `detail.sequence` until the Slice 2 root-cause ladder can read them. No
+  `coach_copy` is written (player voice only) until Slice 2 lands. Turning
+  the flag off stops new rows but does not sweep rows written while it was
+  on; the flag's `cleanup_plan` lists the signature prefixes to archive.
+  Tests: `insight-angles/__tests__/` (`contract.ts` asserts the family
+  contract on every composed row).
 - **v2 coach-alert family (bubble_player, pattern_detected, streak,
   surge_player, plateau, tournament_pressure, closing_holes, par_3_issues,
   recurring_weakness, team_trend, scoring_decline) is still live-written,

@@ -151,6 +151,14 @@ const ACCESS_PHRASES = [
   // while the identical outcome logged by our own code classified correctly.
   // One event, two vocabularies — the list has to carry both.
   'invalid login credentials',
+  // A signup password the policy rejected. Same two-vocabulary problem as
+  // above: Supabase Auth's HIBP check throws `AuthWeakPasswordError: Password
+  // is known to be weak...` (Sentry JAVASCRIPT-NEXTJS-1CT, severity error),
+  // and our own copy says "choose a stronger password" / "password must
+  // contain". The person is told why and picks another; nothing broke.
+  'password is known to be weak',
+  'choose a stronger password',
+  'password must contain',
   'you must be signed in',
   'must be signed in',
   'only coaches can',

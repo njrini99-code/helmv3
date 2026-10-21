@@ -51,6 +51,17 @@ import {
 } from '@/lib/coachhelm/v3/engine/analysis-outcome';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
+/** The CoachHelm run-log label for each trigger reason (Slice 1, flag
+ *  `coachhelm_support_v1`). The safety net re-runs a round whose analysis did
+ *  not finish: its own label, not a fresh round and not 02 §5's checkpoint
+ *  re-test. */
+const RUN_TRIGGER_BY_REASON = {
+  round_submitted: 'round',
+  safety_net: 'safety_net',
+  manual_refresh: 'manual',
+  cron: 'sweep',
+} as const satisfies Record<NonNullable<PostRoundTriggerArgs['triggerReason']>, 'round' | 'safety_net' | 'manual' | 'sweep'>;
+
 export interface PostRoundTriggerArgs {
   playerId: string;
   roundId: string;
@@ -187,7 +198,11 @@ export async function postRoundTrigger(
   const now = new Date().toISOString();
   let outcome: AnalysisOutcome;
   try {
-    outcome = outcomeFromTriggerResult(await triggerPlayerInsightsAfterRound(args.playerId));
+    outcome = outcomeFromTriggerResult(
+      await triggerPlayerInsightsAfterRound(args.playerId, {
+        runTrigger: RUN_TRIGGER_BY_REASON[args.triggerReason ?? 'round_submitted'],
+      }),
+    );
   } catch (err) {
     // The engine envelope never throws by contract; reaching here means the
     // bridge itself did (unregistered impl, an unexpected rejection). Keep

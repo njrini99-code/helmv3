@@ -158,7 +158,8 @@ function Hero({ p }: { p: ChProfile }) {
         {/* A no-break space before each dot, so a wrapped line never starts with one. */}
         <span className="ch-num">{meta.join('\u00a0· ')}</span>
       </div>
-      <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
+      {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+      <h2 id="ch-hg-hero-t">{p.courseProfile?.replaceAll(' · ', '\u00a0· ') ?? 'What your rounds say so far'}</h2>
       {none ? (
         <p className="ch-hg-hero__none">Nothing stands out yet. A strength or a watch-out shows once a measure is clearly high or low, with enough rounds behind it.</p>
       ) : (
@@ -273,9 +274,13 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
                 measures as full cards, the locked ones as compact tiles that say what each still needs. */}
             {ready.length > 0 && (
               <>
-                <h3 className="ch-hg-grp">
-                  With a read <span className="ch-num">{ready.length}</span>
-                </h3>
+                {/* The split is only news when both halves are there: with nothing still filling in, a lone "With a read"
+                    under "Every measure" read as a tab with nothing beside it (2026-10-19). */}
+                {locked.length > 0 && (
+                  <h3 className="ch-hg-grp">
+                    With a read <span className="ch-num">{ready.length}</span>
+                  </h3>
+                )}
                 <ol className="ch-hg-grid">
                   {ready.map((m) => (
                     <Measure key={m.id} m={m} />

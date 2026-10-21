@@ -1,6 +1,7 @@
 import 'server-only';
 
 import type { AnalysisOutcomeCode, PreservedCause } from '@/lib/coachhelm/v3/engine/analysis-outcome';
+import type { AnalysisOptions } from '@/lib/coachhelm/v2/types';
 
 /**
  * ============================================================================
@@ -85,7 +86,20 @@ export interface TriggerPlayerInsightsResult {
   cause?: PreservedCause;
 }
 
-type TriggerPlayerInsightsFn = (playerId: string) => Promise<TriggerPlayerInsightsResult>;
+/**
+ * Per-call options. `runTrigger` labels the engine run in the CoachHelm run
+ * log (Slice 1, flag `coachhelm_support_v1`): 'round' after a submitted round,
+ * 'safety_net' for the safety-net cron's re-run of a round whose analysis did
+ * not finish, 'sweep' for the roster sweep, 'manual' for a coach refresh.
+ */
+export interface TriggerPlayerInsightsOptions {
+  runTrigger?: AnalysisOptions['runTrigger'];
+}
+
+type TriggerPlayerInsightsFn = (
+  playerId: string,
+  options?: TriggerPlayerInsightsOptions,
+) => Promise<TriggerPlayerInsightsResult>;
 
 let impl: TriggerPlayerInsightsFn | null = null;
 
@@ -107,6 +121,7 @@ export function __registerTriggerPlayerInsightsAfterRound(fn: TriggerPlayerInsig
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string,
+  options?: TriggerPlayerInsightsOptions,
 ): Promise<TriggerPlayerInsightsResult> {
   if (!impl) {
     throw new Error(
@@ -115,5 +130,5 @@ export async function triggerPlayerInsightsAfterRound(
         '(see the wiring note in this file header), or the registration call was removed',
     );
   }
-  return impl(playerId);
+  return options ? impl(playerId, options) : impl(playerId);
 }

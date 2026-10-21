@@ -1,5 +1,59 @@
 # Clubhouse changelog
 
+## 2026-10-20 — Stats visuals: ties by the head of the run
+
+- `lib/stats-signal.ts` `rankWithTies`: a tie run now holds only the players
+  within one standard error of its first player, not of the neighbor before
+  them. Chaining neighbors let a smooth spread join everyone into T1. First
+  used by the team ranked dot plot (P004).
+
+## 2026-10-20 — Stats visuals: a hole floor and an eagle fill token
+
+- `lib/stats-signal.ts`: a `holes` floor (shows from 1, early read under 30)
+  and `earlyTag(n, unit)` for a unit other than rounds ("Early read · 24
+  holes"). First used by the scoring mix (P005).
+- `styles/tokens.css`: `--ch-score-eagle-fill` in the light and dark blocks,
+  the deeper red of eagle or better as a fill.
+
+## 2026-10-20 — Stats visuals: area scrubbing in the pin hook
+
+- `lib/use-chart-pin.ts`: `useChartPin(count, axis, inset)` returns `area`, the
+  pointer handlers for a chart drawn as one surface: a mouse reads the nearest
+  column, a finger scrubs after about 8 px of mostly sideways travel
+  (`touch-action: pan-y` keeps a vertical swipe scrolling, and a cancel clears),
+  the end of a drag keeps the last column pinned, a tap or click toggles the
+  nearest. First used by the trend of rounds (P005).
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+- `lib/stats-signal.ts`: `meanSe`, `changeSe` and `halvesChange`, the
+  standard error of a window and of a change, beside `deltaTone` and
+  `deltaWords`. `data/stats-weight.ts` gains `windowChangeSe` (per-18 values,
+  a nine-hole round as half) and `data/round-scope.ts` `recordedPutts`.
+- `ui/FormLine.tsx`: green or amber only past one standard error of the
+  halves' change, neutral otherwise; its comment now says lower scores sit
+  higher. Roster (P003) and the home leaderboard use it, so their form lines
+  turn neutral where the change is inside its error.
+- `data/season.ts` `formStatus`: Improving or Slipping only past one standard
+  error, Steady otherwise. It drives the roster's and leaderboard's form word.
+- `lib/sg.ts` `sgTint`: `color-mix` of `--ch-chart-gain` and
+  `--ch-chart-loss` in place of literal rgb values, so the tint follows dark
+  mode.
+- `styles/stats.css`: neutral fills for the gauge and the Overview tracks,
+  the phone "No clear change" line and the Overview change line's colours.
+
+## 2026-10-20 — Stats visuals: the signal and pin helpers
+
+- `lib/stats-signal.ts` and `lib/use-chart-pin.ts` (shared, no page owns them):
+  sample floors per stat, standard errors from the player's own or the pooled
+  spread, the tone of a change (color only past one standard error), Wilson
+  intervals, a trailing mean and ties in a ranking; and the one hover,
+  tap-to-pin and arrow-key behavior the stats charts share. First used by
+  strokes gained by leg (P005); the later stats pieces build on them. Decisions
+  are in the project's stats-visuals files.
+- `styles/stats.css`: `.ch-sv-*` (readout line, whisker, hollow early mark,
+  "needs" text), stats-owned.
+
 ## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
 
 - CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
