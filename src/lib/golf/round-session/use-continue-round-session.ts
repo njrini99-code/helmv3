@@ -220,6 +220,12 @@ export function useContinueRoundSession({
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0);
   const isSubmittingRef = useRef(false);
+  // CoachHelm Slice 8b (coachhelm_data_prompts_v2): a course the player
+  // linked from the course nudge mid-round. Null unless they did, so every
+  // payload below is exactly what it was without it; set, it rides the next
+  // partial and final write as courseId (the round RPCs keep course_id with
+  // COALESCE, so a later write without it never clears it).
+  const linkedCourseIdRef = useRef<string | null>(null);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
   const lastServerUpdatedAtRef = useRef<string | undefined>(serverDataTimestamp);
   // B2: set once polling proves the server moved past this device's own
@@ -508,7 +514,7 @@ export function useContinueRoundSession({
   ) => {
     const terminalSubmission: TerminalRoundSubmissionData = {
       courseName: recoverySetupData.courseName,
-      courseId: recoverySetupData.courseId,
+      courseId: linkedCourseIdRef.current ?? recoverySetupData.courseId,
       teeId: recoverySetupData.teeId,
       courseCity: recoverySetupData.courseCity || undefined,
       courseState: recoverySetupData.courseState || undefined,
@@ -712,6 +718,7 @@ export function useContinueRoundSession({
         }));
       const saveData: PartialRoundData = {
         courseName: setupData.courseName,
+        ...(linkedCourseIdRef.current ? { courseId: linkedCourseIdRef.current } : {}),
         courseCity: setupData.courseCity || undefined,
         courseState: setupData.courseState || undefined,
         courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -813,6 +820,7 @@ export function useContinueRoundSession({
 
     return {
       courseName: setupData.courseName,
+      ...(linkedCourseIdRef.current ? { courseId: linkedCourseIdRef.current } : {}),
       courseCity: setupData.courseCity || undefined,
       courseState: setupData.courseState || undefined,
       courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -1455,7 +1463,7 @@ export function useContinueRoundSession({
 
       const roundData = {
         courseName: submitSetupData.courseName,
-        courseId: submitSetupData.courseId,
+        courseId: linkedCourseIdRef.current ?? submitSetupData.courseId,
         teeId: submitSetupData.teeId,
         courseCity: submitSetupData.courseCity || undefined,
         courseState: submitSetupData.courseState || undefined,
@@ -1803,6 +1811,7 @@ export function useContinueRoundSession({
 
   return {
     roundId,
+    linkedCourseIdRef,
     syncStatus,
     currentHoleIndex,
     setCurrentHoleIndex,

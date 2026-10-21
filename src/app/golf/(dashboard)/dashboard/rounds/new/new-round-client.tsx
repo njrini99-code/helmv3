@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { FairwayCoursePicker } from '@/components/fairway/pages/rounds-new/FairwayCoursePicker';
 import { OfflineWarningBanner } from '@/components/golf';
@@ -16,6 +17,8 @@ import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { haptic } from '@/lib/haptics';
 import { useNewRoundSession, type NewRoundClientProps } from '@/lib/golf/round-session/use-new-round-session';
 import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
+import { FairwayCourseNudge } from '@/components/fairway/pages/rounds-tracking/FairwayCourseNudge';
+import { useCourseNudge } from '@/components/fairway/pages/rounds-tracking/useCourseNudge';
 // The post-hole decision lives with the engine; its tests import it from here.
 export { decidePostHoleCompleteAction, type PostHoleCompleteAction } from '@/lib/golf/round-session/use-new-round-session';
 
@@ -70,9 +73,12 @@ const FairwayRoundSummarySheet = dynamic(
 export default function NewRoundClient({
   playerId,
   dataGapAsks,
+  dataPromptsV2 = false,
 }: NewRoundClientProps & {
   /** CoachHelm Slice 8a: open one-tap asks, only with coachhelm_data_gap_prompt_v1 on. */
   dataGapAsks?: readonly DataGapAsk[];
+  /** CoachHelm Slice 8b: course nudge and recovery tap, only with coachhelm_data_prompts_v2 on. */
+  dataPromptsV2?: boolean;
 }) {
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
@@ -129,6 +135,7 @@ export default function NewRoundClient({
     recentCourses,
     courseMode,
     selectedCourseId,
+    resolvedCourseIdRef,
     inProgressConflict,
     setInProgressConflict,
     conflictActionBusy,
@@ -176,6 +183,19 @@ export default function NewRoundClient({
     handleSubmitSaveAndExit,
     handleSubmitDiscard,
   } = useNewRoundSession({ playerId, ports: { showToast, hideMobileNav, showMobileNav, haptic } });
+
+  // CoachHelm Slice 8b: the course nudge. A pick sets the course the engine
+  // sends with the round's next update (courseId on every partial and final
+  // write, which the round RPCs keep with COALESCE); null with the flag off.
+  const linkRoundCourse = useCallback((courseId: string) => {
+    resolvedCourseIdRef.current = courseId;
+  }, [resolvedCourseIdRef]);
+  const courseNudge = useCourseNudge({
+    enabled: dataPromptsV2,
+    hasCourse: resolvedCourseIdRef.current != null,
+    courseName: setupData.courseName,
+    onLink: linkRoundCourse,
+  });
   // Shared across BOTH the setup/holes return below and the tracking-step
   // return further down, so the SAME recovery prompt renders regardless of
   // which step the player is on when a recoverable snapshot is found (B4).
@@ -474,6 +494,8 @@ export default function NewRoundClient({
           autoSaveInterval={15000}
           autoSaveDisabled={step === 'submitting' || !!completedRoundId}
           dataGapAsks={dataGapAsks}
+          recoveryPrompt={dataPromptsV2}
+          courseNudge={courseNudge}
         />
       </div>
 
@@ -557,6 +579,7 @@ export default function NewRoundClient({
           }}
           finalStats={pendingFinalStats}
           courseName={setupData.courseName}
+          notice={courseNudge ? <FairwayCourseNudge nudge={courseNudge} /> : undefined}
           onGoBack={() => setShowFinishConfirm(false)}
           onSubmit={async () => {
             if (!pendingFinalStats) return;

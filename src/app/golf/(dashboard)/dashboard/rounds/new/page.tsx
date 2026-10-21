@@ -7,6 +7,8 @@ import { isClubhouseFor } from '@/clubhouse/gate';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
 import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
+import { isFlagEnabled } from '@/lib/flags';
+import { DATA_PROMPTS_FLAG } from '@/lib/golf/data-prompts/recovery';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -51,7 +53,12 @@ export default async function NewRoundPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient playerId={player.id} dataGapAsks={dataGapAsks} />
+        <NewRoundClient
+          playerId={player.id}
+          dataGapAsks={dataGapAsks}
+          // CoachHelm Slice 8b: course nudge and recovery tap (off: false).
+          dataPromptsV2={isFlagEnabled(DATA_PROMPTS_FLAG)}
+        />
       </AnimatedItem>
     </AnimatedPage>
   );

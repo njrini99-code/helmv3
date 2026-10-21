@@ -3,7 +3,8 @@ import { ShotEntryPreview } from './shot-entry-preview';
 
 /**
  * Local fixture of the Fairway shot screen with the one-tap data-gap prompt
- * (CoachHelm Slice 8a), for screenshots. Synthetic data; no reads, no writes,
+ * (CoachHelm Slice 8a) and the Slice 8b recovery tap and course nudge
+ * (`?state=recovery|course|finish`), for screenshots. Synthetic data; no reads, no writes,
  * not served in production.
  */
 export default async function ShotEntryPreviewPage({
@@ -13,5 +14,7 @@ export default async function ShotEntryPreviewPage({
 }) {
   if (process.env.NODE_ENV === 'production') notFound();
   const { state } = await searchParams;
-  return <ShotEntryPreview state={state === 'complete' ? 'complete' : state === 'off' ? 'off' : 'entry'} />;
+  const known = ['complete', 'off', 'recovery', 'course', 'finish'] as const;
+  const picked = known.find((k) => k === state) ?? 'entry';
+  return <ShotEntryPreview state={picked} />;
 }

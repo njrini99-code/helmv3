@@ -13,6 +13,7 @@ import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/ut
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { useShotStateMachine } from '@/hooks/golf/use-shot-state-machine';
 import { usePuttMissTagger } from '@/hooks/golf/use-putt-miss-tagger';
+import { useRecoveryTagger } from '@/hooks/golf/use-recovery-tagger';
 import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
@@ -561,6 +562,11 @@ export function useShotTracking(
     shotHistory, dispatch, onAutoSave, autoSaveDisabled, currentHoleIndex, shotMutationInFlightRef,
   });
 
+  // The recovery tap (CoachHelm Slice 8b); see use-recovery-tagger. Same lock.
+  const handleTagRecovery = useRecoveryTagger({
+    shotHistory, dispatch, onAutoSave, autoSaveDisabled, currentHoleIndex, shotMutationInFlightRef,
+  });
+
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
     scrollElementIntoView(shotHistoryRefs.current[shotNumber] ?? null);
@@ -633,5 +639,7 @@ export function useShotTracking(
     handleSelectShot,
     /** Tag a recorded putt's miss (the data-gap prompt); see its doc comment. */
     handleTagPuttMiss,
+    /** Answer the recovery tap on a tee shot; see use-recovery-tagger. */
+    handleTagRecovery,
   };
 }

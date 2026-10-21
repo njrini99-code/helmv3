@@ -21,6 +21,7 @@ import { resolveQualifierRoundNumber } from '@/lib/golf/qualifier-round-number';
 import { firstBlockingPartialHoleIssue } from '@/lib/golf/round-entry-validation';
 import { getUserResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
+import { lieAfterRecoveryPayload, withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { comprehensiveShotSchema, createSafeFlightRecorder, derivePuttDistanceFeet, derivePuttMade, formatIssuePath, getPlayerTeamId, helmTracePayload, humanizeHoleFieldIssue, isRealApproachShot, isTransientAuthCheckFailure, resolveCourseId, toDbLieType } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -898,6 +899,7 @@ async function savePartialRoundImpl(
           putt_made: derivePuttMade(shot),
           is_penalty: shot.isPenalty,
           penalty_type: shot.penaltyType ?? null,
+          ...lieAfterRecoveryPayload(shot),
         })),
       })
     );
@@ -1765,7 +1767,7 @@ async function savePartialRoundImpl(
               round_id: roundId,
               hole_id: holeId,
               hole_number: group.hole_number,
-              ...shot,
+              ...withoutLieAfterRecovery(shot),
             }));
 
             // Upsert on (round_id, hole_number, shot_number) — see migration

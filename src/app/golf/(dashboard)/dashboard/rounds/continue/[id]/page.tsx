@@ -5,6 +5,8 @@ import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
+import { DATA_PROMPTS_FLAG, lieAfterRecoveryFromRow } from '@/lib/golf/data-prompts/recovery';
+import { isFlagEnabled } from '@/lib/flags';
 import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -163,6 +165,8 @@ function mapShotToRecord(
     approachMissDirection: approachMissDir,
     approachMissLieType: approachMissLie,
     distanceFromGreenYards,
+    // Slice 8b recovery tap: absent until the held migration adds the column.
+    ...(lieAfterRecoveryFromRow(shot) !== undefined ? { lieAfterRecovery: lieAfterRecoveryFromRow(shot) } : {}),
   };
 }
 
@@ -742,6 +746,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         qualifierRoundNumberOptions={qualifierRoundNumberOptions}
         qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
         dataGapAsks={dataGapAsks}
+        // CoachHelm Slice 8b: course nudge and recovery tap (off: false).
+        dataPromptsV2={isFlagEnabled(DATA_PROMPTS_FLAG)}
       />
     </AnimatedPage>
   );
