@@ -50,7 +50,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `ADR` | 6 | 0 | 3 | 2 |
 | `INDEX` | 28 | 2 | 12 | 5 |
 | `ARCHIVE` | 4 | 0 | 1 | 20 |
-| `UNKNOWN` | 334 | 13 | 71 | 92 |
+| `UNKNOWN` | 349 | 13 | 71 | 92 |
 
 ## Files
 
@@ -813,6 +813,22 @@ them would bury everything above.
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-auth.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-calendar.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-classes.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-coachhelm.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-home.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-hub.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-ios-edge-swipe.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-ios-launch-and-offline.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-messages.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-qualifiers.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-recruiting.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-roster.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-rounds.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-settings.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-shell.md` | current | - | - | - | - |
+| `docs/clubhouse/motion/2026-10-20-stats.md` | current | - | - | - | - |
 | `docs/clubhouse/motion/TEMPLATE.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/CONTRACT.md` | current | - | - | yes | - |
@@ -902,7 +918,6 @@ them would bury everything above.
 | `docs/clubhouse/phone/home.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/join-team.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
-| `docs/clubhouse/phone/push-opt-in.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |

@@ -148,6 +148,13 @@ function feedRankFactors(
 }
 
 /**
+ * One weights map for every insight, or a per-insight lookup: the coach team
+ * feed and the roster cards rank several players at once, each with their
+ * own primary coach's weights (Slice 6a, `coachhelm_corrections_v1`).
+ */
+export type InsightCoachWeights<T> = CoachWeights | ((insight: T) => CoachWeights);
+
+/**
  * Sort a mapped insight list by the shared composite, newest-first on ties.
  *
  * Confidence is the generator's raw support score: calibration is a
@@ -157,13 +164,14 @@ function feedRankFactors(
  */
 export async function rankEvidenceInsightsScored<T extends RankableEvidenceInsight>(
   insights: T[],
-  weights: CoachWeights = {},
+  weights: InsightCoachWeights<T> = {},
   goals: Goal[] = [],
   _sb?: SupabaseClient<Database>,
 ): Promise<Array<{ insight: T; score: number; factors: RankScoreFactors }>> {
+  const weightsFor = typeof weights === 'function' ? weights : () => weights;
   return insights
     .map((insight) => {
-      const factors = feedRankFactors(insight, weights, goals);
+      const factors = feedRankFactors(insight, weightsFor(insight), goals);
       return { insight, score: factors.score, factors };
     })
     .sort((a, b) => {

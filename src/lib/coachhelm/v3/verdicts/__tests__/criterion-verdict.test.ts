@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { oneSided90Bounds } from '../bounds';
 import { generateCriterion, horizonAttemptsFor, requiredAttemptsFor } from '../criterion';
 import { verdictMetricFor, type VerdictMetricDef } from '../metrics';
-import { keptShare, shrinkToward } from '../shrink-baseline';
+import { keptShare, shrinkToward } from '@/lib/coachhelm/v3/support/shrink';
 import { accumulatePostWindow, computeVerdict, type PostRound } from '../verdict';
 import { coachVerdictLine, playerVerdictLine } from '../verdict-copy';
 

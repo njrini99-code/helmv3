@@ -363,4 +363,3 @@ describe('delivery with the flag on', () => {
     expect(listed.find((i) => i.insight_id === leader)?.content).toContain(FOLDED_TITLE[folded]);
   });
 });
-
