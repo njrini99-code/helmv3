@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import type { HoleStats, RoundHole, ShotRecord } from '@/lib/types/golf';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -8,6 +8,7 @@ import { AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay, type ChSummaryHole } from '../screens/rounds/track/round-sheets';
 import { PREVIEW_TRACK_ROUND, trackingFixture } from './fixtures-tracking';
+import { postedScore } from '../screens/rounds/entry/session';
 
 const wait = <T,>(v: T, ms = 500) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 const NONE: ShotRecord[] = [];
@@ -35,8 +36,14 @@ const PREVIEW_SAVES: Record<string, NonNullable<RoundTrackingProps['onAutoSave']
  * makes that fail), moves to the next unplayed hole, opens the finished
  * round, and fakes submitting. Nothing reaches the server: the preview's
  * shots have no ids, so the engine's own edits and undos stay local too.
+ *
+ * `statusSlot` is where the round screen (entry/RoundRuntime) draws its
+ * round-level banners: inside the shot screen, above the hole strip. The entry
+ * preview passes its Reload and error banners through it, so they sit where the
+ * real round draws them and the full-height phone shot screen keeps its card
+ * and action bar on the screen's foot.
  */
-export function PreviewTracking({ state }: { state?: string }) {
+export function PreviewTracking({ state, statusSlot }: { state?: string; statusSlot?: ReactNode }) {
   const f = useMemo(() => trackingFixture(state), [state]);
   const { setDistancePref } = useDistanceUnits();
   useEffect(() => {
@@ -97,6 +104,8 @@ export function PreviewTracking({ state }: { state?: string }) {
         onExit={() => setSheet('exit')}
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => shotsByHole[i] ?? null}
+        statusSlot={statusSlot}
+        onReviewRound={holes.every((h) => h.score !== null) ? () => setSheet('summary') : undefined}
       />
       <ExitSheet
         open={sheet === 'exit'}
@@ -116,7 +125,7 @@ export function PreviewTracking({ state }: { state?: string }) {
       />
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={PREVIEW_TRACK_ROUND.course} tee="Blue" holes={card} current={holes[index]!.number} />
       <RoundCompleteSheet open={sheet === 'summary'} heading="Finley GC · Blue · Oct 14" holes={summary} onBack={() => setSheet(null)} onSubmit={submitRound} />
-      {submit && <SubmitOverlay state={submit} course={PREVIEW_TRACK_ROUND.course} shots={shotCount} coach="Coach Reyes" reviewHref={`/clubhouse-preview/round`} error={null} onRetry={submitRound} />}
+      {submit && <SubmitOverlay state={submit} course={PREVIEW_TRACK_ROUND.course} shots={shotCount} coach="Coach Reyes" score={postedScore(card)} reviewHref={`/clubhouse-preview/round`} error={null} onRetry={submitRound} />}
     </>
   );
 }

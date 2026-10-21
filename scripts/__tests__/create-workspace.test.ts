@@ -11,7 +11,7 @@
 // disposable git repo — a bare origin plus a seed clone, same shape as
 // src/test/scripts/worktree-lifecycle.test.ts — and the hook as a real
 // subprocess against the same fixture. Nothing here mocks git.
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
   mkdtempSync,
@@ -42,6 +42,12 @@ let seed: string;
 let home: string;
 
 beforeEach(() => {
+  // The 12 GiB machine reserve reads the host's real free space, so on a
+  // runner with less than that every call here was refused with DISK_LOW
+  // before it touched the fixture. No test in this file is about the
+  // reserve; a fixture this small needs none. The hook subprocess inherits
+  // the same value through process.env.
+  vi.stubEnv('HELM_DISK_RESERVE_GIB', '0');
   // realpathSync matters on macOS: /var/folders/... vs /private/var/folders/...
   // is exactly the string mismatch that made canonical-root comparisons
   // manufacture false budget refusals elsewhere in this repo (see
@@ -75,6 +81,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   rmSync(tmp, { recursive: true, force: true });
 });
 

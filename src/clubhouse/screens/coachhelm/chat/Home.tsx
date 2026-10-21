@@ -3,7 +3,7 @@
 import { Users } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ChAskData, ChAskFinding, ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
+import { askSuggestionSub, type ChAskData, type ChAskFinding, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { pulseGapsLabel } from '../../../data/coachhelm-shape';
 import { haptic } from '../../../lib/haptics';
 import { Icon } from '../../../ui/Icon';
@@ -178,7 +178,7 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
                   }}
                 >
                   <b>{s.title}</b>
-                  <span>{s.sub(data.teamName)}</span>
+                  <span>{askSuggestionSub(s, data.teamName)}</span>
                 </button>
               </li>
             ))}

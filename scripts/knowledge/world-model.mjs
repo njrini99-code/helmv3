@@ -591,9 +591,9 @@ function renderMarkdown(model) {
       'attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.',
   );
   L.push('');
-  const counts = Object.entries(model.nodes).map(([k, v]) => `${v.length} ${k}`);
-  L.push(`**Node counts:** ${counts.join(', ')}.`);
-  L.push(`**Edges:** ${model.edges.length} (merged; an edge with more than one evidence kind is a stronger claim).`);
+  // No node or edge totals here (2026-10-21): they changed on almost every PR,
+  // so any two open PRs that touched the graph conflicted on this one line.
+  // `npm run knowledge:world-model -- --summary` prints them fresh.
   if (model.notes?.journeys) L.push(`**Journeys:** ${model.notes.journeys}`);
   if (model.notes?.unmapped) L.push(`**Unmapped:** ${model.notes.unmapped}`);
   if (model.notes?.tableAttribution) L.push(`**Table attribution:** ${model.notes.tableAttribution}`);
@@ -754,6 +754,11 @@ async function main() {
 
   const check = args.includes('--check');
   const model = await buildModel();
+  if (args.includes('--summary')) {
+    console.log(`Node counts: ${Object.entries(model.nodes).map(([k, v]) => `${v.length} ${k}`).join(', ')}.`);
+    console.log(`Edges: ${model.edges.length} (merged; an edge with more than one evidence kind is a stronger claim).`);
+    return;
+  }
   const nextJson = renderJson(model);
   const nextMd = renderMarkdown(model);
 

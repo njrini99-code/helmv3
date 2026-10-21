@@ -115,7 +115,7 @@ describe('Team switcher · desktop', () => {
     const user = userEvent.setup();
     wrap(sidebar(head()));
     const btn = trigger();
-    expect(btn.getAttribute('aria-label')).toBe("GolfHelm, UNCW Men's Golf. Switch team");
+    expect(btn.getAttribute('aria-label')).toBe("UNCW Men's Golf. Switch team");
     expect(btn.getAttribute('aria-haspopup')).toBe('listbox');
     expect(btn.getAttribute('aria-expanded')).toBe('false');
     await user.click(btn);
@@ -137,7 +137,7 @@ describe('Team switcher · desktop', () => {
     expect(setActiveTeam).toHaveBeenCalledTimes(1);
     expect(setActiveTeam).toHaveBeenCalledWith(WOMEN.id);
     // The new team is on the button before the refresh brings the server's answer.
-    expect(trigger().getAttribute('aria-label')).toBe("GolfHelm, UNCW Women's Golf. Switch team");
+    expect(trigger().getAttribute('aria-label')).toBe("UNCW Women's Golf. Switch team");
     await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
     // A pick is a selection tick; a switch that lands says nothing more (the new team is the confirmation).
@@ -196,7 +196,7 @@ describe('Team switcher · desktop', () => {
     await expectCode('CH-1003', /Couldn't switch to UNCW Women's Golf/);
     expect(code('CH-1003')!.textContent).toMatch(/You aren't staffed on that team\./);
     expect(within(code('CH-1003') as HTMLElement).queryByRole('button', { name: 'Retry' })).toBeNull();
-    expect(trigger().getAttribute('aria-label')).toBe("GolfHelm, UNCW Men's Golf. Switch team");
+    expect(trigger().getAttribute('aria-label')).toBe("UNCW Men's Golf. Switch team");
     expect(router.refresh).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('error');
   });
@@ -208,7 +208,7 @@ describe('Team switcher · desktop', () => {
     await user.click(trigger());
     await user.click(await screen.findByRole('option', { name: WOMEN.name }));
     await expectCode('CH-1003', /You're still on UNCW Men's Golf\. Try again\./);
-    expect(trigger().getAttribute('aria-label')).toBe("GolfHelm, UNCW Men's Golf. Switch team");
+    expect(trigger().getAttribute('aria-label')).toBe("UNCW Men's Golf. Switch team");
     await user.click(within(code('CH-1003') as HTMLElement).getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(router.refresh).toHaveBeenCalledTimes(1));
     expect(setActiveTeam).toHaveBeenCalledTimes(2);

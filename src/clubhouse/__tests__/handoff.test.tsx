@@ -56,6 +56,16 @@ describe('the hand-off curtain', () => {
     expect(curtain()).toBeNull();
   });
 
+  it('holds what waits for the dashboard to be seen while it is up, and lets it go when it lifts', async () => {
+    media(false, true);
+    dropHandoffCurtain();
+    // The sidebar brand's entrance holds on this (shell.css), so it plays after the dashboard is visible.
+    expect(document.documentElement.hasAttribute('data-ch-handoff')).toBe(true);
+    liftHandoffCurtain();
+    await vi.advanceTimersByTimeAsync(700);
+    expect(document.documentElement.hasAttribute('data-ch-handoff')).toBe(false);
+  });
+
   it('lifts on its own if the dashboard never mounts, so a wrong destination is never covered', async () => {
     media(false, true);
     dropHandoffCurtain();

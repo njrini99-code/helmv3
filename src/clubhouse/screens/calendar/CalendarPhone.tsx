@@ -6,7 +6,7 @@ import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
 import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
-import { IconButton } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
@@ -14,7 +14,7 @@ import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthName, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
 
@@ -43,6 +43,7 @@ export function CalendarPhone({
   flagged,
   selId,
   notices,
+  eventsNotice,
   onView,
   onStep,
   onOpen,
@@ -59,6 +60,8 @@ export function CalendarPhone({
   selId: string | null;
   /** The failed-read notices, shared with desktop. */
   notices: ReactNode;
+  /** CH-6201, when the events didn't load: Day keeps its week strip and arrows and shows this where the day's list goes. */
+  eventsNotice?: ReactNode;
   onView: (view: ChCalView, anchor: string) => void;
   /** The Calendar's step (its arrow keys): one day, week or month on from where the page is headed, with a tick. */
   onStep: (dir: 1 | -1) => void;
@@ -67,6 +70,8 @@ export function CalendarPhone({
   onSubscribe: () => void;
 }) {
   const coach = data.role === 'coach';
+  // A player's own class is titled without their name; their replies still owed are marked (P006, wave 7).
+  const viewerId = coach ? null : data.viewerPlayerId;
   const pv = phoneViewOf(view);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
 
@@ -101,15 +106,21 @@ export function CalendarPhone({
         </span>
       </header>
       {notices}
+      {data.eventsError &&
+        (pv === 'day' ? (
+          <DayView anchor={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} failed={eventsNotice} />
+        ) : (
+          eventsNotice
+        ))}
       {!data.eventsError && (
         <SectionBoundary surface={`calendar.phone.${pv}`} label="The calendar" code="CH-6210">
           {/* CH-6604: Day, Month and List settle in as the switch moves (base in, quick out); instant with reduced motion. */}
           <Swap swapKey={pv}>
-            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} range={data.range} />}
+            {pv === 'day' && <DayView anchor={anchor} events={events} people={people} now={now} flagged={flagged} selId={selId} onDay={(d) => onView('day', d)} onOpen={onOpen} coach={coach} viewerId={viewerId} range={data.range} onNew={onNew} />}
             {pv === 'month' && <MonthGrid anchor={anchor} events={events} now={now} onPick={(d) => onView('day', d)} onStep={onStep} onMonth={(d) => onView('month', d)} />}
             {pv === 'list' &&
               (events.some((e) => e.date >= now.date) ? (
-                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} />
+                <AgendaView events={events} people={people} now={now} selId={selId} flagged={flagged} onSelect={(id) => onOpen(id, events.find((e) => e.id === id)?.date ?? anchor)} viewerId={viewerId} />
               ) : (
                 <EmptyState code="CH-6301" icon={CalendarDays} title="Nothing on the calendar in this range" body={coach ? 'Events you publish show here, with any overlaps and replies.' : 'Events your coach invites you to show here.'} />
               ))}
@@ -135,7 +146,10 @@ function DayView({
   onDay,
   onOpen,
   coach,
+  viewerId,
   range,
+  failed,
+  onNew,
 }: {
   anchor: string;
   events: ChCalEvent[];
@@ -146,8 +160,15 @@ function DayView({
   onDay: (date: string) => void;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
+  /** The signed-in player (null for a coach): their own class titles, and the replies they still owe. */
+  viewerId: string | null;
+  /** New event on a day (coach): the empty day's action. */
+  onNew?: (date: string) => void;
   /** The dates the page has loaded: a neighbouring day outside it waits for its week instead of reading as empty. */
   range: { from: string; to: string };
+  /** The events didn't load (CH-6201): the strip and the week arrows still move the page, with no counts and no swipe,
+   * and this notice stands where the day's list goes. */
+  failed?: ReactNode;
 }) {
   const week = weekDates(anchor);
   // The day on show and the way it went: a later day comes in from the right, an earlier one from the left. A swipe has
@@ -163,20 +184,22 @@ function DayView({
         </h3>
       </div>
     ) : (
-      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} />
+      <DayPage date={date} events={events} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={live ? (dir) => ((swiped.current = false), onDay(addDays(anchor, 7 * dir))) : undefined} onNew={live ? onNew : undefined} />
     );
   return (
     <>
       <ol className="ch-calm-week" aria-label="This week" style={{ ['--ch-calm-at' as string]: Math.max(0, week.indexOf(anchor)) }}>
         {week.map((d) => {
           const n = events.filter((e) => e.date === d && e.type !== 'class' && e.type !== 'busy').length;
+          // A player's reply still owed that day: one amber dot beside the day's own (wave 7).
+          const reply = !failed && events.some((e) => e.date === d && playerReplyNeeded(e, viewerId, now));
           return (
             <li key={d}>
               <button
                 type="button"
                 className={'ch-calm-week__d' + (d === anchor ? ' is-on' : '') + (d === now.date ? ' is-today' : '')}
                 aria-pressed={d === anchor}
-                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}, ${n} ${n === 1 ? 'event' : 'events'}`}
+                aria-label={`${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}${reply ? ', needs your reply' : ''}`}
                 onClick={() => {
                   if (d !== anchor) haptic('select');
                   swiped.current = false;
@@ -189,25 +212,30 @@ function DayView({
                   {Array.from({ length: Math.min(3, n) }, (_, j) => (
                     <span key={j} />
                   ))}
+                  {reply && <span className="is-reply" />}
                 </i>
               </button>
             </li>
           );
         })}
       </ol>
-      <DayPager
-        anchor={anchor}
-        onSettle={(d) => {
-          swiped.current = true;
-          onDay(d);
-        }}
-        prev={page(addDays(anchor, -1), false)}
-        next={page(addDays(anchor, 1), false)}
-      >
-        <Swap swapKey={day.slide} kind="slide" dir={day.dir} className="ch-calm-dayswap">
-          {page(anchor, true)}
-        </Swap>
-      </DayPager>
+      {failed ? (
+        <DayPage date={anchor} events={[]} people={people} now={now} flagged={flagged} selId={selId} onOpen={onOpen} coach={coach} viewerId={viewerId} onWeek={(dir) => onDay(addDays(anchor, 7 * dir))} failed={failed} />
+      ) : (
+        <DayPager
+          anchor={anchor}
+          onSettle={(d) => {
+            swiped.current = true;
+            onDay(d);
+          }}
+          prev={page(addDays(anchor, -1), false)}
+          next={page(addDays(anchor, 1), false)}
+        >
+          <Swap swapKey={day.slide} kind="slide" dir={day.dir} className="ch-calm-dayswap">
+            {page(anchor, true)}
+          </Swap>
+        </DayPager>
+      )}
     </>
   );
 }
@@ -222,7 +250,10 @@ function DayPage({
   selId,
   onOpen,
   coach,
+  viewerId,
   onWeek,
+  failed,
+  onNew,
 }: {
   date: string;
   events: ChCalEvent[];
@@ -232,7 +263,12 @@ function DayPage({
   selId: string | null;
   onOpen: (id: string, date: string) => void;
   coach: boolean;
+  viewerId: string | null;
   onWeek?: (dir: 1 | -1) => void;
+  /** The events didn't load: the heading and arrows stay, no count, and the notice in the list's place. */
+  failed?: ReactNode;
+  /** The day on show's New event (coach); the neighbouring days drawn beside it for a swipe have none. */
+  onNew?: (date: string) => void;
 }) {
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
@@ -253,10 +289,13 @@ function DayPage({
         <h3>
           {dowOf(anchor)} {dayNum(anchor)} {monthName(anchor)}
         </h3>
-        <span className="ch-num">
-          {team.length} {team.length === 1 ? 'event' : 'events'}
-          {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
-        </span>
+        {/* An empty day has no "0 events": the empty state under it says so. */}
+        {!failed && list.length > 0 && (
+          <span className="ch-num">
+            {team.length} {team.length === 1 ? 'event' : 'events'}
+            {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
+          </span>
+        )}
         {/* P006 D5, B2: the week before and after without going through Month; the same reach a swipe gives, for
             VoiceOver and the keyboard. */}
         {onWeek && (
@@ -266,14 +305,32 @@ function DayPage({
           </span>
         )}
       </div>
-      {!list.length ? (
-        <EmptyState compact code="CH-6308" icon={CalendarDays} title="Nothing on this day" body={coach ? 'Tap + to plan something for the team.' : 'Events your coach invites you to show here.'} />
+      {failed ? (
+        failed
+      ) : !list.length ? (
+        <EmptyState
+          compact
+          code="CH-6308"
+          icon={CalendarDays}
+          title="Nothing on this day"
+          body={coach ? 'Plan something for the team.' : 'Events your coach invites you to show here.'}
+          action={
+            coach && onNew ? (
+              <Button size="sm" leftIcon={Plus} onClick={() => onNew(anchor)}>
+                New event
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <ol className="ch-calm-agenda">
           {list.map((e, i) => {
             const past = isToday && !e.allDay && (e.end ?? 0) <= now.hour;
             const live = isToday && !e.allDay && (e.start ?? 0) <= now.hour && (e.end ?? 0) > now.hour;
             const block = e.type === 'class' || e.type === 'busy';
+            // The player's reply is still owed (and the server would take it): marked as Team Hub marks one.
+            const reply = playerReplyNeeded(e, viewerId, now);
+            const title = eventTitle(e, people, viewerId);
             return (
               <li key={`${e.id}${e.date}`}>
                 {i === nowAt && nowLine}
@@ -282,14 +339,14 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                    aria-label={`${eventTitle(e, people)}, ${e.allDay ? 'all day' : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${flagged.has(e.id) ? ', schedule overlap' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e) : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
                     }}
                   >
                     <span className="ch-calm-ev__t ch-num">
-                      {e.allDay ? 'All day' : fmtHour(e.start!, false)}
+                      {startLabel(e, false)}
                       {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
                     </span>
                     {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}
@@ -297,10 +354,14 @@ function DayPage({
                       <i className={`ch-dot-${e.type}`} />
                     </span>
                     <span className="ch-calm-ev__b">
-                      <b>{eventTitle(e, people)}</b>
-                      <span>{block ? (e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : [e.title, e.location].filter(Boolean).join(' · ')) : (e.location ?? '')}</span>
+                      <b>{title}</b>
+                      {/* A class's code is already in its title ("Priya · STAT 201"), so its line names only the room. */}
+                      <span>{block && e.busyOnly ? 'Busy' : e.type === 'busy' ? 'Your busy time' : (e.location ?? '')}</span>
                     </span>
-                    {flagged.has(e.id) ? (
+                    {reply ? (
+                      // The reply is the action on this row; an overlap still reads in its label and on the event.
+                      <Badge tone="warning">Reply</Badge>
+                    ) : flagged.has(e.id) ? (
                       <span className="ch-calm-ev__w" aria-hidden="true">
                         <Icon icon={TriangleAlert} size={13} />
                       </span>

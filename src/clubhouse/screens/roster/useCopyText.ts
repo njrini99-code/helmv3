@@ -4,7 +4,7 @@ import { useCallback } from 'react';
 import { haptic } from '../../lib/haptics';
 import { useToast } from '../../ui/Toast';
 
-/** Copy the join code or link: the OS success tap and a toast (CH-3703), or how to do it by hand (CH-3006). */
+/** Copy the team code or invite link: the OS success tap and a toast (CH-3703), or how to do it by hand (CH-3006). */
 export function useCopyText() {
   const toast = useToast();
   return useCallback(

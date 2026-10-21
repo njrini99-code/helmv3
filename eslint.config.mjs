@@ -24,6 +24,16 @@ import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read
 // D8 (db-tooling-drift) — the .in() PostgREST URL-length trap
 // (.claude/rules/database.md). Ratcheted by scripts/supabase-chunk-audit.mjs.
 import noUnchunkedInFilter from "./eslint-rules/no-unchunked-in-filter.mjs";
+// Import restrictions built from data (the Clubhouse boundary and the legacy
+// loggers, plan phase 7b). Flat config replaces `no-restricted-imports` options
+// instead of merging them, so every block that sets the rule takes its options
+// from here. See the header of that module.
+import {
+  importRestrictionBase,
+  importRestrictionOverrides,
+  golfRestrictions,
+  clubhouseRestrictions,
+} from "./eslint-rules/import-restrictions.mjs";
 
 // Downgrade every `error`-severity rule in a flat-config rules object to
 // `warn`. Used by W0 to ship the jsx-a11y recommended set + the six
@@ -215,6 +225,11 @@ export default tseslint.config(
       "helm/no-unchunked-in-filter": "off",
     },
   },
+  // Clubhouse boundary + legacy logger ban for every non-test file outside
+  // src/clubhouse. The golf and Clubhouse blocks below set the same rule with
+  // their own additions; the overrides at the end of this config carve out the
+  // route files and the grandfathered allowlists.
+  importRestrictionBase,
   {
     // CON-09 (owner decision 2026-09-23, "more contrast, more green"): the
     // golf product surfaces were swept clean of the text colours that fail AA
@@ -243,19 +258,7 @@ export default tseslint.config(
       // Point at the pre-Clubhouse Button and Input; Clubhouse ships its own form styles.
       "helm/no-raw-button": "off",
       "helm/no-raw-input": "off",
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            { name: "framer-motion", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
-            { name: "motion/react", importNames: ["useReducedMotion"], message: "Use useChReducedMotion() from '@/clubhouse/lib/reduced-motion'." },
-            { name: "@/lib/utils/capacitor", importNames: ["triggerHaptic", "triggerSelectionHaptic"], message: "Use haptic() from '@/clubhouse/lib/haptics'." },
-          ],
-          patterns: [
-            { group: ["@/components/fairway/*", "@/components/fairway", "@/lib/fairway/*", "@/lib/redesign/*"], message: "Clubhouse never reuses Fairway UI. Build it in src/clubhouse." },
-          ],
-        },
-      ],
+      "no-restricted-imports": clubhouseRestrictions,
     },
   },
   {
@@ -280,28 +283,7 @@ export default tseslint.config(
       "**/__tests__/**",
     ],
     rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          paths: [
-            {
-              name: "framer-motion",
-              importNames: ["useReducedMotion"],
-              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
-            },
-            {
-              name: "motion/react",
-              importNames: ["useReducedMotion"],
-              message: "Use useReducedMotionGuard() from '@/lib/coachhelm/v3/motion'.",
-            },
-            {
-              name: "@/lib/utils/capacitor",
-              importNames: ["triggerHaptic"],
-              message: "Use haptic('select' | 'commit' | ...) from '@/lib/haptics'.",
-            },
-          ],
-        },
-      ],
+      "no-restricted-imports": golfRestrictions,
     },
   },
   {
@@ -324,5 +306,7 @@ export default tseslint.config(
       "helm/no-raw-input": "off",
       "helm/no-arbitrary-text-px": "off",
     },
-  }
+  },
+  // MUST stay last: route-file and allowlist carve-outs replace the options set above.
+  ...importRestrictionOverrides()
 );

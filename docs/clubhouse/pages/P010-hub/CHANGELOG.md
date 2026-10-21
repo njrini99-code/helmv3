@@ -1,5 +1,484 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-19 — Type, shape and touch in the page stylesheet
+
+```text
+Design package: none (complete-and-elevate plan, lane W4b: type, shape and touch in the page stylesheets)
+PR/commit:      lane W4b commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (hub.css)
+
+- The task ring's numeral and the date tile keep their size; the remaining announcement headings and the pass figure follow the iPhone's text size.
+- Radii on the 5, 7, 10, 14, 20 scale.
+- The phone "5 of 6 acknowledged" count and the attached-document chip reach 44px; on a pointer the chip, the count, the waiver box and the updates rows have a hover state.
+
+### Why
+
+- Pixel font sizes did not follow Dynamic Type, radii were off the 5/7/10/14/20 scale, some phone controls were under 44px, some clickable things did not answer a pointer, and the font shorthand had dropped tabular figures from figures that sit in columns.
+
+### Verification
+
+- WebKit (headless) at 390 and 1280, light and dark: Rounds, a round, sign-up, sign-in, Home, a CoachHelm thread and Team Hub looked at after the change; the phone with `--ch-type-scale: 1.4` scales text with no sideways overflow (scrollWidth equals clientWidth). Touch reach was measured with `elementFromPoint` 21px beyond each short control; hover was measured by comparing computed styles under the pointer; figures were measured by computed `font-variant-numeric`. `npm run clubhouse:css`: its two findings are existing shadows in `auth.css` (lines 1809 and 1872).
+
+## 2026-10-19 — In-flight saves are busy; icon buttons have tooltips; the tabs fade a clipped edge
+
+```text
+Design package: none (complete-and-elevate plan, lane W4a: controls behave one way everywhere)
+PR/commit:      lane W4a commits on agent/clubhouse-complete
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Post, Save changes, Publish, Assign and Delete (and Edit trip) are busy while they run instead of disabled; Back and Cancel stay disabled.
+- Each More button shows its name on hover and focus.
+- The section tabs fade only the clipped edge when they scroll.
+
+### Why
+
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+
+### Verification
+
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
+
+## 2026-10-19 — Empty Team Hub tabs draw their rows
+
+```text
+Design package: none (complete-and-elevate plan, lane L3: empty, first-run and failure states)
+PR/commit:      lane L3 commits on agent/clubhouse-complete
+Contract IDs:   CH-10304, CH-10305, CH-10306, CH-10307, CH-10308
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The Team Hub's empty page, and its Announcements, Travel and Documents tabs when they are wholly empty, draw ruled rows under the sentence. Sections inside the Home tab keep their one-line empties.
+
+### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
+
+### Verification
+
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/hub?state=empty` and `hub-player?state=empty`. `hub-player?state=empty&tab=ann` was captured after only, phone, light.
+
+## 2026-10-18 — Pickers and controls: due date, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. A task's Due (optional, with Clear; from today) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+
+## 2026-10-18 — Wave 8: press states and the featured coin
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Dark: the author's coin on the featured (green) announcement keeps the
+  day's neutral, so it no longer sinks into the night green.
+- Presses answer: a tab takes the primary ink, and the coach's read count
+  takes the row press tint (a white wash on the featured card).
+
+## 2026-10-18 — Wave 7: player Team Hub
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, player Team Hub)
+
+- Tasks are listed open first, then soonest due, the undated last, for
+  coach and player (`taskOrder`); a done task no longer sits above an open
+  one. The coach's capped read still keeps the latest due.
+- A player's phone Home shows Your tasks before Updates.
+- A player sees no role chip ("Player view" is gone); the coach keeps
+  "Coach view". The skeletons draw the chip for a coach only.
+
+## 2026-10-18 — Wave 6: coach forms, who hasn't acknowledged
+
+```text
+Design package: none (wave-6 coach workflows review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none (one new coach read in loadTeamHub)
+Data impact:    read-only: golf_announcement_recipients and
+                golf_announcement_acknowledgements, coach only
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- A refused save in New announcement, Assign a task, Plan a trip and Edit
+  trip reads its errors out (`role="alert"`) and moves focus to the first
+  field; Plan a trip goes back to Logistics first.
+- Enter assigns a task, and is Next on Plan a trip's steps (Publish only on
+  the last). New announcement and Assign a task open on their first field on
+  desktop; the phone keeps the heading first.
+- Trip dates and times read Departs, Departure time, Returns, Return time;
+  the return date can't be picked before the departure, and a task's due date
+  starts at today. Date and time stay side by side on the phone.
+- A trip with no calendar event skips Travelers both ways, and the strip
+  marks it skipped. On the phone the sheet says "Step 3 of 4 · Logistics".
+- Optional fields carry the shared Optional tag instead of "(optional)".
+- Assign a task and an event's travelers have Clear all / Select all.
+- Several files dropped at once land with one toast ("3 files shared with
+  the team"); a failure still has its own, with Retry.
+- Trip departure reads "Mon · 12:00 PM", like the return. The big pass no
+  longer counts the travelers it names.
+- Coach: "5 of 6 acknowledged" opens who hasn't acknowledged yet. A failed
+  read leaves the count alone.
+
+### Verification (2026-10-18, wave 6)
+
+- `hub.test`, `hub-trip-manage.test`, `hub-focus-task.test`,
+  `wiring-p010-hub.test`, `hub-paged-reads.test`.
+- WebKit 320 and 1280 (Playwright, dev preview): focus on open and on a
+  refused save, Enter on Assign and on Logistics, the skipped step, the
+  phone's step line, date and time two-up at 320 with no overflow, and the
+  acknowledgement list.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Posting…" (CH-10402), "Saving…" (CH-10403, CH-10406),
+  "Assigning…" (CH-10404), and "Saving…" / "Deleting…" in the
+  trip editor and its delete question.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `hub.css`: the phone's text (head, tabs, RSVPs, announcements, passes,
+  itinerary, updates, tasks, documents, pickers) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The phone tabs' gap widens with the text once the row scrolls (4px at
+  the default size); the itinerary's label columns grow with it; a post's
+  footer wraps instead of squeezing "5 of 6 acknowledged".
+- Left fixed on purpose: the RSVP date tile, the task ring's numeral and the
+  file-type label in a document's icon. At the default size every value is
+  the same pixel.
+- Phone Tasks (coach): the title's 15px rule matched the completion ring's
+  numeral too (both are `<b>`), so "3/5" was drawn at 15px on a 24px face
+  and spilled past it. The rule now targets the title only, and the ring's
+  numeral is a fixed 10px on the phone, like the bell's count.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit 390 (Playwright, dev preview, `--ch-type-scale` 1.353): unscaled
+  text 57 to 11 on `hub`, 70 to 10 on `hub-player`; travel 42 to 4, docs
+  30 to 10, tasks 25 to 4 (the rest are the shell, buttons and the kept
+  tiles). Scale-1 screenshots are pixel identical to before; no horizontal
+  overflow at XXL.
+- The ring is the one scale-1 change: "3/5" now sits inside its face at
+  every text size.
+
+## 2026-10-18 — Wave 3 accessibility: tabs point only at the shown panel
+
+```text
+Design package: none (wave-3 accessibility review, items 16)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The Hub's tabs set `aria-controls` only on the tab whose panel is drawn; the
+  others pointed at panels that were not in the page.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `hub.test.tsx` and `wiring-p010-hub.test.tsx`.
+
+## 2026-10-18 — Wave 3: the head on the shared line, a 44px phone action
+
+```text
+Design package: none (wave-3 design review, items 5, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs.
+- Phone: the head's full-width action (New announcement, Plan a trip, Assign a
+  task) is 44px tall, as Create qualifier is, where it was 36px; the loading
+  shape matches.
+
+### Verification (2026-10-18, page-head line)
+
+- `npm run test:file` on `hub.test.tsx`.
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Polish: tab rings and hover
+
+```text
+Design package: none (wave-2 interaction review rows 4, 14)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- The tabs' scroller carries 4px of room (taken back by its margins, so the
+  row does not move), so a focused tab's ring is no longer clipped. The
+  desktop skeleton's strip grows to 42px to match. On the phone, where the
+  full-height tabs leave no room, the ring is drawn inside the tab.
+- An unselected tab darkens to primary ink on hover (desktop).
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: Travel scrolls to the trip a link names; no-team way out
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- `?tab=travel&trip=<id>` (Calendar's View itinerary) scrolls that trip's
+  pass into view once, as `?task=` does for a task; the page passes `trip`
+  through `ClubhouseHubRoute`. A trip not in the rows is left alone.
+- No team (CH-10309): the page empty offers "Open team settings"; a coach
+  goes to Team, a player to Golf profile (CH-8302).
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+
+## 2026-10-17 — Polish: straight RSVP seams on the phone
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone RSVPs: rows are square, so the seam between two rows runs straight to
+  both ends; the desktop's 12px hover radius bent it up at each end
+  (`hub.css`).
+- Tabular figures come back on 20 rules in `hub.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
+## 2026-10-17 — Wiring checked against production, and fixed
+
+```text
+Design package: none (an attachment list in the existing card idiom; no owner board draws it)
+PR/commit:      uncommitted (Clubhouse wiring audit, remaining screens)
+Contract IDs:   none new (prose in CONTRACT §15; Bridge IDs not minted)
+Actions:        ACT-P010-OPEN-ATTACHMENT, ACT-P010-OPEN-UPDATE, ACT-P010-MARK-TRAVEL-SEEN (new), ACT-P010-UPLOAD-FILE;
+                ACT-P010-ACKNOWLEDGE, ACT-P010-COMPLETE-TASK, ACT-P010-UPLOAD-FILE
+Data impact:    reads golf_travel_itineraries (id, event_id) for a player's trips; writes golf_player_notification_state
+                (markTravelSeen) and notifications / golf_calendar_notifications read_at (markNotificationRead)
+Held items:     none
+```
+
+Every Team Hub control was checked against production's callers of the same
+server action (Fairway's Team Hub, player hub, Announcements, Tasks, Travel and
+Documents): arguments, the action's role check for the role that sees the
+control, what the screen does with the result, and where its links go.
+
+### Fixed
+
+- **A player's trip never said whether they travel.** `getPlayerHubSummaryData`
+  selects no `event_id`, so the loader's invite check had nothing to look up and
+  every pass read "You —". The loader now reads each trip's event
+  (`tripEventIds`); production has 2 of 9 recent trips linked to an event. A
+  failed read leaves it unknown and is logged (`tripLinks`).
+- **Team Hub's badge stayed stale after a player's write.** Got it and a task's
+  tick (and untick) now read the badge again once they land, as production's hub
+  does after the same actions; it waited up to 45s.
+- **The travel part of the badge never cleared.** Production's Travel page marks
+  travel seen on a visit; `/golf/dashboard/travel` now opens Team Hub's Travel
+  tab, which did not. A player's Travel tab now does, once a visit.
+- **A post's attachments could not be opened.** The card said "N attachments"
+  and nothing more; production's card lists them and opens each. The count is
+  now a disclosure: the list is read the first time it opens
+  (`getAnnouncementDetail`, which keeps a targeted post to its recipients), each
+  file opens as a Documents file does, and a failed list says so with Try again.
+- **Updates.** Opening an update marks it read in its own feed, as the bell does
+  (it stayed unread in the bell), and a link off GolfHelm is no longer followed
+  (the bell's `isSafeInternalPath` rule, applied in the loader).
+- **A Clubhouse upload stored its extension as the file type** (`pdf`, where
+  every production row reads `application/pdf`, and the version row's
+  `mime_type` copies it). It now stores the MIME type (`resolveMimeType`, as the
+  storage upload already did), and the file label reads either (a Word file
+  uploaded from Fairway read "VND.").
+
+- **Documents took any file and blamed its size.** The picker had no type list,
+  a drop sent anything, and a refused file came back as "Check the file is under
+  50 MB" when the `documents` bucket's limit is 25 MB (production
+  `file_size_limit` 26214400). The picker now offers Fairway Documents' exact
+  types (`HUB_UPLOAD_ACCEPT`, which are the bucket's `allowed_mime_types`); a
+  file of another type or over 25 MB is refused by name before anything is sent
+  ("setup.exe can’t be shared" / "Film.mov is too large", error haptic) and the
+  rest of the drop goes on. Fairway has no client-side refusal (its drop sends
+  anything and the server refuses), so the wording is Clubhouse's. The failure
+  hint says 25 MB.
+- **Travel seen is the Travel tab's alone.** Opening Team Hub on Home,
+  Announcements or Documents, or moving between them, marks nothing; the Travel
+  tab marks it once a visit, and a later visit marks it again (tests pin all of
+  it).
+
+### Checked, no change
+
+Reply, Got it, task tick and untick, post, edit, delete, assign, plan and edit a
+trip, travelers, upload and open a file call the same actions with the same
+arguments as production; each action's check admits the role that sees the
+control (a coach staffed on the team, assistants included; a player with an
+assignment, an invite or team membership). The old `/announcements`, `/tasks`
+(with `?task=`), `/travel` and `/documents` addresses open the matching tab for
+both roles. Calendar links (`?new=1`, `?date=&event=`) open rebuilt routes. The
+player badge sums the same three counts as production's nav.
+
+### Verification
+
+- `npx vitest run` on `wiring-p010-hub.test.tsx` (new, 20 cases) with
+  `hub.test.tsx`, `hub-focus-task.test.tsx`, `hub-paged-reads.test.ts`,
+  `hub-trip-manage.test.tsx`: 198 passed. `hub.test.tsx`'s two player-trip
+  fixtures no longer hand the aggregate an `event_id` it never returns (they
+  read it from the itinerary instead).
+- No screenshots: the dev server was not run in this pass (the attachment list
+  is a visible change; capture before and after when it is next run).
+
+## 2026-10-17 — A team list that didn't load is told on the page
+
+```text
+Design package: none (existing InlineNotice / RefreshNotice pattern)
+PR/commit:      uncommitted (owner request "fix whatever needs it")
+Contract IDs:   none new (CH-10208 / 100617)
+Actions:        ACT-P010-POST-ANNOUNCEMENT, ACT-P010-PLAN-TRIP, ACT-P010-ASSIGN-TASK, ACT-P010-TRY-AGAIN
+Data impact:    none (the loader's roster read already reported its failure)
+Held items:     none
+```
+
+### Changed
+
+- A coach whose roster read failed sees "The team list didn’t load" under the
+  page head, with Try again, before opening any sheet: players can't be chosen
+  for a post, a trip or a task, and a post to the whole team still goes out.
+  With another failed read, "the team list" is named in the page notice
+  (CH-1209) instead of a second notice. Players never see it.
+- The pickers in New announcement, Plan a trip and Assign a task show the same
+  refresh notice (CH-10208, Try again reads the page again) instead of their
+  own help line; never an empty list. Plan a trip says "Who’s traveling"
+  without "0 of 0".
+- `loadTeamHub`: without the roster a trip's travelers, their ids and count
+  are unknown (null), never "0 travelers"; the "{trip} travelers" audience is
+  not offered.
+- VERIFY and CONTRACT: the tablist has arrow keys, Home and End (102001); upload
+  and delete check for a coach (`documents.ts`).
+
+### Verification (2026-10-17)
+
+- `npm run test:file -- src/clubhouse/__tests__/hub.test.tsx` (new CH-10208
+  cases: page notice with Try again, page-notice wording beside another
+  failure, none for a player, no "0 of 0", null travelers). No screenshots:
+  the dev server was not run in this pass.
+
+## 2026-10-14 — A new ?tab= on an open Team Hub moves to that tab
+
+A notification's `?tab=tasks&task=` while Team Hub was already open re-rendered
+the route without remounting it, and the page stood on its first tab. The tab
+and the focused task now follow the address.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
@@ -10,12 +489,12 @@ has one, is unchanged. Shared change: docs/clubhouse/CHANGELOG.md.
 
 ## 2026-10-12 — a task notification opens its task
 
-- A task notification (`?task=<id>`, kept through the old `/golf/dashboard/tasks`
-  address) opens Team Hub on that task: the coach's Tasks tab or the player's
-  Home, its row scrolled into view and lit once with the selected-row wash,
-  fading over the reveal duration; with reduced motion the wash stays still
-  until the row is used. An unknown or malformed id is ignored. New contract
-  100103.
+- A task notification (`?task=<id>`, kept through the old
+  `/golf/dashboard/tasks` address) opens Team Hub on that task: the coach's
+  Tasks tab or the player's Home, its row scrolled into view and lit once with
+  the selected-row wash, fading over the reveal duration; with reduced motion
+  the wash stays still until the row is used. An unknown or malformed id is
+  ignored. New contract 100103.
 - The role (coach or player hub, and the no-team copy) is the dashboard
   layout's (`getGolfDashboardRole`): a user whose player profile is the
   onboarded one and whose coach profile is not gets the player hub.
@@ -35,22 +514,53 @@ gold hairline; an RSVP row warms under the pointer.
 
 ## 2026-10-08 — the radio groups take programmatic focus
 
-Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in
-the trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is still the one Tab stop and the group
-still routes the arrow keys, Home and End (D7); the group itself is now
-focusable, as `jsx-a11y/interactive-supports-focus` requires of an element
-that handles keys, without adding a Tab stop.
+Every Hub radio group (an RSVP's reply, Send to, Event, and Getting there in the
+trip sheet and the trip editor) takes `tabIndex={-1}`. The checked radio is
+still the one Tab stop and the group still routes the arrow keys, Home and End
+(D7); the group itself is now focusable, as
+`jsx-a11y/interactive-supports-focus` requires of an element that handles keys,
+without adding a Tab stop.
 
 ## 2026-10-08 — premium pass: the lit pass, the plate, the edited page and findings (P010-A1 to A3, D1 to D9, D14)
 
-- A1: the next trip is the page's one paper object. On desktop it keeps the paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges and a contact shadow with a long falloff leaning away from the sun (`--ch-light-*`, never on the facts), joined to its stub by a dashed perforation with two notches; its eyebrow is the page's one gilt (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved flush entry keeps everything but gains the perforated rule and notches between the facts and the plan. More contrast drops the rim and shadow for a plain border.
-- A2: the latest announcement is a lacquered plate on the phone (a rim on its sun-facing edges, a pressed headline, the Display-P3 green where the screen has it, light theme only); on desktop the flush entry's headline is debossed.
-- A3: the Announcements tab is an edited page: the newest at 36px, older posts at 22px with their date in the left margin; on desktop the coach's right margin holds the read count of the post in view, pinned while the page scrolls (only the count the page already has). On the phone an older post folds to its title and first line until tapped.
-- D1 a done task strikes its title only, not the ring's fraction. D2 the tab is in the URL (`?tab=`, replaced in place). D3 the coach preview's Updates are coach-shaped. D4 the big pass doesn't repeat Departs and Stay beside its plan, and the plan and the pass's lines share one 96px label column. D5 failure titles are ink (the shell's D5-1). D6 the head's one primary follows the tab (New announcement, Plan a trip, Assign a task; none on Documents, whose drop zone is its primary, or on a tab whose read failed); the in-panel Plan a trip and Assign duplicates are gone. D7 every radio group is one Tab stop and the arrow keys, Home and End walk it (an RSVP's arrows move without sending; Space chooses). D8 "Needs your acknowledgement". D9 an RSVP row's line keeps time and place; the date tile says the day (the full date is still read). D14 the tab underline glides on the base spring.
+- A1: the next trip is the page's one paper object. On desktop it keeps the
+  paper (the room's light as `--ch-light-paper`), a rim on its sun-facing edges
+  and a contact shadow with a long falloff leaning away from the sun
+  (`--ch-light-*`, never on the facts), joined to its stub by a dashed
+  perforation with two notches; its eyebrow is the page's one gilt
+  (`--ch-ledger-eyebrow`). Later trips stay flat rows. On the phone the approved
+  flush entry keeps everything but gains the perforated rule and notches between
+  the facts and the plan. More contrast drops the rim and shadow for a plain
+  border.
+- A2: the latest announcement is a lacquered plate on the phone (a rim on its
+  sun-facing edges, a pressed headline, the Display-P3 green where the screen
+  has it, light theme only); on desktop the flush entry's headline is debossed.
+- A3: the Announcements tab is an edited page: the newest at 36px, older posts
+  at 22px with their date in the left margin; on desktop the coach's right
+  margin holds the read count of the post in view, pinned while the page scrolls
+  (only the count the page already has). On the phone an older post folds to its
+  title and first line until tapped.
+- D1 a done task strikes its title only, not the ring's fraction. D2 the tab is
+  in the URL (`?tab=`, replaced in place). D3 the coach preview's Updates are
+  coach-shaped. D4 the big pass doesn't repeat Departs and Stay beside its plan,
+  and the plan and the pass's lines share one 96px label column. D5 failure
+  titles are ink (the shell's D5-1). D6 the head's one primary follows the tab
+  (New announcement, Plan a trip, Assign a task; none on Documents, whose drop
+  zone is its primary, or on a tab whose read failed); the in-panel Plan a trip
+  and Assign duplicates are gone. D7 every radio group is one Tab stop and the
+  arrow keys, Home and End walk it (an RSVP's arrows move without sending; Space
+  chooses). D8 "Needs your acknowledgement". D9 an RSVP row's line keeps time
+  and place; the date tile says the day (the full date is still read). D14 the
+  tab underline glides on the base spring.
 
 ## 2026-10-08 — dark: Clubhouse at night
 
-Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the pass's perforation, task checkboxes, RSVP and read tracks become ivory hairlines; the tab underline and Going in the RSVP bar take the light green; ivory type on a filled green (RSVP choice, task tick, upload mark, audience choice, step) takes the on-green ink; the featured announcement is unchanged. Light mode is unchanged.
+Team Hub follows GolfHelm's dark theme ("Clubhouse at night"). Row rules, the
+pass's perforation, task checkboxes, RSVP and read tracks become ivory
+hairlines; the tab underline and Going in the RSVP bar take the light green;
+ivory type on a filled green (RSVP choice, task tick, upload mark, audience
+choice, step) takes the on-green ink; the featured announcement is unchanged.
+Light mode is unchanged.
 
 ## 2026-10-08 — phone: Mobile clubhouse pass
 
@@ -156,8 +666,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (calendar-events.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (calendar-events.ts) after `golf.ts`, `insights.ts` and `admin-data.ts`
+were split by domain. No behavior change.
 
 ## 2026-10-06 — Whole-app release audit
 
@@ -189,9 +699,9 @@ requested action; a task reopened earlier in the visit also restores that last
 confirmed state after a failed completion. No write endpoint or role rule
 changed. Nine added regression cases verify independent saves,
 duplicate/opposite-action prevention, rollback, acknowledgment Retry, the
-reopened-task edge case, tab remounts, quiet stale Retry contention and retaining
-a confirmed acknowledgment after a later stale Retry refuses. The full Hub
-file passes 144/144 tests (exit 0, 37.46 s, one worker).
+reopened-task edge case, tab remounts, quiet stale Retry contention and
+retaining a confirmed acknowledgment after a later stale Retry refuses. The full
+Hub file passes 144/144 tests (exit 0, 37.46 s, one worker).
 
 Evidence and practical limits: `VERIFY.md` and the scoped intuitive
 secondary-screen report.
@@ -355,7 +865,7 @@ Data impact:    none
 - **Fix.** Four steps (Event, Travelers, Logistics, Itinerary) with Back and
   Next; the event fills name, place and day, its invitees are the travelers
   (written with explicit adds and removes); Publish saves the trip once, so a
-  Retry writes only the travelers. New announcement offers "<trip> travelers ·
+  Retry writes only the travelers. New announcement offers "{trip} travelers ·
   N". New states CH-10210, CH-10211, CH-10312, CH-10313. The class-clash line is
   not built (Q-84).
 - **Checked.** hub 101/101, 6 of 6 mutations caught.
@@ -456,7 +966,7 @@ Data impact:    none
 Held items:     none
 ```
 
-### Changed
+### Changed (2026-09-30)
 
 - The six page docs, the manifest's actions (`status.docs` current,
   `status.contract` complete) and the hand
@@ -470,7 +980,7 @@ Held items:     none
   `HubSkeleton`); it used to show
   the Fairway one inside the Clubhouse shell.
 
-### Fixed (each with a test that fails without the fix)
+### Fixed (each with a test that fails without the fix) (2026-09-30)
 
 - **The toast's Retry skipped every follow-up.** All nine writes did their
   follow-up after `await x.run()`
@@ -516,6 +1026,6 @@ Held items:     none
   named, and every bug class the
   Calendar and Messages passes found looked for here.
 
-### Verification
+### Verification (2026-09-30)
 
 - See VERIFY.md.

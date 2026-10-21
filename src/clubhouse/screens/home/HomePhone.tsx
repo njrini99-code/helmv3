@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -14,7 +14,9 @@ import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { withPointSpan } from '../../ui/point-span';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
@@ -26,6 +28,7 @@ import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
+import { MineBadge } from './CoachAsks';
 import { competitionExtra, DayCard, dayPhase, LaterToday, SinceYouLooked, sunsetExtra } from './DayCard';
 import { useLightPlace } from '../../shell/light';
 
@@ -173,6 +176,8 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
           <Icon icon={ChevronRight} size={17} />
         </span>
       )}
+      {/* A player's own reply (their Home only; a coach's card never carries `mine`). */}
+      <MineBadge mine={e.mine} />
       {children}
       <LinkPending />
     </Link>
@@ -325,18 +330,19 @@ function Form({ form }: { form: ChTeamForm }) {
   const x = (i: number) => 4 + (pts.length > 1 ? (i * (W - 8)) / (pts.length - 1) : (W - 8) / 2);
   const y = (v: number) => 6 + ((v - lo) / (hi - lo || 1)) * (H - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  // Lower scores and fewer putts are better; more greens are better. A change that rounds to zero as shown ("0.0") is no change: plain, not amber (F-54).
-  const tone = (delta: number | null, lowerIsBetter: boolean, digits: number) => changeTone(delta, lowerIsBetter, digits);
+  // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
+  // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
+  const avgTone = deltaTone(form.delta, form.deltaSe, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__top">
         <span>
           <em id="ch-hm-form">Team scoring average</em>
-          <b className="ch-num">{formatFixed(form.avg)}</b>
+          <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        <span className={'ch-hm-delta ch-num ' + tone(form.delta, true, 1)}>
+        <span className={'ch-hm-delta ch-num ' + avgTone}>
           {form.delta != null && formatSigned(form.delta)}
-          {form.delta != null && <em>vs previous 10</em>}
+          {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
         </span>
       </div>
@@ -356,20 +362,20 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? formatSigned(form.gir.delta, 0) : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.putts.delta, true, 1)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
   );
 }
 
-/** `children`: what follows the week inside its section (the player's Today). `majorIcon`: the mark on a competition day (the coach's is the trophy; the player's board draws a flag). */
-export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tournament }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode; majorIcon?: LucideIcon }) {
+/** `children`: what follows the week inside its section (the player's Today). A competition day carries its type's mark, the one the calendar draws. */
+export function WeekStrip({ days, note, children }: { days: ChCoachHome['week']['days']; note: ChCoachHome['phone']['weekNote']; children?: ReactNode }) {
   return (
     <section className="ch-hm-sec" aria-labelledby="ch-hm-week">
       <div className="ch-hm-sec__h">
@@ -383,7 +389,7 @@ export function WeekStrip({ days, note, children, majorIcon = TYPE_ICON.tourname
               <b className="ch-num" aria-hidden="true">
                 {d.dayOfMonth}
               </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={majorIcon} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
+              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
               <span className="ch-sr-only">
                 {d.weekday} {d.dayOfMonth}
                 {d.isToday ? ', today' : ''}
@@ -458,7 +464,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                   <Avatar name={r.playerName} size={38} />
                   <span className="ch-hm-rd__b">
                     <b>{r.playerName}</b>
-                    <span>{r.meta.split(' · ').slice(0, 2).join(' · ')}</span>
+                    <RoundMeta meta={r.meta} />
                   </span>
                   {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
                     <span className="ch-hm-rd__spark" aria-hidden="true">
@@ -476,6 +482,20 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         </ul>
       )}
     </section>
+  );
+}
+
+/**
+ * A latest round's course and date: the course gives way (ellipsis) and the date keeps its place, so a long course name
+ * never pushes the date out of the row. The same words as one line ("Oakmont CC · Sun 12 Oct").
+ */
+function RoundMeta({ meta }: { meta: string }) {
+  const [lead, ...rest] = meta.split(' · ').slice(0, 2);
+  return (
+    <span className="ch-hm-rd__m">
+      <span>{lead}</span>
+      {rest.length > 0 && <span className="ch-hm-rd__when">{rest.join(' · ')}</span>}
+    </span>
   );
 }
 

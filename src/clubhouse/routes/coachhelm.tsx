@@ -2,12 +2,16 @@ import 'server-only';
 import { Suspense, type ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { Users } from 'lucide-react';
+import { pickGolfDashboardRole } from '@/lib/auth/golf-dashboard-role';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
+import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
+import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
@@ -18,6 +22,7 @@ import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Profile } from '../screens/coachhelm/views/Profile';
 import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
+import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
 import { EmptyState } from '../ui/States';
 import { resolveClubhouseTeam } from './team';
 import '../styles/coachhelm.css';
@@ -26,6 +31,7 @@ import '../styles/coachhelm-views.css';
 import '../styles/coachhelm-profile.css';
 import '../styles/coachhelm-standing.css';
 import '../styles/coachhelm-dive.css';
+import '../styles/coachhelm-track.css';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway
@@ -45,7 +51,7 @@ import '../styles/coachhelm-dive.css';
 
 /** The coach's Board or Ask. The Board's loader checks the CoachHelm gate itself; Ask's is checked here, before its read. */
 async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlayer }: { coachId: string; teamId: string; ask: boolean; conversationId?: string; initialPlayer?: string }) {
-  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} />;
+  if (!ask) return <CoachBoard data={await loadCoachCoachHelm({ coachId, teamId })} initialPlayer={initialPlayer} trackRecordHref={isTrackRecordEnabled() ? COACH_TRACK_RECORD_HREF : undefined} />;
   // Ask is CoachHelm's, so it is off when CoachHelm is off for this coach, their team or GolfHelm, as the board is: the
   // address that led here is answered with the board's own "CoachHelm is off" page, and a lookup that failed with Ask's own
   // "did not load" notice, never with a chat that runs against a switch that is off.
@@ -53,6 +59,11 @@ async function CoachHelmView({ coachId, teamId, ask, conversationId, initialPlay
   if (gate.status === 'off') return <CoachBoard data={emptyCoachHelm(gate.off)} />;
   if (gate.status === 'failed') return <Ask load={{ status: 'failed' }} />;
   return <Ask load={await loadAskCoachHelm({ conversationId })} />;
+}
+
+/** The coach's Track record (`?view=track-record`, flag `coachhelm_track_record_v1`; the route checks the flag). Its loader checks the CoachHelm gate. */
+async function CoachTrackRecordView({ coachId, teamId }: { coachId: string; teamId: string }) {
+  return <TrackRecord load={await loadCoachTrackRecord({ coachId, teamId })} />;
 }
 
 /**
@@ -86,7 +97,10 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
   if (!session) return null;
-  if (session.coach) {
+  // The view follows the dashboard role (the one resolveClubhouseTeam and the layout use), not "has a coach row": a user
+  // whose onboarded profile is the player one, with an unfinished coach profile beside it, is drawn as a player and gets
+  // their own CoachHelm, never the coach's no-team page (wiring audit, 2026-10-17; routes/roster.tsx has the same rule).
+  if (pickGolfDashboardRole(session) === 'coach' && session.coach) {
     const team = await resolveClubhouseTeam(session);
     if (!team || team.role !== 'coach') {
       return (
@@ -99,6 +113,14 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
             body="Once your team is set up, CoachHelm reads the rounds your players post and shows their signals here."
           />
         </main>
+      );
+    }
+    // The Track record is the coach's alone, and only with its flag on; with it off the address is the board.
+    if (view === 'track-record' && isTrackRecordEnabled()) {
+      return (
+        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+          <CoachTrackRecordView coachId={team.coachId} teamId={team.teamId} />
+        </Suspense>
       );
     }
     // The Ask sub-tab is the coach's alone: a player's `?view=ask` falls through to their own board below.

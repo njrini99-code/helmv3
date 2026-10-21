@@ -254,9 +254,10 @@ export default async function RoundDetailPage({
   // conditions `updateRoundType` re-checks server-side. Offering any other
   // qualifier would be a dead end dressed as a choice.
   //
-  // Degrades rather than throws: an empty list makes the editor say "not
-  // entered in any open qualifier" instead of taking the whole page down, and
-  // the practice/tournament choices still work without it.
+  // Degrades rather than throws: a failed read leaves an empty list and
+  // `qualifierReadFailed`, so the editor says it couldn't load the qualifiers
+  // instead of taking the whole page down, and the practice/tournament choices
+  // still work without it.
   let qualifierOptions: Array<{
     id: string;
     name: string;
@@ -276,6 +277,7 @@ export default async function RoundDetailPage({
       .eq('player_id', roundData.player_id);
 
     if (entriesError) {
+      qualifierReadFailed = true;
       void logServerError(
         `[round detail] qualifier options read failed for round ${id}; the type editor will offer no qualifier to attach to: ${describeError(entriesError)}`,
         { action: 'roundDetail.qualifierOptions', featureArea: 'rounds' },
@@ -376,11 +378,15 @@ export default async function RoundDetailPage({
         .neq('id', id);
 
       if (takenError) {
-        // Degrade to "nothing known taken" rather than dropping the editor:
-        // the action still refuses a real clash, so the worst case is the old
-        // behaviour (a save that fails with an explanation), not a bad write.
+        // An unread slot list is not "nothing taken": offering every slot
+        // would default the picker to one this player may already hold, and
+        // the save would then fail on the clash. Offer no qualifier and say
+        // the read failed (the editor's reload dead end); practice and
+        // tournament still work.
+        qualifierReadFailed = true;
+        qualifierOptions = [];
         void logServerError(
-          `[round detail] taken qualifier slots read failed for round ${id}; the type editor may offer a slot that is already used: ${describeError(takenError)}`,
+          `[round detail] taken qualifier slots read failed for round ${id}; the type editor will offer no qualifier: ${describeError(takenError)}`,
           { action: 'roundDetail.takenSlots', featureArea: 'rounds' },
           'warning',
         );

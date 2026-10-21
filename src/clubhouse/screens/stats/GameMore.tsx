@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
+import { ScoreMixBar } from './ScoreMixBar';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
 
 /**
@@ -15,7 +16,7 @@ import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type 
  * nothing behind it says so (CH-5317), never a zero.
  */
 
-const pct = (v: number | null | undefined, d = 0) => (v == null ? NO_DATA : `${v.toFixed(d)}%`);
+const pct = formatPct;
 const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
 const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${v.toFixed(d)} ft`);
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
@@ -86,34 +87,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
                 <span className="ch-num">
                   {d.avgToPar == null ? NO_DATA : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
                 </span>
-                <div className="ch-mix">
-                  <div className="ch-mix__bar" role="img" aria-label={`Par ${p}: birdie or better ${d.eagle + d.birdie}, par ${d.par}, bogey ${d.bogey}, double or worse ${d.doublePlus}, of ${d.total} holes`}>
-                    {(
-                      [
-                        ['is-birdie', d.eagle + d.birdie],
-                        ['is-par', d.par],
-                        ['is-bogey', d.bogey],
-                        ['is-double', d.doublePlus],
-                      ] as const
-                    ).map(([c, v]) => (v > 0 ? <span key={c} className={`ch-mix__s ${c}`} style={{ flex: v }} /> : null))}
-                  </div>
-                  <div className="ch-mix__k">
-                    {(
-                      [
-                        ['is-birdie', 'Birdie+', d.eagle + d.birdie],
-                        ['is-par', 'Par', d.par],
-                        ['is-bogey', 'Bogey', d.bogey],
-                        ['is-double', 'Double+', d.doublePlus],
-                      ] as const
-                    ).map(([c, l, v]) => (
-                      <span key={l}>
-                        <i className={c} />
-                        <b className="ch-num">{Math.round((v / d.total) * 100)}%</b>
-                        {l}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <ScoreMixBar counts={{ eagle: d.eagle, birdie: d.birdie, par: d.par, bogey: d.bogey, double: d.doublePlus }} label={`Par ${p}s`} compact />
               </div>
             ),
           )}
@@ -474,7 +448,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
               const you = b.attempts ? (b.made / b.attempts) * 100 : null;
               const verdict = !b.attempts ? 'No putts yet' : b.attempts < GRADE_MIN ? `Under ${GRADE_MIN} putts` : you! >= b.bench! ? 'At or above the Tour' : 'Below the Tour';
               const t: Tone = b.attempts >= GRADE_MIN ? tone(you, b.bench) : undefined;
-              return { key: b.label, head: b.label, cells: [{ v: pct(you), tone: t }, pct(b.bench, 1), String(b.attempts), { v: verdict, tone: t }] };
+              return { key: b.label, head: b.label, cells: [{ v: pct(you), tone: t }, pct(b.bench), String(b.attempts), { v: verdict, tone: t }] };
             })}
           />
         ) : (

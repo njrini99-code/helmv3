@@ -2,7 +2,8 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 import type { PulseItem } from '@/lib/coachhelm/v3/chat/program-pulse';
 import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
-import { pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChInsight, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
+import type { ChViewer } from '../data/coachhelm-voice';
+import { firstName, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChInsight, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 
 /**
  * CoachHelm sample data (design/handoff/helm3.jsx `INS`, `PULSE`, `PLAYERS`).
@@ -67,12 +68,12 @@ export const slope = (playerId: string, id = 'in-slope'): EvidenceInsight =>
     id,
     category: 'putting',
     priority: 'medium',
-    title: 'Downhill putts inside 4-6 ft: a real penalty',
+    title: 'Downhill putts from 4-6 ft: a real penalty',
     content:
-      "Inside 4-6 ft you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap (n=31 downhill / 44 level). Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.",
+      "From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap. Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.",
     evidence: evidence({
       metric: SLOPE_METRIC,
-      metric_label: 'Downhill penalty vs level putts (distance-controlled)',
+      metric_label: 'Make rate, downhill vs level, same distance',
       unit: 'percent',
       polarity: 'lower_better',
       your_value: 23,
@@ -244,14 +245,17 @@ const NO_PROPOSALS: ChPlayerHelm['proposals'] = { list: [], error: false };
 const jonah = HELM_PLAYERS.jonah.id;
 /** A men's team's Tour values for the two metrics whose generator writes a college comparison (golf_pga_standards, tour = pga). */
 export const PREVIEW_TOUR: ChTourBaseline = { tour: 'pga', values: new Map([['penalty_rate_per_round', 0.3], ['big_number_rate', 2]]) };
-const chTour = (i: EvidenceInsight) => toChInsight(i, { tour: PREVIEW_TOUR });
-const chSlope = (playerId: string, id?: string, assigned: ChInsight['assigned'] = null) => toChInsight(slope(playerId, id), { drillText: DRILL_TEXT, assigned });
+/** Whose voice a card is in, as the loaders set it: the player's own on their board, the player's first name on the coach's. */
+const ME: ChViewer = { role: 'player' };
+const coachOf = (p: { name: string }): ChViewer => ({ role: 'coach', first: firstName(p.name) });
+const chTour = (i: EvidenceInsight, viewer: ChViewer) => toChInsight(i, { tour: PREVIEW_TOUR, viewer });
+const chSlope = (playerId: string, viewer: ChViewer, id?: string, assigned: ChInsight['assigned'] = null) => toChInsight(slope(playerId, id), { drillText: DRILL_TEXT, assigned, viewer });
 
 /** Jonah's own CoachHelm, as the board draws it: the downhill penalty as the focus, two more, and one thing working. */
 export const PREVIEW_HELM_PLAYER: ChPlayerHelm = {
   off: null,
   proposals: NO_PROPOSALS,
-  insights: { list: [chSlope(jonah), chTour(penalties(jonah)), toChInsight(breakBias(jonah)), chTour(bigNumber(jonah))], error: false },
+  insights: { list: [chSlope(jonah, ME), chTour(penalties(jonah), ME), toChInsight(breakBias(jonah), { viewer: ME }), chTour(bigNumber(jonah), ME)], error: false },
   rounds: null,
 };
 /** Two focus areas Coach Reyes proposed to Jonah: one made from his downhill-putts insight, one of the coach's own. */
@@ -259,8 +263,8 @@ export const PREVIEW_HELM_PLAYER_PROPOSED: ChPlayerHelm = {
   ...PREVIEW_HELM_PLAYER,
   proposals: {
     list: [
-      { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts inside 4-6 ft: a real penalty' },
-      { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null },
+      { id: 'fa-ladder', title: 'Downhill putts inside 6 ft', from: 'Downhill putts from 4–6 ft: a real penalty' },
+      { id: 'fa-lag', title: 'Lag putting from 30 ft', from: null, coachUserId: 'u-maya' },
     ],
     error: false,
   },
@@ -274,12 +278,91 @@ export const PREVIEW_HELM_PLAYER_NO_ROUNDS: ChPlayerHelm = { off: null, proposal
 export const PREVIEW_HELM_PLAYER_FAILED: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [], error: true }, rounds: null };
 export const PREVIEW_HELM_PLAYER_OFF: ChPlayerHelm = { off: { reason: null }, proposals: NO_PROPOSALS, insights: { list: [], error: false }, rounds: null };
 /** Only strengths: nothing needs work. */
-export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah))], error: false }, rounds: null };
+export const PREVIEW_HELM_PLAYER_WORKING: ChPlayerHelm = { off: null, proposals: NO_PROPOSALS, insights: { list: [chTour(bigNumber(jonah), ME)], error: false }, rounds: null };
+
+/**
+ * A crowded player board (`?state=many`), for the Board caps, the Deep dive Read and their before/after screenshots. Eleven
+ * findings (ten current, one out of date), three strengths, two reads with the generators' placeholder cause and action, and two
+ * whose stored estimate is zero ("Projected impact: ~0.00 strokes per round", course-management.ts).
+ */
+type ManySeed = { id: string; category: NonNullable<EvidenceInsight['category']>; priority: EvidenceInsight['priority']; title: string; content: string; metric: string; label: string; unit: InsightEvidence['unit']; polarity: 'lower_better' | 'higher_better'; you: number; display: string; cmp: number; cmpLabel: string; n: number; confidence: number; placeholder?: boolean; refreshed?: string };
+const manyRead = (s: ManySeed): EvidenceInsight =>
+  insight(jonah, {
+    id: s.id,
+    category: s.category,
+    priority: s.priority,
+    title: s.title,
+    content: s.content,
+    metadata: s.refreshed ? { last_refreshed_at: s.refreshed } : null,
+    evidence: evidence({
+      metric: s.metric,
+      metric_label: s.label,
+      unit: s.unit,
+      polarity: s.polarity,
+      your_value: s.you,
+      your_value_display: s.display,
+      comparison_value: s.cmp,
+      comparison_label: s.cmpLabel,
+      comparison_source: 'absolute_target',
+      sample_n: s.n,
+      confidence: s.confidence,
+      ...(s.placeholder ? { diagnosis: diagnosis(s.label) } : {}),
+    }),
+  });
+const ZERO_LINE = ' Projected impact: ~0.00 strokes per round.';
+export const MANY_FINDINGS: EvidenceInsight[] = [
+  manyRead({ id: 'in-3putt', category: 'putting', priority: 'high', title: 'Three-putt rate: 14%', content: `You three-putted 14% of greens across 21 rounds, against 8% for the Tour. Most start from outside 30 ft, so lag distance is the lever.${ZERO_LINE}`, metric: 'three_putt_rate', label: 'Three-putt Rate', unit: 'percent', polarity: 'lower_better', you: 14, display: '14%', cmp: 8, cmpLabel: 'PGA Tour avg', n: 378, confidence: 0.82 }),
+  manyRead({ id: 'in-updown', category: 'short_game', priority: 'high', title: 'Up-and-down rate: 38%', content: `You got up and down 38% of the time after missing a green, against 58% for the Tour.${ZERO_LINE}`, metric: 'up_and_down_pct', label: 'Up-and-down Rate', unit: 'percent', polarity: 'higher_better', you: 38, display: '38%', cmp: 58, cmpLabel: 'PGA Tour avg', n: 96, confidence: 0.7, placeholder: true }),
+  manyRead({ id: 'in-prox', category: 'approach', priority: 'medium', title: 'Approach from 150-175 yds: 31 ft from the hole', content: 'From 150-175 yards your approaches finish a median 31 ft from the hole, against 26 ft for the Tour. Projected impact: ~0.21 strokes per round.', metric: 'approach_prox_150_175', label: 'Proximity, 150-175 yds', unit: 'feet', polarity: 'lower_better', you: 31, display: '31 ft', cmp: 26, cmpLabel: 'PGA Tour avg', n: 64, confidence: 0.66 }),
+  manyRead({ id: 'in-fw', category: 'tee', priority: 'medium', title: 'Fairways hit: 49%', content: 'You hit 49% of fairways over 21 rounds, against 62% for the Tour. Projected impact: ~0.34 strokes per round.', metric: 'fairway_pct', label: 'Fairways Hit', unit: 'percent', polarity: 'higher_better', you: 49, display: '49%', cmp: 62, cmpLabel: 'PGA Tour avg', n: 294, confidence: 0.78 }),
+  manyRead({ id: 'in-par5', category: 'scoring', priority: 'medium', title: 'Bogeys on par 5s: 38%', content: 'You bogeyed or worse on 38% of par 5s, against 24% for the Tour. Projected impact: ~0.18 strokes per round.', metric: 'par5_bogey_rate', label: 'Par 5 Bogey Rate', unit: 'percent', polarity: 'lower_better', you: 38, display: '38%', cmp: 24, cmpLabel: 'PGA Tour avg', n: 63, confidence: 0.6, placeholder: true }),
+  manyRead({ id: 'in-lag', category: 'putting', priority: 'medium', title: 'Lag putts from 30+ ft: 4.1 ft left', content: 'From 30 ft and out your first putt stops a median 4.1 ft from the hole, against 3.2 ft for the Tour. Projected impact: ~0.12 strokes per round.', metric: 'lag_leave_distance', label: 'First-putt Leave, 30+ ft', unit: 'feet', polarity: 'lower_better', you: 4.1, display: '4.1 ft', cmp: 3.2, cmpLabel: 'PGA Tour avg', n: 71, confidence: 0.58 }),
+  manyRead({ id: 'in-badtee', category: 'course_management', priority: 'low', title: 'Bogey or worse after a missed fairway: 71%', content: 'After a missed fairway you made bogey or worse on 71% of holes, against 55% for the Tour. Projected impact: ~0.09 strokes per round.', metric: 'bogey_after_miss_pct', label: 'Bogey or Worse After a Missed Fairway', unit: 'percent', polarity: 'lower_better', you: 71, display: '71%', cmp: 55, cmpLabel: 'PGA Tour avg', n: 107, confidence: 0.5 }),
+];
+/** Older than the player's newest round (Oct 14): drawn Out of date, not an open signal. */
+export const MANY_STALE: EvidenceInsight = manyRead({ id: 'in-gir', category: 'approach', priority: 'medium', title: 'Greens in regulation: 52%', content: 'You hit 52% of greens in regulation, against 65% for the Tour. Projected impact: ~0.28 strokes per round.', metric: 'gir_pct', label: 'Greens in Regulation', unit: 'percent', polarity: 'higher_better', you: 52, display: '52%', cmp: 65, cmpLabel: 'PGA Tour avg', n: 378, confidence: 0.74, refreshed: '2026-10-05T12:00:00Z' });
+export const MANY_NEWEST_ROUND = '2026-10-14';
+export const MANY_STRENGTHS: EvidenceInsight[] = [
+  manyRead({ id: 'in-scramble', category: 'short_game', priority: 'low', title: 'Scrambling from the rough: 64%', content: 'You saved par from the rough 64% of the time, against 50% for the Tour.', metric: 'scramble_rough_pct', label: 'Scrambling From the Rough', unit: 'percent', polarity: 'higher_better', you: 64, display: '64%', cmp: 50, cmpLabel: 'PGA Tour avg', n: 41, confidence: 0.7 }),
+  manyRead({ id: 'in-inside3', category: 'putting', priority: 'low', title: 'Putts inside 3 ft: 97%', content: 'You made 97% of putts inside 3 ft, against 94% for the Tour.', metric: 'make_pct_inside_3', label: 'Make Rate Inside 3 ft', unit: 'percent', polarity: 'higher_better', you: 97, display: '97%', cmp: 94, cmpLabel: 'PGA Tour avg', n: 212, confidence: 0.85 }),
+];
+export const PREVIEW_HELM_PLAYER_MANY: ChPlayerHelm = {
+  off: null,
+  proposals: NO_PROPOSALS,
+  insights: {
+    list: [
+      chSlope(jonah, ME),
+      chTour(penalties(jonah), ME),
+      ...MANY_FINDINGS.slice(0, 2).map((i) => chTour(i, ME)),
+      toChInsight(breakBias(jonah), { viewer: ME }),
+      ...MANY_FINDINGS.slice(2).map((i) => chTour(i, ME)),
+      toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }),
+      chTour(bigNumber(jonah), ME),
+      ...MANY_STRENGTHS.map((i) => chTour(i, ME)),
+    ],
+    error: false,
+  },
+  rounds: null,
+};
+
+/** `?state=zero`: the zero-estimate read leads (its "Projected impact: ~0.00 strokes per round" sits under Why we think this), then the placeholder-cause reads. */
+export const PREVIEW_HELM_PLAYER_ZERO: ChPlayerHelm = {
+  ...PREVIEW_HELM_PLAYER_MANY,
+  insights: { list: [chTour(MANY_FINDINGS[0]!, ME), chTour(MANY_FINDINGS[1]!, ME), chTour(penalties(jonah), ME), chSlope(jonah, ME), chTour(bigNumber(jonah), ME)], error: false },
+};
+/** `?state=stale`: current reads first, then the one older than the player's newest round (Out of date). */
+export const PREVIEW_HELM_PLAYER_STALE: ChPlayerHelm = {
+  ...PREVIEW_HELM_PLAYER_MANY,
+  insights: {
+    list: [chSlope(jonah, ME), chTour(penalties(jonah), ME), toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: ME, newestRound: MANY_NEWEST_ROUND }), chTour(bigNumber(jonah), ME)],
+    error: false,
+  },
+};
 
 const PULSE_ITEMS: PulseItem[] = [
-  { id: 'rsvp-e1', headline: '2 players have not responded for Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 responded', tone: 'attention', weight: 85 },
-  { id: 'movement-decline', headline: '2 players are scoring higher than their previous three rounds', evidence: 'Jonah Okafor +2.1 · Eli Brandt +0.8', tone: 'attention', weight: 80 },
-  { id: 'signals-open', headline: '7 open signals across 4 players', evidence: 'Downhill putts inside 4-6 ft: a real penalty', tone: 'neutral', weight: 70 },
+  { id: 'rsvp-e1', headline: '2 players haven’t replied to Team dinner', evidence: 'Thu, Oct 16, 6:30 PM · 4 of 6 replied', tone: 'attention', weight: 85 },
+  { id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes', tone: 'attention', weight: 80 },
+  { id: 'signals-open', headline: '7 open signals across 4 players', evidence: 'Downhill putts from 4-6 ft: a real penalty', tone: 'neutral', weight: 70 },
   { id: 'focus-stalled', headline: '1 active focus area has no recent progress', evidence: 'Priya Natarajan: Lag putting', tone: 'attention', weight: 65 },
   { id: 'coverage-stale', headline: 'No rounds recorded in 9 days', evidence: 'The most recent round anywhere on the team was Oct 5.', tone: 'attention', weight: 60 },
 ];
@@ -287,28 +370,29 @@ const PULSE_ITEMS: PulseItem[] = [
 const player = (p: { id: string; name: string }, top: ChInsight, count: number): ChCoachPlayer => ({ id: p.id, name: p.name, count, top });
 
 const COACH_PLAYERS: ChCoachPlayer[] = sortCoachPlayers([
-  player(HELM_PLAYERS.jonah, chSlope(jonah), 3),
-  player(HELM_PLAYERS.eli, chTour(penalties(HELM_PLAYERS.eli.id, 'in-pen-eli')), 2),
-  player(HELM_PLAYERS.priya, toChInsight(breakBias(HELM_PLAYERS.priya.id, 'in-brk-priya')), 1),
+  player(HELM_PLAYERS.jonah, chSlope(jonah, coachOf(HELM_PLAYERS.jonah)), 3),
+  player(HELM_PLAYERS.eli, chTour(penalties(HELM_PLAYERS.eli.id, 'in-pen-eli'), coachOf(HELM_PLAYERS.eli)), 2),
+  player(HELM_PLAYERS.priya, toChInsight(breakBias(HELM_PLAYERS.priya.id, 'in-brk-priya'), { viewer: coachOf(HELM_PLAYERS.priya) }), 1),
   // What is working is not an open signal: Theo's top card is a strength, so he has none open.
-  player(HELM_PLAYERS.theo, chTour(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo')), 0),
+  player(HELM_PLAYERS.theo, chTour(bigNumber(HELM_PLAYERS.theo.id, 'in-dbl-theo'), coachOf(HELM_PLAYERS.theo)), 0),
 ]);
 
-/** The coach's board: the pulse, four players with signals, one without. */
+/** The coach's board: the pulse, four players with signals, one without (Sam, named). */
 export const PREVIEW_HELM_COACH: ChCoachHelmData = {
   off: null,
   roster: { count: 5, error: false },
   pulse: { rows: pulseRows(PULSE_ITEMS), error: false },
   players: { list: COACH_PLAYERS, error: false },
   withoutSignals: 1,
+  withoutNames: ['Sam Whitfield'],
 };
 /** Jonah's slope insight already has a focus area made from it, waiting for him to accept. */
 export const PREVIEW_HELM_COACH_ASSIGNED: ChCoachHelmData = {
   ...PREVIEW_HELM_COACH,
-  players: { list: sortCoachPlayers([player(HELM_PLAYERS.jonah, chSlope(jonah, 'in-slope', 'proposed'), 3), ...COACH_PLAYERS.filter((p) => p.id !== HELM_PLAYERS.jonah.id)]), error: false },
+  players: { list: sortCoachPlayers([player(HELM_PLAYERS.jonah, chSlope(jonah, coachOf(HELM_PLAYERS.jonah), 'in-slope', 'proposed'), 3), ...COACH_PLAYERS.filter((p) => p.id !== HELM_PLAYERS.jonah.id)]), error: false },
 };
 /** Players on the team, none with a signal yet. */
-export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5 };
+export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5, withoutNames: [...Object.values(HELM_PLAYERS).map((p) => p.name), 'Sam Whitfield'] };
 /** No players on the team yet. */
 export const PREVIEW_HELM_COACH_NO_ROSTER: ChCoachHelmData = {
   off: null,

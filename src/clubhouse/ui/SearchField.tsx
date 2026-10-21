@@ -2,6 +2,7 @@
 
 import { Search, X } from 'lucide-react';
 import { Icon } from './Icon';
+import { Tooltip } from './Tooltip';
 
 /**
  * A search box: the magnifier, the field, and a clear key once there is text (Esc clears it too). On the phone it is
@@ -35,9 +36,11 @@ export function SearchField({
         autoComplete="off"
       />
       {value && (
-        <button type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
-          <Icon icon={X} size={13} />
-        </button>
+        <Tooltip>
+          <button type="button" className="ch-search__x" aria-label="Clear search" onClick={() => onChange('')}>
+            <Icon icon={X} size={13} />
+          </button>
+        </Tooltip>
       )}
     </label>
   );

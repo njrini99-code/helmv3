@@ -1,4 +1,4 @@
-import { Skeleton } from '../../ui/States';
+import { SkelLine, Skeleton } from '../../ui/States';
 import '../../styles/classes.css';
 
 /** Route loading for Classes: the header, the term overview, then the deck of classes beside the week's side card, in place. On desktop the header is the framed page head at its loaded height and the deck's placeholders are rows (classes.css). */
@@ -17,13 +17,34 @@ export function ClassesSkeleton() {
             <Skeleton width={120} height={40} radius={11} />
           </div>
         </header>
-        <Skeleton width="100%" height={158} radius={22} />
+        <Skeleton width="100%" height={146} radius={22} />
         <div className="ch-cl-grid">
-          <div className="ch-cl-deck">
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} width="100%" height={236} radius={18} />
-            ))}
-          </div>
+          {/* Your classes under its heading, the week's days once over the rows (TimetableHead), then the rows. Shapes only:
+              a team event's name under its day is drawn when it loads. */}
+          <section className="ch-sec ch-cl-sec">
+            <div className="ch-sec__head">
+              <div className="ch-sec__titles">
+                <SkelLine line={22.8} bar={17} width={120} />
+              </div>
+            </div>
+            <div className="ch-cl-deck">
+              <div className="ch-cl-tthead" style={{ ['--ch-cl-cols' as string]: 5 }}>
+                <span className="ch-cl-tthead__lead">
+                  <SkelLine line={15} bar={10} width={64} />
+                </span>
+                <span className="ch-cl-tthead__days">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span key={i}>
+                      <SkelLine line={12.5} bar={10} width={28} />
+                    </span>
+                  ))}
+                </span>
+              </div>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} width="100%" height={236} radius={18} />
+              ))}
+            </div>
+          </section>
           <div className="ch-cl-side">
             <Skeleton width="100%" height={200} radius={18} />
             <Skeleton width="100%" height={92} radius={18} />
@@ -40,8 +61,8 @@ export function ClassesSkeleton() {
             <Skeleton width={190} height={11} />
           </span>
           <span className="ch-cl-sk-acts">
-            <Skeleton width="100%" height={36} radius={11} />
-            <Skeleton width="100%" height={36} radius={11} />
+            <Skeleton width="100%" height={44} radius={11} />
+            <Skeleton width="100%" height={44} radius={11} />
           </span>
         </header>
         <Skeleton width="100%" height={116.7} radius={14} shape="solid" />

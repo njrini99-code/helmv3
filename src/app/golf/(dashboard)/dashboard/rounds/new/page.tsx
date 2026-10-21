@@ -6,6 +6,8 @@ import { FeatureUnavailable } from '@/components/fairway';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { getGolfDashboardRole } from '@/lib/auth/get-golf-dashboard-role';
 import { ClubhouseNewRoundRoute } from '@/clubhouse/routes/round-new';
+import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
+import { dataPromptsV2ForShotEntry } from '@/lib/golf/data-prompts/flag';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -43,10 +45,21 @@ export default async function NewRoundPage() {
   // never shown (its result was discarded). Starting a New Round lands straight
   // on the course carousel.
 
+  // CoachHelm Slice 8a: the one-tap data-gap asks (undefined with
+  // coachhelm_data_gap_prompt_v1 off, so nothing is read or passed).
+  const dataGapAsks = await dataGapAsksForShotEntry(player.id);
+  // CoachHelm Slice 8b: course nudge and recovery tap, in the player's
+  // HELM_COACHHELM_TEAMS canary scope (false with the flag off).
+  const dataPromptsV2 = await dataPromptsV2ForShotEntry(player.id);
+
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient playerId={player.id} />
+        <NewRoundClient
+          playerId={player.id}
+          dataGapAsks={dataGapAsks}
+          dataPromptsV2={dataPromptsV2}
+        />
       </AnimatedItem>
     </AnimatedPage>
   );

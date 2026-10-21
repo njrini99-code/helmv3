@@ -1,14 +1,14 @@
 'use client';
 
 import { useHeroTone } from '../../ui/PageHero';
+import { withPointSpan } from '../../ui/point-span';
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingDown, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import type { ChWindow } from '../../data/stats-common';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -19,18 +19,21 @@ import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
+import { usePrinting } from './PrintHead';
 import { useChSessionState } from '../../lib/session-state';
 import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -48,22 +51,32 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
-  return (w: ChWindow) => go(withWindow(filter, w));
+  return (r: ChRange) => go(withScope(filter, r));
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
-export function useShownWindow(): ChWindow {
+export function useShownWindow(): ChRange {
   return useContext(GoFilter).shown;
+}
+
+/**
+ * The phone's window switch, reading the frame itself: a tap moves the pill at once and re-renders only this, not the
+ * whole page (the page re-rendered every chart in the click, 40ms in the Simulator audit, 2026-10-14).
+ */
+export function PhoneWindowSwitch({ custom }: { custom: boolean }) {
+  const go = useGoWindow();
+  return <WindowSwitch value={useShownWindow()} onChange={go} custom={custom} />;
 }
 
 /** The page frame: changing the window or the filter dims the page and marks it busy until the new rounds land. */
 export function StatsTeamFrame({ filter: current, phone, children }: { filter: ChFilter; phone?: ReactNode; children: ReactNode }) {
-  const isPhone = useChPhone() && phone != null;
+  const printing = usePrinting();
+  const isPhone = useChPhone() && phone != null && !printing;
   const tone = useHeroTone();
   const router = useRouter();
   const toast = useToast();
@@ -96,7 +109,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
@@ -117,7 +130,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
-      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${filter.window}${isFiltered(filter) ? '-filtered' : ''}.csv`;
+      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${rangeOf(filter)}${isFiltered(filter) ? '-filtered' : ''}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
       haptic('success');
@@ -133,7 +146,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
       <WindowSwitch value={useShownWindow()} onChange={go} custom={hasRange(filter)} />
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
-        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)}>
+        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
           Export
         </Button>
       )}
@@ -186,6 +199,11 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
       {/* The other figures sit under the trend as one open tape (server-rendered, passed in so the island keeps its focus state). */}
       {tape}
 
+      {/* Who gains and who loses (spec 4.5): after the figures and the trend, before the legs and the grid, its table view. */}
+      <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+        <TeamRank data={data} />
+      </SectionBoundary>
+
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
         <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
         <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
@@ -224,8 +242,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const all = [...team, ...lines.flatMap((l) => l.v)].filter((v): v is number => v != null);
   const w = 900;
   const h = 300;
-  const padL = 38;
-  const padR = 16;
+  // Room for a tick such as −1.5, and for half the last week's date, at the chart's tick size (stats.css `.ch-sgt__svg .ch-tick`).
+  const padL = 46;
+  const padR = 28;
   const padT = 16;
   const padB = 28;
   // Par is what the window's rounds were played against (the average score less the average to par), not a number written here.
@@ -304,8 +323,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
   const leadValue = lead?.value ?? null;
   const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : leadValue.toFixed(lead!.digits);
-  const leadFlat = lead?.delta != null && Math.abs(lead.delta) < 0.05;
-  const leadGood = lead?.delta != null && !leadFlat && (lead.lowerIsBetter ? lead.delta < 0 : lead.delta > 0);
+  // Coloured only when the change clears its standard error (Q4); otherwise neutral ink and "No clear change", the number kept.
+  const leadTone = lead ? deltaTone(lead.delta, lead.se, lead.lowerIsBetter) : '';
   const uid = useId().replace(/:/g, '');
   // The scrubber: a pointer on the plot reads the week under it (mouse and pen; a finger scrolls the page).
   const [scrub, setScrub] = useState<number | null>(null);
@@ -322,6 +341,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     setScrub(best);
   };
   const yRef = ref != null ? y(ref) : null;
+  // A team ending on the reference puts its end figure where the reference's label sits: the label moves to the left end.
+  const refLabelLeft = yRef != null && tLast != null && Math.abs(y(tLast.v) - yRef) < 16;
   // The wash reaches full strength at the team's furthest week from the reference, so it reads at any scale.
   const reach = (side: 'up' | 'down') => {
     const ys = team.flatMap((v) => (v == null ? [] : [y(v)]));
@@ -337,7 +358,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span className="ch-sgt__row">
             <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
               <Swap swapKey={`${lens}${leadText}`} inline>
-                {leadText}
+                {withPointSpan(leadText)}
               </Swap>
             </b>
             {lead?.delta == null && lead?.context && (
@@ -346,10 +367,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               </span>
             )}
             {lead?.delta != null && (
-              <span className={`ch-sgt__chg ch-num ${leadFlat ? 'is-flat' : leadGood ? 'is-good' : 'is-bad'}`}>
-                <Icon icon={leadFlat ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+              <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' ? 'is-good' : leadTone === 'is-loss' ? 'is-bad' : 'is-flat'}`}>
+                <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
                 {formatSigned(lead.delta, lead.digits)}
-                <em>{lead.context}</em>
+                <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>
               </span>
             )}
           </span>
@@ -464,7 +485,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g key={t}>
                   <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
                   <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
-                    {isSg ? (t > 0 ? `+${t}` : t === 0 ? '0' : `−${Math.abs(t)}`) : t}
+                    {isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : t}
                   </text>
                 </g>
               ))}
@@ -483,7 +504,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {yRef != null && (
                 <g aria-hidden="true">
                   <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
-                  <text x={w - padR} y={yRef - 7} textAnchor="end" className="ch-tick ch-sgt__reflab">
+                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-sgt__reflab">
                     {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
                   </text>
                 </g>
@@ -526,7 +547,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                 <g aria-hidden="true" className="ch-sgt__scrub">
                   <line x1={x(scrub)} x2={x(scrub)} y1={padT} y2={h - padB} />
                   <circle cx={x(scrub)} cy={y(team[scrub]!)} r={5} />
-                  <text x={Math.min(Math.max(x(scrub), padL + 44), w - padR - 44)} y={padT - 3} textAnchor="middle">
+                  <text x={Math.min(Math.max(x(scrub), padL + 54), w - padR - 54)} y={padT - 3} textAnchor="middle">
                     {data.weeks[scrub]} · {fmt(team[scrub]!)}
                   </text>
                 </g>

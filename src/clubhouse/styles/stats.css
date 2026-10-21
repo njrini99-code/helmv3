@@ -6,7 +6,8 @@
   gap: 28px;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 40px 36px 80px;
+  /* The eyebrow line sits 2px lower than the page head's (tokens.css), so the top gives it back. */
+  padding: calc(var(--ch-page-head-top) - 2px) var(--ch-page-gutter) 80px;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-st-panel {
@@ -129,8 +130,7 @@
 .ch-loss {
   color: var(--ch-chart-loss);
 }
-.ch-lg__cell .ch-loss,
-.ch-ft__you .ch-loss {
+.ch-lg__cell .ch-loss {
   color: var(--ch-chart-loss-on-tint);
 }
 
@@ -227,12 +227,14 @@
   align-items: baseline;
   gap: 3px;
   font: 500 36px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
   font-variation-settings: 'wdth' 92;
 }
 .ch-fg__v small {
   margin-left: 2px;
   font: 500 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -245,6 +247,7 @@
 }
 .ch-fg__d > span:last-child {
   font: 400 12.5px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* A figure drawn against its reference (`FigureGauge`): a 6px recessed track, the figure as a fill, the reference as a
@@ -277,6 +280,14 @@
 }
 .ch-fg__track i.is-loss {
   background: var(--ch-chart-loss);
+}
+/* A rate with no mark to judge it by: neither gain nor loss (stats visuals Q4). */
+/* The phone's scoring trend inside its standard error: "No clear change" on its own line above the halves it compares. */
+.ch-stm-figs__clear {
+  display: block;
+}
+.ch-fg__track i.is-neutral {
+  background: var(--ch-ink-400);
 }
 .ch-fg__track b {
   position: absolute;
@@ -387,7 +398,7 @@
   font: var(--ch-type-caption);
   letter-spacing: normal;
 }
-/* One line at every width: on a canvas of about 680 to 770px the four figures are narrow enough that "vs. previous 10"
+/* One line at every width: on a canvas of about 680 to 770px the four figures are narrow enough that "vs previous 10"
    wrapped under its chip and grew the hero 24px past its loading skeleton. The words shorten instead. */
 .ch-pf-hero__figs .ch-sgchg {
   flex-wrap: nowrap;
@@ -407,6 +418,7 @@
   padding: 0 7px;
   border-radius: 6px;
   font: 600 12px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-delta.is-good {
   background: var(--ch-green-fill-700);
@@ -447,6 +459,7 @@
 }
 .ch-sgt__head > div > span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-sgt__tools {
@@ -500,6 +513,13 @@
   font: 500 11px var(--ch-font-sans);
   fill: var(--ch-text-tertiary);
 }
+/* The team chart is drawn on a 900 unit canvas about 700px wide at 1280, so its ticks are set in those units: 14.5 reads
+   at about 11px there. The phone keeps its own floor (below). */
+@media (min-width: 821px) {
+  .ch-sgt__svg .ch-tick {
+    font-size: 14.5px;
+  }
+}
 .ch-sgt__ends {
   display: flex;
   flex-direction: column;
@@ -522,6 +542,7 @@
 }
 .ch-sgt__team b {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-green-800);
 }
 .ch-sgt__end {
@@ -539,7 +560,9 @@
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-sgt__end:focus-visible {
+/* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here). */
+.ch-root .ch-sgt__end:focus-visible {
+  outline-color: var(--ch-champagne-300);
   outline-offset: 0;
 }
 @media (hover: hover) {
@@ -553,6 +576,7 @@
 }
 .ch-sgt__end b {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 /* CH-4601: a player in focus turns green and comes forward while the others fade back, all over quick. Their line is
    drawn again over the others (.ch-sgt__front), fading in, and the pointer meets each line along a wider band. */
@@ -641,7 +665,7 @@
 }
 .ch-sgm[aria-pressed='true'] {
   background: var(--ch-green-25);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .ch-sgm__top {
@@ -655,6 +679,7 @@
 }
 .ch-sgm__v {
   font: 500 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -794,12 +819,14 @@
 }
 .ch-lg__tot {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lg__ch {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-who {
   display: flex;
@@ -821,6 +848,7 @@
 .ch-who__m {
   display: block;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 
@@ -879,99 +907,6 @@
     font-size: 24px;
   }
 }
-.ch-board {
-  display: grid;
-  grid-template-columns: repeat(var(--ch-n, 10), minmax(0, 1fr));
-  gap: 4px;
-  margin-top: 2px;
-}
-.ch-board__c {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-.ch-board__d {
-  font: 500 10.5px/1 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  white-space: nowrap;
-}
-.ch-board__n {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 34px;
-  border-radius: 7px;
-  background: #fff;
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.1), 0 1px 2px rgb(28 25 18 / 0.06);
-  font: 600 16px/1 var(--ch-font-sans);
-}
-.ch-board__n.is-under {
-  color: var(--ch-chart-flag);
-}
-.ch-board__n.is-even {
-  color: var(--ch-green-800);
-}
-/* Strokes gained route (design system StrokesGainedRoute). */
-.ch-yb .ch-route {
-  width: 100%;
-  max-width: 360px;
-}
-.ch-route rect.is-pos {
-  fill: var(--ch-green-500);
-}
-.ch-route rect.is-neg {
-  fill: var(--ch-chart-loss);
-}
-.ch-route__v {
-  font: 700 14px var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  fill: var(--ch-ink-500);
-}
-.ch-route__v.is-pos {
-  fill: var(--ch-chart-gain);
-}
-.ch-route__v.is-neg {
-  fill: var(--ch-chart-loss);
-}
-.ch-route__k {
-  font: italic 500 11.5px var(--ch-font-sans);
-  fill: var(--ch-ink-600);
-}
-.ch-ft {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-.ch-ft th {
-  padding: 0 0 10px;
-  font: 500 12px/1 var(--ch-font-sans);
-  color: var(--ch-ink-500);
-  text-align: center;
-}
-.ch-ft th:first-child,
-.ch-ft td:first-child {
-  text-align: left;
-}
-.ch-ft td {
-  height: 44px;
-  border-top: 1px solid rgb(28 25 18 / 0.1);
-  font: 600 14px/1 var(--ch-font-sans);
-  text-align: center;
-}
-.ch-ft td:first-child {
-  font: 500 13.5px/1.2 var(--ch-font-sans);
-  color: var(--ch-ink-700);
-}
-.ch-ft__you span {
-  display: inline-grid;
-  place-items: center;
-  min-width: 52px;
-  height: 28px;
-  border-radius: 8px;
-  background: rgb(21 90 57 / 0.07);
-}
 /* Team view: the handoff's putting page keeps the design system's YardagePage depth. */
 .ch-st-grid2 .ch-yb {
   box-shadow: var(--ch-elevation-reading);
@@ -993,12 +928,12 @@
   stroke: rgb(28 25 18 / 0.35);
   stroke-width: 1;
 }
-.ch-pg-lbl {
+.ch-pg-band,
+.ch-pg-pct {
   font: 500 12px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-pg-band {
-  font-style: italic;
   fill: var(--ch-ink-600);
 }
 .ch-pg-pct {
@@ -1024,6 +959,7 @@
 }
 .ch-best__v {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-best__v.is-under {
   color: var(--ch-score-under);
@@ -1169,6 +1105,7 @@
 .ch-pf-hero__figs dd {
   margin: 0;
   font: 500 24px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -1221,7 +1158,7 @@
   }
 }
 .ch-tab-t[aria-selected='true'] {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   font-weight: 600;
 }
 .ch-tab-t__bar {
@@ -1311,13 +1248,16 @@
 }
 .ch-n {
   font: 500 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-n2 {
   font: 500 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-topar {
   font: 500 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-topar.is-under {
@@ -1383,37 +1323,13 @@
   gap: 18px;
 }
 .ch-gd__nav {
-  position: sticky;
-  top: calc(var(--ch-topbar-h) + 8px);
-  z-index: 5;
+  /* Scrolls away with the page (owner, 2026-10-16: a bar riding over the sections "looks bad"). */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   margin: 0 -8px;
   padding: 8px;
-  border-radius: 14px;
-  background: rgb(244 242 234 / 0.86);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-}
-/* P005-D5: without backdrop-filter, or under Reduce Transparency, the sticky bar is opaque parchment. */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .ch-gd__nav {
-    background: var(--ch-bg-page);
-  }
-}
-@media (prefers-reduced-transparency: reduce) {
-  .ch-gd__nav {
-    background: var(--ch-bg-page);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-:root[data-reduce-transparency] .ch-gd__nav {
-  background: var(--ch-bg-page);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 .ch-gd__src {
   margin-left: auto;
@@ -1451,7 +1367,7 @@
 }
 .ch-gm__t p {
   max-width: 68ch;
-  font: 400 14.5px/1.55 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -1479,12 +1395,13 @@
   box-shadow: inset 1px 0 0 var(--ch-border-hairline);
 }
 .ch-gm__figs dt {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-gm__figs dd {
   margin: 0;
   font: 500 26px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
   font-variation-settings: 'wdth' 92;
 }
@@ -1512,10 +1429,10 @@
   grid-column: 1 / -1;
 }
 .ch-gm-p__t {
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
 }
 .ch-gm-p__n {
-  font: italic 400 13px/1.45 var(--ch-font-sans);
+  font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-gm-p__empty {
@@ -1523,57 +1440,6 @@
   color: var(--ch-text-tertiary);
 }
 
-.ch-mix {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.ch-mix__bar {
-  display: flex;
-  height: 34px;
-  overflow: hidden;
-  border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
-}
-.ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.7);
-}
-.ch-mix .is-eagle {
-  background: #8e2a20;
-}
-.ch-mix .is-birdie {
-  background: var(--ch-score-under);
-}
-.ch-mix .is-par {
-  background: var(--ch-ivory-200);
-}
-.ch-mix .is-bogey {
-  background: #8f8b81;
-}
-.ch-mix .is-double {
-  background: var(--ch-ink-700);
-}
-.ch-mix__k {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
-  font: var(--ch-type-caption);
-  color: var(--ch-text-tertiary);
-}
-.ch-mix__k span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ch-mix__k i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-.ch-mix__k b {
-  font: 600 13px/1 var(--ch-font-sans);
-  color: var(--ch-text-primary);
-}
 .ch-par3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1589,19 +1455,22 @@
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
 .ch-par3__l {
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-par3__v {
   font: 500 28px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
 }
 .ch-par3__to {
   font: 500 12.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-par3__d {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-fws {
@@ -1626,6 +1495,7 @@
 }
 .ch-fws__z b {
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-fws__z em {
   font: 500 11.5px/1 var(--ch-font-sans);
@@ -1686,6 +1556,7 @@
 .ch-cmp__r b {
   justify-self: end;
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lad {
   position: relative;
@@ -1702,6 +1573,7 @@
 }
 .ch-lad__v {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-lad__col {
   position: relative;
@@ -1740,6 +1612,7 @@
 }
 .ch-lad__b {
   font: 500 11.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-lad__axis {
@@ -1769,6 +1642,7 @@
 }
 .ch-gmiss__c b {
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   /* 5:1 on the heaviest miss fill (#ceb998 on the darker page tone); #6b4610 held 4.39 there. */
   color: #5f3e0c;
 }
@@ -1784,28 +1658,6 @@
   background: radial-gradient(circle at 50% 50%, #cbddcc 0 60%, #bfd5c1 61%);
   color: var(--ch-green-700);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.2);
-}
-.ch-mk {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.ch-mk__v {
-  font: 600 11.5px var(--ch-font-sans);
-}
-.ch-mk__v.is-gain {
-  fill: var(--ch-chart-gain);
-}
-.ch-mk__v.is-loss {
-  fill: var(--ch-chart-loss);
-}
-.ch-mk__b {
-  font: 500 11px var(--ch-font-sans);
-  fill: var(--ch-text-secondary);
-}
-.ch-mk__n {
-  font: 400 10px var(--ch-font-sans);
-  fill: var(--ch-text-tertiary);
 }
 .ch-cup {
   display: grid;
@@ -1839,10 +1691,11 @@
   align-items: center;
   gap: 2px;
   font: 500 11px/1 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-cup__lbl b {
   font: 600 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-cup__lbl.is-long {
@@ -1891,6 +1744,7 @@
 .ch-cup__split b {
   margin-bottom: 3px;
   font: 600 16px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-cup__split .is-low {
   background: rgb(154 101 18 / 0.16);
@@ -1906,10 +1760,14 @@
   color: var(--ch-text-secondary);
 }
 
-@container (max-width: 1080px) {
+/* Team putting and Season bests stay side by side down to an 860px canvas (a 1280 window with the sidebar open is about 950):
+   stacked from 1080, the putting rings sat alone with half the row empty beside them (2026-10-19). */
+@container (max-width: 860px) {
   .ch-st-grid2 {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+@container (max-width: 1080px) {
   .ch-pf-hero {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -2064,10 +1922,11 @@
   }
   .ch-stm-head span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm-head h1 {
-    font: 400 38px/1.05 var(--ch-font-serif);
+    font: 400 calc(38 * var(--ch-type-k))/1.05 var(--ch-font-serif);
     letter-spacing: -0.008em;
     color: var(--ch-text-primary);
   }
@@ -2093,7 +1952,7 @@
     border-left: 1px solid var(--ch-border-hairline);
   }
   .ch-stm-figs dt {
-    font: 500 11.5px/1.35 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     overflow-wrap: anywhere;
   }
@@ -2102,13 +1961,15 @@
   }
   .ch-stm-figs dd:first-of-type {
     font: 500 20px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
   .ch-stm-figs dd + dd {
     min-height: 1em;
-    font: 500 11.5px/1.4 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-stm-figs:not(.is-three) dd + dd {
     min-height: 1.4em;
@@ -2129,7 +1990,7 @@
     box-shadow: var(--ch-seam-y);
   }
   .ch-stm-figs.is-line dt {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-gauges {
     display: grid;
@@ -2171,19 +2032,21 @@
     gap: 10px;
   }
   .ch-stm-panel__h h2 {
-    font: 400 23px/1.15 var(--ch-font-serif);
+    font: 400 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-serif);
     color: var(--ch-text-primary);
   }
   .ch-stm-panel__h > span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
     text-align: right;
   }
-  /* The one-line reading under a panel (m.css .m-note): italic, green. */
+  /* The one-line reading under a panel (m.css .m-note): italic, in the secondary ink. The board's green read as a gain,
+     but the reading as often says a leg is losing strokes (green is gains only). */
   .ch-stm-note {
     margin: 0;
-    font: italic 400 13px/1.45 var(--ch-font-sans);
-    color: var(--ch-green-700);
+    font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    color: var(--ch-text-secondary);
     text-wrap: pretty;
   }
   .ch-stm-chart {
@@ -2256,6 +2119,7 @@
   .ch-stm-leg b,
 .ch-stm-putt__r b {
     font: 600 13px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-align: right;
     color: var(--ch-text-primary);
   }
@@ -2299,6 +2163,40 @@
     border-top: 1px solid var(--ch-border-hairline);
     font-weight: 600;
     color: var(--ch-text-primary);
+  }
+  /* Stats visuals: the phone's rows are a 44px tap target, a pinned row lifts, an early read is hollow. */
+  .ch-stm-legs:has(.ch-sv-row) {
+    gap: 2px;
+  }
+  .ch-stm-legs > .ch-sv-read {
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+  .ch-stm-leg.ch-sv-row {
+    min-height: 44px;
+    margin: 0 -6px;
+    padding: 0 6px;
+    border-radius: 10px;
+    transition: background var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-stm-leg.ch-sv-row[data-pinned] {
+    background: var(--ch-bg-inset);
+  }
+  .ch-stm-leg.is-total.ch-sv-row {
+    padding-top: 0;
+    border-top: 0;
+    box-shadow: 0 -1px 0 var(--ch-border-hairline);
+  }
+  .ch-stm-leg.is-early .ch-stm-leg__v {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  }
+  .ch-stm-leg.is-early b {
+    color: var(--ch-text-secondary);
+  }
+  .ch-stm-leg .ch-sv-needs {
+    left: calc(50% + 8px);
+    font: var(--ch-type-caption);
   }
   .ch-stm-putt__bar i {
     position: absolute;
@@ -2346,7 +2244,7 @@
   }
   .ch-stm-row__b b {
     overflow: hidden;
-    font: 600 15px/1.2 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2354,6 +2252,7 @@
   .ch-stm-row__b span,
 .ch-stm-row__v span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm-row__v {
@@ -2364,6 +2263,7 @@
   }
   .ch-stm-row__v b {
     font: 600 17px/1.1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-stm-row__v span.ch-gain {
@@ -2380,7 +2280,7 @@
 /* Player stats on the phone (m-stats.jsx `Player`) */
 @media (max-width: 820px) {
   .ch-stm-figs.is-three dd:first-of-type {
-    font-size: 20px;
+    font-size: calc(20 * var(--ch-type-k));
   }
   .ch-stm-figs.is-three dd:last-of-type {
     color: var(--ch-text-tertiary);
@@ -2406,7 +2306,7 @@
   }
   .ch-spm-head h1 {
     overflow: hidden;
-    font: 400 34px/1.05 var(--ch-font-serif);
+    font: 400 calc(34 * var(--ch-type-k))/1.05 var(--ch-font-serif);
     letter-spacing: -0.008em;
     font-variation-settings: normal;
     color: var(--ch-text-primary);
@@ -2415,7 +2315,11 @@
   }
   .ch-spm-head p {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
+  }
+  .ch-spm-head p > span {
+    white-space: nowrap;
   }
   .ch-spm-head__msg {
     display: grid;
@@ -2444,7 +2348,7 @@
     padding: 0 16px;
     border: 0;
     background: none;
-    font: 600 14px/1 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
     touch-action: manipulation;
@@ -2455,11 +2359,12 @@
     justify-content: space-between;
     gap: 8px;
     padding-top: 4px;
-    font: 600 14px/1.2 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-spm-sub span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-spm-dev {
@@ -2477,7 +2382,7 @@
     border-top: 1px solid var(--ch-border-hairline);
   }
   .ch-spm-dev b {
-    font: 500 14px/1.3 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-spm-dev li.is-done b {
@@ -2485,6 +2390,7 @@
   }
   .ch-spm-dev span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 
@@ -2531,10 +2437,10 @@
     height: 32px;
   }
   .ch-gd.is-phone .ch-gm__t h2 {
-    font-size: 18px;
+    font-size: calc(18 * var(--ch-type-k));
   }
   .ch-gd.is-phone .ch-gm__t p {
-    font-size: 14px;
+    font-size: calc(14 * var(--ch-type-k));
   }
   .ch-gd.is-phone .ch-gm__figs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2611,7 +2517,7 @@
   gap: 8px;
   min-height: 48px;
   padding: 0 24px;
-  font: 600 13.5px/1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
   list-style: none;
@@ -2645,6 +2551,10 @@
   gap: 10px;
   margin: 0;
 }
+/* Four tiles are two by two: auto-fit drew three across and left the fourth alone on its row (2026-10-19). */
+.ch-gx-tiles:has(> :nth-child(4):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .ch-gx-tiles > div {
   display: flex;
   flex-direction: column;
@@ -2655,12 +2565,13 @@
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
 .ch-gx-tiles dt {
-  font: 500 12px/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-gx-tiles dd {
   margin: 0;
   font: 500 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-gx-tiles dd.ch-gx-sub {
@@ -2684,6 +2595,7 @@
   padding: 9px 10px 9px 0;
   border-top: 1px solid var(--ch-border-hairline);
   font: 500 13.5px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: left;
   white-space: nowrap;
 }
@@ -2727,9 +2639,11 @@
 }
 .ch-gx-sec__c b {
   font: 600 17px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-gx-sec__c i {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -2762,22 +2676,15 @@
 }
 .ch-gx-pm > b {
   font: 600 13.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-gx-pm > span {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-pm.is-empty > span {
   color: var(--ch-text-secondary);
-}
-.ch-gx-pm .ch-mix__k {
-  gap: 10px 14px;
-}
-.ch-mix__k small {
-  display: block;
-  margin-left: 4px;
-  font: var(--ch-type-caption);
-  color: var(--ch-text-tertiary);
 }
 .ch-gx-rank {
   display: flex;
@@ -2798,15 +2705,17 @@
   border-top: 0;
 }
 .ch-gx-rank b {
-  font: 500 14px/1.2 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-gx-rank em {
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-rank__n {
   font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-gx-target {
@@ -2827,20 +2736,6 @@
   font: 500 11px/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-secondary);
-}
-.ch-ft__g th {
-  padding: 18px 0 8px;
-  border-top: 1px solid rgb(28 25 18 / 0.1);
-  font: 600 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-  text-align: left;
-}
-.ch-ft__floor {
-  display: block;
-  margin-top: 4px;
-  font: var(--ch-type-caption);
-  font-style: normal;
-  color: var(--ch-text-tertiary);
 }
 @container (max-width: 720px) {
   .ch-gx-pars {
@@ -2885,6 +2780,7 @@
   background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font: 600 11px/18px var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 .ch-sf__chips {
@@ -2905,7 +2801,7 @@
   border-radius: 999px;
   background: #edf4ef;
   color: var(--ch-green-700);
-  font: 600 12.5px/28px var(--ch-font-sans);
+  font: 600 calc(12.5 * var(--ch-type-k))/28px var(--ch-font-sans);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
   cursor: pointer;
   touch-action: manipulation;
@@ -2927,7 +2823,7 @@
   border: 0;
   background: transparent;
   color: var(--ch-text-secondary);
-  font: 500 12.5px/28px var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/28px var(--ch-font-sans);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -2941,6 +2837,7 @@
 .ch-sf__count {
   margin: 0;
   font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 /* How a 9-hole round counts, said under the figures whenever the filter lets one in. */
@@ -3072,16 +2969,24 @@
     display: flex;
     width: 100%;
   }
+  /* Grown from each label's own width (not equal shares), so "Qualifiers" keeps its room beside 5, 10 and 20 at 390px. */
   .ch-stm-controls > :first-child .ch-seg__b {
-    flex: 1;
+    flex: 1 1 auto;
     justify-content: center;
+    padding-inline: 8px;
   }
+  /* The range is Last 5, 10, 20, Season and Qualifiers (and Custom): the three counts drop "Last" here so they fit the row beside the filter. */
+  .ch-stm-controls .ch-sw-last {
+    display: none;
+  }
+  /* Drawn as tall as the window switch's 40px track, with its 14px radius, so the row's two controls share one edge;
+     the shared button reach (controls.css) still takes a 44px tap. */
   .ch-stm-controls .ch-sf.is-phone .ch-sf__open {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 14px;
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-elevation-control);
   }
@@ -3103,7 +3008,7 @@
    with 20px values and 11.5px captions (the old rule sized the captions as values), and the panels' titles plain. */
 @media (max-width: 820px) {
   .ch-stm-figs.is-three dd.is-words {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.01em;
   }
   .ch-gd.is-phone .ch-gm {
@@ -3120,28 +3025,29 @@
   }
   .ch-gd.is-phone .ch-gm__t h2 {
     margin-bottom: 6px;
-    font: 600 15.5px/1.2 var(--ch-font-sans);
+    font: 600 calc(15.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.01em;
     font-variation-settings: normal;
   }
   .ch-gd.is-phone .ch-gm__t p {
-    font: italic 400 13px/1.45 var(--ch-font-sans);
+    font: italic 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
     color: var(--ch-green-700);
   }
   .ch-gd.is-phone .ch-gm__figs {
     margin: 0 16px;
   }
   .ch-gd.is-phone .ch-gm__figs dt {
-    font: 500 11.5px/1.15 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   }
   .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
     font: 500 20px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
     font-variation-settings: normal;
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
     padding-top: 0;
-    font: 500 11.5px/1.2 var(--ch-font-sans);
+    font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     white-space: normal;
   }
@@ -3157,7 +3063,7 @@
     background: transparent;
   }
   .ch-gd.is-phone .ch-gm-p__t {
-    font: 600 14.5px/1.25 var(--ch-font-sans);
+    font: 600 calc(14.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   }
   .ch-gd.is-phone .ch-gx-more > summary {
     padding: 0 16px;
@@ -3235,37 +3141,40 @@
    quiet line as the scope, not a second headline. A figure with nothing behind it says why, in a few words, not a bare dash. */
 .ch-gm__figs dd.ch-gm__none {
   font: 500 14px/20px var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
   color: var(--ch-text-secondary);
 }
 @media (max-width: 820px) {
   .ch-gd.is-phone .ch-gm__figs dt {
-    font: 500 13.5px/19px var(--ch-font-sans);
+    font: 500 calc(13.5 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gm__figs dd:not(.ch-gm__sub) {
     font: 600 28px/32px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__none {
     display: flex;
     align-items: center;
     min-height: 32px;
-    font: 500 14px/20px var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0;
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gm__figs dd.ch-gm__sub {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   /* A panel's note is one short plain line; the method is behind "How this is measured". */
   .ch-gd.is-phone .ch-gm-p__n {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-gd.is-phone .ch-gx-rule {
-    font: 400 13px/18px var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
 }
@@ -3276,7 +3185,7 @@
   gap: 8px;
   min-height: 44px;
   padding: 0;
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
   list-style: none;
@@ -3303,7 +3212,7 @@
 }
 .ch-gm-how > p {
   margin: 0 0 6px;
-  font: 400 13px/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-gx-rule + .ch-gm-how {
@@ -3372,6 +3281,7 @@
 }
 .ch-brow__v b {
   font: 600 15px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-brow__v b.ch-gain {
@@ -3382,6 +3292,7 @@
 }
 .ch-brow__v small {
   font: 400 12px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-brow__v.is-none {
@@ -3409,26 +3320,24 @@
    exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
 @media (max-width: 820px) {
   .ch-tick,
-.ch-lg__r--h,
-.ch-board__d,
-.ch-pf-tag,
-.ch-pf-hero__figs dt,
-.ch-tab-t__n,
-.ch-fws__z em,
-.ch-lad__b,
-.ch-gmiss__c em,
-.ch-gmiss__g em,
-.ch-mk__v,
-.ch-mk__b,
-.ch-mk__n,
-.ch-cup__lbl,
-.ch-cup__split span,
-.ch-stm-figs dt,
-.ch-stm-figs dd + dd,
-.ch-gx-sec__c em,
-.ch-gx-type,
-.ch-sf__n {
+  .ch-tab-t__n,
+  .ch-sf__n {
     font-size: 12px;
+  }
+  .ch-lg__r--h,
+  .ch-pf-tag,
+  .ch-pf-hero__figs dt,
+  .ch-fws__z em,
+  .ch-lad__b,
+  .ch-gmiss__c em,
+  .ch-gmiss__g em,
+  .ch-cup__lbl,
+  .ch-cup__split span,
+  .ch-stm-figs dt,
+  .ch-stm-figs dd + dd,
+  .ch-gx-sec__c em,
+  .ch-gx-type {
+    font-size: calc(12 * var(--ch-type-k));
   }
   .ch-stm-chart__t {
     font-size: 12.5px;
@@ -3565,11 +3474,12 @@
   }
   /* The team's context line over the title: plain sentence case, never tracked (doctrine; direction A, 2026-10-08). */
   .ch-stm .ch-stm-head span {
-    font: 400 15px/1.3 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm .ch-stm-head h1 {
-    font: 600 31px/1.08 var(--ch-font-sans);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3580,11 +3490,13 @@
     padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
   .ch-stm .ch-spm-head > .ch-avatar {
+    margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);
   }
   .ch-stm .ch-spm-head h1 {
-    font: 600 26px/1.1 var(--ch-font-sans);
+    font: 600 calc(26 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.032em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3611,15 +3523,17 @@
     border-bottom: 1px solid var(--ch-ledger-rule);
   }
   .ch-stm .ch-stm-figs dt {
-    font: 500 12px/1.35 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-stm .ch-stm-figs dd:first-of-type {
     font: 600 22px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-stm .ch-stm-figs.is-three dd.is-words {
-    font: 600 16px/22px var(--ch-font-sans);
+    font: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.015em;
   }
   /* The hole-coverage caption belongs to the figures: it sits just under their rule, its line held when empty, and
@@ -3676,7 +3590,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-stm .ch-stm-panel__h h2 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3717,11 +3631,12 @@
     outline-offset: -2px;
   }
   .ch-stm .ch-stm-row__b b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   .ch-stm .ch-stm-row__v b {
     font: 600 17px/1.1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.02em;
   }
   .ch-stm .ch-stm-row__chev {
@@ -3760,7 +3675,7 @@
   }
   .ch-stm .ch-spm-sub {
     padding-top: 6px;
-    font: 600 14px/1.2 var(--ch-font-sans);
+    font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-ledger-ink);
   }
   /* A filter that leaves nothing: the empty state alone, centred on the sheet, no card around it. */
@@ -3791,7 +3706,7 @@
     padding: 2px 0 12px;
   }
   .ch-stm .ch-gd.is-phone .ch-gm__t h2 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -3891,6 +3806,7 @@
   }
   .ch-stm .ch-par3__v {
     font: 600 24px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-stm .ch-gx-pars {
@@ -3974,7 +3890,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-sgt__team b,
 :where(html[data-fw-theme='dark']) .ch-sgt__end.is-sel,
 :where(html[data-fw-theme='dark']) .ch-sgm[aria-pressed='true'],
-:where(html[data-fw-theme='dark']) .ch-board__n.is-even,
 :where(html[data-fw-theme='dark']) .ch-pf-tag,
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'],
 :where(html[data-fw-theme='dark']) .ch-tab-t[aria-selected='true'] .ch-tab-t__n,
@@ -4003,17 +3918,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 :where(html[data-fw-theme='dark']) .ch-yb__head {
   border-bottom-color: var(--ch-border-subtle);
-}
-:where(html[data-fw-theme='dark']) .ch-board__n {
-  background: var(--ch-ivory-100);
-  box-shadow: 0 0 0 1px var(--ch-border-subtle), var(--ch-elevation-bubble);
-}
-:where(html[data-fw-theme='dark']) .ch-ft td,
-:where(html[data-fw-theme='dark']) .ch-ft__g th {
-  border-top-color: var(--ch-border-subtle);
-}
-:where(html[data-fw-theme='dark']) .ch-ft__you span {
-  background: rgb(107 187 140 / 0.1);
 }
 :where(html[data-fw-theme='dark']) .ch-pg-leader {
   stroke: var(--ch-st-mean-rule);
@@ -4047,13 +3951,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-pf-goal__c {
   color: var(--ch-text-on-accent);
 }
-:where(html[data-fw-theme='dark']) .ch-gd__nav {
-  background: rgb(17 21 18 / 0.86);
-}
 :where(html[data-fw-theme='dark']) .ch-gm__ic {
   box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.16);
 }
-:where(html[data-fw-theme='dark']) .ch-mix__bar,
 :where(html[data-fw-theme='dark']) .ch-par3__t,
 :where(html[data-fw-theme='dark']) .ch-lad__col,
 :where(html[data-fw-theme='dark']) .ch-cup__split .is-high,
@@ -4061,20 +3961,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-gx-sec__c,
 :where(html[data-fw-theme='dark']) .ch-gx-pm {
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
-}
-/* The score mix keeps its order by lightness as well as hue: eagle the deep red, birdie the light one, then par, bogey
-   and double stepping up from the card. */
-:where(html[data-fw-theme='dark']) .ch-mix__s + .ch-mix__s {
-  box-shadow: inset 1px 0 0 rgb(17 21 18 / 0.9);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-eagle {
-  background: #b0473a;
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-par {
-  background: var(--ch-ivory-300);
-}
-:where(html[data-fw-theme='dark']) .ch-mix .is-bogey {
-  background: #7a7569;
 }
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-rough {
   background: repeating-linear-gradient(135deg, var(--ch-chart-rough) 0 6px, #2e3529 6px 7px);
@@ -4164,7 +4050,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border-top: 0;
   }
   .ch-stm.is-team .ch-stm-head h1 {
-    font: 650 34px/1.1 var(--ch-font-sans);
+    font: 650 calc(34 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     font-variation-settings: normal;
     color: var(--ch-text-primary);
@@ -4182,13 +4068,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-hero dt {
     grid-area: k;
-    font: 500 15px/1.3 var(--ch-font-sans);
+    font: 500 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   /* Against par, over the change: the two lines of context share the column to the value's right. */
   .ch-stm.is-team .ch-stm-hero__par {
     grid-area: p;
-    font: 400 15px/1.3 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-hero dd {
@@ -4197,19 +4084,20 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-hero__v {
     grid-area: v;
     font: 560 64px/1 var(--ch-font-sans);
-    letter-spacing: -0.045em;
+    letter-spacing: -0.035em;
     color: var(--ch-text-primary);
   }
   .ch-stm.is-team .ch-stm-hero__c {
     grid-area: c;
     min-width: 0;
     min-height: 1.3em;
-    font: 400 15px/1.3 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-hero__c b {
     margin-right: 2px;
     font: 600 17px/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
 
@@ -4230,6 +4118,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     -webkit-tap-highlight-color: transparent;
   }
   /* Nothing in the plot takes focus on purpose (it is pointer-only; the reading carries it), so a stray focus draws no ring. */
+  /* TeamTrendChart's observed box: the plot's full size, read by a ResizeObserver. */
+  .ch-stm.is-team .ch-stm-plot__box {
+    width: 100%;
+    height: 100%;
+  }
   .ch-stm.is-team .ch-stm-plot :focus {
     outline: none;
   }
@@ -4244,7 +4137,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border-radius: var(--ch-radius-md);
     background: var(--ch-ink-900);
     color: var(--ch-bg-surface);
-    font: 500 12px/1.2 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     box-shadow: var(--ch-elevation-overlay);
   }
   .ch-stm.is-team .ch-stm-tip b {
@@ -4275,7 +4168,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   /* Every note under a group: plain footnote type, inset to the group's text. */
   .ch-stm.is-team .ch-stm-note {
-    font: 400 14px/1.4 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-panel > .ch-stm-note,
@@ -4289,7 +4182,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-cover {
     min-height: 1.4em;
-    font: 400 13px/1.4 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
 
@@ -4312,14 +4205,15 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding-right: 4px;
   }
   .ch-stm.is-team .ch-stm-panel__h h2 {
-    font: 500 13px/1.45 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
     letter-spacing: 0;
     font-variation-settings: normal;
     color: var(--ch-text-secondary);
   }
   .ch-stm.is-team .ch-stm-panel__h > span,
 .ch-stm.is-team .ch-stm-gh > span {
-    font: 400 13px/1.45 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
     text-align: right;
   }
@@ -4354,26 +4248,27 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     pointer-events: none;
   }
 
-  /* The round: greens, putts, scrambling. Each row is 60px whether or not it carries a reference line. */
+  /* The round: greens, putts, scrambling. Each row is 60px whether or not it carries a reference line, and grows when
+     Dynamic Type wraps its label. */
   .ch-stm.is-team .ch-stm-figrow {
     position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto 3.2em;
     align-items: center;
     column-gap: 12px;
-    height: 60px;
-    padding: 0 16px;
+    min-height: 60px;
+    padding: 8px 16px;
   }
   .ch-stm.is-team .ch-stm-figrow dt {
     display: flex;
     flex-direction: column;
     gap: 2px;
     min-width: 0;
-    font: 400 17px/1.25 var(--ch-font-sans);
+    font: 400 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-stm.is-team .ch-stm-figrow__ref {
-    font: 400 13px/1.3 var(--ch-font-sans);
+    font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team .ch-stm-figrow dd {
@@ -4382,11 +4277,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-figrow__v {
     font: 600 17px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
     color: var(--ch-text-primary);
   }
   .ch-stm.is-team .ch-stm-figrow__d {
     font: 500 14px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-stm.is-team :is(.ch-stm-figrow__d,
@@ -4422,7 +4319,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-sgfig > span {
     overflow: hidden;
-    font: 400 15px/1.3 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -4444,7 +4341,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border: 0;
     border-radius: var(--ch-radius-md);
     background: transparent;
-    font: 400 16px/1.2 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
@@ -4471,6 +4368,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-leg b {
     font: 600 16px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     text-align: right;
     color: var(--ch-text-primary);
   }
@@ -4498,12 +4396,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     top: 0;
     right: 6px;
     left: 6px;
-    height: var(--ch-stm-pick-h, 44px);
+    height: 44px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-bg-selected);
     box-shadow: inset 0 0 0 1px var(--ch-green-ring);
-    translate: 0 var(--ch-stm-pick-y, 0px);
-    /* Every row is 44px, so only the position moves. */
+    /* Every row is 44px under the list's 4px top padding, so the chosen row's index is its place: nothing is measured. */
+    translate: 0 calc(4px + var(--ch-stm-pick-i, 0) * 44px);
     transition: translate var(--ch-dur-base) var(--ch-ease);
   }
   /* The empty window holds the loaded section's height: a 19px header, the 64px figure and five 44px rows in their
@@ -4541,14 +4439,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border-radius: 0;
   }
   .ch-stm.is-team .ch-stm-row__b b {
-    font: 500 17px/1.25 var(--ch-font-sans);
+    font: 500 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.01em;
   }
   .ch-stm.is-team .ch-stm-row__b span {
-    font: 400 14px/1.3 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-stm.is-team .ch-stm-row__v span {
-    font: 500 13px/1.3 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   /* The rolling figure inside the strokes gained line takes its line's type and colour. */
   .ch-stm.is-team .ch-stm-row__v span span {
@@ -4565,11 +4465,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     grid-template-columns: 4.6em minmax(0, 1fr) 3em;
     gap: 12px;
     height: 40px;
-    font: 400 15px/1 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-stm.is-team .ch-stm-putt__r b {
     font: 600 15px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-stm.is-team .ch-stm-putt__bar em {
     top: -4px;
@@ -4620,6 +4521,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   align-items: center;
   gap: 4px;
   font: 600 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-st[data-canopy] .ch-sgt__chg em {
   margin-left: 6px;
@@ -4663,7 +4565,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   stroke-width: 2.5;
 }
 .ch-st[data-canopy] .ch-sgt__scrub text {
-  font: 600 12px var(--ch-font-sans);
+  font: 600 14.5px var(--ch-font-sans);
   fill: var(--ch-text-primary);
 }
 
@@ -4696,6 +4598,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-tp__v {
   font: 500 34px / 1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.045em;
   font-variation-settings: 'wdth' 92;
   color: var(--ch-ledger-ink);
@@ -4711,6 +4614,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   gap: 3px;
   min-width: 0;
   font: 600 13px / 1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .ch-st[data-canopy] .ch-tp__d em {
@@ -4781,6 +4685,48 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   border-radius: 24px;
   background: radial-gradient(120% 90% at 85% -10%, rgb(79 138 100 / 0.38), transparent 60%), linear-gradient(165deg, var(--ch-green-700), var(--ch-green-900) 70%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(176 149 96 / 0.28), var(--ch-elevation-feature);
+  color: var(--ch-on-fill-100);
+}
+/* The stage is deep green and its ink ivory in both themes (overnight polish, 2026-10-15): drawn from the palette, it
+   turned mint with dark ink at night, and the players, axis and summary fell under 2:1. At night it keeps the day's
+   palette, as Home's form card does with the --ch-stage-* tokens. */
+html[data-fw-theme='dark'] .ch-st .ch-sgt {
+  --ch-ivory-0: #ffffff;
+  --ch-ivory-25: #fdfcf8;
+  --ch-ivory-50: #f9f7f1;
+  --ch-ivory-100: #f4f2ea;
+  --ch-ivory-150: #eeebe2;
+  --ch-ivory-200: #e7e3d8;
+  --ch-ivory-300: #dcd6c8;
+  --ch-ivory-400: #c9c2b1;
+  --ch-ink-950: #141412;
+  --ch-ink-900: #1c1b18;
+  --ch-ink-700: #3a3833;
+  --ch-ink-600: #46433d;
+  --ch-ink-500: #5f5c55;
+  --ch-ink-400: #8f8b81;
+  --ch-ink-300: #b3afa5;
+  --ch-green-25: #f5f9f6;
+  --ch-green-50: #eef5f0;
+  --ch-green-100: #ddebe1;
+  --ch-green-200: #bcd6c4;
+  --ch-green-400: #4f8a64;
+  --ch-green-500: #1f6b45;
+  --ch-green-600: #155a39;
+  --ch-green-700: #0f4a2f;
+  --ch-green-800: #0b3a25;
+  --ch-green-900: #082b1c;
+  --ch-forest-800: #0b3a25;
+  --ch-forest-900: #082b1c;
+  --ch-green-fill-500: #1f6b45;
+  --ch-green-fill-600: #155a39;
+  --ch-green-fill-700: #0f4a2f;
+  --ch-champagne-100: #efe6d2;
+  --ch-champagne-300: #dccda6;
+  --ch-champagne-500: #b09560;
+  /* Its Strokes gained / Scoring switch: the day's well and raised pill, as it is drawn in light. */
+  --ch-well-bg: linear-gradient(180deg, #d4cebe 0%, #ddd8ca 55%, #e4dfd3 100%);
+  --ch-control-bg: linear-gradient(180deg, #fffdf8 0%, #f8f6ef 60%, #f0ede4 100%);
   color: var(--ch-ivory-100);
 }
 .ch-st[data-canopy] .ch-sgt::after {
@@ -4799,7 +4745,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   font-weight: 600;
 }
 .ch-st[data-canopy] .ch-sgt__n {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
   text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
 }
 .ch-st[data-canopy] .ch-sgt__n.ch-gain {
@@ -4844,8 +4790,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   gap: 8px;
   margin: 0;
   font: 600 22px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__facts em {
   font: var(--ch-type-caption);
@@ -4915,7 +4862,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__team-row,
 .ch-st[data-canopy] .ch-sgt__team {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team span,
 .ch-st[data-canopy] .ch-sgt__end {
@@ -4923,7 +4870,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__ends .ch-sgt__team b,
 .ch-st[data-canopy] .ch-sgt__end.is-sel {
-  color: var(--ch-ivory-25);
+  color: var(--ch-on-fill-25);
 }
 .ch-st[data-canopy] .ch-sgt__end.is-sel {
   background: rgb(255 255 255 / 0.12);
@@ -4962,29 +4909,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-tp__c + .ch-tp__c {
   box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34);
 }
-.ch-st[data-canopy] .ch-tp__c::before {
-  position: absolute;
-  top: 0;
-  right: 20px;
-  left: 20px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--ch-border-strong);
-  content: '';
-}
-.ch-st[data-canopy] .ch-tp__c.is-good::before {
-  background: var(--ch-green-500);
-}
-.ch-st[data-canopy] .ch-tp__c.is-bad::before {
-  background: var(--ch-champagne-500);
-}
+/* No coloured bar across a figure's top: the change under the number already says better or worse in its arrow and ink, and a
+   status is a dot or a word, never a stripe (owner's call left open on #2202; taken in the 2026-10-19 Stats pass, revert this
+   commit to restore the bars). */
 .ch-st[data-canopy] .ch-tp__l {
   padding-right: 52px;
   color: var(--ch-text-primary);
   font-weight: 600;
 }
 .ch-st[data-canopy] .ch-tp__v {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-tp__dial {
   position: absolute;
@@ -5022,6 +4956,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   display: grid;
   justify-items: end;
   font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-st[data-canopy] .ch-tp__par em {
@@ -5115,7 +5050,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   stroke-width: 2;
 }
 .ch-st[data-canopy] .ch-sgt__best text {
-  font: 600 11px var(--ch-font-sans);
+  font: 600 14.5px var(--ch-font-sans);
   fill: var(--ch-champagne-300);
   paint-order: stroke;
   stroke: var(--ch-green-800);
@@ -5229,26 +5164,32 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 
 /* P005: on a wide canvas the four figures sit beside the name instead of under it, so the trend stage opens in view
-   ("that's up very large": the page head had grown to over 500px). */
+   ("that's up very large": the page head had grown to over 500px). The route skeleton (aria-busy, no is-desk) takes
+   the same layout, so the tabs land where its bars were. */
 @media (min-width: 1280px) {
-  .ch-st.is-desk[data-canopy] .ch-pf-hero {
+  /* The name column holds the three actions on one row at 1280 (Add focus area wrapped alone at 22px gaps and 14px
+     button padding): 16px gaps and 12px padding leave it about 9px to spare (WebKit, 2026-10-18). */
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    column-gap: 22px;
+    column-gap: 16px;
     row-gap: 0;
     align-items: end;
     padding-top: 14px;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs {
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__act .ch-btn {
+    padding-inline: 12px;
+  }
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs {
     grid-row: 1;
     grid-column: 3;
     grid-template-columns: repeat(4, minmax(92px, auto));
     padding: 0 0 6px;
     box-shadow: none;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs div {
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs div {
     padding: 4px 16px;
   }
-  .ch-st.is-desk[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
+  .ch-st:is(.is-desk, [aria-busy='true'])[data-canopy] .ch-pf-hero__figs dd:not(.ch-pf-hero__sub,
 .ch-pf-hero__chg) {
     font-size: 24px;
   }
@@ -5277,7 +5218,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   margin: 0 0 4px;
   font: var(--ch-type-serif-s);
   letter-spacing: -0.004em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-fm__head p {
   margin: 0;
@@ -5300,8 +5241,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   gap: 6px;
   margin: 0;
   font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-fm__facts em {
   font: var(--ch-type-caption);
@@ -5363,6 +5305,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   width: 100%;
   text-align: center;
   font: 600 14px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__score {
@@ -5397,11 +5340,35 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   box-shadow: inset 0 0 0 1px rgb(110 98 62 / 0.14);
   text-align: center;
   font: 600 13px/1.1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-st[data-canopy] .ch-fm__tp.is-under {
   background: var(--ch-green-50);
   color: var(--ch-green-600);
+}
+/* Reading a round: the ribbon takes a drag across it (a finger scrolls the page up and down, never sideways here) and the arrow keys. */
+.ch-st[data-canopy] .ch-fm__bars {
+  touch-action: pan-y;
+  cursor: default;
+}
+.ch-st[data-canopy] .ch-fm__bars:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: 8px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-fm__head p.ch-fm__read {
+  font: 600 14px/1.45 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-text-primary);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read {
+  border-radius: 10px;
+  background: rgb(176 149 96 / 0.12);
+}
+.ch-st[data-canopy] .ch-fm__c.is-read .ch-fm__d {
+  font-weight: 600;
+  color: var(--ch-text-primary);
 }
 .ch-st[data-canopy] .ch-fm__key {
   display: flex;
@@ -5518,6 +5485,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-lb__v {
   text-align: right;
   font: 600 20px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-st[data-canopy] .ch-lb__key {
@@ -5534,6 +5502,176 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   height: 14px;
   border-radius: 2px;
   background: var(--ch-ink-700);
+}
+
+/* Stats visuals (shared signal layer): how sure a stat is. A readout line above the marks, a whisker of one standard error, a
+   hollow muted mark for an early read, and what a stat needs while it has too few. Prefix .ch-sv-. */
+.ch-sv-read {
+  min-height: 22px;
+  margin: 0 0 8px;
+  font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-read.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-sv-whisk {
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--ch-text-tertiary);
+  pointer-events: none;
+}
+.ch-sv-whisk::before,
+.ch-sv-whisk::after {
+  position: absolute;
+  top: -3px;
+  width: 1px;
+  height: 7px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-whisk::before {
+  left: 0;
+}
+.ch-sv-whisk::after {
+  right: 0;
+}
+/* A whisker the rail cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-whisk.is-clip-l::before,
+.ch-sv-whisk.is-clip-r::after {
+  display: none;
+}
+.ch-sv-needs {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 10px);
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-note {
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-row {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-lb:focus-visible,
+.ch-stm-legs:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-st[data-canopy] .ch-lb__r.ch-sv-row {
+  margin: 0 -12px;
+  padding: 10px 12px;
+}
+.ch-st[data-canopy] .ch-sv-row[data-active] {
+  background: rgb(176 149 96 / 0.1);
+}
+.ch-st[data-canopy] .ch-sv-row[data-pinned] {
+  box-shadow:
+    inset 0 0 0 1px var(--ch-border-strong),
+    inset 0 -1px 0 var(--ch-ledger-rule-soft);
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__bar {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-st[data-canopy] .ch-sv-row.is-early .ch-lb__v {
+  color: var(--ch-text-secondary);
+}
+
+/* Stats visuals: the trend of rounds (RoundTrend). Dots for rounds, a five-round average, a par or zero line; a pinned round
+   offers Open round. Prefix .ch-sv-rt, .ch-sv-open. */
+.ch-sv-rt:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-stm-chart-hold.ch-sv-rt__hold {
+  aspect-ratio: 340 / 212;
+}
+.ch-sv-rt__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+}
+.ch-stm-panel .ch-sv-rt__head {
+  min-height: 44px;
+}
+.ch-sv-rt__head .ch-sv-read {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ch-sv-open {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 -10px;
+  padding: 0 4px 0 12px;
+  font: var(--ch-type-body-s);
+  font-weight: 600;
+  color: var(--ch-green-600);
+  text-decoration: none;
+}
+.ch-sv-rt__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-sv-rt__grid {
+  stroke: var(--ch-border-hairline);
+  stroke-width: 1;
+}
+.ch-sv-rt__ref {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.ch-sv-rt__t {
+  font: 500 10px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ch-text-tertiary);
+}
+.ch-sv-rt__mean {
+  stroke: var(--ch-text-primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-sv-rt__guide {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-sv-rt__dot {
+  fill: var(--ch-text-tertiary);
+  stroke: var(--ch-bg-surface);
+  stroke-width: 1.5;
+}
+.ch-sv-rt__dot.is-hollow {
+  fill: var(--ch-bg-surface);
+  stroke: var(--ch-text-tertiary);
+}
+.ch-sv-rt__dot.is-active {
+  fill: var(--ch-text-primary);
+  stroke: var(--ch-bg-surface);
+  stroke-width: 2;
 }
 
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
@@ -5590,6 +5728,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-ztrack__fill.is-bad {
   background: var(--ch-warning-600);
 }
+/* The strokes gained change in the zone's lines: coloured only when it clears its standard error (OverviewZones). */
+.ch-znlines b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-znlines b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+/* Nothing to judge the figure by (no benchmark): neither gain nor loss (stats visuals Q4). */
+.ch-st[data-canopy] .ch-ztrack__fill.is-neutral {
+  background: var(--ch-ink-400);
+}
 .ch-st[data-canopy] .ch-ztrack__tick {
   position: absolute;
   top: -5px;
@@ -5641,72 +5790,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   background: var(--ch-champagne-500);
 }
 
-/* every hole by result */
-.ch-st[data-canopy] .ch-zmix {
-  display: flex;
-  height: 44px;
-  overflow: hidden;
-  border-radius: 10px;
-  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-}
-.ch-st[data-canopy] .ch-zmix i {
-  flex: var(--ch-z-n, 0) 1 0;
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  font: 700 13px/1 var(--ch-font-sans, inherit);
-  font-style: normal;
-}
-.ch-st[data-canopy] .ch-zmix .is-eagle,
-.ch-st[data-canopy] .ch-zmixkey i.is-eagle {
-  background: #7f2a21;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-birdie,
-.ch-st[data-canopy] .ch-zmixkey i.is-birdie {
-  background: var(--ch-chart-flag);
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-par,
-.ch-st[data-canopy] .ch-zmixkey i.is-par {
-  background: var(--ch-ivory-300);
-  color: var(--ch-ink-900);
-}
-.ch-st[data-canopy] .ch-zmix .is-bogey,
-.ch-st[data-canopy] .ch-zmixkey i.is-bogey {
-  background: #6f6b62;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmix .is-double,
-.ch-st[data-canopy] .ch-zmixkey i.is-double {
-  background: #1c1b18;
-  color: #fff;
-}
-.ch-st[data-canopy] .ch-zmixkey {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 10px;
-}
-.ch-st[data-canopy] .ch-zmixkey div {
-  display: grid;
-  gap: 3px;
-  font: 500 12.5px/1.2 var(--ch-font-sans, inherit);
-  color: var(--ch-text-tertiary);
-}
-.ch-st[data-canopy] .ch-zmixkey b {
-  font: 700 18px/1 var(--ch-font-sans, inherit);
-  letter-spacing: -0.02em;
-  color: var(--ch-text-primary);
-}
-.ch-st[data-canopy] .ch-zmixkey i {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 6px;
-  border-radius: 2px;
-}
-
 /* the fairway strip */
 .ch-st[data-canopy] .ch-zfw {
   display: flex;
@@ -5726,6 +5809,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-zfw b {
   font: 700 22px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 .ch-st[data-canopy] .ch-zfw .is-rough {
@@ -5791,6 +5875,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-zfn .r > b {
   text-align: right;
   font: 700 20px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
@@ -5822,8 +5907,9 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-zmini > b {
   font: 600 30px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-zmini > b small {
   font-size: 14px;
@@ -5853,6 +5939,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-zrow > b {
   text-align: right;
   font: 700 17px/1 var(--ch-font-sans, inherit);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
@@ -5898,7 +5985,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__id {
   display: grid;
   position: sticky;
-  top: 24px;
+  /* Below the sticky top bar, never behind it. */
+  top: calc(var(--ch-topbar-h) + 24px);
   align-content: start;
   align-self: start;
   gap: 18px;
@@ -5913,14 +6001,14 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   height: 30px;
   border-radius: 50%;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   box-shadow: none;
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t h2 {
   margin: 0 0 12px;
   font: 600 27px/1.1 var(--ch-font-sans);
   letter-spacing: -0.015em;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {
   font: 400 14.5px/1.5 var(--ch-font-sans);
@@ -5949,7 +6037,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd:not(.ch-gm__sub) {
   font-size: 32px;
   font-weight: 600;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__figs dd.ch-gain {
   color: var(--ch-green-600);
@@ -5992,10 +6080,46 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-zt {
   min-width: 0;
 }
+.ch-st[data-canopy] .ch-zt {
+  container: ch-rounds / inline-size;
+}
 .ch-st[data-canopy] .ch-zt .ch-tr {
-  grid-template-columns: minmax(160px, 1.4fr) 64px 52px 52px 56px 52px 68px repeat(4, minmax(72px, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(150px, 1fr) 56px 46px 46px 52px 46px 60px repeat(4, minmax(56px, 72px));
+  gap: 8px;
   min-width: 0;
+}
+/* the rounds table fits the canvas it is in (880px at a 1280 window, more at 1440): where the canvas is narrower, GIR and putts
+   (both on Game detail) leave before anything scrolls, and the course keeps its line with an ellipsis */
+@container ch-rounds (max-width: 820px) {
+  .ch-st[data-canopy] .ch-zt .ch-tr {
+    grid-template-columns: minmax(120px, 1fr) 52px 44px 44px 56px repeat(4, minmax(52px, 64px));
+  }
+  .ch-st[data-canopy] .ch-zt .ch-tr > .ch-tr__x {
+    display: none;
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-st[data-canopy] .ch-zt .ch-tr__course .ch-gx-type {
+  flex: none;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h):hover {
+    background: rgb(176 149 96 / 0.1);
+  }
+}
+.ch-st[data-canopy] .ch-zt .ch-tr:not(.ch-tr--h) {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 
 /* Development: each focus area or goal as a track from where it started to its target, with the current value marked on it. */
@@ -6024,7 +6148,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-dv__top b {
   display: block;
   font: 600 19px/1.2 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-dv__top span {
   display: block;
@@ -6043,7 +6167,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-dv.is-done .ch-dv__top em {
   background: var(--ch-green-800);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-st[data-canopy] .ch-dv__rail {
   position: relative;
@@ -6081,6 +6205,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   top: -28px;
   transform: translateX(-50%);
   font: 700 15px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--ch-green-700);
 }
@@ -6125,7 +6250,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-dv__dot {
   transition: translate var(--ch-dur-base) var(--ch-ease);
 }
-.ch-st[data-canopy] .ch-zmix i,
 .ch-st[data-canopy] .ch-zfw > div {
   transition:
     flex-grow var(--ch-dur-base) var(--ch-ease),
@@ -6141,7 +6265,855 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-st[data-canopy] .ch-zrow:hover {
     background: rgb(176 149 96 / 0.1);
   }
-  .ch-st[data-canopy] .ch-zmix i:hover {
-    filter: brightness(1.12);
+}
+
+/* Print: one clean page of the figures. The shell already drops the sidebar, top bar and strip (shell.css); here the page's own
+   controls go, the page takes the paper's width, rules and fills keep their ink, and nothing that reads as one row or one card is
+   cut across two sheets. PrintHead puts GolfHelm, the subject and the day at the top. */
+.ch-st-print {
+  display: none;
+}
+@media print {
+  .ch-st-print {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12pt;
+    margin: 0 0 4pt;
+    padding-bottom: 6pt;
+    border-bottom: 1pt solid gray;
+    font: 500 9.5pt/1.2 var(--ch-font-sans);
+    color: black;
   }
+  .ch-st-print b {
+    font-weight: 700;
+  }
+  /* Paper is under the phone breakpoint, which hides the desktop tree until the phone view takes over; on paper the desktop tree is the page. */
+  .ch-st-desk,
+  .ch-st.is-desk > * {
+    visibility: visible;
+  }
+  .ch-st,
+  .ch-st * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .ch-st {
+    max-width: none;
+    padding: 0;
+    opacity: 1;
+    transition: none;
+  }
+  .ch-st .ch-hero__actions,
+  .ch-st .ch-st-back,
+  .ch-st .ch-pf-hero__act,
+  .ch-st .ch-pf-tabs,
+  .ch-st .ch-sf,
+  .ch-st .ch-gd__nav,
+  .ch-st .ch-st-updating {
+    display: none !important;
+  }
+  /* A plain page: white paper, and the shell's "Skip to content" (fixed, so it would print on every sheet) stays on screen. */
+  html:has(.ch-st),
+  html:has(.ch-st) body,
+  html:has(.ch-st) .ch-root,
+  html:has(.ch-st) .ch-app,
+  html:has(.ch-st) .ch-canvas {
+    background: white !important;
+  }
+  html:has(.ch-st) .ch-skip {
+    display: none !important;
+  }
+  .ch-st .ch-tbl {
+    overflow: visible;
+  }
+  .ch-st .ch-tr {
+    min-width: 0;
+  }
+  .ch-st .ch-tr,
+  .ch-st .ch-zrow,
+  .ch-st .ch-lb__r,
+  .ch-st .ch-tp__c,
+  .ch-st .ch-fm,
+  .ch-st .ch-st-card,
+  .ch-st .ch-sgm,
+  .ch-st .ch-dv,
+  .ch-st .ch-best__r,
+  .ch-st .ch-par3__t,
+  .ch-st .ch-gm-p,
+  .ch-st .ch-lg {
+    break-inside: avoid;
+  }
+  .ch-st h2,
+  .ch-st h3 {
+    break-after: avoid;
+  }
+}
+
+/* -- W4c tablet tier (a canvas under 861px: an iPad portrait with the sidebar open leaves 618px) --------------------
+   Team stats was tuned from a canvas of about 860px up. Two things broke below it. The tape's five 110px cards put the
+   figure on top of its change and the label under the next card, so it takes two rows (three, then two) with the seam
+   between them. The leg grid forced 760px of minimum width, which scrolled sideways when the canvas could hold it with
+   narrower leg columns. The container is the canvas (shell.css). The media query keeps it to a tablet on screen: the
+   phone has its own tree, 1181px and wider is untouched, and paper keeps the desktop view as it is. */
+@media screen and (min-width: 821px) and (max-width: 1180px) {
+  @container (max-width: 720px) {
+    .ch-st[data-canopy] .ch-tp {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c {
+      grid-column: span 2;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(n + 4) {
+      grid-column: span 3;
+      box-shadow: inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(4) {
+      padding-left: 22px;
+    }
+    .ch-st[data-canopy] .ch-tp > .ch-tp__c:nth-child(5) {
+      box-shadow: inset 1px 0 0 rgb(176 149 96 / 0.34), inset 0 1px 0 rgb(176 149 96 / 0.34);
+    }
+  }
+  @container (max-width: 860px) {
+    .ch-lg__r {
+      grid-template-columns: minmax(160px, 1.6fr) repeat(4, minmax(56px, 1fr)) 48px 60px;
+      min-width: 0;
+    }
+    .ch-lg__r .c {
+      padding: 0 8px;
+    }
+  }
+}
+
+/* P005: make rate by distance (PuttBands, stats-visuals spec 4.3). The bands on equal spacing, a dot per band on a 0 to 100%
+   axis with a thin Wilson whisker, the Tour's thin line behind the dots, and made/tried under each band. Each band is one
+   column and one hit target (44px or wider): the column tint is the guide to the readout above. The same block draws the
+   desktop Overview and Game detail and, with .is-compact, the phone. Prefix .ch-sv-pb. */
+.ch-sv-pb {
+  --ch-pb-h: 208px;
+  --ch-pb-pad: 10px;
+  --ch-pb-y: 44px;
+  padding: 4px 0 2px;
+}
+.ch-sv-pb.is-compact {
+  --ch-pb-h: 172px;
+  --ch-pb-y: 40px;
+}
+.ch-sv-pb.is-compact > .ch-sv-read {
+  min-height: calc(2 * 1.45em);
+}
+.ch-sv-pb:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-pb__chart {
+  display: grid;
+  grid-template-columns: var(--ch-pb-y) minmax(0, 1fr);
+}
+.ch-sv-pb__y {
+  position: relative;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  margin-top: var(--ch-pb-pad);
+}
+.ch-sv-pb__y span {
+  position: absolute;
+  top: var(--ch-pb-at);
+  right: 6px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__cols {
+  position: relative;
+  display: grid;
+  min-width: 0;
+}
+.ch-sv-pb__grid,
+.ch-sv-pb__tour {
+  position: absolute;
+  top: var(--ch-pb-pad);
+  left: 0;
+  width: 100%;
+  height: calc(var(--ch-pb-h) - 2 * var(--ch-pb-pad));
+  pointer-events: none;
+}
+.ch-sv-pb__grid i {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--ch-ledger-rule);
+}
+.ch-sv-pb__tour {
+  overflow: visible;
+}
+.ch-sv-pb__tour polyline {
+  fill: none;
+  stroke: var(--ch-champagne-500);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.ch-sv-pb__col {
+  position: relative;
+  display: grid;
+  grid-template-rows: var(--ch-pb-h) auto;
+  min-width: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__col[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-pb__col[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-pb__mk {
+  position: relative;
+}
+.ch-sv-pb__scale {
+  position: absolute;
+  inset: var(--ch-pb-pad) 0;
+}
+.ch-sv-pb__tick {
+  position: absolute;
+  left: 50%;
+  width: 20px;
+  height: 2px;
+  margin: -1px 0 0 -10px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__whisk {
+  position: absolute;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: var(--ch-text-tertiary);
+}
+.ch-sv-pb__whisk::before,
+.ch-sv-pb__whisk::after {
+  position: absolute;
+  left: -3px;
+  width: 7px;
+  height: 1px;
+  background: inherit;
+  content: '';
+}
+.ch-sv-pb__whisk::before {
+  top: 0;
+}
+.ch-sv-pb__whisk::after {
+  bottom: 0;
+}
+/* A whisker the axis cuts off draws no cap at that end: the readout carries the number. */
+.ch-sv-pb__whisk.is-clip-t::before,
+.ch-sv-pb__whisk.is-clip-b::after {
+  display: none;
+}
+.ch-sv-pb__dot {
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-pb__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-pb__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-pb__col[data-active] .ch-sv-pb__dot {
+  scale: 1.25;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-pb__col.is-early .ch-sv-pb__dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+  opacity: 0.85;
+}
+.ch-sv-pb__needs {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  left: 4px;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  text-align: center;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__lab {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 1px;
+  padding: 8px 2px 8px;
+  text-align: center;
+}
+.ch-sv-pb__lab span {
+  font: 500 13.5px/1.3 var(--ch-font-sans);
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b {
+  font: 600 16px/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-sv-pb__lab b.ch-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-sv-pb__lab b.ch-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-sv-pb__col.is-early .ch-sv-pb__lab b,
+.ch-sv-pb__col.is-none .ch-sv-pb__lab b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-pb__lab small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab span {
+  font-size: 12.5px;
+}
+.ch-sv-pb.is-compact .ch-sv-pb__lab b {
+  font-size: 14px;
+}
+.ch-sv-pb__cap,
+.ch-sv-pb__key {
+  margin: 6px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-pb__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.ch-sv-pb__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-pb__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-pb__kline {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-sv-pb__kwhisk {
+  position: relative;
+  width: 7px;
+  height: 12px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 1px 100% no-repeat;
+  box-shadow:
+    inset 0 1px 0 var(--ch-text-tertiary),
+    inset 0 -1px 0 var(--ch-text-tertiary);
+}
+/* Stats visuals, the scoring mix (ScoreMixBar; spec 4.4, decision Q11). One 100% bar of every scored hole by result, par in the
+   middle: going out from it, birdie then eagle or better to the left, bogey then double or worse to the right. Red is under par;
+   par, bogey and double are the scorecard's ivory, gray and ink, every fill a token. A segment prints its share only when it is
+   at least 30px wide (a container query on the segment itself); the key carries every share. Prefix .ch-sv-mix-. */
+.ch-sv-mix {
+  container: ch-sv-mix / inline-size;
+}
+.ch-sv-mix:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-mix .is-eagle {
+  --ch-sv-mix-fill: var(--ch-score-eagle-fill);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-birdie {
+  --ch-sv-mix-fill: var(--ch-chart-flag);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-par {
+  --ch-sv-mix-fill: var(--ch-ivory-300);
+  --ch-sv-mix-ink: var(--ch-ink-900);
+}
+.ch-sv-mix .is-bogey {
+  --ch-sv-mix-fill: var(--ch-ink-500);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+.ch-sv-mix .is-double {
+  --ch-sv-mix-fill: var(--ch-score-double);
+  --ch-sv-mix-ink: var(--ch-text-on-accent);
+}
+/* At night birdie, bogey and double are the light fills (the salmon, the warm gray, the ivory ink): their numerals take the page's
+   near-black. Eagle stays the deeper red under an ivory numeral. */
+html[data-fw-theme='dark'] .ch-sv-mix .is-birdie,
+html[data-fw-theme='dark'] .ch-sv-mix .is-bogey,
+html[data-fw-theme='dark'] .ch-sv-mix .is-double {
+  --ch-sv-mix-ink: var(--ch-bg-page);
+}
+.ch-sv-mix-bar {
+  display: flex;
+  gap: 2px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.ch-sv-mix-seg {
+  container-type: inline-size;
+  display: grid;
+  flex: 0 1 0;
+  place-items: center;
+  min-width: 2px;
+  background: var(--ch-sv-mix-fill);
+  color: var(--ch-sv-mix-ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+}
+/* Par is parchment on parchment: a hairline keeps its edge. */
+.ch-sv-mix-seg.is-par {
+  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+}
+.ch-sv-mix-seg b {
+  font: 700 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@container (max-width: 29.98px) {
+  .ch-sv-mix-seg b {
+    visibility: hidden;
+  }
+}
+/* A result read under the pointer or pinned stands out; the others step back. */
+.ch-sv-mix[data-has-active] .ch-sv-mix-seg:not([data-active]) {
+  opacity: 0.5;
+}
+.ch-sv-mix-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-key {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  margin: 8px -8px 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-sv-mix-key li {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-mix-key li[data-active] {
+  background: var(--ch-bg-hover);
+}
+.ch-sv-mix-key li[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font: 500 12.5px/1.2 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-mix-name i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--ch-sv-mix-fill);
+}
+.ch-sv-mix-key .is-par .ch-sv-mix-name i {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-mix-key b {
+  font: 700 18px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+}
+.ch-sv-mix-key small {
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+/* Each par's mix (Game detail, More detail): a slimmer bar, the key as one wrapping line of name and share. */
+.ch-sv-mix.is-compact .ch-sv-read {
+  min-height: 18px;
+  margin-bottom: 6px;
+  font: var(--ch-type-caption);
+}
+.ch-sv-mix.is-compact .ch-sv-mix-bar {
+  height: 28px;
+  border-radius: 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-seg b {
+  font-size: 12px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: 6px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+}
+.ch-sv-mix.is-compact .ch-sv-mix-key b {
+  font: 600 13px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+/* An early read (under 30 holes): the bar a step quieter and the shares in secondary ink; the note says why. */
+.ch-sv-mix.is-early .ch-sv-mix-bar {
+  opacity: 0.72;
+}
+.ch-sv-mix.is-early .ch-sv-mix-key b {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-mix-none {
+  margin: 0;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
+/* A narrow mix (the phone, a half-width panel): the key becomes a short table, one result a row (name, share, a round), and the
+   readout has room to wrap to two lines without moving the bar. */
+@container ch-sv-mix (max-width: 559px) {
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key li {
+    grid-template-columns: minmax(0, 1fr) auto 7.5em;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 36px;
+    align-content: center;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key b {
+    font-size: 15px;
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-key small {
+    text-align: right;
+  }
+  .ch-sv-mix:not(.is-compact) .ch-sv-mix-name {
+    font-size: 13.5px;
+  }
+  .ch-sv-mix:not(.is-compact) > .ch-sv-read {
+    min-height: calc(2 * 1.45em);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-sv-mix-seg,
+  .ch-sv-mix-key li {
+    transition: none;
+  }
+}
+
+/* P004: who gains and who loses (TeamRank, stats-visuals spec 4.5, decision Q10). A ranked dot plot: one row per player in
+   order of the dot, a rank ("T3" for a tie), the name, a track with the player's mean and a whisker of one standard error, and
+   the value. The team's mean is one dashed line through every row, the grid lines and zero sit behind. Better is right for
+   every figure. Each row is one hit target (44px on the phone); the row tint is the guide to the readout above. Prefix .ch-sv-tr. */
+.ch-sv-tr:not(.is-phone) {
+  padding: 6px 6px 14px;
+  border-radius: 16px;
+  background: var(--ch-ivory-25);
+  box-shadow: var(--ch-elevation-reading);
+}
+.ch-sv-tr__menu {
+  flex: none;
+}
+.ch-sv-tr__menu .ch-select {
+  width: auto;
+}
+.ch-sv-tr__menu .ch-select select {
+  width: auto;
+  height: 34px;
+}
+.ch-sv-tr__plot {
+  --ch-tr-rank: 40px;
+  --ch-tr-who: 184px;
+  --ch-tr-v: 64px;
+  --ch-tr-row: 30px;
+  --ch-tr-cap: 22px;
+  --ch-tr-axis: 24px;
+  --ch-tr-none-gap: 0px;
+  padding: 0 16px;
+}
+.ch-sv-tr__plot:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: 10px;
+}
+.ch-sv-tr__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+}
+.ch-sv-tr__top .ch-sv-read {
+  flex: 1 1 auto;
+  margin: 0;
+}
+.ch-sv-tr__body {
+  position: relative;
+}
+.ch-sv-tr__field {
+  position: absolute;
+  top: var(--ch-tr-cap);
+  right: var(--ch-tr-v);
+  bottom: calc(var(--ch-tr-axis) + var(--ch-tr-none, 0) * var(--ch-tr-row) + var(--ch-tr-none-gap));
+  left: calc(var(--ch-tr-rank) + var(--ch-tr-who));
+  pointer-events: none;
+}
+.ch-sv-tr__grid,
+.ch-sv-tr__mean {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  text-decoration: none;
+}
+.ch-sv-tr__grid {
+  border-left: 1px solid var(--ch-border-hairline);
+}
+.ch-sv-tr__grid.is-zero {
+  border-left-color: var(--ch-border-strong);
+}
+.ch-sv-tr__mean {
+  top: -4px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  margin-left: -0.75px;
+}
+.ch-sv-tr__r {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--ch-tr-rank) var(--ch-tr-who) minmax(0, 1fr) var(--ch-tr-v);
+  align-items: center;
+  min-height: var(--ch-tr-row);
+  border-radius: 8px;
+}
+.ch-sv-tr__r.is-cap {
+  min-height: var(--ch-tr-cap);
+}
+.ch-sv-tr__r.is-axis {
+  min-height: var(--ch-tr-axis);
+}
+.ch-sv-tr__body:has(.ch-sv-tr__r.is-none) {
+  --ch-tr-none-gap: 6px;
+}
+.ch-sv-tr__r.is-axis + .ch-sv-tr__r.is-none {
+  margin-top: var(--ch-tr-none-gap);
+}
+.ch-sv-tr__r.ch-sv-row {
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__r.ch-sv-row[data-active] {
+  background: color-mix(in srgb, var(--ch-champagne-500) 12%, transparent);
+}
+.ch-sv-tr__r.ch-sv-row[data-pinned] {
+  box-shadow: inset 0 0 0 1px var(--ch-border-strong);
+}
+.ch-sv-tr__rank {
+  padding-left: 8px;
+  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__who {
+  overflow: hidden;
+  padding-right: 12px;
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-none .ch-sv-tr__who {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__track {
+  position: relative;
+  align-self: stretch;
+  min-height: inherit;
+}
+.ch-sv-tr__dot {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+  transition: scale var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-sv-tr__dot.is-gain {
+  background: var(--ch-chart-gain);
+}
+.ch-sv-tr__dot.is-loss {
+  background: var(--ch-chart-loss);
+}
+.ch-sv-tr__r[data-active] .ch-sv-tr__dot {
+  scale: 1.3;
+}
+/* An early read: hollow, no gain or loss color, a little quieter. */
+.ch-sv-tr__r.is-early .ch-sv-tr__dot {
+  background: var(--ch-ivory-25);
+  box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary);
+}
+.ch-sv-tr__r.is-early .ch-sv-whisk {
+  opacity: 0.7;
+}
+.ch-sv-tr__needs {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  translate: 0 -50%;
+  font: var(--ch-type-caption);
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__v {
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--ch-text-primary);
+}
+.ch-sv-tr__r.is-early .ch-sv-tr__v,
+.ch-sv-tr__r.is-none .ch-sv-tr__v {
+  font-weight: 500;
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__meanlab,
+.ch-sv-tr__tick {
+  position: absolute;
+  top: 50%;
+  left: var(--ch-tr-at);
+  translate: -50% -50%;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__meanlab {
+  color: var(--ch-text-secondary);
+}
+.ch-sv-tr__key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-sv-tr__key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ch-sv-tr__kdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ch-ink-700);
+}
+.ch-sv-tr__kwhisk {
+  width: 14px;
+  height: 7px;
+  background: linear-gradient(var(--ch-text-tertiary), var(--ch-text-tertiary)) center / 100% 1px no-repeat;
+  box-shadow:
+    inset 1px 0 0 var(--ch-text-tertiary),
+    inset -1px 0 0 var(--ch-text-tertiary);
+}
+.ch-sv-tr__kmean {
+  width: 0;
+  height: 12px;
+  border-left: 1.5px dashed var(--ch-champagne-500);
+  text-decoration: none;
+}
+.ch-st[data-canopy] .ch-sv-tr:not(.is-phone) {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.ch-st[data-canopy] .ch-sv-tr .ch-sgt__head {
+  margin-bottom: 10px;
+  padding: 0 0 12px;
+  box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
+}
+.ch-st[data-canopy] .ch-sv-tr__plot {
+  padding: 0;
+}
+
+/* The phone: an inset panel; rows are 44px tap targets, names shortened ("Theo M."), the track takes what is left. */
+.ch-sv-tr.is-phone .ch-stm-panel__h {
+  align-items: center;
+  padding-right: 4px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__menu select {
+  /* Under 16px, iOS zooms the page when the picker takes focus. */
+  font-size: 16px;
+}
+.ch-sv-tr__inset {
+  padding: 10px 12px 12px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__plot {
+  --ch-tr-rank: 30px;
+  --ch-tr-who: 78px;
+  --ch-tr-v: 46px;
+  --ch-tr-row: 44px;
+  padding: 0;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__top {
+  /* The longest readout (an early read with its range and the team) is three lines at 390: held, so a pin never moves the rows. */
+  min-height: calc(3 * 1.45em + 4px);
+}
+.ch-sv-tr.is-phone .ch-sv-tr__rank {
+  padding-left: 6px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__who {
+  padding-right: 8px;
+  font-size: calc(14 * var(--ch-type-k));
+}
+.ch-sv-tr.is-phone .ch-sv-tr__dot {
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+}
+.ch-sv-tr.is-phone .ch-sv-tr__v {
+  padding-right: 6px;
 }

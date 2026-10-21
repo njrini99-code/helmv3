@@ -21,9 +21,11 @@ export interface EngineLeakRow {
 }
 
 /** `evidence.counterfactual.strokes_saved_per_round` when live (not
- *  suppressed, finite, > 0), else null. */
+ *  suppressed, finite, > 0), else null. A rough estimate
+ *  (`evidence.estimated === true`) never counts: its size is not measured. */
 export function liveCounterfactual(evidence: unknown): number | null {
   if (!evidence || typeof evidence !== 'object') return null;
+  if ((evidence as Record<string, unknown>).estimated === true) return null;
   const cf = (evidence as Record<string, unknown>).counterfactual;
   if (!cf || typeof cf !== 'object') return null;
   const rec = cf as Record<string, unknown>;

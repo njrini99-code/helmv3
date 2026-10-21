@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useCallback, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import type { HoleStats } from '@/lib/types/golf';
 import { useToast } from '@/components/ui/sonner';
@@ -16,6 +16,9 @@ import {
   useContinueRoundSession,
   type ContinueRoundSessionProps,
 } from '@/lib/golf/round-session/use-continue-round-session';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
+import { FairwayCourseNudge } from '@/components/fairway/pages/rounds-tracking/FairwayCourseNudge';
+import { useCourseNudge } from '@/components/fairway/pages/rounds-tracking/useCourseNudge';
 
 // Round-completion-only overlays — never rendered until the round is
 // finished, so keep them out of the initial hole-entry bundle (perf audit
@@ -47,12 +50,18 @@ interface ContinueRoundClientProps extends ContinueRoundSessionProps {
   qualifierRoundNumberOptions?: number[];
   /** Explains why a legacy row cannot currently choose a safe result number. */
   qualifierRoundNumberUnavailableReason?: string;
+  /** CoachHelm Slice 8a: open one-tap asks, only with coachhelm_data_gap_prompt_v1 on. */
+  dataGapAsks?: readonly DataGapAsk[];
+  /** CoachHelm Slice 8b: course nudge and recovery tap, only with coachhelm_data_prompts_v2 on. */
+  dataPromptsV2?: boolean;
 }
 
 export default function ContinueRoundClient({
   roundTypeEditor,
   qualifierRoundNumberOptions = [],
   qualifierRoundNumberUnavailableReason,
+  dataGapAsks,
+  dataPromptsV2 = false,
   ...session
 }: ContinueRoundClientProps) {
   const { setupData } = session;
@@ -63,6 +72,7 @@ export default function ContinueRoundClient({
   const ExitRoundModal = FairwaySaveRoundModal;
   const SubmitOverlay = FairwayRoundSubmitOverlay;
   const {
+    linkedCourseIdRef,
     syncStatus,
     currentHoleIndex,
     setCurrentHoleIndex,
@@ -105,6 +115,18 @@ export default function ContinueRoundClient({
     handleSubmitDiscard,
     restoreEpoch,
   } = useContinueRoundSession({ ...session, ports: { showToast } });
+
+  // CoachHelm Slice 8b: the course nudge; null with the flag off or when the
+  // round already has a course. A pick rides the engine's next write.
+  const linkRoundCourse = useCallback((courseId: string) => {
+    linkedCourseIdRef.current = courseId;
+  }, [linkedCourseIdRef]);
+  const courseNudge = useCourseNudge({
+    enabled: dataPromptsV2,
+    hasCourse: !!setupData.courseId,
+    courseName: setupData.courseName,
+    onLink: linkRoundCourse,
+  });
   // Submitting overlay stats (computed once, used by overlay)
   const submittingDefinedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
   const submittingTotalScore = submittingDefinedStats.reduce((sum, h) => sum + h.score, 0);
@@ -229,6 +251,9 @@ export default function ContinueRoundClient({
           onAutoSave={handleAutoSave}
           autoSaveInterval={15000}
           autoSaveDisabled={submitting || !!completedRoundId}
+          dataGapAsks={dataGapAsks}
+          recoveryPrompt={dataPromptsV2}
+          courseNudge={courseNudge}
         />
       </div>
 
@@ -364,6 +389,7 @@ export default function ContinueRoundClient({
         }}
         finalStats={pendingFinalStats ?? []}
         courseName={setupData.courseName}
+        notice={courseNudge ? <FairwayCourseNudge nudge={courseNudge} /> : undefined}
         onGoBack={() => setShowFinishConfirm(false)}
         onSubmit={async () => {
           if (!pendingFinalStats) return;

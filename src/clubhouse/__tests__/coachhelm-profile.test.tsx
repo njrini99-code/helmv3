@@ -19,6 +19,9 @@ const sessionClient = vi.hoisted(() => ({ marker: 'the session client' }));
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => sessionClient }));
 const genomeRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('@/lib/coachhelm/v3/genome/loader', () => ({ loadGenome: genomeRead.load }));
+// The profile also reads the player's CoachHelm insights, the Board's own read (owner, 2026-10-16).
+const helmRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('../data/coachhelm', () => ({ loadPlayerCoachHelm: helmRead.load }));
 
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
@@ -61,7 +64,7 @@ describe('the genome as the profile draws it', () => {
     expect(by.miss_side_bias).toMatchObject({ headline: 'Left bias', figure: '71% left', figureNote: 'of the misses that name a side (29% right)' });
     expect(by.pressure_delta).toMatchObject({ headline: 'Tightens up', figure: '+0.82', figureNote: 'strokes per 18 holes, tournaments against practice' });
     expect(by.scrambling_rate).toMatchObject({ headline: 'Reliable', figure: '35%' });
-    expect(by.par3_proficiency).toMatchObject({ figure: '−0.38', figureNote: 'strokes to par per par 3' });
+    expect(by.par3_proficiency).toMatchObject({ figure: '−0.84', figureNote: 'strokes to par per par 3' });
     expect(by.scoring_trend).toMatchObject({ headline: 'Improving', figure: '−0.64' });
     expect(by.driver_usage).toMatchObject({ headline: 'Mixed', figure: '62%' });
   });
@@ -72,15 +75,17 @@ describe('the genome as the profile draws it', () => {
   });
 
   it('the persona’s strengths and watch-outs are its own (derivePersona), and mark the measures they name', () => {
-    expect(PREVIEW_PROFILE.strengths.map((s) => s.id)).toEqual(['driver_usage']);
+    expect(PREVIEW_PROFILE.strengths.map((s) => s.id)).toEqual(['par3_proficiency']);
     expect(PREVIEW_PROFILE.watchouts).toEqual([]);
-    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'driver_usage')!.stance).toBe('strength');
-    expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · holds steady on par-3 holes · tendency to miss left.');
+    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'par3_proficiency')!.stance).toBe('strength');
+    // Driver usage is a profile, not a grade: never a strength, whatever its value.
+    expect(PREVIEW_PROFILE.measures.find((m) => m.id === 'driver_usage')!.stance).toBeNull();
+    expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · thrives on par-3 holes · tendency to miss left.');
   });
 
   it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias and a profile are plain', () => {
     const tone = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m.tone]));
-    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'good' });
+    expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'good', driver_usage: 'plain' });
   });
 
   it('every word the tone list names is a word a dimension can give (the dimension files are read, so a rename cannot drop one silently)', () => {
@@ -129,6 +134,19 @@ describe('the genome as the profile draws it', () => {
 });
 
 describe('the loader reads the player’s own genome through the session’s client, and says when it could not', () => {
+  beforeEach(() => {
+    helmRead.load.mockResolvedValue({ off: null, proposals: { list: [], error: false }, insights: { list: [], error: false }, rounds: null });
+  });
+
+  it('what CoachHelm sees is the Board’s own insight read for the same player, carried beside the genome', async () => {
+    genomeRead.load.mockResolvedValue(null);
+    const insights = { list: [{ id: 'i1' }], error: false };
+    helmRead.load.mockResolvedValue({ off: null, proposals: { list: [], error: false }, insights, rounds: null });
+    const out = await loadPlayerProfile({ playerId: 'pl-jonah' });
+    expect(helmRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
+    expect(out).toMatchObject({ status: 'ready', data: { sees: insights } });
+  });
+
   it('ready: the row the session client reads, for the player id it was given', async () => {
     genomeRead.load.mockResolvedValue({ player_id: 'pl-jonah', vector: { par3_proficiency: { value: -0.38, confidence: 1, label: 'Under par' } }, computed_at: '2026-09-30T02:30:00Z', rounds_basis: 9 });
     const out = await loadPlayerProfile({ playerId: 'pl-jonah' });
@@ -156,13 +174,28 @@ describe('the loader reads the player’s own genome through the session’s cli
 describe('the Game profile screen', () => {
   const show = (load = profileLoad(PREVIEW_PROFILE)) => render(wrap(<Profile load={load} />));
 
+  it('what CoachHelm sees: the top insight as the headline, then what is costing strokes and what is working, each opening its evidence', () => {
+    const ins = (id: string, title: string, strength: boolean, stale: unknown = null) =>
+      ({ id, title, strength, stale, category: 'Putting', value: '28%', lede: `${title} lede.`, evidence: { sample: '83 putts', window: '132 days', asOf: 'As of Oct 1' } }) as never;
+    const sees = { list: [ins('a', '5-10 ft putting: 28%', false), ins('b', '125-175 yd approach: 84%', true), ins('c', 'Old read', false, { since: 'x' })], error: false };
+    show(profileLoad({ ...PREVIEW_PROFILE_PARTIAL, sees }));
+    const board = screen.getByRole('region', { name: '5-10 ft putting: 28%' });
+    expect(within(board).getByText('What CoachHelm sees')).toBeTruthy();
+    expect(within(board).getByText('83 putts · 132 days · As of Oct 1')).toBeTruthy();
+    expect(within(within(board).getByRole('region', { name: 'Costing you' })).getByRole('link').getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&insight=a');
+    expect(within(board).getByRole('region', { name: 'What’s working' }).textContent).toContain('125-175 yd approach: 84%');
+    // An out-of-date read is not drawn as current.
+    expect(within(board).queryByText('Old read')).toBeNull();
+  });
+
   it('CH-13860 the page is labelled by CoachHelm; the shape of the game, then every measure, are labelled regions', () => {
     show();
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-hl-title');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('CoachHelm');
-    expect(screen.getByRole('region', { name: 'Mixed off the tee · holds steady on par-3 holes · tendency to miss left.' })).toBeTruthy();
+    // The headline holds a no-break space before each dot (a wrapped line never starts with one); it reads as a space.
+    expect(screen.getByRole('region', { name: (n) => n.replace(/\u00a0/g, ' ') === 'Mixed off the tee · thrives on par-3 holes · tendency to miss left.' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Every measure' })).toBeTruthy();
-    expect(screen.getByText('Last 90 days · 14 rounds · Refreshed yesterday')).toBeTruthy();
+    expect(screen.getByText('Last 90 days · 14 rounds · Refreshed yesterday').textContent).toBe('Last 90 days\u00a0· 14 rounds\u00a0· Refreshed yesterday');
   });
 
   it('each measure: its word, its value with what it counts, what it means, how sure the read is, and how it is measured', () => {
@@ -188,8 +221,9 @@ describe('the Game profile screen', () => {
 
   it('the persona’s call is a word as well as a colour: Strength on the measure it names, and Strong in the shape of the game', () => {
     show();
-    expect(within(card('Driver usage')).getByText('Strength')).toBeTruthy();
-    expect(within(screen.getByRole('region', { name: 'Strong' })).getByText('Driver usage')).toBeTruthy();
+    expect(within(card('Par-3 proficiency')).getByText('Strength')).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Strong' })).getByText('Par-3 proficiency')).toBeTruthy();
+    expect(within(card('Driver usage')).queryByText('Strength')).toBeNull();
     expect(within(card('Scrambling rate')).queryByText('Strength')).toBeNull();
   });
 
@@ -223,6 +257,13 @@ describe('the Game profile screen', () => {
     expect(code('CH-13260')!.textContent).toMatch(/Your game profile didn’t load.*Nothing is lost/);
     expect(code('CH-13360')).toBeNull();
     await userEvent.click(within(code('CH-13260') as HTMLElement).getByRole('button', { name: /Try again/ }));
+    expect(router.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CH-13261 CoachHelm\u2019s insights not loading says so under the head, never that it has nothing to say, and the measures stay', async () => {
+    show(profileLoad({ ...PREVIEW_PROFILE_PARTIAL, sees: { list: [], error: true } }));
+    expect(code('CH-13261')!.textContent).toMatch(/What CoachHelm sees didn\u2019t load.*Your measures below are still right/);
+    await userEvent.click(within(code('CH-13261') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalledTimes(1);
   });
 

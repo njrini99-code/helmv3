@@ -22,6 +22,7 @@
  * across the two files.
  * ========================================================================== */
 
+import type { ReactNode } from 'react';
 import { LazyMotion, m } from 'motion/react';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
 import { loadFeatures } from '@/lib/motion/load-features';
@@ -40,6 +41,11 @@ export interface FairwayRoundSummarySheetProps {
   courseName: string;
   onGoBack: () => void;
   onSubmit: () => void;
+  /**
+   * An optional row under the scorecard (CoachHelm Slice 8b: the course
+   * nudge, only with coachhelm_data_prompts_v2 on). Absent, nothing is drawn.
+   */
+  notice?: ReactNode;
 }
 
 export function FairwayRoundSummarySheet({
@@ -49,6 +55,7 @@ export function FairwayRoundSummarySheet({
   courseName,
   onGoBack,
   onSubmit,
+  notice,
 }: FairwayRoundSummarySheetProps) {
   const prefersReducedMotion = useReducedMotionGuard();
 
@@ -219,6 +226,7 @@ export function FairwayRoundSummarySheet({
               </div>
             </m.div>
 
+            {notice ? <div className="mt-4">{notice}</div> : null}
           </div>
           </div>
 

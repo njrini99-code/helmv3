@@ -4,7 +4,7 @@
 - Also affects: `admin_platform`
 - Surface: `/admin/database` Locks & Transactions panel (`src/lib/admin/database/locks.ts`)
 - Classification: TELEMETRY_DEFECT (the Bridge misreported; no product behaviour was wrong)
-- Status: fix in PR (desktop health routine, 2026-10-13); verified_in_production pending deploy
+- Status: released: b7dbb350b (#2191) is in production 87bd60345 (release:status, 2026-10-15 00:45Z); 0 open lock incidents in the 24h to then
 - First seen: the panel shipped with the defect (20260903191000); found 2026-10-13
 - Evidence (production, read-only, 2026-10-13T17:40Z): `helm_debug.db_lock_incidents` held 129 rows with `resolved_at` null, newest `detected_at` 2026-10-05T13:10Z, 0 in 24h; the panel read "OPEN INCIDENTS (AT LEAST) 100".
 

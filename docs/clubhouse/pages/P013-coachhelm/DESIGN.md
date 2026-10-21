@@ -255,18 +255,42 @@ read, with no projection.
 and mapper, so one insight reads the same on both pages), in full. Desktop is a
 list (Needs work, then Working, a read that is out of date after the current
 ones) beside the read; the phone is the list, and a read is a pushed screen. A
-read shows: what was measured (the number in the colour of what it means, the
-metric, the dates, then the Board's own evidence with its sample and confidence
-word); how it has moved (since it was first seen, the outcome after it was
-worked on, the category's trend in words, and a line of the scores in the rounds
-listed); the rounds behind it (the newest eight of the total it names, each a
-link to its review once that screen is rebuilt); why CoachHelm thinks so (the
-cause marked "Measured in your shots" or "Likely, not measured": a hypothesis is
-never read as fact; the drivers with their counts; why the confidence is what it
-is; then the full write-up); this week's drill; and where it goes (the focus
-area or goal made from it, or one on the same stat, linking to Development).
-Strength against needs work follows the Board's doctrine. There is no coach
-control and no write: nothing to assign, dismiss or accept.
+read opens with **the Read**, four lines under its title
+(`data/coachhelm-read-shape.ts`), built only from fields the row carries:
+
+- **What**: the metric, the player's value and its sample ("18 of 31 putts"
+  only when the stored rate times its sample is that whole number, else the
+  Board's sample), the comparison by name (never a bare number), strokes a
+  round only from the cascade's figure (which names what the gap is closed to)
+  or a real `sg_baseline` or `peer_delta` estimate (nothing for a zero or a
+  rough estimate, never "0.0 strokes"), and the confidence word.
+- **Why**: a cause seen in the shots, marked "Measured in your shots", with the
+  drivers' counts; otherwise "Not traced yet: the record does not say why."
+  A player never sees an inferred cause (owner default for supercharge open
+  question 3, "hide"): no cause sentence and no "Likely, not measured" marker,
+  here or in "Why CoachHelm thinks so". A coach's rendering keeps "Likely, not
+  measured" and the cause (the role is the viewer the card is mapped for).
+- **Next**: the attached drill with its length, or the row's own action; the
+  generators' placeholder ("Target ... in the next practice block") is "No drill
+  assigned."
+- **When**: "Through" the newest round listed under the read (else the window's
+  end, else its as-of day, else a dash), and "Out of date: a round played ..."
+  when a newer round is not in it (CH-13903).
+
+The coach's rendering (through `speak`) has the same numbers; only the cause
+differs by role. Then
+the read's evidence: what was measured (the number in the colour of what it
+means, the metric, the dates, then the Board's own evidence with its sample and
+confidence word); how it has moved (since it was first seen, the outcome after
+it was worked on, the category's trend in words, and a line of the scores in the
+rounds listed); the rounds behind it (the newest eight of the total it names,
+each a link to its review once that screen is rebuilt); why CoachHelm thinks so
+(the drivers with their counts, why the confidence is what it is unless it is
+the stock "sample adequate", then the full write-up, its first sentence
+included); and where it goes (the focus area or
+goal made from it, or one on the same stat, linking to Development). Strength
+against needs work follows the Board's doctrine. There is no coach control and
+no write: nothing to assign, dismiss or accept.
 
 **Honesty rules (all three).** A read that failed is its own notice with Try
 again and is never drawn as nothing: the Deep dive's rounds, plans and category
@@ -278,8 +302,8 @@ run, early read and failed read are three different pages. A read from before
 the newest round says so (CH-13903). No sentence says strokes are being lost: a
 gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour
 (the LPGA Tour for a women's team) when the cascade had no team average to
-anchor on, and says which. A movement is in the stat's own unit (points for a
-share), never a percent of a percentage.
+anchor on, and says which, once, on the Read's What line. A movement is in
+the stat's own unit (points for a share), never a percent of a percentage.
 
 **States.** Skeleton at the page's final height (a view's own, drawn by the
 page's one Suspense on a hard load, because `coachhelm/loading.tsx` cannot read

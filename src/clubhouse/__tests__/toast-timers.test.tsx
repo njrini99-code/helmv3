@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import { useEffect, useLayoutEffect } from 'react';
 import { ToastProvider, useDelayedToast, useToast, type ToastInput } from '../ui/Toast';
 
@@ -268,5 +268,99 @@ describe('ToastProvider timers', () => {
       </ToastProvider>,
     );
     await waitFor(() => expect(screen.queryByText('Saved')).toBeNull());
+  });
+});
+
+describe('Toast onExpire, replace and dismiss (wave 5)', () => {
+  it('onExpire runs once when the clock runs out, waits while hovered, and never runs for the action or a cleared stack', () => {
+    vi.useFakeTimers();
+    let show!: ReturnType<typeof useToast>;
+    const capture = (fn: typeof show) => { show = fn; };
+    const view = render(<ToastProvider scope="a"><CaptureToast capture={capture} /></ToastProvider>);
+    const expired = vi.fn();
+    act(() => show({ title: 'Moved', action: { label: 'Undo', run: () => {} }, onExpire: expired }));
+    const card = screen.getByText('Moved').closest('.ch-toast')!;
+    fireEvent.pointerOver(card, { pointerType: 'mouse' });
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(expired).not.toHaveBeenCalled();
+    fireEvent.pointerOut(card, { pointerType: 'mouse', relatedTarget: document.body });
+    act(() => vi.advanceTimersByTime(4000));
+    expect(expired).toHaveBeenCalledTimes(1);
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(expired).toHaveBeenCalledTimes(1);
+
+    const undone = vi.fn();
+    const notExpired = vi.fn();
+    act(() => show({ title: 'Moved again', action: { label: 'Undo', run: undone }, onExpire: notExpired }));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    act(() => vi.advanceTimersByTime(20_000));
+    expect(undone).toHaveBeenCalledTimes(1);
+    expect(notExpired).not.toHaveBeenCalled();
+
+    const cleared = vi.fn();
+    act(() => show({ title: 'Old team move', onExpire: cleared }));
+    view.rerender(<ToastProvider scope="b"><CaptureToast capture={capture} /></ToastProvider>);
+    act(() => vi.advanceTimersByTime(20_000));
+    view.unmount();
+    expect(cleared).not.toHaveBeenCalled();
+  });
+
+  it('CH-1910 a notice pushed out of the stack or replaced by its key expires; the replacement takes its place', () => {
+    vi.useFakeTimers();
+    let show!: ReturnType<typeof useToast>;
+    const capture = (fn: typeof show) => { show = fn; };
+    render(<ToastProvider><CaptureToast capture={capture} /></ToastProvider>);
+    const first = vi.fn();
+    const muted = vi.fn();
+    act(() => show({ title: 'First', onExpire: first }));
+    act(() => show({ title: 'Conversation muted', replace: 'mute', onExpire: muted }));
+    act(() => show({ title: 'Notifications back on', replace: 'mute' }));
+    expect(muted).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Conversation muted')).toBeNull();
+    expect(screen.getByText('Notifications back on')).toBeTruthy();
+    expect(first).not.toHaveBeenCalled();
+    act(() => show({ title: 'Second' }));
+    act(() => show({ title: 'Third' }));
+    // Four notices: the oldest leaves, and its held work commits.
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('First')).toBeNull();
+    expect(vi.getTimerCount()).toBe(3);
+    // Once the keyed notice has gone, the key names nothing: a later one with it stacks normally.
+    act(() => vi.advanceTimersByTime(4000));
+    act(() => show({ title: 'Conversation muted', replace: 'mute' }));
+    expect(screen.getByText('Conversation muted')).toBeTruthy();
+  });
+
+  it('CH-1817 the Dismiss X and Esc (focus inside) close it, expire it, and only it: Esc never reaches the dialog under it', () => {
+    vi.useFakeTimers();
+    let show!: ReturnType<typeof useToast>;
+    const capture = (fn: typeof show) => { show = fn; };
+    const outerKey = vi.fn();
+    render(
+      // A test harness that records keys bubbling out of the toast; nothing here is a control.
+      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+      <div onKeyDown={(e) => outerKey(e.key)}>
+        <button type="button">Before</button>
+        <ToastProvider><CaptureToast capture={capture} /></ToastProvider>
+      </div>,
+    );
+    const viaX = vi.fn();
+    act(() => show({ title: 'Saved', onExpire: viaX }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }));
+    expect(viaX).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Saved')).toBeNull();
+
+    const viaEsc = vi.fn();
+    act(() => show({ title: 'Moved', action: { label: 'Undo', run: () => {} }, onExpire: viaEsc }));
+    const before = screen.getByRole('button', { name: 'Before' });
+    before.focus();
+    const undo = screen.getByRole('button', { name: 'Undo' });
+    act(() => undo.focus());
+    fireEvent.keyDown(undo, { key: 'Escape' });
+    expect(viaEsc).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Moved')).toBeNull();
+    expect(outerKey).not.toHaveBeenCalled();
+    // Focus goes back where it came from, not to the page's body.
+    expect(document.activeElement).toBe(before);
   });
 });

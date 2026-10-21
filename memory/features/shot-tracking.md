@@ -701,6 +701,90 @@ any make. No schema change.
   (hole-out `checkpoint` haptic) and Clubhouse `ShotEntry` (CH-11913: medium on
   the tap, success once the hole saves).
 
+## One-tap data-gap prompt (CoachHelm Slice 8a, added 2026-10-20)
+
+Behind `coachhelm_data_gap_prompt_v1` (OFF). With it off the New Round and
+Continue Round pages pass no `dataGapAsks` and the screen renders exactly as
+before.
+
+- Load: the pages call `dataGapAsksForShotEntry` (`src/lib/coachhelm/
+  data-gap/load-asks.ts`), which reads the player's visible v3 reads with an
+  `evidence.data_gap` (RLS, own client) and the putts already tagged since
+  each read's window. Any read error logs and answers no prompt.
+- Show: `useDataGapPrompt` in `FairwayShotTracking` (state survives the
+  entry/completed-hole switch and hole moves) asks about the hole's first
+  putt when it was missed from a band an open read waits on and has no miss
+  tag. `FairwayDataGapPrompt` draws one row above the entry panel or the
+  completed-hole review: "Which side?", Short · Long · High · Low, the
+  counter, Skip. Secondary buttons only; the one primary action stays Next
+  shot / Complete hole. It disappears at the target.
+- Write: `useShotTracking.handleTagPuttMiss` (`use-putt-miss-tagger.ts`)
+  dispatches `TAG_PUTT_MISS` (sets that putt's `puttMissTags` and
+  `missDirection`, nothing else, so the next shot's input survives) and
+  calls `onAutoSave` with the hole, the same tail an edit uses: device copy
+  first, then the server snapshot, held and retried by the state machine.
+  No second queue, no point update. It holds the shared Edit/Undo
+  `shotMutationInFlightRef` until that save settles, so an older tagged
+  snapshot cannot overwrite an edit or bring back an undone shot.
+- Target: tags and untagged misses in non-test rounds since the read are
+  counted at load; an untagged miss (stored, or skipped this session) joins
+  the engine's coverage population, so the target is recomputed
+  (`askTarget`) and Skip never closes the ask below 60%.
+- Clubhouse round entry does not show it yet (Clubhouse is off in
+  production).
+
+## Recovery tap and course nudge (CoachHelm Slice 8b, added 2026-10-21)
+
+Behind `coachhelm_data_prompts_v2` (OFF). With it off the New Round and
+Continue Round pages pass `dataPromptsV2={false}`, the screen and the summary
+sheet draw nothing new, and the round payloads are byte-identical (the new
+key is spread only when answered). The pages read the flag with
+`dataPromptsV2ForShotEntry` (`src/lib/golf/data-prompts/flag.ts`), in the
+player's `HELM_COACHHELM_TEAMS` canary scope like the Slice 8a asks, so a
+canary list limits the prompts to its teams. Rules: `src/lib/golf/data-prompts/
+recovery.ts` (pure).
+
+- Recovery tap: after a non-penalty tee shot whose result is `rough` or
+  `other`, while it is the hole's last shot, `useRecoveryPrompt` and
+  `FairwayRecoveryPrompt` draw one row, "Next shot from there?", Clear shot
+  · Blocked / punch out, Skip. The tap goes through
+  `useShotTracking.handleTagRecovery` (`use-recovery-tagger.ts`): the
+  `TAG_LIE_AFTER_RECOVERY` reducer action sets
+  `ShotRecord.lieAfterRecovery` on that tee shot only, then `onAutoSave`
+  with the hole under the shared Edit/Undo lock, as the putt tag does.
+- Storage: `golf_shots.lie_after_recovery boolean` (null = not asked), added
+  by the HELD migration `20261021091000_shot_lie_after_recovery.sql`,
+  which also patches the shot INSERT of `save_partial_round_atomic` and
+  `submit_round_atomic`. The partial and final actions send
+  `shots[].lie_after_recovery` only for an answered rough/other tee shot
+  (`lieAfterRecoveryPayload`; a stale answer on a shot edited to the
+  fairway is never sent). Before the apply the RPCs ignore the key and the
+  answer lives in the device copy only; the direct-table fallbacks strip it
+  (`withoutLieAfterRecovery`). Continue Round reads it back from
+  `select('*')` when the column exists (`lieAfterRecoveryFromRow`).
+  Stored beside the lie, not as a new lie value, so no strokes-gained lookup
+  changes; costing it is a later engine slice.
+- Course nudge: when the round has no course id, `useCourseNudge` (owned by
+  the round client) feeds `FairwayCourseNudge` on the shot screen at the
+  round's start only (`isRoundStartMoment`: first hole in play order, no
+  score, no shot) and in `FairwayRoundSummarySheet`'s `notice` slot at the
+  finish. "Pick the course" opens the existing `FairwayCoursePicker`
+  (loaded on the first tap); the pick links the course id only (pars,
+  yardages and tee stay as entered). New Round sets `resolvedCourseIdRef`,
+  Continue Round `linkedCourseIdRef`; either rides the next partial and
+  final write as `courseId`, which both round RPCs keep with
+  `COALESCE((p_round_data->>'course_id')::uuid, course_id)`. Skip hides it
+  for the round. A typed name the library matches is linked by the server at
+  the start (`resolveCourseId`); `savePartialRound` returns that id as the
+  optional `data.courseId`, New Round keeps it as `startLinkedCourseId`, and
+  the nudge does not show for that round.
+- Production (2026-10-21, last 90 days): 35 of 572 rounds (6.1%) have no
+  course id, every one with a typed course name; 30 of 521 completed. Tee
+  shots ending `rough` 2,242 and `other` 387 (the recovery tap's
+  population).
+- Clubhouse round entry does not show either yet (Clubhouse is off in
+  production).
+
 ## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
 
 - **Held, not saved.** When an autosave or completed-hole checkpoint does not

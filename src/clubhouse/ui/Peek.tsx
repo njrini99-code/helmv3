@@ -37,6 +37,7 @@ export interface PeekAction {
 export const PEEK_HOLD_MS = 450;
 export const PEEK_HOVER_MS = 400;
 export const PEEK_FOCUS_MS = 600;
+
 const SLOP_PX = 8;
 const HOVER_GRACE_MS = 160;
 const CARD_W = 328;
@@ -154,7 +155,9 @@ export function PeekTarget({
           if (e.pointerType === 'mouse') leaveHover();
         },
         onFocus: (e: React.FocusEvent) => {
-          if (!(e.target as HTMLElement).matches?.(':focus-visible')) return;
+          const target = e.target as HTMLElement;
+          if (!target.matches?.(':focus-visible')) return;
+          if (target.closest?.('[data-ch-peek-quiet]')) return;
           clear();
           timer.current = setTimeout(() => open('hover'), PEEK_FOCUS_MS);
         },
@@ -261,8 +264,8 @@ function HoverCard({
       role="dialog"
       aria-label={label}
       style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, width: CARD_W }}
-      initial={reduced ? false : { opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reduced ? false : { opacity: 0, transform: 'translate(0px, 4px)' }}
+      animate={{ opacity: 1, transform: 'translate(0px, 0px)' }}
       transition={reduced ? { duration: 0 } : chTween('quick')}
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}

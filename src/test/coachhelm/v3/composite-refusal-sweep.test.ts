@@ -84,7 +84,6 @@ vi.mock('@/lib/coachhelm/v3/composite/hole-sequence-loader', () => ({
         })),
       ),
       short_game_shots: [],
-      flyer_lie_shots: [],
     }),
 }));
 

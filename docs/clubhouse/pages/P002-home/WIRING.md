@@ -55,13 +55,18 @@ Tests: src/clubhouse/__tests__/home.test.tsx (the route, Coach Home, the coach l
 
 ## Actions
 
-Each action's record is in `config/clubhouse/pages/P002-home.json` (`actions`), and the whole list is readable in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Home has no write, so no action goes through `useAction` and none has an offline refusal of its own (the shell's Try again offline is 10704).
+Each action's record is in `config/clubhouse/pages/P002-home.json` (`actions`),
+and the whole list is readable in
+`docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`. Home has no write, so no
+action goes through `useAction` and none has an offline refusal of its own (the
+shell's Try again offline is 10704).
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
 | ACT-P002-OPEN-COACH-HOME | Opening `/golf/dashboard` as a coach | `GolfDashboardPage` (coach branch) | `loadCoachHome` | the coach's team, see Data | ready 20101 · loading 20201 · role 20801 · team 20802 · no team 20407 · first run 20408 · week fails 20601 · timezone 20618 |
 | ACT-P002-OPEN-PLAYER-HOME | Opening `/golf/dashboard` as a player | `GolfDashboardPage` (player branch) | `loadPlayerHome` | the player's own rounds and the team's week | ready 20102 · loading 20201 · role 20801 · team 20802 · no team 20413 · first run 20412 · own rounds 20803 · names 20804 · rounds fail 20615 · scrambling 20616 |
 | ACT-P002-MESSAGE-TEAM | Message team (coach header) | link built in `HomeActions` | the team chat id from `loadCoachHome` | golf_conversations | links 20103 · chat does not load 20608 |
+| ACT-P002-FIRST-RUN-INVITE | Invite players (coach first run, desktop and phone) | link built in `HomeFirstRun` (`CoachHome.tsx`) | none | none | links 20103 · first run 20408 · opens Roster's invite sheet (`/golf/dashboard/roster?invite=1`, P003 30102) |
 | ACT-P002-NEW-EVENT | New event, or N (coach header) | `HomeActions` (link and key handler) | none | none | links 20103 · N 21801 · light tap 21702, 21703 |
 | ACT-P002-QUICK-ADD-EVENT | Quick event types, Add event, Plan (coach phone) | links in `NoEvents` and `Today` | none | none | links 20103 · nothing ahead 20409 · taps 21703 |
 | ACT-P002-OPEN-EVENT | Up next, a Today row | `UpNext`, `Today` | none | none | links 20103 · clock 20301 · breadcrumb 22301 |
@@ -150,9 +155,21 @@ None.
 
 ## Impact notes
 
-- `homeClock`, `loadHomeWeek` and `latestWithHoles` serve both roles. A change to them changes Coach Home and Player Home together; `loadPlayerHome` passes `loadHomeWeek` no names, and that argument is the player's privacy (20804).
-- `page.tsx` also renders the Fairway dashboards; only its two Clubhouse branches belong to Home, and the Fairway branches must keep working while the flag is off (20801).
-- Home imports the event type label and icon from Calendar's screens (`calendar/model`, `calendar/views`) and `formatHcp` from Roster's (`roster/format`); `ui/Nine` is shared with Qualifiers.
-- Message coach depends on Messages accepting `?user=` (Messages.tsx, CH-7001). If that deep link changes, `messageCoachHref` (`player-links.ts`) changes with it.
-- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten live teams, per the fix on 2026-09-30); `coachFor` matches it against `golf_coaches.id` and returns that coach's `user_id`.
-- The desktop markup is what the server renders on every width; the phone Home replaces it at hydration (CSS hides the desktop markup at 820px and below until then).
+- `homeClock`, `loadHomeWeek` and `latestWithHoles` serve both roles. A change
+  to them changes Coach Home and Player Home together; `loadPlayerHome` passes
+  `loadHomeWeek` no names, and that argument is the player's privacy (20804).
+- `page.tsx` also renders the Fairway dashboards; only its two Clubhouse
+  branches belong to Home, and the Fairway branches must keep working while the
+  flag is off (20801).
+- Home imports the event type label and icon from Calendar's screens
+  (`calendar/model`, `calendar/views`) and `formatHcp` from Roster's
+  (`roster/format`); `ui/Nine` is shared with Qualifiers.
+- Message coach depends on Messages accepting `?user=` (Messages.tsx, CH-7001).
+  If that deep link changes, `messageCoachHref` (`player-links.ts`) changes with
+  it.
+- `golf_teams.created_by` is a `golf_coaches.id`, not a user id (true of all ten
+  live teams, per the fix on 2026-09-30); `coachFor` matches it against
+  `golf_coaches.id` and returns that coach's `user_id`.
+- The desktop markup is what the server renders on every width; the phone Home
+  replaces it at hydration (CSS hides the desktop markup at 820px and below
+  until then).

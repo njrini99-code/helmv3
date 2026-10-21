@@ -11,7 +11,12 @@
  * content wrapper, matching the pattern used by every sibling auth-style
  * loading file (e.g. `../../(auth)/login/loading.tsx:37-46`).
  */
+import { isClubhouseFrontDoor } from '@/clubhouse/gate';
+import { GateLoading } from '@/clubhouse/screens/auth/GateLoading';
+
 export default function Loading() {
+  // golf_clubhouse_front_door: the same loading boundary, drawn in the sign-in room.
+  if (isClubhouseFrontDoor()) return <GateLoading label="Checking your team code" title="Checking your code" line="Finding your team…" />;
   return (
     <div className="min-h-dvh bg-auth-golf relative">
       {/* Floating orbs — mirrors the real page's (GolfJoinTeamClient) orb composition */}

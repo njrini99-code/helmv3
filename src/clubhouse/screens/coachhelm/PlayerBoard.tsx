@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
-import { Play, Sparkles } from 'lucide-react';
-import { partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
-import { PLAYER_HELM_HREF, type PlayerHelmView } from '../../data/coachhelm-views-shape';
+import { ArrowRight, Plus, Sparkles } from 'lucide-react';
+import { moreReadsLine, partitionInsights, type ChInsight, type ChPlayerHelm } from '../../data/coachhelm-shape';
+import { PLAYER_HELM_HREF, PLAYER_HELM_VIEWS, type PlayerHelmView } from '../../data/coachhelm-views-shape';
 import { useChSessionState } from '../../lib/session-state';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -13,6 +13,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState } from '../../ui/States';
 import { BoardPartial, FocusCard, Head, InsightRow } from './parts';
+import { ClearedLines } from './EngineState';
 import { Proposals } from './Proposals';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
@@ -47,12 +48,15 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
   const picked = hydrated ? kept : null;
   const focusTop = useRef<HTMLDivElement>(null);
   // A switch of view moves the strip at once and dims the board (aria-busy) until the next view is ready.
-  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v]);
+  const sw = useViewSwitch<PlayerHelmView>('board', (v) => PLAYER_HELM_HREF[v], PLAYER_HELM_VIEWS);
 
   const list = data.insights.list;
-  const { focus, also, working } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);
+  // At most three reads that need work and one that is working; the rest are counted and are in the Deep dive (NEEDS_MAX).
+  const { focus, also, working, more } = useMemo(() => partitionInsights(list, picked?.id), [list, picked]);
   const gone = picked && focus && focus.id !== picked.id ? picked : null;
   const startHref = coachHelmLinks.startRound();
+  // How many rounds CoachHelm still waits for (the miner's floor less the rounds in its window), when known and some are still to come.
+  const short = data.roundsToGo != null && data.roundsToGo > 0 ? data.roundsToGo : null;
   const pick = (ins: ChInsight) => {
     setPicked({ id: ins.id, title: ins.title });
     // On the phone the focus sits above the lists, so bring it into view.
@@ -65,8 +69,8 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
     <main className={'ch-hl' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hl-title" aria-busy={sw.pending || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start title="CoachHelm" />}
       {phone && tabs}
-      <Head who="Player" phone={phone} aside={!phone ? tabs : undefined}>
-        One thing to work on this week, based on the rounds you’ve posted.
+      <Head phone={phone} aside={!phone ? tabs : undefined}>
+        {data.rounds === 0 ? 'One thing to work on each week, from the rounds you post.' : 'One thing to work on this week, based on the rounds you’ve posted.'}
       </Head>
 
       {!data.off && <Proposals proposals={data.proposals} writes={writes} />}
@@ -77,7 +81,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
         <EmptyState
           size="page"
           code="CH-13304"
-          icon={Sparkles}
+          kind="restricted"
           title="CoachHelm is off for your team"
           body={
             data.off.reason
@@ -88,37 +92,45 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
       ) : data.insights.error ? (
         <RefreshNotice code="CH-13201" title="Your insights didn’t load" body="Nothing is lost. Your CoachHelm reads are still saved; try again in a moment." />
       ) : list.length === 0 ? (
-        data.rounds === 0 ? (
-          <EmptyState
-            size="page"
-            code="CH-13301"
-            icon={Sparkles}
-            title="Post a round to start CoachHelm"
-            body="CoachHelm reads the rounds you post. Once there is enough to go on, one thing to work on this week shows up here."
-            action={
-              startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
-                  {startHref.label}
-                </Button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <EmptyState
-            size="page"
-            code="CH-13302"
-            icon={Sparkles}
-            title="No insights yet"
-            body={`${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`}
-            action={
-              startHref ? (
-                <Button variant="primary" leftIcon={Play} href={startHref.href}>
-                  {startHref.label}
-                </Button>
-              ) : undefined
-            }
-          />
-        )
+        <>
+          {data.rounds === 0 ? (
+            <EmptyState
+              size="page"
+              code="CH-13301"
+              shape="rows"
+              title="Post a round to start CoachHelm"
+              body={`CoachHelm reads the rounds you post. ${short != null ? `After ${short} ${short === 1 ? 'round' : 'rounds'}` : 'Once there is enough to go on'}, one thing to work on this week shows up here.`}
+              action={
+                startHref ? (
+                  <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+                    {startHref.label}
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <EmptyState
+              size="page"
+              code="CH-13302"
+              shape="rows"
+              title="No insights yet"
+              body={
+                short != null
+                  ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
+                  : `${data.rounds ? `You’ve posted ${data.rounds} ${data.rounds === 1 ? 'round' : 'rounds'}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
+              }
+              action={
+                startHref ? (
+                  <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+                    {startHref.label}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
+          {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
+          <ClearedLines lines={data.cleared} />
+        </>
       ) : (
         <div className="ch-hl-grid">
           <div ref={focusTop} aria-live="polite">
@@ -135,7 +147,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
                   code="CH-13303"
                   icon={Sparkles}
                   title="Nothing needs work right now"
-                  body="CoachHelm found nothing to fix in the rounds you’ve posted. What is working is listed beside this."
+                  body={`CoachHelm found nothing to fix in the rounds you’ve posted.${working.length > 0 ? ` What is working is listed ${phone ? 'below' : 'beside this'}.` : ''}`}
                 />
               )}
             </SectionBoundary>
@@ -152,12 +164,18 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES }: { data: ChPla
               )}
               {working.length > 0 && (
                 <section className="ch-hl-sec" aria-labelledby="ch-hl-working">
-                  <h2 id="ch-hl-working">Working</h2>
+                  <h2 id="ch-hl-working">What’s working</h2>
                   {working.map((i) => (
                     <InsightRow key={i.id} ins={i} onPick={() => pick(i)} />
                   ))}
                 </section>
               )}
+              {more > 0 && (
+                <Button className="ch-hl-more" variant="ghost" size="sm" rightIcon={ArrowRight} feel="select" onClick={() => sw.go('deep-dive')}>
+                  {moreReadsLine(more)}
+                </Button>
+              )}
+              <ClearedLines lines={data.cleared} />
               <p className="ch-hl-note">Reads update as you post rounds. Your coaches see the same insights.</p>
             </SectionBoundary>
           </aside>

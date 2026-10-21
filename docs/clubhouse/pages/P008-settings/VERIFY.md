@@ -1,5 +1,14 @@
 # P008 — Settings: verification
 
+## 2026-10-19 — Save bar, per-row Saved, measure, danger zone (lane L7)
+
+Source and emulated-browser evidence only; no physical-device or owner acceptance.
+
+- Tests (exit 0): `settings-save-bar.test.tsx` (9), `settings.test.tsx` (201), `settings-staff.test.tsx`, `settings-server.test.tsx`, `settings-distance-units.test.tsx`, `settings-philosophy-save.test.tsx`, `wiring-p008-settings.test.tsx`, plus `shell-reach-css`, `course-location`, `popup-layout`, `native`, `logic`, `dialog-lifetime`, `dark-ink-guard`, `audit-a11y-motion` and the motion tests.
+- Browser (WebKit, headless, reduced motion, dev server): 1280 and 390, light and dark, of account, notifications, team, CoachHelm and preferences, the player's account and golf sections, a dirty profile and a dirty team card with the bar at the foot of the view, a CoachHelm switch and a notifications switch saying Saved in their rows, and a saved team card. Dark is the stored golf theme plus `data-fw-theme="dark"` on the root.
+- Measured in WebKit: the reorder arrows (30px) and the setting segments (26px) carry a 44px hit area (`::after`), and the arrows sit 14px apart.
+- Not verified: a physical iPhone, the native app's keyboard with the bar, VoiceOver reading of the row Saved region, Cmd+S in Safari's own Save dialog (the handler prevents it inside a card; only the unit test exercises it).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -15,8 +24,8 @@ verification and durable writes are still pending.
 
 Desktop section swaps, phone pushes, settings sheets and reorder list.
 
-Check the single 260ms entrance without exit wait; verify instant reduced motion,
-drag/scroll conflicts and pending saves.
+Check the single 260ms entrance without exit wait; verify instant reduced
+motion, drag/scroll conflicts and pending saves.
 
 Fresh WebKit 26.6: `/clubhouse-preview/settings` at
 375, 430 and 1280px; zero Axe A/AA violations and no horizontal document
@@ -215,6 +224,19 @@ Animation:         v2 tokens only
 Notes:             first-load JS and LCP are open (CH-1954)
 ```
 
+## Push on this device in the app (2026-10-16, CH-8902, CH-8903, blocker 12)
+
+- Tests: `src/clubhouse/__tests__/settings.test.tsx` (phone: the switch before iOS has asked and while it is being read,
+  On and Off with Open iOS Settings, no Open iOS Settings where it can't open, no Send a test in the app; wide layout:
+  the same three states) and `src/clubhouse/screens/settings/__tests__/native-push.test.tsx` (`useNativePush`: nothing
+  on the web, the read, Turn on allowed and refused, one ask for two taps, the read on return from iOS Settings that
+  registers push turned on there, Open iOS Settings only on iOS).
+- Browser: the preview has the three app states (`/clubhouse-preview/settings?section=notifications&state=nativeprompt`,
+  `nativeon`, `nativeoff`). The before capture (the preview's web push row) is filed below; the after captures were not
+  taken (no headless browser would launch on this machine after about 18:30 on 2026-10-16).
+- Not verified: on a device, including that `app-settings:` opens GolfHelm's page in the Settings app (from Capacitor
+  8.5.2's navigation handler, which hands a top-level navigation to a non-app URL to `UIApplication.shared.open`).
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -252,6 +274,7 @@ before, after, baseline or evidence.
 | `P008__premium-audit__coach__390__case-073-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-073-chromium-normal; /clubhouse-preview/settings; synthetic preview |
 | `P008__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P008__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P008__notifications__coach__390__web-push-preview__before__22e5426.png` | before | 22e5426 | Notifications on the phone (WebKit, preview): the web push row from the preview's fixture; in the app this group was hidden (web push is unsupported in the WebView) |
 
 ## Historical verification gaps
 
@@ -281,25 +304,40 @@ before, after, baseline or evidence.
   CoachHelm access check made a head
   coach see the switch disabled with "Only the head coach can change this."
   (80804).
-- Found and not fixed:
-  - Phone: the browser's Back or the iOS edge swipe while a section-level sheet
-    (Team details, Golf details, a reminder
-    time, Join a team) holds edits pops the section behind it and drops the
-    sheet without the discard question. The page
-    guard (CH-8508, CH-8506) covers closing the tab and links, not history
-    entries; the sheets are not history entries.
-  - A refused instant save (a switch or CoachHelm autosave) always says "Check
-    your connection", because it never shows
-    the server's reason; a refusal that arrives as an error (an upsert against a
-    policy, "violates row-level
-    security") reads the same way on a form save.
-  - Two CoachHelm priority moves in a row: if the first save fails and the
-    second lands, the screen shows the order
-    from before the first move while the server has both moves.
-  - The loader reads `golf_coach_philosophy` and `golf_teams` twice each.
-  - Leave team, Make a new invite code, Reset CoachHelm updates and Turn off
-    CoachHelm open their confirm without the
-    warning haptic (an owner decision under D-70).
+- Fixed 2026-10-17 (each has a test in `settings.test.tsx` that fails without
+  the fix; jsdom only, not yet seen in Safari, the Simulator or on an iPhone):
+  - Phone: the browser's Back or the iOS edge swipe while an edit sheet holds
+    edits over a section (Team details, Golf details, a reminder time, Join a
+    team, Profile over Account) now asks the CH-8509 discard question and keeps
+    the section; Keep editing leaves the sheet as typed, Discard closes it, and
+    the next Back pops the section as before. A Back while a sheet saves does
+    nothing. A clean sheet still goes with its section. The page puts the
+    section's history entry back before the stack sees the pop
+    (`SettingsPhone`, `HeldSheetsContext` in `phone/sheets.tsx`).
+  - A refused save says why instead of "Check your connection": a switch, a
+    CoachHelm autosave (CH-8022), a form save and the course location. A policy
+    refusal that arrives as an error ("violates row-level security") reads
+    "Your account doesn’t have access to do this."; only a save that threw, gave
+    no reason or failed with the browser's network wording keeps "Check your
+    connection and try again." (`saveFailureBody` in `parts.tsx`).
+- Fixed 2026-10-17 (the rest of the list):
+  - Phone: a Back while the Profile, Change email or Password sheet is open over
+    the list itself now closes the sheet instead of leaving Settings, and asks
+    first when it holds edits: a sheet over the list is a history entry of its
+    own, as a section is. Test `settings.test.tsx` (fails without the fix);
+    checked in WebKit at 390px (Back with edits stayed on Settings, asked, kept
+    the text).
+  - Two CoachHelm priority moves in a row where the first save fails and the
+    second lands: a failed save now puts back only the fields nothing has
+    changed since it was sent, so the screen keeps the second move, as the
+    server does. Test `settings-philosophy-save.test.tsx` (fails without the
+    fix).
+  - The loader reads `golf_coach_philosophy` and `golf_teams` once each (the
+    digest is a column of the philosophy row; the team name comes from the team
+    row each role reads). Test `settings-server.test.tsx` (fails without it).
+  - Leave team, Make a new code, Reset CoachHelm updates and Turn off CoachHelm
+    give the warning tick as their desktop confirm opens (D-70); the phone's
+    action sheets already did. Tests CH-8502 to CH-8505.
 
 ## 2026-10-02 — Custom native overlay lifetime
 

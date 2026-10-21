@@ -40,6 +40,8 @@ COMMENT ON TABLE "public"."golf_coachhelm_llm_budget" IS 'v3 W30 per-coach daily
 
 COMMENT ON TABLE "public"."golf_coachhelm_llm_calls" IS 'v3 W30 append-only LLM call log. One row per compose() invocation. Used for cost attribution, dedup diagnostics, citation audit, and admin spend dashboard (deferred).';
 
+COMMENT ON TABLE "public"."golf_coachhelm_player_state" IS 'CoachHelm checkpoint counter per player (Slice 3, flag coachhelm_recheck_v1): countable rounds and per-family attempts since the last checkpoint. Reads are rechecked, paired and archived only when a checkpoint fires. 07 §2 D.';
+
 COMMENT ON COLUMN "public"."golf_coachhelm_settings"."goal_assignment_default" IS 'v3 goal-assignment default: ''mandatory'' (player must accept; forced active) or ''suggested'' (player chooses). Default ''suggested''. Overridable per-goal at creation.';
 
 COMMENT ON COLUMN "public"."golf_coachhelm_settings"."llm_narrative_enabled" IS 'v3 LLM gate: when false, all three LLM surfaces (round_review, hero_narrative, coach_chat) fall back to deterministic templates for this coach''s players. Default false at W9; flipped per-coach via GrowthBook in W30+.';

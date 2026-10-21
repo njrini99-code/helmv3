@@ -4,9 +4,10 @@ import { useEffect, type RefObject } from 'react';
 
 /**
  * The phone's large titles (iOS large-title behaviour, owner 2026-10-08 "cardless, native-feeling phone Clubhouse").
- * A page that opens with its own large title ("Roster", "Lineup decisions", "Team stats") no longer shows its name
- * twice: while the large title is in view the bar's title is hidden, and as the large title scrolls up under the bar
- * the bar's title fades in. Pages with no large title keep the bar's title.
+ * The bar's section switcher always shows (owner, 2026-10-16: on Stats it seemed gone while "Team stats" was in view).
+ * A pushed page that opens with its own large title does not show its name twice: while the large title is in view
+ * the bar's pushed title is hidden, and as the large title scrolls up under the bar it fades in. Pages with no large
+ * title keep the bar's title.
  *
  * Which element is a page's large title is decided here, once, rather than on each screen: a screen can opt in with
  * `data-ch-large-title`, and the screens that already draw one are listed by their own title class. The same list

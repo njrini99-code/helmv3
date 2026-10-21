@@ -45,7 +45,7 @@ const ROSTER = [
 ];
 const ctx = (over: Record<string, unknown> = {}) => ({ coach_id: 'c1', user_id: 'u1', team_id: 't1', team_name: 'Finley University', timezone: 'America/New_York', roster: ROSTER, ...over });
 const pulse = (over: Record<string, unknown> = {}) => ({
-  items: [{ id: 'rsvp-1', headline: '2 players have not responded for Hilltop', evidence: 'Sat 8:00 AM · 6 of 8 responded', tone: 'attention', weight: 85, action: { label: 'Open calendar', href: '/golf/dashboard/calendar' }, ask: 'Send an RSVP reminder for Hilltop' }],
+  items: [{ id: 'rsvp-1', headline: '2 players haven’t replied to Hilltop', evidence: 'Sat 8:00 AM · 6 of 8 replied', tone: 'attention', weight: 85, action: { label: 'Open calendar', href: '/golf/dashboard/calendar' }, ask: 'Send an RSVP reminder for Hilltop' }],
   latest_round_at: '2026-09-29T15:00:00Z',
   players_without_rounds: 0,
   players_with_recent_rounds: 4,
@@ -113,8 +113,8 @@ describe('loadAskCoachHelm', () => {
       {
         id: 'rsvp-1',
         category: 'Schedule',
-        headline: '2 players have not responded for Hilltop',
-        evidence: 'Sat 8:00 AM · 6 of 8 responded',
+        headline: '2 players haven’t replied to Hilltop',
+        evidence: 'Sat 8:00 AM · 6 of 8 replied',
         tone: 'attention',
         ask: 'Send an RSVP reminder for Hilltop',
         link: { label: 'Open calendar', href: '/golf/dashboard/calendar' },
@@ -152,11 +152,17 @@ describe('loadAskCoachHelm', () => {
     expect(res.data.suggestions.map((s) => s.id)).toEqual(['week']);
   });
 
-  it('a finding whose screen is not rebuilt keeps its text and loses its link', async () => {
-    ctxState.pulse = pulse({ items: [{ id: 'tasks-overdue', headline: '2 tasks are overdue', evidence: 'e', tone: 'attention', weight: 1, action: { label: 'Open tasks', href: '/golf/dashboard/tasks' } }] });
+  it('a finding whose screen moved opens it in Clubhouse (Tasks is Team Hub’s tab); one with no Clubhouse screen keeps its text and loses its link', async () => {
+    ctxState.pulse = pulse({
+      items: [
+        { id: 'tasks-overdue', headline: '2 tasks are overdue', evidence: 'e', tone: 'attention', weight: 1, action: { label: 'Open tasks', href: '/golf/dashboard/tasks' } },
+        { id: 'prep-1', headline: 'Scouting is due', evidence: 'e', tone: 'neutral', weight: 1, action: { label: 'Open scouting', href: '/golf/dashboard/scouting' } },
+      ],
+    });
     const res = await load();
     if (res.status !== 'ready') throw new Error('not ready');
-    expect(res.data.pulse?.findings[0]).toMatchObject({ headline: '2 tasks are overdue', link: null });
+    expect(res.data.pulse?.findings[0]).toMatchObject({ headline: '2 tasks are overdue', link: { label: 'Open tasks', href: '/golf/dashboard/team-hub?tab=tasks' } });
+    expect(res.data.pulse?.findings[1]).toMatchObject({ headline: 'Scouting is due', link: null });
   });
 
   it('CH-13222 a chat list that does not read is its own flag with an empty list, logged, and never "no chats yet"', async () => {

@@ -1,4 +1,6 @@
 import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
+import type { ChReadEngine } from './coachhelm-engine-shape';
+import type { ChTeamPatterns } from './coachhelm-team-pattern';
 
 /**
  * CoachHelm's data shapes (Clubhouse P013) and the steps the screens share,
@@ -124,6 +126,8 @@ export interface ChInsight {
   why: string | null;
   /** The generator's display of the headline number ("23 pts", "1.1"). */
   value: string;
+  /** What that number counts, where the number alone does not say ("gap", "a round", "made", "of holes"); null otherwise. */
+  valueUnit: string | null;
   evidence: ChHelmEvidence;
   week: ChHelmWeek | null;
   lifecycle: ChHelmLifecycle;
@@ -136,6 +140,17 @@ export interface ChInsight {
   assigned: ChHelmAssigned | null;
   /** The player declined a focus made from it and none stands now (CH13-23): Assign proposes it again, and says so. */
   declined: boolean;
+  /**
+   * A measured zero (`data/coachhelm-strokes.ts`): a strokes-gained baseline that came out at 0.0 strokes a round. The player's
+   * Board leaves it out of its open reads and counts it among the reads in the Deep dive, which lists it. Absent is false.
+   */
+  measuredZero?: boolean;
+  /**
+   * What the engine now knows about the read, each part behind the flag that writes it (`coachhelm-engine-shape.ts`): the claim
+   * ladder, the cause state, Cleared / Contradicted / Under review, the verdict on its focus area and the audit lines. Absent with
+   * every flag off and on rows written before the engine wrote them, so the card is exactly what it was.
+   */
+  engine?: ChReadEngine;
 }
 
 /** A focus area a coach proposed, waiting for this player to accept or decline it (`golf_player_focus_areas.status = 'proposed'`; Q-77). */
@@ -144,6 +159,8 @@ export interface ChProposal {
   title: string;
   /** The title of the insight it was made from, when that insight is on this page. */
   from: string | null;
+  /** The proposing coach's user id, for "Tell coach why" after a decline; null when unknown, and then the link is not offered. */
+  coachUserId?: string | null;
 }
 
 /**
@@ -180,8 +197,15 @@ export interface ChPlayerHelm {
   insights: { list: ChInsight[]; error: boolean };
   /** Countable rounds posted, read only when there are no insights, so the empty state can say what to do; null when unknown. */
   rounds: number | null;
+  /**
+   * Rounds still to post before the pattern miner reads this player: its floor (the coach's `min_rounds_for_signal`, never under
+   * the miner's own minimum) less the countable rounds in its lookback window. 0 once there are enough; null or absent when unknown.
+   */
+  roundsToGo?: number | null;
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
+  /** Reads the recheck found cleared, one line each (04 example 5; `coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: string[];
 }
 
 export type ChPulseIcon = 'calendar-x' | 'trending-up' | 'trending-down' | 'rsvp' | 'practice' | 'focus' | 'tasks' | 'roster' | 'flag';
@@ -202,6 +226,8 @@ export interface ChCoachPlayer {
   count: number;
   /** The player's top-ranked insight: the row's line and the focus card. */
   top: ChInsight;
+  /** This player's reads the recheck found cleared, one line each (`coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: string[];
 }
 
 /**
@@ -267,13 +293,39 @@ export interface ChCoachHelmData {
   players: { list: ChCoachPlayer[]; error: boolean };
   /** Roster players with no insight yet. */
   withoutSignals: number;
+  /** Their names, roster order (a player with no name on file is counted, not named); absent where the board cannot say. */
+  withoutNames?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
+  /** Team pattern rows (supercharge Slice 7b, `coachhelm_team_pattern_v1`, off); absent with the flag off or nothing to show. */
+  teamPatterns?: ChTeamPatterns;
+  /** The coach may ask for a course plan for the chosen player (`coachhelm_course_plan_v1`, off). Absent: not offered. */
+  coursePlan?: boolean;
 }
 
-/** Rows in the "Also worth knowing" list and in "Working". */
-export const ALSO_MAX = 5;
-export const WORKING_MAX = 5;
+/** Names said before the rest are counted: "A, B, C and 2 more". */
+const WITHOUT_NAMED_MAX = 3;
+
+/**
+ * "Theo Marchetti has no insights yet.", "Theo Marchetti and Sam Whitfield have no insights yet.", "A, B, C and 2 more have no
+ * insights yet."; with no names, the count alone. A player counted with no name on file is one of the "more".
+ */
+export function withoutSignalsLine(count: number, names: readonly string[] = []): string {
+  if (count <= 0) return '';
+  const shown = names.slice(0, Math.min(WITHOUT_NAMED_MAX, count));
+  if (shown.length === 0) return `${count} ${count === 1 ? 'player has' : 'players have'} no insights yet.`;
+  const more = count - shown.length;
+  const list = more > 0 ? `${shown.join(', ')} and ${more} more` : shown.length === 1 ? shown[0]! : `${shown.slice(0, -1).join(', ')} and ${shown.at(-1)}`;
+  return `${list} ${count === 1 ? 'has' : 'have'} no insights yet.`;
+}
+
+/**
+ * The player's Board shows at most three reads that need work (the focus among them, the rest in "Also worth knowing") and one
+ * that is working (supercharge 03 §2: working memory holds three to five items; production has a median of nine reads a player
+ * and up to nineteen). The rest are counted and are a tap away in the Deep dive, which lists every one.
+ */
+export const NEEDS_MAX = 3;
+export const WORKING_MAX = 1;
 /** Rows in the program pulse (two columns of three). */
 export const PULSE_MAX = 6;
 
@@ -304,20 +356,40 @@ export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
 const PRI_WEIGHT: Record<ChHelmPri, number> = { high: 3, medium: 2, low: 1 };
 
 /**
- * The focus, the rest to look at, and what is working. The focus is the one the
- * viewer picked or, without a pick, the top-ranked insight that is not a
- * strength (the feed's own order). The picked one leaves both lists.
+ * The focus, the rest to look at, what is working, and how many reads the Board leaves to the Deep dive. The focus is the one the
+ * viewer picked or, without a pick, the top-ranked insight that is not a strength (the feed's own order, never re-ranked). The
+ * Board holds at most `NEEDS_MAX` findings (the focus counted when it is one) and `WORKING_MAX` strengths (a picked strength is
+ * that one); the picked one leaves both lists and the one it replaced joins them. A measured zero (`ChInsight.measuredZero`) is
+ * not one of the Board's open reads. `more` counts every read the Deep dive lists that the Board does not show, so the line that
+ * points there is true: a note is in neither.
  */
-export function partitionInsights(list: readonly ChInsight[], pickedId?: string | null): { focus: ChInsight | null; also: ChInsight[]; working: ChInsight[] } {
+export function partitionInsights(
+  list: readonly ChInsight[],
+  pickedId?: string | null,
+): { focus: ChInsight | null; also: ChInsight[]; working: ChInsight[]; more: number } {
   // A note states no finding, so it is neither the focus nor a row in either list.
   const drawn = list.filter((i) => i.kind !== 'note');
-  const picked = pickedId ? drawn.find((i) => i.id === pickedId) : undefined;
+  const open = drawn.filter((i) => !i.measuredZero);
+  const picked = pickedId ? open.find((i) => i.id === pickedId) : undefined;
   // A read that is out of date does not lead while a current finding exists; the feed's own order decides within each.
-  const findings = drawn.filter((i) => i.kind === 'finding');
-  const focus = picked ?? findings.find((i) => !i.stale) ?? findings[0] ?? null;
-  const rest = drawn.filter((i) => i.id !== focus?.id);
-  const also = [...rest.filter((i) => i.kind === 'finding' && !i.stale), ...rest.filter((i) => i.kind === 'finding' && i.stale)];
-  return { focus, also: also.slice(0, ALSO_MAX), working: rest.filter((i) => i.kind === 'strength').slice(0, WORKING_MAX) };
+  const findings = [...open.filter((i) => i.kind === 'finding' && !i.stale), ...open.filter((i) => i.kind === 'finding' && i.stale)];
+  const strengths = open.filter((i) => i.kind === 'strength');
+  const focus = picked ?? findings[0] ?? null;
+  const first = (kind: ChInsight['kind'], of: ChInsight[], max: number) => (focus?.kind === kind ? [focus, ...of.filter((i) => i.id !== focus.id)] : of).slice(0, max);
+  const needs = first('finding', findings, NEEDS_MAX);
+  const good = first('strength', strengths, WORKING_MAX);
+  return {
+    focus,
+    also: needs.filter((i) => i !== focus),
+    working: good.filter((i) => i !== focus),
+    more: drawn.length - needs.length - good.length,
+  };
+}
+
+/** "6 more reads in the Deep dive": what the Board leaves out, said where it is. Empty when it shows every read. */
+export function moreReadsLine(more: number): string {
+  if (more <= 0) return '';
+  return `${more} more ${more === 1 ? 'read' : 'reads'} in the Deep dive`;
 }
 
 /** Most pressing first: the top insight's priority (an out-of-date read or a strength after it, a note last), then how many signals, then the name. */
@@ -350,8 +422,8 @@ const PULSE_ICON: Array<[RegExp, ChPulseIcon]> = [
 /**
  * The program pulse as the board draws it (getProgramPulse's own headline and
  * evidence line, in its own order). The signals item is left out: the page's
- * subtitle says the same count. A higher score is worse, so "scoring higher"
- * wears the rising arrow and amber, "scoring lower" the falling arrow and green.
+ * subtitle says the same count. A higher score is worse, so "scoring worse"
+ * (scores rising) wears the rising arrow and amber, "scoring better" the falling arrow and green.
  */
 export function pulseRows(items: readonly Pick<PulseItem, 'id' | 'headline' | 'evidence' | 'tone'>[]): ChPulseRow[] {
   return items

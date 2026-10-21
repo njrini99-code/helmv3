@@ -58,16 +58,16 @@ Coach: know who needs a look, what is on today and this week, and how the last r
 
 ### Primary action
 
-Coach: New event (the page's one primary button; N from anywhere on the page). Player: Message coach, and Post a round once round entry is rebuilt for players (until then it is not drawn, Q-69).
+Coach: New event (the page's one primary button; N from anywhere on the page). Player: Message coach, and Start a round once round entry is rebuilt for players (until then it is not drawn, Q-69).
 
 ### Secondary actions
 
-Coach: Message team; open an event, a day or a round; page through the latest three rounds; open a player's stats from the leaderboard or the latest round; Full roster; on the phone, Plan or add the first event from an empty Up next. Player: open Up next or a day in Calendar; page through My latest round; choose the Scoring window (last 5, 10 or 20); My stats.
+Coach: Message team; open an event, a day or a round; page through the latest three rounds; open a player's stats from the leaderboard or the latest round; Full roster; on the phone, Plan or add the first event from an empty Up next. Player: open Up next or a day in Calendar; page through Your latest round; choose the Scoring window (last 5, 10 or 20); My stats.
 
 ### Information hierarchy
 
 1. Coach: the greeting and the one-sentence brief (who needs a look, then the week's next competition); the week beside the latest round; the leaderboard. Phone: Up next, Today, the team's scoring form, This week, Latest rounds.
-2. Player: the greeting and one sentence from their own rounds; the week with Up next and its countdown beside My latest round; Scoring; the four parts of the game. Phone: Up next with the countdown and Message coach, This week, Today, My latest round, Scoring, the parts of the game.
+2. Player: the greeting and one sentence from their own rounds; the week with Up next and its countdown beside Your latest round; Scoring; the four parts of the game. Phone: Up next with the countdown and Message coach, This week, Today, Your latest round, Scoring, the parts of the game.
 
 ### User should notice first
 
@@ -115,7 +115,7 @@ The sidebar and the phone tab bar (Home is the first destination for both roles,
 
 ### Exits to
 
-Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor: `?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a player, `?user=` the coach), Stats (`?player=` a player's, and the player's own), Roster (Full roster, Invite players). Post a round and Add classes are not drawn for a player until round entry and Classes are rebuilt.
+Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor: `?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a player, `?user=` the coach), Stats (`?player=` a player's, and the player's own), Roster (Full roster, Invite players). Start a round and Add classes are not drawn for a player until round entry and Classes are rebuilt.
 
 ## Ownership
 

@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,6 +33,7 @@ import { sgChange } from '../data/stats-common';
 import { loadRoundReview } from '../data/round-review';
 import type { ChRoundReview } from '../data/round-review-shape';
 import { sgBaseline, sgScale, sgShare, sgTint } from '../lib/sg';
+import { deltaTone } from '../lib/stats-signal';
 import { PlayerHome } from '../screens/home/PlayerHome';
 import { RoundReview } from '../screens/rounds/RoundReview';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -46,6 +47,7 @@ import { PREVIEW_HOME_NOW } from '../preview/fixtures';
 import { PREVIEW_PLAYER_HOME } from '../preview/fixtures-player-home';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_ROUND } from '../preview/fixtures-round-review';
 import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
+
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 const ROOT = { className: 'ch-root', 'data-ui': 'clubhouse' } as const;
@@ -164,8 +166,8 @@ describe('bar scale', () => {
   });
 
   it('the grid tint follows the scale: 2.6 on a scale of 3 is not the full tint a fixed 1.2 would give', () => {
-    expect(sgTint(-2.6, 3)).toBe('rgb(154 101 18 / 0.32)');
-    expect(sgTint(2.6, 3)).toBe('rgb(21 90 57 / 0.32)');
+    expect(sgTint(-2.6, 3)).toBe('color-mix(in srgb, var(--ch-chart-loss) 32%, transparent)');
+    expect(sgTint(2.6, 3)).toBe('color-mix(in srgb, var(--ch-chart-gain) 32%, transparent)');
     expect(sgTint(null, 3)).toBe('var(--ch-ivory-100)');
   });
 
@@ -234,8 +236,9 @@ describe('team stats · desktop', () => {
     expect(hero.querySelector('.ch-sgt__k')!.textContent).toBe('Team strokes gained per round');
     expect(hero.querySelector('.ch-sgt__n')!.textContent).toBe('−0.5');
     expect(hero.querySelector('.ch-sgt__n')!.className).toContain('ch-loss');
-    expect(hero.querySelector('.ch-sgt__chg')!.textContent).toContain('+0.4');
-    expect(hero.querySelector('.ch-sgt__chg')!.className).toContain('is-good');
+    // +0.4 against a standard error of 0.7 is no clear change (stats visuals Q4): the number stays, in neutral ink, and says so.
+    expect(hero.querySelector('.ch-sgt__chg')!.textContent).toBe('+0.4No clear change vs previous 10');
+    expect(hero.querySelector('.ch-sgt__chg')!.className).toContain('is-flat');
     expect(hero.querySelector('.ch-sgt__vs')!.textContent).toContain('dashed line is the Tour baseline');
     // The trend comes first and the other five figures follow as one tape: no card, one cell each.
     expect(document.querySelector('.ch-fg')).toBeNull();
@@ -245,12 +248,15 @@ describe('team stats · desktop', () => {
   it('every tape figure carries its own weekly line from its series, and its tone follows how it moved', () => {
     showTeam(team());
     const cell = (label: string) => [...document.querySelectorAll('.ch-tp__c')].find((c) => c.querySelector('.ch-tp__l')!.textContent === label) as HTMLElement;
+    // The preview has both: scoring and greens clear their standard errors, putts, scrambling and birdies do not.
+    expect(PREVIEW_TEAM_STATS.figures.filter((x) => x.key !== 'sg').map((f) => deltaTone(f.delta, f.se, f.lowerIsBetter))).toEqual(['is-gain', 'is-gain', '', '', '']);
     for (const f of PREVIEW_TEAM_STATS.figures.filter((x) => x.key !== 'sg')) {
       const c = cell(f.label);
       expect(c.querySelector('.ch-tp__line'), f.label).not.toBeNull();
-      // Lower scores and fewer putts improved when they fell: green for those, by the figure's own direction.
-      const good = f.delta != null && (f.lowerIsBetter ? f.delta < 0 : f.delta > 0);
-      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(good ? 'is-good' : 'is-bad');
+      // Green or amber only when the change clears its standard error, by the figure's own direction (lower scores and fewer
+      // putts improved when they fell); otherwise neutral (stats visuals Q4).
+      const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
+      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(t === 'is-gain' ? 'is-good' : t === 'is-loss' ? 'is-bad' : 'is-flat');
       expect(c.querySelector('.ch-tp__svg')!.getAttribute('aria-hidden')).toBe('true');
     }
   });
@@ -423,7 +429,7 @@ describe('team loader', () => {
     // Ten newest at +2, five before them at +0.5: the change is +1.5.
     tables.current = teamTables('men', [...many(10, 2, 1), ...many(5, 0.5, 11)]);
     const last10 = await loadTeamStats({ teamId: 't1', window: 'last10' });
-    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs. previous 10' });
+    expect(last10.figures[0]).toMatchObject({ delta: 1.5, context: 'vs previous 10' });
     expect(last10.figures[0]!.state).toBeUndefined();
     // Ten rounds and nothing before them.
     tables.current = teamTables('men', many(10, 2, 1));
@@ -441,7 +447,9 @@ describe('team loader', () => {
 
 describe('the change against the previous window', () => {
   it('a change, or the honest reason; nothing to say for the season or for no strokes gained', () => {
-    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs. previous 10' });
+    // The change carries its standard error (none given: null, so it is never painted; stats visuals Q4).
+    expect(sgChange(1, 0.4, 'last10', 12)).toEqual({ delta: 0.6, context: 'vs previous 10', se: null });
+    expect(sgChange(1, 0.4, 'last10', 12, 1.2)).toEqual({ delta: 0.6, context: 'vs previous 10', se: 1.2 });
     expect(sgChange(1, null, 'last10', 0)).toEqual({ delta: null, context: 'No earlier rounds' });
     expect(sgChange(1, null, 'last10', 2)).toEqual({ delta: null, context: 'Too few earlier rounds with shots' });
     expect(sgChange(1, null, 'season', 40)).toEqual({ delta: null, context: '' });
@@ -517,7 +525,10 @@ describe('player loader', () => {
   it('CH-5310 the change against the previous 10: a value with three earlier rounds with shots, or why there is none', async () => {
     const at = (n: number, sg: number, from: number) => Array.from({ length: n }, (_, i) => rnd(`c${from}${i}`, 'p1', from + i, sg, [sg, 0, 0, 0]));
     tables.current = profileTables([...at(10, 2, 1), ...at(5, 0.5, 11)]);
-    expect((await load('coach'))!.sgChange).toEqual({ delta: 1.5, context: 'vs. previous 10' });
+    const change = (await load('coach'))!.sgChange;
+    expect(change).toMatchObject({ delta: 1.5, context: 'vs previous 10' });
+    // Its standard error, from both windows' rounds: identical values measure no spread, so each falls back on the pooled 3.8.
+    expect(change.se).toBeCloseTo(Math.sqrt(3.8 ** 2 / 10 + 3.8 ** 2 / 5), 6);
     tables.current = profileTables(at(10, 2, 1));
     expect((await load('coach'))!.sgChange).toEqual({ delta: null, context: 'No earlier rounds' });
     tables.current = profileTables([...at(10, 2, 1), ...at(2, 0.5, 11)]);
@@ -550,13 +561,21 @@ describe('player loader', () => {
 /* ─── Player profile · desktop ─── */
 
 describe('player profile · desktop', () => {
-  it('the hero’s SG figure carries its change chip against the previous 10 (amber when it fell)', () => {
+  it('the hero’s SG figure carries its change chip against the previous 10, amber only when the fall clears its standard error', () => {
+    // −1.3 against a standard error of 1.7: no clear change (stats visuals Q4), the number kept in neutral ink.
     showPlayer(player());
-    const hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
-    const chip = hero.querySelector('.ch-delta')!;
+    let hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
+    let chip = hero.querySelector('.ch-delta')!;
     expect(chip.textContent).toBe('−1.3');
+    expect(chip.className).toContain('is-flat');
+    expect(hero.querySelector('.ch-sgchg')!.lastElementChild!.textContent).toBe('No clear change vs previous 10');
+    // Against 0.9 the same fall is clear: amber, and it says so.
+    cleanup();
+    showPlayer(player({ sgChange: { ...PREVIEW_PLAYER.sgChange, se: 0.9 } }));
+    hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
+    chip = hero.querySelector('.ch-delta')!;
     expect(chip.className).toContain('is-bad');
-    expect(hero.textContent).toContain('vs. previous 10');
+    expect(hero.querySelector('.ch-sgchg')!.lastElementChild!.textContent).toBe('Worse than previous 10');
   });
 
   it('CH-5310 no earlier rounds: the hero says so instead of a chip', () => {
@@ -696,7 +715,7 @@ describe('player profile · phone', () => {
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
     // P005-D6: away from the SG figure, the chip names what it measures.
-    expect(change.lastElementChild!.textContent).toBe('SG a round vs. previous 10');
+    expect(change.lastElementChild!.textContent).toBe('SG a round · No clear change vs previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');
@@ -711,32 +730,32 @@ describe('player profile · phone', () => {
 /* ─── Make rate by distance ─── */
 
 describe('make rate by distance (Game detail)', () => {
-  it('reaches 35+ feet in the calculator’s nine bands, from the window’s putts with exact counts', async () => {
+  it('draws the six bands the Tour grades, from the window’s putts with exact counts, out to 25 feet and beyond', async () => {
     const user = userEvent.setup();
     showPlayer(player());
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
-    const curve = document.querySelector('svg.ch-mk')!;
-    const label = curve.getAttribute('aria-label')!;
-    expect(label.split(', ')).toHaveLength(9);
-    expect(label).toContain('15–20 feet 12%');
-    expect(label).toContain('25–30 feet 6%');
-    expect(label).toContain('35+ feet 0%');
-    expect(curve.textContent).toContain('16 putts');
-    expect(curve.textContent).toContain('35+ ft');
-    // The Putting section's own total counts every putt; the curve counts the ones logged with a distance, and says so.
-    const note = curve.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent!;
+    const chart = document.querySelector('.ch-gm-p .ch-sv-pb')!;
+    const label = chart.getAttribute('aria-label')!;
+    expect(label.split('; ')).toHaveLength(6);
+    expect(label).toContain('15–25 feet 11%, 5 of 46');
+    expect(label).toContain('25+ feet 3%, 1 of 34');
+    expect(label).toContain('0–3 feet 89%, 57 of 64');
+    expect(chart.textContent).toContain('1/34');
+    expect(chart.textContent).toContain('25+ ft');
+    // The Putting section's own total counts every putt; the chart counts the ones logged with a distance, and says so.
+    const note = chart.closest('.ch-gm-p')!.querySelector('.ch-gm-p__n')!.textContent!;
     expect(note).toContain('Counts are putts logged with a distance.');
-    // The Tour publishes five averages, so the nine bands share them, and the note says so.
-    expect(note).toContain('15 to 25 feet share one');
+    // The Tour publishes five averages, one per band past 3 feet, and the note says so.
+    expect(note).toContain('The Tour publishes five averages, one for each band past 3 feet.');
   });
 
-  it('CH-5211 without the window’s putts the curve stops where the shot stats do, at 20 feet, and says the putts did not load', async () => {
+  it('CH-5211 without the window’s putts the chart stops where the shot stats do, at 20 feet, and says the putts did not load', async () => {
     const user = userEvent.setup();
-    showPlayer(player({ extra: { ...PREVIEW_PLAYER.extra, puttBandsNine: null, puttsError: true } }));
+    showPlayer(player({ puttBands: null, extra: { ...PREVIEW_PLAYER.extra, puttBandsNine: null, puttsError: true } }));
     await user.click(screen.getByRole('tab', { name: /Game detail/ }));
-    const curve = document.querySelector('svg.ch-mk')!;
-    expect(curve.getAttribute('aria-label')).toContain('15–20 feet');
-    expect(curve.getAttribute('aria-label')).not.toContain('25');
+    const chart = document.querySelector('.ch-gm-p .ch-sv-pb')!;
+    expect(chart.getAttribute('aria-label')).toContain('15–20 feet');
+    expect(chart.getAttribute('aria-label')).not.toContain('25');
     expect(code('CH-5211')!.textContent).toContain('Putts past 20 feet didn’t load');
   });
 });
@@ -905,8 +924,8 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     const band = (label: string, made: number, attempts: number, bench: number | null) => ({ label, made, attempts, bench });
     expect(puttingNote([band('3–5 ft', 5, 5, 90)])).toBe('Bands grade against the Tour once they have 10 or more putts.');
     expect(puttingNote([band('3–5 ft', 18, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('Every graded band is at or above the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5 feet is the only band below the Tour make rate.');
-    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5 ft, 5–10 ft.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 14, 20, 50)])).toBe('3 to 5\u00a0feet is the only band below the Tour make rate.');
+    expect(puttingNote([band('3–5 ft', 10, 20, 90), band('5–10 ft', 4, 20, 50)])).toBe('2 bands are below the Tour make rate: 3–5\u00a0ft, 5–10\u00a0ft.');
   });
 
   it('Home says Tour on the benchmark mark of a part of the game', () => {

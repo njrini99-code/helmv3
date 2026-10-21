@@ -5,6 +5,7 @@ import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
 import {
   classYearLabel,
+  displayHandicap,
   fullName,
   groupByPlayer,
   loadSeasonRounds,
@@ -145,8 +146,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   // Rounds, focus areas, goals and this coach's notes, in parallel.
   const [season, focus, goals, notes] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
+    // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
-      supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).eq('status', 'active'),
+      supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).in('status', ['active', 'in_progress']),
     ),
     countBy('golf_goals', ids, (chunk) => supabase.from('golf_goals').select('player_id').in('player_id', chunk).eq('state', 'active')),
     loadNotes(supabase, input.coachId, ids),
@@ -167,7 +169,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
       highSchool: p.high_school_name,
       jersey: m.jersey_number != null && `${m.jersey_number}` !== '' ? `${m.jersey_number}` : null,
-      handicap: p.handicap_index ?? p.handicap,
+      handicap: displayHandicap(p),
       status,
       joined: m.joined_at
         ? `Joined ${new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(m.joined_at))}`

@@ -25,7 +25,9 @@ Frame:                   src/clubhouse/shell/ClubhouseFrame.tsx (Sidebar, TopBar
                          NotRebuilt when isRebuilt(pathname, role) is false, 10401, 10802; the team switch offered to
                          Sidebar and TabBar from teamSwitchFor(userData), 10803; RouteFrame keyed by pathname and team, 10103)
 Server loader:           src/clubhouse/data/shell.ts loadClubhouseShell (next event, join requests, timezone in parallel,
-                         then the event's attendance; each failed read logs through chLogServer('shell', …) and hides its UI)
+                         then, for a player, the invites of any upcoming meetings (D2-8: one nobody is invited to is
+                         skipped), then the event's attendance; each failed read logs through chLogServer('shell', …) and
+                         hides its UI)
 Route errors:            src/components/errors/RouteErrorBoundary.tsx → RouteErrorView inside Clubhouse (10603 to 10607)
 ```
 
@@ -60,7 +62,7 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | --- | --- | --- | --- | --- | --- |
 | ACT-P001-OPEN-BELL | The bell | `setOpen` → load effect | `getUnifiedNotifications` | notifications feed | loading 10201 · refresh 10301 · empty 10402 · failed 10602 |
 | ACT-P001-FILTER-BELL | The bell's filter menu | `setFilter` | — | — | nothing of this kind 10403 |
-| ACT-P001-OPEN-NOTIFICATION | A notification row | `openItem` | `markNotificationRead` (failure reported at low severity) | notifications feed | optimistic 11301 |
+| ACT-P001-OPEN-NOTIFICATION | A notification row | `openItem` (`armRelink`, then `router.push(action_url)`, as Fairway's bell pushes it) | `markNotificationRead` (failure reported at low severity) | notifications feed | optimistic 11301 |
 | ACT-P001-MARK-ALL-READ | Mark all read | `markAll.run` (useAction `shell.markAllRead`) | `markAllNotificationsRead` | notifications feed | lands 10901 · fails 10601 · optimistic 11301 · Retry 11402 · offline 10703 |
 | ACT-P001-SWITCH-TEAM | The sidebar's team line (desktop); the Team list in the More sheet (phone) | `useTeamSwitch.pick` (useAction `shell.switchTeam`; the refresh and the sheet close are inside the action, so Retry finishes the job) | `setActiveTeam` | golf_team_coach_staff, golf_teams, the golf_active_team cookie | reads again 10103 · gate 10803 · plain label 10405 · fails 10611 · tick 11707 · menu 11813 · phone 11814 |
 | ACT-P001-NAVIGATE | Sidebar, tab bar, More | `next/link` | — | — | frame 10102 · top 10101 · not rebuilt 10401 · role 10802 |
@@ -73,7 +75,7 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | --- | --- | --- |
 | `shell/ClubhouseFrame.tsx` | The frame; skip link; motion-off marker | 10102, 11801, 11608 |
 | `shell/Sidebar.tsx`, `NextEventCard.tsx` | Navigation by v2 section, badges, next event; the brand block (a plain team label, or the switcher's button) | 10802, 10404, 10405, 10608, 10609, 11803 |
-| `shell/TeamSwitch.tsx`, `team-switch.ts` | The team switcher: `BrandTeamSwitch` (the sidebar's menu button and listbox), `MoreTeamSwitch` (the phone's Team list), `teamSwitchFor` (the gate and the names) and `useTeamSwitch` (the action, the optimistic team, the refresh) | 10103, 10611, 10803, 11707, 11813, 11814 |
+| `shell/TeamSwitch.tsx`, `team-switch.ts` | The team switcher: `TeamSwitch` (the sidebar's menu button and listbox), `MoreTeamSwitch` (the phone's Team list), `teamSwitchFor` (the gate and the names) and `useTeamSwitch` (the action, the optimistic team, the refresh) | 10103, 10611, 10803, 11707, 11813, 11814 |
 | `shell/TopBar.tsx`, `crumbs.tsx` | Breadcrumb, bell, settings (a coach on CoachHelm or Team Hub gets that page's section: `settings?section=coachhelm` or `team`); the phone title or a page's back link | 11810 |
 | `shell/Bell.tsx` | The bell: popover, phone sheet, filter, mark all read | 10201, 10301, 10402, 10403, 10601, 10602, 11301, 11805, 11811, 11612 |
 | `shell/TabBar.tsx` | Phone tabs and the More sheet (a head coach on two or more teams gets the Team list under who they are; the sheet scrolls on a short screen) | 11808, 11802, 11602, 11901, 11701, 11704, 11814 |
@@ -137,6 +139,41 @@ Read path:  the layout's getCoachTeamSwitchContext (teams and canSwitch, passed 
 Write path: setActiveTeam (checks canSwitch and that the team is staffed, then sets the cookie); every page's team comes from
             resolveCoachActiveTeamIdForRequest, which validates the cookie against the staff rows
 ```
+
+## Notification links (checked 2026-10-17)
+
+Every `action_url` shape in production (`notifications`,
+`golf_calendar_notifications`; read-only aggregate) and every writer that sets
+one, followed for each role that receives it, lands on a rebuilt screen or an
+alias that moves it to one, and the query naming the item is read there
+(`__tests__/wiring-p001-notification-links.test.ts`):
+
+| Address | Receives | Lands on |
+| --- | --- | --- |
+| `/calendar?event=<id>` (invitations, reminders, updates, cancellations, RSVPs) | coach, player | Calendar, opened on that event's day |
+| `/messages?conversation=<id>` (message fan-out, stored in `golf_calendar_notifications`) | coach, player | Messages, that thread |
+| `/announcements` | coach, player | Team Hub, Announcements tab |
+| `/tasks?task=<id>` | coach, player | Team Hub (coach: Tasks tab), that task |
+| `/roster`, `/roster?tab=requests` | coach | Roster; for `?tab=requests` desktop focuses the requests card at the top (`Roster`), and the phone opens the requests sheet once (`RosterPhone`); P003 |
+| `/team` (older rows) | coach | Settings, Team |
+| `/settings`, `/settings?section=notifications` | coach, player | Settings |
+| `/coachhelm`, `/coachhelm?view=development`, `/my-development` (next.config) | coach, player | CoachHelm; a player's Development opens Stats' Development tab |
+| `/rounds/<id>/review` | player | the round, `/rounds/<id>` |
+| `/qualifiers/<id>` | coach, player | the qualifier |
+| `/golf/dashboard` | coach, player | Home |
+
+The calendar table's `notification_type` carries dedupe keys
+(`event_updated:<start>|<end>`, `rsvp_response:<id>`); the bell never reads the
+type for that table, so they render as events. A message row from that table is
+filed under Events, not Messages, by the shared model
+(`categorizeCalendarNotificationRow`), in Fairway too: raised, not changed here.
+
+A link to the screen already open (the bell's `?conversation=` while Messages is
+up) armed `shell/relink.ts` first: the frame (`useRelinkEpoch`, in RouteFrame's
+key) mounts the screen again once that address arrives, as Messages and Calendar
+read their item only on mount. Universal links (`DeepLinks`) arm it the same
+way, and a tapped push is armed from `helm:push-navigate`, which
+CapacitorProvider pushes.
 
 ## Held dependencies
 

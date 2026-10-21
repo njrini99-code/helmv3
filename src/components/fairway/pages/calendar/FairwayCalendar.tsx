@@ -34,10 +34,10 @@
  *            RSVP control; read-only events, no FAB.
  *
  * ── HONEST-EMPTY (the all-past demo) ─────────────────────────────────────────
- *   21 events ALL PAST → upcomingCount === 0. We DEFAULT TO AGENDA so the real
- *   Feb–Apr events are visible immediately (the current week is empty); the hero
- *   shows the dim "No upcoming events" line (no fabricated count); 0 declined /
- *   tentative render as 0 in the coach Readouts.
+ *   The calendar DEFAULTS TO DAY (owner 2026-09-27): today's time grid,
+ *   scrolled to now. An empty day says so in its header ("Nothing on the
+ *   books") and never fabricates a count; Agenda is one tap away for the
+ *   month's list. 0 declined / tentative render as 0 in the coach Readouts.
  *
  * ── HYDRATION (serverNow → nowRef) ───────────────────────────────────────────
  *   We seed BOTH the server and first-client render from `serverNow` so the
@@ -69,8 +69,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus, RsvpRespondResult } from '@/hooks/useRSVP';
 import { readRsvpLockCode } from '@/hooks/useRSVP';
-import { zonedMidnight, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
-import { wallClockInZone } from '@/lib/golf/timezone';
+import { zonedMidnight, DEFAULT_TIMEZONE, getValidTimezone } from '@/lib/calendar/timezone';
+import { offsetMinutesFor, wallClockInZone } from '@/lib/golf/timezone';
 import { computeCommonFreeTime, type FreeWindow } from '@/lib/golf/common-free-time';
 import { useCalendarRangeEvents } from '@/hooks/golf/use-calendar-range-events';
 import { useRouter } from 'next/navigation';
@@ -80,6 +80,8 @@ import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/ca
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import surfaces from './CalendarSurfaces.module.css';
 import { FairwayAgendaView } from './FairwayAgendaView';
+import { FairwayDayTimeGrid } from './FairwayDayTimeGrid';
+import { FairwayWeekTimeGrid } from './FairwayWeekTimeGrid';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayMonthOverview } from './FairwayMonthOverview';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
@@ -244,9 +246,9 @@ export function FairwayCalendar({
     });
   }, [initialFocus, teamTimezone]);
 
-  // DEFAULT AGENDA — on the all-past demo the current week is empty; Agenda
-  // surfaces the real Feb–Apr events immediately. Week stays one tap away.
-  const [view, setView] = React.useState<ViewId>('agenda');
+  // DEFAULT DAY (owner 2026-09-27): the calendar opens on today's time grid,
+  // scrolled to now. Agenda, Week and Month stay one tap away.
+  const [view, setView] = React.useState<ViewId>('day');
 
   // ── Visible window — varies with the active lens. ───────────────────────────
   const visibleWindow = React.useMemo(() => {
@@ -533,7 +535,19 @@ export function FairwayCalendar({
   const handleSaveEvent = React.useCallback(
     async (data: GolfEventFormData) => {
       setIsSavingEvent(true);
-      const timezoneOffset = new Date().getTimezoneOffset();
+      // The team zone's offset ON THE EVENT'S DATE, not today's device offset: an EDT device saving a November event
+      // (EST) stored it an hour off, and every later edit (dates are always sent) shifted it again. Series also get
+      // the zone itself, so each occurrence takes its own date's offset across the change.
+      const zone = getValidTimezone(teamTimezone ?? DEFAULT_TIMEZONE);
+      const timezoneOffset =
+        offsetMinutesFor(data.startDate, !data.allDay && data.startTime ? data.startTime : '12:00', zone) ??
+        new Date().getTimezoneOffset();
+      // An emptied field on edit is sent as '' (the server stores null) so a coach can clear a location or notes; an
+      // empty field the event never had stays undefined, so a series edit leaves other occurrences' values alone.
+      const clearedLocation = data.location || (editorEvent?.location ? '' : undefined);
+      const clearedDescription = data.description || (editorEvent?.description ? '' : undefined);
+      // The save landed but its invitations did not: the server says so beside `success`.
+      let invitationsError: string | undefined;
       try {
         if (!editorEvent) {
           if (data.recurrence && data.recurrence !== 'none') {
@@ -565,8 +579,10 @@ export function FairwayCalendar({
               allDay: data.allDay,
               attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
               timezoneOffset,
+              timeZone: zone,
             });
             if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
+            invitationsError = result.data?.invitationsError;
           } else {
             const { createGolfEvent } = await import('@/app/golf/actions/calendar-events');
             const result = await createGolfEvent({
@@ -588,6 +604,7 @@ export function FairwayCalendar({
               timezoneOffset,
             } as never);
             if (!result.success) throw new Error(result.error || 'Failed to create event');
+            invitationsError = result.data?.invitationsError;
           }
         } else if (data.editScope && data.editScope !== 'this') {
           const { serializeRecurrenceRule } = await import('@/lib/golf/recurrence');
@@ -597,14 +614,15 @@ export function FairwayCalendar({
             originalStartDate: editorEvent.start_date,
             scope: data.editScope,
             timezoneOffset,
+            timeZone: zone,
             updates: {
               title: data.title,
-              description: data.description || undefined,
+              description: clearedDescription,
               startDate: data.startDate,
               endDate: data.endDate || data.startDate,
               startTime: data.allDay ? undefined : data.startTime || undefined,
               endTime: data.allDay ? undefined : data.endTime || undefined,
-              location: data.location || undefined,
+              location: clearedLocation,
               // Forward a re-patterned series rule when the editor produced one.
               recurrenceRule: data.recurrenceRule
                 ? serializeRecurrenceRule(data.recurrenceRule)
@@ -622,9 +640,9 @@ export function FairwayCalendar({
             startTime: data.allDay ? undefined : data.startTime || undefined,
             endTime: data.allDay ? undefined : data.endTime || undefined,
             allDay: data.allDay,
-            location: data.location || undefined,
+            location: clearedLocation,
             courseName: data.courseName || undefined,
-            description: data.description || undefined,
+            description: clearedDescription,
             isMandatory: data.isMandatory,
             requiresRsvp: data.requiresRsvp,
             rsvpDeadline: data.rsvpDeadline || undefined,
@@ -637,14 +655,20 @@ export function FairwayCalendar({
             timezoneOffset,
           } as never);
           if (!result.success) throw new Error(result.error || 'Failed to update event');
+          invitationsError = result.data?.invitationsError;
         }
         const wasCreate = !editorEvent;
         const isSeriesEdit = !wasCreate && data.editScope != null && data.editScope !== 'this';
         // Visible confirmation of system status (audit P238) — every successful
         // mutation gives one consistent Fairway toast.
-        fairwayToast.success(
-          wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated',
-        );
+        const savedLabel = wasCreate ? 'Event created' : isSeriesEdit ? 'Series updated' : 'Event updated';
+        if (invitationsError) {
+          fairwayToast.warning(`${savedLabel} · invitations didn’t go out`, {
+            description: `${invitationsError} Open the event and invite them again.`,
+          });
+        } else {
+          fairwayToast.success(savedLabel);
+        }
         setEditorOpen(false);
         setEditorEvent(null);
         // A newly created event must never silently vanish: if its date falls
@@ -681,7 +705,7 @@ export function FairwayCalendar({
         setIsSavingEvent(false);
       }
     },
-    [editorEvent, router, visibleWindow, refetchVisibleRange],
+    [editorEvent, router, visibleWindow, refetchVisibleRange, teamTimezone],
   );
 
   // Restore (un-cancel) a soft-cancelled event. Flips status back to
@@ -1322,16 +1346,17 @@ export function FairwayCalendar({
           overdueTaskCount={overdueTaskCount}
         />
       ) : isDay ? (
-        <FairwayAgendaView
+        // Day → the full 24-hour time grid: blocks sized by duration, the
+        // all-day band above, the now-line on today (FairwayDayTimeGrid).
+        <FairwayDayTimeGrid
           events={events}
-          mode="day"
           focusDate={focusDate}
+          nowRef={nowRef}
           isCoach={isCoach}
           userRsvpStatuses={userRsvpStatuses}
           timezone={teamTimezone}
           onEventClick={openDrawerForEvent}
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
-          nowRef={nowRef}
           isLoadingRange={isLoadingRange}
         />
       ) : view === 'month' ? (
@@ -1389,24 +1414,45 @@ export function FairwayCalendar({
           </div>
         </>
       ) : (
-        // ── Week → a week-scoped agenda for BOTH roles (sparse golf calendars
-        //    read better as a list than a time-grid). Opens the same Fairway
-        //    drawer; coaches get the "New event" CTA on the empty state. ────────
-        <FairwayAgendaView
-          events={events}
-          mode="range"
-          focusDate={focusDate}
-          rangeStart={visibleWindow.start}
-          rangeEnd={visibleWindow.end}
-          periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
-          isCoach={isCoach}
-          userRsvpStatuses={userRsvpStatuses}
-          timezone={teamTimezone}
-          onEventClick={openDrawerForEvent}
-          onCreateEvent={isCoach ? handlePrimaryAction : undefined}
-          nowRef={nowRef}
-          isLoadingRange={isLoadingRange}
-        />
+        // ── Week → from md up, seven day columns on one time axis (all-day
+        //    bars across the days they cover, the now-line on today); a day
+        //    header opens that day. A phone keeps the week-scoped list, where
+        //    seven narrow columns would not read. Both open the same drawer.
+        <>
+          <div className="md:hidden">
+            <FairwayAgendaView
+              events={events}
+              mode="range"
+              focusDate={focusDate}
+              rangeStart={visibleWindow.start}
+              rangeEnd={visibleWindow.end}
+              periodLabel={`the week of ${format(visibleWindow.start, 'MMMM d')}`}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onCreateEvent={isCoach ? handlePrimaryAction : undefined}
+              nowRef={nowRef}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+          <div className="hidden md:block">
+            <FairwayWeekTimeGrid
+              events={events}
+              focusDate={focusDate}
+              nowRef={nowRef}
+              isCoach={isCoach}
+              userRsvpStatuses={userRsvpStatuses}
+              timezone={teamTimezone}
+              onEventClick={openDrawerForEvent}
+              onSelectDay={(d) => {
+                setFocusDate(d);
+                setView('day');
+              }}
+              isLoadingRange={isLoadingRange}
+            />
+          </div>
+        </>
       )}
       </motion.div>
 

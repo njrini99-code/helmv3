@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-tabs';
 
 /**
  * A switch between views of the CoachHelm page (Board, Ask, Game profile, Standing, Deep dive), each its own address. The same
@@ -12,9 +13,20 @@ import { useEffect, useState, useTransition } from 'react';
  *
  * `active` is the view the server last drew. Choosing the one already shown does nothing; choosing the one on screen while
  * another is loading sends the page back to it.
+ *
+ * The other `views` are fetched whole once the page is idle, as the phone's tabs are (use-prefetch-tabs): a default prefetch
+ * stops at the route's loading boundary, so every switch waited on the server for the whole page (owner, desktop Safari,
+ * 2026-10-16). Skipped with Data Saver on or offline; Next prefetches only in production builds.
  */
-export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => string) {
+export function useViewSwitch<V extends string>(active: V, hrefOf: (view: V) => string, views: readonly V[] = []) {
   const router = useRouter();
+  const others = views.filter((v) => v !== active).map(hrefOf).join('|');
+  useEffect(() => {
+    if (!others || !prefetchAllowed(typeof navigator === 'undefined' ? undefined : navigator)) return;
+    return whenIdle(() => {
+      for (const href of others.split('|')) fetchAhead(router, href, Date.now());
+    });
+  }, [others, router]);
   const [pending, start] = useTransition();
   const [target, setTarget] = useState<V | null>(null);
   // The server answered with a new view (this owner is replaced, so this is the same-view answer), or the navigation ended

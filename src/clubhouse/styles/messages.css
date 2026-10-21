@@ -16,7 +16,8 @@
   height: auto;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 34px 40px 80px;
+  /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 80px;
 }
 .ch-ms-head {
   display: flex;
@@ -52,14 +53,8 @@
 .ch-ms-rail__head .ch-seg__b {
   flex: 1;
 }
-/* All, Unread, Groups (owner, 2026-10-08: never ivory on ivory): the chosen filter is a green chip with ivory ink. */
-.ch-ms-rail__head .ch-seg__pill {
-  background: var(--ch-green-fill-700);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
-}
-.ch-ms-rail__head .ch-seg__b.is-on {
-  color: var(--ch-ivory-50);
-}
+/* All, Unread, Groups: the chosen filter is the green chip every switcher now draws (controls.css; owner, 2026-10-08
+   and 2026-10-16). */
 .ch-ms-rail__title {
   display: flex;
   align-items: center;
@@ -69,7 +64,7 @@
    loose tracking after the serif went). */
 .ch-ms-rail__title h1 {
   margin: 0;
-  font: 600 34px/1.15 var(--ch-font-sans);
+  font: 600 calc(34 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   letter-spacing: -0.036em;
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
@@ -91,7 +86,7 @@
 }
 .ch-ms-sec__l {
   padding: 0 8px 7px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 /* One continuous rail (Mail's sidebar, not a stack of boxes): rows sit on the page, each a rounded target that
@@ -153,7 +148,7 @@
 }
 .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-field-green);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 .ch-ms-grp {
   display: grid;
@@ -187,7 +182,7 @@
 }
 .ch-ms-row__top b {
   overflow: hidden;
-  font: 500 14px/1.25 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -199,6 +194,7 @@
 .ch-ms-row__top > span {
   flex: none;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ms-row__bot {
@@ -220,6 +216,11 @@
   font-style: normal;
   color: var(--ch-text-secondary);
 }
+/* Urgent is a word on the row, in the amber of the mark beside it (the letter's head says it the same way). */
+.ch-ms-row__bot em.is-urgent {
+  font-weight: 600;
+  color: var(--ch-warning-600);
+}
 .ch-ms-row.is-unread .ch-ms-row__top b {
   font-weight: 700;
 }
@@ -239,7 +240,8 @@
   padding: 0 6px;
   border-radius: 999px;
   background: var(--ch-green-fill-600);
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
 /* The conversation list (owner, 2026-10-08: "too card heavy"): a flat list on the rail, thin dividers inset to the text,
@@ -251,7 +253,7 @@
   grid-template-columns: 44px minmax(0, 1fr);
   gap: 13px;
   padding: 12px 12px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: transparent;
   box-shadow: none;
 }
@@ -278,7 +280,7 @@
   width: 44px;
   height: 44px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ms-row__top b {
   /* A long name wraps to a second line rather than being cut mid-word ("26-27 Group C…"). */
@@ -286,7 +288,7 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font: 600 15px/1.25 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   letter-spacing: -0.01em;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -313,7 +315,7 @@
 }
 .ch-ms-row.is-sel .ch-ms-row__top b,
 .ch-ms-row.is-sel.is-unread .ch-ms-row__top b {
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ms-row.is-sel .ch-ms-row__top > span,
 .ch-ms-row.is-sel.is-unread .ch-ms-row__top > span {
@@ -329,13 +331,7 @@
 }
 .ch-ms-row.is-sel .ch-ms-count {
   background: var(--ch-ivory-50);
-  color: var(--ch-green-800);
-}
-.ch-ms-empty {
-  padding: 30px 12px;
-  font: var(--ch-type-body-s);
-  color: var(--ch-text-tertiary);
-  text-align: center;
+  color: var(--ch-forest-800);
 }
 
 /* CH-7605: the thread pane's swap (ui/Swap) fills the grid cell at every level, so the thread keeps its own
@@ -390,13 +386,14 @@
 }
 .ch-ms-th__who b {
   display: block;
-  font: 600 15px/1.25 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ms-th__who div > span {
   display: block;
   overflow: hidden;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -427,7 +424,7 @@
   width: min(280px, 100%);
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-100);
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.08);
 }
@@ -443,6 +440,12 @@
   padding: 12px 0 8px;
   overflow: auto;
   overscroll-behavior: contain;
+}
+/* Scrolled off its top, the thread fades into the header over 16px rather than being cut off under it (use-thread-anchor
+   toggles the class; the shell's canopy fades the same way). */
+.ch-ms-scroll.is-scrolled {
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 16px);
+  mask-image: linear-gradient(180deg, transparent, #000 16px);
 }
 .ch-ms-msgs {
   display: flex;
@@ -461,7 +464,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 1px var(--ch-border-hairline);
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-ms-msg {
@@ -490,9 +493,10 @@
 .ch-ms-msg.is-mine .ch-ms-msg__col {
   align-items: flex-end;
 }
+/* The name and the time under a bubble start (or end) on its text's 14px inset. */
 .ch-ms-msg__who {
-  padding-left: 12px;
-  font: 500 12px/1 var(--ch-font-sans);
+  padding-left: 14px;
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-msg__line {
@@ -522,10 +526,10 @@
 }
 .ch-ms-bub {
   padding: 10px 14px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
-  font: 400 14.5px/1.45 var(--ch-font-sans);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -570,6 +574,16 @@
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   color: var(--ch-text-tertiary);
 }
+/* A search hit the thread came to (useFocusMessage): a green ring that fades once the mark is lifted (FOUND_FOR_MS). */
+/* Never over a failed bubble's dashed edge or a file bubble's own focus ring. */
+.ch-ms-msg:not(.is-failed) .ch-ms-bub:not(:focus-visible) {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-msg.is-found:not(.is-failed) .ch-ms-bub:not(:focus-visible) {
+  outline-color: var(--ch-green-ring);
+}
 .ch-ms-bub--file {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
@@ -589,7 +603,7 @@
 .ch-ms-bub--file b {
   display: block;
   overflow: hidden;
-  font: 500 13.5px/1.3 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -633,7 +647,7 @@
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: transparent;
   color: var(--ch-text-tertiary);
   cursor: pointer;
@@ -701,19 +715,20 @@
   padding: 0 9px;
   border: 0;
   border-radius: 999px;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
 /* A reaction is the opposite colour of the message it sits under (owner, 2026-10-08): ivory under a green bubble, a
    green chip under an ivory one. Yours carries a ring so you can tell it from the rest. */
 .ch-ms-reacts.on-mine .ch-ms-react {
   background: var(--ch-ivory-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2), var(--ch-elevation-bubble);
 }
 .ch-ms-reacts.on-theirs .ch-ms-react {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), var(--ch-elevation-pill-on);
 }
 .ch-ms-reacts .ch-ms-react.is-mine {
@@ -734,7 +749,7 @@
   stroke-width: 2.3;
 }
 .ch-ms-reacts.on-mine .ch-ms-react {
-  color: var(--ch-green-900);
+  color: var(--ch-forest-900);
 }
 .ch-ms-reacts.on-theirs .ch-ms-react,
 .ch-rx__head {
@@ -744,7 +759,7 @@
   background: rgb(255 255 255 / 0.22);
 }
 .ch-ms-reactbar__b {
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-reactbar__b.is-on {
   background: var(--ch-green-fill-700);
@@ -753,7 +768,7 @@
 @media (hover: hover) {
   .ch-ms-reactbar__b:hover {
     background: var(--ch-green-100);
-    color: var(--ch-green-900);
+    color: var(--ch-forest-900);
   }
   .ch-ms-reactbar__b.is-on:hover {
     background: var(--ch-green-800);
@@ -769,7 +784,7 @@
   width: 248px;
   max-height: min(60vh, 360px);
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.16), var(--ch-elevation-overlay);
 }
@@ -780,10 +795,10 @@
   gap: 10px;
   padding: 12px 14px;
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-rx__head b {
-  font: 650 14px/1.2 var(--ch-font-sans);
+  font: 650 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rx__glyph {
   display: grid;
@@ -797,7 +812,8 @@
   padding: 3px 8px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
 }
 .ch-rx__list {
   display: flex;
@@ -811,8 +827,8 @@
   align-items: center;
   gap: 10px;
   padding: 7px 8px;
-  border-radius: 10px;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  border-radius: var(--ch-radius-md);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-ink-900);
 }
 .ch-rx__none {
@@ -826,7 +842,7 @@
   border: 0;
   border-top: 1px solid var(--ch-border-hairline);
   background: var(--ch-bg-surface);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   text-align: left;
   cursor: pointer;
@@ -841,8 +857,9 @@
   outline-offset: -2px;
 }
 .ch-ms-msg__t {
-  padding: 0 6px;
+  padding: 0 14px;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-ms-msg__fail {
@@ -858,7 +875,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  font: 600 12px/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
 }
@@ -867,7 +884,7 @@
   align-self: flex-start;
   gap: 4px;
   padding: 13px 14px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   border-bottom-left-radius: 6px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-bubble);
@@ -918,7 +935,7 @@
   align-items: flex-end;
   gap: 6px;
   padding: 6px 6px 6px 8px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -999,7 +1016,7 @@
 }
 .ch-ms-comp__field textarea {
   padding: 9px 6px;
-  font: 400 15px/1.4 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.4 var(--ch-font-sans);
 }
 .ch-ms-comp__field .ch-iconbtn {
   width: 38px;
@@ -1023,7 +1040,7 @@
 .ch-ms-send.is-ready {
   background: var(--ch-green-fill-700);
   box-shadow: var(--ch-green-raised-shadow);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 @media (hover: hover) {
   .ch-ms-send.is-ready:hover {
@@ -1063,7 +1080,7 @@
   text-align: center;
 }
 .ch-ms-det__hero b {
-  font: 600 17px/1.25 var(--ch-font-sans);
+  font: 600 calc(17 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ms-det__hero span {
@@ -1095,7 +1112,7 @@
 .ch-ms-mem b {
   display: block;
   overflow: hidden;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1115,7 +1132,7 @@
   margin: 0 -8px;
   padding: 6px 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -1131,7 +1148,7 @@
 .ch-ms-fil b {
   display: block;
   overflow: hidden;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1168,7 +1185,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-ms-new__draft > q {
-  font: 400 15px/1.45 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-primary);
   quotes: '\201C' '\201D';
 }
@@ -1194,8 +1211,8 @@
   border-radius: 999px;
   background: var(--ch-green-50);
   box-shadow: var(--ch-elevation-control);
-  font: 500 12.5px/1 var(--ch-font-sans);
-  color: var(--ch-green-800);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-forest-800);
 }
 .ch-ms-to__c button {
   display: grid;
@@ -1269,7 +1286,7 @@
 /* Announcements */
 .ch-ms-grp.is-ann {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-ms-grp.is-ann.is-urgent {
   background: var(--ch-warning-100);
@@ -1282,7 +1299,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-green-700);
   cursor: pointer;
 }
@@ -1293,7 +1310,7 @@
   max-width: 680px;
   margin: 12px auto 24px;
   padding: 24px 28px;
-  border-radius: 18px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
 }
@@ -1305,7 +1322,7 @@
 .ch-ms-ann__title {
   margin: 0;
   font: var(--ch-type-display-s);
-  font-size: 24px;
+  font-size: calc(24 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1325,18 +1342,18 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.16);
   font: var(--ch-type-body-s);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ms-ann__done {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   margin: 0;
-  font: 500 13.5px/1.3 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-positive-600);
 }
 .ch-ms-ann__sec {
@@ -1355,7 +1372,7 @@
 }
 .ch-ms-ann__task b {
   display: block;
-  font: 500 14px/1.3 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ms-ann__task span span {
@@ -1382,7 +1399,7 @@
   box-shadow:
     0 1px 0 var(--ch-border-hairline),
     0 2px 0 rgb(255 255 255 / 0.55);
-  font: 500 13px/1.35 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ms-ann__head > span:last-child:not(:first-child) {
@@ -1395,7 +1412,7 @@
   color: var(--ch-warning-600);
 }
 .ch-ms-ann.is-letter .ch-ms-ann__title {
-  font-size: 28px;
+  font-size: calc(28 * var(--ch-type-k));
   line-height: 1.12;
 }
 .ch-ms-ann.is-letter .ch-ms-ann__body {
@@ -1413,7 +1430,7 @@
   border-bottom: 1px solid var(--ch-champagne-500);
 }
 .ch-ms-ann__sig b {
-  font: 600 15px/1.3 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ms-ann__sig span {
@@ -1442,7 +1459,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font: 500 13px/1.35 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-ms-mute__opts {
@@ -1572,53 +1589,70 @@
   }
 
   /* Inbox */
-  /* The design's 40px field inside a 44px target: the transparent border is tappable, the fill stops inside it. */
-  .ch-msp-search.ch-search {
-    height: 44px;
-    padding: 0 12px;
-    border: 2px solid transparent;
-    border-radius: 14px;
-    background: var(--ch-ledger-row-hover);
-    background-clip: padding-box;
-    box-shadow: none;
-  }
-  .ch-msp-search input {
-    font: 400 16px/1 var(--ch-font-sans);
-  }
+  /* Search is the kit's field, as Qualifiers draws it (controls.css: 36px drawn, 44px to the finger, 16px text). */
   .ch-msp-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
   }
-  /* A filter is an engraved ring on the parchment; the chosen one takes the green tint and ink. The fill, ring and ink
-     cross over the quick beat as the choice moves (CH-7606; the weight stays, so no chip changes width). */
+  /* The filters are the Qualifiers chips (one treatment across the app): a quiet surface pill with a hairline, the
+     chosen one the green fill and ink, a count as its own figure. The fill is a layer under the label that fades in over
+     the quick beat as the last chip's fades out (CH-7606; a gradient cannot fade as a background, and the weight stays,
+     so no chip changes width). */
   .ch-msp-chip {
     position: relative;
-    height: 34px;
+    z-index: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
     padding: 0 13px;
     border: 0;
     border-radius: 999px;
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-    font: 500 13.5px/1 var(--ch-font-sans);
+    background: var(--ch-bg-surface);
+    box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
+    font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-msp-chip:active {
-    background: var(--ch-ledger-row-hover);
+  .ch-msp-chip span {
+    color: var(--ch-text-tertiary);
+    transition: color var(--ch-dur-quick) var(--ch-ease), opacity var(--ch-dur-quick) var(--ch-ease);
+  }
+  .ch-msp-chip::after {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--ch-seg-on-bg);
+    box-shadow: var(--ch-seg-on-shadow);
+    opacity: 0;
+    transition: opacity var(--ch-dur-quick) var(--ch-ease);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-msp-chip:active:not([aria-pressed='true']) {
+    background: var(--ch-bg-subtle);
     transition-duration: var(--ch-dur-press);
   }
-  /* A 44px target around the 34px chip (the 6px gaps shared out, for a short chip such as All). */
+  /* A 44px target around the 36px chip (the 6px gaps shared out, for a short chip such as All). */
   .ch-msp-chip::before {
     content: '';
     position: absolute;
-    inset: -5px -3px;
+    inset: -4px -3px;
   }
   .ch-msp-chip[aria-pressed='true'] {
-    background: var(--ch-ledger-row-press);
-    box-shadow: inset 0 0 0 1px var(--ch-green-ring);
-    color: var(--ch-green-700);
+    box-shadow: inset 0 0 0 1px transparent;
+    color: var(--ch-seg-on-ink);
+  }
+  .ch-msp-chip[aria-pressed='true'] span {
+    color: var(--ch-seg-on-ink);
+    opacity: 0.8;
+  }
+  .ch-msp-chip[aria-pressed='true']::after {
+    opacity: 1;
   }
   .ch-msp .ch-ms-sec {
     display: flex;
@@ -1631,7 +1665,7 @@
     margin: 0;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1640,8 +1674,8 @@
      section's title, so Today and This week read as entries in one list, not four more sections. */
   .ch-msp .ch-ms-sec.is-date > .ch-ms-sec__l {
     padding-top: 13px;
-    font: 500 12px/1.2 var(--ch-font-sans);
-    letter-spacing: 0.12em;
+    font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    letter-spacing: 0.01em;
     font-variation-settings: normal;
     color: var(--ch-ledger-eyebrow);
   }
@@ -1690,7 +1724,7 @@
     width: 44px;
     height: 44px;
     background: var(--ch-green-fill-700);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-msp .ch-ms-row .ch-ms-grp.is-ann.is-urgent {
     background: var(--ch-warning-100);
@@ -1704,17 +1738,18 @@
     gap: 4px;
   }
   .ch-msp .ch-ms-row__top b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   .ch-msp .ch-ms-row__top > span {
-    font: 400 12.5px/1.2 var(--ch-font-sans);
+    font: 400 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-msp .ch-ms-row__bot > span:first-child {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
-    font: 400 13.5px/1.35 var(--ch-font-sans);
+    font: 400 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
     white-space: normal;
   }
   .ch-msp .ch-ms-row__bot em {
@@ -1744,13 +1779,8 @@
     align-items: center;
     min-height: 44px;
     margin: 0;
-    font: 600 13px/1 var(--ch-font-sans);
+    font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
-  }
-  /* Nothing unread, no match: a quiet line at the list's edge, not a centred island. */
-  .ch-msp .ch-ms-empty {
-    padding: 14px 0;
-    text-align: left;
   }
 
   /* Pushed screens: a thread, details, a new message */
@@ -1778,14 +1808,14 @@
      the shell recolours its own title, back and icons, not a lead's content. */
   .ch-msp-who b {
     overflow: hidden;
-    font: 600 15px/1.2 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-on-green-ink);
     white-space: nowrap;
     text-overflow: ellipsis;
   }
   .ch-msp-who em {
     overflow: hidden;
-    font: 400 12px/1.1 var(--ch-font-sans);
+    font: 400 calc(12 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     font-style: normal;
     color: var(--ch-on-green-ink-muted);
     white-space: nowrap;
@@ -1796,7 +1826,7 @@
     flex: 0 1 auto;
     padding: 0 10px 0 4px;
     margin-left: -4px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
   .ch-msp-who:active {
@@ -1819,7 +1849,7 @@
     place-items: center;
     border-radius: 50%;
     background: var(--ch-green-fill-700);
-    color: var(--ch-ivory-100);
+    color: var(--ch-on-fill-100);
   }
   .ch-msp-mark.is-sm {
     width: 30px;
@@ -1866,7 +1896,7 @@
   .ch-msp-thread .ch-ms-bub {
     padding: 10px 14px;
     box-shadow: var(--ch-elevation-bubble);
-    font: 400 17px/1.4 var(--ch-font-sans);
+    font: 400 calc(17 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   }
   .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub:not(.ch-ms-bub--file) {
     background: var(--ch-bubble-mine-bg);
@@ -1900,10 +1930,11 @@
   .ch-msp-thread .ch-ms-msg__stack { touch-action: pan-y; }
   .ch-msp-composer { flex: none; min-width: 0; }
   .ch-msp-thread .ch-ms-msg__t {
-    font: 500 12px/1 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
   }
   .ch-msp-thread .ch-ms-msg__who {
-    font: 600 13px/1 var(--ch-font-sans);
+    font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
 
@@ -1949,7 +1980,7 @@
     background: var(--ch-ivory-0);
     background-clip: padding-box;
     box-shadow: var(--ch-field-pill-edge);
-    font: 400 16px/1.25 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   }
   .ch-msp-thread .ch-ms-comp__field textarea:focus,
   .ch-msp-new .ch-ms-comp__field textarea:focus {
@@ -1962,7 +1993,7 @@
   .ch-msp-new .ch-ms-send {
     position: relative;
     background: var(--ch-ivory-300);
-    color: var(--ch-ivory-0);
+    color: var(--ch-on-fill-0);
   }
   .ch-msp-thread .ch-ms-send.is-ready,
   .ch-msp-new .ch-ms-send.is-ready {
@@ -2007,7 +2038,7 @@
     justify-content: space-between;
     gap: 4px;
     padding: 6px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-bg-surface);
     box-shadow: var(--ch-shadow-sm);
   }
@@ -2027,7 +2058,7 @@
   }
   .ch-msp-prof h2 {
     margin: 12px 0 2px;
-    font: 600 31px/1.08 var(--ch-font-sans);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2035,7 +2066,8 @@
   }
   .ch-msp-prof p {
     margin: 0;
-    font: 400 14px/1.3 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
   }
   .ch-msp-tiles {
@@ -2055,10 +2087,10 @@
     min-height: 56px;
     padding: 10px 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: transparent;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-    font: 500 12px/1 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     text-decoration: none;
     cursor: pointer;
@@ -2098,7 +2130,7 @@
   }
   .ch-msp-panel__h h3 {
     margin: 0;
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2108,7 +2140,7 @@
     padding: 0;
     border: 0;
     background: none;
-    font: 600 13px/1 var(--ch-font-sans);
+    font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-600);
     cursor: pointer;
   }
@@ -2120,6 +2152,7 @@
   }
   .ch-msp-count {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-row {
@@ -2182,7 +2215,7 @@
   }
   .ch-msp-row__b b {
     overflow: hidden;
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
     white-space: nowrap;
@@ -2194,6 +2227,7 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-row__ic {
@@ -2202,7 +2236,7 @@
     place-items: center;
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-ledger-row-hover);
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule-soft);
     color: var(--ch-text-secondary);
@@ -2225,13 +2259,17 @@
     margin-right: -10px;
     padding: 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: var(--ch-text-secondary);
     cursor: pointer;
   }
   .ch-msp-icon:active {
     background: rgb(28 25 18 / 0.06);
+  }
+  /* Remove sits before Message on a member's row: no pull to the edge, so the two targets don't overlap. */
+  .ch-msp-icon.is-remove {
+    margin-right: 0;
   }
   .ch-msp-chev {
     flex: none;
@@ -2264,12 +2302,13 @@
     justify-content: space-between;
     width: 100%;
     min-height: 44px;
-    font: 400 14px/1.2 var(--ch-font-sans);
+    font: 400 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
   .ch-msp-set__note {
     padding-bottom: 10px;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-msp-danger {
@@ -2284,7 +2323,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: 500 15px/1 var(--ch-font-sans);
+    font: 500 calc(15 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-danger-600);
     text-align: left;
     cursor: pointer;
@@ -2306,7 +2345,7 @@
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-msp-to__k {
-    font: 500 15px/32px var(--ch-font-sans);
+    font: 500 calc(15 * var(--ch-type-k))/32px var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-msp-to__f {
@@ -2328,7 +2367,7 @@
     border-radius: 14px;
     background: var(--ch-green-50);
     box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
-    font: 500 14px/1 var(--ch-font-sans);
+    font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-green-700);
     cursor: pointer;
   }
@@ -2354,7 +2393,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 16px/44px var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/44px var(--ch-font-sans);
     color: var(--ch-text-primary);
   }
   .ch-msp-check {
@@ -2375,6 +2414,7 @@
     margin: 0;
     padding: 0;
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
 
@@ -2400,13 +2440,13 @@
     box-shadow: none;
   }
   .ch-msp-ann .ch-ms-ann__title {
-    font: 600 31px/1.08 var(--ch-font-sans);
+    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-msp-ann .ch-ms-ann__body {
-    font: 400 16px/1.55 var(--ch-font-sans);
+    font: 400 calc(16 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   }
   .ch-msp-ann .ch-ms-ann.is-letter {
     padding: 26px 20px 32px;
@@ -2421,7 +2461,7 @@
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-det__l {
     padding: 12px 0 6px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2437,7 +2477,7 @@
   }
   .ch-msp-ann .ch-ms-ann__task b,
   .ch-msp-ann .ch-ms-mem b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
   }
   .ch-msp-ann .ch-ms-mem {
@@ -2473,7 +2513,7 @@
     pointer-events: none;
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
   }
@@ -2491,10 +2531,93 @@
   border: 0;
   border-radius: 999px;
   background: var(--ch-green-800);
-  color: var(--ch-ivory-100);
-  font: 600 13px/36px var(--ch-font-sans);
+  color: var(--ch-on-fill-100);
+  font: 600 calc(13 * var(--ch-type-k))/36px var(--ch-font-sans);
   box-shadow: 0 4px 12px -4px rgb(11 58 37 / 0.45);
   cursor: pointer;
+}
+/* Jump to latest (wave 5 #17): the same pill, quieter, once the reader is away from the end with nothing new. */
+.ch-ms-below.is-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--ch-sheet-bg);
+  color: var(--ch-text-primary);
+  box-shadow: var(--ch-elevation-floating);
+}
+/* "New": the first message that was unread when the thread opened. */
+.ch-ms-day.is-new span {
+  background: var(--ch-green-50);
+  box-shadow: 0 0 0 1px rgb(21 90 57 / 0.18);
+  color: var(--ch-green-700);
+  font-weight: 600;
+}
+/* A web link in a bubble (wave 5 #13): underlined in the bubble's own ink, and free to wrap. */
+.ch-ms-link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.ch-ms-msg:not(.is-mine) .ch-ms-link {
+  color: var(--ch-green-700);
+}
+.ch-ms-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* A search hit's match, marked in its row (wave 5 #11). */
+.ch-ms-hit {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ch-champagne-500) 34%, transparent);
+  color: inherit;
+}
+/* The message Delete asks about, quoted (wave 5 #14). */
+.ch-ms-delq {
+  display: -webkit-box;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-inset);
+  font: var(--ch-type-body);
+  color: var(--ch-text-secondary);
+  white-space: pre-wrap;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+/* A picked file's name ends in an ellipsis rather than running the chip off its row (wave 5 #6). */
+.ch-ms-to__n {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ch-ms-comp .ch-ms-to__c:has(.ch-ms-to__n) {
+  max-width: 100%;
+  overflow-wrap: normal;
+}
+/* "N left" near the 5000-character limit (wave 5 #21). */
+.ch-ms-comp__hint {
+  display: flex;
+  gap: 12px;
+}
+.ch-ms-comp__left {
+  margin-left: auto;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-comp > .ch-ms-comp__left {
+  padding: 0 16px;
+  text-align: right;
+}
+.ch-ms-comp__left.is-out {
+  color: var(--ch-text-primary);
+  font-weight: 600;
 }
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
@@ -2504,7 +2627,7 @@
   .ch-ms-count,
   .ch-ms-react,
   .ch-msp-thread .ch-ms-msg__t {
-    font-size: 12px;
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -2520,16 +2643,16 @@
   min-width: 0;
   max-width: 100%;
   padding: 10px 14px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-floating);
   color: var(--ch-text-secondary);
-  font: 400 14px/1.35 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.35 var(--ch-font-sans);
 }
 .ch-ms-quote:disabled { cursor: default; opacity: 1; }
 .ch-ms-quote:focus-visible { outline: 2px solid var(--ch-green-500); outline-offset: 3px; }
 .ch-ms-quote b {
-  font: 600 13px/1.3 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ms-quote span {
@@ -2550,7 +2673,7 @@
 .ch-ms-comp > .ch-notice {
   --ch-notice-fill: var(--ch-sheet-bg);
   padding: 10px 12px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   box-shadow: var(--ch-elevation-floating);
 }
 .ch-ms-comp .ch-ms-to__c {
@@ -2566,7 +2689,7 @@
 .ch-ms-comp .ch-ms-to__c button { flex: none; }
 .ch-msp-acts__preview {
   padding: 12px 14px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-bubble);
 }
@@ -2576,7 +2699,7 @@
   overflow-y: auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font: 400 17px/1.4 var(--ch-font-sans);
+  font: 400 calc(17 * var(--ch-type-k))/1.4 var(--ch-font-sans);
 }
 
 /* ── Dark: "Clubhouse at night" (owner, 2026-10-08) ──────────────────────────
@@ -2605,7 +2728,7 @@ html[data-fw-theme='dark'] .ch-ms-row:active {
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow), inset 3px 0 0 var(--ch-green-600);
+  box-shadow: var(--ch-key-raised-shadow);
 }
 html[data-fw-theme='dark'] .ch-ms-msg.is-mine .ch-ms-bub {
   color: var(--ch-on-green-ink);
@@ -2691,4 +2814,91 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
 }
 .ch-msp-thread .ch-ms-msg.is-failed .ch-ms-bub::after {
   display: none;
+}
+
+/* Announcements fold under the conversations (owner, 2026-10-16: "messages should be first", announcements "folded"):
+   one raised row on its own tinted card, a gap above it, opening in place to the newest three. */
+.ch-ms-sec.is-ann {
+  margin: 10px -4px 4px;
+  padding: 4px;
+  border-radius: var(--ch-radius-xl);
+  background: color-mix(in srgb, var(--ch-green-100) 55%, var(--ch-bg-surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 22%, transparent),
+    var(--ch-elevation-reading-accent);
+}
+.ch-ms-sec.is-ann > .ch-ms-sec__l {
+  padding: 8px 12px;
+}
+.ch-ms-fold {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 13px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: transparent;
+  text-align: left;
+  color: var(--ch-text-primary);
+  cursor: pointer;
+  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-ms-fold:hover {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
+}
+.ch-ms-fold:focus-visible {
+  outline: 2px solid var(--ch-green-600);
+  outline-offset: -2px;
+}
+.ch-ms-fold .ch-ms-grp {
+  width: 44px;
+  height: 44px;
+}
+.ch-ms-fold__b {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-ms-fold__b b {
+  font: 600 calc(14.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+}
+.ch-ms-fold__b b .ch-num {
+  margin-left: 4px;
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-ms-fold__b > span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 400 calc(13 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-ms-fold__chev {
+  color: var(--ch-text-tertiary);
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-sec.is-ann.is-open .ch-ms-fold__chev {
+  transform: rotate(180deg);
+}
+.ch-ms-fold__body {
+  padding: 2px 0 6px;
+  border-top: 1px solid color-mix(in srgb, var(--ch-green-fill-600) 16%, transparent);
+  animation: ch-ms-fold-in var(--ch-dur-base) var(--ch-ease);
+}
+.ch-ms-fold__body .ch-ms-more {
+  margin-inline: 12px;
+}
+@keyframes ch-ms-fold-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
+  background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-500) 22%, transparent);
 }

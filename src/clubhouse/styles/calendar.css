@@ -6,7 +6,8 @@
   gap: 18px;
   max-width: 1360px;
   margin: 0 auto;
-  padding: 28px 32px 64px;
+  /* No eyebrow line over the week's title: its 24px is added to the head's top (tokens.css). */
+  padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 64px;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-cal[aria-busy='true'] {
@@ -31,7 +32,7 @@
   margin: -2px -6px;
   padding: 2px 6px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: transparent;
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -55,6 +56,8 @@
 }
 .ch-cal-title__yr {
   font: 500 15px/1 var(--ch-font-sans);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-cal-title svg {
@@ -83,7 +86,7 @@
   z-index: var(--ch-z-overlay);
   width: 288px;
   padding: 12px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-shadow-lg);
 }
@@ -116,7 +119,7 @@
   place-items: center;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: transparent;
   font: 500 12.5px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
@@ -214,7 +217,7 @@
   height: 48px;
   padding: 0 14px 0 8px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-control);
   cursor: pointer;
@@ -275,7 +278,7 @@
   text-align: left;
 }
 .ch-pp__txt b {
-  font: 600 13.5px/1.1 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-pp__trigger.is-on .ch-pp__txt b {
@@ -299,7 +302,7 @@
   flex-direction: column;
   width: 320px;
   padding: 6px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-shadow-lg);
 }
@@ -308,7 +311,7 @@
 }
 .ch-pp__label {
   padding: 10px 10px 4px;
-  font: 500 12px/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-pp__list {
@@ -337,7 +340,7 @@
   align-items: start;
 }
 .ch-cal-surface {
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -372,7 +375,7 @@
   z-index: 3;
   margin: -10px -10px 0;
   padding: 10px 10px 0;
-  border-radius: 16px 16px 0 0;
+  border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
   background: var(--ch-bg-surface);
 }
 .ch-wk__head,
@@ -394,7 +397,7 @@
   transition: transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-wk__day:focus-visible {
-  outline: 2px solid rgb(21 90 57 / 0.45);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 1px;
 }
 .ch-wk__d {
@@ -473,6 +476,47 @@
 .ch-wk__col.is-today {
   background-color: rgb(21 90 57 / 0.025);
 }
+/* Time that has gone (overnight polish, 2026-10-15): past days and today's hours above the now line take a faint wash,
+   and ended events step back, so the week reads from the now line forward. Hover, focus and selection bring one back. */
+.ch-wk__col.is-past,
+.ch-wk__gone {
+  background-color: color-mix(in oklab, var(--ch-text-primary) 3.5%, transparent);
+}
+.ch-wk__gone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+/* The fill steps back, never the words: faded to 0.56 an ended event's text measured 2.4–3.3:1 (a11y wave 3). A tinted
+   block's ink goes to ink-500; a filled one keeps ivory on its fill mixed a quarter toward the page. */
+.ch-ev.is-past {
+  filter: saturate(0.55);
+}
+.ch-ev.is-past:is(.ch-ev--practice, .ch-ev--workout, .ch-ev--meeting, .ch-ev--other, .ch-ev--busy, .ch-ev--travel, .ch-ev--class:not(.ch-ev--fill-3)):not(:hover):not(:focus-visible):not(.is-sel) {
+  color: var(--ch-ink-500);
+}
+.ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel) {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
+}
+.ch-ev.is-past .ch-ev__m {
+  opacity: 1;
+}
+.ch-ev.is-past:hover,
+.ch-ev.is-past:focus-visible,
+.ch-ev.is-past.is-sel {
+  filter: none;
+}
+.ch-mo__cell.is-past .ch-mo__ev {
+  filter: saturate(0.55);
+}
+.ch-mo__cell.is-past .ch-mo__ev:not(.is-major) {
+  color: var(--ch-ink-500);
+}
+.ch-mo__cell.is-past .ch-mo__ev.is-major {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 75%, var(--ch-bg-page));
+}
 .ch-wk__now {
   position: absolute;
   left: 0;
@@ -492,6 +536,28 @@
   border-radius: 50%;
   background: var(--ch-green-fill-600);
   box-shadow: 0 0 0 2px var(--ch-bg-surface);
+}
+/* The now dot breathes (overnight polish, 2026-10-15): a slow ring, so the line reads as live time, not a rule. Reduced
+   motion runs it once (base.css); Animations off stops it. */
+@keyframes ch-now-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 2px transparent;
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--ch-bg-surface),
+      0 0 0 6px color-mix(in oklab, var(--ch-green-fill-600) 24%, transparent);
+  }
+}
+.ch-wk__now::before {
+  animation: ch-now-breathe var(--ch-dur-live) var(--ch-ease-io) infinite;
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-wk__now::before,
+[data-ui='clubhouse'][data-motion='off'] .ch-calm-now span {
+  animation: none;
 }
 .ch-wk__nowlbl {
   position: absolute;
@@ -516,12 +582,14 @@
   padding: 6px 8px;
   overflow: hidden;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   text-align: left;
   cursor: pointer;
   transition:
     box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+    transform var(--ch-dur-quick) var(--ch-ease),
+    opacity var(--ch-dur-quick) var(--ch-ease),
+    filter var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -583,6 +651,24 @@
   text-overflow: ellipsis;
   opacity: 0.82;
 }
+/* An event block's time in whole parts (views.tsx): "8:00", " AM", " – 9:30 AM", " · Finley GC". One line shows; a part
+   that doesn't fit wraps out of sight with every part after it, so the block keeps the longest start of its time that
+   fits and never a cut figure. */
+.ch-ev__m--fit {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  height: 1lh;
+}
+.ch-ev__m--fit > span {
+  white-space: pre;
+}
+/* A short block's title gives way to its time ("Travel bri… 1:30 PM"); the meridiem drops only when the title would
+   be left under 24px. */
+.ch-ev--short .ch-ev__m--fit {
+  flex-shrink: 0;
+  max-width: calc(100% - 30px);
+}
 /* Faded to 0.82 the time on a class or busy block measured 3.6:1 and 4.0:1; its own color holds 5.2:1 and 6.0:1.
    Aesthetic audit X-3. */
 .ch-ev--class .ch-ev__m,
@@ -606,10 +692,10 @@
 }
 .ch-ev--class.ch-ev--fill-3 {
   background: var(--ch-info-600);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-ev--class.ch-ev--fill-3 .ch-ev__who {
-  color: color-mix(in oklab, var(--ch-ivory-50) 82%, transparent);
+  color: color-mix(in oklab, var(--ch-on-fill-50) 82%, transparent);
 }
 /* The class card (P006): a slate band naming the slot, then a row a player. Colour from the class slate, not ivory. */
 .ch-cg {
@@ -618,7 +704,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px rgb(45 92 119 / 0.14), var(--ch-elevation-overlay);
 }
@@ -629,14 +715,14 @@
   gap: 12px;
   padding: 14px 16px;
   background: var(--ch-info-600);
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-cg__glyph {
   display: grid;
   width: 32px;
   height: 32px;
   place-items: center;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: rgb(255 255 255 / 0.14);
 }
 .ch-cg__title {
@@ -646,10 +732,11 @@
   min-width: 0;
 }
 .ch-cg__title b {
-  font: 650 15px/1.2 var(--ch-font-sans);
+  font: 650 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-cg__title span {
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   opacity: 0.8;
 }
 .ch-cg__count {
@@ -657,7 +744,8 @@
   padding: 4px 8px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.16);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   text-align: center;
 }
 .ch-cg__list {
@@ -703,11 +791,11 @@
   min-width: 0;
 }
 .ch-cg__who b {
-  font: 600 13.5px/1.25 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-cg__who > span {
   overflow: hidden;
-  font: 400 12.5px/1.3 var(--ch-font-sans);
+  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -719,7 +807,8 @@
   color: var(--ch-info-600);
 }
 .ch-cg__time {
-  font: 400 12px/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 /* Events that share a column (aesthetic audit C-1): at 1440px a three-way overlap leaves 29px of text, and the one-line
@@ -772,7 +861,7 @@
 .ch-ev--practice,
 .ch-ev--workout {
   background: var(--ch-green-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.14);
 }
 .ch-ev--meeting,
@@ -785,14 +874,19 @@
   .ch-ev--practice:hover,
   .ch-ev--workout:hover,
   .ch-ev--meeting:hover,
-  .ch-ev--other:hover {
+  .ch-ev--other:hover,
+  .ch-ev--tournament:hover,
+  .ch-ev--qualifier:hover,
+  .ch-ev--travel:hover,
+  .ch-ev--busy:hover,
+  .ch-ev-bar:hover {
     box-shadow: var(--ch-elevation-chip-hover);
   }
 }
 .ch-ev--tournament,
 .ch-ev--qualifier {
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
 }
 .ch-ev--travel {
   background: rgb(255 255 255 / 0.5);
@@ -840,12 +934,14 @@
   padding: 0 10px;
   overflow: hidden;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   font: 600 12px/1 var(--ch-font-sans);
   white-space: nowrap;
   text-overflow: ellipsis;
   cursor: pointer;
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition:
+    transform var(--ch-dur-quick) var(--ch-ease),
+    box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ev-bar span {
   overflow: hidden;
@@ -873,7 +969,7 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   grid-auto-rows: minmax(112px, auto);
   overflow: hidden;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
 }
 .ch-mo__cell {
@@ -958,9 +1054,9 @@
 .ch-mo__ev.is-major {
   margin: 0 -3px;
   padding: 4px 7px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   font-weight: 600;
 }
 .ch-mo__ev.is-major i {
@@ -994,7 +1090,7 @@
   padding-top: 12px;
 }
 .ch-ag__when b {
-  font: 600 15px/1.2 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ag__when span {
@@ -1004,7 +1100,7 @@
 .ch-ag__when.is-today {
   margin-left: -14px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12);
 }
@@ -1053,12 +1149,12 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font: 600 13px/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
 }
 .ch-ag__t span {
-  font: 400 12px/1.2 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-ag__dot {
@@ -1076,7 +1172,7 @@
 }
 .ch-ag__a {
   display: block;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-ag__b {
@@ -1110,7 +1206,7 @@
   padding: 3px 7px;
   border-radius: 4px;
   background: var(--ch-green-fill-600);
-  font: 600 10.5px/1 var(--ch-font-sans);
+  font: 600 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
   transform: translateY(-1px);
@@ -1148,12 +1244,13 @@
   justify-content: space-between;
   gap: 8px;
   font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-in__title {
   margin: 0;
   font: var(--ch-type-display-s);
-  font-size: 22px;
+  font-size: calc(22 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1176,6 +1273,29 @@
   margin-top: 1px;
   color: var(--ch-green-700);
 }
+/* The linked trip (Fairway's "View itinerary"): a quiet link in the facts, the destination in the primary ink. */
+.ch-in__trip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  color: inherit;
+  text-decoration: none;
+}
+.ch-in__trip b {
+  font-weight: 500;
+  color: var(--ch-text-primary);
+}
+.ch-in__trip:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (hover: hover) {
+  .ch-in__trip:hover b {
+    color: var(--ch-green-700);
+  }
+}
 .ch-in__sec {
   display: flex;
   flex-direction: column;
@@ -1193,7 +1313,7 @@
 }
 .ch-in__sechead b {
   font: var(--ch-type-title);
-  font-size: 14px;
+  font-size: calc(14 * var(--ch-type-k));
   color: var(--ch-text-primary);
 }
 .ch-in__resp {
@@ -1215,7 +1335,7 @@
 }
 .ch-in__resp dt {
   order: 2;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-in__resp dd {
@@ -1236,7 +1356,7 @@
 .ch-in__person > span:nth-child(2) {
   flex: 1;
   min-width: 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__foot {
@@ -1264,17 +1384,18 @@
 .ch-in__need:first-child {
   border-top: 0;
 }
+/* Inset: the inbox scroller clips a ring drawn outside the row. */
 .ch-in__need:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-  border-radius: 8px;
+  outline-offset: -2px;
+  border-radius: var(--ch-radius-sm);
 }
 .ch-in__need .ch-in__ic {
   display: grid;
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.14);
@@ -1286,7 +1407,8 @@
 }
 .ch-in__need b {
   display: block;
-  font: 600 13.5px/1.3 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   transition: color var(--ch-dur-quick) var(--ch-ease);
 }
@@ -1297,6 +1419,8 @@
 }
 .ch-in__need span span {
   font: var(--ch-type-caption);
+
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
 .ch-in__need > svg {
@@ -1314,9 +1438,9 @@
   align-items: center;
   padding: 10px 12px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-green-fill-700);
-  color: var(--ch-ivory-100);
+  color: var(--ch-on-fill-100);
   text-align: left;
   cursor: pointer;
   transition: transform var(--ch-dur-quick) var(--ch-ease);
@@ -1327,15 +1451,15 @@
 }
 .ch-in__at {
   padding: 5px 8px;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.14);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
-  font: 600 13px/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
 .ch-in__na {
   display: block;
-  font: 600 14px/1.25 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-in__nb {
   display: block;
@@ -1352,17 +1476,18 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px 16px 14px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-green-fill-700);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), var(--ch-elevation-reading);
 }
 .ch-in__today .ch-in__kick {
   color: #bfd5c6;
 }
-/* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. */
+/* [data-ui] main[data-canopy] h2 (shell.css) sets the forest ink on every h2; the plate's title is ivory. The plates are
+   green in both themes, so their ink is the stage's (--ch-ivory-50 turns dark in dark mode). */
 [data-ui='clubhouse'] main[data-canopy] .ch-in__today h2.ch-in__title {
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__today .ch-in__next {
   background: rgb(255 255 255 / 0.1);
@@ -1371,7 +1496,7 @@
 .ch-in__sec .ch-in__need {
   padding: 10px 12px;
   border-top: 0;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-hairline), var(--ch-elevation-control);
 }
@@ -1391,7 +1516,7 @@
   box-sizing: content-box;
   margin: 0;
   padding: 6px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
 }
 .ch-in__fact.is-team > svg {
@@ -1415,9 +1540,9 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px 16px 14px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-plate);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), var(--ch-elevation-reading);
 }
 .ch-in__plate[data-tone='green'] {
@@ -1442,39 +1567,39 @@
 }
 .ch-in__plate .ch-in__kick .ch-badge {
   background: rgb(255 255 255 / 0.18);
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
   box-shadow: none;
 }
 .ch-in__plate .ch-in__kick .ch-btn {
   margin-left: auto;
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__plate .ch-cal-sub {
   color: rgb(255 255 255 / 0.84);
 }
 [data-ui='clubhouse'] main[data-canopy] .ch-in__plate h2.ch-in__title {
-  color: var(--ch-ivory-50);
+  color: var(--ch-stage-ink);
 }
 .ch-in__chip {
   padding: 3px 9px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
-  font: 600 12px/1.2 var(--ch-font-sans);
-  color: var(--ch-ivory-50);
+  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-stage-ink);
 }
 .ch-in__by {
   display: flex;
   align-items: center;
   gap: 9px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: rgb(255 255 255 / 0.84);
 }
 .ch-in__by b {
   padding: 2px 7px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.16);
   font-weight: 600;
-  color: var(--ch-ivory-50);
+  color: var(--ch-on-fill-50);
 }
 .ch-in__note {
   display: grid;
@@ -1482,7 +1607,7 @@
   gap: 9px;
   margin: 0;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-info-100);
   font: var(--ch-type-caption);
   color: var(--ch-info-600);
@@ -1502,7 +1627,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-in__who small {
@@ -1513,15 +1638,12 @@
 .ch-in__att .ch-seg__b {
   height: 26px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: calc(12 * var(--ch-type-k));
 }
-.ch-in__att .ch-seg__b.is-on.is-late .ch-seg__l {
-  color: var(--ch-warning-600);
-}
+/* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
 .ch-in__att .ch-seg__b.is-on.is-absent .ch-seg__l {
-  color: var(--ch-text-primary);
   text-decoration: line-through;
-  text-decoration-color: var(--ch-warning-600);
+  text-decoration-color: rgb(249 247 241 / 0.7);
 }
 .ch-in__note {
   margin: 0;
@@ -1558,7 +1680,7 @@
 .ch-lane {
   position: relative;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
@@ -1570,13 +1692,13 @@
   align-items: center;
   padding: 0 8px;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
   font: 600 11px/1 var(--ch-font-sans);
   white-space: nowrap;
 }
 .ch-lane__b.is-ev {
   background: var(--ch-green-50);
-  color: var(--ch-green-800);
+  color: var(--ch-forest-800);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.2);
 }
 .ch-lane__b.is-busy {
@@ -1647,7 +1769,7 @@
   border-bottom: 1px solid var(--ch-border-subtle);
   background: transparent;
   font: var(--ch-type-display-s);
-  font-size: 24px;
+  font-size: calc(24 * var(--ch-type-k));
   letter-spacing: -0.028em;
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
@@ -1682,6 +1804,16 @@
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
+/* On the phone three across left each time 99px, which clipped "07:00 AM": the date takes its own line, the times share
+   the one under it. */
+@media (max-width: 820px) {
+  .ch-ed__row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ch-ed__row > [type='date'] {
+    grid-column: 1 / -1;
+  }
+}
 .ch-ed__opts {
   display: flex;
   align-items: center;
@@ -1695,7 +1827,7 @@
   max-height: 208px;
   padding: 4px 10px;
   overflow: auto;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
@@ -1705,7 +1837,7 @@
   gap: 10px;
   align-items: center;
   padding: 7px 0;
-  font: 500 13.5px/1.2 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1724,7 +1856,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font: 500 14px/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -1768,7 +1900,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font: 500 13px/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-verify__ic {
@@ -1797,7 +1929,7 @@
   gap: 8px 12px;
   margin: 0;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
@@ -1807,7 +1939,8 @@
 }
 .ch-rcpt dd {
   margin: 0;
-  font: 500 13px/1.35 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
 .ch-rcpt__was {
@@ -1828,7 +1961,7 @@
 }
 .ch-feed b {
   display: block;
-  font: 600 14px/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-feed__t span {
@@ -1930,14 +2063,14 @@
   gap: 10px;
   align-items: start;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.18);
   color: var(--ch-warning-600);
 }
 .ch-cal-warn b {
   display: block;
-  font: 600 13.5px/1.3 var(--ch-font-sans);
+  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-cal-warn p {
@@ -1983,7 +2116,7 @@
 .ch-in__file b {
   display: block;
   overflow: hidden;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
   color: var(--ch-text-primary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -2003,7 +2136,7 @@
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
   color: var(--ch-green-700);
@@ -2117,7 +2250,7 @@
     bottom: 0;
     left: 0;
     width: calc((100% - 12px) / 7);
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-green-fill-600);
     transform: translateX(calc(var(--ch-calm-at, 0) * (100% + 2px)));
     transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -2137,7 +2270,7 @@
     height: 64px;
     padding: 11px 0 0;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: inherit;
     cursor: pointer;
@@ -2159,6 +2292,7 @@
   }
   .ch-calm-week__d b {
     font: 500 17px/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
     transition: color var(--ch-dur-base) var(--ch-ease);
   }
@@ -2205,13 +2339,15 @@
   }
   .ch-calm-dayk h3 {
     margin: 0;
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-calm-dayk span {
     font: var(--ch-type-caption);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-calm-dayk + .ch-empty {
@@ -2329,11 +2465,14 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font: 600 13.5px/1 var(--ch-font-sans);
+    font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
   }
   .ch-calm-ev__t em {
-    font: 400 12px/1 var(--ch-font-sans);
+    font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+
+    font-variant-numeric: tabular-nums;
     font-style: normal;
     color: var(--ch-text-tertiary);
   }
@@ -2392,7 +2531,7 @@
     overflow-wrap: anywhere;
   }
   .ch-calm-ev__b b {
-    font: 600 15px/1.25 var(--ch-font-sans);
+    font: 600 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
     letter-spacing: -0.012em;
     color: var(--ch-text-primary);
   }
@@ -2424,10 +2563,21 @@
   }
   .ch-calm-now span {
     padding: 3px 7px;
-    border-radius: 6px;
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-green-fill-600);
-    font: 600 12px/1 var(--ch-font-sans);
+    font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
     color: var(--ch-text-on-accent);
+    animation: ch-now-pill var(--ch-dur-live) var(--ch-ease-io) infinite;
+  }
+  @keyframes ch-now-pill {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 transparent;
+    }
+    50% {
+      box-shadow: 0 0 0 4px color-mix(in oklab, var(--ch-green-fill-600) 22%, transparent);
+    }
   }
 
   /* Month: the grid flush on the parchment under the weekdays' engraved rule; a dot for a day with events, a dark one
@@ -2472,7 +2622,7 @@
     height: 52px;
     padding: 5px 0 0;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: inherit;
     cursor: pointer;
@@ -2572,7 +2722,7 @@
     box-shadow: none;
   }
   .ch-calm .ch-ag__when b {
-    font: 600 19px/1.1 var(--ch-font-sans);
+    font: 600 calc(19 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -2595,7 +2745,8 @@
   .ch-calm .ch-ag__row,
   .ch-calm .ch-ag__row:first-child {
     position: relative;
-    grid-template-columns: 62px 8px minmax(0, 1fr) auto;
+    /* The time column grows with Dynamic Type, so "10:15 AM" holds one line at the largest size. */
+    grid-template-columns: calc(62 * var(--ch-type-k)) 8px minmax(0, 1fr) auto;
     gap: 10px;
     width: calc(100% + 24px);
     min-height: 60px;
@@ -2632,7 +2783,7 @@
     text-overflow: ellipsis;
   }
   .ch-calm .ch-ag__a {
-    font-size: 15px;
+    font-size: calc(15 * var(--ch-type-k));
     letter-spacing: -0.012em;
   }
   .ch-calm .ch-ag__now {
@@ -2657,7 +2808,8 @@
 
 /* Phone text floor (high-fidelity audit F09, PROGRESS Q-141): on a phone no text in this stylesheet is drawn
    under 12px. Desktop keeps the sizes above. SVG chart text is in viewBox units, so it takes 12.5px. Kept
-   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. */
+   exceptions: the tab bar labels (11.5px, Q-139) and the bell's count numeral. Keep this block last. Labels follow
+   Dynamic Type from the floor up; the grids' cells (week, month, lanes, mini-month) keep a fixed 12px so they hold. */
 @media (max-width: 820px) {
   .ch-cal-jump__dow,
   .ch-pp__more,
@@ -2666,14 +2818,16 @@
   .ch-wk__nowlbl,
   .ch-ev__m,
   .ch-mo__more,
-  .ch-ag__now span,
-  .ch-in__resp dt,
   .ch-lanes__axis span,
   .ch-lane__b,
   .ch-calm-week__d em,
-  .ch-calm-now span,
   .ch-calm-month__h span {
     font-size: 12px;
+  }
+  .ch-ag__now span,
+  .ch-in__resp dt,
+  .ch-calm-now span {
+    font-size: calc(12 * var(--ch-type-k));
   }
 }
 
@@ -2699,7 +2853,7 @@
   /* Owner, 2026-10-08: the week sits in the day's light. The sun's wash falls across the grid from its side, and the
      pinned days carry the same light so they don't read as a white card laid over it. */
   .ch-cal[data-canopy] .ch-wk.ch-cal-surface {
-    border-radius: 16px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-light-surface);
   }
   .ch-cal[data-canopy] .ch-wk__top {
@@ -2890,9 +3044,6 @@ html[data-fw-theme='dark'] .ch-dot-qualifier {
 html[data-fw-theme='dark'] .ch-pp__trigger.is-on {
   box-shadow: 0 0 0 1px rgb(107 187 140 / 0.32);
 }
-html[data-fw-theme='dark'] .ch-wk__day:focus-visible {
-  outline-color: var(--ch-green-rule);
-}
 html[data-fw-theme='dark'] .ch-wk__col.is-today {
   background-color: rgb(107 187 140 / 0.04);
 }
@@ -2919,6 +3070,11 @@ html[data-fw-theme='dark'] .ch-ev--travel {
 }
 html[data-fw-theme='dark'] .ch-ev--class {
   box-shadow: inset 0 0 0 1px rgb(134 182 212 / 0.2);
+}
+/* At night ivory holds 10:1 on the filled green halfway to the page, so an ended competition can step further back. */
+html[data-fw-theme='dark'] .ch-ev.is-past:is(.ch-ev--tournament, .ch-ev--qualifier):not(:hover):not(:focus-visible):not(.is-sel),
+html[data-fw-theme='dark'] .ch-mo__cell.is-past .ch-mo__ev.is-major {
+  background-color: color-mix(in srgb, var(--ch-green-fill-700) 50%, var(--ch-bg-page));
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
   box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-floating);
@@ -3069,6 +3225,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   transform: translateY(-100%);
   padding-bottom: 2px;
   font: 500 10.5px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
   font-style: normal;
   color: var(--ch-ledger-eyebrow);
   white-space: nowrap;
@@ -3099,7 +3256,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
-  font: var(--ch-type-k);
+  font: var(--ch-type-label-s);
   color: var(--ch-text-tertiary);
 }
 .ch-evpeek__t {
@@ -3109,6 +3266,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
 }
 .ch-evpeek__m {
   font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-evpeek__r {
@@ -3116,9 +3274,26 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   padding-top: 8px;
   box-shadow: inset 0 1px 0 var(--ch-border-hairline);
   font: var(--ch-type-body-s);
+  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-evpeek__r b {
   font-weight: 600;
   color: var(--ch-text-primary);
+}
+
+/* Wave 7: a player's reply still owed that day (CalendarPhone's week strip): one amber dot after the day's own. */
+.ch-calm-week__d i span.is-reply,
+.ch-calm-week__d.is-on i span.is-reply {
+  background: var(--ch-warning-600);
+}
+
+/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
+@media (hover: hover) {
+  .ch-in__next:hover {
+    background: var(--ch-green-fill-600);
+  }
+  .ch-in__today .ch-in__next:hover {
+    background: rgb(255 255 255 / 0.16);
+  }
 }

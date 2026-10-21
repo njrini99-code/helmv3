@@ -63,7 +63,7 @@ export function LiveChip({ view }: { view: LiveFeedView }) {
           onClick={() => start(() => onRefresh())}
         >
           <Icon icon={RotateCw} size={13} />
-          {refreshing ? 'Refreshing' : 'Refresh'}
+          {refreshing ? 'Refreshing…' : 'Refresh'}
         </button>
       </span>
     );
@@ -212,7 +212,8 @@ function CourseRows({ s }: { s: ChQDetailSecondary }) {
         <li key={c.number}>
           <span className="ch-qf-rn">{c.number}</span>
           <b>{c.course ?? 'Course not set'}</b>
-          <span className="ch-qf-list__m">{[c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ')}</span>
+          {/* A round with neither tees nor par says so, as the form does, rather than a blank beside its course. */}
+          <span className="ch-qf-list__m">{[c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set'}</span>
         </li>
       ))}
     </ol>

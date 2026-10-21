@@ -2,20 +2,18 @@
 
 import { useMemo, useState, type CSSProperties } from 'react';
 import { formatToPar, initials } from '../../lib/format';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { positionLabel, type ChQRow, type ChQRowState } from './model';
 
 /**
  * P009: the field's spread on one number line. Each player who has a round in is a coin at their total to par (lower, better, on
  * the left); the gold line is the top-score cut, drawn between the last player who qualifies on score and the first who does not.
  * It holds nothing of its own: the rows, their to-par and their states are the leaderboard's. A coin's colour is its state (mint
- * on score, gold a coach's pick, a gold ring the bubble, ivory the rest); the first time it is seen the coins glide out from
- * even par. A pointer reads a name and a place; the leaderboard under it is the route for the keyboard and screen readers.
+ * on score, gold a coach's pick, a gold ring the bubble, ivory the rest); it is drawn in place at first paint (Q-153: no first-paint
+ * draw-ins); a coin glides only when the data moves it. A pointer reads a name and a place; the leaderboard under it is the route for the keyboard and screen readers.
  */
 const KIND: Partial<Record<NonNullable<ChQRowState>, 'score' | 'pick' | 'bubble'>> = { qualifying: 'score', qualified: 'score', selected: 'score', pick: 'pick', bubble: 'bubble' };
 
 export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: number }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>(0.4);
   const [hot, setHot] = useState<string | null>(null);
   const layout = useMemo(() => {
     const scored = rows.filter((r) => r.toPar != null);
@@ -49,7 +47,7 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
   const height = layout.lanes * 40 + 6;
   const tip = hot ? layout.placed.find((p) => p.r.playerId === hot) : null;
   return (
-    <div ref={ref} className={'ch-qf-sp' + (seen ? ' is-in' : '')} onPointerLeave={() => setHot(null)}>
+    <div className="ch-qf-sp" onPointerLeave={() => setHot(null)}>
       <div className="ch-qf-sp__plot" style={{ height: height + 30 }} aria-hidden="true">
         <i className="ch-qf-sp__even" style={{ left: `${even}%`, height: height + 6 }} />
         {layout.cut != null && (
@@ -62,7 +60,7 @@ export function StandingsSpread({ rows, topScore }: { rows: ChQRow[]; topScore: 
             <li
               key={r.playerId}
               className={'is-' + (KIND[r.state as NonNullable<ChQRowState>] ?? 'out') + (hot === r.playerId ? ' is-hot' : '')}
-              style={{ '--ch-qf-x': seen ? x : even, top: lane * 40 } as CSSProperties}
+              style={{ '--ch-qf-x': x, top: lane * 40 } as CSSProperties}
               onPointerEnter={() => setHot(r.playerId)}
             >
               <span>{initials(r.name)}</span>

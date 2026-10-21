@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { currentPath, deepLinkPath } from '../lib/deep-link';
+import { armRelink } from './relink';
 
 /** Read once per launch: a cold start from a link hands the app its URL here rather than (only) as an event. */
 const LAUNCH_SEEN = 'ch-deeplink-launch-seen';
@@ -22,6 +23,8 @@ export function DeepLinks() {
     const go = (raw: string | null | undefined) => {
       const path = deepLinkPath(raw, window.location.origin);
       if (!path || path === currentPath(window.location)) return;
+      // The screen already open, with another item named: it mounts again for it (relink.ts).
+      armRelink(path);
       router.push(path);
     };
     void import('@capacitor/app')

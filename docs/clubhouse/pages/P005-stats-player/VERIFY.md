@@ -1,5 +1,20 @@
 # P005 — Stats (player): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Rounds table, putting rings, collapsed More detail, compact empty states, one number voice, the scoring form scrub, print.
+
+Vitest, `npx vitest run src/clubhouse/__tests__/stats- src/clubhouse/lib/__tests__/format-number.test.ts`: 20 files, 432 tests pass (exit 0),
+including `stats-scrub` (snapping, arrow keys, the live region), `stats-print` and `stats-tape`. ESLint on `screens/stats` is clean.
+`npm run typecheck` reports no error in these files (it fails on other lanes' files).
+
+WebKit 26, headless, against the dev server, reduced motion: `/clubhouse-preview/player` Rounds tab at 1024, 1100, 1280 and 1440px
+has no horizontal overflow (scrollWidth equals clientWidth in the table); the scrub was driven by pointer and by ArrowLeft, light and dark;
+the putting rings were looked at light and dark. Print was checked as a Letter PDF from headless Chromium (WebKit cannot make a PDF):
+white page, no controls, the head line, no section split across sheets, light tokens even when the page was dark.
+Not checked: a real Safari print dialog, the phone widths for the rounds table and the scrub (the phone view has its own markup),
+and the compact empty states in Game detail panels (no fixture reaches them).
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -189,7 +204,7 @@ Result:       built to the approved spec; the browser pass at 390 and 430 and th
 | P005__filter__coach__390__populated__after__cca081c.png | after | cca081c (working-tree after) | WebKit iPhone 13; Phoneplayerstatsfilter44×44px target withremainingcontrolsvisible |
 | P005__overview__coach__390__populated__before__cbc1c0d.png | before | cbc1c0d (working-tree before) | WebKit iPhone 13; Baseline phone player stats before page spacing and material repairs |
 | P005__overview__coach__390__populated__after__cbc1c0d.png | after | cbc1c0d (working-tree after) | WebKit iPhone 13; Layered overview and strokes gained panels,16px rhythm and readable captions |
-| Skeleton | CH-4401 | the route's loading.tsx (Team stats' shape); test on Team stats | busy skeleton; a profile's first paint moves it |
+| Skeleton | CH-4401 | the route's loading.tsx, profile-aware (`StatsRouteSkeleton.tsx`: a player or a coach's `?player=` draws the profile's shape; corrected 2026-10-17) | busy skeleton |
 | Empty | 50401 to 50405 | `?state=early` (preview), tests | each tab or section says what is missing; an early read names what will move |
 | Validation | 50501 | test | message under the field, the field focused, the warning tick, nothing sent |
 | Server failure | 50601 to 50611 | tests (each read forced with its logged name, four tab crashes, the save, the share); preview `?state=failed` | toast or notice with its code; the text is kept |
@@ -237,8 +252,8 @@ Text scaling:   not checked.
 ## Performance
 
 ```text
-Layout shift:      not measured for the profile; the route skeleton is Team stats' shape, so a profile's
-                   hero (taller) moves what the skeleton drew
+Layout shift:      not measured for the profile; the route skeleton is profile-shaped
+                   (`StatsRouteSkeleton.tsx`, corrected 2026-10-17)
 Request waterfall: a test now holds the shape (52101): the team, player and membership together, then the
                    rounds, shot detail, benchmarks, focus areas and goals together, then the round figures once
 Large list:        not measured
@@ -302,6 +317,47 @@ before, after, baseline or evidence.
 | `P005__premium-audit__player__390__case-031-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (player), 390px, case-031-chromium-normal; /clubhouse-preview/player; synthetic preview |
 | `P005__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P005__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P005__score-trend__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | score-trend (coach), 1440px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__score-trend__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | score-trend (coach), 1440px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__sg-trend__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | sg-trend (coach), 1440px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__score-trend__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | score-trend (coach), 390px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__score-trend__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | score-trend (coach), 390px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__score-trend__coach__390__round-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | score-trend (coach), 390px, round-pinned; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__sg-trend__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | sg-trend (coach), 390px, default; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__1440__default__before__6f8be23.png` | before | 6f8be23 | strokes-gained-legs (coach), 1440px, default, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__1440__default__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 1440px, default, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__1440__leg-pinned__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 1440px, Putting pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__default__before__6f8be23.png` | before | 6f8be23 | strokes-gained-legs (coach), 390px, default, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__default__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, default, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__strokes-gained-legs__coach__390__leg-pinned__after__6f8be23.png` | after | 6f8be23 | strokes-gained-legs (coach), 390px, Approach pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__hero-figures__coach__1440__sg-chip__before__2b3c6f5.png` | before | 2b3c6f5 | hero-figures (coach), 1440px, sg-chip, before: hero figures and the strokes gained change chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__hero-figures__coach__1440__sg-chip__after__2b3c6f5.png` | after | 2b3c6f5 | hero-figures (coach), 1440px, sg-chip, after: hero figures and the strokes gained change chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-sg-zone__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | overview-sg-zone (coach), 1440px, default, before: Overview strokes gained zone: change line and the data-scaled track; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-sg-zone__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | overview-sg-zone (coach), 1440px, default, after: Overview strokes gained zone: change line and the data-scaled track; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-figures__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | overview-figures (coach), 390px, default, before: phone Overview figures, scoring trend and the SG chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-figures__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | overview-figures (coach), 390px, default, after: phone Overview figures, scoring trend and the SG chip; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-putting__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Overview zone 6, make rate by distance: the old nine-band line against the Tour, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail, Make rate by distance (desktop): the old nine-band curve, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail, Putting (phone): the old nine bars with Tour ticks, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-putting__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Overview zone 6: PuttBands, six evenly spaced bands, dots, Wilson whiskers, the Tour line from 3 feet, made/tried under each, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Game detail, Make rate by distance (desktop): PuttBands with the new note, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | Game detail, Putting (phone): the same PuttBands sized for 390, bands 44px or wider, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-putting__coach__1440__band-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Overview zone 6 with 5–10 ft pinned: readout "20 of 51 made, 39% · likely range 27% to 53% · Tour 62%", after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__390__band-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Game detail, Putting (phone) with 5–10 ft tapped and pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__overview-putting__coach__1440__thin-bands__after__2b3c6f5.png` | after | 2b3c6f5 | Overview zone 6 with thin bands (temporary local fixture override, not committed: 10–15 ft 4/18 hollow early read, 25+ ft 1/7 "Needs 10 putts in the band", pinned), after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__game-detail-putting__coach__390__thin-bands__after__2b3c6f5.png` | after | 2b3c6f5 | Game detail, Putting (phone) with the same thin bands (temporary local fixture override, not committed), 10–15 ft pinned, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-overview__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Overview zone 2 scoring mix, 1440px, before (ch-zmix, counts on segments); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-overview__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Overview zone 2 scoring mix, 1440px, after (ScoreMixBar, shares on segments, key with shares and rate a round); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-overview__coach__1440__birdie-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Overview scoring mix, 1440px, Birdie pinned (readout: 19 of 180 holes); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-overview__coach__1440__dark__after__2b3c6f5.png` | after | 2b3c6f5 | Overview scoring mix, 1440px, dark theme, after; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-game-detail__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail Scoring section, 1440px, before (ScoreMix); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-game-detail__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Game detail Scoring section, 1440px, after (ScoreMixBar); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-game-detail__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | Phone Game detail scoring mix, 390px, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-game-detail__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | Phone Game detail scoring mix, 390px, after (key as a table); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-game-detail__coach__390__double-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Phone scoring mix, 390px, Double or worse pinned from the key (3 triple or worse); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-by-par__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | Game detail More detail, Outcomes by par, 1440px, before; /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-by-par__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, after (compact ScoreMixBar, eagle split from birdie); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
+| `P005__scoring-mix-by-par__coach__1440__eagle-pinned__after__2b3c6f5.png` | after | 2b3c6f5 | Outcomes by par, 1440px, Par 5s eagle pinned (1 of 34 holes); /clubhouse-preview/player; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -335,8 +391,8 @@ before, after, baseline or evidence.
 - `clubhouse:a11y` rerun for the phone profile and every state.
 - Forced states against a live session; the shot-level refusal against a real
   other-team coach.
-- Layout shift for the profile, and a profile-shaped loading state (a
-  loading.tsx cannot read the address).
+- Layout shift for the profile (the loading state is profile-shaped now,
+  `StatsRouteSkeleton.tsx`).
 - Found and fixed 2026-09-30: a failed player or membership read showed "That
   player isn't on your team"; a
   pending or removed member opened as Active; the Message button opened the bare

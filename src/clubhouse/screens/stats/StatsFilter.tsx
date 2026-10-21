@@ -21,15 +21,17 @@ import {
   withPick,
   withRange,
   withTypes,
-  withWindow,
+  rangeOf,
+  withScope,
   type ChFilter,
   type ChFilterOptions,
   type ChHoles,
   type ChRoundKind,
-  type ChWindow,
+  type ChRange,
 } from '../../data/stats-filter';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
+import { DateField } from '../../ui/DateField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { EmptyState } from '../../ui/States';
@@ -97,7 +99,7 @@ export function StatsFilter({
   return (
     <section className={'ch-sf' + (phone ? ' is-phone' : '')} aria-label="Round filter">
       <div className="ch-sf__bar">
-        <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm ch-sf__open" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
           {chips.length > 0 && <span className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}
@@ -262,10 +264,10 @@ function FilterSheet({
     haptic('select');
     setDraft((d) => (k === 'all' ? withTypes(d, []) : withTypes(d, d.types.includes(k) ? d.types.filter((x) => x !== k) : [...d.types, k])));
   };
-  const setWindow = (w: ChWindow) => {
+  const setWindow = (w: ChRange) => {
     setFrom('');
     setTo('');
-    setDraft((d) => withWindow(d, w));
+    setDraft((d) => withScope(d, w));
   };
   const toggleCourse = (name: string, on: boolean) => setDraft((d) => withCourses(d, on ? [...d.courses, name] : d.courses.filter((c) => c !== name)));
   const toggleRound = (id: string, on: boolean) =>
@@ -359,34 +361,37 @@ function FilterSheet({
 
         <div className="ch-sf-sec" role="group" aria-labelledby={`${uid}-time`}>
           <h3 id={`${uid}-time`}>Time</h3>
-          <WindowSwitch value={draft.window} onChange={setWindow} custom={hasRange(withRange(draft, from || null, to || null)) && !badRange} />
+          <WindowSwitch value={rangeOf(draft)} onChange={setWindow} custom={hasRange(withRange(draft, from || null, to || null)) && !badRange} />
           <div className="ch-sf-range">
             <label className="ch-field" htmlFor={`${uid}-from`}>
               <span className="ch-field__label">From</span>
-              <input
+              <DateField
                 id={`${uid}-from`}
-                type="date"
+                label="From"
                 className="ch-input ch-num"
                 value={from}
                 min="2000-01-01"
                 max="2100-12-31"
+                clearable
                 aria-invalid={touched && badRange}
                 aria-describedby={`${uid}-range-help`}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={setFrom}
               />
             </label>
             <label className="ch-field" htmlFor={`${uid}-to`}>
               <span className="ch-field__label">To</span>
-              <input
+              <DateField
                 id={`${uid}-to`}
-                type="date"
+                label="To"
                 className="ch-input ch-num"
                 value={to}
-                min="2000-01-01"
+                min={from || '2000-01-01'}
                 max="2100-12-31"
+                anchor={from || undefined}
+                clearable
                 aria-invalid={touched && badRange}
                 aria-describedby={`${uid}-range-help`}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={setTo}
               />
             </label>
           </div>

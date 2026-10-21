@@ -70,7 +70,7 @@ and read their figures, form and recent rounds. Write a private note about a
 player. Search, filter by status, sort and switch between cards and a list
 (desktop). Export the roster as a CSV (desktop). Message a player, view their
 stats, plan a one-to-one (phone). Remove a player from the team. Copy the team
-code or share the join link.
+code or share the invite link.
 
 ### The player's view
 
@@ -132,8 +132,9 @@ Status:           approved
 
 The sidebar (Team › Roster, with a coach's join requests count; a player's
 Team › Roster has no count) and the More sheet on the phone (D-50, D-66), Home's Full roster link, and the bell's join-request
-notification (its address carries `?tab=requests`, which Roster ignores: the
-requests are the first thing under the header).
+notification (its address carries `?tab=requests`: the phone opens the requests
+sheet, and desktop takes focus to the requests card under the header; the param
+is dropped either way).
 
 ### Exits to
 

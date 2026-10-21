@@ -21,7 +21,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { GolfCourse, GolfCourseTee, GolfCourseTeeHole } from '@/lib/types/golf-course';
 
 vi.mock('@/components/ui/sonner', () => ({ useToast: () => ({ showToast: vi.fn() }) }));
-vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn() }));
+vi.mock('@/lib/golf/upload-course-image', () => ({ uploadCourseImage: vi.fn(), discardCourseImageUpload: vi.fn(async () => {}) }));
 
 const course: GolfCourse = {
   id: 'course-1',
@@ -104,7 +104,7 @@ vi.mock('@/app/golf/actions/course-library', () => ({
 
 import { CourseDetailDrawer } from '@/components/golf/courses/CourseDetailDrawer';
 import { getCourseDetail, setCourseImageUrl } from '@/app/golf/actions/course-library';
-import { uploadCourseImage } from '@/lib/golf/upload-course-image';
+import { discardCourseImageUpload, uploadCourseImage } from '@/lib/golf/upload-course-image';
 
 describe('CourseDetailDrawer — desktop chrome + holes', () => {
   beforeEach(() => {
@@ -113,7 +113,8 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
       success: true,
       data: { imageUrl: 'https://example.com/course.jpg' },
     });
-    vi.mocked(uploadCourseImage).mockReset().mockResolvedValue({ ok: true, url: 'https://example.com/course.jpg' });
+    vi.mocked(uploadCourseImage).mockReset().mockResolvedValue({ ok: true, url: 'https://example.com/course.jpg', path: 'courses/course-1/photo.jpg' });
+    vi.mocked(discardCourseImageUpload).mockReset().mockResolvedValue(undefined);
   });
 
   it('exits loading after a missing detail response and retries to the course snapshot', async () => {
@@ -169,6 +170,39 @@ describe('CourseDetailDrawer — desktop chrome + holes', () => {
 
     expect((await screen.findAllByText('Championship')).length).toBeGreaterThan(0);
     expect(screen.getByText('Course snapshot')).toBeInTheDocument();
+  });
+
+  // A refused save (a player before golf_set_course_image is applied, a rejected
+  // URL) left the uploaded object in the public bucket with nothing pointing at it.
+  it('removes the uploaded photo when the save is refused, and keeps it when the save lands', async () => {
+    vi.mocked(setCourseImageUrl).mockResolvedValueOnce({ success: false, error: 'Only coaches can manage the course library' });
+    render(
+      <CourseDetailDrawer
+        courseId="course-1"
+        open
+        onOpenChange={() => {}}
+        canManageTeam
+        isSuperAdmin={false}
+        savedCourseIds={new Set()}
+      />,
+    );
+
+    await screen.findAllByText('Championship');
+    const fileInput = document.querySelector('input[type="file"]');
+    expect(fileInput).toBeTruthy();
+    fireEvent.change(fileInput!, {
+      target: { files: [new File(['course photo'], 'course.jpg', { type: 'image/jpeg' })] },
+    });
+    await vi.waitFor(() => expect(discardCourseImageUpload).toHaveBeenCalledWith('courses/course-1/photo.jpg'));
+
+    // A save that lands keeps the object.
+    vi.mocked(discardCourseImageUpload).mockClear();
+    fireEvent.change(fileInput!, {
+      target: { files: [new File(['course photo 2'], 'course2.jpg', { type: 'image/jpeg' })] },
+    });
+    await vi.waitFor(() => expect(setCourseImageUrl).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(getCourseDetail).toHaveBeenCalledTimes(2));
+    expect(discardCourseImageUpload).not.toHaveBeenCalled();
   });
 
   it('keeps a successful photo save recoverable when its follow-up detail refresh fails', async () => {

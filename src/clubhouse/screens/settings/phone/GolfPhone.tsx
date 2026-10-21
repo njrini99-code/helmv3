@@ -46,7 +46,7 @@ function DetailsPhone({ details, writes }: { details: ChGolfDetails; writes: ChS
   const [editing, setEditing] = useState(false);
   return (
     <>
-      <Group title="Golf details" note="Your coaches see these on the roster.">
+      <Group title="Golf details" note="Your coaches and teammates see your handicap and class on the roster.">
         {FIELDS.map((f) => (
           <NavRow key={f.key} label={f.label} value={details[f.key] || 'Not set'} onClick={() => setEditing(true)} />
         ))}
@@ -73,7 +73,7 @@ function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose:
       dirty={dirty}
       actionDisabled={!dirty || !!invalid}
       onAction={() => void save.run(draft)}
-      note="Your coaches see these on the roster."
+      note="Your coaches and teammates see your handicap and class on the roster."
     >
       <div className="ch-setm-card">
         <FieldRow id="set-hcp-v" label="Handicap" inline inputMode="decimal" placeholder="5.2" value={draft.handicap} onChange={set('handicap')} />
@@ -115,7 +115,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
           onClose={() => setLeaving(false)}
           code="CH-8502"
           title={`Leave ${m.team.name}?`}
-          message="You come off the roster right away. To come back, you’ll need the invite code and your coach’s approval."
+          message="You come off the roster right away. To come back, you’ll need the team code or an invite link from your coach."
           actions={[
             {
               label: 'Leave team',
@@ -132,7 +132,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
 
   return (
     <>
-      <Group title="Join a team" code="CH-8302" note="Ask your coach for the team’s invite code. They approve your request from their roster.">
+      <Group title="Join a team" code="CH-8302" note="Ask your coach for the team code. They approve your request from their roster.">
         {requests.map((r) => (
           <div key={r.id} className="ch-setm-row is-info has-help" data-ch-code="CH-8303">
             <span className="ch-setm-row__l">Waiting on {r.teamName}</span>
@@ -142,7 +142,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
             <span className="ch-setm-help">Sent {new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
           </div>
         ))}
-        {requests.length === 0 && <NavRow label="Invite code" value="Enter" onClick={() => setJoining(true)} />}
+        {requests.length === 0 && <NavRow label="Team code" value="Enter" onClick={() => setJoining(true)} />}
       </Group>
       <FormSheet
         open={joining}
@@ -156,7 +156,7 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
         note="Your coaches approve the request from their roster."
       >
         <div className="ch-setm-card">
-          <FieldRow id="set-join-code" label="Invite code" autoComplete="off" autoCapitalize="characters" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+          <FieldRow id="set-join-code" label="Team code" autoComplete="off" autoCapitalize="characters" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           <FieldRow id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
       </FormSheet>

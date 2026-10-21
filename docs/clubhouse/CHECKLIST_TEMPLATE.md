@@ -77,8 +77,8 @@ Route: <route>   Surface tag: `<screen>` (Sentry `surface=<screen>.<section>`)
 <!-- Rewritten for v2 motion (D-64) and v2 haptics (D-70) on 2026-09-29; earlier evidence was against the old timings, so every box starts again. -->
 - [ ] Transitions use only the v2 tokens (press 110, quick 180, base 260, release 280, reveal 520ms) and the v2 curves (D-64)
 - [ ] Press: every tappable shrinks about 6px and springs back (`useChPress`), and nothing scales twice
-- [ ] First paint: sections rise in once (`.ch-reveal`); no count-ups and no other stagger; a refresh never replays it
-- [ ] Skeletons wait 150ms, fade in, and share one shimmer sweep
+- [ ] First paint: content is visible at once (the reveal and every stagger are retired, Q-139); no count-ups; charts and graphics are drawn in place, with no wipe, rise or glide when they scroll into view (a changed value may still move); a refresh never animates
+- [ ] Page changes fade through (120 ms out, a 120 ms gap, 220 ms in) and hold the route skeleton back 300 ms, so a quick load never shows one; skeletons share one shimmer sweep; pushes and sheets settle on the 462 ms smooth spring
 - [ ] Reduced motion and Animations off remove the rise, the press and the shimmer (`useChReducedMotion`)
 - [ ] Haptics follow v2 (D-70): selection for tabs, segmented controls, switches and choices; light for primary buttons; success for Post, Save, Send, Share, Assign and Got it; warning for Remove, Delete, Discard and Dismiss; medium only for a sheet settling or a shot logged; error when an import or sync fails; every other tap silent
 

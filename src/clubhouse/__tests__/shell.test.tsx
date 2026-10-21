@@ -1,5 +1,6 @@
 import { LazyMotion, domAnimation } from 'motion/react';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
 import { useState } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -166,6 +167,13 @@ describe('Shell · bell', () => {
     expect(dialog.contains(code('CH-9999'))).toBe(false);
   });
 
+  it('CH-1812 inside a dialog the toasts sit at the top on desktop and phone, clear of the footer and its Save', () => {
+    const ui = readFileSync('src/clubhouse/styles/ui.css', 'utf8');
+    const shell = readFileSync('src/clubhouse/styles/shell.css', 'utf8');
+    expect(ui).toMatch(/\.ch-toasts\.ch-toasts--in-dialog\s*{[^}]*top:[^}]*bottom: auto/);
+    expect(shell).toMatch(/\.ch-toasts\.ch-toasts--in-dialog\s*{[^}]*top:[^}]*bottom: auto/);
+  });
+
   it('CH-1201 the list does not load', async () => {
     const user = userEvent.setup();
     bell({ unread: 3, load: vi.fn(() => Promise.resolve({ success: false, error: 'nope' })) });
@@ -177,6 +185,19 @@ describe('Shell · bell', () => {
     expect(panel.querySelector('.ch-bellp__head')!.textContent).toBe('Notifications');
     expect(within(panel).queryByRole('button', { name: 'Mark all read' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Notifications, 3 unread' })).toBeTruthy();
+  });
+
+  it('A-30 the desktop panel closes when focus leaves it for the page', async () => {
+    const user = userEvent.setup();
+    bell({ unread: 0, load: vi.fn(() => Promise.resolve({ success: true, data: { items: [] } })) });
+    const outside = document.createElement('button');
+    outside.textContent = 'page control';
+    document.body.append(outside);
+    await user.click(screen.getByRole('button', { name: 'Notifications' }));
+    expect(screen.getByRole('dialog', { name: 'Notifications' })).toBeTruthy();
+    act(() => outside.focus());
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Notifications' })).toBeNull());
+    outside.remove();
   });
 
   it('CH-1302 nothing to show', async () => {
@@ -438,7 +459,7 @@ describe('Shell · sidebar data', () => {
     };
     const shell = await loadClubhouseShell('t1');
     wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
-    expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 confirmed/);
+    expect(document.querySelector('.ch-next')!.textContent).toMatch(/2 of 3 going/);
   });
 
   it('CH-1304 an event that doesn’t require an RSVP shows when and where, with no confirmed count, and its replies are never read (owner, 2026-10-08)', async () => {
@@ -466,6 +487,14 @@ describe('Shell · sidebar data', () => {
     expect(shell.nextEvent?.id).toBe('e1');
   });
 
+  it('P001 the identity line: a head coach is "Head coach"; an assistant, or a staff role that did not load, is "Coach"', () => {
+    for (const [viewerIsHeadCoach, line] of [[true, 'Head coach · Varsity'], [false, 'Coach · Varsity']] as const) {
+      const { unmount } = wrap(<Sidebar userData={coach} shell={{ nextEvent: null, pendingJoinRequests: null, viewerIsHeadCoach }} pathname="/golf/dashboard" />);
+      expect(document.querySelector('.ch-identity__meta')?.textContent).toBe(line);
+      unmount();
+    }
+  });
+
   it('D-66 10802 the sidebar follows v2 gh-nav.js for each role, sections in order', () => {
     const shell: ChShellData = { nextEvent: null, pendingJoinRequests: null };
     const read = () =>
@@ -474,17 +503,18 @@ describe('Shell · sidebar data', () => {
         [...g.querySelectorAll('a')].map((a) => a.textContent?.replace(/\d+$/, '').trim()),
       ]);
     const { unmount } = wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
+    // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team, and the team's own name heads that group.
     expect(read()).toEqual([
-      ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
-      ['Team', ['Roster', 'Recruiting', 'Stats', 'Qualifiers']],
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
+      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Qualifiers', 'Recruiting']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
     wrap(<Sidebar userData={player} shell={shell} pathname="/golf/dashboard" />);
     expect(read()).toEqual([
-      ['', ['Home', 'CoachHelm', 'Calendar', 'Team Hub', 'Messages']],
-      ['Team', ['Roster']],
-      ['My game', ['Rounds', 'My stats', 'Qualifiers']],
+      ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
+      ['Varsity', ['Team Hub', 'Roster', 'Qualifiers']],
+      ['My game', ['Rounds', 'My stats']],
       ['School', ['Classes']],
     ]);
   });
@@ -566,6 +596,18 @@ describe('Shell · navigation and accessibility', () => {
     signOutSpy.mockResolvedValueOnce(undefined);
     await user.click(within(sheet).getByRole('button', { name: 'Sign out' }));
     expect(signOutSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('P001 the account sheet names a head coach "Head coach" and an assistant "Coach"', async () => {
+    for (const [headCoach, line] of [[true, 'Head coach · Varsity'], [false, 'Coach · Varsity']] as const) {
+      const user = userEvent.setup();
+      // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
+      const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" user={{ name: 'Maya Reyes', teamName: 'Varsity', headCoach }} />);
+      await user.click(screen.getByRole('button', { name: 'Account' }));
+      const sheet = (await screen.findByRole('dialog', { name: 'Account' })) as HTMLElement;
+      expect(within(sheet).getByRole('link', { name: new RegExp(`^Maya Reyes ${line}`) }).getAttribute('href')).toBe('/golf/dashboard/settings');
+      unmount();
+    }
   });
 
   it('CH-1002 a sign-out that fails says you are still signed in, with Retry', async () => {
@@ -789,14 +831,55 @@ describe('Shell · phone chrome', () => {
     const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const labels = () => [...code('CH-1808')!.querySelectorAll('.ch-strip__label')].map((el) => el.textContent);
     // D-66 (v2 GH.tabs) first: coach Home, CoachHelm, Calendar, Stats; then the sidebar's order.
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Team Hub', 'Messages', 'Roster', 'Recruiting', 'Qualifiers', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
     unmount();
     // Player: Home, CoachHelm, Rounds, Team Hub first.
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role
     wrap(<PhoneNav pathname="/golf/dashboard/team-hub" shell={shell} role="player" />);
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'Calendar', 'Messages', 'Roster', 'My stats', 'Qualifiers', 'Classes', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Rounds', 'Team Hub', 'Calendar', 'Messages', 'Roster', 'Qualifiers', 'My stats', 'Classes', 'Settings', 'Account']);
     expect(screen.getByRole('link', { name: /Team Hub/ }).getAttribute('aria-current')).toBe('page');
     expect(code('CH-1816')!.getAttribute('aria-controls')).toBe('ch-strip');
+  });
+
+  it('a keyboard-aware pushed screen fits Safari\'s visible area while the keyboard is up, so its bar stays on screen', () => {
+    // Safari 26: the keyboard shrinks innerHeight with the visible area and scrolls it down to the composer; only the
+    // layout viewport's clientHeight keeps the full height.
+    const vv = Object.assign(new EventTarget(), { height: 714, offsetTop: 0, scale: 1 });
+    const realVV = Object.getOwnPropertyDescriptor(window, 'visualViewport');
+    const realMM = window.matchMedia;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: vv });
+    window.matchMedia = ((q: string) => ({ ...realMM(q), matches: q === '(pointer: coarse)' || q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const ch = vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(714);
+    const ih = vi.spyOn(window, 'innerHeight', 'get').mockImplementation(() => vv.height);
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/messages" forceRebuilt>
+          <PhoneScreen labelledBy="kb-title" keyboardAware>
+            <PhoneBar title="Cole Bennett" titleId="kb-title" back={{ onBack: () => {}, ariaLabel: 'Back to Messages' }} />
+          </PhoneScreen>
+        </ClubhouseFrame>,
+      );
+      const el = document.querySelector<HTMLElement>('.ch-pscreen')!;
+      expect(el.dataset.chVv).toBeUndefined();
+      act(() => {
+        Object.assign(vv, { height: 404, offsetTop: 310 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBe('');
+      expect(el.style.getPropertyValue('--ch-vv-top')).toBe('310px');
+      expect(el.style.getPropertyValue('--ch-vv-h')).toBe('404px');
+      act(() => {
+        Object.assign(vv, { height: 714, offsetTop: 0 });
+        vv.dispatchEvent(new Event('resize'));
+      });
+      expect(el.dataset.chVv).toBeUndefined();
+    } finally {
+      ch.mockRestore();
+      ih.mockRestore();
+      window.matchMedia = realMM;
+      if (realVV) Object.defineProperty(window, 'visualViewport', realVV);
+      else delete (window as { visualViewport?: unknown }).visualViewport;
+    }
   });
 
   it('CH-1809 a pushed screen takes focus on its title and makes the shell chrome inert until it closes', async () => {
@@ -1174,6 +1257,31 @@ describe('Shell · behaviour contracts (P001)', () => {
     await waitFor(() => expect(api.load).toHaveBeenCalledTimes(2));
   });
 
+  it('on the phone the feed is read once the page settles, so the first open lands on its cards, not the skeleton (Simulator, 2026-10-14)', async () => {
+    const real = window.matchMedia;
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    let opened!: () => void;
+    const first = new Promise<void>((r) => (opened = r));
+    try {
+      // The open's own read never answers here: the cards on screen can only be the settled read's.
+      const load = vi
+        .fn<ChBellApi['load']>()
+        .mockImplementationOnce(() => {
+          opened();
+          return Promise.resolve({ success: true, data: { items: [item()] } });
+        })
+        .mockImplementation(() => new Promise(() => {}));
+      bell({ load });
+      await act(() => first);
+      expect(load).toHaveBeenCalledTimes(1);
+      await userEvent.setup().click(screen.getByRole('button', { name: /Notifications/ }));
+      expect(await screen.findByText('Ava in Varsity team')).toBeTruthy();
+      expect(document.querySelector('.ch-bst-skel')).toBeNull();
+    } finally {
+      window.matchMedia = real;
+    }
+  });
+
   it('11301 Mark all read clears the rows at once, and puts them back when the write fails', async () => {
     const user = userEvent.setup();
     let fail: (v: { success: false; error: string }) => void = () => {};
@@ -1236,7 +1344,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('link', { name: 'Back to Home' }).getAttribute('href')).toBe('/golf/dashboard');
     rerender(view({ kind: 'unknown', isRetrying: true, retryCount: 1 }));
-    expect((screen.getByRole('button', { name: 'Trying again' }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: 'Trying again…' }) as HTMLButtonElement).disabled).toBe(true);
     rerender(view({ kind: 'chunk', isRetrying: false, retryCount: 2 }));
     expect(screen.getByRole('button', { name: 'Reload' })).toBeTruthy();
     expect(screen.getByText('Tried again 2 times.')).toBeTruthy();

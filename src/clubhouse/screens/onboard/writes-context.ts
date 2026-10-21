@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { checkCode, createAccount, finishPlayer, sendRequest, uploadPhoto } from './writes';
+import { checkCode, createAccount, finishCoach, finishPlayer, sendRequest, uploadPhoto } from './writes';
 
 /**
  * The server calls, behind a context so the dev preview can draw every step and
@@ -12,11 +12,12 @@ export interface OnboardWrites {
   checkCode: typeof checkCode;
   createAccount: typeof createAccount;
   finishPlayer: typeof finishPlayer;
+  finishCoach: typeof finishCoach;
   uploadPhoto: typeof uploadPhoto;
   sendRequest: typeof sendRequest;
 }
 
-export const REAL_WRITES: OnboardWrites = { checkCode, createAccount, finishPlayer, uploadPhoto, sendRequest };
+export const REAL_WRITES: OnboardWrites = { checkCode, createAccount, finishPlayer, finishCoach, uploadPhoto, sendRequest };
 
 export const OnboardWritesContext = createContext<OnboardWrites>(REAL_WRITES);
 

@@ -1,5 +1,13 @@
 # P004 — Stats (team): verification
 
+## 2026-10-19 — Scorecard pass (lane L6a)
+
+Putting rings, par swatch, scrambling dial reference, no captions under an em dash, print.
+
+Vitest `stats-tape` (the tick, the empty caption) and the stats suites pass (20 files, 432 tests, exit 0). Print was checked as a Letter PDF
+from headless Chromium, light and dark: head line (GolfHelm, team and season, day), no controls, trend card, tape, leg grid, putting and
+season bests each whole on a sheet. Not checked: the scrambling tick on screen (the preview fixture gives the dial no reference), a real Safari print.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -285,6 +293,21 @@ before, after, baseline or evidence.
 | `P004__figures-lead__coach__1280__loading__after__d16567c.png` | after | d16567c | figures-lead (coach), 1280px window, Safari TP 253; skeleton in the lead layout; loading row 213px = loaded 213px; /clubhouse-preview/stats?state=loading; synthetic preview |
 | `P004__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P004__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P004__lead-chip__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | lead-chip (coach), 1440px, default, before: team strokes gained lead and its change chip; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__lead-chip__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | lead-chip (coach), 1440px, default, after: team strokes gained lead and its change chip; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__figure-tape__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | figure-tape (coach), 1440px, default, before: team figure tape: change tones and words; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__figure-tape__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | figure-tape (coach), 1440px, default, after: team figure tape: change tones and words; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__hero__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | hero (coach), 390px, default, before: phone hero scoring change; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__hero__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | hero (coach), 390px, default, after: phone hero scoring change; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__round-figures__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | round-figures (coach), 390px, default, before: phone figure rows and their change tones; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__round-figures__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | round-figures (coach), 390px, default, after: phone figure rows and their change tones; /clubhouse-preview/stats; synthetic preview, captured in the cloud container (Chromium) |
+| `P004__team-rank__coach__1440__default__before__8449655.png` | before | 8449655 | team-rank (coach), 1440px, default, before: the grid ledger where the ranked dot plot goes, above it; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__390__default__before__8449655.png` | before | 8449655 | team-rank (coach), 390px, default, before: the phone's Players list, which the plot now precedes; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__1440__default__after__8449655.png` | after | 8449655 | team-rank (coach), 1440px, default, after: ranked dot plot by strokes gained, ties (T1, T4), team line, whiskers, hollow early read, Needs 3 rounds row; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__1440__pinned__after__8449655.png` | after | 8449655 | team-rank (coach), 1440px, pinned, after: Sofia pinned, readout with rank, sample, likely range and team, Open player; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__1440__scoring__after__8449655.png` | after | 8449655 | team-rank (coach), 1440px, scoring, after: scoring average menu choice, lower is better plotted to the right, no gain or loss color; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__390__default__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, default, after: phone panel with 44px rows, short names, native metric menu; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
+| `P004__team-rank__coach__390__putting-pinned__after__8449655.png` | after | 8449655 | team-rank (coach), 390px, putting-pinned, after: putting leg, every dot an early read (under 15 rounds), Jonah pinned, Needs 5 rounds; /clubhouse-preview/stats; synthetic preview, captured in the cloud container |
 
 ## 2026-10-02 — Mobile design fidelity verification
 
@@ -325,7 +348,8 @@ before, after, baseline or evidence.
   written as text now (40501), and the test fails with the fix taken out
   (checked).
 - v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet"
-  (D-71); not built, owner decision.
+  (D-71): built for Team stats (`StatsTeamFirstRun.tsx`; corrected
+  2026-10-17).
 
 ## 2026-10-02 — Settled WebKit filter-sheet targets
 

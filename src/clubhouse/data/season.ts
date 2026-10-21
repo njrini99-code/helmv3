@@ -5,6 +5,7 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import { chLogServer } from '../lib/track-server';
+import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { hasHoleScores, isTotalOnlyCountable } from './round-scope';
 
 /**
@@ -65,6 +66,8 @@ export const LAST_TEN_MONTHS = 12;
 /**
  * Where a Last 10 read starts: twelve months back from `now`, a bound so the team page never loads whole histories. The ten newest
  * rounds and the ten before them are found inside it unless a player has fewer than twenty in the year (then they are all the player has had).
+ * Last 5 and Last 20 read the same year: Last 20 and its previous 20 need forty rounds in it, so a thinner player gets a shorter
+ * previous stretch, or none under 23 (a known limit, PR #2257; the read is not widened per cut).
  */
 export function lastTenFloor(now = new Date()): string {
   const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - LAST_TEN_MONTHS, now.getUTCDate()));
@@ -118,15 +121,16 @@ export function isFull18(r: ChRound): boolean {
 
 export type ChForm = 'improving' | 'steady' | 'slipping' | 'early';
 
-/** Recent form: the newer half of the trend against the older half, in strokes. */
+/**
+ * Recent form: the newer half of the trend against the older half, in strokes. It is a change only when it clears that change's
+ * standard error (`halvesChange`, `deltaTone`; stats visuals Q4): three scores a half on the pooled 3.6 a round need about three
+ * strokes, so most players read steady, as the form line beside the word does.
+ */
 export function formStatus(trend: number[]): ChForm {
-  if (trend.length < 3) return 'early';
-  const half = Math.floor(trend.length / 2);
-  const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  const change = m(trend.slice(trend.length - half)) - m(trend.slice(0, half));
-  if (change <= -0.5) return 'improving';
-  if (change >= 0.5) return 'slipping';
-  return 'steady';
+  const half = halvesChange(trend);
+  if (!half) return 'early';
+  const tone = deltaTone(half.delta, half.se, true);
+  return tone === 'is-gain' ? 'improving' : tone === 'is-loss' ? 'slipping' : 'steady';
 }
 
 export function mean(xs: number[]): number | null {
@@ -206,6 +210,14 @@ export function classYearLabel(graduationYear: number | null, now = new Date()):
 
 export function fullName(p: { first_name: string | null; last_name: string | null }): string {
   return [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Unnamed player';
+}
+
+/**
+ * The one handicap a player shows, on every screen that names it: the handicap index when it is set, else the handicap
+ * they typed. Settings' identity line holds the same order on its strings (SettingsPhone).
+ */
+export function displayHandicap(p: { handicap_index: number | null; handicap: number | null } | null | undefined): number | null {
+  return p?.handicap_index ?? p?.handicap ?? null;
 }
 
 /** "Oct 12" for a round date (a calendar date, not an instant). */

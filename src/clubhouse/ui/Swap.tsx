@@ -67,16 +67,18 @@ function Leaving({ inline, children }: { inline: boolean; children: ReactNode })
 const IN = { ...chSpring('settle'), opacity: { duration: CH_DUR.base, ease: CH_EASE } };
 const OUT = { duration: CH_DUR.quick, ease: CH_EASE };
 
+// Transform strings, not framer's `x`/`y`: Motion hands them to the compositor (WAAPI), so a swap keeps moving while
+// the new content renders (owner, 2026-10-15: "All transitions need fixed").
 const SETTLE = {
-  enter: { opacity: 0, y: 6 },
-  shown: { opacity: 1, y: 0, transition: IN },
-  leave: { opacity: 0, y: -3, transition: OUT },
+  enter: { opacity: 0, transform: 'translate(0px, 6px)' },
+  shown: { opacity: 1, transform: 'translate(0px, 0px)', transition: IN },
+  leave: { opacity: 0, transform: 'translate(0px, -3px)', transition: OUT },
 };
 
 const SLIDE = {
-  enter: (d: 1 | -1) => ({ opacity: 0, x: 12 * d }),
-  shown: { opacity: 1, x: 0, transition: IN },
-  leave: (d: 1 | -1) => ({ opacity: 0, x: -12 * d, transition: OUT }),
+  enter: (d: 1 | -1) => ({ opacity: 0, transform: `translate(${12 * d}px, 0px)` }),
+  shown: { opacity: 1, transform: 'translate(0px, 0px)', transition: IN },
+  leave: (d: 1 | -1) => ({ opacity: 0, transform: `translate(${-12 * d}px, 0px)`, transition: OUT }),
 };
 
 const INSTANT = {

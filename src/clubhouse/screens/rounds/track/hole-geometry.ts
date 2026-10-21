@@ -110,7 +110,13 @@ function table(s: ChHoleShape): { pts: ChPt[]; len: number[] } {
   let acc = 0;
   for (let i = 0; i <= STEPS; i++) {
     const p = bez(s, i / STEPS);
-    if (i > 0) acc += Math.hypot(p.x - pts[i - 1]!.x, p.y - pts[i - 1]!.y);
+    // Math.sqrt, not Math.hypot: hypot's last digit differs between Node and JavaScriptCore, so the server's map and
+    // Safari's disagreed and every tracking screen logged a hydration mismatch (2026-10-14). sqrt is exactly rounded.
+    if (i > 0) {
+      const dx = p.x - pts[i - 1]!.x;
+      const dy = p.y - pts[i - 1]!.y;
+      acc += Math.sqrt(dx * dx + dy * dy);
+    }
     pts.push(p);
     len.push(acc);
   }

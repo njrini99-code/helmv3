@@ -1,6 +1,7 @@
 # Design: Rounds (player, desktop and phone)
 
 <!-- clubhouse:release-audit:start -->
+
 ## Phone acceptance audit — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.
@@ -13,11 +14,20 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Status: approved. The owner's v2 boards are the spec (D-22): `design/handoff/Player - Rounds.html` and `Player - Rounds - Mobile.html` (`rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`, `rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`, `rounds-data.js`). The whole project, its order and its engine seam are in `docs/clubhouse/ROUNDS_PLAN.md`. Gaps are Q-72.
+Status: approved. The owner's v2 boards are the spec (D-22):
+`design/handoff/Player - Rounds.html` and `Player - Rounds - Mobile.html`
+(`rounds-flow.jsx`, `rounds-course.jsx`, `rounds-track.jsx`,
+`rounds-review.jsx`, `rounds-flow.css`, `rounds-track.css`, `rounds-data.js`).
+The whole project, its order and its engine seam are in
+`docs/clubhouse/ROUNDS_PLAN.md`. Gaps are Q-72.
 
-This file covers the library, a round's review and the shot screen (Tracking), built in `src/clubhouse/screens/rounds/` (Tracking in `track/`) and a new round's setup (`setup/`).
+This file covers the library, a round's review and the shot screen (Tracking),
+built in `src/clubhouse/screens/rounds/` (Tracking in `track/`) and a new
+round's setup (`setup/`).
 
-The route is `/golf/dashboard/rounds`, for players. It is the player's third phone tab (D-66). Coaches have no Rounds library in v2; `/golf/dashboard/rounds` keeps the Fairway page for them.
+The route is `/golf/dashboard/rounds`, for players. It is the player's third
+phone tab (D-66). Coaches have no Rounds library in v2; `/golf/dashboard/rounds`
+keeps the Fairway page for them.
 
 ## Library: board to data
 
@@ -35,24 +45,50 @@ The route is `/golf/dashboard/rounds`, for players. It is the player's third pho
 
 ## Beyond the board
 
-- **More than one unfinished round.** The live data has them: 51 rounds are in progress across players. The newest fills the card. The rest are listed under it ("2 more unfinished rounds"), each with Continue (or Submit) and Discard, so an abandoned round can be cleared.
-- **Ready to submit.** A round whose every hole already has a score says "Ready to submit" and "Submit round". This is legacy R8. It never says so when a completed round already holds that course and day.
-- **Not counted.** A round that isn't countable (`isCountableRound`) still lists, with a "Not counted" pill. It sets no season figure.
-- **9-hole rounds** list with their hole count in place of Out and In. They set no season figure (full 18 only, as on Home and Stats).
+- **More than one unfinished round.** The live data has them: 51 rounds are in
+  progress across players. The newest fills the card. The rest are listed under
+  it ("2 more unfinished rounds"), each with Continue (or Submit) and Discard,
+  so an abandoned round can be cleared.
+- **Ready to post.** A round whose every hole already has a score says "Ready
+  to post" and "Post round". This is legacy R8. It never says so when a
+  completed round already holds that course and day.
+- **Not counted.** A round that isn't countable (`isCountableRound`) still
+  lists, with a "Not counted" pill. It sets no season figure.
+- **9-hole rounds** list with their hole count in place of Out and In. They set
+  no season figure (full 18 only, as on Home and Stats).
 
 ## Gaps (Q-72), none built as a mock
 
-- **Course photos.** None of the courses has `image_url`, and the handoff says there is no photography. The library's photo tile is a green date tile.
-- **The tee swatch** shows the tee's own colour when its name spells one out ("Men's Blue" is blue). "Championship" and "Qualifying Tees" draw no swatch. A red tee's swatch is the tee's colour, not a status colour.
+- **Course photos.** The handoff says there is no photography, and the library's
+  photo tile is a green date tile. The course picker and Add a course (setup)
+  are the exception, by the owner's direction of 2026-10-16: the picker's phone
+  list shows a small photo beside each course (its uploaded photo, else a
+  bundled photo of the real course, else a flag tile), and Add a course shows
+  its course card and a photo slot after the form.
+- **The tee swatch** shows the tee's own colour when its name spells one out
+  ("Men's Blue" is blue). "Championship" and "Qualifying Tees" draw no swatch. A
+  red tee's swatch is the tee's colour, not a status colour.
 - **"Show example"** on the idle card is a board device and is left out.
 
 ## States
 
-Loading: a route skeleton (CH-11401). The list didn't load: CH-11201, in place of the season card, never "no rounds". The in-progress check failed: CH-11202, in place of the card. A section that crashes is contained (CH-11203). Nothing yet: the first-run page (CH-11301). No countable round this season: CH-11302. No search match: CH-11303. Nothing in progress: CH-11304. Discard asks first (CH-11501) and says when it fails (CH-11001). Full list: `docs/clubhouse/catalog/rounds.md`.
+Loading: a route skeleton (CH-11401). The list didn't load: CH-11201, in place
+of the season card, never "no rounds". The in-progress check failed: CH-11202,
+in place of the card. A section that crashes is contained (CH-11203). Nothing
+yet: the first-run page (CH-11301). No countable round this season: CH-11302. No
+search match: CH-11303. Nothing in progress: CH-11304. Discard asks first
+(CH-11501) and says when it fails (CH-11001). Full list:
+`docs/clubhouse/catalog/rounds.md`.
 
 ## Review: board to data
 
-The board's review is the round page, so it lives at `/golf/dashboard/rounds/[id]`, where the legacy round detail page is (Q-72e). The AI deep review at `/rounds/[id]/review` (the filmstrip, sequence attribution, share with coach) belongs to CoachHelm and stays as it is until CoachHelm is rebuilt. The player who played the round opens it from the library. A coach of their team opens it from a player's rounds; the route is rebuilt for both roles.
+The board's review is the round page, so it lives at
+`/golf/dashboard/rounds/[id]`, where the legacy round detail page is (Q-72e).
+The AI deep review at `/rounds/[id]/review` (the filmstrip, sequence
+attribution, share with coach) belongs to CoachHelm and stays as it is until
+CoachHelm is rebuilt. The player who played the round opens it from the library.
+A coach of their team opens it from a player's rounds; the route is rebuilt for
+both roles.
 
 | Board piece | Read |
 | --- | --- |
@@ -66,37 +102,68 @@ The board's review is the round page, so it lives at `/golf/dashboard/rounds/[id
 | Coach notes | **Gap (Q-72f).** The board's card reads coach notes. The only store is the CoachHelm review's annotation (`golf_round_reviews.coach_notes`), and none has ever been written. The card shows instead what the player wrote when posting (`golf_rounds.notes`, on 181 rounds), labelled "Your notes" or "Jonah's notes" |
 | Recap Focus and Keep | **Gap (Q-72f).** Their source is the CoachHelm review's takeaway and practice priority. All 295 stored reviews are unpublished drafts, so they are not shown here |
 
-The review's states: the card didn't load (CH-11204), the shots didn't load (CH-11205), the round didn't load (CH-11206), posted as a total (CH-11305), a hole with no shots (CH-11306), and not here (CH-11307, the same page for a missing round and one the viewer may not see). A round still being played goes to be continued, as on the legacy page.
+The review's states: the card didn't load (CH-11204), the shots didn't load
+(CH-11205), the round didn't load (CH-11206), posted as a total (CH-11305), a
+hole with no shots (CH-11306), and not here (CH-11307, the same page for a
+missing round and one the viewer may not see). A round still being played goes
+to be continued, as on the legacy page.
 
 ## Phone
 
 `Player - Rounds - Mobile.html`, boards 01 (library) and 02 (none in progress).
 
 - The top bar is the tab root's: "Rounds", left-aligned, with no back link.
-- The page keeps its own header ("Your rounds" and New round), as the board draws it.
-- Below 860px of page width the card and the season stack. Below 640px the book drops the Out · In · Tot grid and the meters to a date tile, course and tee, and the to-par box. Group headers drop avg and low.
-- The tab bar stays. There are no sheets on the library; the discard question is a Modal, which is a bottom sheet on the phone.
-- The review's top bar is "Round", with "‹ Rounds" (or "‹ Stats" for a coach). The hero stacks, the score sits beside its to par, and the figures wrap to three columns. The card scrolls sideways inside its own frame, never the page.
+- The page keeps its own header ("Your rounds" and New round), as the board
+  draws it.
+- Below 860px of page width the card and the season stack. Below 640px the book
+  drops the Out · In · Tot grid and the meters to a date tile, course and tee,
+  and the to-par box. Group headers drop avg and low.
+- The tab bar stays. There are no sheets on the library; the discard question is
+  a Modal, which is a bottom sheet on the phone.
+- The review's top bar is "Round", with "‹ Rounds" (or "‹ Stats" for a coach).
+  The hero stacks, the score sits beside its to par, and the figures wrap to
+  three columns. The card scrolls sideways inside its own frame, never the page.
 
 ## Tracking: board to engine
 
-The board is `rounds-track.jsx` / `rounds-track.css`. The screen is Clubhouse's renderer of the shot screen: every rule and write is `useShotTracking`, the hook the Fairway screen runs (moved there unchanged, reviewed), and the gating is `shot-entry-rules`. Where the board and the hardened engine disagree, the engine wins:
+The board is `rounds-track.jsx` / `rounds-track.css`. The screen is Clubhouse's
+renderer of the shot screen: every rule and write is `useShotTracking`, the hook
+the Fairway screen runs (moved there unchanged, reviewed), and the gating is
+`shot-entry-rules`. Where the board and the hardened engine disagree, the engine
+wins:
 
-- Penalty works before the first shot (the board disables it). The penalty sheet asks which stroke went for out of bounds and lost ball, as the engine records them.
-- Undo asks first (the board undoes at once), and a failed undo says so (the Fairway screen showed nothing).
-- Putt tags are the engine's four (Short, Long, Low side, High side; the pairs exclude each other), not the board's eight.
-- The hole-out button says "Hole out · 4" and the engine saves the hole before the round moves on; while it saves the review shows "Saving hole 4…", and a failed save shows Try again. The board's "Next hole" is the round screen's job: it moves to the next hole itself once the hole is saved, so the review's button is "Back to hole N" only when the player looked back at a finished hole.
-- The hero has no hole handicap (the round's holes don't carry it). The map is a schematic (Q-72c).
-- Quick distances: on the green the Fairway entry's (5 to 40 ft, or 1 to 12 m); off it the board's (120 to 180 off the tee, 10 to 80 elsewhere), in meters their nearest round values.
-- Meters: the hero, the labels and the quick picks follow the player's unit; what is stored stays yards and feet. The change-a-shot sheet is in stored units, as in the Fairway sheet.
+- Penalty works before the first shot (the board disables it). The penalty sheet
+  asks which stroke went for out of bounds and lost ball, as the engine records
+  them.
+- Undo asks first (the board undoes at once), and a failed undo says so (the
+  Fairway screen showed nothing).
+- Putt tags are the engine's four (Short, Long, Low side, High side; the pairs
+  exclude each other), not the board's eight.
+- The hole-out button says "Hole out · 4" and the engine saves the hole before
+  the round moves on; while it saves the review shows "Saving hole 4…", and a
+  failed save shows Try again. The board's "Next hole" is the round screen's
+  job: it moves to the next hole itself once the hole is saved, so the review's
+  button is "Back to hole N" only when the player looked back at a finished
+  hole.
+- The hero has no hole handicap (the round's holes don't carry it). The map is a
+  schematic (Q-72c).
+- Quick distances: on the green the Fairway entry's (5 to 40 ft, or 1 to 12 m);
+  off it the board's (120 to 180 off the tee, 10 to 80 elsewhere), in meters
+  their nearest round values.
+- Meters: the hero, the labels and the quick picks follow the player's unit;
+  what is stored stays yards and feet. The change-a-shot sheet is in stored
+  units, as in the Fairway sheet.
 
-The round's own sheets (Exit, Scorecard, Round complete, Submitting) are `round-sheets.tsx`, driven by props, because the round screen owns the round. The preview plays that part (`PreviewTracking`).
+The round's own sheets (Exit, Scorecard, Round complete, Submitting) are
+`round-sheets.tsx`, driven by props, because the round screen owns the round.
+The preview plays that part (`PreviewTracking`).
 
 ## Tracking on the phone
 
 Board: `Player - Rounds - Mobile.html`, the tracking frames.
 
-- A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the scorecard (an icon) are in the screen's own top bar.
+- A round is full screen: the tab bar hides (`usePhoneTabsHidden`); Exit and the
+  scorecard (an icon) are in the screen's own top bar.
 - The hole strip is one row of compact chips (board 3): the score once played
   (red only under par), the hole number until then, the current hole lit ivory,
   each in a 44 x 44 hit area. It scrolls sideways edge to edge and keeps the
@@ -108,8 +175,14 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
   move. Quick distances fill the row at 44px.
 - The round's save line (CH-11901) is a quiet line beside the distance readout
   (or the holed score), never a pill under the top bar.
-- Sheets (penalty, change a shot, leave this shot, exit, scorecard, round complete) are bottom sheets that drag to close.
-- Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar for it); an iPhone pass.
+- Sheets (penalty, change a shot, leave this shot, exit, scorecard, round
+  complete) are bottom sheets that drag to close.
+- The number pad's Done key (2026-10-20, release blocker 19): in the app, round
+  entry holds the system's keyboard accessory bar (‹ › Done) up from mount to
+  unmount (`useRoundDoneKey`, `pinKeyboardAccessoryBar`), so every field, sheets
+  included, can put its keyboard away; Mobile Safari draws that bar itself. Not
+  yet felt on a device.
+- Not yet: an iPhone pass.
 
 ## Tap in on the phone (draft, no owner board)
 
@@ -149,19 +222,38 @@ as they read every other make.
 
 ## Setup: board to source
 
-The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and `rounds-course.jsx` (AddCourse). The screen draws; the round screen's ports (`ChSetupPorts` in `setup/shape.ts`) read the course library (`listCourses`, `getRecentlyPlayedCourses`, `getTeamSavedCourses`, `getCourseDetail`, `getTeeWithHoles` in `actions/course-library.ts`) and start the round (the legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).
+The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and
+`rounds-course.jsx` (AddCourse). The screen draws; the round screen's ports
+(`ChSetupPorts` in `setup/shape.ts`) read the course library (`listCourses`,
+`getRecentlyPlayedCourses`, `getTeamSavedCourses`, `getCourseDetail`,
+`getTeeWithHoles` in `actions/course-library.ts`) and start the round (the
+legacy engine's start, when the engine moves; ROUNDS_PLAN step 4).
 
-- Course and tees: the picker's three groups are the library's recent, team and all courses; a tee shows length, par, rating and slope, and a draft tee shows but can't be played. The board's per-hole length bars need every tee's holes up front; the card draws one bar for the tee's length against the course's longest instead.
-- No course photos (Q-72a): the course card is a typographic green band; Add a course has no photo step.
-- Add a course is the round's own course (Q-72h): the library's add is coach-only, so a player's typed course goes with the round, and "Save this course for next time" (on by default; the legacy screen's opt-in, off by default) saves it and offers it to the library. One tee, not the board's several.
-- The spine is Course, Scorecard, Track (the board's Setup, Holes, Track, Done): setup ends when tracking opens.
+- Course and tees: the picker's three groups are the library's recent, team and
+  all courses; a tee shows length, par, rating and slope, and a draft tee shows
+  but can't be played. The board's per-hole length bars need every tee's holes
+  up front; the card draws one bar for the tee's length against the course's
+  longest instead.
+- No course photos (Q-72a): the course card is a typographic green band; Add a
+  course has no photo step.
+- Add a course is the round's own course (Q-72h): the library's add is
+  coach-only, so a player's typed course goes with the round, and "Save this
+  course for next time" (on by default; the legacy screen's opt-in, off by
+  default) saves it and offers it to the library. One tee, not the board's
+  several.
+- The spine is Course, Scorecard, Track (the board's Setup, Holes, Track, Done):
+  setup ends when tracking opens.
 - The note is a plain list of what is tracked, not "50+ stats" (Q-72b).
-- Pars are 3 to 6 and yardages 1 to 999, the legacy editor's rules; the date can't be after today (the team's today, from the server).
-- The qualifier: the first open qualifier is offered above Round details (Play sets the type, the course and the tees, and says which round it counts as); a qualifier with no round open shows why and can't be chosen.
+- Pars are 3 to 6 and yardages 1 to 999, the legacy editor's rules; the date
+  can't be after today (the team's today, from the server).
+- The qualifier: the first open qualifier is offered above Round details (Play
+  sets the type, the course and the tees, and says which round it counts as); a
+  qualifier with no round open shows why and can't be chosen.
 
 ## Setup on the phone
 
-- One column; the band shrinks; the scorecard is one column of holes with 36px par buttons and 40px yardage boxes.
+- One column; the band shrinks; the scorecard is one column of holes with 36px
+  par buttons and 40px yardage boxes.
 - The dock (summary and Start round) sits above the home indicator.
 - The picker and Add a course are bottom sheets that drag to close.
 
@@ -179,7 +271,7 @@ device: the recovery journal and the failed-submit queue in IndexedDB, the old
 | --- | --- | --- |
 | A card per round: course, status, "Practice · Oct 14 · 9 of 18 holes · 36 strokes", "Saved 5 min ago" | The player's own copies only, deduplicated by server round id (else by course, day, type and what was played); a copy with no scored hole and no shot is not offered | none |
 | Status: "Only on this device", "Saved on this device", "Waiting to sync", "Didn't sync" (with the engine's reason) | The queue's own status: pending or failed. A copy in no queue has nothing to retry | none |
-| Restore round, or Submit round for a finished round whose submit failed | The newest copy | `savePartialRound` (the round opens to continue) or `submitGolfRoundComprehensive` (its review opens), through `writeRoundRecreatingIfMissing`; the device copies are cleared only after the server confirms, and only up to what it confirmed |
+| Restore round, or Post round for a finished round whose submit failed | The newest copy | `savePartialRound` (the round opens to continue) or `submitGolfRoundComprehensive` (its review opens), through `writeRoundRecreatingIfMissing`; the device copies are cleared only after the server confirms, and only up to what it confirmed |
 | Retry sync (queue rounds only) | The queue | `getSyncEngine().retryFailed()`, then the device is read again |
 | Discard, after a question | none | `deleteInProgressRound` when the server holds the round (the Library's discard), then every device copy, and the mark the round screens and the queue's drain honour |
 

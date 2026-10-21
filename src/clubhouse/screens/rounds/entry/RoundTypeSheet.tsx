@@ -14,8 +14,24 @@ import {
   sameChoice,
   type ChRoundTypeChoice,
   type ChRoundTypeCurrent,
+  type ChQualifierOption,
   type ChRoundTypeOptions,
+  type ChRoundTypeViewer,
 } from './round-type';
+
+/**
+ * The line under a qualifier's name. A live round (Continue) is only counted once it is submitted, and a closed
+ * qualifier refuses that submit (the live `submit_round_atomic` still refuses a completed qualifier, whatever the
+ * action's comment says), so there it says the qualifier has to be reopened first; a submitted round (the review)
+ * moves the published result at once. One the player isn't entered in yet is only a coach's to choose, and saving
+ * enters them (`updateRoundType`).
+ */
+export function qualifierHint(q: ChQualifierOption, live: boolean): string {
+  const rounds = `${q.numRounds} ${q.numRounds === 1 ? 'round' : 'rounds'}`;
+  const finished = q.isCompleted ? (live ? 'Closed. It has to be reopened before this round can be submitted.' : 'Finished. Adding this round changes its final standings.') : null;
+  const entry = q.playerEntered === false ? 'Not entered yet. Saving enters the player in it.' : null;
+  return [finished, entry].filter(Boolean).join(' ') || rounds;
+}
 
 /**
  * CH-11521: change what a live round counts toward (owner, 2026-08-31: players can edit it; PROGRESS Q-92b). The
@@ -35,11 +51,17 @@ export function RoundTypeSheet({
   pending,
   onClose,
   onSave,
+  viewer = 'player',
+  live = true,
 }: {
   open: boolean;
   current: ChRoundTypeCurrent;
   options: ChRoundTypeOptions;
   pending: boolean;
+  /** A coach of the player's team (the review) or the player; the copy follows. */
+  viewer?: ChRoundTypeViewer;
+  /** The round is still being played (Continue), not submitted (the review). */
+  live?: boolean;
   onClose: () => void;
   onSave: (choice: ChRoundTypeChoice) => void;
 }) {
@@ -84,7 +106,7 @@ export function RoundTypeSheet({
           <Button variant="ghost" disabled={pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={!ready || pending} onClick={() => onSave(choice)}>
+          <Button variant="primary" busy={pending} disabled={!ready} onClick={() => onSave(choice)}>
             {pending ? <span data-ch-code="CH-11411">Saving…</span> : 'Save'}
           </Button>
         </>
@@ -111,7 +133,11 @@ export function RoundTypeSheet({
           </p>
         ) : options.qualifiers.length === 0 ? (
           <p className="ch-rt-note" role="status" data-ch-code="CH-11316">
-            <span>You aren’t in any qualifier yet, so this round can’t count toward one. Ask your coach to add you, then change it here.</span>
+            <span>
+              {viewer === 'coach'
+                ? 'This team has no qualifier to add a round to. Create one, then change this round here.'
+                : 'You aren’t in any qualifier yet, so this round can’t count toward one. Ask your coach to add you, then change it here.'}
+            </span>
           </p>
         ) : (
           <>
@@ -124,7 +150,7 @@ export function RoundTypeSheet({
                     icon={Medal}
                     tone={qualifierId === q.id ? 'primary' : undefined}
                     label={q.name}
-                    hint={q.isCompleted ? 'Finished. Adding this round changes its final standings.' : `${q.numRounds} ${q.numRounds === 1 ? 'round' : 'rounds'}`}
+                    hint={qualifierHint(q, live)}
                     disabled={pending}
                     onClick={() => pickQualifier(q.id)}
                   />
@@ -133,7 +159,9 @@ export function RoundTypeSheet({
             </div>
             {full ? (
               <p className="ch-rt-note is-warn" role="status" data-ch-code="CH-11110">
-                <span>Every round of {chosen?.name} already has one of your rounds in it, so this one can’t be added. Pick another qualifier, or change the round in the wrong slot first.</span>
+                <span>
+                  Every round of {chosen?.name} already has one of {viewer === 'coach' ? 'the player’s' : 'your'} rounds in it, so this one can’t be added. Pick another qualifier, or change the round in the wrong slot first.
+                </span>
               </p>
             ) : chosen ? (
               <div className="ch-rt-sub">

@@ -96,7 +96,7 @@ export function FairwayDashboardSkeleton() {
           The plinth is rendered as a REAL tinted band, not a shimmer block:
           `bg-surface-tint` is chrome the resolved header keeps, so painting it
           here means the band is simply already there when the text arrives. */}
-      <div className="flex w-full flex-col gap-4 rounded-fw-lg bg-surface-tint px-6 py-5 md:px-8 md:py-7">
+      <div className="flex w-full flex-col gap-4 fw-plinth-green rounded-fw-lg px-6 py-5 md:px-8 md:py-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1.5">
             {/* eyebrow → title → description, on the header's own 1.5 rhythm */}

@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { logServerError, logServerException } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { attributeClassEvents, type ClassOwnerIndex } from '@/lib/calendar/class-events';
+import { filterMeetingsForPlayer } from '@/lib/calendar/meeting-invites';
 import { splitDisplayName } from '@/lib/types/calendar';
 import { DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import {
@@ -446,6 +447,17 @@ export async function CalendarEventsSection({
       recurrence_rule: event.recurrence_rule,
     };
   });
+
+  // A player sees a meeting only when they are invited to it (their own
+  // attendance row; meeting-visibility.ts). golf_events_select_team still
+  // returns every team meeting to a player until the held migration
+  // 20261018120000 lands, so this is what keeps a 1:1's title off a teammate's
+  // calendar. A failed invite read hides every meeting. Coaches are unchanged.
+  if (!isCoach) {
+    events = await filterMeetingsForPlayer(supabase, events, playerId, {
+      action: 'golf.calendarPage.meetingInvites',
+    });
+  }
 
   // Label each class occurrence with the player it belongs to (and, for a
   // player viewer, drop teammates' classes — see attributeClassEvents). Done

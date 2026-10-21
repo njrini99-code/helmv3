@@ -67,8 +67,10 @@ vi.mock('next/font/google', () => ({
   Satisfy: mockFont,
   // Clubhouse (src/clubhouse/lib/fonts.ts)
   Instrument_Sans: mockFont,
-  Instrument_Serif: mockFont,
   JetBrains_Mono: mockFont,
+  Norican: mockFont,
+  // GolfHelm reset page (src/app/golf/(auth)/reset-password/layout.tsx)
+  Poppins: mockFont,
 }));
 
 // Mock Next.js image
@@ -86,6 +88,13 @@ vi.mock('next/image', () => ({
   }: { src: string; alt: string; [key: string]: unknown }) => {
     return <img src={src} alt={alt} {...props} />;
   },
+}));
+
+// Clubhouse renders a long page's lower sections a painted frame after a navigation (useArrivalPainted). A component
+// test renders a page at rest, so they render at once; use-painted.test.tsx tests the wait with the real hook.
+vi.mock('@/clubhouse/lib/use-painted', async (orig) => ({
+  ...(await orig<typeof import('@/clubhouse/lib/use-painted')>()),
+  useArrivalPainted: () => true,
 }));
 
 // NumberFlow relies on browser animation internals that jsdom does not fully

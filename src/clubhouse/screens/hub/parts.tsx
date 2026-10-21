@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, CalendarCheck, Check, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, CalendarCheck, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -11,11 +11,14 @@ import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { haptic } from '../../lib/haptics';
-import { useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
+import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
+import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
+import { HUB_UPLOAD_ACCEPT } from './upload-rules';
+import type { ChHubWrites } from './writes';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -185,6 +188,7 @@ export function Announcement({
   onAck,
   onEdit,
   onDelete,
+  files,
 }: {
   a: ChHubAnnouncement;
   role: ChTeamHub['role'];
@@ -199,12 +203,26 @@ export function Announcement({
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
   onEdit: (a: ChHubAnnouncement) => void;
   onDelete: (a: ChHubAnnouncement) => void;
+  /** Lists and opens the post's attachments; without it the count is plain text (a preview set with no read). */
+  files?: ChHubAttachments;
 }) {
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
   const phone = useChPhone();
   const [open, setOpen] = useState(false);
   const fold = rank === 'older' && phone && !open && !!a.body;
+  // Coach: the count opens who hasn't acknowledged yet, when that read came back with anyone left.
+  const waiting = coach && a.needAck && a.notAcked && a.notAcked.length > 0 ? a.notAcked : null;
+  const [showWaiting, setShowWaiting] = useState(false);
+  const waitingId = `ch-hb-ann-wait-${a.id}`;
+  const reads = (
+    <>
+      <span className="ch-hb-reads__t" aria-hidden="true">
+        <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
+      </span>
+      {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
+    </>
+  );
   return (
     <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
       {rank === 'older' && (
@@ -239,28 +257,133 @@ export function Announcement({
               { label: 'Delete announcement', icon: Trash2, danger: true, onSelect: () => onDelete(a) },
             ]}
             trigger={(p) => (
-              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
-                <Icon icon={MoreHorizontal} size={16} />
-              </button>
+              <Tooltip>
+                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
+                  <Icon icon={MoreHorizontal} size={16} />
+                </button>
+              </Tooltip>
             )}
           />
         )}
       </div>
       <div className="ch-hb-ann__f">
         {coach ? (
-          <span className="ch-hb-reads ch-num">
-            <span className="ch-hb-reads__t" aria-hidden="true">
-              <i style={{ '--ch-hb-p': pct / 100 } as CSSProperties} />
-            </span>
-            {a.ackCount} of {a.recipients} {a.needAck ? 'acknowledged' : 'read'}
-          </span>
+          waiting ? (
+            <button
+              type="button"
+              className="ch-hb-reads ch-hb-reads--open ch-num"
+              aria-expanded={showWaiting}
+              aria-controls={waitingId}
+              onClick={() => (haptic('select'), setShowWaiting((v) => !v))}
+            >
+              {reads}
+              <Icon icon={ChevronDown} size={13} />
+            </button>
+          ) : (
+            <span className="ch-hb-reads ch-num">{reads}</span>
+          )
         ) : a.needAck ? (
           <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />
         ) : null}
-        {a.documentCount > 0 && <span className="ch-hb-muted ch-num">{a.documentCount === 1 ? '1 attachment' : `${a.documentCount} attachments`}</span>}
+        {a.documentCount > 0 && !files && <span className="ch-hb-muted ch-num">{attachmentCount(a.documentCount)}</span>}
       </div>
+      {waiting && showWaiting && (
+        <p className="ch-hb-ann__wait" id={waitingId}>
+          <em>Not yet</em>
+          {waiting.join(', ')}
+        </p>
+      )}
+      {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
     </article>
   );
+}
+
+const attachmentCount = (n: number) => (n === 1 ? '1 attachment' : `${n} attachments`);
+
+/** What a post's attachment list needs from the Hub: the read, and Documents' own open (one tab, one signed link). */
+export interface ChHubAttachments {
+  load: NonNullable<ChHubWrites['announcementFiles']>;
+  open: (f: ChHubFile) => void;
+  /** The file being opened, from Documents' open action. */
+  opening: string | null;
+}
+
+type AttachmentsState = { status: 'idle' } | { status: 'loading' } | { status: 'failed' } | { status: 'ready'; rows: ChHubFile[] };
+
+/**
+ * A post's attachments (production's FairwayPlayerAnnouncementCard lists them with the post and opens each through
+ * getPreviewUrl). The count is a disclosure; the list is read the first time it opens, and a failed read says so with a
+ * Try again in place.
+ */
+function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachments }) {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<AttachmentsState>({ status: 'idle' });
+  const load = async () => {
+    setState({ status: 'loading' });
+    try {
+      const res = normalise(await files.load(a.id));
+      if (res.success && res.data) {
+        setState({ status: 'ready', rows: res.data.files.map((f) => ({ id: f.id, title: f.title, type: kindLabel(f.type), size: null, date: null, isPublic: true })) });
+      } else setState({ status: 'failed' });
+    } catch {
+      setState({ status: 'failed' });
+    }
+  };
+  const toggle = () => {
+    haptic('select');
+    const next = !open;
+    setOpen(next);
+    if (next && state.status === 'idle') void load();
+  };
+  const listId = `ch-hb-ann-files-${a.id}`;
+  return (
+    <div className="ch-hb-ann__files">
+      <button type="button" className="ch-hb-ann__files-t ch-num" aria-expanded={open} aria-controls={listId} onClick={toggle}>
+        <Icon icon={FileText} size={13} />
+        {attachmentCount(a.documentCount)}
+      </button>
+      {open && (
+        <div id={listId}>
+          {state.status === 'loading' || state.status === 'idle' ? (
+            <span className="ch-hb-muted" role="status">
+              Loading attachments…
+            </span>
+          ) : state.status === 'failed' ? (
+            <span className="ch-hb-ann__files-err" role="alert">
+              The attachments didn’t load.{' '}
+              <button type="button" className="ch-hb-ann__files-retry" onClick={() => void load()}>
+                Try again
+              </button>
+            </span>
+          ) : !state.rows.length ? (
+            <span className="ch-hb-muted">These files are no longer shared.</span>
+          ) : (
+            <ul>
+              {state.rows.map((f) => (
+                <li key={f.id}>
+                  <button type="button" className="ch-hb-ann__file" onClick={() => files.open(f)} disabled={files.opening === f.id} aria-label={`Open ${f.title}, ${f.type}`}>
+                    <span>{f.title}</span>
+                    <em className="ch-num">{files.opening === f.id ? 'Opening…' : f.type}</em>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** A stored file type (MIME or extension) as the short label Documents shows. */
+function kindLabel(t: string | null): string {
+  const v = (t ?? '').toLowerCase();
+  if (v.includes('pdf')) return 'PDF';
+  if (v.startsWith('image/') || /^(png|jpe?g|gif|webp|heic)$/.test(v)) return 'IMG';
+  if (v.includes('word') || /^docx?$/.test(v)) return 'DOC';
+  if (v.includes('sheet') || v.includes('excel') || v.includes('csv') || /^(xlsx?|csv)$/.test(v)) return 'XLS';
+  if (v.startsWith('text/') || /^(txt|md)$/.test(v)) return 'TXT';
+  return 'FILE';
 }
 
 const TRANSPORT: Record<string, string> = { bus: 'Bus', van: 'Van', flight: 'Flight', carpool: 'Carpool' };
@@ -273,6 +396,8 @@ export function TripPass({
   role,
   onEdit,
   onDelete,
+  focus = false,
+  onFocused,
 }: {
   t: ChHubTrip;
   big?: boolean;
@@ -282,7 +407,19 @@ export function TripPass({
   /** A coach's Edit and Delete; a player's pass has neither. */
   onEdit?: (t: ChHubTrip) => void;
   onDelete?: (t: ChHubTrip) => void;
+  /** Calendar's View itinerary named this trip (`?trip=`): it scrolls into view once, as a notification's task does. */
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
+  const pass = useRef<HTMLElement>(null);
+  const reduced = useChReducedMotion();
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!focus || scrolled.current) return;
+    scrolled.current = true;
+    pass.current?.scrollIntoView?.({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+    onFocused?.();
+  }, [focus, reduced, onFocused]);
   const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
     t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
@@ -291,7 +428,7 @@ export function TripPass({
   ].filter((x): x is readonly [string, string] => !!x);
   return (
     // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
-    <article className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    <article ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -307,9 +444,11 @@ export function TripPass({
                 ...(onDelete ? [{ label: 'Delete trip', icon: Trash2, danger: true, onSelect: () => onDelete(t) }] : []),
               ]}
               trigger={(p) => (
-                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
-                  <Icon icon={MoreHorizontal} size={16} />
-                </button>
+                <Tooltip>
+                  <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                    <Icon icon={MoreHorizontal} size={16} />
+                  </button>
+                </Tooltip>
               )}
             />
           )}
@@ -332,10 +471,13 @@ export function TripPass({
               <dd>{t.hotel ?? 'Same day'}</dd>
             </div>
           )}
-          <div>
-            <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
-            <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
-          </div>
+          {/* The big pass names the coach's travelers below; the count would say them twice. */}
+          {!(big && role === 'coach' && t.travelers && t.travelers.length > 0) && (
+            <div>
+              <dt>{role === 'coach' ? 'Travelers' : 'You'}</dt>
+              <dd className="ch-num">{role === 'coach' ? (t.travelerCount ?? '—') : t.mine == null ? '—' : t.mine ? 'Traveling' : 'Not traveling'}</dd>
+            </div>
+          )}
         </dl>
       </div>
       {big && (
@@ -376,8 +518,15 @@ export function TripPass({
   );
 }
 
-export function Updates({ data, covered = false }: { data: ChTeamHub['updates']; covered?: boolean }) {
-  const unread = data.rows.filter((n) => n.unread).length;
+export function Updates({ data, covered = false, read, onOpen }: {
+  data: ChTeamHub['updates'];
+  covered?: boolean;
+  /** Updates opened this visit: read now, whatever the page loaded. */
+  read?: ReadonlySet<string>;
+  onOpen?: (n: ChHubUpdate) => void;
+}) {
+  const isNew = (n: ChHubUpdate) => n.unread && !read?.has(n.id);
+  const unread = data.rows.filter(isNew).length;
   return (
     <section className="ch-hb-card ch-hb-feed" aria-labelledby="ch-hb-updates">
       <div className="ch-hb-card__h">
@@ -391,14 +540,14 @@ export function Updates({ data, covered = false }: { data: ChTeamHub['updates'];
       ) : (
         <ol>
           {data.rows.map((n: ChHubUpdate) => (
-            <li key={n.id} className={n.unread ? 'is-new' : undefined}>
+            <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
-                <Link href={n.href}>
-                  <UpdateBody n={n} />
+                <Link href={n.href} onClick={() => onOpen?.(n)}>
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </Link>
               ) : (
                 <div className="ch-hb-feed__row">
-                  <UpdateBody n={n} />
+                  <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </div>
               )}
             </li>
@@ -550,9 +699,11 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           align="end"
           items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
           trigger={(p) => (
-            <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-              <Icon icon={MoreHorizontal} size={16} />
-            </button>
+            <Tooltip>
+              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
+                <Icon icon={MoreHorizontal} size={16} />
+              </button>
+            </Tooltip>
           )}
         />
       )}
@@ -618,6 +769,7 @@ export function Documents({
             ref={input}
             type="file"
             multiple
+            accept={HUB_UPLOAD_ACCEPT}
             hidden
             aria-hidden="true"
             tabIndex={-1}
@@ -632,7 +784,7 @@ export function Documents({
       {data.error ? (
         <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
       ) : !data.folders.length ? (
-        <EmptyState compact code="CH-10304" icon={Folder} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
+        <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (
         data.folders.map((f) => (
           <section key={f.name} className="ch-hb-card ch-hb-folder" aria-labelledby={`ch-hb-f-${f.name}`}>
@@ -663,9 +815,11 @@ export function Documents({
                       align="end"
                       items={[{ label: 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
                       trigger={(p) => (
-                        <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
-                          <Icon icon={MoreHorizontal} size={16} />
-                        </button>
+                        <Tooltip>
+                          <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
+                            <Icon icon={MoreHorizontal} size={16} />
+                          </button>
+                        </Tooltip>
                       )}
                     />
                   )}

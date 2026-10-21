@@ -214,6 +214,13 @@ before, after, baseline or evidence.
 | `P002__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P002__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P002__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P002__team-form__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 1440px, default, before: team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 1440px, default, after: team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__leaderboard__coach__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | leaderboard (coach), 1440px, default, before: leaderboard form words and form lines; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__leaderboard__coach__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | leaderboard (coach), 1440px, default, after: leaderboard form words and form lines; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 390px, default, before: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__team-form__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 390px, default, after: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__player-scoring__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | player-scoring (player), 390px, default, after: player home scoring caption; /clubhouse-preview/home-player; synthetic preview, captured in the cloud container (Chromium) |
 
 ## Historical verification gaps
 
@@ -221,21 +228,31 @@ before, after, baseline or evidence.
   390 and 430 with a real coach and a real player account.
 - Forced failures against a live session; `clubhouse:a11y` and a full keyboard
   walk; LCP and layout shift.
-- Whether the row level security on `golf_event_attendance` returns other
-  players' replies to a player. The screen never has a name to draw (20804), but
-  the counts come from those rows.
-- Not fixed, found in this pass: `dashboard/loading.tsx` shows the coach's
-  desktop-shaped skeleton to a player and on a phone (Player Home's own and a
-  phone-shaped skeleton are not built). The phone's "Today", "Tomorrow" and
-  weekday labels compare the team-local event date with the device's date, so a
-  viewer in another timezone than the team may see a label a day off near
-  midnight (not tested). A page left open past midnight keeps the day it loaded.
-  The desktop Up next in the player's week and the pagers leave no breadcrumb.
-  The coach lookup behind Message coach sets no order on `golf_coaches`, so when
-  the team's creating coach has no account, which other coach is named is not
-  fixed (rare: `created_by` matches on the live teams). The first-run Invite
-  players button (primary) gives the light tap, which no contract lists by name;
-  the rule is in CONTRACT.md 17 (only primary buttons tap).
+- Answered read-only on 2026-10-17 (`pg_policies` on the production project,
+  matching `supabase/migrations/20260527000000_prod_public_baseline.sql:19070`):
+  yes, a player can read other players' replies.
+  `golf_event_attendance_select_team` allows SELECT on every row of an event
+  whose team the reader coaches or plays on (`is_golf_team_coach(e.team_id) OR
+  is_golf_team_player(e.team_id)`), with no `player_id` condition, so a player's
+  own session can read each teammate's `player_id` and `status` on every team
+  event, invited or not. Player Home draws only counts from those rows (going,
+  "N of M confirmed") and no names (20804); the exposure is at the API, not on
+  the page. Not changed here: a policy decision for the owner.
+- Fixed since (source and tests, 2026-10-17): the day labels and a page left
+  open past midnight. "Today", "Tomorrow" and the weekday compare both dates on
+  the team's clock (`whenLabel`, since 2026-10-02; home-day-rollover.test
+  20301), and both Homes read the page again when the team-local date turns
+  (`useHomeDayRollover`: at the team's midnight, and on visibilitychange, focus
+  and pageshow; home-day-rollover.test). The phone skeleton is phone-shaped and
+  in the reader's role since 2026-10-08 (`SkeletonPhoneHero`); the desktop
+  skeleton is still the coach's shape for both roles.
+- Not fixed, found in this pass: the desktop Up next in the player's week and
+  the pagers leave no breadcrumb. The coach lookup behind Message coach sets no
+  order on `golf_coaches`, so when the team's creating coach has no account,
+  which other coach is named is not fixed (rare: `created_by` matches on the
+  live teams). The first-run Invite players button (primary) gives the light
+  tap, which no contract lists by name; the rule is in CONTRACT.md 17 (only
+  primary buttons tap).
 - Fixed 2026-09-30: a stored team timezone that is not a real zone threw in
   `homeClock` and failed the whole page; it now reads as Eastern and is logged
   (20618, the test failed before the fix). The player's countdown was named

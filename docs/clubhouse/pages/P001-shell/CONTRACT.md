@@ -76,7 +76,11 @@ Status: DEFINED
 
 The bell reads its list again on every open, and a list already shown stays
 while it does (10301). The sidebar's next event and Roster badge are read on the
-server with each page load.
+server with each page load. A stored link (a bell row, a universal link, a
+tapped push) to the screen already open that names another item through its
+query (`?conversation=`, `?event=`) mounts that screen again once the new
+address arrives, so the item opens as it does from any other screen; the
+screen's own address changes (a week, a tab) keep its state (`shell/relink.ts`).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -88,7 +92,9 @@ Status: DEFINED
 
 A page not rebuilt yet (10401), an empty bell (10402), a bell filter with
 nothing (10403), no next event (10404, the card is left out), and a team that is
-a plain label because there is nothing to switch to (10405). Each page's own
+a plain label because there is nothing to switch to (10405). For a player the
+next event is the next one their Calendar shows: a meeting nobody is invited to
+is the coach's own and is skipped (D2-8); a failed invite read hides nothing. Each page's own
 first-run and filtered empties are in its contract.
 
 | Bridge ID | Code | Name | Meaning |
@@ -161,6 +167,7 @@ remain four seconds and errors eight seconds.
 | 10703 | CH-1903 | `SOMEONE_SAVES_WHILE_OFFLINE` | Someone saves while offline |
 | 10704 | CH-1905 | `SOMEONE_PRESSES_TRY_AGAIN_ON_A_NOTICE` | Someone presses Try again on a notice, or on a page that didn't load, while offline |
 | 10705 | CH-1909 | `IN_THE_IPHONE_APP_PULLING_A_PHONE` | In the iPhone app, pulling a phone page down from its top |
+| 10706 | CH-1910 | `TWO_NOTICES_ABOUT_THE_SAME_THING_IN` | Two notices about the same thing in a row (Conversation muted, then Notifications back on) |
 
 ## 08 — Permission / authorization
 
@@ -179,6 +186,7 @@ never by the frame; the pages name their own gates.
 | 10801 | — | `CLUBHOUSE_GATE` | Clubhouse renders only for a coach or a player, and only with golf_clubhouse_ui on (isClubhouseFor); everyone else gets the existing GolfHelm pages, and held server actions refuse through the same check. |
 | 10802 | — | `ROLE_SCOPED_NAV` | Each role sees only its own navigation (D-66), and an address not rebuilt for the viewer's role shows the not-rebuilt notice inside the Clubhouse frame, never another role's page or a Fairway page. |
 | 10803 | — | `TEAM_SWITCH_IS_A_HEAD_COACHS` | Only a head coach staffed on more than one team is offered the team switch (canSwitchTeams and two or more teams), the same gate setActiveTeam enforces: a coach on one team, an assistant on several, and a player see the team as a plain label, and a forged or unstaffed team id is refused by the server, so the switch can never be wider than the server's answer. |
+| 10804 | CH-1911 | `IN_THE_IPHONE_APP_ONCE_A_LAUNCH` | In the iPhone app, once a launch at most, while iOS has not asked about push and the person has not answered this ask in either UI (the stored answer is shared with the current app's ask): a page has held for 4 seconds, nothing else is open or focused, and it is not round entry, onboarding or Settings |
 
 ## 09 — Success
 
@@ -201,7 +209,7 @@ Status: N/A — the frame has no destructive control. Sign out lives in Settings
 
 ## 12 — State preservation
 
-Status: N/A — the frame holds nothing the user typed. A refused offline save changes nothing (10703), and the pages keep their own drafts (for example Messages 71202).
+Status: N/A — the frame holds nothing the user typed. A refused offline save changes nothing (10703), and the pages keep their own drafts (for example Messages 71202). Since 2026-10-17 the frame keeps one choice of the user's: the sidebar folded to its icon rail (RailToggle), in the `ch_rail` cookie, read by the layout so a reload draws the same layout first.
 
 ## 13 — Optimistic UI
 
@@ -333,7 +341,7 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | 11810 | CH-1810 | `ON_THE_PHONE_THE_TOP_BAR_NAMES` | On the phone the top bar names the page; a page with its own top (`PhoneTop`) gets a back link named for where it goes ("Back to More") in place of the bell |
 | 11811 | CH-1811 | `ON_THE_PHONE_THE_BELL_OPENS_AS` | On the phone the bell drops the feed as lock-screen stacks under a green veil (`BellStacks`, notification-stacks.ts) instead of a popover: a modal dialog; focus moves in, Tab stays inside, Esc, a tap on the open space, the bell or a drag up closes it and focus returns to the bell; the edge swipe is off while it is up |
 | 11812 | CH-1812 | `A_TOAST_RAISED_WHILE_A_DIALOG_OR` | A toast raised while a dialog or sheet is open shows inside it (on the phone, from the top), so it is seen, announced and its Retry can be tapped; a modal dialog makes everything outside it inert, which had hidden them. When the dialog closes, open toasts move back to the page |
-| 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's team line as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
+| 11813 | CH-1813 | `ON_A_DESKTOP_A_HEAD_COACH_ON` | On a desktop a head coach on more than one team sees the sidebar's Team group heading (the team's name) as a menu button (the boards' up-down chevrons): it opens a listbox of the teams with the current one `aria-selected`; arrows, Home and End move, Enter or Space picks, Esc or Tab closes and focus returns to the button; a pick switches at once and every screen re-reads for the new team |
 | 11814 | CH-1814 | `ON_THE_PHONE_THE_SAME_COACH_SEES` | On the phone the same coach sees their teams in the account sheet, under who they are, the current one marked (`aria-current`); a switch closes the sheet on the new team, a refused one leaves it open with the reason |
 | 11815 | CH-1815 | `ON_THE_PHONE_EVERY_KEY_A_FINGER` | On the phone every key a finger uses reaches at least 44 by 44: the bar's back link and text action (a pushed screen's bar has the shell bar's 44px row, with no hairline), the hero bell (its 40px disc drawn inside a 44px key, where it was), a sheet's Close (its reach leans up into the header's padding, so a title-only header no longer clips it to 43), and the search field (36px drawn, 44px to the finger; its input and clear key take their own taps, and its 16px text keeps iOS from zooming the page on focus). Measured in WebKit at 390 on 2026-10-08 |
 | 11816 | CH-1820 | `ON_THE_PHONE_THE_DOCK_THE_BAND` | On the phone the dock, the band just above the tab bar, carries a page's primary controls (`ThumbDock`) and the Resume round accessory; it hides with the tab bar (a pushed screen, a full-page form) and while a field has focus (the keyboard), and the canvas grows by its height so the last row clears it. Empty, it is not drawn |
@@ -346,6 +354,7 @@ reaching 44 by 44, the search field included (11801 to 11815).
 | 11823 | CH-1841 | `THE_ASK_SHEET_IS_COACHHELMS_ASK_OVER` | The Ask sheet is CoachHelm's Ask over any screen: the same chat hook and route (no new model or spend), the thread and the message box, saved like any chat; Open in CoachHelm goes to it there. Phone: a bottom sheet that opens at half height with the page in view and grows to full when a thread starts (the grab or the chevron toggles); desktop: a centred sheet. Its heading takes focus, Esc, Close or the backdrop close it, and a new page (or another player) closes it and starts the next one fresh; in the app it sits above the keyboard |
 | 11824 | CH-1842 | `THE_SHEET_NAMES_WHAT_THE_COACH_IS` | The sheet names what the coach is looking at (“Looking at: Stats · Jonah Okafor”, from the page's trail or the navigation); a page about one player (`?player=`) also hands the chat that player as its context chip |
 | 11825 | CH-1816 | `ON_THE_PHONE_THE_SECTIONS_NAME_IN` | On the phone the section's name in the top bar is the section switcher: a button with a chevron (`aria-expanded`, `aria-controls="ch-strip"`) that opens the section strip, with a dot and a spoken note while another section has something new; on a section's own page a pull down on the bar draws the strip and a sideways swipe steps to the next section |
+| 11826 | CH-1817 | `A_TOAST_IS_CLOSED_WITHOUT_A_FINGER` | A toast is closed without a finger: on a device with a mouse (`hover: hover`) it has a ghost Dismiss X ("Dismiss notification"), and Esc closes it while focus is inside it. Focus goes back where it was before it came into the toast; inside an open dialog (CH-1812) Esc closes only the toast. Closing it counts as letting it run out: held work (a calendar move, CH-6015) is written |
 
 ## 19 — Responsive layout
 
@@ -412,7 +421,7 @@ log through chLogServer; each intent leaves a breadcrumb (12301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 12301 | — | `FAILURES_REPORTED` | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.<read>. |
+| 12301 | — | `FAILURES_REPORTED` | A thrown action is reported through chReport with its surface and action; a refused one at low severity; every event is tagged ui=clubhouse, and server reads log through chLogServer as clubhouse.<surface>.{read}. |
 
 ## 24 — CI / automated test
 

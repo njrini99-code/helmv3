@@ -1,5 +1,635 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
+
+```text
+Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals
+                log)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none (wording: switch label, "vs previous N")
+Actions:        none
+Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands
+                cut at the same edges)
+Held items:     none
+```
+
+### Changed
+
+- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers (also
+  in the filter sheet). Last 10 is the default and leaves the address as it was;
+  Last 5 and Last 20 add `?last=5` or `?last=20`. "vs previous 10" becomes "vs
+  previous N", and the basis line reads "Last 20 rounds" (a short window still
+  says how many rounds qualify).
+- The Rounds tab's "Against the one before" says the cut in force ("Latest 20
+  rounds and the 20 before them", "against the 20 before"), not a fixed 10
+  (fixer, PR #2257).
+- Putting by distance counts its six and nine bands from `lib/golf/putt-make.ts`
+  (the cut the calculator, the leak map and CoachHelm share). Band edges and
+  counts are unchanged.
+- Removed the unused `LegRoute` (strokes gained by leg, the old route drawing)
+  and the other dead chart code listed on the team page entry.
+
+### Known limit
+
+- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the
+  20 before it need forty rounds in the last twelve months; a player with fewer
+  gets a shorter previous stretch, and none under 23 ("Comparing starts at 23
+  rounds"). The read is not widened for Last 20.
+
+## 2026-10-20 — No visible change (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, piece 5; the entry is in P004)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the player page. `stats.css`, which this page shares with the
+  team page, gained the `.ch-sv-tr` block for the team's ranked dot plot.
+
+## 2026-10-20 — Scoring mix bar (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, spec 4.4, decision Q11)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    profile gains extra.triplePlus (from the existing hole read)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- One scoring mix everywhere: `ScoreMixBar` replaces the Overview's "Every
+  hole, by result" bar (`ch-zmix`), Game detail's "What an average round looks
+  like" (`ScoreMix`, desktop and phone) and the three bars in Outcomes by par
+  (More detail). A 100% bar with par in the middle: going out from it, birdie
+  then eagle or better to the left (under par), bogey then double or worse to
+  the right (over par), with "Under par" and "Over par" under the bar.
+- Each segment at least about 30px wide prints its share; every share is in
+  the key (with the rate a round on the main mix). Shares are whole percents
+  that add up to 100 (largest remainder; a result with holes that rounds to
+  none reads "<1%"). The preview's birdies read 10%, not 11% (10.6% exact).
+- A pointer, a tap or the arrow keys read a result above the bar: "Double
+  or worse · 12 of 180 holes · 7% · 1.2 a round · 3 triple or worse". A tap
+  or a key pins it; only a pin or a key is announced. The key entries pin
+  too, so a sliver (one eagle) is reachable on the phone.
+- A result with no holes draws nothing; the main key reads it as 0%, each
+  par's key leaves it out. Under 30 holes the mix is muted with "Early read ·
+  N holes". The phone's key is a short table, one result a row.
+- Palette as before (red under par; ivory, gray and ink over), with no literal
+  colors: eagle is the new `--ch-score-eagle-fill` token (light and dark),
+  birdie `--ch-chart-flag`, par `--ch-ivory-300`, bogey `--ch-ink-500`, double
+  `--ch-score-double`. Bogey stays gray, not amber (Q11).
+- Data: the profile carries `extra.triplePlus`, counted from the hole read
+  the loader already makes (same rounds as the detail read); null when that
+  read failed. No query, table or migration change.
+
+## 2026-10-20 — Putting by distance (stats visuals 4)
+
+```text
+Design package: none (stats-display-spec.md section 4.3, decision Q9)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same putt rows; no query, table or migration change)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Make rate by distance is one component, `PuttBands`, on the desktop Overview
+  (zone 6), the desktop Game detail putting section and the phone's Game detail.
+  It replaces the two `MakeCurve` copies (Overview and `charts.tsx`) and the
+  phone's `MakeRows`.
+- Six bands in the Tour's cut (0–3, 3–5, 5–10, 10–15, 15–25, 25+ ft) on equal
+  spacing, and the chart says the spacing is equal and not to scale. The
+  nine-band breakdown (15–20 ft up to 35+ ft) stays in the putting table under
+  More. Each band is a dot on a 0 to 100% axis with a thin Wilson 95% whisker
+  (named once, "Likely range (95%)", in the key), its rate and "made/tried"
+  under it, and the Tour's thin line behind the dots where the Tour publishes a
+  value (none inside 3 feet).
+- A band of 10 to 29 putts is a hollow early read and is not graded against the
+  Tour; under 10 it draws no dot and says "Needs 10 putts in the band" ("Needs
+  10 putts" in the phone's narrow column). From 30 putts a band grades by its
+  dot, green at or above the Tour and amber below; the whisker never grades.
+- A pointer over a band, a tap, or the arrow keys read it in the line above the
+  chart ("5–10 ft · 20 of 51 made, 39% · likely range 27% to 53% · Tour 62%"); a
+  tap or a key pins it and a screen reader hears it then, never on hover. The
+  chart is a focusable group.
+- The putt-read failure notes are unchanged (CH-5211 in Game detail, "The putt
+  read failed, so the curve stops at 20 feet." on the Overview). Without the
+  putt read, Game detail still falls back to the calculator's five bands to 20
+  feet, drawing each rate as kept and printing its count ("33 putts").
+- The panel and zone notes describe the new chart; the old `.ch-mk` styles are
+  gone.
+
+## 2026-10-20 — The trend of rounds is a dot per round (visuals 3)
+
+```text
+Design package: none (stats visuals plan, decisions Q1 Q2 Q8 Q12 Q13)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- The phone's Scoring trend, and a new Round by round chart in the desktop
+  Overview (under Scoring and under Strokes gained), draw every round as a dot,
+  a trailing five-round average through them from the third round (no line
+  before it, a gap rather than a bridge), and a par line for scores or a zero
+  line (the Tour) for strokes gained. Scores plot with the better ones higher;
+  the chart prints its real ticks and says "↑ Lower is better". A nine-hole
+  round is doubled, as everywhere on the page, and the readout says so.
+- A mouse over the plot, a finger dragged sideways (after about 8 px and mostly
+  sideways, so a vertical swipe still scrolls the page), or the arrow keys read
+  a round in the line above: "Sep 23 · Lonnie Poole GC · 73, +1 · 5-round
+  average 74.2". A tap, a key, or the end of a drag pins it, with a vertical
+  guide and a larger dot; a second tap on it, Esc, or a press outside lets go. A
+  pinned round offers "Open round" (44px) where the round review is rebuilt for
+  the viewer, and none where it is not; the line is announced only for a pin or
+  a key, never for a hover.
+- A thin sample is an early read, not a smaller chart: under five scores (eight
+  rounds of shots for strokes gained) the dots are hollow and the note says
+  "Early read · N rounds". Strokes gained by round needs three rounds with
+  shots; under that the panel says "Needs 3 rounds with shots. N so far." One
+  scored round says so and keeps the chart's frame.
+- The phone gains a Strokes gained by round panel under Scoring trend when the
+  window has rounds with shots. The old `ScoreLine` (still used only by tests)
+  and `ScoreBoardTrend` are no longer drawn by any screen.
+- `useChartPin` gains `area`, the pointer behavior for a chart drawn as one
+  surface, with an `inset` for the axis labels (shared piece, see the shared
+  changelog).
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- The strokes gained chip on the hero (desktop) and on the phone Overview is
+  green or amber only when the change against the previous 10 is larger than
+  one standard error of the difference. Otherwise the signed number stays, in
+  neutral ink, with "No clear change vs previous 10". A clear change reads
+  "Better than previous 10" or "Worse than previous 10", never "Improving".
+  The phone chip names its subject: "SG a round · No clear change vs previous
+  10". The standard error is the player's own spread from five rounds, else
+  the pooled 3.8, over whole rounds (a nine-hole round is half).
+- Overview, Where the strokes go: the change line reads "+0.6 · No clear
+  change vs previous 10" in place of "Up 0.6 on the previous 10".
+- The SG gauge (was a fixed ±3) and the Overview strokes gained track (was
+  −3 to +1) take their ends from the data through `sgScale`, always with zero
+  inside. On the preview player the track runs −1 to +1.
+- Tracks that were always green now follow the data: fairways, greens and
+  scrambling against the team or Tour, penalties amber only above the bench,
+  and a track with nothing to compare against is neutral grey.
+- Phone scoring trend: the form line is green or amber only past one
+  standard error, and "No clear change" sits above the halves line otherwise.
+- Phone Game detail now gets the holes filter (it always read "18 holes
+  only"), with a regression test.
+- The rate gauges are neutral with no reference.
+
+## 2026-10-20 — Strokes gained by leg says how sure it is (visuals 1)
+
+```text
+Design package: none (stats visuals plan, decisions Q2 Q3 Q7 Q12 Q13)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed (2026-10-20, stats visuals)
+
+- Strokes gained by leg is interactive on desktop (Overview, Where the strokes
+  go) and on the phone (the Strokes gained panel). A pointer over a leg, a tap,
+  or the arrow keys read it in a line above the bars: "Approach · −1.2 a round ·
+  10 rounds · likely range −1.5 to −0.9 · Team −0.7" (the team only for a
+  coach). A tap or a key pins the leg (a ring on desktop, a wash on the phone),
+  a second tap, Esc or a press outside lets go. A screen reader hears a pinned
+  leg or a key step, never a hover. The chart is now a focusable group, not a
+  flat image.
+- Every bar carries a thin whisker of one standard error, the "likely range". It
+  uses the player's own round-to-round spread once they have five rounds in the
+  window, else the pooled spread of production players (3.8 strokes gained). The
+  bars keep their scale (the widest value or team mark, rounded up); a whisker
+  the rail cuts off draws no cap at that end and the readout carries the number.
+- A thin sample is muted, never hidden and never shrunk. Off the tee, approach
+  and the total show from 3 rounds and are early reads until 8; around the green
+  and putting show from 5 and are early reads until 15. An early read is a
+  hollow bar with no gain or loss color, its figure in neutral ink, and a note
+  under the bars names which legs are early. A leg under its show floor draws no
+  bar and says "Needs 5 rounds" where the bar would be. On the 10-round preview
+  player, around the green and putting read as early reads.
+- The phone's rows are 44px tap targets, and the panel's note counts only the
+  legs it is showing.
+- New shared pieces: `lib/stats-signal.ts` (floors, standard error, the tone of
+  a change, Wilson intervals, a trailing mean, ties in a ranking: the later
+  pieces use them) and `lib/use-chart-pin.ts` (the hover, pin and key behavior
+  every stats chart will share). `SgBars` moved from `charts.tsx` to its own
+  client file, `SgBars.tsx`; `screens/stats/leg-rows.ts` builds the rows for
+  both screens.
+
+## 2026-10-19 — Player stats: bests two by two, the class year on its own line
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Four personal-best tiles are two by two. Auto-fit drew three across and
+  left Fewest putts alone on a row (Rounds tab, desktop).
+- Phone header: the class year has its own line. Beside the season count
+  the line always broke after it, leaving "Sophomore ·" alone.
+
+### Verified
+
+WebKit at 390 and 1280; no sideways scroll at 834 to 1440 (default, early
+and self).
+
+## 2026-10-19 — Stats you can read like a scorecard (L6a)
+
+```text
+Design package: none (complete-and-elevate plan, lane L6a)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6a)
+
+- The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px wide and scrolled sideways at 1280). The columns size to the room, and where the canvas is under 820px GIR and putts, both on Game detail, step out before anything scrolls. A long course keeps one line with an ellipsis (the full name on hover) and its round type beside it; the figures stay right-aligned in tabular numerals, and a row lifts on hover where hover exists.
+- Putting rings: the five distance labels are upright, the band on the left and its make rate right-aligned, and every leader starts on one ray from the cup and steps down with its label, so no two cross and none runs through another label.
+- The Par swatch in the scoring key has a hairline ring, so parchment on parchment reads as a swatch.
+- Game detail opens with every More detail collapsed (it opened expanded on desktop). A figure with no data no longer carries its caption underneath ("Tour 62%", "18 approaches" under an em dash).
+- Empty panels are the shared compact empty state, not a bare sentence: the five Game detail panels with nothing logged (drives, missed greens, missed putts, long first putts, putts with a break), the scoring-trend scoreboard and the form chart with no rounds, and the proximity bands that need more shots (now a title, with the bands and their counts as its sentence). A title carries no full stop.
+- One number voice: percentages are whole numbers everywhere on the page (the Tour column of the putting table, Best GIR and the share of holes that are doubles or worse used to carry a decimal), through the new `formatPct`; the scoring average's to par is `formatToPar` (E for even, a true minus) and the chart ticks use `formatSigned`, not hand-built signs.
+- The scoring form ribbon reads like a scorecard: a finger or pointer dragged across it, or the arrow keys (Home, End and Escape too) once it has focus, snaps to the nearest round and reads that round's date, course and score with to par in the ribbon's own header line, in place of its note, with the round's column lifted; a polite live region says the same. A vertical swipe still scrolls the page. Nothing animates, so reduced motion needs no swap.
+- Print: a stats page prints as plain pages. The shell's chrome and the page's own controls (tabs, filter, window switch, back link, actions) are gone; the page is white and light even from dark mode; a head line gives GolfHelm, the subject (the player here; the team and season on the team page) and the day it was printed; rows, cards and sections are not cut across sheets; rules and fills keep their ink. The page keeps its desktop view on paper instead of flipping to the phone view at paper width, and the shell's skip link is not printed.
+
+## 2026-10-18 — Pickers and controls: filter date range, saving
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. The filter's From and To (each with Clear; To opens on From) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+
+## 2026-10-18 — Wave 10: an early read in plain words
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-5309 CH-5313
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 early read)
+
+- Desktop: with no strokes gained yet, chapter 1 says it in one line
+  (CH-5309, the phone's line) instead of a big dash and four leg rows of
+  dashes under the early-read notice.
+- The Rounds tab's Last 10 reason (CH-5313) reads "Comparing starts at 13
+  rounds: the newest 10 against at least 3 before them."
+
+## 2026-10-18 — Wave 8: premium details, Filter on the column edge
+
+```text
+Design package: none (wave-7 premium details review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, premium details)
+
+- Desktop: Filter's icon starts on the column's edge
+  (`.ch-btn--flush-start`); the phone filter bar is unchanged.
+- Phone: the note under a panel ("2 legs are losing strokes…") is the
+  secondary ink, not green (green is gains only).
+- Phone header: each part of "Sophomore · 21 rounds this season · 3.9 hcp"
+  keeps to one line and the dot stays at a line's end.
+- Phone header: the ringed coin is inset by its 4px ring to the column edge.
+- Phone: the filter button matches the window switch's 40px track and radius.
+
+## 2026-10-18 — Wave 7: player stats trend
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, phone scoring trend)
+
+- The phone hero's Scoring trend reads "2.1 higher", "2.1 lower" or "level",
+  over "Newest 5 vs first 5" (the halves the change compares), in place of
+  "up 2.1 · Newer rounds".
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Adding…" (CH-5401) and "Accepting…" / "Declining…" (CH-5404)
+  while those writes run.
+
+## 2026-10-18 — Wave 4: Dynamic Type for the phone's text
+
+```text
+Design package: none (wave-4 Dynamic Type brief)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- `stats.css`: the player page's phone text (the profile head, the game
+  sections' heads, notes, labels and captions, the round list) is set in
+  `calc(N * var(--ch-type-k))`, so it follows the iPhone's Text Size up to
+  XXL. The game section's label and scope keep 13.5/19 and 13/18 at the
+  default size.
+- Left fixed on purpose: the figures (`28px/32px` value), the comparison
+  table, the chart text and the rank numerals.
+- At XXL (390 wide) the unscaled text drops from 177 to 103; the rest is
+  the shared shell and the figures. At the default size every value is the
+  same pixel.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): the scale 1 screenshot is
+  pixel-identical to before; at XXL no overflow and no visible overlap (the
+  detector's new pairs sit in panels that are not shown).
+- `npm run test:file` on `stats-parity.test.tsx` (the type contract now reads
+  the Dynamic Type steps).
+
+## 2026-10-18 — Wave 3 accessibility: tab targets, birdie digits
+
+```text
+Design package: none (wave-3 accessibility review, items 16, 18)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The profile's tabs set `aria-controls` only on the tab whose panel is drawn;
+  the others pointed at panels that were not in the page.
+- Dark: the score mix's birdie segment and key print their figures in the
+  page's near-black, not white, on the salmon flag (2.53:1 to 7.27:1).
+
+### Verification (2026-10-18, a11y wave 3)
+
+- `npm run test:file` on `stats-player.test.tsx`.
+- WebKit (Playwright, dev preview, 1280 dark): `.ch-zmix .is-birdie` 7.27:1;
+  light unchanged at 6.02:1.
+
+## 2026-10-18 — Wave 3: the shared gutter
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- The profile takes the Stats main's shared gutter and head top (`stats.css`,
+  design #5): the back link and hero start 40px in from the frame, the name at x
+  384 beside the photo.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: the actions keep one row, ranges typeset
+
+```text
+Design package: none (wave-3 design review, items 4, 6, 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, hero actions and zone ranges)
+
+- At 1280 and wider the hero's three actions (Message, Schedule 1:1, Add
+  focus area) sit on one row: the hero's column gap is 16px (was 22px) and
+  the action buttons take 12px side padding (was 14px). Add focus area
+  wrapped to a row of its own at 1280 (`stats.css`).
+- Approach ranges read "50–125 yds", "125–175 yds" and "175+ yds" on screen
+  (en dash, yds); the bucket labels stay the lookup keys in
+  `leak-map-buckets.ts` (`OverviewZones.tsx`).
+- The strokes gained track's note gives its range with true signs ("−3 to
+  +1"), where the low end had a hyphen-minus (`OverviewZones.tsx`).
+
+### Verification (2026-10-18, hero actions and zone ranges)
+
+- WebKit, the three actions' tops: 280, 280, 280 at 1280 (the row ends 10px
+  inside its 384px column) and at 1440; the name stays one line.
+- `npm run test:file` on `stats-parity.test.tsx` and `stats-player.test.tsx`.
+
+## 2026-10-18 — Polish: the profile skeleton takes the wide layout
+
+```text
+Design package: none (wave-2 states review row 2)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- At 1280 and wider the profile's skeleton (CH-5403, aria-busy) takes the
+  loaded page's layout too, the four figures beside the name: the rules in
+  `stats.css` key on `.ch-st:is(.is-desk, [aria-busy='true'])`.
+- The strokes gained figure's change line keeps its loaded width (about
+  140px), so a coach's three actions wrap to two rows beside it as they do
+  when the page lands (`StatsSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures), tabs top skeleton vs
+  loaded: 1280 422 vs 422 (was 568 vs 422); 1440 378 vs 378; 1100 568 vs
+  568.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-17 — Polish: the trend names scoring; vs previous 10
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Phone figures: the third figure's label is "Scoring trend", so an amber "up
+  2.1" reads as scores rising rather than as a gain. The review asked for the
+  value to read "Scoring up 2.1"; at 390px that cell measures roughly 106px on
+  the review's screenshot (an estimate) and "Scoring down 1.4" would likely
+  wrap, so the word went on the label
+  (`StatsPlayerPhone.tsx`).
+- "vs. previous 10" reads "vs previous 10", as Home says it (the shared
+  `data/stats-common.ts`).
+- Tabular figures restored (review row 18) in the shared `stats.css`, as the
+  P004 entry lists; the player's figures, ladders and round rows included.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `clubhouse:css`, `typecheck:fast` and eslint. The WebKit pass is the
+  coordinator's.
+
+## 2026-10-17 — Figures checked against production on the same rounds; putts with none recorded fixed
+
+The profile's figures were run beside production's on the same round ids:
+`getDetailedStats` (the Fairway player page's calculator), the Fairway Team
+stats page's row for the player, and the Standing strip
+(`stats-production-parity.test.ts`; fixtures always, every production player's
+rows in the opt-in read-only pass, 187 player windows, 2026-10-17).
+
+- **Putts and 3-putts per round leave out a round with no putt recorded**
+  (`stats-player.ts`, `perPutts`, with `cachedPutts` in `stats-common.ts`), for
+  the player and the team column, and the Rounds tab shows no putts figure for
+  it instead of 0. Production writes 0 putts for such a round and its calculator
+  counts only holes with a putt. No production round is like that today, so no
+  number moved.
+- **Matched with no change (0 differences at the shown precision):** fairways,
+  greens, putts, 3-putts, scrambling, sand saves, penalties, par 3/4/5 scoring,
+  birdies, pars and bogeys a round, putts per green, rounds counted, and strokes
+  gained and its legs against the Team stats page's stored values.
+- **Differ on purpose (unchanged):** a round posted as a total only counts in
+  the scoring average, to par and best round (Q-123: 15, 15 and 2 of 187 pairs,
+  7 players, up to 1.03 strokes); strokes gained waits for three whole rounds
+  (25 pairs where production shows a value).
+- **Production's Standing strip is a different basis, not a window of this
+  page:** it reads every completed round, test rounds included, and the pressure
+  gap and opening hole only the last 90 days; strokes gained averages nine- and
+  eighteen-hole rounds per round; its 175+ yd proximity drops every par-5
+  approach that misses the green as a lay-up, where production's own leak map
+  (and this page, which uses its aggregator and read) drops only long leaves.
+  Against the profile over the whole career: 20 of 49 strokes gained, 6 of 11
+  pressure gap, 4 of 33 opening hole and 50 of 57 proximity 175+ pairs differ.
+  The HELD OD-01 chain adds the test-round filter; none of it changes the 90-day
+  window or the lay-up rule.
+- **Production rounds twice:** the calculator rounds rates to 0.1 and the
+  Fairway page then shows a whole percent, so 61.46% shows as 62% there and 61%
+  here (fairways 14, greens 5, scrambling 11, sand saves 2 of about 187 pairs).
+  Clubhouse rounds once; left as it is.
+
+## 2026-10-16 — Game detail: the section bar scrolls with the page; the summary sticks below the top bar
+
+Desktop My stats (`stats.css`). The section bar (`.ch-gd__nav`) is no longer
+sticky: the owner said a bar riding over the sections "looks bad". Its glass and
+its opaque fallbacks (P005-D5, below) are gone with it. A section's summary
+(`.ch-gm__id`) used to stick at 24px, behind the top bar; it now sticks at the
+top bar's height plus 24px. Measured by the main session in Chrome at 1567px:
+the top bar's bottom at 64px, and the summaries of Strokes gained, Scoring and
+Approach stick at 88px, 24px below it; a short section (Off the tee, Short game,
+Putting) pushes its summary up as the section ends; the section bar is
+`position: static`. Not checked in Safari.
+
+## 2026-10-16 — Shared change in StatsTeamPhone
+
+`StatsTeamPhone.tsx` is named by this page too; the player's page is unchanged.
+See P004's entry (rolling figures are text until a hand is on the legs).
+
+## 2026-10-16 — A switch to My stats on the phone renders the first screen, then the rest
+
+Game detail and everything under it (the trend, the rounds, development) start
+below the first screen (game detail at 876px of 852). On a page reached by
+navigating they now render a frame after the first one is painted
+(`useArrivalPainted`); a hard load hydrates everything at once, and a link to
+the rounds still scrolls to them. Worst frame of a switch to the player's My
+stats (WebKit, production build, phone, three runs each): 72–79ms rendering
+everything, 49–57ms with the lower sections a frame later. All eight sections
+are in place after a switch, and hard loads have no errors.
+
+## 2026-10-14 — The phone header says its count is the season's
+
+The phone player header read "5 rounds" over a Last 10 window that counts "10
+countable rounds". It now reads "5 rounds this season", as the desktop's
+Rounds figure does.
+
+## 2026-10-14 — Shared Stats islands: the phone window switch
+
+- The team page's phone window switch moved into `PhoneWindowSwitch`
+  (StatsTeamIslands, shared with this page's files); nothing on the player page
+  changes. See P004's entry.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
@@ -145,31 +775,32 @@ Held items: none
 
 ## 2026-10-08 — Premium pass: one round set, one chart, one surface, the best card
 
-Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8, D12, D13).
+Approved by the owner on 2026-10-08 (P005-A2, C2; findings D1, D2, D5 to D8,
+D12, D13).
 
 - **One round set (D2).** The hero, Game detail and the charts read the same
   rounds: Game detail's scoring average is always the window's posted totals
   (`perEighteen`), and the preview's Last 10 reads 73.6 everywhere.
-- **One chart and one axis on the phone (D1).** Scoring trend draws every round in
-  the window; Score by round is desktop only. Score charts put lower scores higher
-  and say "Lower is better"; the mean label moves off any value label
+- **One chart and one axis on the phone (D1).** Scoring trend draws every round
+  in the window; Score by round is desktop only. Score charts put lower scores
+  higher and say "Lower is better"; the mean label moves off any value label
   (`meanLabelSpot`).
 - **One surface in Game detail (A2).** On desktop each section is the one card;
-  its tiles and par tiles sit between hairlines with soft rules, no boxes inside.
-  The sticky section bar is opaque without backdrop-filter or under Reduce
-  Transparency (D5).
+  its tiles and par tiles sit between hairlines with soft rules, no boxes
+  inside. The sticky section bar is opaque without backdrop-filter or under
+  Reduce Transparency (D5).
 - **The personal-best card (C2).** Personal bests offer "Share best score": a
   dated card (the score, to par when it is the same round, the course, the date,
   "Attested by Coach `<surname>`" for the team's primary coach, so a shared card
-  doesn't point to the school; owner, 2026-10-08), drawn on a canvas and handed to the
-  share sheet, or downloaded where there is none (CH-5810, CH-5005). It never
-  shows a school or team name, and a coach's card names the player by first
-  name and last initial. The loader reads the attesting coach from
+  doesn't point to the school; owner, 2026-10-08), drawn on a canvas and handed
+  to the share sheet, or downloaded where there is none (CH-5810, CH-5005). It
+  never shows a school or team name, and a coach's card names the player by
+  first name and last initial. The loader reads the attesting coach from
   `golf_team_coach_staff` and `golf_coaches`; a failed read drops the line.
 - **Findings.** One h1 on the phone (the bar's title is plain text) and the
-  overview's section titles are h2 (D7); Development rows show units (D8, fixture
-  metric ids); the phone's change chip says "SG a round" (D6); "holes" and
-  "Par 4s: 65%" (D12); the loading preview is the phone's own (D13).
+  overview's section titles are h2 (D7); Development rows show units (D8,
+  fixture metric ids); the phone's change chip says "SG a round" (D6); "holes"
+  and "Par 4s: 65%" (D12); the loading preview is the phone's own (D13).
 
 ## 2026-10-08 — Security: Add focus area trusts only the session
 

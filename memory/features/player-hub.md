@@ -29,7 +29,7 @@ It depends on Team Operations, Calendar, and Team Communications. Because it agg
 
 ### Routes
 
-- `src/app/golf/(dashboard)/dashboard/hub/page.tsx`
+- `next.config.mjs` `redirects()`: `/golf/dashboard/hub` to `/golf/dashboard` (the stub page was deleted in plan phase 7b)
 
 ### Components
 
@@ -67,8 +67,16 @@ Player opens hub
 
 ## Business Rules
 
+- Home leaves cancelled events (`cancelled_at` set) out of the player's Today
+  and Upcoming and the coach's upcoming count (2026-10-17); held migration
+  `20261017111000` does the same in `get_coach_today_schedule` and
+  `get_player_hub_events`. The hub's trips carry `event_id`.
 - Player Hub must only show data for the authenticated player's team and assignments.
 - RSVP actions update event attendance, not generic task state.
+- Events (hub and Home Today/Up next) list a meeting only when the player is
+  invited to it; a failed invite read hides every meeting. See "A meeting is
+  visible to a player only when they are invited to it" in
+  `memory/features/calendar-events.md`.
 - Task completion truth must match the write path used by `completeTask()`.
 - Travel details can include sensitive logistics and should stay team/player scoped.
 - Headline numbers (scoring average, best round, putts/18, birdies/18, SG)

@@ -1,5 +1,567 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-21 — The standings spread starts in place
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- The coins on the standings spread no longer glide out from even par when the chart scrolls into view. They sit at their score at first paint (`StandingsSpread.tsx`; Q-153). A coin still glides if the data moves it.
+
+## 2026-10-19 — Qualifier leaderboard on an iPad: fits its column at 1180px
+
+```text
+Design package: none (complete-and-elevate plan, lane W4c)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Tablet tier (end block of `qualifiers.css`): under 560px the leaderboard keeps a 110px name and tighter gaps and numbers, so it no longer scrolls sideways by 34px in the 500px column beside Selections at 1180px with the sidebar open. The round-by-round table still scrolls by design (its columns follow the round count).
+
+### Why
+
+- The narrow template wanted 534px of a 498px column.
+
+### Verification
+
+- WebKit, touch, 1180 and 1024 (open and folded): the leaderboard's scrollWidth equals its clientWidth.
+
+## 2026-10-19 — Qualifiers: eyebrow, step strip, tracking, leaderboard, print
+
+```text
+Design package: none (complete-and-elevate plan, lane L6b)
+PR/commit:      see git log (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-19, L6b)
+
+- The list's eyebrow is the page's name alone. The filter pills already carry the active and concluded counts, so the eyebrow no longer repeats them, and when the counts failed to load it no longer reads "— active · — concluded" (the failure notice says so).
+- Manage selections' step strip reads as progress, not a segmented control: numbered steps joined by a rule, finished steps checked with a green rule behind them, the current step ringed with its name in bold, the steps ahead plain outlines. The well and the raised chip are gone. On the phone only the current step keeps its visible name (the others stay named for a screen reader), so the strip is one row at 390px.
+- The tracked eyebrows (the list, the form and Manage selections heads, and the standings head's key) no longer carry letter-spacing.
+- Leaderboard on desktop: the column heads stay under the top bar while the field scrolls past (sticky), figures are right-aligned and tabular throughout, and row hover tints only where a pointer hovers (`@media (hover: hover)`). The columns moved from an inline style to the board's stylesheet and follow the board's own width: below 780px (the board beside Selections at 1280) Avg steps aside so a name keeps 150px; before, names cut to "El…" and the sample note wrapped over four lines.
+- Print: the qualifier page prints one clean sheet. A small head (qualifier, team, dates, "GolfHelm" and the day printed) sits over the leaderboard alone, in ink on white whatever the theme; the head, facts, side column and app chrome stay off the paper, the ledger rules are kept (`print-color-adjust: exact`), and a row never splits across pages. A letter sheet is narrower than the phone breakpoint, so the page prints in its phone layout; the sheet is set for both layouts, and the phone's leaderboard rows carry `data-print-visible` because the app-wide print sheet hides buttons.
+
+## 2026-10-18 — Pickers and controls: start and end date
+
+```text
+Design package: none (complete-and-elevate plan, lane L2)
+PR/commit:      uncommitted (agent/clubhouse-complete)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, L2 pickers and controls)
+
+- The browser's own date and time inputs are gone. Start date and End date (optional, with Clear; it opens on the start and cannot be picked before it) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- Create qualifier stays lit while it works (Button's `busy`: aria-busy and no second press) instead of going unlit like a button that is unavailable.
+
+## 2026-10-18 — Wave 10: the lede and a form with nobody to enter
+
+```text
+Design package: none (wave-10 first-run review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   CH-09305
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave-10 first run)
+
+- The coach's lede says what a qualifier is: "Rank players over counted
+  rounds and pick who travels." (it said head-to-head; the format is
+  aggregate stroke play). The skeleton reads the same sentence.
+- A form with nobody on the roster says so first, over the form (CH-09305),
+  with Invite players (Roster's invite sheet); Create (and the phone bar's)
+  is off, and the Players head reads "Nobody to enter yet", not "0 of 0".
+- With no qualifier at all, the list's eyebrow is the name alone, not "0
+  active · 0 concluded"; the phone, whose bar names the page, has none.
+
+## 2026-10-18 — Wave 7: player qualifiers
+
+```text
+Design package: none (wave-7 player journey review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only (own selection rows, round courses)
+Held items:     none
+```
+
+### Changed (2026-10-18, player qualifiers)
+
+- A live qualifier's next round for the player is a link to round setup with
+  the qualifier chosen (`?qualifier=`): the dashed tile on the detail reads
+  "Play round 3" with the round's own course, and the list adds "Play round
+  3 · Hope Valley CC" under the live card, outside its link (CH-09906). None
+  once the qualifier is past its last day.
+- The list's standings mark the player: their row is lighter, with "You".
+- Once the coach confirms the squad, the player's line says "You made the
+  squad · 4th · +6" or "You're 4th · +6 · not selected" (CH-09907), from
+  their own selection row. A failed read keeps the plain standing (logged
+  as `ownSelections`).
+- Two rounds tied on the best total: only the first is "Best round".
+
+## 2026-10-18 — Wave 6: qualifier form and selections
+
+```text
+Design package: none (wave-6 coach workflow review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, wave 6)
+
+- Form placeholders no longer print like values: the full-contrast block
+  keeps them on the lightest ink, and the samples read "e.g. Pinehurst
+  qualifier", "e.g. Finley GC".
+- "Optional" is the shared `.ch-field__opt` tag (controls.css); the page's
+  own `.ch-qf-optional` and `.ch-qf-label` are gone.
+- End date can't be set before the start date (`min`); the check stays.
+- Paired short fields (start and end, squad and picks) stay two-up on a
+  phone: `.ch-qf-2` columns are `minmax(140px, 1fr)`.
+- Squad size help says the limit: "Players who make the trip, up to 12."
+- A round with no course of its own and no qualifier course reads "Choose
+  one, or set the qualifier's course above".
+- Manage selections: the stage note counts down the picks left ("Choose 1
+  more coach's pick, with a reason, …") and says a missing reason.
+
+### Added (2026-10-18, wave 6)
+
+- Players head: one "Select all" (every active player) or "Clear all" (keeps
+  a player with a round in or a squad place).
+- Manage selections: while a pick is open, each player in the rest of the
+  field has Pick, which opens the pick dialog with them chosen.
+
+### Verification (2026-10-18, wave 6)
+
+- WebKit (Playwright, dev preview; 320, 390, 1280): the name placeholder is
+  `rgb(85 82 75)` against the value's `rgb(20 20 18)`; start and end, squad
+  and picks sit two-up at 390 and 1280 (the desktop Travel squad pair, which
+  stacked before, now does too) and stack at 320 (a 280px column), with no
+  sideways scroll; Pick on Eli Brandt opens the dialog with Eli chosen.
+
+## 2026-10-18 — Wave 5: pending labels end in “…”
+
+```text
+Design package: none (wave-5 feedback review)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, pending labels)
+
+- "Creating…" / "Saving…" (CH-09404), "Closing…" (CH-09405),
+  "Reopening…" (CH-09406), and "Starting…", "Saving…",
+  "Removing…", "Confirming…" (CH-09408); "Refreshing…" on the
+  sections' Refresh.
+
+## 2026-10-18 — Wave 4: phone text follows Dynamic Type
+
+```text
+Design package: none (wave-4 Dynamic Type pass)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, Dynamic Type)
+
+- Phone text in `qualifiers.css` (list, detail, form, selection, rounds)
+  moves from fixed px to `calc(N * var(--ch-type-k))`. Positions, to-par
+  plates, the facts figures, the numbered round and step discs and the round
+  scorecard stay fixed.
+- Phone, for a large Text Size: the form's course-per-round rows take 4px
+  above and below and a course name takes a second line before its ellipsis;
+  the selection steps wrap to a second row instead of running off the well.
+  None of it moves at the default size.
+
+### Verification (2026-10-18, Dynamic Type)
+
+- WebKit (Playwright, dev preview, 390): every Qualifiers preview state is
+  pixel-identical to before at the default size. At XXL this sheet's change
+  takes unscaled text from 54 to 15 on `qualifiers`, 68 to 26 on `qualifier`,
+  51 to 12 on `my-qualifiers` and 56 to 28 on `qualifier-new` (the rest: the
+  fixed figures, and shared badges, buttons and field labels). At 1280 the
+  steps stay on one row and the course rows 48px.
+
+## 2026-10-18 — Wave 3 accessibility: standings positions at body contrast
+
+```text
+Design package: none (wave-3 accessibility review, items 7)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, a11y wave 3)
+
+- The live board's position numbers take `--ch-ink-500` instead of
+  `--ch-ink-400`: the phone rows measured 2.99:1 in light.
+- Round-by-round's sideways scroll region is named "Round-by-round scores,
+  scrolls sideways", so it no longer shares its section's landmark name.
+
+### Verification (2026-10-18, a11y wave 3)
+
+- WebKit (Playwright, dev preview, `qualifier?q=live`): the weakest position
+  number 5.87:1 at 390 light (was 2.99), 7.0:1 dark (was 4.38); at 1280 6.44:1
+  dark (was 4.03).
+- axe-core on `qualifier?q=live`, 390 and 1280, light and dark:
+  landmark-unique 2 to 0. `npm run test:file` on `qualifiers.test.tsx`.
+
+## 2026-10-18 — Wave 3: the head on the shared line
+
+```text
+Design package: none (wave-3 design review, items 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, page-head line)
+
+- On desktop the page head sits on the shared line: the main takes
+  `--ch-page-gutter` (40px) at its sides and `--ch-page-head-top` (34px) above
+  the head (tokens.css), and keeps its own max width, so at 1280 and below the
+  title holds still between tabs. The detail page takes the same gutter and top;
+  its title sits under the back link.
+
+### Verification (2026-10-18, page-head line)
+
+- WebKit (Playwright, dev preview): every full-head tab title (Home, Hub, Stats,
+  Calendar, Settings, Qualifiers, Rounds, Classes, CoachHelm) at y 156 (156.9 on
+  Rounds) at 1280 and 1440, and at x 284 at 1280; at 1440 a page narrower than
+  the canvas still centres (Home x 320, Settings 340, CoachHelm 290). Loading
+  states keep the loaded head line. At 1024 the same line holds where a page's
+  narrow layout does not take over (Settings keeps its 16px); at 390 every main
+  keeps its phone padding.
+- `clubhouse:check`, `typecheck:fast` and eslint pass. `clubhouse:css` exits 1
+  on five `shell.css` findings (lines 3743 to 3822) from earlier work, none in
+  this change.
+
+## 2026-10-18 — Wave 3: Concluded throughout, Also active under the hero
+
+```text
+Design package: none (wave-3 design review, items 9)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, status word and section head)
+
+- A finished qualifier's status reads "Concluded", the list's filter and
+  section word, where its badge said "Completed" (`model.ts`).
+- Under the Active hero, the section of the other active qualifiers is
+  headed "Also active"; with no hero it stays "Upcoming and live"
+  (`QualifiersList.tsx`).
+
+### Verification (2026-10-18, status word and section head)
+
+- `npm run test:file` on `qualifiers.test.tsx` and
+  `qualifiers-premium.test.tsx`.
+
+## 2026-10-18 — Polish: your place reads as the Hub says it
+
+```text
+Design package: none (wave-2 interaction review rows 8)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, interaction review)
+
+- My qualifiers: "You're 3" reads "You're 3rd" and a tie "T4" reads
+  "tied 4th", as the Team Hub's standings line does.
+
+### Verification (2026-10-18, interaction review)
+
+- WebKit (Playwright) checks: focused vs blurred and hovered vs resting
+  computed styles and crops, `scratchpad/w2-interact/`.
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on the five
+  existing `shell.css` findings (lines 3742-3821), none in this change.
+
+## 2026-10-18 — Polish: the phone skeleton draws two figures
+
+```text
+Design package: none (wave-2 states review row 5)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, loading)
+
+- Phone qualifier skeleton (CH-09402): two figures (Rounds in, Spots) as the
+  page has since 2026-10-16; a third wrapped to a second row of the two
+  columns (`QualifiersSkeleton.tsx`).
+
+### Verification (2026-10-18, loading)
+
+- WebKit (Playwright, dev server, preview fixtures) at 390: the figures 88px
+  tall as loaded (was 151) and the leaderboard at 370 vs 370 (was 432).
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint.
+
+## 2026-10-18 — Polish: whole names in the ellipsis, the ledger at 821–1000px
+
+```text
+Design package: none (wave-2 states review rows; no new pattern)
+PR/commit:      uncommitted (polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (2026-10-18, states review)
+
+- Phone leaderboard: the name clips on its own span, so a long name ends in
+  an ellipsis instead of being cut mid-letter by the flex row; "You" stays
+  whole (`QualifierDetailPhone.tsx`, `qualifiers.css`).
+- Desktop list on a canvas of 800px or less (821–1040px windows): a ledger
+  row puts the name and status across the row with its link at the end, and
+  the dates under them, where three columns left the name 93px.
+- The list's notice ends "Try again; the error has been reported.".
+
+### Verification (2026-10-18, states review)
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` exits 1 on five
+  `shell.css` findings from commit 3730926bb, none in this change.
+- WebKit (Playwright, dev preview): the list at 821, 900, 1000, 1024, 1100
+  and 1280px; every title on one line, two columns up to 1024px, three from
+  1100px. A 44-letter name on the phone board ends in an ellipsis on its
+  span.
+
+## 2026-10-17 — Polish: score column, dark board words, ranges
+
+```text
+Design package: none (polish review rows; no new pattern)
+PR/commit:      uncommitted (Clubhouse polish review, agent/fairway-fixes-polish)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Selection rows: the score holds a "+10" width, right-aligned, so the rounds
+  column before it stays put for −3, E or +10 (`qualifiers.css`).
+- Dark mode: the board's status words ("Qualifying", "Bubble") and the Live
+  stamp stay words; the dark tone fills had drawn a tight box behind them
+  (`qualifiers.css`).
+- A range outside this year says its year once: "Sep 22 – Oct 1, 2026", not
+  "Sep 22, 2026 – Oct 1, 2026"; across a new year both dates keep theirs
+  (`model.ts` `rangeLabel`).
+- Tabular figures come back on 31 rules in `qualifiers.css` whose `font` shorthand
+  reset `.ch-num` (counts, times, scores and facts in rows); display
+  numerals keep their proportional figures.
+
+### Verification
+
+- `npm run test:file` on the page's tests, `clubhouse:check`,
+  `typecheck:fast` and eslint pass. `clubhouse:css` reports five findings,
+  all in `shell.css`, which this change does not touch. The WebKit pass is
+  the coordinator's.
+
+## 2026-10-17 — Standings checked against production
+
+Parity pass on the standings (which rounds count, the score, ties, the cut, the
+lifecycle) against what production serves: Fairway's live leaderboard
+(`FairwayQualifierLeaderboard` with `useQualifierRealtime`), the selection
+workspace its confirm commits from (`loadQualifyingWorkspace`), the unused
+`getQualifierLeaderboard` action and `get_qualifier_leaderboard` function. The
+board already counted the workspace's rounds in the workspace's order with its
+tie at the cut; two Clubhouse differences are fixed
+(`screens/qualifiers/model.ts`):
+
+- **The Bubble is inside the squad.** `buildBoard` marked the first player out
+  as Bubble too (`i <= squad`), drawn below the board's own travel cut, and with
+  no coach's picks at all, when there is no place to contend for. It is now the
+  places below the line on score down to the squad size, as Fairway's tiers and
+  DESIGN.md have it. In production data this moved one row on five qualifiers
+  (3cf7f129, b7fdd787, 8fe2c339, ec46521b, 86dad12b) from Bubble to out.
+- **A round with no stored round number counts.** It was drawn as round 1 and
+  then dropped as a second round 1 when the player had one; the workspace counts
+  it. No production round lacks a number today. The round-by-round grid and the
+  rounds panel still draw one round per number, so such a round would be in the
+  total but not in its own column.
+
+The board's round shaping moved into `model.ts` (`roundOfRow`, `countsOnBoard`)
+and the loader reads `status` and `is_test` with each round and holds the same
+rule after the query, so the tests run the loader's own shaping.
+
+Kept, where production's live leaderboard is wrong (raised as questions;
+WIRING.md "Standings parity"): it numbers ties 1, T2 and marks a tie on to par
+alone, puts one of two players level at the cut in by stored order, counts test
+rounds and a completed round with no total (as 0 strokes), falls back to the
+stored entry aggregate, and averages 9-hole rounds with 18-hole ones. The
+Bubble's ⌈rounds ÷ 2⌉ minimum (P009-C2) is the owner's and stays.
+
+Tests: `standings-parity.test.tsx` (new, beside the Fairway leaderboard because
+Clubhouse code may not import Fairway: the three real pipelines over one fake
+database, 18 cases), and the `qualifiers.test.tsx` standings case, whose fourth
+player of a squad of three is now out. A read-only run over every production
+qualifier matched the workspace on all 19 qualifiers Clubhouse shows (score,
+order, cut) before and after; the 3 test qualifiers are not shown. No visual
+check is recorded.
+
+## 2026-10-17 — Qualifier writes checked against production
+
+Parity pass on the write paths (create, edit, close and reopen, the squad
+selection) against Fairway's create, edit and CoachHelm qualifying workspace.
+Every Clubhouse write calls the same shared action with the same arguments, so
+the server's revalidation, notifications, logging and entry rows are the same;
+no server action changed. Two Clubhouse differences are fixed:
+
+- **A retired entry deadline no longer blocks an edit** (`QualifierForm.tsx`,
+  `keptDeadline`). The form has no deadline field (2026-10-16), but an older
+  qualifier can carry one, and both the form (CH-09104) and
+  `updateGolfQualifierDetails` refuse a deadline after the start. Moving the
+  start date before a stored deadline failed on a field the coach could not see.
+  The stored deadline now rides along while it still fits and is cleared (sent
+  as null) once the new start passes it; create sends none, as before.
+- **Every refusal of the selection service has its own words** (`writes.ts`,
+  `selectionReason`). A tie at the cut on Confirm read "Choose every pick, each
+  with a reason", and the tie-place, scored-round and pick-slot refusals were
+  unmapped or read as a roster problem. Each is mapped from the service's exact
+  sentence; a workspace that would not read now says to try again instead of
+  "may have been deleted".
+
+Checked and unchanged (the full table is in the PR): D-61's squad and entrant
+edits stay held behind the flag and the coach dashboard role before any read;
+Close is offered at any stage, while Fairway only shows Conclude once the squad
+is confirmed; no recorded decision covers this, so it is left as built and
+raised as an open question; the squad cap of 12 is the database's (Fairway's
+field allows 50 and fails at the database).
+
+Tests: `qualifier-write-parity.test.tsx` (new: payloads of every live write,
+each service refusal, the deadline), and two `qualifiers.test.tsx` assertions
+that pinned the old wording. Not checked in a browser.
+
+## 2026-10-17 — A coach on /my-qualifiers goes to Qualifiers
+
+Readiness audit (2026-10-17): "My qualifiers" is a player's screen, and a coach
+on `/golf/dashboard/my-qualifiers` stood on "not rebuilt". The page now sends a
+coach to Qualifiers (`redirectToClubhouse`) and the address is on the frame's
+aliased list. A player's My qualifiers is unchanged (checked in Chrome). Test:
+`alias-frame.test.ts`.
+
+## 2026-10-16 — Qualifiers: separate sheets, the active one in focus, full contrast
+
+Owner, 2026-10-16: "better separation between qualifiers listed", "more contrast
+on this page", "more focal on active qualifiers", "way more contrast on this
+page". Three commits, all in `qualifiers.css` unless noted. No visual check is
+recorded for any of them.
+
+- **The desktop list** (above 820px): each qualifier is its own raised sheet on
+  the parchment with a gap between, in place of the ruled ledger seams. Titles,
+  the lines under them, the facts and the intro step up to full ink (the facts'
+  icons are green), and the filter pills take ink when idle and the shared green
+  chip when chosen (docs/clubhouse/CHANGELOG.md). The phone's list is unchanged.
+- **The active qualifier is the list's focus** (`QualifiersList.tsx`): it sits
+  under its own "Active" heading on a raised sheet with a green edge; concluded
+  qualifiers are quieter (secondary heading, lighter sheets). The board in the
+  active qualifier read "Leaders", which did not say it belonged to that
+  qualifier; it reads "Standings · top N" now (`qualifiers.test.tsx` follows).
+- **Full contrast in light mode**: the page takes a page-scoped step up. Text is
+  one grade darker, and rules and borders use the Increase Contrast values
+  (`.ch-qf` re-points `--ch-text-*`, `--ch-border-*` and the ledger rules). On a
+  qualifier's own desktop page the facts, the leaderboard and the side sections
+  sit on bright sheets. Dark mode is unchanged.
+
+## 2026-10-16 — Thru as dots; qualifiers have no entry deadline
+
+Owner, 2026-10-16.
+
+- **Thru is a row of dots** (`ThruDots` in `parts.tsx`, desktop and phone
+  leaderboards): one per scheduled round, green for each one played, centred,
+  labelled "2 of 3 rounds" for VoiceOver. A qualifier of more than eight rounds
+  keeps the figure ("2/9"), since a longer row of dots is not countable at a
+  glance.
+- **No entry deadline.** The owner says qualifiers have none. The fact is gone
+  from the desktop facts (five left) and the phone's facts (two, now a
+  two-column grid), and the field and its skeleton from the create and edit
+  form. A stored deadline is left as it is, the database is untouched, and the
+  CH-09104 check ("The entry deadline has to be on or before the start date.")
+  and its catalog row stay, though the form can no longer set a value for it to
+  refuse. CONTRACT 90102 and 91901 and the phone notes now count the remaining
+  facts.
+- **A player's rounds beside the leaderboard** (desktop only,
+  `QualifierDetail.tsx`, `PlayerRounds`): a side panel on the scoreboard green,
+  "Your rounds" or "{name}’s rounds", with the total to par large and one tile
+  per round (course, date, score and plate). The best round is marked and an
+  unplayed round is dashed. It follows the leaderboard row a coach opens,
+  otherwise the viewer's own; a player sees only their own. It reads
+  `board.rows[].rounds`, so there is no new read and no migration. The open row
+  now lives in a small `useSyncExternalStore` store: lifting it into the page's
+  state re-rendered the page and stalled the streamed sections (CH-09410). Its
+  boundary is **CH-09223** (the commit named it CH-09216, which is already the
+  qualifier form's boundary, so it was renumbered, on the phone too; the
+  existing crash test now names it). Qualifiers vitest passed in the main
+  session; no visual check is recorded for this panel.
+- **A round opens in place** (`RoundsShowcase.tsx`, which now holds
+  `PlayerRounds`, `RoundVisual`, `FieldStrip` and the open-row store): a round
+  tile is a button that opens its detail under it. The round's rank in the field
+  comes first, with every score as an anonymous dot on one line, this round lit
+  and the average a tick. When the round has holes, a hole-by-hole shape against
+  par is drawn as SVG, with the nines as score marks and counts by kind. A link
+  goes to the whole round, `/golf/dashboard/rounds/<id>`. No new read.
+- **The phone**: a player's own rounds are shown above the board, between the
+  facts and the leaderboard (a coach opens anyone's from their row, which opens
+  a sheet as before), inside the same boundary, CH-09223. The phone list takes
+  the separate sheets and the green filter chip too. Checked by the main session
+  in Chrome at 1567 and 420px wide; Qualifiers vitest passed; not checked on a
+  device.
+- **The ink ramp** in the page's contrast block is darker too, 700 down to 300
+  (the same step CoachHelm and Ask took, see P013), so copy that names a mid ink
+  directly reads darker.
+
+## 2026-10-14 — A round with no tees says so
+
+Course per round showed a blank beside a round whose tees and par were not set.
+It reads "Tees not set", as the qualifier form does.
+
 ## 2026-10-12 — A section root on the phone (no "‹ More")
 
 The phone shell's section strip replaced the tab bar and the More sheet
@@ -75,33 +637,45 @@ hero keeps its scoreboard.
 
 ## 2026-10-08 — Premium pass: honest Live, standings on plates, rows that move only on a change, pace beside the total
 
-Owner-approved items P009-A1, B1, B2 and C2 (docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:
+Owner-approved items P009-A1, B1, B2 and C2
+(docs/clubhouse/PREMIUM_PASS_AUDIT.md), with findings D1–D5, D10, D11 and D14:
 
-- **Honest Live (B2, D1):** `useLiveStandings` returns the realtime feed's state (`feedReduce`). The board's chip
-  reads "Live · updated 4:12 PM" only while the channel is SUBSCRIBED; on CHANNEL_ERROR, TIMED_OUT or CLOSED, or
-  after the tab was hidden 5 minutes or more, it reads "Paused · standings from 4:12 PM" with Refresh, which re-reads
-  the page and reopens a dropped channel. A channel error is still reported. The dot stays static (D-33). The time is
-  stamped after hydration, by the chip alone.
-- **Ended (D3):** a live qualifier past its end date reads "Ended · n rounds outstanding" in its status pill (list hero
-  and cards, detail, phone), never Live. The loader stamps `today` as the date at UTC−12 (`endDayFor`), so a qualifier
-  ends only once its last day is over everywhere; a fixture or test without `today` is not reconciled.
-- **Plates (A1):** to par sits on a fixed-aspect ivory plate (condensed cell numeral; red only under par) on the
-  desktop board, the phone rows and the list's live card; ties read "T3" with a raised T; movement since the previous
-  round ("▲2", "▼1") is computed against the board with the latest round number left out (`ChQRow.move`). Nothing
-  animates in. The phone board is one 56pt row a player under a header drawn once (D4).
-- **Rows that move only on a change (B1):** when a refresh changes the ranked order (`rankOrderChanged`), each moved
-  row slides to its new place inside React's `<ViewTransition>` (class `ch-rank`, the smooth spring). No digit
-  rolling or count-ups (owner override of the spec's NumberFlow). Skipped with reduced motion or Animations off,
-  within 300ms of a scroll, with a scorecard tray, sheet or dialog open (`useRankSlide`).
-- **Pace (C2, D2):** the desktop board adds Thru and Avg; a ranked row with fewer rounds in than the most anyone has
-  carries "1 of 3 rounds"; Bubble needs at least half the scheduled rounds in, rounded up (`bubbleMinRounds`: 2 of 3),
+- **Honest Live (B2, D1):** `useLiveStandings` returns the realtime feed's state
+  (`feedReduce`). The board's chip reads "Live · updated 4:12 PM" only while the
+  channel is SUBSCRIBED; on CHANNEL_ERROR, TIMED_OUT or CLOSED, or after the tab
+  was hidden 5 minutes or more, it reads "Paused · standings from 4:12 PM" with
+  Refresh, which re-reads the page and reopens a dropped channel. A channel
+  error is still reported. The dot stays static (D-33). The time is stamped
+  after hydration, by the chip alone.
+- **Ended (D3):** a live qualifier past its end date reads "Ended · n rounds
+  outstanding" in its status pill (list hero and cards, detail, phone), never
+  Live. The loader stamps `today` as the date at UTC−12 (`endDayFor`), so a
+  qualifier ends only once its last day is over everywhere; a fixture or test
+  without `today` is not reconciled.
+- **Plates (A1):** to par sits on a fixed-aspect ivory plate (condensed cell
+  numeral; red only under par) on the desktop board, the phone rows and the
+  list's live card; ties read "T3" with a raised T; movement since the previous
+  round ("▲2", "▼1") is computed against the board with the latest round number
+  left out (`ChQRow.move`). Nothing animates in. The phone board is one 56pt row
+  a player under a header drawn once (D4).
+- **Rows that move only on a change (B1):** when a refresh changes the ranked
+  order (`rankOrderChanged`), each moved row slides to its new place inside
+  React's `<ViewTransition>` (class `ch-rank`, the smooth spring). No digit
+  rolling or count-ups (owner override of the spec's NumberFlow). Skipped with
+  reduced motion or Animations off, within 300ms of a scroll, with a scorecard
+  tray, sheet or dialog open (`useRankSlide`).
+- **Pace (C2, D2):** the desktop board adds Thru and Avg; a ranked row with
+  fewer rounds in than the most anyone has carries "1 of 3 rounds"; Bubble needs
+  at least half the scheduled rounds in, rounded up (`bubbleMinRounds`: 2 of 3),
   and the caption says so. The ranking rule is unchanged.
-- **Findings:** the Refresh and the desktop scorecards chevron are 44pt to a finger, as is Choose a player on the phone
-  (D5; the pills and the phone action row already were); the form's description help reads "format and stakes" and a
-  round with no course of its own names the qualifier's course (D10); list dates drop the year inside the current
-  year (D11); the "Active" section is "Upcoming and live" (D14).
-- Preview: `/clubhouse-preview/qualifier?q=live&state=paused | ended | reorder` (reorder refreshes to three more
-  signed rounds after 2s).
+- **Findings:** the Refresh and the desktop scorecards chevron are 44pt to a
+  finger, as is Choose a player on the phone (D5; the pills and the phone action
+  row already were); the form's description help reads "format and stakes" and a
+  round with no course of its own names the qualifier's course (D10); list dates
+  drop the year inside the current year (D11); the "Active" section is "Upcoming
+  and live" (D14).
+- Preview: `/clubhouse-preview/qualifier?q=live&state=paused | ended | reorder`
+  (reorder refreshes to three more signed rounds after 2s).
 - Tests: `src/clubhouse/__tests__/qualifiers-premium.test.tsx`.
 
 ## 2026-10-08 — States: a failed read keeps the head; one save failure, said once
@@ -203,8 +777,8 @@ Held items:     none
 ```
 
 The screen's imports and test mocks now point at the files that own the server
-actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and `admin-data.ts` were split
-by domain. No behavior change.
+actions (qualifier-actions.ts) after `golf.ts`, `insights.ts` and
+`admin-data.ts` were split by domain. No behavior change.
 
 ## 2026-10-07 — Presses answer; a row's scorecards drop into place
 

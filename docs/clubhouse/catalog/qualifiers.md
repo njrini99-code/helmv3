@@ -14,10 +14,12 @@ assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
 Routes:
-- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and `/[id]/selection` (Manage selections)
+- `/golf/dashboard/qualifiers` with `/new`, `/[id]`, `/[id]/edit` and
+  `/[id]/selection` (Manage selections)
 - `/golf/dashboard/my-qualifiers`
 
-Coaches and players share the list and the detail (D-30). Create, edit and Manage selections are coach-only.
+Coaches and players share the list and the detail (D-30). Create, edit and
+Manage selections are coach-only.
 
 Where things live:
 - Code: `src/clubhouse/screens/qualifiers/`
@@ -26,9 +28,13 @@ Where things live:
 - Tests: `src/clubhouse/__tests__/qualifiers.test.tsx`
 - Preview:
   - `/clubhouse-preview/qualifiers` (`?state=empty|failed|partial|loading`)
-  - `/clubhouse-preview/qualifier` (`?q=live|upcoming|selected|completed|spring`, and `?state=failed|scores|partial|failwrites|loading`)
-  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit` (`?state=failed|noroster|courses|failwrites|loading`)
-  - `/clubhouse-preview/qualifiers-player`, `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
+  - `/clubhouse-preview/qualifier`
+    (`?q=live|upcoming|selected|completed|spring`, and
+    `?state=failed|scores|partial|failwrites|loading`)
+  - `/clubhouse-preview/qualifier-new` and `/clubhouse-preview/qualifier-edit`
+    (`?state=failed|noroster|courses|failwrites|loading`)
+  - `/clubhouse-preview/qualifiers-player`,
+    `/clubhouse-preview/qualifier-player` and `/clubhouse-preview/my-qualifiers`
 
 Every save goes through `useAction`, so these belong to the shell:
 - offline refusal (CH-1903);
@@ -93,6 +99,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09220 | A refresh of a qualifier's standings fails after they were showing (a live update, a write's re-read, Try again) | "These standings may be out of date." + "The latest scores didn’t load, so this is the last list that did. Try again to bring it up to date." + Try again, in the leaderboard (desktop and phone), above the last good rows (or above "Awaiting first round" when the last good board had no round in). A recovered read clears it; another qualifier never inherits the rows; a first load that fails is CH-09203 or CH-09204 | `InlineNotice` (`StaleStandings`) from `useLastGood(qualifier id, data, board loaded)` | qualifiers.test › CH-09220 |
 | CH-09221 | The coach's pick notes don't load (detail, coach, confirmed squad) | "Pick notes didn’t load." + "The squad is right; the coach’s notes on the picks are missing until they load." + Try again, under the squad. The picks stay; the notes are never shown as "no notes" | `InlineNotice` in `Selections`; `reasonsError` from `loadQualifierDetail` | qualifiers.test › CH-09221 |
 | CH-09222 | A player's entries don't load on /my-qualifiers | "Your qualifiers didn't load" + Try again, never "You aren’t entered in any qualifiers"; the head reads "— active · — concluded", never "0 active · 0 concluded" | `InlineNotice`; `entriesError` from `loadQualifierList` | qualifiers.test › CH-09222 |
+| CH-09223 | The player's rounds panel crashes (desktop, beside the leaderboard) | "A player’s rounds couldn't be shown." | `SectionBoundary` `qualifiers.player-rounds` | qualifiers.test › CH-09223 |
 
 ## 093xx Empty
 
@@ -102,7 +109,7 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09302 | Search or filter matches nothing | "No qualifiers match your filters." + Clear filters | `EmptyState` | qualifiers.test › CH-09302 |
 | CH-09303 | Nothing has concluded yet | "No concluded qualifiers yet." under Concluded | `EmptyState` | qualifiers.test › CH-09303 |
 | CH-09304 | No round is in yet | "Awaiting first round." + "7 players entered. Standings appear once a player submits a round." | `EmptyState` | qualifiers.test › CH-09304 |
-| CH-09305 | The roster has no active players (form) | "No active players on the roster." | `EmptyState` | qualifiers.test › CH-09305 |
+| CH-09305 | The roster has no active players (form) | Over the form, before any field: "No active players on the roster." + "A qualifier needs at least one entrant, so Create waits until players join." + Invite players (Roster's invite sheet). Create (and the phone bar's) is off; the Players head reads "Nobody to enter yet", never "0 of 0" | `EmptyState` | qualifiers.test › CH-09305 |
 | CH-09306 | A player isn't entered in any qualifier (/my-qualifiers) | The page empty state (v2 medallion): "You aren’t entered in any qualifiers" + See the team's qualifiers | `EmptyState` | qualifiers.test › CH-09306 |
 | CH-09308 | A round has no hole-by-hole card | "No hole-by-hole card for this round. Only the total was recorded." | `Scorecard` | qualifiers.test › CH-09308 |
 | CH-09309 | Not on a team | The page empty state (v2 medallion): "You aren’t on a team yet" | `EmptyState` (route) | qualifiers.test › CH-09309 |
@@ -121,13 +128,13 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09401 | The list is loading | Its skeleton: head, tools, hero, cards | `QualifiersSkeleton` | qualifiers.test › CH-09401 |
 | CH-09402 | A qualifier is loading | Its skeleton: head, facts, leaderboard, side cards | `QualifierDetailSkeleton` | qualifiers.test › CH-09402 |
 | CH-09403 | The form is loading | Its skeleton | `QualifierFormSkeleton` | qualifiers.test › CH-09403 |
-| CH-09404 | A create or save is in flight | The button reads "Creating" or "Saving" and is disabled | `QualifierForm` | qualifiers.test › CH-09404 |
-| CH-09405 | A close is in flight | "Closing", disabled | `QualifierDetail` | qualifiers.test › CH-09405 |
-| CH-09406 | A reopen is in flight | "Reopening", disabled. On the phone the Edit sheet stays up until the server answers and its Reopen button says it (a refusal leaves the sheet and the button as they were; a landed reopen closes it) | `QualifierDetail`, `QualifierDetailPhone` | qualifiers.test › CH-09406 |
+| CH-09404 | A create or save is in flight | The button reads "Creating…" or "Saving…" and is disabled | `QualifierForm` | qualifiers.test › CH-09404 |
+| CH-09405 | A close is in flight | "Closing…", disabled | `QualifierDetail` | qualifiers.test › CH-09405 |
+| CH-09406 | A reopen is in flight | "Reopening…", disabled. On the phone the Edit sheet stays up until the server answers and its Reopen button says it (a refusal leaves the sheet and the button as they were; a landed reopen closes it) | `QualifierDetail`, `QualifierDetailPhone` | qualifiers.test › CH-09406 |
 | CH-09407 | Courses or tees are loading in the picker | Skeleton rows | `CoursePicker` | qualifiers.test › CH-09407 |
 | CH-09409 | Manage selections is loading | Its own skeleton, on the page's own classes: head with the primary slot, the three steps, the note, the two lists and the picks card | `QualifierSelectionSkeleton` through `ClubhouseSwitch` in `[id]/selection/loading.tsx` | qualifiers.test › CH-09409 |
 | CH-09410 | A qualifier's courses and scorecards are still streaming in behind its standings | The standings, facts and squad are on screen; the Par line under Course is a one-line placeholder, Course per round is a row per round on the list's own classes, and an opened row's cards are the round's head (round, course, day, total) over a card-sized block (the phone's sheet: the head over two nine-sized blocks). Nothing says "no card", "no courses" or "Par by round" until they land. A live refresh (`router.refresh`) is a transition: the page on screen stays whole, standings, courses and cards, until the new render with its streamed part has landed, and then changes in one commit, so the placeholders are the first load's (and a render that is not a transition); they are never drawn over standings | `Streamed` (`use()` of the loader's `secondary` promise inside its own `Suspense`), `CoursesSkeleton`, `CardBodySkeleton`, `NinesSkeleton`, `ParLineSkeleton` | qualifiers.test › CH-09410 |
-| CH-09408 | A selection write is in flight | The dialog's button reads "Starting", "Saving", "Removing" or "Confirming" and is disabled. Giving or taking back a place at a tied cut waits on that player's row only (its button reads "Saving"); the other level players stay available, and the places left count the give in flight | `QualifierSelection`, `TieRow` | qualifiers.test › CH-09408 |
+| CH-09408 | A selection write is in flight | The dialog's button reads "Starting…", "Saving…", "Removing…" or "Confirming…" and is disabled. Giving or taking back a place at a tied cut waits on that player's row only (its button reads "Saving…"); the other level players stay available, and the places left count the give in flight | `QualifierSelection`, `TieRow` | qualifiers.test › CH-09408 |
 
 ## 095xx Confirm
 
@@ -171,4 +178,6 @@ Every save goes through `useAction`, so these belong to the shell:
 | CH-09902 | An edit saved only in part, or not at all | "Couldn’t save the qualifier" at the top of the form, with which part did save, for example "Saved the details and the rounds and courses, but not the players. One player has a round … Save again to finish." It is the one place this is said (no toast as well), comes into view when the save was pressed further down, and stays until the next save | `InlineNotice` in `QualifierForm`, from `runEditPlan`'s message | qualifiers.test › CH-09902 |
 | CH-09904 | The list's filter and search | They come back when the list is opened again in this tab for the same team (Back from a qualifier, the sidebar, a tab): the shell keeps them in session state (`useChSessionState`, per page and team, never restored while the page hydrates). Another team, and a player's own /my-qualifiers, open on All with nothing typed; going back to All with nothing typed keeps nothing. Nothing is written to the address | `QualifiersList` with the shell's `useChSessionState` | qualifiers.test › CH-09904 |
 | CH-09905 | Returning to the list from a qualifier | The list's place comes back from the frame (RouteFrame records the scroll per page and team and restores it on Back or Forward; a new page opens at the top, CH-1904); the list scrolls nothing itself. Back from the qualifier (desktop link, phone top bar, the not-found page) is a step back in history when the list opened that qualifier in this tab (a note in `sessionStorage` carrying the time of the click, read once and spent as the qualifier opens; one older than ten seconds is ignored), and the list's address otherwise (a deep link, Home, a fresh tab, a new-tab click, a later page for the same qualifier such as the edit form's save). A second tap on Back inside a second is the first one's. Manage selections' Back does the same toward the qualifier, and hands the list's note back to it so its Back is still a step to the list | `return-state.ts` (`useStepBack`), `BackToList`, `QualifiersList`, `QualifierDetail`, `QualifierDetailPhone`, `QualifierSelection` | qualifiers.test › CH-09905 |
+| CH-09906 | Player: a live qualifier with a round still to play, before its last day | Detail: the first round still to play is a link tile, "Play round 3" over the round's own course (streamed in), to round setup with the qualifier chosen (`/golf/dashboard/rounds/new?qualifier=`), which preselects it when it has a round open. List: "Play round 3 · Hope Valley CC" under the live card, outside the card's own link. Not for a coach, an ended qualifier, or before round setup is rebuilt for players | `PlayerRounds` (`RoundsShowcase`), `PlayNext` in `QualifiersList` | qualifiers.test › CH-09906 |
+| CH-09907 | Player: the squad is confirmed | Their line reads "You made the squad · 4th · +6" or "You’re 4th · +6 · not selected", from their own selection row (RLS shows it only once the squad is confirmed); a failed read is the plain standing, never "not selected" (logged `ownSelections`). The live card's standings mark them: their row lighter, with "You" | `Mine`, `Hero` in `QualifiersList`; `readOwnSelections` | qualifiers.test › CH-09907 |
 | CH-09903 | The squad is confirmed (Manage selections) | "The squad is confirmed, and every entrant has been told whether they made it." The page is read-only | `QualifierSelection` | qualifiers.test › CH-09903 |

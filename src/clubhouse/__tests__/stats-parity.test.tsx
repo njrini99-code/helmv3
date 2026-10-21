@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
@@ -30,6 +30,7 @@ vi.mock('@/app/golf/actions/stats-data', () => ({ getDetailedStats: detailed, ge
 
 import { approachBands } from '../data/stats-detail';
 import { bandPutts, PUTT_BANDS, PUTT_BANDS_NINE } from '../data/stats-common';
+import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor } from '@/lib/golf/putt-make';
 import type { ChRound } from '../data/season';
 import { loadPlayerProfile, type ChPlayerProfile } from '../data/stats-player';
 import { openingDelta, perRoundSeries, personalBests, pressureGap, toughestHoles, windowCompare, type ChHoleRow } from '../data/stats-figures';
@@ -278,6 +279,19 @@ describe('putts by distance', () => {
     expect(by('25+ ft')).toMatchObject({ attempts: 2, made: 1 });
   });
 
+  it('bands are the shared lib\u2019s: the same edges, every putt in the band the shared cut puts it in', () => {
+    expect(PUTT_BANDS_NINE.map((b) => b.fine)).toEqual(PUTT_MAKE_BANDS.map((b) => [b.id]));
+    expect(PUTT_BANDS_NINE.map((b) => b.label)).toEqual(['0–3 ft', '3–5 ft', '5–10 ft', '10–15 ft', '15–20 ft', '20–25 ft', '25–30 ft', '30–35 ft', '35+ ft']);
+    expect(PUTT_BANDS.map((b) => b.label)).toEqual(['0–3 ft', '3–5 ft', '5–10 ft', '10–15 ft', '15–25 ft', '25+ ft']);
+    const feet = [0, 0.5, 3, 3.01, 5, 5.01, 10, 10.01, 15, 15.01, 20, 20.01, 25, 25.01, 30, 30.01, 35, 35.01, 120];
+    const nine = bandPutts(feet.map((f) => put(f, true)), new Map(), PUTT_BANDS_NINE);
+    const six = bandPutts(feet.map((f) => put(f, true)), new Map());
+    for (const [i, band] of PUTT_MAKE_BANDS.entries()) expect(nine[i]!.attempts).toBe(feet.filter((f) => puttMakeBandFor(f) === band.id).length);
+    for (const b of PUTT_BANDS) expect(six.find((x) => x.label === b.label)!.attempts).toBe(feet.filter((f) => b.fine.includes(puttMakeBandFor(f))).length);
+    expect(PUTT_BANDS.flatMap((b) => b.fine).sort()).toEqual(PUTT_MAKE_BANDS.map((b) => b.id).sort());
+    expect(PUTT_BANDS.every((b) => b.fine.every((id) => PUTT_REPORT_BAND_OF[id] === PUTT_REPORT_BAND_OF[b.fine[0]!]))).toBe(true);
+  });
+
   it('the nine bands add up to the six, and each carries the Tour value its standard maps to', () => {
     const rows = [0.5, 2, 3, 4, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30, 33, 35, 40, 60].map((f, i) => put(f, i % 3 === 0));
     const bench = new Map([
@@ -412,7 +426,8 @@ describe('the profile’s extra figures', () => {
 
   it('the standing rows: the Tour’s value beside each, a band graded only with 10 putts, big numbers from the round cache; a coach’s team figures pooled, a player’s never', async () => {
     const puttRows = [...Array.from({ length: 10 }, (_, i) => ({ round_id: 'r1', putt_distance_feet: 4, putt_made: i < 7 })), ...Array.from({ length: 9 }, () => ({ round_id: 'r1', putt_distance_feet: 8, putt_made: true }))];
-    const cache = ['r1', 'r2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, three_putts: 1, sand_attempts: 2, sand_saves: 1, greens_hit: 9, greens_total: 18 }));
+    // A three-putt count stands on a round with its putts recorded (cachedPutts): the cache always writes both.
+    const cache = ['r1', 'r2'].map((round_id) => ({ round_id, double_bogeys: 1, triple_plus: 1, penalty_strokes: 1, total_putts: 32, three_putts: 1, sand_attempts: 2, sand_saves: 1, greens_hit: 9, greens_total: 18 }));
     tables.current = loaderTables(ten, { golf_shots: (f) => (f.some(([k, a]) => k === 'eq' && a[0] === 'shot_type') ? { data: [] } : { data: puttRows }), golf_round_stats_cache: { data: cache } });
     const coach = (await load('coach'))!;
     const row = (p: ChPlayerProfile, l: string) => p.comparisons.find((c) => c.label === l)!;
@@ -433,12 +448,12 @@ describe('the profile’s extra figures', () => {
 /* ─── Game detail: More detail ─── */
 
 describe('Game detail · More detail', () => {
-  it('each section has one, open on the desktop, a native disclosure with its own panels', async () => {
+  it('each section has one, closed to start, a native disclosure with its own panels', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
     const more = [...document.querySelectorAll('details.ch-gx-more')] as HTMLDetailsElement[];
     expect(more).toHaveLength(5);
-    expect(more.every((d) => d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
+    expect(more.every((d) => !d.open && d.querySelector('summary')!.textContent === 'More detail')).toBe(true);
     expect([...document.querySelectorAll('.ch-gm')].every((s) => s.querySelector('.ch-gx-rule')!.textContent!.includes('18 holes only'))).toBe(true);
   });
 
@@ -461,8 +476,14 @@ describe('Game detail · More detail', () => {
     expect(tile(numbers, 'Best round').textContent).toContain('72');
     expect(tile(numbers, 'Best round').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(numbers, 'Worst round').querySelector('dd')!.textContent).toBe('75');
-    // The mix carries the holes behind it.
-    expect(s.querySelector('.ch-mix__k')!.textContent).toContain('19 of 180 holes · 11%');
+    // The mix carries the holes behind it: each result's share in the key, and its holes on a tap (stats visuals, piece 6). The
+    // shares are whole percents that add up to 100 (largest remainder), so birdie's 10.6% prints as 10%.
+    const mix = s.querySelector('.ch-sv-mix')!;
+    expect([...mix.querySelectorAll('.ch-sv-mix-key li b')].map((b) => b.textContent)).toEqual(['<1%', '10%', '56%', '27%', '7%']);
+    fireEvent.click(mix.querySelector('.ch-sv-mix-seg.is-birdie')!);
+    expect(mix.querySelector('.ch-sv-read')!.textContent).toBe('Birdie · 19 of 180 holes · 10% · 1.9 a round');
+    fireEvent.click(mix.querySelectorAll('.ch-sv-mix-key li')[4]!);
+    expect(mix.querySelector('.ch-sv-read')!.textContent).toBe('Double or worse · 12 of 180 holes · 7% · 1.2 a round · 3 triple or worse');
     const pars = panel('Outcomes by par');
     expect(pars.textContent).toContain('+0.30 / hole · 40 holes');
     expect(pars.querySelectorAll('.ch-gx-pm')).toHaveLength(3);
@@ -549,7 +570,7 @@ describe('Game detail · More detail', () => {
     expect(cells(rowOf(panel('Short, low and high misses by break'), 'Straight'))).toEqual(['40%', '40%', '20%']);
     const tour = panel('Against the Tour');
     expect(tour.querySelectorAll('tbody tr')).toHaveLength(5);
-    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '90.5%', '38', 'Below the Tour']);
+    expect(cells(rowOf(tour, '3–5 ft'))).toEqual(['63%', '91%', '38', 'Below the Tour']);
     expect(panel('Putts by round').querySelector('svg.ch-gx-line')).not.toBeNull();
   });
 
@@ -645,7 +666,7 @@ describe('Game detail · states', () => {
   it('CH-5316 a proximity band under 10 shots says how many it has and is not graded; no approaches at all says so', async () => {
     showPlayer(player());
     await openTab(/Game detail/);
-    expect(code('CH-5316')!.textContent).toBe('175+ yards: 7 shots, under 10');
+    expect(code('CH-5316')!.textContent).toContain('175+ yards: 7 shots, under 10');
     expect(panel('Proximity against the Tour').querySelectorAll('.ch-lad__fill')).toHaveLength(2);
     cleanup();
     showPlayer(bare());
@@ -663,10 +684,10 @@ describe('Game detail · states', () => {
     expect(code('CH-5319')).toBeNull();
   });
 
-  it('without the putt read the curve grades only bands the Tour publishes: 15 to 20 ft is not set against the Tour\'s 15 to 25 ft value', async () => {
-    showPlayer(withExtra({ puttsError: true, puttBandsNine: null }));
+  it('without the putt read the chart grades only bands the Tour publishes: 15 to 20 ft is not set against the Tour\'s 15 to 25 ft value', async () => {
+    showPlayer(withExtra({ puttsError: true, puttBandsNine: null }, { puttBands: null }));
     await openTab(/Game detail/);
-    const marks = [...document.querySelectorAll('svg.ch-mk .ch-mk__v')].map((el) => [el.textContent, el.getAttribute('class')]);
+    const marks = [...document.querySelectorAll('.ch-sv-pb__col')].map((el) => [el.querySelector('.ch-sv-pb__lab b')!.textContent, el.querySelector('.ch-sv-pb__dot')!.getAttribute('class')]);
     // 10 to 15 ft (20%, 40 putts) is graded against its own Tour value; 15 to 20 ft (13%, 33 putts) has no mark.
     expect(marks.find(([t]) => t === '20%')![1]).toContain('is-loss');
     expect(marks.find(([t]) => t === '13%')![1]).not.toMatch(/is-(gain|loss)/);
@@ -704,7 +725,7 @@ describe('Rounds tab · bests and comparison', () => {
     expect(tile(bests, 'Best score').textContent).toContain('72');
     expect(tile(bests, 'Best score').textContent).toContain('Pinehurst No. 8 · Sep 9');
     expect(tile(bests, 'Best to par').querySelector('dd')!.textContent).toBe('E');
-    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83.3%');
+    expect(tile(bests, 'Best GIR').querySelector('dd')!.textContent).toBe('83%');
     expect(tile(bests, 'Fewest putts').textContent).toContain('Oakmont CC · Oct 12');
     const cmp = card('rx-compare');
     expect(cmp.querySelector('th[scope="col"]:nth-child(2)')!.textContent).toBe('Latest 10');
@@ -713,6 +734,13 @@ describe('Rounds tab · bests and comparison', () => {
     expect(rowOf(cmp, 'Scoring avg').querySelectorAll('td')[2]!.className).toContain('ch-loss');
     expect(rowOf(cmp, 'Putts per round').querySelectorAll('td')[2]!.className).toContain('ch-gain');
     expect(rowOf(cmp, 'Greens in regulation').querySelectorAll('td')[2]!.className).toContain('ch-loss');
+  });
+
+  it('the comparison says the cut in force: Last 20 is the latest 20 against the 20 before them, never "10"', async () => {
+    showPlayer(player({ last: 20, filter: filterFor('last10', 20) }));
+    await openTab(/Rounds/);
+    expect(document.body.textContent).toContain('Latest 20 rounds and the 20 before them');
+    expect(document.body.textContent).not.toMatch(/Latest 10 rounds|the 10 before/);
   });
 
   it('CH-5313 no earlier window to compare: the season and qualifiers say why, and last 10 says what it needs', async () => {
@@ -726,7 +754,7 @@ describe('Rounds tab · bests and comparison', () => {
     cleanup();
     showPlayer(withExtra({ compare: null }));
     await openTab(/Rounds/);
-    expect(code('CH-5313')!.textContent).toContain('Needs 3 earlier 18-hole rounds');
+    expect(code('CH-5313')!.textContent).toContain('Comparing starts at 13 rounds');
   });
 
   it('CH-5314 the score line needs two rounds, and a window with no rounds shows none of it', async () => {
@@ -775,7 +803,7 @@ describe('Overview · the zones', () => {
     expect(pars.getAttribute('aria-label')).toMatch(/Par 3 \+0\.\d+, Par 4 \+\d\.\d+, Par 5/);
     // The approach ranges: 50–125 yd reads 26 ft against the Tour's 18 ft, and amber because it is further.
     const rows = [...document.querySelectorAll('.ch-zrow')];
-    const near = rows.find((r) => r.textContent?.startsWith('50-125 yd'))!;
+    const near = rows.find((r) => r.textContent?.startsWith('50–125 yds'))!;
     expect(near.textContent).toContain('26 ft');
     expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
     expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();
@@ -930,11 +958,11 @@ describe('Game detail on the phone · the approach section', () => {
     expect([...section('putting').querySelectorAll('.ch-gm__figs dd')].some((d) => d.textContent === '—')).toBe(false);
   });
 
-  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px in secondary ink, and nothing floors them back to 12px', () => {
+  it('the type contract in the stylesheet: the value is 28px and 600, its label and scope are 13 to 14px (Dynamic Type steps) in secondary ink, and nothing floors them back to 12px', () => {
     const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../styles/stats.css'), 'utf8');
     expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd:not\(\.ch-gm__sub\) \{\s*font: 600 28px\/32px/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 13\.5px\/19px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
-    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 13px\/18px var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dt \{\s*font: 500 calc\(13\.5 \* var\(--ch-type-k\)\)\/calc\(19 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
+    expect(css).toMatch(/\.ch-gd\.is-phone \.ch-gm__figs dd\.ch-gm__sub \{\s*font: 400 calc\(13 \* var\(--ch-type-k\)\)\/calc\(18 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);\s*color: var\(--ch-text-secondary\)/);
     const floor = css.slice(css.indexOf('Phone text floor'));
     expect(floor).not.toMatch(/\.ch-gd\.is-phone \.ch-gm__figs d[td]/);
   });

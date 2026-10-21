@@ -69,7 +69,7 @@ const arrange = () => {
       [eli.id, [penalties(eli.id, 'in-pen-eli')]],
     ]),
   );
-  pulseRead.read.mockResolvedValue(pulseOf([{ id: 'movement-decline', headline: '2 players are scoring higher than their previous three rounds', evidence: 'Jonah Okafor +2.1', tone: 'attention', weight: 80 }]));
+  pulseRead.read.mockResolvedValue(pulseOf([{ id: 'movement-decline', headline: '2 players are scoring worse over their last three rounds', evidence: 'Jonah Okafor +2.1', tone: 'attention', weight: 80 }]));
   tables.current = {
     golf_team_members: { data: [{ player_id: jonah.id }, { player_id: eli.id }] },
     golf_players: {

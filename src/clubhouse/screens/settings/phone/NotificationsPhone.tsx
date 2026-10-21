@@ -2,18 +2,23 @@
 
 import { useState } from 'react';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
-import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChSettingsData, type ChSettingsWrites } from '../model';
+import { channelsFor, ROUTING_GROUPS, ROUTING_QUIET_EXEMPT, type ChDevice, type ChNativePush, type ChSettingsData, type ChSettingsWrites } from '../model';
 import { useDelivery, usePushToggle, useRouting, useTestPush } from '../hooks';
 import { DELIVERY_GROUPS } from '../Notifications';
 import { EmailPaused, ReadFailed, ReadsFailed } from '../parts';
 import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
-import { ActionRow, Group, NavRow, SwitchRow } from './ui';
+import { ActionRow, Group, InfoRow, NavRow, SwitchRow } from './ui';
 
 /**
  * Notifications on the phone: the notification matrix becomes one row per kind of update, which opens a sheet with
- * its switches and shows what is on ("In app, Push") on the row. Same saves and catalog numbers as desktop.
+ * its switches and shows what is on ("In app, push") on the row. Same saves and catalog numbers as desktop.
  */
+/** What is on, as a row reads it in sentence case: "Email, push", "In app, push (some)"; "Off" when nothing is. */
+function onList(on: string[]): string {
+  return on.length ? on.map((l, i) => (i ? l.charAt(0).toLowerCase() + l.slice(1) : l)).join(', ') : 'Off';
+}
+
 export function NotificationsPhone({ data, writes, device }: { data: ChSettingsData; writes: ChSettingsWrites; device: ChDevice }) {
   const failed = notificationReadsFailed(data);
   const covered = failed.length > 1;
@@ -62,11 +67,14 @@ function DeliveryPhone({
   const [kind, setKind] = useState<string | null>(null);
   const open = DELIVERY_GROUPS.find((g) => g.id === kind);
   const denied = push.status === 'denied';
+  const native = device.nativePush;
+  // Push is off on this device: the app's own push in the iOS app, the browser's elsewhere.
+  const offHere = native ? native.status !== 'granted' : push.status !== 'unsupported' && push.status !== 'subscribed';
   const silenced = (exempt: boolean) => quiet && !exempt;
   const summary = (g: (typeof DELIVERY_GROUPS)[number]) => {
     if (silenced(g.quietExempt)) return 'Paused';
-    const on = [p[g.emailKey] && 'Email', g.pushKey && p[g.pushKey] && 'Push'].filter(Boolean);
-    return on.length ? on.join(', ') : 'Off';
+    const on = [p[g.emailKey] && 'Email', g.pushKey && p[g.pushKey] && 'Push'].filter((l): l is string => !!l);
+    return onList(on);
   };
 
   return (
@@ -76,7 +84,9 @@ function DeliveryPhone({
         <SwitchRow label="Quiet mode" checked={quiet} busy={pending.has('quiet_mode')} onChange={flip('quiet_mode', 'quiet mode')} />
       </Group>
 
-      {push.status !== 'unsupported' && (
+      {native ? (
+        <NativePushGroup push={native} />
+      ) : push.status !== 'unsupported' && (
         <Group title="This device">
           <SwitchRow
             label="Push on this device"
@@ -91,7 +101,7 @@ function DeliveryPhone({
         </Group>
       )}
 
-      <Group title="Email and push" note={push.status !== 'unsupported' && push.status !== 'subscribed' ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
+      <Group title="Email and push" note={offHere ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
         {DELIVERY_GROUPS.map((g) => (
           <NavRow key={g.id} label={g.label} value={summary(g)} onClick={() => setKind(g.id)} />
         ))}
@@ -157,6 +167,38 @@ function DeliveryPhone({
   );
 }
 
+/**
+ * This device in the iOS app (CH-8902, CH-8903; docs/clubhouse/phone/push-opt-in.md): before iOS has asked, a switch
+ * that shows its prompt; after, what iOS says, which only its Settings app changes, and the way there. No "Send a
+ * test": the test route sends web push only.
+ */
+function NativePushGroup({ push }: { push: ChNativePush }) {
+  if (push.status === 'granted' || push.status === 'denied') {
+    const on = push.status === 'granted';
+    return (
+      <Group title="This device" code="CH-8903">
+        <InfoRow
+          label="Push on this device"
+          value={on ? 'On' : 'Off'}
+          help={on ? 'Turn it off in iOS Settings.' : 'Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.'}
+        />
+        {push.openSettings && <ActionRow label="Open iOS Settings" onClick={push.openSettings} />}
+      </Group>
+    );
+  }
+  return (
+    <Group title="This device" code="CH-8902">
+      <SwitchRow
+        label="Push on this device"
+        checked={false}
+        disabled={push.status === 'checking'}
+        busy={push.pending || push.status === 'checking'}
+        onChange={(v) => v && void push.turnOn()}
+      />
+    </Group>
+  );
+}
+
 const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
   { key: 'in_app', label: 'In app' },
   { key: 'push', label: 'Push' },
@@ -189,7 +231,7 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
       const { state } = channelState(r.prefs, cats, c.key);
       return state === 'all' ? [c.label] : state === 'some' ? [`${c.label} (some)`] : [];
     });
-    return on.length ? on.join(', ') : 'Off';
+    return onList(on);
   };
 
   return (

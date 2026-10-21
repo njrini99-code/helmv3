@@ -23,6 +23,7 @@ import {
   monthCells,
   monthName,
   rangeLabel,
+  startLabel,
   addDays,
   type ChCalEvent,
   type ChCalPerson,
@@ -35,13 +36,18 @@ export { TYPE_ICON };
 export interface ChNow {
   date: string;
   hour: number;
+  /** The instant itself, once the browser's clock is read (absent on the server's first render and in a frozen preview). */
+  ms?: number;
 }
 
-/** What a block says. A class shown as Busy never leaks its title or room. */
-export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>): string {
+/**
+ * What a block says. A class shown as Busy never leaks its title or room. A class is named for whose it is ("Priya ·
+ * STAT 201"), except the viewer's own (`viewerId`): a player's own class is just "ECON 101".
+ */
+export function eventTitle(e: ChCalEvent, people: Map<string, ChCalPerson>, viewerId?: string | null): string {
   if (e.type === 'busy') return `Busy · ${e.title}`;
   if (e.type !== 'class') return e.title;
-  const first = e.owner ? people.get(e.owner)?.name.split(' ')[0] : null;
+  const first = e.owner && e.owner !== viewerId ? people.get(e.owner)?.name.split(' ')[0] : null;
   if (e.busyOnly) return first ? `${first} · Busy` : 'Busy';
   return first ? `${first} · ${e.title}` : e.title;
 }
@@ -74,6 +80,12 @@ export function clashesAt(e: ChCalEvent, to: ChMoveTarget, events: ChCalEvent[])
 
 const byStart = (a: ChCalEvent, b: ChCalEvent) => (a.allDay ? -1 : (a.start ?? 0)) - (b.allDay ? -1 : (b.start ?? 0));
 
+/** An event that has ended: on a day before today, or today with its end at or before now. */
+export function isPastEvent(e: ChCalEvent, now: ChNow): boolean {
+  if (e.date < now.date) return true;
+  return e.date === now.date && !e.allDay && e.end != null && e.end <= now.hour;
+}
+
 function EventBlock({
   e,
   lane,
@@ -81,11 +93,13 @@ function EventBlock({
   sel,
   flagged,
   people,
+  viewerId,
   onSelect,
   from,
   to,
   drag,
   state,
+  past = false,
 }: {
   e: ChCalEvent;
   lane: number;
@@ -93,6 +107,8 @@ function EventBlock({
   sel: boolean;
   flagged: boolean;
   people: Map<string, ChCalPerson>;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
   onSelect: (id: string) => void;
   /** The grid's first and last hour. */
   from: number;
@@ -101,6 +117,8 @@ function EventBlock({
   drag?: { onPointerDown: (ev: PointerEvent<HTMLButtonElement>) => void; onNudge: (dir: 1 | -1) => void; moved: () => boolean };
   /** While a block is dragged: it is the one held (`held`), the ghost where it would land (`ghost`), or a clash (`clash`). */
   state?: 'held' | 'ghost' | 'clash';
+  /** It has ended: it steps back so what is still to come reads first (it comes forward on hover, focus and selection). */
+  past?: boolean;
 }) {
   const start = Math.max(e.start!, from);
   const end = Math.min(e.end!, to);
@@ -113,8 +131,14 @@ function EventBlock({
   const step = lanes > 1 ? Math.min(46, 70 / (lanes - 1)) : 0;
   const left = step * lane;
   const shared = lanes > 1;
-  const title = eventTitle(e, people);
-  const meta = short || shared ? fmtHour(e.start!, false) : rangeLabel(e) + (h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : '');
+  const title = eventTitle(e, people, viewerId);
+  // The time in parts, each kept whole: the block shows as many as fit on its one line (calendar.css, .ch-ev__m--fit),
+  // so a narrow block reads "8:00 AM" and a narrower one "8:00", never a cut "8:00 – 9:…" or a bare start where AM or PM
+  // fits. The start carries its half, so a range reads "8:00 AM – 9:30 AM". A short block gives only its start; a day
+  // of a run over several days keeps rangeLabel's one phrase ("From 8:00 AM").
+  const timed = !e.allDay && !(e.span?.start != null && e.span.end != null && e.date);
+  const when = timed ? [fmtHour(e.start!, false), e.start! < 12 ? ' AM' : ' PM', ...(short ? [] : [` – ${fmtHour(e.end!)}`])] : [rangeLabel(e)];
+  const where = !shared && h > 70 && e.location && !e.busyOnly ? ` · ${e.location}` : null;
   // P006 D2: a block on its own wraps its title to the lines its height leaves above the time (padding 12, gap 2, time 15;
   // a title line is 15.6), at most three, so "Bus to Pinehurst" isn't cut to "Bus to Pine…" in a block with room.
   // One line keeps the plain cut-off, which shows more of the title than a word-wrapped clamp.
@@ -125,9 +149,9 @@ function EventBlock({
       type="button"
       data-print-visible
       // CH-6801: a button named with its title, time and any overlap. CH-6601: it lifts on hover and marks its selection.
-      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}`}
+      className={`ch-ev ch-ev--${e.type}${short ? ' ch-ev--short' : ''}${shared ? ' ch-ev--lane' : ''}${lines ? ' ch-ev--wrap' : ''}${sel ? ' is-sel' : ''}${drag ? ' is-draggable' : ''}${state ? ` is-${state}` : ''}${past && !state ? ' is-past' : ''}`}
       style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: state === 'ghost' ? 6 : shared ? lane + 1 : undefined, ...(lines ? { '--ch-ev-lines': lines } : {}) } as CSSProperties}
-      aria-label={`${title}, ${rangeLabel(e)}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
+      aria-label={`${title}, ${rangeLabel(e)}${past && !state ? ', ended' : ''}${flagged ? ', schedule overlap' : ''}${drag ? '. Alt and the arrow keys move it 15 minutes' : ''}`}
       aria-pressed={sel}
       aria-hidden={state === 'ghost' || undefined}
       tabIndex={state === 'ghost' ? -1 : undefined}
@@ -148,7 +172,12 @@ function EventBlock({
       }}
     >
       <span className="ch-ev__t">{title}</span>
-      <span className="ch-ev__m">{meta}</span>
+      <span className="ch-ev__m ch-ev__m--fit">
+        {when.map((part, i) => (
+          <span key={i}>{part}</span>
+        ))}
+        {where && <span>{where}</span>}
+      </span>
       {flagged && !short && (
         <span className="ch-ev__warn" aria-hidden="true">
           <Icon icon={TriangleAlert} size={10} />
@@ -170,10 +199,13 @@ export function TimeGrid({
   onMove,
   daylight,
   coach = false,
+  viewerId,
 }: {
   dates: string[];
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
   now: ChNow;
   selId: string | null;
   flagged: Set<string>;
@@ -295,7 +327,7 @@ export function TimeGrid({
                     }}
                   >
                     <Icon icon={TYPE_ICON[e.type]} size={12} />
-                    <span>{eventTitle(e, people)}</span>
+                    <span>{eventTitle(e, people, viewerId)}</span>
                   </button>
                 ))}
             </div>
@@ -316,8 +348,10 @@ export function TimeGrid({
         {dates.map((d) => {
           const laid = layoutLanes(groupClasses(events.filter((e) => !e.allDay && e.date === d && e.start != null && e.end != null)));
           return (
-            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : '')}>
+            <div key={d} className={'ch-wk__col' + (d === now.date ? ' is-today' : d < now.date ? ' is-past' : '')}>
               {daylight && <Daylight dl={daylight(d)} from={from} to={to} label={d === dates[dates.length - 1]} />}
+              {/* Today's hours behind the now line take the past days' wash, so the day reads from the line down. */}
+              {d === now.date && nowVisible && <span className="ch-wk__gone" aria-hidden="true" style={{ height: (now.hour - from) * CAL_HH }} />}
               {laid.map((l) => {
                 const g = l.e;
                 if (isClassGroup(g)) return <ClassGroupBlock key={g.id} g={g} lane={l.lane} lanes={l.lanes} selId={selId} people={people} onSelect={onSelect} from={from} to={to} />;
@@ -330,17 +364,19 @@ export function TimeGrid({
                     sel={selId === g.id}
                     flagged={flagged.has(g.id)}
                     people={people}
+                    viewerId={viewerId}
                     onSelect={onSelect}
                     from={from}
                     to={to}
                     drag={dragFor(g)}
                     state={drag?.e.id === g.id ? 'held' : clashes?.has(g.id) ? 'clash' : undefined}
+                    past={isPastEvent(g, now)}
                   />
                 </EventPeek>
                 );
               })}
               {drag && drag.to.date === d && (
-                <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} onSelect={() => {}} from={from} to={to} state="ghost" />
+                <EventBlock e={{ ...drag.e, date: d, start: drag.to.start, end: drag.to.end }} lane={0} lanes={1} sel={false} flagged={false} people={people} viewerId={viewerId} onSelect={() => {}} from={from} to={to} state="ghost" />
               )}
               {d === now.date && nowVisible && (
                 <div className="ch-wk__now" /* CH-6603: the current time, a line across today */ style={{ top: (now.hour - from) * CAL_HH }} role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
@@ -406,7 +442,7 @@ export function MonthView({
               key={date}
               type="button"
               data-print-visible
-              className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : '') + (date === selDate ? ' is-sel' : '')}
+              className={'ch-mo__cell' + (out ? ' is-out' : '') + (date === now.date ? ' is-today' : !out && date < now.date ? ' is-past' : '') + (date === selDate ? ' is-sel' : '')}
               aria-label={`${dowOf(date)} ${dayNum(date)} ${monthName(date)}: ${evs.length ? `${evs.length} ${evs.length === 1 ? 'event' : 'events'}` : 'no events'}`}
               aria-pressed={date === selDate}
               onClick={() => {
@@ -437,6 +473,7 @@ export function AgendaView({
   selId,
   flagged,
   onSelect,
+  viewerId,
 }: {
   events: ChCalEvent[];
   people: Map<string, ChCalPerson>;
@@ -444,6 +481,8 @@ export function AgendaView({
   selId: string | null;
   flagged: Set<string>;
   onSelect: (id: string) => void;
+  /** The signed-in player: their own class is titled without their name. */
+  viewerId?: string | null;
 }) {
   const [early, setEarly] = useState(false);
   const days = [...new Set(events.map((e) => e.date))].sort();
@@ -487,12 +526,12 @@ export function AgendaView({
               }}
             >
               <span className="ch-ag__t">
-                {e.allDay ? 'All day' : fmtHour(e.start!)}
+                {startLabel(e)}
                 {!e.allDay && <span>{fmtHour(e.end!)}</span>}
               </span>
               <span className={`ch-ag__dot ch-dot-${e.type}`} aria-hidden="true" />
               <span style={{ minWidth: 0 }}>
-                <span className="ch-ag__a">{e.type === 'class' && e.owner && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people)}</span>
+                <span className="ch-ag__a">{e.type === 'class' && e.owner && e.owner !== viewerId && people.get(e.owner) ? `${people.get(e.owner)!.name} · ${e.title}` : e.type === 'busy' ? e.title : eventTitle(e, people, viewerId)}</span>
                 <span className="ch-ag__b">
                   {e.type === 'busy' ? 'Your busy time · only you see it' : TYPE_LABEL[e.type]}
                   {e.location && !e.busyOnly ? ` · ${e.location}` : ''}

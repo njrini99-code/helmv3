@@ -50,6 +50,12 @@ authentication test.
 | Test | Result |
 | --- | --- |
 | `auth.test.tsx`, `auth-logic.test.ts`, `auth-server.test.tsx`, `auth-scene.test.tsx` (sign in and the welcome) | pass |
+| `auth-reset.test.tsx` (2026-10-19: the new-password page: the link verified once, the rules and refusals, CH-15030 to CH-15133, CH-15430, CH-15431, CH-15930 to CH-15932; `describeResetFailure` and the Supabase calls held to today's page) | pass (14) |
+| `auth-join.test.tsx` (2026-10-19: the code field's typing, paste, Backspace and growth; `/golf/join`, the confirm, already-a-member, another team, the wrong account and an invalid code, CH-15032, CH-15033, CH-15140, CH-15141, CH-15432, CH-15436, CH-15933 to CH-15939) | pass (15) |
+| `auth-staff.test.tsx` (2026-10-19: an invalid invitation, accept, create, the wrong account, an account made without its staff row; CH-15034, CH-15142, CH-15433, CH-15940 to CH-15946) | pass (11) |
+| `auth-demo-pending.test.tsx` (2026-10-19: the demo's checks, ref, destination and refusals, and waiting for approval: Check again, the minute's look, sign out; CH-15036, CH-15143, CH-15435, CH-15960 to CH-15972) | pass (12) |
+| `onboard-coach.test.tsx` (2026-10-19: the coach path, its draft key, the program's questions, the action's fields, the code, the guard; CH-15035, CH-15143, CH-15950 to CH-15953) | pass (18) |
+| `front-door-routes.test.tsx` (2026-10-19: the layouts and pages that choose Fairway or Clubhouse; flag off is today's page, flag on is Clubhouse's, and a client page's children are never replaced) | pass (7) |
 | `auth-credentials.test.ts` (Q-98: the server's wrong-password text reads as the design's, attempts kept) | pass |
 | `auth-forgot.test.tsx` (2026-10-07: the reset form and check your email in the panel, CH-15020 to CH-15922, and a guard that today's reset page and the panel keep the same rules and words) | pass (8) |
 | `auth.test.tsx` › the sign-in micro-motion (2026-10-07: CH-15607 to CH-15611, including the glide's WebKit offsetParent case) | pass (6) |
@@ -60,6 +66,35 @@ authentication test.
 | `src/components/auth/golf-sign-in-form.test.tsx` and `src/test/auth` (today's form unchanged) | pass |
 
 ## Looked at
+
+- 2026-10-19, headless WebKit at 390x844 (touch) and 1280x900, light and dark, reduced motion,
+  `/clubhouse-preview/auth` (`screen=reset|join|joinconfirm|staff|pending|demo`) and `/clubhouse-preview/onboard`
+  (`step=cprogram|cprofile|cdone`): every state the new screens draw, looked at as contact sheets and then opened where
+  anything looked off (Screenshots, below, files the evidence set).
+  - Final set (the last code): all 48 states in the list below, each at 390 and 1280 in light and in dark (192 captures), read as
+    contact sheets of six (phone) and eight (desktop) states with light over dark. The Next dev badge in the corner and the
+    "Compiling" pill in two captures are the dev server's, not the page.
+  - The new-password page in every stage (checking, the form, the other-account line, a field refusal, a mismatch, a
+    banner, expired, sent, saved); the team code empty, partly and fully typed, ten characters and too short; the confirm,
+    long names, already on this team, another team, a refused join and a code that names no team; the staff invitation
+    signed in, signed out, with a field problem, the wrong account, an account made without its staff row, expired, not
+    valid, a program admin's and joined; waiting for approval (waiting, checked, no program name, a failed sign out); the
+    demo (checking, form, invite address, timed out, a problem, refused, already signed in); the new coach's questions
+    empty and filled, the profile, and the code with and without one.
+  - In WebKit with motion on, scripted: the reset flow end to end against fakes (check, type, rules 4 of 4, Save, "Password
+    updated"); the team code typed, a link-like paste cleaned to the code, Backspace, Enter to the confirm, Join to "You're
+    on Varsity Golf". No page error or console error. A first run typed into the code before the page was listening: the
+    text sat in the DOM, Enter submitted the page natively and the boxes stayed empty. Fixed the way sign in's is (#1245):
+    what is typed is taken up at mount and the key waits for it.
+  - The real routes on the dev server with the flag on (headless WebKit, 390): `/golf/reset-password?token_hash=bogus`
+    lands on "This link has expired" (the check ran against the local auth server); `/golf/demo`, `/golf/join` and
+    `/golf/staff/join/not-a-token` draw their Clubhouse screens; `/golf/coach` signed out goes to sign in;
+    `/golf/join/ABC12345` signed out goes to `/golf/signup?returnTo=/golf/join/ABC12345`, which opens "You've been
+    invited to a team" with the code carried.
+  - Not done: a physical iPhone (keyboard, safe areas, haptics), Safari, VoiceOver, a real reset email, a real team, a real
+    staff invitation or a real coach sign-up (there is one database, and it is production). The dark theme on the real
+    routes: `ThemeScript` only boots the theme on a short list of paths (login, forgot and reset password, welcome), so
+    `/golf/join`, `/golf/staff/join`, `/golf/coach` and `/golf/demo` follow the device's theme only after the app applies it.
 
 - 2026-10-07, WebKit at 1440x900 and 390x844 (touch), preview: every sign-in state
   and welcome state before and after the polish pass.
@@ -189,6 +224,66 @@ before, after, baseline or evidence.
 | `P015__signup__none__390x844__account__after__e107280.png` | after | `e107280` | After: "3 of 5" over a hairline filled to the same point (CH-15622) |
 | `P015__signup__none__390x844__done-joinfail__before__fbdd6ee.png` | before | `fbdd6ee` | Before: "Enter a team code" in the link's green on the green key, unreadable |
 | `P015__signup__none__390x844__done-joinfail__after__e107280.png` | after | `e107280` | After: the key's word in its own ivory |
+| `P015__coach-onboarding__none__1280x900__done__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 1280x900px, done |
+| `P015__coach-onboarding__none__1280x900__done-dark__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 1280x900px, done-dark |
+| `P015__coach-onboarding__none__1280x900__profile__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 1280x900px, profile |
+| `P015__coach-onboarding__none__1280x900__program__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 1280x900px, program |
+| `P015__coach-onboarding__none__1280x900__program-dark__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 1280x900px, program-dark |
+| `P015__coach-onboarding__none__390x844__done__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 390x844px, done |
+| `P015__coach-onboarding__none__390x844__done-dark__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 390x844px, done-dark |
+| `P015__coach-onboarding__none__390x844__profile__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 390x844px, profile |
+| `P015__coach-onboarding__none__390x844__program__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 390x844px, program |
+| `P015__coach-onboarding__none__390x844__program-dark__after__667ce28.png` | after | 667ce28 | coach-onboarding (none), 390x844px, program-dark |
+| `P015__coach-pending__none__1280x900__checked__after__667ce28.png` | after | 667ce28 | coach-pending (none), 1280x900px, checked |
+| `P015__coach-pending__none__1280x900__waiting__after__667ce28.png` | after | 667ce28 | coach-pending (none), 1280x900px, waiting |
+| `P015__coach-pending__none__1280x900__waiting-dark__after__667ce28.png` | after | 667ce28 | coach-pending (none), 1280x900px, waiting-dark |
+| `P015__coach-pending__none__390x844__checked__after__667ce28.png` | after | 667ce28 | coach-pending (none), 390x844px, checked |
+| `P015__coach-pending__none__390x844__waiting__after__667ce28.png` | after | 667ce28 | coach-pending (none), 390x844px, waiting |
+| `P015__coach-pending__none__390x844__waiting-dark__after__667ce28.png` | after | 667ce28 | coach-pending (none), 390x844px, waiting-dark |
+| `P015__demo-entry__none__1280x900__form__after__667ce28.png` | after | 667ce28 | demo-entry (none), 1280x900px, form |
+| `P015__demo-entry__none__1280x900__form-dark__after__667ce28.png` | after | 667ce28 | demo-entry (none), 1280x900px, form-dark |
+| `P015__demo-entry__none__1280x900__problem__after__667ce28.png` | after | 667ce28 | demo-entry (none), 1280x900px, problem |
+| `P015__demo-entry__none__390x844__form__after__667ce28.png` | after | 667ce28 | demo-entry (none), 390x844px, form |
+| `P015__demo-entry__none__390x844__form-dark__after__667ce28.png` | after | 667ce28 | demo-entry (none), 390x844px, form-dark |
+| `P015__demo-entry__none__390x844__problem__after__667ce28.png` | after | 667ce28 | demo-entry (none), 390x844px, problem |
+| `P015__join-code__none__1280x900__empty__after__667ce28.png` | after | 667ce28 | join-code (none), 1280x900px, empty |
+| `P015__join-code__none__1280x900__filled__after__667ce28.png` | after | 667ce28 | join-code (none), 1280x900px, filled |
+| `P015__join-code__none__1280x900__filled-dark__after__667ce28.png` | after | 667ce28 | join-code (none), 1280x900px, filled-dark |
+| `P015__join-code__none__1280x900__too-short__after__667ce28.png` | after | 667ce28 | join-code (none), 1280x900px, too-short |
+| `P015__join-code__none__390x844__empty__after__667ce28.png` | after | 667ce28 | join-code (none), 390x844px, empty |
+| `P015__join-code__none__390x844__filled__after__667ce28.png` | after | 667ce28 | join-code (none), 390x844px, filled |
+| `P015__join-code__none__390x844__filled-dark__after__667ce28.png` | after | 667ce28 | join-code (none), 390x844px, filled-dark |
+| `P015__join-code__none__390x844__too-short__after__667ce28.png` | after | 667ce28 | join-code (none), 390x844px, too-short |
+| `P015__join-confirm__none__1280x900__another-team__after__667ce28.png` | after | 667ce28 | join-confirm (none), 1280x900px, another-team |
+| `P015__join-confirm__none__1280x900__confirm__after__667ce28.png` | after | 667ce28 | join-confirm (none), 1280x900px, confirm |
+| `P015__join-confirm__none__1280x900__confirm-dark__after__667ce28.png` | after | 667ce28 | join-confirm (none), 1280x900px, confirm-dark |
+| `P015__join-confirm__none__1280x900__invalid-code__after__667ce28.png` | after | 667ce28 | join-confirm (none), 1280x900px, invalid-code |
+| `P015__join-confirm__none__390x844__another-team__after__667ce28.png` | after | 667ce28 | join-confirm (none), 390x844px, another-team |
+| `P015__join-confirm__none__390x844__confirm__after__667ce28.png` | after | 667ce28 | join-confirm (none), 390x844px, confirm |
+| `P015__join-confirm__none__390x844__confirm-dark__after__667ce28.png` | after | 667ce28 | join-confirm (none), 390x844px, confirm-dark |
+| `P015__join-confirm__none__390x844__invalid-code__after__667ce28.png` | after | 667ce28 | join-confirm (none), 390x844px, invalid-code |
+| `P015__reset-password__none__1280x900__expired__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, expired |
+| `P015__reset-password__none__1280x900__form__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, form |
+| `P015__reset-password__none__1280x900__form-dark__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, form-dark |
+| `P015__reset-password__none__1280x900__form-other-account__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, form-other-account |
+| `P015__reset-password__none__1280x900__form-refused__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, form-refused |
+| `P015__reset-password__none__1280x900__saved__after__667ce28.png` | after | 667ce28 | reset-password (none), 1280x900px, saved |
+| `P015__reset-password__none__390x844__expired__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, expired |
+| `P015__reset-password__none__390x844__form__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, form |
+| `P015__reset-password__none__390x844__form-dark__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, form-dark |
+| `P015__reset-password__none__390x844__form-other-account__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, form-other-account |
+| `P015__reset-password__none__390x844__form-refused__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, form-refused |
+| `P015__reset-password__none__390x844__saved__after__667ce28.png` | after | 667ce28 | reset-password (none), 390x844px, saved |
+| `P015__staff-invite__none__1280x900__accept__after__667ce28.png` | after | 667ce28 | staff-invite (none), 1280x900px, accept |
+| `P015__staff-invite__none__1280x900__create__after__667ce28.png` | after | 667ce28 | staff-invite (none), 1280x900px, create |
+| `P015__staff-invite__none__1280x900__create-dark__after__667ce28.png` | after | 667ce28 | staff-invite (none), 1280x900px, create-dark |
+| `P015__staff-invite__none__1280x900__invalid__after__667ce28.png` | after | 667ce28 | staff-invite (none), 1280x900px, invalid |
+| `P015__staff-invite__none__1280x900__wrong-account__after__667ce28.png` | after | 667ce28 | staff-invite (none), 1280x900px, wrong-account |
+| `P015__staff-invite__none__390x844__accept__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, accept |
+| `P015__staff-invite__none__390x844__create__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, create |
+| `P015__staff-invite__none__390x844__create-dark__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, create-dark |
+| `P015__staff-invite__none__390x844__invalid__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, invalid |
+| `P015__staff-invite__none__390x844__wrong-account__after__667ce28.png` | after | 667ce28 | staff-invite (none), 390x844px, wrong-account |
 
 ## Historical verification gaps
 

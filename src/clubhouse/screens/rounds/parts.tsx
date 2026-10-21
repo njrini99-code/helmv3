@@ -6,18 +6,19 @@ import { ArrowRight, Trash2 } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsSeason, ChRoundType, ChTeeColor, ChUnfinishedRound } from '../../data/rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { useInViewOnce } from '../../lib/use-in-view';
 import { InlineNotice } from '../../ui/Notices';
+import { withPointSpan } from '../../ui/point-span';
+import type { ContextMenuBind } from '../../ui/ContextMenu';
 import { Icon } from '../../ui/Icon';
+import { Tooltip } from '../../ui/Tooltip';
 
-/** A calendar date (yyyy-mm-dd) as a Date at noon UTC, so no zone moves it a day. */
-export const dateOf = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`);
+import { dateOf, TYPE_LABEL } from './labels';
+
+export { dateOf, TYPE_LABEL };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
 export const monthLabel = (iso: string) => fmt({ month: 'long', year: 'numeric' }).format(dateOf(iso));
 export const shortDay = (iso: string) => fmt({ month: 'short', day: 'numeric' }).format(dateOf(iso));
 const dow = (iso: string) => fmt({ weekday: 'short' }).format(dateOf(iso));
-
-export const TYPE_LABEL: Record<ChRoundType, string> = { practice: 'Practice', tournament: 'Tournament', qualifier: 'Qualifier' };
 
 export function TeeSwatch({ color }: { color: ChTeeColor | null }) {
   return color ? <i className={`ch-rd-tee ch-rd-tee--${color}`} aria-hidden="true" /> : null;
@@ -79,6 +80,7 @@ export function UnfinishedCard({
   onRetry,
   retrying = false,
   onDiscard,
+  menu,
 }: {
   round: ChUnfinishedRound | null;
   error: boolean;
@@ -92,6 +94,8 @@ export function UnfinishedCard({
   /** The retry is in flight (`useRefresh().refreshing`). */
   retrying?: boolean;
   onDiscard: (r: ChUnfinishedRound) => void;
+  /** The round's right-click menu handlers (ui/ContextMenu.tsx); the round in progress only. */
+  menu?: ContextMenuBind;
 }) {
   if (error) {
     return (
@@ -123,7 +127,7 @@ export function UnfinishedCard({
             )}
           </span>
           {startHref && (
-            // CH-11703: Start a round, Continue and Submit are primary taps (light).
+            // CH-11703: Start a round, Continue and Post round are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               Start a round
               <Icon icon={ArrowRight} size={15} />
@@ -135,13 +139,13 @@ export function UnfinishedCard({
   }
   const started = round.date === todayIso ? 'Today' : shortDay(round.date);
   const thru = round.played.length;
-  const cta = round.readyToSubmit ? 'Submit round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
+  const cta = round.readyToSubmit ? 'Post round' : round.nextHole ? `Continue at hole ${round.nextHole}` : 'Continue';
   return (
-    <div className="ch-rd-unf">
+    <div className="ch-rd-unf" {...menu}>
       <div className="ch-rd-unf__top">
         <span className="ch-rd-unf__k">
           <i />
-          {round.readyToSubmit ? 'Ready to submit' : 'In progress'}
+          {round.readyToSubmit ? 'Ready to post' : 'In progress'}
         </span>
         <span className="ch-rd-unf__t">{started}</span>
       </div>
@@ -153,7 +157,7 @@ export function UnfinishedCard({
         <InlineNotice
           code="CH-11215"
           title="Couldn’t check whether this round was already posted"
-          body="Every hole is scored, but your posted rounds didn’t load, so Submit isn’t offered here yet. Try again."
+          body="Every hole is scored, but your posted rounds didn’t load, so Post round isn’t offered here yet. Try again."
           onRetry={onRetry}
           retrying={retrying}
         />
@@ -169,9 +173,11 @@ export function UnfinishedCard({
           )}
         </span>
         <span className="ch-rd-unf__acts">
-          <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
-            <Icon icon={Trash2} size={14} />
-          </button>
+          <Tooltip>
+            <button type="button" className="ch-rd-unf__discard" data-ch-press="" onClick={() => onDiscard(round)} aria-label={`Discard the round at ${round.course}`}>
+              <Icon icon={Trash2} size={14} />
+            </button>
+          </Tooltip>
           {continueHref && (
             <Link href={continueHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
               {cta}
@@ -185,9 +191,11 @@ export function UnfinishedCard({
 }
 
 /**
- * Strokes over par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). CH-11803: one labelled
- * image; each bar has a title. Move across it (or touch it) and the round reads out on a card; the bars rise from the par line once,
- * the first time the chart is scrolled into view (`.is-in` on the stage that holds it, rounds.css).
+ * Strokes against par for each round, oldest to newest, against the dashed average (rounds-flow.jsx `Ribbon`). Better is up, the one
+ * scoring-axis convention (stats visuals Q1): a round under par rises above the par line, one over par hangs below it, and the ticks keep
+ * their real values (+2 below Par, −1 above). CH-11803: one labelled
+ * image; each bar has a title. Move across it (or touch it) and the round reads out on a card. The bars are drawn in place at first paint (Q-139: no
+ * first-paint draw-ins); a bar glides only when its round changes.
  */
 export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeason['ribbon']; avg: number; compact?: boolean }) {
   const id = useId();
@@ -202,10 +210,11 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
     R = compact ? 76 : 100,
     u = Math.min(20, 160 / (maxOver + maxUnder)),
     top = 20;
-  const base = top + maxOver * u;
-  const H = base + maxUnder * u + 40;
+  // Better is up: under par above the line, over par below it. The space under the deepest bar holds its score and the date.
+  const base = top + maxUnder * u;
+  const H = base + maxOver * u + 58;
   const bw = (W - L - R) / Math.max(rounds.length, 1);
-  const y = (d: number) => base - d * u;
+  const y = (d: number) => base + d * u;
   const step = maxOver + maxUnder > 12 ? 2 : 1;
   const ticks: number[] = [];
   for (let v = -maxUnder; v <= maxOver; v++) if (v % step === 0) ticks.push(v);
@@ -216,11 +225,12 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
     <div className="ch-rd-rib-w">
       <svg viewBox={`0 0 ${W} ${H}`} className="ch-rd-rib" role="img" aria-label={`Strokes over par for your last ${rounds.length} rounds, oldest to newest; average ${formatToPar(avg, 1)}`} onPointerLeave={() => setHover(null)}>
         <defs>
-          <linearGradient id={`${id}-u`} x1="0" y1="0" x2="0" y2="1">
+          {/* Each fill starts (its a stop) at the par line: an under-par bar rises from it, an over-par bar hangs from it. */}
+          <linearGradient id={`${id}-u`} x1="0" y1="1" x2="0" y2="0">
             <stop offset="0" stopColor="var(--ch-rd-under-a)" />
             <stop offset="1" stopColor="var(--ch-rd-under-b)" />
           </linearGradient>
-          <linearGradient id={`${id}-o`} x1="0" y1="1" x2="0" y2="0">
+          <linearGradient id={`${id}-o`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--ch-rd-over-a)" />
             <stop offset="1" stopColor="var(--ch-rd-over-b)" />
           </linearGradient>
@@ -244,7 +254,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
           const d = x.toPar;
           const cx = cxOf(i);
           const h = Math.max(3, Math.abs(d) * u);
-          const y0 = d >= 0 ? base - h : base;
+          const y0 = d > 0 ? base : base - h;
           // D3: one scoring language, red under par as everywhere else; a qualifier is a gilt outline on any bar.
           const cls = (d < 0 ? 'is-under' : d === 0 ? 'is-even' : 'is-over') + (x.type === 'qualifier' ? ' is-q' : '');
           return (
@@ -265,10 +275,11 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
                 width={bw * 0.52}
                 height={d === 0 ? 3 : h}
                 rx="4"
-                className={cls + ' ch-rd-rib__bar' + (d < 0 ? ' is-down' : '')}
+                className={cls + ' ch-rd-rib__bar' + (d > 0 ? ' is-down' : '')}
                 style={d < 0 ? { fill: `url(#${id}-u)` } : d > 0 ? { fill: `url(#${id}-o)` } : undefined}
               />
-              <text x={cx} y={base - (d >= 0 ? h : 0) - 7} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
+              {/* The score sits at the bar's far end: above a bar that rises, below one that hangs. */}
+              <text x={cx} y={d > 0 ? base + h + 15 : base - (d < 0 ? h : 0) - 7} textAnchor="middle" className={'ch-rd-rib__v' + (d < 0 ? ' is-under' : '')}>
                 {x.score}
               </text>
               {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
@@ -343,9 +354,10 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
           </dd>
         )}
         <dd className="ch-rd-fig__m">{season.best ? (
-            // D16: the whole course name, cut by the column's ellipsis rather than at its first word.
+            // D16: the whole course name, cut by the column's ellipsis rather than at its first word. It keeps its words
+            // on one line (rounds.css) and the separator ends that line, so a wrapped date never starts with "·".
             <>
-              <span className="ch-rd-fig__course">{season.best.course}</span> · {shortDay(season.best.date)}
+              <span className="ch-rd-fig__course">{season.best.course}</span>&nbsp;· {shortDay(season.best.date)}
             </>
           ) : (
             ''
@@ -362,8 +374,9 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
+        {/* A non-breaking hyphen: "two-" never ends a line on the phone (overnight polish, 2026-10-15). */}
         <dd className="ch-rd-fig__m">
-          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two-putting`}
+          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two‑putting`}
         </dd>
       </div>
       <div className="ch-rd-fig">
@@ -391,7 +404,8 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        <b className="ch-rd-season__none">Your season starts with your first 18-hole round</b>
+        {/* A non-breaking hyphen (U+2011), so the line never breaks "18- / hole". */}
+        <b className="ch-rd-season__none">Your season starts with your first {'18\u2011hole'} round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );
@@ -404,7 +418,7 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
             Season scoring
           </span>
           <div className="ch-rd-season__big">
-            <b className="ch-num">{formatFixed(season.avg, 1)}</b>
+            <b className="ch-num">{withPointSpan(formatFixed(season.avg, 1))}</b>
             <em>avg · {formatToPar(season.toPar, 1)} to par</em>
           </div>
         </div>
@@ -421,15 +435,14 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
  * The bars rise from the par line the first time the stage is scrolled into view, and not again.
  */
 function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon']; avg: number; phone: boolean }) {
-  const [ref, seen] = useInViewOnce<HTMLDivElement>();
   const under = ribbon.some((x) => x.toPar < 0);
   const q = ribbon.some((x) => x.type === 'qualifier');
   return (
-    <div ref={ref} className={'ch-rd-stage' + (seen ? ' is-in' : '')}>
+    <div className="ch-rd-stage">
       <div className="ch-rd-stage__h">
         <div className="ch-rd-season__ch">
           <b>Every round vs par</b>
-          <span>Above the line is over par, below it under · lower is better · the number on top is your score</span>
+          <span>↑ Lower is better · above the line is under par, below it over · the number at the bar’s end is your score</span>
         </div>
         <div className="ch-rd-season__lg">
           {under && (
@@ -462,8 +475,9 @@ function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon'];
 }
 
 /**
- * A month's rounds as a row of small bars, oldest to newest: taller is further over par, red is under it. It reads at a glance
- * whether the month trended down; the figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
+ * A month's rounds as a row of small bars, oldest to newest: taller is better (further under par, or less over it), red is under
+ * par; better is up, as the season ribbon above reads (stats visuals Q1). It reads at a glance whether the month trended up; the
+ * figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
   const pts = rounds.filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null).reverse();
@@ -473,7 +487,7 @@ export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
   return (
     <span className="ch-rd-grp__spark" aria-hidden="true">
       {pts.map((r) => (
-        <i key={r.id} className={r.toPar < 0 ? 'is-under' : undefined} style={{ height: `${hi === lo ? 55 : 24 + ((r.toPar - lo) / (hi - lo)) * 76}%` }} />
+        <i key={r.id} className={r.toPar < 0 ? 'is-under' : undefined} style={{ height: `${hi === lo ? 55 : 24 + ((hi - r.toPar) / (hi - lo)) * 76}%` }} />
       ))}
     </span>
   );
@@ -494,7 +508,7 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * CH-11801: one link (or one group) named for the round. CH-11702: opening it is a selection tap. CH-11601: on the
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
-export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void }) {
+export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -553,6 +567,7 @@ export function RoundRow({ r, href, onOpen }: { r: ChLibraryRound; href: string 
       href={href}
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
+      {...bind}
       onClick={(e) => {
         haptic('select');
         // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.

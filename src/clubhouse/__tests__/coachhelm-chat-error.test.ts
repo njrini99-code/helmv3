@@ -63,7 +63,7 @@ describe('Ask CoachHelm: what a failed request says (a copy of the PR 2105 mappi
   it('a rate limit reads as a sentence, and Try again is offered', async () => {
     const notice = describeChatError(await thrownFor(429, { error: 'Too many requests. Please slow down.' }));
     expect(notice).toEqual({ message: CHAT_ERROR_RATE_LIMIT, recovery: 'retry' });
-    expect(notice.message).toBe("You're asking quickly. Wait a moment, then try again.");
+    expect(notice.message).toBe("Too many questions in a row. Give it a few seconds and try again.");
   });
 
   it.each([

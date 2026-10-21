@@ -176,14 +176,20 @@ export async function flushPendingDeviceToken(): Promise<void> {
  * never hang or fail on token cleanup. On any failure the row simply stays
  * active (the pre-fix status quo for that one sign-out) and the next
  * launch's registration self-heals it.
+ *
+ * Returns when the deactivation has been answered (never rejects), so a
+ * caller can wait for it before ending the session: started and not waited
+ * for, the session could end first, the action's getUser() then refused it,
+ * and the row stayed active (security review, 2026-10-16). Callers that do
+ * not wait keep the old behaviour.
  */
-export function teardownDeviceTokenOnSignOut(): void {
+export function teardownDeviceTokenOnSignOut(): Promise<void> {
   const token = lastRegisteredDeviceToken ?? pendingDeviceToken;
-  if (!token) return; // web session, or push never registered this launch
+  if (!token) return Promise.resolve(); // web session, or push never registered this launch
   // Re-park FIRST so the next SIGNED_IN re-registers even if the network
   // request below never lands.
   pendingDeviceToken = token;
-  void import('@/app/golf/actions/push-notifications')
+  return import('@/app/golf/actions/push-notifications')
     .then(({ unregisterDeviceToken }) => unregisterDeviceToken(token.value))
     .then((result) => {
       if (!result.success) {
@@ -336,6 +342,23 @@ export async function shouldShowPushSoftAsk(): Promise<boolean> {
     return permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale';
   } catch {
     return false;
+  }
+}
+
+/**
+ * What iOS (or Android) says about push for this app, for a Settings row: `prompt` while it has never been asked,
+ * then `granted` or `denied`, which only the phone's Settings app can change. `unsupported` on the web, or when the
+ * plugin can't answer. A read only: it never prompts and never registers.
+ */
+export async function nativePushPermission(): Promise<'prompt' | 'granted' | 'denied' | 'unsupported'> {
+  if (!isNativeApp()) return 'unsupported';
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const { receive } = await PushNotifications.checkPermissions();
+    if (receive === 'granted' || receive === 'denied') return receive;
+    return 'prompt';
+  } catch {
+    return 'unsupported';
   }
 }
 

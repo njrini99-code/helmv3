@@ -69,13 +69,16 @@ describe('110115 setup: the starting hole', () => {
       </ToastProvider>,
     );
     const user = userEvent.setup();
-    expect(screen.queryByLabelText('Starting hole')).toBeNull();
+    // Shown before a course is picked so a shotgun start is findable, but it can't be set until the card's holes load.
+    expect(screen.getByLabelText('Starting hole')).toBeDisabled();
+    expect(screen.getByText('Shotgun start? Pick a course, then choose your first hole.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Browse courses/ }));
     await user.click(await within(code('CH-11510')!).findByRole('button', { name: /^Finley GC/ }));
     await user.click(await screen.findByRole('button', { name: /Play the Blue tees/ }));
     await waitFor(() => expect(screen.getByRole('region', { name: 'Scorecard' })).toBeInTheDocument());
 
     const select = screen.getByLabelText('Starting hole') as HTMLSelectElement;
+    expect(select).toBeEnabled();
     expect(select.value).toBe('1');
     expect(within(select).getAllByRole('option')).toHaveLength(18);
     const dock = document.getElementById('ch-rsu-dock-s')!;

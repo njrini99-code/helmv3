@@ -71,7 +71,7 @@ link), then the tab bar.
 `TopBar`, `Bell`, `TabBar` with the More sheet, `OfflineBanner`, `RouteFrame`
 (the navigation crossfade and the press), `NotRebuilt`, `NextEventCard`,
 `PhoneScreen` and `phone-chrome` (pushed screens, the page top), `crumbs`,
-`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `BrandTeamSwitch` in the
+`ClubhouseSwitch`, `TeamSwitch` (the team switcher: `TeamSwitch` in the
 sidebar, `MoreTeamSwitch` in the More sheet) with `team-switch` (the gate and
 the action).
 
@@ -199,9 +199,9 @@ blocks in `styles/shell.css`) now draws one family:
   with Try again first (it re-runs the page through `useRefresh`) and the
   offline line (CH-1905) above the actions when there is no connection. It is
   the same anatomy as the route error, not a fourth one.
-- **Skeletons**: a shade deeper on the parchment; on desktop Ledger pages a block
-  placeholder is a rule with two lines of type, never a filled card. Pages build
-  theirs from `Skeleton`, `SkelLine`, `SkelRows` and `SkelRule`.
+- **Skeletons**: a shade deeper on the parchment; on desktop Ledger pages a
+  block placeholder is a rule with two lines of type, never a filled card. Pages
+  build theirs from `Skeleton`, `SkelLine`, `SkelRows` and `SkelRule`.
 - **Titles** never end in a full stop (`stateTitle`).
 
 ### Decisions from the states audit
@@ -242,8 +242,9 @@ search source exists (PROGRESS data gaps). There is no dead control.
 
 `getUnifiedNotifications`, `markNotificationRead`, `markAllNotificationsRead`
 (`src/app/golf/actions/unified-notifications.ts`); `setActiveTeam`
-(`src/app/golf/actions/team-switcher.ts`, shared with Fairway); the badge context
-(`useNotificationBadges`); the shell loader's three reads. WIRING.md maps each.
+(`src/app/golf/actions/team-switcher.ts`, shared with Fairway); the badge
+context (`useNotificationBadges`); the shell loader's three reads. WIRING.md
+maps each.
 
 ## HELD requirements
 

@@ -7,7 +7,8 @@ import { submitGolfRoundComprehensive } from '@/app/golf/actions/round-submit';
 import { savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/round-partial';
 import { getPlayerQualifiers, getNextQualifierRoundNumber, type PlayerQualifierInfo } from '@/app/golf/actions/qualifier-actions';
 import { getPlayerSavedCourses, getRecentCoursesForPlayer, savePlayerCourse, touchSavedCourse, type SavedCourse, type SavedCourseHoleConfig, type RecentPlayedCourse } from '@/app/golf/actions/saved-courses';
-import { contributeCourseFromRound, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
+import { contributeCourseFromRound, getCourseDetail, setCourseImageUrl, type TeeRoundDefaults } from '@/app/golf/actions/course-library';
+import { discardCourseImageUpload, uploadCourseImage } from '@/lib/golf/upload-course-image';
 import { checkRoundStaleness, type TerminalRoundSubmissionData } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -116,6 +117,24 @@ export interface NewRoundSessionOptions {
  */
 function forgetQueuedRound(roundId: string): void {
   void Promise.resolve().then(() => deleteOfflineRound(roundId)).catch(() => {});
+}
+
+/**
+ * Upload a typed course's photo and set it on the library course, when that course has none. Best-effort.
+ * When the save is refused (`success: false`) the uploaded object is removed, so a refused save never leaves an
+ * orphan in the public bucket. A thrown or lost response keeps it: the save may have landed.
+ */
+export async function attachCourseImage(courseId: string, file: File): Promise<void> {
+  try {
+    const detail = await getCourseDetail(courseId);
+    if (!detail || detail.course.image_url) return;
+    const up = await uploadCourseImage(courseId, file);
+    if (!up.ok) return;
+    const res = await setCourseImageUrl(courseId, up.url);
+    if (!res.success) await discardCourseImageUpload(up.path);
+  } catch {
+    /* best-effort: a course photo never affects the round */
+  }
 }
 
 export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRoundClientProps & NewRoundSessionOptions) {
@@ -869,6 +888,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   // FK to golf_courses (resolved from saved course or server-side fallback)
   const resolvedCourseIdRef = useRef<string | null>(null);
+  // The course the server linked the round to at the start (a typed name the library matched; `savePartialRound`'s
+  // `courseId`). Read only by the course nudge (CoachHelm Slice 8b), so it is kept apart from `resolvedCourseIdRef`: that
+  // ref also gates the library contributions after a start, which must run exactly as before.
+  const [startLinkedCourseId, setStartLinkedCourseId] = useState<string | null>(null);
   // Cloud Course Library tee (golf_course_tees.id) when the round was started
   // from the tee picker. Cleared whenever a non-library course is chosen.
   const selectedTeeIdRef = useRef<string | null>(null);
@@ -1521,6 +1544,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       savedRoundIdRef.current = result.data.roundId;
       setSavedRoundId(result.data.roundId);
       if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+      setStartLinkedCourseId(result.data.courseId ?? null);
       // The round now exists server-side; Continue Round owns it from here.
       clearPendingTeePick(playerId);
       setHoles(initialHoles);
@@ -1621,7 +1645,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       yardage: h.yardage,
       score: null,
     }));
-    const persisted = await persistRoundStart(initialHoles, configs);
+    // The start write numbers its hole setup as the engine does (a back nine is
+    // 1..9, not the course's 10..18); the catalog contribution below keeps the
+    // course's own numbers.
+    const persisted = await persistRoundStart(initialHoles, configs.map((h, idx) => ({ ...h, holeNumber: idx + 1 })));
     if (!persisted.ok) {
       setIsStartingRound(false);
       return;
@@ -1812,10 +1839,37 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
           if (contrib.success) {
             resolvedCourseIdRef.current = contrib.data.courseId;
             if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+            // The photo chosen for the typed course (Clubhouse's Add a course), on a course that has none yet: a library
+            // course already found by name keeps its own. Not awaited: the round is tracking by the time it lands.
+            if (form.courseImage) void attachCourseImage(contrib.data.courseId, form.courseImage);
           }
         } catch { /* best-effort: catalog growth must never block the round */ }
       }
     };
+    // Opt-in (`libraryOffer`, Clubhouse's saved courses): the legacy saved-course start's catalog growth, run here so the
+    // round is linked to the course and tee it resolves, as `startWithPreloadedConfigs` links it. Best-effort and not
+    // awaited; the legacy screens never pass it.
+    const offer = form.libraryOffer;
+    if (offer && offer.length > 0 && !form.saveCourse && setup.courseName && resolvedCourseIdRef.current == null && selectedTeeIdRef.current == null) {
+      void (async () => {
+        try {
+          const contrib = await contributeCourseFromRound({
+            courseName: setup.courseName,
+            city: setup.courseCity || null,
+            state: setup.courseState || null,
+            teeName: setup.teesPlayed || null,
+            courseRating: setup.courseRating ? parseFloat(setup.courseRating) : null,
+            slopeRating: setup.courseSlope ? parseInt(setup.courseSlope) : null,
+            holes: offer.map(h => ({ holeNumber: h.holeNumber, par: h.par, yardage: h.yardage })),
+          });
+          if (contrib.success) {
+            resolvedCourseIdRef.current = contrib.data.courseId;
+            if (contrib.data.teeId) selectedTeeIdRef.current = contrib.data.teeId;
+          }
+        } catch { /* best-effort: catalog growth must never block the round */ }
+      })();
+    }
+
     if (form.saveCourse && setup.courseName) {
       if (fromStart) {
         // The round exists by now. A library save that throws (a dropped connection) must not leave a caller's Start
@@ -1883,7 +1937,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
       return { ok: false, reason: 'already_started', error: 'A round is already in progress on this screen.' };
     }
     const form = { ...startForm, holes: startForm.holes.map((h, i) => ({ ...h, holeNumber: i + 1 })) };
-    const invalid = validateStartForm(form) ?? validateStartHoles(form.holes);
+    const invalid = validateStartForm(form) ?? validateStartHoles(form.holes, form.yardage);
     if (invalid) {
       reportRoundStartValidationBlocked({
         validationError: invalid,
@@ -2851,8 +2905,10 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     // the component actually unmounts).
     roundExitedSafelyRef.current = true;
     // No router.refresh() after the push (swap audit F-59): the refresh is bound to the library and, landing after a
-    // quick tap on Continue, pulled the player back to it. The push already renders the library fresh (dynamic page,
-    // no staleTimes override), as the continue engine's own Save for later does.
+    // quick tap on Continue, pulled the player back to it. Off the phone the push renders the library fresh (dynamic
+    // page, dynamic stale time 0). On the phone the library is a player tab, fetched whole ahead, so the push shows what
+    // was held: Clubhouse's tab prefetch refreshes a held page reached from outside the strip in place once it has
+    // painted (src/clubhouse/shell/use-prefetch-tabs.ts), and a tap after that wins over the refresh.
     router.push(routesRef.current.library);
   };
 
@@ -3163,6 +3219,7 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
     selectedCourseId,
     setSelectedCourseId,
     resolvedCourseIdRef,
+    startLinkedCourseId,
     selectedTeeIdRef,
     inProgressConflict,
     setInProgressConflict,

@@ -58,7 +58,7 @@ export function ComponentGallery() {
     <section className="ch-gallery__section" aria-labelledby="gallery-actions"><h2 id="gallery-actions">Actions and feedback</h2>
       <div className="ch-gallery__row"><Button variant="primary" onClick={() => toast({ title: 'Changes saved', body: 'Local preview only.' })}>Save changes</Button>
         <Button>Secondary</Button><Button variant="ink">Ink</Button><Button variant="ghost">Ghost</Button><Button variant="danger">Remove</Button></div>
-      <div className="ch-gallery__row"><Button disabled>Disabled</Button><button type="button" className="ch-btn ch-btn--primary" disabled aria-busy="true">Saving changes</button>
+      <div className="ch-gallery__row"><Button disabled>Disabled</Button><button type="button" className="ch-btn ch-btn--primary" disabled aria-busy="true">Saving changes…</button>
         <Button onClick={() => toast({ title: 'Could not save', tone: 'error', body: 'Your changes are still here. Try again.' })}>Show error toast</Button></div>
           <div className="ch-gallery__row"><Button size="sm" leftIcon={Search}>Small action</Button><Button size="lg" rightIcon={CalendarDays}>Large action</Button>
         <IconButton icon={MoreHorizontal} label="Preview more actions" onClick={() => toast({ title: 'More actions', body: 'Local preview only.' })} />
@@ -112,7 +112,7 @@ export function ComponentGallery() {
       <p>These are the real bar controls. Pushed-screen transitions and immersive shell behavior are covered in the page and popup previews.</p>
       <PhoneBar lead title="Preview detail" back={{ label: 'Components', onBack: () => toast({ title: 'Back action', body: 'This fixture stays open.' }) }}
         action={<PhoneIconAction icon={MoreHorizontal} label="Preview phone actions" onClick={() => setOpen(true)} />} />
-      <div className="ch-gallery__row"><PhoneTextAction onClick={() => setOpen(true)}>Continue</PhoneTextAction><PhoneTextAction disabled onClick={() => {}}>Unavailable</PhoneTextAction><PhoneTextAction busy onClick={() => {}}>Saving</PhoneTextAction></div>
+      <div className="ch-gallery__row"><PhoneTextAction onClick={() => setOpen(true)}>Continue</PhoneTextAction><PhoneTextAction disabled onClick={() => {}}>Unavailable</PhoneTextAction><PhoneTextAction busy onClick={() => {}}>Saving…</PhoneTextAction></div>
     </section>
     <section className="ch-gallery__section" aria-labelledby="gallery-motion"><h2 id="gallery-motion">Motion</h2>
       <Button onClick={() => setMotion(value => !value)}>Replay motion sample</Button>

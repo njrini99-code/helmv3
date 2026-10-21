@@ -570,20 +570,27 @@ export function detailTable(detail: unknown, caption: string): AskTable | null {
 function seriesTable(s: MeasurementSeries): AskTable {
   return {
     caption: `${s.metric_label} for ${s.entity.label}`,
-    columns: [s.points.some((p) => p.bucket) ? 'Range' : 'Round', s.metric_label, 'Sample'],
+    // The caption already names the metric; a rate's column says what its figures are rather than repeating it.
+    columns: [s.points.some((p) => p.bucket) ? 'Range' : 'Round', s.unit === 'percent' ? 'Rate' : s.metric_label, 'Sample'],
     rows: s.points.map((p) => [p.bucket ?? fmtDay(p.at) ?? p.at, formatValue(p.value, s.unit), p.sample_size > 0 ? String(p.sample_size) : NO_DATA]),
   };
 }
 
 function trendBlock(s: MeasurementSeries): AskEvidence {
   const values = s.points.map((p) => p.value);
-  const mean = values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
+  // A rate's average is its made count over its attempts (3 of 9 is 33%), so each round counts by its sample; without samples, plainly.
+  const weight = s.points.reduce((a, p) => a + p.sample_size, 0);
+  const mean =
+    s.unit === 'percent' && weight > 0
+      ? s.points.reduce((a, p) => a + p.value * p.sample_size, 0) / weight
+      : values.reduce((a, b) => a + b, 0) / Math.max(1, values.length);
   const bench = s.benchmark && !s.benchmark.omitted_for_cohort ? s.benchmark : null;
   const first = values[0] as number;
   const last = values[values.length - 1] as number;
   return {
     kind: 'trend',
-    title: s.metric_label,
+    // Whose numbers they are, as the strokes-gained chart names its player.
+    title: s.entity.kind === 'player' ? `${s.metric_label}, ${s.entity.label}` : s.metric_label,
     unit: s.unit,
     points: s.points.map((p) => ({ label: fmtDay(p.at) ?? p.at, value: p.value, n: p.sample_size })),
     // A real benchmark beats the series' own average: "vs the Tour" is a standard, "vs your own average" is a tautology.

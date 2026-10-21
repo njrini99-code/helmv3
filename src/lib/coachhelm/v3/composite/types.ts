@@ -78,8 +78,8 @@ export interface CompositeContent {
  * Per-player context pre-loaded ONCE by the synthesis runner and
  * passed to every rule's detect(). Carries the raw-data sources that
  * not all rules need to read — hole-sequence rows (for closing-hole
- * fatigue, doubles-after-bogey, front-9 starter) and shot rows
- * filtered by lie (for flyer-lie + short-side scrambling chain).
+ * fatigue, doubles-after-bogey, front-9 starter) and short-game shot
+ * rows (short-side scrambling chain).
  *
  * Loaders return empty arrays on failure so rules can safely no-op.
  * Insights-only rules ignore ctx entirely.
@@ -87,7 +87,13 @@ export interface CompositeContent {
 export interface CompositeContext {
   hole_scores: HoleScore[];
   short_game_shots: ShortGameShot[];
-  flyer_lie_shots: ApproachShotWithLie[];
+  /**
+   * Slice 5b: `coachhelm_insight_angles_v1` is on, so the counted families
+   * exist and the composites that estimated them (C6 lag → 3-putt, C8 short
+   * approach + scrambling) read the counted rows instead. Absent or false:
+   * every rule behaves exactly as before.
+   */
+  counted_families?: boolean;
 }
 
 /** One row per (round, hole) the player completed in the window. */
@@ -111,15 +117,6 @@ export interface ShortGameShot {
   /** Unit of distance_to_hole_after ('feet'|'yards'); the short-side-scrambling
    *  composite converts yards→feet before the proximity gate (CANON: UNITS). */
   distance_unit_after?: string | null;
-}
-
-/** Approach shot from a flyer-prone lie (light rough). */
-export interface ApproachShotWithLie {
-  round_id: string;
-  hole_number: number | null;
-  lie_before: string;
-  distance_to_hole_before: number; // yards
-  distance_to_hole_after: number;
 }
 
 /**

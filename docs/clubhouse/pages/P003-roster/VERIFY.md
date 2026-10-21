@@ -244,9 +244,11 @@ before, after, baseline or evidence.
   - Resolved 2026-10-02: the desktop player panel and row menu now carry the
     player's thread target (`?player=`), matching the phone and P007 entry
     contract.
-  - The join-request notification links to `roster?tab=requests`; Roster ignores
+  - The join-request notification links to `roster?tab=requests`; Roster ignored
     `tab`, though the requests are the
-    first thing under the header.
+    first thing under the header. Fixed: the phone opens the requests sheet
+    (#2201, 2026-10-18); desktop focuses the requests card and drops the param
+    (2026-10-20, `screens/roster/__tests__/roster-requests-link.test.tsx`).
   - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is
     two parallel rounds (corrected).
   - The Clubhouse roster files are not mapped to a feature in

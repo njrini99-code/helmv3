@@ -26,8 +26,9 @@ export function puttingNote(all: NonNullable<ChTeamStats['putting']>['bands']): 
   const below = graded.filter((b) => (b.made / b.attempts) * 100 < b.bench!);
   if (!graded.length) return 'Bands grade against the Tour once they have 10 or more putts.';
   if (!below.length) return 'Every graded band is at or above the Tour make rate.';
-  if (below.length === 1) return `${below[0]!.label.replace('–', ' to ').replace(' ft', ' feet')} is the only band below the Tour make rate.`;
-  return `${below.length} bands are below the Tour make rate: ${below.map((b) => b.label).join(', ')}.`;
+  // A no-break space keeps each distance's unit on its line ("5–10 ft", never "5–10" then "ft").
+  if (below.length === 1) return `${below[0]!.label.replace('–', ' to ').replace(' ft', '\u00a0feet')} is the only band below the Tour make rate.`;
+  return `${below.length} bands are below the Tour make rate: ${below.map((b) => b.label.replace(' ft', '\u00a0ft')).join(', ')}.`;
 }
 
 /** Strokes a round: the change in form (newer half of the rounds against the older) that counts as a move, not as holding steady. */

@@ -22,6 +22,8 @@ and `AUTOGEN:*` blocks in `memory/` (never hand-edit inside one).
     // Client: createClient() from '@/lib/supabase/client', with 'use client'
     // Tables are sport-prefixed: golf_*, baseball_*, helm_lifting_*.
     // Anything with useState/useEffect/onClick starts with 'use client'.
+    // Tests: new ones go in __tests__/ next to the code (AGENTS.md); src/test/** is
+    // legacy and its count may only fall (npm run lint:test-location).
 
 ## Commands
     npm run dev / typecheck / typecheck:fast / lint / test / test:all
@@ -76,4 +78,5 @@ multi-agent PR review · `/helm-fix-ci` red CI on agent PRs.
 
 Skills: `finish-task` (definition of done and green-gate traps),
 `helm-supabase` (Supabase client and query traps), `helm-sentry` (read-only
-production error investigation).
+production error investigation), `helm-safari-performance` (measuring
+smoothness in Safari, the Simulator and on the iPhone; `scripts/phone/`).

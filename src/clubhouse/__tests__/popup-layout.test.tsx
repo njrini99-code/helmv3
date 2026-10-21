@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Modal } from '../ui/Modal';
 import { Menu } from '../ui/Menu';
 import { FormSheet } from '../screens/settings/phone/sheets';
-import { BrandTeamSwitch } from '../shell/TeamSwitch';
+import { TeamSwitch } from '../shell/TeamSwitch';
 import { usePopoverFit } from '../lib/use-popover-fit';
 import { useRef } from 'react';
 import { RecActionSheet } from '../screens/recruiting/RecSheet';
@@ -35,6 +35,14 @@ describe('popup layout and native dialog containment', () => {
     fireEvent.scroll(view.getByRole('textbox'));
     expect(view.getByRole('menu')).toBeInTheDocument();
   });
+  it('A-27 Tab out of an open menu puts focus back on its trigger before the menu closes', () => {
+    const view = render(<Menu label="Actions" items={[{ label: 'Copy link' }]} trigger={trigger} />);
+    fireEvent.click(view.getByRole('button', { name: 'Actions' }));
+    const item = view.getByRole('menuitem', { name: 'Copy link' });
+    item.focus();
+    fireEvent.keyDown(item, { key: 'Tab' });
+    expect(view.getByRole('button', { name: 'Actions' })).toHaveFocus();
+  });
   it('starts a settings form at its reading title', () => {
     const view = render(<FormSheet open title="Profile" onClose={() => {}} onAction={() => {}}>Fields</FormSheet>);
     expect(view.getByRole('heading', { name: 'Profile' })).toHaveFocus();
@@ -57,7 +65,7 @@ describe('popup layout and native dialog containment', () => {
   it('bounds a long team list below the sidebar trigger', () => {
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(300);
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ top: 20, bottom: 80, left: 16, right: 224, width: 208, height: 60, x: 16, y: 20, toJSON() {} });
-    const view = render(<BrandTeamSwitch teamName="Team one" model={{ activeId: 'one', choices: [{ id: 'one', label: 'Team one' }, { id: 'two', label: 'Team two' }] }} />);
+    const view = render(<TeamSwitch teamName="Team one" model={{ activeId: 'one', choices: [{ id: 'one', label: 'Team one' }, { id: 'two', label: 'Team two' }] }} />);
     fireEvent.click(view.getByRole('button', { name: /Switch team/ }));
     const popup = document.querySelector<HTMLElement>('.ch-tsw')!;
     expect(Number.parseFloat(popup.style.maxHeight)).toBe(206);

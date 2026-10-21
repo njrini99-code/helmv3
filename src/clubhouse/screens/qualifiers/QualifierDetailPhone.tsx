@@ -18,13 +18,15 @@ import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ToParPlate } from './parts';
+import { PrintHead } from './PrintHead';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
 import { Courses, LiveChip, Selections, StaleStandings } from './QualifierSections';
 import { NinesSkeleton, Streamed } from './streamed';
 import { SerifText } from '../../ui/SerifText';
+import { createOpenRow, PlayerRounds as ShowcaseRounds } from './RoundsShowcase';
 
 const LIST = '/golf/dashboard/qualifiers';
 
@@ -36,6 +38,9 @@ const LIST = '/golf/dashboard/qualifiers';
  * confirmed squad sits above the leaderboard. Same data, writes and catalog
  * as desktop; the close confirm is the desktop's, passed in.
  */
+/** The phone has no open row to follow: its rows open a sheet instead. */
+const NO_OPEN_ROW = createOpenRow();
+
 export function QualifierDetailPhone({
   data,
   stale,
@@ -93,11 +98,11 @@ export function QualifierDetailPhone({
         </span>
       ) : null,
     ],
-    ['Deadline', data.deadline ? dayLabel(data.deadline) : '—'],
   ];
 
   return (
     <main className="ch-qfm" aria-label={data.name}>
+      <PrintHead data={data} />
       <PhoneTop
         heading={false}
         title="Qualifier"
@@ -159,6 +164,13 @@ export function QualifierDetailPhone({
         </SectionBoundary>
       )}
 
+      {/* A player's own rounds, shown off above the board (owner, 2026-10-16); a coach opens anyone's from their row. */}
+      {data.role !== 'coach' && (
+        <SectionBoundary surface="qualifiers.player-rounds" label="Your rounds" code="CH-09223">
+          <ShowcaseRounds data={data} openRow={NO_OPEN_ROW} ownOnly />
+        </SectionBoundary>
+      )}
+
       <SectionBoundary surface="qualifiers.leaderboard" label="The leaderboard" code="CH-09212">
         <Board data={data} status={status} stale={stale} feed={feed} onPeek={setPeek} sheetOpen={!!peeked || actions} />
       </SectionBoundary>
@@ -212,7 +224,7 @@ export function QualifierDetailPhone({
                 });
               }}
             >
-              {reopenPending ? <span data-ch-code="CH-09406">Reopening</span> : 'Reopen qualifier'}
+              {reopenPending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}
             </Button>
           )}
         </div>
@@ -313,7 +325,7 @@ function Board({
               <Pos position={r.position} tied={r.tied} move={r.move} />
               <span className="ch-qfm-lb__n">
                 <b>
-                  {r.name}
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
                   {me && <span className="ch-qf-you">You</span>}
                 </b>
                 {(r.state || note) && (
@@ -325,7 +337,7 @@ function Board({
               </span>
               <ToParPlate value={r.toPar} />
               <span className="ch-qfm-lb__thru ch-num">
-                {r.played}/{data.numRounds}
+                <ThruDots played={r.played} total={data.numRounds} />
               </span>
             </>
           );
@@ -335,6 +347,7 @@ function Board({
               {canOpen(r) ? (
                 <button
                   type="button"
+                  data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                   data-state={r.state ?? undefined}
                   aria-label={`${label}. Show ${me ? 'your' : 'their'} rounds`}
@@ -368,7 +381,9 @@ function Board({
             <div className={'ch-qfm-lb__row is-static is-none' + (r.playerId === data.viewerPlayerId ? ' is-me' : '')}>
               <Pos position={null} tied={false} move={null} />
               <span className="ch-qfm-lb__n">
-                <b>{r.name}</b>
+                <b>
+                  <span className="ch-qfm-lb__nm">{r.name}</span>
+                </b>
                 <span className="ch-qfm-lb__sub">No rounds submitted</span>
               </span>
               <span className="ch-qf-dash">—</span>

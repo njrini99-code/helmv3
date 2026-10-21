@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import { ArrowRight, Users } from 'lucide-react';
+import { ArrowRight, UserPlus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLatestRound, ChLeaderRow } from '../../data/home';
 import { Avatar } from '../../ui/Avatar';
+import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
@@ -11,6 +12,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { FormLine } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
+import { SideScroll } from '../../ui/SideScroll';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -115,6 +117,8 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
 /** `covered`: the page's notice (CH-1209) carries the one Try again, so a failed read keeps only its notice's title. */
 export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHome['leaderboard']; covered?: boolean; /** The latest rounds, for each player's peek. */ rounds?: ChLatestRound[] }) {
   const rosterHref = rebuiltHref('/golf/dashboard/roster');
+  // Opens Roster's invite sheet (Roster reads `?invite=1` once).
+  const inviteHref = rebuiltHref('/golf/dashboard/roster?invite=1');
   return (
     <section aria-labelledby="ch-lb-title">
       <div className="ch-h-sec">
@@ -139,29 +143,36 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
         <RefreshNotice
           code="CH-2204"
           title="The leaderboard didn’t load"
-          body="Scores are safe. Try again, and if it keeps happening the error has already been reported."
+          body="Scores are safe. Try again; the error has been reported."
           covered={covered}
         />
       ) : data.rosterSize === 0 ? (
         <div className="ch-h-lb ch-sheet">
           <EmptyState
             code="CH-2304"
-            icon={Users}
+            shape="people"
             title="No players on the roster yet."
-            body="Share your team’s join code from Roster, and players appear here once you approve them."
+            body="Share your team code from Roster; players appear here as they join."
+            action={
+              inviteHref ? (
+                <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                  Invite players
+                </Button>
+              ) : undefined
+            }
           />
         </div>
       ) : data.rows.length === 0 ? (
         <div className="ch-h-lb ch-sheet">
           <EmptyState
             code="CH-2305"
-            icon={Users}
-            title="No 18-hole rounds this season yet."
+            shape="people"
+            title="No 18-hole rounds posted yet this season."
             body={`${data.rosterSize} ${data.rosterSize === 1 ? 'player is' : 'players are'} on the roster. The leaderboard fills in as rounds are posted.`}
           />
         </div>
       ) : (
-        <div className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
+        <SideScroll className="ch-h-lb ch-sheet" role="table" aria-labelledby="ch-lb-title">
           <div className="ch-h-lb__row ch-h-lb__head" role="row">
             <span role="columnheader">
               <span className="ch-sr-only">Position</span>
@@ -176,7 +187,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             const places = leaderPlaces(data.rows);
             return data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />);
           })()}
-        </div>
+        </SideScroll>
       )}
     </section>
   );

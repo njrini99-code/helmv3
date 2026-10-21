@@ -64,7 +64,7 @@ export type CoachHelmPattern = NonNullable<
 >[number];
 
 import { resolveStageTour } from '@/lib/golf/benchmarks/tour';
-import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict } from './buildStatsViewModel';
+import { biggestLeakArea, buildLedger, buildPriorities, buildStandingTrack, buildVerdict, withExactHeadlineRates } from './buildStatsViewModel';
 import { StatsSpine } from './StatsSpine';
 import { StatsBento } from './StatsBento';
 import { PuttingDrill } from './PuttingDrill';
@@ -131,7 +131,7 @@ function bundleToState(bundle: StatsDashboardBundle) {
   const leakFailed = !isDeferred(bundle.leak) && (!bundle.leak.ok || !bundle.leak.value.success);
   const sw = bundle.strengthsWeaknesses.ok ? bundle.strengthsWeaknesses.value : null;
   return {
-    detailedStats: bundle.detailed.ok ? bundle.detailed.value : null,
+    detailedStats: bundle.detailed.ok ? withExactHeadlineRates(bundle.detailed.value) : null,
     trendData: bundle.trend.ok ? bundle.trend.value : null,
     standingRows:
       bundle.standing.ok && bundle.standing.value.success ? (bundle.standing.value.data ?? []) : [],
