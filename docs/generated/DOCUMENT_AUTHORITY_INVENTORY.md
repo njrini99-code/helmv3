@@ -667,6 +667,7 @@ them would bury everything above.
 | `.devin/AGENTS-POINTER.md` | current | - | - | - | - |
 | `.github/PULL_REQUEST_TEMPLATE.md` | current | - | - | - | - |
 | `.github/branch-protection.md` | current | - | - | - | 1 |
+| `.oss-scanner/threat_model.md` | current | - | - | - | - |
 | `DESIGN.md` | current | - | - | yes | - |
 | `android/playstore/SUBMISSION.md` | current | - | - | - | - |
 | `design/handoff/README-v1.md` | current | - | - | - | - |
