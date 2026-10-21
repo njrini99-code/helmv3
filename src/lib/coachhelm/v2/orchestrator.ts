@@ -574,7 +574,13 @@ class CoachHelmIntelligence {
     // each row's evidence, plus one run-log row. Off → never entered, nothing
     // read or written. Failure-isolated inside runSupportPass.
     if (supportEnabled && runCollector) {
-      await runSupportPass({ playerId, insightIds: runCollector.ids(), trigger: options.runTrigger });
+      await runSupportPass({
+        playerId,
+        insightIds: runCollector.ids(),
+        gated: runCollector.gated().map((g) => ({ id: `gated:${g.signature}`, insight_type: g.insight_type, evidence: g.evidence })),
+        refused: runCollector.refused(),
+        trigger: options.runTrigger,
+      });
     }
 
     // Extract features for the legacy pipeline
