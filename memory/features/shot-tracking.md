@@ -738,7 +738,10 @@ before.
 Behind `coachhelm_data_prompts_v2` (OFF). With it off the New Round and
 Continue Round pages pass `dataPromptsV2={false}`, the screen and the summary
 sheet draw nothing new, and the round payloads are byte-identical (the new
-key is spread only when answered). Rules: `src/lib/golf/data-prompts/
+key is spread only when answered). The pages read the flag with
+`dataPromptsV2ForShotEntry` (`src/lib/golf/data-prompts/flag.ts`), in the
+player's `HELM_COACHHELM_TEAMS` canary scope like the Slice 8a asks, so a
+canary list limits the prompts to its teams. Rules: `src/lib/golf/data-prompts/
 recovery.ts` (pure).
 
 - Recovery tap: after a non-penalty tee shot whose result is `rough` or

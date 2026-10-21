@@ -5,8 +5,8 @@ import { isUuid } from '@/lib/utils/uuid';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
-import { DATA_PROMPTS_FLAG, lieAfterRecoveryFromRow } from '@/lib/golf/data-prompts/recovery';
-import { isFlagEnabled } from '@/lib/flags';
+import { lieAfterRecoveryFromRow } from '@/lib/golf/data-prompts/recovery';
+import { dataPromptsV2ForShotEntry } from '@/lib/golf/data-prompts/flag';
 import { CompletedRoundRedirect } from './completed-round-redirect';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -718,6 +718,9 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // CoachHelm Slice 8a: the one-tap data-gap asks (undefined with
   // coachhelm_data_gap_prompt_v1 off, so nothing is read or passed).
   const dataGapAsks = await dataGapAsksForShotEntry(player.id);
+  // CoachHelm Slice 8b: course nudge and recovery tap, in the player's
+  // HELM_COACHHELM_TEAMS canary scope (false with the flag off).
+  const dataPromptsV2 = await dataPromptsV2ForShotEntry(player.id);
 
   return (
     <AnimatedPage>
@@ -746,8 +749,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         qualifierRoundNumberOptions={qualifierRoundNumberOptions}
         qualifierRoundNumberUnavailableReason={qualifierRoundNumberUnavailableReason}
         dataGapAsks={dataGapAsks}
-        // CoachHelm Slice 8b: course nudge and recovery tap (off: false).
-        dataPromptsV2={isFlagEnabled(DATA_PROMPTS_FLAG)}
+        dataPromptsV2={dataPromptsV2}
       />
     </AnimatedPage>
   );

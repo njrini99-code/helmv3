@@ -32,6 +32,16 @@
 -- (that one patches the UPDATE of golf_rounds; this one the golf_shots
 -- INSERT). Re-running is a no-op (ADD COLUMN IF NOT EXISTS; a function that
 -- already writes the column is skipped).
+--
+-- ROLLBACK: functions first, then the column (the patched INSERTs name the
+-- ROLLBACK: column, so dropping it first breaks every round save). For each of
+-- ROLLBACK: save_partial_round_atomic and submit_round_atomic, re-run its
+-- ROLLBACK: pg_get_functiondef with the two patches reversed (remove
+-- ROLLBACK: ", lie_after_recovery" from the golf_shots column list and the
+-- ROLLBACK: ", CASE WHEN jsonb_typeof(v_shot->'lie_after_recovery') ... END"
+-- ROLLBACK: value), then ALTER TABLE public.golf_shots DROP COLUMN IF EXISTS
+-- ROLLBACK: lie_after_recovery. Clients keep working throughout: the RPCs
+-- ROLLBACK: before this migration ignore the payload key.
 
 ALTER TABLE public.golf_shots
 ADD COLUMN IF NOT EXISTS lie_after_recovery boolean;
