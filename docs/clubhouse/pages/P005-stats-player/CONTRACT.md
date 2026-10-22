@@ -207,12 +207,11 @@ that fails to render at all is the shell's route error view (10603 to 10607).
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
 | 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 | 50619 | CH-5005 | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | Sharing a personal-best card fails (the share sheet or the download is blocked) |
-| 50620 | CH-5214 | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
+| 50620 | CH-5006 | `STARTING_A_GOAL_FAILS` | Starting a goal fails (Set a goal) |
 | 50621 | CH-5007 | `ACCEPTING_A_SUGGESTED_GOAL_FAILS` | Accepting a suggested goal fails |
 | 50622 | CH-5008 | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | Dismissing a suggested goal fails |
 | 50623 | CH-5009 | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | A coach pauses, resumes or abandons a goal and it fails |
-| 50624 | CH-5215 | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
-| 50625 | CH-5006 | `STARTING_A_GOAL_FAILS` | Starting a goal fails (Set a goal) |
+| 50624 | CH-5214 | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
 
 ## 07 — Network / offline
 

@@ -150,7 +150,7 @@ describe('Suggested goals', () => {
     expect(none.container.querySelector('.ch-gs')).toBeNull();
     cleanup();
     wrap(<GoalSuggestions items={undefined} error />);
-    expect(code('CH-5215')).not.toBeNull();
+    expect(code('CH-5214')).not.toBeNull();
     expect(screen.getByText(/Suggested goals didn’t load/)).toBeTruthy();
   });
 

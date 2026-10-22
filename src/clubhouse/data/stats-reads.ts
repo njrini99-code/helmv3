@@ -25,7 +25,7 @@ export interface ChAreaReads extends ChReadCount {
 /**
  * What Game detail draws. `ready`: the sections with at least one current read (a section with none draws nothing, never
  * "0 reads"). `off`: CoachHelm is off for the coach or for the player; nothing is drawn. `failed`: a read did not load; one line
- * under the section chips says so (CH-5214).
+ * under the section chips says so (CH-5215).
  */
 export type ChStatsReads = { status: 'ready'; byArea: Partial<Record<ChReadArea, ChAreaReads>> } | { status: 'off' } | { status: 'failed' };
 

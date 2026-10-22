@@ -71,11 +71,11 @@ function SuggestionRow({ s }: { s: ChGoalSuggestion }) {
 
 /**
  * The goals CoachHelm suggests, above the player's own: nothing is drawn when there are none (a bonus rail, not a
- * state), and a failed read says so (CH-5215) instead of passing for "no suggestions".
+ * state), and a failed read says so (CH-5214) instead of passing for "no suggestions".
  */
 export function GoalSuggestions({ items, error }: { items: ChGoalSuggestion[] | undefined; error: boolean | undefined }) {
   const router = useRouter();
-  if (error) return <InlineNotice code="CH-5215" title="Suggested goals didn’t load." body="Your goals are fine. Try again in a moment." onRetry={() => router.refresh()} />;
+  if (error) return <InlineNotice code="CH-5214" title="Suggested goals didn’t load." body="Your goals are fine. Try again in a moment." onRetry={() => router.refresh()} />;
   if (!items?.length) return null;
   return (
     <section className="ch-gs" aria-label="Suggested goals">
