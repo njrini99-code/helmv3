@@ -43,11 +43,16 @@ async function note(what: string, err: unknown): Promise<void> {
   }
 }
 
-async function loadReads(supabase: SupabaseClient, ids: string[]): Promise<MondayBriefRead[] | null> {
+/**
+ * Reads are scoped to this team (or to no team, the rows written before team
+ * scoping): a player on two teams must not carry team B's reads into team A's
+ * brief, which the cron reads with the admin client.
+ */
+async function loadReads(supabase: SupabaseClient, teamId: string, ids: string[]): Promise<MondayBriefRead[] | null> {
   const out: MondayBriefRead[] = [];
   for (const chunk of chunkIds(ids)) {
     const res = await fetchAllRowsResult<MondayBriefRead>((from, to) =>
-      applyInsightVisibility(supabase.from('golf_coach_insights').select(READ_COLUMNS).in('player_id', chunk).not('evidence', 'is', null))
+      applyInsightVisibility(supabase.from('golf_coach_insights').select(READ_COLUMNS).in('player_id', chunk).or(`team_id.eq.${teamId},team_id.is.null`).not('evidence', 'is', null))
         .order('id', { ascending: true })
         .range(from, to),
     );
@@ -106,7 +111,7 @@ export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, 
       }
     }
     const ids = roster.map((p) => p.id);
-    const [reads, rounds] = ids.length ? await Promise.all([loadReads(supabase, ids), loadRounds(supabase, ids)]) : [[], []];
+    const [reads, rounds] = ids.length ? await Promise.all([loadReads(supabase, teamId, ids), loadRounds(supabase, ids)]) : [[], []];
     if (!reads || !rounds) return null;
 
     const perPlayer = new Map<string, number>();
