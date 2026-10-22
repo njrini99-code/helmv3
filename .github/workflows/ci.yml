@@ -745,9 +745,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # A follow-up push gets one job (shard 1 runs the related tests), so
-        # shards 2-5 never take a runner slot. Full runs get all five.
-        shard: ${{ fromJSON(github.event_name == 'pull_request' && github.event.action == 'synchronize' && '[1]' || '[1, 2, 3, 4, 5]') }}
+        shard: [1, 2, 3, 4, 5]
     env:
       VITEST_MAX_WORKERS: '4'  # 4-vCPU hosted runner; vitest.config.ts defaults to 3 for shared machines
     steps:
@@ -789,9 +787,10 @@ jobs:
           fi
 
       # Decide test scope. full = this shard runs its slice of the whole suite.
-      # scoped = a follow-up push: the tests related to the diff. A change to
-      # package.json or the vitest config is in vitest's forceRerunTriggers,
-      # which widens --changed to the whole suite on its own.
+      # scoped = a follow-up push: this shard runs its slice of the tests
+      # related to the diff. A follow-up push whose diff touches the test
+      # runner, the dependency set or this workflow can alter any test, so it
+      # runs full.
       - name: Decide test scope
         id: scope
         if: steps.gate.outputs.run == 'true'
@@ -800,7 +799,14 @@ jobs:
         run: |
           set -eu
           mode=full
-          if [ "$SCOPED" = "true" ]; then mode=scoped; fi
+          if [ "$SCOPED" = "true" ]; then
+            RISKY=$(git diff --name-only HEAD^1 HEAD | grep -E '^(package\.json|package-lock\.json|vitest\.|tsconfig|scripts/serialize\.mjs|\.github/workflows/ci\.yml)' || true)
+            if [ -n "$RISKY" ]; then
+              echo "::notice::runner/dependency/workflow files changed, running the full suite: $RISKY"
+            else
+              mode=scoped
+            fi
+          fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node and install dependencies
@@ -814,13 +820,11 @@ jobs:
       # Follow-up push: only the tests related to this PR's diff, in this
       # shard's slice. Not evidence that the suite passes (the full run on
       # ready and on main is), hence the different step name.
-      # Quick tier (2026-10-21): a follow-up push has only shard 1, which runs
-      # every related test unsharded.
-      - name: Related unit tests (follow-up push)
+      - name: Related unit tests (shard ${{ matrix.shard }}/5, follow-up push)
         if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped'
         run: |
-          echo "::notice::follow-up push: running the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
-          npm run test:run -- --changed HEAD^1 --passWithNoTests
+          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
+          npm run test:run -- --changed HEAD^1 --shard=${{ matrix.shard }}/5 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -1272,7 +1276,8 @@ jobs:
       - name: Fail if any required CI check failed
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
-          OTHER_RESULTS: ${{ toJSON(fromJSON(format('["{0}","{1}","{2}","{3}","{4}","{5}"]', needs.detect-changes.result, needs.static-checks.result, needs.world-model.result, needs.typecheck.result, needs.lint.result, needs.unit-tests.result))) }}
+          NEXT_BUILD_RESULT: ${{ needs.next-build.result }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
           ACTION: ${{ github.event.action }}
           CODE: ${{ needs.detect-changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
@@ -1288,10 +1293,13 @@ jobs:
           fi
           incomplete=false
           if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
-          SKIPS="$RESULTS"
+          skips=$(jq '[.[] | select(. == "skipped")] | length' <<< "$RESULTS")
           # Quick tier: a follow-up push skips Next build and Supabase on purpose.
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then SKIPS="$OTHER_RESULTS"; fi
-          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$SKIPS" >/dev/null; then incomplete=true; fi
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            [ "$NEXT_BUILD_RESULT" = "skipped" ] && skips=$((skips - 1))
+            [ "$SUPABASE_RESULT" = "skipped" ] && skips=$((skips - 1))
+          fi
+          if [ "$CODE" = "true" ] && [ "$skips" -gt 0 ]; then incomplete=true; fi
           if [ "$incomplete" = "false" ]; then
             echo "CI hard gates clean."; exit 0
           fi
