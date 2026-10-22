@@ -9,7 +9,7 @@ title: >-
   IP) in admin_events, error_logs and Sentry's server_trace context. It now
   runs collapseHtmlErrorPages, which keeps the page title only.
 bad_version: 50b2f8bd9b264b4666e142fae0a172fbf0f1b733
-fixed_version: f8d28828f91a8036bbe31146b583c4e27c5d8730
+fixed_version: 786e2b06483649f3567c9c68e4bdc4c8ba265c08
 fixture:
   - source: collapse-html-error-pages.test.ts
     target: src/lib/utils/__tests__/collapse-html-error-pages.test.ts
@@ -30,6 +30,6 @@ sanitization:
 source_incident_status: fixed
 created_at: "2026-10-22"
 notes: >-
-  On bad_version the five helper tests fail with "collapseHtmlErrorPages is
+  On bad_version the six helper tests fail with "collapseHtmlErrorPages is
   not a function" and the logger test fails by assertion (metadata stored
   verbatim); the other 26 logger tests pass on both versions.
