@@ -100,7 +100,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     feature_id: "coachhelm_corrections_v1",
     owner: "golf/coachhelm",
-    purpose: "Lets a coach (or a player, on their own read) record a correction on a CoachHelm read through recordCoachHelmCorrection (Not this with a reason, Wrong cause, Already on it, Show later, Good read) into golf_coachhelm_corrections, and multiplies the learned coach weight W (start 1.0, -0.1 per Not this, +0.05 per Good read, bounds 0.5 to 1.5, one vote per read) into insight ranking through loadCoachWeightsForPlayer, for families with no calibrated outcome weight. Turning it on reorders a coach's feeds for the player's primary coach once that coach has recorded corrections; player surfaces stay neutral (a coach's corrections are not readable by players). No surface draws the chips yet. Off: the action writes nothing and returns not available, and ranking is byte-identical to before.",
+    purpose: "Lets a coach (or a player, on their own read) record a correction on a CoachHelm read through recordCoachHelmCorrection (Not this with a reason, Wrong cause, Already on it, Show later, Good read) into golf_coachhelm_corrections, and multiplies the learned coach weight W (start 1.0, -0.1 per Not this, +0.05 per Good read, bounds 0.5 to 1.5, one vote per read) into insight ranking through loadCoachWeightsForPlayer, for families with no calibrated outcome weight. Turning it on reorders a coach's feeds for the player's primary coach once that coach has recorded corrections; player surfaces stay neutral (a coach's corrections are not readable by players). On, the Clubhouse coach card draws the five chips under a read's audit and the player's Board and Deep dive draw Not this and Good read on their own reads (no chips while the held table is missing). Off: nothing is read or drawn, the action writes nothing and returns not available, and ranking is byte-identical to before.",
     type: "release",
     status: "active",
     created_at: "2026-10-20",
@@ -108,7 +108,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -125,7 +125,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -142,7 +142,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -159,7 +159,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -172,11 +172,11 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -210,7 +210,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -244,7 +244,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -274,11 +274,11 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     type: "temporary_migration",
     status: "active",
     created_at: "2026-09-23",
-    expires_at: "2026-10-23",
+    expires_at: "2026-12-31",
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -295,7 +295,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -312,7 +312,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the next analysis run rewrites each row's diagnosis with the old template and drops evidence.cause (the update path replaces evidence).",
@@ -336,6 +336,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     cleanup_plan: "Flip on (development, then preview, then production) only after the owner applies 20260923100000_round_recap_single_flight_lock to each environment, confirmed via information_schema.columns (ai_narrative) and pg_proc (claim_round_recap_lock / release_round_recap_lock). Once on everywhere and the fallback rate (deterministic vs. LLM-authored) is acceptable, consider promoting to a permanent `release` flag — owner's call, not automatic.",
   },
   {
+    feature_id: "coachhelm_stale_refresh_v1",
+    owner: "golf/coachhelm",
+    purpose: "Adds an idle-player pass to the nightly roster sweep: an analyzed player whose newest analysis (newest visible-read refresh stamp or engine run) is 14 or more days old, who still has an open read and a completed round inside the engine's 90-day window, is re-analyzed with the same deterministic engine run the sweep already uses (no model calls), at most 6 players a night in a rotation through the stale players (oldest first), after the freshness picks and under the same time budget. Reads through the HELM_COACHHELM_TEAMS canary. Off: the sweep runs exactly as before.",
+    type: "release",
+    status: "active",
+    created_at: "2026-10-21",
+    expires_at: null,
+    default: false,
+    environment: {
+      production: false,
+      preview: false,
+      development: false,
+    },
+    kill_switch_behavior: null,
+    cleanup_plan: "Turn on after the owner reviews the idle-player count in the PR. Once the pass has run for a month without pinning the cap or failing sweeps, make it unconditional in the roster sweep and delete this flag in the same change. Turning it off stops the extra runs at once; reads it refreshed stay as they are until their next run.",
+  },
+  {
     feature_id: "coachhelm_support_v1",
     owner: "golf/coachhelm",
     purpose: "After the insight generators write a player's rows for a run, computes each row's support (the gap to the benchmark with a 95% range, a one-sided p and a Benjamini-Hochberg q across every candidate of the run, q <= 0.10), the shrunk estimate and the five-rung claim ladder, and merges them into the row's evidence (support, ladder, what_ladder, ladder_reasons, strokes_shrunk, shrink); writes one golf_coachhelm_run_log row per run; and records rank_factors on golf_insight_exposure. Turning it on changes no title, content, confidence, priority or lifecycle: no surface reads the ladder yet, so coaches and players see nothing different until a renderer PR does. Off: nothing is read or written by this code.",
@@ -346,7 +363,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -363,7 +380,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the coach board draws no Team patterns section, and the next analysis run writes the bad-day-floor and pressure reads without detail.field_day and with the bad-day gate as before.",
@@ -380,7 +397,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: "Off: the next analysis run rewrites each row's evidence without evidence.comparison (the update path replaces evidence), and the surfaces fall back to their Tour wording.",
@@ -397,7 +414,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,
@@ -448,7 +465,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     default: false,
     environment: {
       production: false,
-      preview: false,
+      preview: true,
       development: false,
     },
     kill_switch_behavior: null,

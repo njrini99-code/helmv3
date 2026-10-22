@@ -110,10 +110,13 @@ function git(args) {
  * not a blind spot: nothing routes to it, and its own header states what it is.
  */
 function tracked() {
-  return git(['ls-files', '*.md', '*.mdx'])
+  // `git ls-files` prints a path once per index stage while a merge is
+  // unresolved (stages 1-3), so regenerating mid-merge listed a conflicted
+  // file three times and every fixer needed a second "regenerate" commit.
+  return [...new Set(git(['ls-files', '*.md', '*.mdx'])
     .trim()
     .split('\n')
-    .filter(Boolean)
+    .filter(Boolean))]
     .filter((f) => f !== 'docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md')
     .sort();
 }

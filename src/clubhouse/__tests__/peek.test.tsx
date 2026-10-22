@@ -140,6 +140,7 @@ describe('the player peek card (CH-1832)', () => {
       '/golf/dashboard/messages?player=p-theo',
       '/golf/dashboard/stats?player=p-theo',
       '/golf/dashboard/calendar?new=1&with=p-theo',
+      '/golf/dashboard/coachhelm?view=deep-dive&player=p-theo',
     ]);
   });
 });

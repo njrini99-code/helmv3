@@ -577,7 +577,7 @@ export class CorrelationDiscovery {
               strokeImpact: strokeDiff * 4, // ~4 par 5s per round
               sampleSize: par5Holes.length,
               context: 'par 5 holes only',
-              recommendation: 'Consider laying up or using a more accurate club on par 5 tee shots',
+              recommendation: 'Consider laying up or hitting a non-driver tee shot on par 5s',
             });
           }
         }

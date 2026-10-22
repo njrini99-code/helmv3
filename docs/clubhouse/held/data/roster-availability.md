@@ -106,6 +106,18 @@ added 2026-09-29. The file was committed in 816c8c1a1 without a row or header; b
 - [ ] page wiring activated
 - [ ] held status discharged
 
+## Availability note: not used (2026-10-21)
+
+The writer shipped with the word only. `golf_team_members_select_v5` lets every teammate read every
+column of their team's rows through the API, so a note in `availability_note` would reach players,
+whatever the screens select. The app therefore never reads or writes `availability_note`:
+`loadRoster` leaves it out of its select, `setPlayerAvailability` refuses a note, and the panel has
+no note field (CH-3010 and CH-3102 are retired, never shipped). The column stays in place, empty.
+
+A note comes back only with a coach-only store, which needs a migration and so its own held plan
+here: for example a coach-only table keyed by membership with a SELECT policy for the team's coaches,
+or a column-level grant that hides the note from teammates. No migration is written for it yet.
+
 ## Released
 
 Applied to production on 2026-10-21 by the production rollout: `supabase_migrations.schema_migrations`

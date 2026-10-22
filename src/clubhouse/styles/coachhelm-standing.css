@@ -314,6 +314,33 @@
   color: var(--ch-chart-loss-on-tint);
 }
 
+/* A coach's way from a stat to the open read on it (spec A): a quiet text link under the row, or under the stat in Most to gain. */
+.ch-hs-read {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.ch-hs-open {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 4px;
+  font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hs-open:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-hs-open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+
 /* Route skeleton: the page's own shape and height */
 .ch-hs-sk__hero {
   display: grid;
@@ -687,6 +714,10 @@ main[data-canopy] .ch-hs-hero.ch-scoreboard .ch-hs-gaps,
 .ch-hs-hero.ch-scoreboard .ch-hs-gaps__v em,
 .ch-hs-hero.ch-scoreboard .ch-hs-gaps > p {
   color: var(--ch-text-secondary);
+}
+/* "Open the read" under a stat in Most to gain (a coach's Standing, spec A): the card's mint, as its count, not the paper's green. */
+.ch-hs-hero.ch-scoreboard .ch-hs-open {
+  color: var(--ch-hero-mint);
 }
 
 /* A group's head: its name in the field green with the tally beside it, over a green rule. */

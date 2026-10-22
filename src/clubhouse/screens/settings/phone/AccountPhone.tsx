@@ -176,7 +176,19 @@ export function ProfileSheet({
 
       <div className="ch-setm-card">
         {coach ? (
-          <FieldRow id="set-fullname" label="Full name" inline autoComplete="name" value={draft.fullName} onChange={(e) => setDraft((d) => ({ ...d, fullName: e.target.value }))} />
+          <>
+            <FieldRow id="set-fullname" label="Full name" inline autoComplete="name" value={draft.fullName} onChange={(e) => setDraft((d) => ({ ...d, fullName: e.target.value }))} />
+            <FieldRow
+              id="set-title"
+              label="Title"
+              inline
+              placeholder="Assistant coach"
+              maxLength={100}
+              autoComplete="organization-title"
+              value={draft.title}
+              onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+            />
+          </>
         ) : (
           <>
             <FieldRow id="set-first" label="First name" inline autoComplete="given-name" value={draft.firstName} onChange={(e) => setDraft((d) => ({ ...d, firstName: e.target.value }))} />

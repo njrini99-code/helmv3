@@ -13,6 +13,7 @@ import {
 // Frontend and DB both use 'practice' | 'qualifier' | 'tournament'.
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { withAdminObserved } from '@/lib/admin/observed-action';
+import { logServerError } from '@/lib/server-error-logger';
 import { getCoachTeamId } from './golf-action-shared';
 import type { ActionResult } from './golf-action-shared';
 
@@ -273,4 +274,138 @@ export async function updatePlayerStatus(
   status: 'active' | 'injured' | 'redshirt' | 'inactive'
 ): Promise<{ success: boolean; error?: string }> {
   return observedUpdatePlayerStatus(playerId, status);
+}
+
+// ============================================================================
+// AVAILABILITY (Clubhouse roster, P003)
+// ============================================================================
+
+/**
+ * Whether a player can play right now: available, injured or away. Display only, on the coach's roster: it never changes
+ * team access (that is `status`, Mark inactive). golf_team_members.availability is CHECKed to these three values; the
+ * write policy is golf_team_members_update_coach (head or assistant coach of the team). Players have no UPDATE policy,
+ * so there is no self-report.
+ *
+ * No note: golf_team_members_select_v5 lets every teammate read every column of their team's rows, so a free-text
+ * reason (health-adjacent) cannot live in availability_note until a coach-only store exists (a held migration;
+ * docs/clubhouse/held/data/roster-availability.md). This action never reads or writes that column, and refuses a note.
+ */
+export type PlayerAvailability = 'available' | 'injured' | 'away';
+const AVAILABILITY_VALUES: readonly PlayerAvailability[] = ['available', 'injured', 'away'];
+
+async function setPlayerAvailabilityImpl(input: {
+  playerId: string;
+  availability: PlayerAvailability;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    // A server action takes whatever the caller sends. A note would be readable by teammates, so it is refused, not
+    // dropped silently: nothing is written.
+    if (input && typeof input === 'object' && 'note' in input) {
+      return { success: false, error: 'Availability notes are not saved' };
+    }
+
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to update player availability' };
+    }
+
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (coachError) {
+      await logServerError(`setPlayerAvailability coach read failed: ${coachError.message}`, {
+        action: 'roster.setPlayerAvailability',
+        playerId: input.playerId,
+      });
+      return { success: false, error: 'Failed to update player availability' };
+    }
+    if (!coach) {
+      return { success: false, error: 'Only coaches can update player availability' };
+    }
+
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    if (!AVAILABILITY_VALUES.includes(input.availability)) {
+      return { success: false, error: 'Choose available, injured or away' };
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', input.playerId)
+      .eq('team_id', teamId)
+      .maybeSingle();
+
+    if (membershipError) {
+      await logServerError(`setPlayerAvailability membership read failed: ${membershipError.message}`, {
+        action: 'roster.setPlayerAvailability',
+        playerId: input.playerId,
+        teamId,
+      });
+      return { success: false, error: 'Failed to update player availability' };
+    }
+    if (!membership) {
+      return { success: false, error: 'Player is not on your team' };
+    }
+
+    const now = new Date().toISOString();
+    const { error, count } = await supabase
+      .from('golf_team_members')
+      .update(
+        {
+          availability: input.availability,
+          availability_updated_at: now,
+          updated_at: now,
+        },
+        { count: 'exact' },
+      )
+      .eq('player_id', input.playerId)
+      .eq('team_id', teamId);
+
+    if (error) {
+      await logServerError(`setPlayerAvailability failed: ${error.message}`, {
+        action: 'roster.setPlayerAvailability',
+        playerId: input.playerId,
+        teamId,
+      });
+      return { success: false, error: 'Failed to update player availability' };
+    }
+    // RLS hid the row (an assistant whose staff row lapsed, say): nothing was written, so it is not a save.
+    if (!count) {
+      return { success: false };
+    }
+
+    revalidatePath('/golf/dashboard/roster');
+    updateTag(CACHE_TAGS.ROSTER);
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorizationError || err instanceof NotFoundError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+const observedSetPlayerAvailability = withAdminObserved(
+  'setPlayerAvailability',
+  {
+    demoSafe: true,
+    sport: 'golf',
+    feature: 'roster_management',
+    contextFrom: ([i]) => ({ playerId: i.playerId }),
+  },
+  setPlayerAvailabilityImpl,
+);
+export async function setPlayerAvailability(input: {
+  playerId: string;
+  availability: PlayerAvailability;
+}): Promise<{ success: boolean; error?: string }> {
+  return observedSetPlayerAvailability(input);
 }

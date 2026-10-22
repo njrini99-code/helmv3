@@ -1673,8 +1673,8 @@ class CoachHelmIntelligence {
       headline: `Round Approach Check: ${topBracket.label} produced the biggest misses`,
       body: `${topBracket.severeCount} of ${topBracket.sampleSize} missed approaches from ${topBracket.label} finished more than 25 yards away or in a penalty state in this round.`,
       callToAction: severePct >= 75
-        ? 'Check the club, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'
-        : 'Check whether those misses shared a club, lie, or target. Recommended: keep the target wider from this yardage window and aim to finish inside a playable leave.',
+        ? 'Check the shot type, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'
+        : 'Check whether those misses shared a shot type, lie, or target. Recommended: keep the target wider from this yardage window and aim to finish inside a playable leave.',
       tone: severePct >= 75 ? 'urgent' : 'cautionary',
       confidence: Math.min(0.9, 0.55 + topBracket.sampleSize * 0.08),
       // severeRate × max(1, n/2): a ranking heuristic, not strokes.
@@ -1730,7 +1730,7 @@ class CoachHelmIntelligence {
       bestInsight = {
         headline: `Round Lie Check: rough from ${bracket.label} left longer next shots`,
         body: `From ${bracket.label}, fairway approaches finished ${Math.round(fairwayAvg)} yards away on average versus ${Math.round(roughAvg)} yards from rough in this round.`,
-        callToAction: 'Check whether the rough approaches shared a lie depth, club, or target before treating this as a lie effect. Recommended: when you miss the fairway into this yardage window, take the safer target and protect against the long leave.',
+        callToAction: 'Check whether the rough approaches shared a lie depth, shot type, or target before treating this as a lie effect. Recommended: when you miss the fairway into this yardage window, take the safer target and protect against the long leave.',
         tone: gap >= 12 ? 'urgent' : 'cautionary',
         confidence: Math.min(0.88, 0.55 + (fairwayShots.length + roughShots.length) * 0.05),
         // max(0.8, gap / 10): a ranking heuristic, not strokes.
@@ -2149,8 +2149,8 @@ class CoachHelmIntelligence {
     const implications: Record<string, string> = {
       one_way_right: 'Ball flight or swing path creates consistent right-side misses',
       one_way_left: 'Ball flight or swing path creates consistent left-side misses',
-      one_way_short: 'Club selection or swing commitment leads to distance shortfall',
-      one_way_long: 'Club selection or swing aggression leads to overshoot',
+      one_way_short: 'Playing for too little carry or swing commitment leads to distance shortfall',
+      one_way_long: 'Playing for too much carry or swing aggression leads to overshoot',
       scattered: 'Multiple factors are affecting shot consistency',
       tight: 'Shot dispersion is well controlled for this distance',
     };
@@ -2164,8 +2164,8 @@ class CoachHelmIntelligence {
     const conclusions: Record<string, string> = {
       one_way_right: 'A predictable miss pattern that can be used for course management',
       one_way_left: 'A predictable miss pattern that can be used for course management',
-      one_way_short: 'Distance control requires attention - consider club selection adjustment',
-      one_way_long: 'Distance control requires attention - consider club selection adjustment',
+      one_way_short: 'Distance control requires attention - consider adjusting the carry you play for',
+      one_way_long: 'Distance control requires attention - consider adjusting the carry you play for',
       scattered: 'Consistency work needed to tighten shot dispersion',
       tight: 'Distance is well controlled - maintain current approach',
     };

@@ -10,8 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { CoachNote, type NoteSaved } from './RosterPeek';
-import { formatHcp, rowNote } from './format';
+import { AvailabilityPanel, CoachNote, type AvailabilityControl, type NoteSaved } from './RosterPeek';
+import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
 
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,
@@ -24,17 +24,27 @@ export function RosterProfile({
   notesLocked,
   statsError,
   onNoteSaved,
+  availability,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
   statsError: boolean;
   onNoteSaved: NoteSaved;
+  availability: AvailabilityControl;
 }) {
-  const note = rowNote(p, statsError);
+  // The trend's legend is about form: availability has the identity line and its own panel here, so it is left out.
+  const note = rowNote({ ...p, availability: 'available' }, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
-  const identity = [p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ');
+  const identity = [
+    p.classYear,
+    p.gradYear ? `Class of ${p.gradYear}` : null,
+    p.status === 'inactive' ? 'Inactive' : null,
+    p.availability && p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const place = [p.hometown, p.highSchool].filter(Boolean).join(' · ');
   const facts = [
     ['Hometown', p.hometown],
@@ -161,6 +171,10 @@ export function RosterProfile({
           </dl>
         </section>
       )}
+
+      <section className="ch-rsm-panel ch-rsm-note ch-rsm-avail" aria-labelledby={`avail-${p.id}-l`}>
+        <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} block />
+      </section>
 
       <section className="ch-rsm-panel ch-rsm-note">
         <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />

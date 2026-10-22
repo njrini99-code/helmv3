@@ -108,32 +108,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # PATH GATE for the World Model check only (plan 5.6). Everything else in
-      # this job runs on every PR, on purpose (see the comment above the job).
-      # The aggregate treats a SKIPPED step as a failure, so the check itself
-      # never gets an `if:`: it runs and exits 0 early. These two ids are
-      # excluded from the aggregate (IGNORE_STEPS below).
-      - name: Filter changed paths (knowledge)
-        id: filter_knowledge
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
-        with:
-          filters: .github/path-filters.yml
-
-      - name: Knowledge paths changed? (fail closed)
-        id: knowledge_gate
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          FILTER_OUTCOME: ${{ steps.filter_knowledge.outcome }}
-          FILTER_KNOWLEDGE: ${{ steps.filter_knowledge.outputs.knowledge }}
-        run: |
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_KNOWLEDGE" = "false" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
-
       # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
       # has never covered these three Deno edge functions. They are deployed code
       # that sends push notifications and email; until 2026-08-19 nothing checked
@@ -310,30 +284,6 @@ jobs:
         continue-on-error: true
         run: npm run clubhouse:check
 
-      # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
-      # 2026-09-02 alongside the generator itself. Without this step the
-      # committed artifact could go stale on the very next registry.yml edit
-      # and nothing would notice: `.claude/rules/quality-gates.md`'s own rule
-      # is "a script in package.json with no workflow step is not a gate,"
-      # and `npm run knowledge:world-model:check` sat exactly there until
-      # this step was added in the same change that introduced it.
-      #
-      # 2026-10-07: only when memory/**, docs/** or scripts/knowledge/** changed
-      # (`knowledge` in .github/path-filters.yml); every push to main still runs
-      # it. The step exits 0 early instead of carrying an `if:` because the
-      # aggregate counts a skipped step as a failure.
-      - name: World Model graph is current
-        id: world_model
-        continue-on-error: true
-        env:
-          KNOWLEDGE_CHANGED: ${{ steps.knowledge_gate.outputs.run }}
-        run: |
-          if [ "$KNOWLEDGE_CHANGED" != "true" ]; then
-            echo "::notice::No memory/**, docs/** or scripts/knowledge/** change; World Model check not needed (it runs on every push to main)."
-            exit 0
-          fi
-          node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run knowledge:world-model:check
-
       # The other direction from registry glob coverage in knowledge:check:
       # that check fails when a registry entry points at a path that no
       # longer exists, this one fails when a tracked file under a directory
@@ -444,13 +394,14 @@ jobs:
       # `npm run typecheck` started failing on a file nobody had touched. A
       # type gate must not mutate the tree it is checking.
       #
-      # It also passes --minimum-dependency-age=120 (minutes). Deno's default
-      # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
-      # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
-      # code change on our side. 2h keeps the protection against
-      # just-published/compromised versions without a day-long outage every
-      # time a floating transitive dep ships a release. Owner decision
-      # 2026-08-21.
+      # It resolves from the committed supabase/functions/deno.lock with
+      # --frozen (#2278), so a transitive dependency that publishes upstream
+      # cannot change what this job checks. The check no longer passes
+      # --minimum-dependency-age=120: the 2026-08-21 rollup 4.62.5 outage that
+      # flag papered over cannot recur when nothing resolves at CI time (the
+      # relock script still uses it). When a function's imports change,
+      # regenerate the lock with `npm run typecheck:functions:relock` and
+      # commit it.
       - name: Edge functions (Deno)
         id: edge_functions
         continue-on-error: true
@@ -540,8 +491,72 @@ jobs:
           STEP_OUTCOMES: ${{ toJSON(steps) }}
           WORKFLOW_FILE: .github/workflows/ci.yml
           JOB_ID: static-checks
-          IGNORE_STEPS: filter_knowledge,knowledge_gate
         run: node scripts/github/step-summary.mjs
+
+  # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
+  # 2026-09-02 alongside the generator itself, as a step of `static-checks`.
+  # Without a gate the committed artifact could go stale on the very next
+  # registry.yml edit and nothing would notice: `.claude/rules/quality-gates.md`'s
+  # own rule is "a script in package.json with no workflow step is not a gate."
+  #
+  # 2026-10-21: its own job. The check takes 110-342 s and sat in the middle of
+  # Static checks (4.3-8.9 min, the slowest of the non-build jobs on a PR that
+  # touches docs), so it set the pace once the build got faster. It runs beside
+  # the others now. Only when memory/**, docs/** or scripts/knowledge/** changed
+  # (`knowledge` in .github/path-filters.yml); every push to main still runs it.
+  # Not gated in the aggregate by `if:`: a skipped job there reads as a failure,
+  # so the job always runs and its steps exit early.
+  world-model:
+    name: World Model
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read  # dorny/paths-filter lists the PR's files via the API
+    env:
+      # Read by scripts/github/pr-drift-gate.mjs: on a pull_request, a failing
+      # drift check is re-run on the base (main) and the PR head to tell
+      # "introduced by this PR" from "inherited from main". Empty elsewhere.
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Full history: the drift gate and the knowledge checks read git.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Filter changed paths (knowledge)
+        id: filter_knowledge
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: .github/path-filters.yml
+
+      - name: Knowledge paths changed? (fail closed)
+        id: knowledge_gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter_knowledge.outcome }}
+          FILTER_KNOWLEDGE: ${{ steps.filter_knowledge.outputs.knowledge }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_KNOWLEDGE" = "false" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No memory/**, docs/** or scripts/knowledge/** change; World Model check not needed (it runs on every push to main)."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node and install dependencies
+        if: steps.knowledge_gate.outputs.run == 'true'
+        uses: ./.github/actions/setup-node-npm
+
+      - name: World Model graph is current
+        if: steps.knowledge_gate.outputs.run == 'true'
+        run: node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run knowledge:world-model:check
 
   # TypeScript and Lint are two PARALLEL jobs again (2026-10-07, plan 5.6).
   # They were folded into one on 2026-09-23 to save a runner slot and an
@@ -716,14 +731,23 @@ jobs:
     # (`vitest --changed`, import-graph based). Everything else keeps the five
     # shards: the run when a PR is opened or marked ready, a reopen, a manual
     # dispatch, and every push to main (so main always gets the full suite).
-    # That frees about 30 job-minutes per follow-up push: shard 1 runs the
-    # related tests and shards 2-5 skip every step after the checkout (a few
-    # seconds each). If the diff touches the runner, the dependency set or this
-    # workflow (see "Decide test scope"), all five shards run normally.
+    # The related tests are sharded too (`--changed ... --shard=N/5`): a diff
+    # to a widely imported file pulls in most of the suite, and one job for all
+    # of it ran 16-21 minutes (2026-10-21: 06:33, 07:05 and 08:10Z runs, the
+    # last behind a 21 minute queue). Sharded, the worst case is a full run and
+    # a small diff leaves every shard a few seconds of tests. If the diff touches
+    # the runner, the dependency set or this workflow (see "Decide test scope"),
+    # every shard runs its slice of the whole suite.
+    #
+    # The two test steps keep different names on purpose: scripts/pr-land.mjs
+    # lands only on a run where every `Unit tests (shard N/5)` step succeeded,
+    # so a related-tests-only run must never satisfy it.
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5]
+    env:
+      VITEST_MAX_WORKERS: '4'  # 4-vCPU hosted runner; vitest.config.ts defaults to 3 for shared machines
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -762,50 +786,45 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Decide test scope. full = this shard runs its slice of the suite.
-      # scoped = follow-up push, shard 1 runs only the tests related to the
-      # diff. skip = follow-up push, shards 2-5 have nothing to do. A follow-up
-      # push whose diff touches the test runner, the dependency set or this
-      # workflow can alter any test, so it falls back to full on every shard
-      # (never one serial job: that hit the 30-minute timeout).
+      # Decide test scope. full = this shard runs its slice of the whole suite.
+      # scoped = a follow-up push: this shard runs its slice of the tests
+      # related to the diff. A follow-up push whose diff touches the test
+      # runner, the dependency set or this workflow can alter any test, so it
+      # runs full.
       - name: Decide test scope
         id: scope
         if: steps.gate.outputs.run == 'true'
         env:
           SCOPED: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
-          SHARD: ${{ matrix.shard }}
         run: |
           set -eu
           mode=full
           if [ "$SCOPED" = "true" ]; then
             RISKY=$(git diff --name-only HEAD^1 HEAD | grep -E '^(package\.json|package-lock\.json|vitest\.|tsconfig|scripts/serialize\.mjs|\.github/workflows/ci\.yml)' || true)
             if [ -n "$RISKY" ]; then
-              echo "::notice::runner/dependency/workflow files changed, running the full suite on all five shards: $RISKY"
-            elif [ "$SHARD" = "1" ]; then
-              mode=scoped
+              echo "::notice::runner/dependency/workflow files changed, running the full suite: $RISKY"
             else
-              mode=skip
-              echo "::notice::follow-up push: the related tests run on shard 1, nothing for this shard"
+              mode=scoped
             fi
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node and install dependencies
-        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode != 'skip'
+        if: steps.gate.outputs.run == 'true'
         uses: ./.github/actions/setup-node-npm
 
       - name: Unit tests (shard ${{ matrix.shard }}/5)
-        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode != 'skip'
-        env:
-          MODE: ${{ steps.scope.outputs.mode }}
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'full'
+        run: npm run test:run -- --shard=${{ matrix.shard }}/5
+
+      # Follow-up push: only the tests related to this PR's diff, in this
+      # shard's slice. Not evidence that the suite passes (the full run on
+      # ready and on main is), hence the different step name.
+      - name: Related unit tests (shard ${{ matrix.shard }}/5, follow-up push)
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped'
         run: |
-          set -eu
-          if [ "$MODE" = "full" ]; then
-            exec npm run test:run -- --shard=${{ matrix.shard }}/5
-          fi
-          # Follow-up push: only the tests related to this PR's diff.
-          echo "::notice::follow-up push: running the tests related to the diff (the full suite runs when the PR is opened or ready, and on main)"
-          exec npm run test:run -- --changed HEAD^1 --passWithNoTests
+          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
+          npm run test:run -- --changed HEAD^1 --shard=${{ matrix.shard }}/5 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -820,7 +839,8 @@ jobs:
   next-build:
     name: Next build
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts builds the head.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -991,7 +1011,8 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts runs it.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the ghcr.io login step below get the authenticated
@@ -1225,6 +1246,7 @@ jobs:
     needs:
       - detect-changes
       - static-checks
+      - world-model
       - typecheck
       - lint
       - unit-tests
@@ -1254,6 +1276,9 @@ jobs:
       - name: Fail if any required CI check failed
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
+          NEXT_BUILD_RESULT: ${{ needs.next-build.result }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+          ACTION: ${{ github.event.action }}
           CODE: ${{ needs.detect-changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1268,7 +1293,13 @@ jobs:
           fi
           incomplete=false
           if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
-          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          skips=$(jq '[.[] | select(. == "skipped")] | length' <<< "$RESULTS")
+          # Quick tier: a follow-up push skips Next build and Supabase on purpose.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            [ "$NEXT_BUILD_RESULT" = "skipped" ] && skips=$((skips - 1))
+            [ "$SUPABASE_RESULT" = "skipped" ] && skips=$((skips - 1))
+          fi
+          if [ "$CODE" = "true" ] && [ "$skips" -gt 0 ]; then incomplete=true; fi
           if [ "$incomplete" = "false" ]; then
             echo "CI hard gates clean."; exit 0
           fi

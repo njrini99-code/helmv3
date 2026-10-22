@@ -12,9 +12,15 @@ import { previewViewer } from '@/clubhouse/preview/viewer';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
 import { RoundReviewSkeleton, RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
-import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
+import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_COACH_NOTED, PREVIEW_REVIEW_NOTE_FAILED, PREVIEW_REVIEW_PLAYER_NOTED, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
+import { TeamRounds } from '@/clubhouse/screens/rounds/TeamRounds';
+import { TeamRoundsSkeleton } from '@/clubhouse/screens/rounds/TeamRoundsSkeleton';
+import { WhatsNew } from '@/clubhouse/screens/whats-new/WhatsNew';
+import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
+import { PREVIEW_WHATS_NEW, PREVIEW_WHATS_NEW_EMPTY, PREVIEW_WHATS_NEW_FAILED, PREVIEW_WHATS_NEW_TRUNCATED } from '@/clubhouse/preview/fixtures-whats-new';
+import { PREVIEW_TEAM_ROUNDS, PREVIEW_TEAM_ROUNDS_EMPTY, PREVIEW_TEAM_ROUNDS_FAILED, PREVIEW_TEAM_ROUNDS_NO_ROSTER, PREVIEW_TEAM_ROUNDS_ROSTER_FAILED } from '@/clubhouse/preview/fixtures-team-rounds';
 import { PreviewClasses } from '@/clubhouse/preview/PreviewClasses';
 import { ClassesNoTeam } from '@/clubhouse/screens/classes/ClassesNoTeam';
 import { ClassesSkeleton } from '@/clubhouse/screens/classes/ClassesSkeleton';
@@ -28,7 +34,7 @@ import { Roster } from '@/clubhouse/screens/roster/Roster';
 import { RosterNoTeam } from '@/clubhouse/screens/roster/RosterNoTeam';
 import { TeamRoster } from '@/clubhouse/screens/roster/TeamRoster';
 import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
-import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
+import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
@@ -37,9 +43,11 @@ import {
   PREVIEW_PLAYER_EARLY,
   PREVIEW_PLAYER_FILTERED,
   PREVIEW_PLAYER_NINES,
+  PREVIEW_PLAYER_SUGGESTED,
   PREVIEW_PLAYER_NOMATCH,
   PREVIEW_TEAM_EARLY_FILTER,
   PREVIEW_TEAM_FILTERED,
+  PREVIEW_TEAM_DEMO,
   PREVIEW_TEAM_LAST20,
   PREVIEW_TEAM_NINES,
   PREVIEW_TEAM_NOMATCH,
@@ -74,6 +82,11 @@ import {
   PREVIEW_HOME,
   PREVIEW_HOME_EMPTY,
   PREVIEW_HOME_FAILED,
+  PREVIEW_HOME_LEGS_CACHE_FAILED,
+  PREVIEW_HOME_LEGS_NO_HOLES,
+  PREVIEW_HOME_LEGS_TOUR_FAILED,
+  PREVIEW_HOME_LEGS_UNRANKED,
+  PREVIEW_HOME_QUEUE_FAILED,
   PREVIEW_HOME_NO_EVENTS,
   PREVIEW_HOME_EVENTS_ONLY,
   PREVIEW_HOME_NO_ROUNDS,
@@ -111,12 +124,15 @@ import {
   PREVIEW_HELM_PLAYER_WORKING,
 } from '@/clubhouse/preview/fixtures-coachhelm';
 import { PREVIEW_HELM_COACH_PATTERNS } from '@/clubhouse/preview/fixtures-coachhelm-patterns';
+import { PREVIEW_HELM_COACH_FALLBACK, PREVIEW_HELM_COACH_NARROWING, PREVIEW_HELM_COACH_NO_READS, PREVIEW_HELM_COACH_PATH } from '@/clubhouse/preview/fixtures-coachhelm-path';
+import { PREVIEW_HELM_COACH_NOT_ENOUGH } from '@/clubhouse/preview/fixtures-coachhelm-firm';
 import { PreviewCoachHelmPlayer } from '@/clubhouse/preview/PreviewCoachHelmPlayer';
 import { PreviewAsk } from '@/clubhouse/preview/PreviewAsk';
 import { PreviewCoachHelmViews } from '@/clubhouse/preview/PreviewCoachHelmViews';
+import { PreviewCoachHelmCoachPlayer } from '@/clubhouse/preview/PreviewCoachHelmCoachPlayer';
 import { PREVIEW_TRACK_RECORD, PREVIEW_TRACK_RECORD_EARLY, PREVIEW_TRACK_RECORD_EMPTY, PREVIEW_TRACK_RECORD_UNAVAILABLE, trackLoad } from '@/clubhouse/preview/fixtures-coachhelm-track';
 import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
-import { PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
+import { PREVIEW_HELM_COACH_CORRECTIONS, PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -132,7 +148,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  * handoff's sample data, with no auth and no database, for comparison with
  * design/handoff/screenshots. 404 in production.
  *
- *   /clubhouse-preview/home   ?state=empty | eventsonly | norounds | noevents | failed | loading | error   (empty and eventsonly are the first-run page)
+ *   /clubhouse-preview/home   ?state=empty | eventsonly | norounds | noevents | failed | loading | error | cachefailed | tourfailed | queuefailed | noholes | unranked   (empty and eventsonly are the first-run page)
  *   any screen &at=HH:MM holds the global light; &round=1 adds a round in progress (the Resume accessory)
  *   /clubhouse-preview/home-player ?state=empty | norounds | noevents | failed | loading   (Theo; empty is the first-run page)
  *   /clubhouse-preview/hub, hub-player ?state=empty | failed | failwrites, &tab=home | ann | travel | docs | tasks
@@ -141,9 +157,9 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
- *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
+ *   /clubhouse-preview/roster ?state=empty | failed | partial | availability | loading
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
  *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
@@ -154,13 +170,15 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/qualifier-player ?q=…   /clubhouse-preview/qualifier-new, qualifier-edit ?state=failed | noroster | courses | failwrites | loading
  *   /clubhouse-preview/qualifier-selection ?q=standings | picking | picked | selected, &state=failwrites
  *   /clubhouse-preview/coachhelm ?state=engine | engine-notmoved   (every engine flag on, CoachHelm surfaces A)
+ *   /clubhouse-preview/coachhelm ?state=corrections | corrections-notthis | corrections-wrongcause | corrections-already | corrections-later | corrections-good | corrections-unavailable | corrections-failed   (the correction chips, coachhelm_corrections_v1)
  *   /clubhouse-preview/coachhelm ?state=assigned | empty | noroster | failed | pulsefailed | quiet | off | loading | failwrites | failundo | duplicate | patterns | courseplan | courseplannone | courseplanfailed   (the coach; Maya)
  *   /clubhouse-preview/coachhelm-player ?state=engine   (every engine flag on, CoachHelm surfaces A)
  *   /clubhouse-preview/coachhelm-player ?state=empty | norounds | working | failed | off | loading | proposed | failproposal | proposalsfailed   (Jonah)
  *   /clubhouse-preview/coachhelm-ask ?state=… &q=…   (the Ask sub-tab; states in src/clubhouse/preview/PreviewAsk.tsx)
  *   /clubhouse-preview/coachhelm-views ?view=profile ?state=partial | empty | edge | failed | off | loading   (the player's Game profile; Jonah)
  *   /clubhouse-preview/coachhelm-views ?view=standing ?state=early | empty | womens | nobaseline | failed | off | loading   (the player's Standing)
- *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=engine | young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
+ *   /clubhouse-preview/coachhelm-views ?view=deep-dive ?state=engine | corrections | corrections-good | young | partsfailed | teampool | empty | norounds | failed | off | loading, &q=in-slope | in-pen | in-brk | in-dbl   (the player's Deep dive; q is the read it opens on)
+ *   /clubhouse-preview/coachhelm-coach-player ?view=deep-dive | standing | profile ?state=notonteam | scopefailed | failed | off | loading | failwrites | duplicate, &q=in-pen | in-slope | in-brk | in-dbl   (a coach's views of Jonah, spec A)
  *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
@@ -211,7 +229,7 @@ export default async function ClubhousePreview({
           <PreviewError kind="unknown" />
         ) : (
           <CoachHome
-            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : PREVIEW_HOME}
+            data={state === 'empty' ? PREVIEW_HOME_EMPTY : state === 'failed' ? PREVIEW_HOME_FAILED : state === 'noevents' ? PREVIEW_HOME_NO_EVENTS : state === 'eventsonly' ? PREVIEW_HOME_EVENTS_ONLY : state === 'norounds' ? PREVIEW_HOME_NO_ROUNDS : state === 'cachefailed' ? PREVIEW_HOME_LEGS_CACHE_FAILED : state === 'tourfailed' ? PREVIEW_HOME_LEGS_TOUR_FAILED : state === 'queuefailed' ? PREVIEW_HOME_QUEUE_FAILED : state === 'noholes' ? PREVIEW_HOME_LEGS_NO_HOLES : state === 'unranked' ? PREVIEW_HOME_LEGS_UNRANKED : PREVIEW_HOME}
             now={PREVIEW_HOME_NOW}
           />
         ),
@@ -285,10 +303,26 @@ export default async function ClubhousePreview({
       ) : (
         <RoundReview
           review={
-            { coach: PREVIEW_REVIEW_COACH, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG }[state ?? ''] ?? PREVIEW_REVIEW
+            { coach: PREVIEW_REVIEW_COACH, coachnoted: PREVIEW_REVIEW_COACH_NOTED, playernoted: PREVIEW_REVIEW_PLAYER_NOTED, notefailed: PREVIEW_REVIEW_NOTE_FAILED, noshots: PREVIEW_REVIEW_NO_SHOTS, noholes: PREVIEW_REVIEW_NO_HOLES, total: PREVIEW_REVIEW_TOTAL_ONLY, holebyhole: PREVIEW_REVIEW_HOLE_BY_HOLE, nosg: PREVIEW_REVIEW_NO_SG }[state ?? ''] ?? PREVIEW_REVIEW
           }
         />
       ),
+    },
+    'team-rounds': {
+      path: '/golf/dashboard/rounds',
+      node:
+        state === 'loading' ? (
+          <TeamRoundsSkeleton />
+        ) : (
+          <TeamRounds
+            teamId="preview-team"
+            data={{ empty: PREVIEW_TEAM_ROUNDS_EMPTY, failed: PREVIEW_TEAM_ROUNDS_FAILED, rosterfailed: PREVIEW_TEAM_ROUNDS_ROSTER_FAILED, noroster: PREVIEW_TEAM_ROUNDS_NO_ROSTER }[state ?? ''] ?? PREVIEW_TEAM_ROUNDS}
+          />
+        ),
+    },
+    'whats-new': {
+      path: '/golf/dashboard/whats-new',
+      node: state === 'loading' ? <WhatsNewSkeleton /> : <WhatsNew data={{ empty: PREVIEW_WHATS_NEW_EMPTY, failed: PREVIEW_WHATS_NEW_FAILED, truncated: PREVIEW_WHATS_NEW_TRUNCATED }[state ?? ''] ?? PREVIEW_WHATS_NEW} />,
     },
     roster: {
       path: '/golf/dashboard/roster',
@@ -296,7 +330,19 @@ export default async function ClubhousePreview({
         state === 'loading' ? (
           <RosterSkeleton />
         ) : (
-          <Roster data={state === 'empty' ? PREVIEW_ROSTER_EMPTY : state === 'failed' ? PREVIEW_ROSTER_FAILED : state === 'partial' ? PREVIEW_ROSTER_PARTIAL : PREVIEW_ROSTER} />
+          <Roster
+            data={
+              state === 'empty'
+                ? PREVIEW_ROSTER_EMPTY
+                : state === 'failed'
+                  ? PREVIEW_ROSTER_FAILED
+                  : state === 'partial'
+                    ? PREVIEW_ROSTER_PARTIAL
+                    : state === 'availability'
+                      ? PREVIEW_ROSTER_AVAILABILITY
+                      : PREVIEW_ROSTER
+            }
+          />
         ),
     },
     'roster-player': {
@@ -331,6 +377,8 @@ export default async function ClubhousePreview({
           <StatsTeam data={PREVIEW_TEAM_NINES} />
         ) : state === 'last20' ? (
           <StatsTeam data={PREVIEW_TEAM_LAST20} />
+        ) : state === 'demo' ? (
+          <StatsTeam data={PREVIEW_TEAM_DEMO} />
         ) : state === 'crash' ? (
           // Malformed sections, so every SectionBoundary (CH-4204 to CH-4208) catches and reports once.
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} />
@@ -352,7 +400,7 @@ export default async function ClubhousePreview({
         ) : state === 'nines' ? (
           <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" />
         ) : (
-          <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} />
+          <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? PREVIEW_PLAYER_SUGGESTED : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} initialTab={tab} />
         ),
     },
     calendar: {
@@ -430,7 +478,7 @@ export default async function ClubhousePreview({
         ) : (
           <PreviewCoachHelm
             state={state}
-            data={{ engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF, patterns: PREVIEW_HELM_COACH_PATTERNS }[state ?? ''] ?? PREVIEW_HELM_COACH}
+            data={{ ...PREVIEW_HELM_COACH_CORRECTIONS, engine: PREVIEW_HELM_COACH_ENGINE, 'engine-notmoved': PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, assigned: PREVIEW_HELM_COACH_ASSIGNED, empty: PREVIEW_HELM_COACH_EMPTY, noroster: PREVIEW_HELM_COACH_NO_ROSTER, failed: PREVIEW_HELM_COACH_FAILED, pulsefailed: PREVIEW_HELM_COACH_PULSE_FAILED, quiet: PREVIEW_HELM_COACH_QUIET, off: PREVIEW_HELM_COACH_OFF, patterns: PREVIEW_HELM_COACH_PATTERNS, path: PREVIEW_HELM_COACH_PATH, fallback: PREVIEW_HELM_COACH_FALLBACK, narrowing: PREVIEW_HELM_COACH_NARROWING, noreads: PREVIEW_HELM_COACH_NO_READS, notenough: PREVIEW_HELM_COACH_NOT_ENOUGH }[state ?? ''] ?? PREVIEW_HELM_COACH}
           />
         ),
     },
@@ -477,6 +525,10 @@ export default async function ClubhousePreview({
     'coachhelm-views': {
       path: '/golf/dashboard/coachhelm',
       node: <PreviewCoachHelmViews view={view} state={state} insight={q} />,
+    },
+    'coachhelm-coach-player': {
+      path: '/golf/dashboard/coachhelm',
+      node: <PreviewCoachHelmCoachPlayer view={view} state={state} insight={q} />,
     },
     'coachhelm-track': {
       path: '/golf/dashboard/coachhelm',

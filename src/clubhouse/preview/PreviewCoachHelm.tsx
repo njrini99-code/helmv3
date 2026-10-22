@@ -4,7 +4,9 @@ import { useMemo } from 'react';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
+import { CorrectionWritesProvider } from '../screens/coachhelm/Corrections';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
+import { previewCorrectionWrites } from './fixtures-coachhelm-engine';
 import { previewCoursePlanReads } from './fixtures-course-plan';
 
 const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
@@ -14,7 +16,8 @@ const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
  * fails every write, `failundo` fails only Undo, `duplicate` answers that the
  * player already has an active focus on the metric. `courseplan`, `courseplannone` and
  * `courseplanfailed` turn on the course plan (Slice 7c, coachhelm_course_plan_v1) with
- * fixture reads (fixtures-course-plan.ts). Nothing reaches the server.
+ * fixture reads (fixtures-course-plan.ts). `corrections-*` draw the correction chips with
+ * fake saves (fixtures-coachhelm-engine.ts). Nothing reaches the server.
  */
 export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state?: string }) {
   const writes = useMemo<ChCoachHelmWrites>(() => {
@@ -28,5 +31,10 @@ export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state
   }, [state]);
   const plan = state?.startsWith('courseplan') ?? false;
   const reads = useMemo(() => previewCoursePlanReads(state), [state]);
-  return <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} />;
+  const corrections = useMemo(() => previewCorrectionWrites(state), [state]);
+  return (
+    <CorrectionWritesProvider value={corrections}>
+      <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} />
+    </CorrectionWritesProvider>
+  );
 }

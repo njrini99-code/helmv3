@@ -36,6 +36,13 @@ export const PLAYER_CORRECTION_KINDS: ReadonlySet<CorrectionKind> = new Set([
   'confirm',
 ]);
 
+/**
+ * "Show later" hides a read for this many checkpoints (03 §7.2). A checkpoint
+ * is a completed round the engine rechecks the read on, so the read comes back
+ * once this many rounds newer than the snooze are posted.
+ */
+export const SNOOZE_CHECKPOINTS = 2;
+
 /** Length caps, mirrored by the table's CHECK constraints. */
 export const ALTERNATIVE_CAUSE_MAX = 120;
 export const FREE_TEXT_MAX = 500;

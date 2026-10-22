@@ -50,9 +50,10 @@ export function buildCatalog(base) {
     const classes = new Set();
     const tokens = [];
     ast.walkRules(rule => { for (const match of rule.selector.matchAll(/\.(ch-[\w-]+)/g)) classes.add(match[1]); });
+    // No source line numbers: they shift on any stylesheet edit and made the committed catalog go stale on every merge.
     ast.walkDecls(declaration => {
       if (declaration.prop.startsWith('--ch-')) tokens.push({ name: declaration.prop, value: declaration.value,
-        scope: scopeOf(declaration), line: declaration.source?.start?.line ?? 0 });
+        scope: scopeOf(declaration) });
     });
     return { file: relative(base, file), classes: [...classes].sort(), tokens };
   });
