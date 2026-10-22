@@ -35,8 +35,8 @@ export function devProgress(f: { title: string; metric?: string | null; current:
 }
 
 /** "Now 46.5 · target 68.5", or the goal's state when nothing is measured yet. */
-export function goalLine(g: { title: string; state: string | null; current: number | null; target: number | null }): string {
+export function goalLine(g: { title: string; metric?: string | null; state: string | null; current: number | null; target: number | null }): string {
   if (g.current == null) return g.state ?? 'Active';
-  const metric = devMetric(g.title);
+  const metric = devMetric(g.title, g.metric);
   return `Now ${devValue(g.current, metric)}${g.target != null ? ` · target ${devValue(g.target, metric)}` : ''}`;
 }

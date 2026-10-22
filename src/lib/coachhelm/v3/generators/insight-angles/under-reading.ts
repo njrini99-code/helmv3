@@ -47,6 +47,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { TEAM_POOL_MIN_ATTEMPTS, extractPutts, poolTeammates, recordOf, type BreakingMiss, type TeamShotData } from './counted-shots';
 
 /** `01` row 5 / `04` §2: side-tagged share of misses before the tags can speak. */
@@ -212,12 +213,14 @@ export function composeUnderReading(agg: UnderReadingAggregate): ComposedContent
   };
   return {
     category: 'putting',
-    title: 'Breaking putts are missing on the low side',
-    content:
-      `Of the ${a.tagged} misses on breaking putts you tagged with a side (${covPct}% of ${a.misses} misses), ${a.low} finished low (${a.low_pct}%) and ${a.high} high. ` +
-      `${breakText('Left-to-right:', r.by_break.left_to_right)}; ${breakText('right-to-left:', r.by_break.right_to_left)}.` +
-      (r.team ? ` Your teammates' tagged misses were ${r.team.low_pct}% low.` : '') +
-      ' A low miss comes from too little break or too soft a pace; the tags do not say which.',
+    ...inBothVoices((v) => ({
+      title: 'Breaking putts are missing on the low side',
+      content:
+        `Of the ${a.tagged} misses on breaking putts ${v.player} tagged with a side (${covPct}% of ${a.misses} misses), ${a.low} finished low (${a.low_pct}%) and ${a.high} high. ` +
+        `${breakText('Left-to-right:', r.by_break.left_to_right)}; ${breakText('right-to-left:', r.by_break.right_to_left)}.` +
+        (r.team ? ` ${v.Your} teammates' tagged misses were ${r.team.low_pct}% low.` : '') +
+        ' A low miss comes from too little break or too soft a pace; the tags do not say which.',
+    })),
     priority: 'low',
     signature: 'under_reading:breaking',
     evidence,

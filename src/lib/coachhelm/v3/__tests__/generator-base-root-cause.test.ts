@@ -12,6 +12,7 @@ const upsertInsightV3Mock = vi.fn();
 const loadRootCauseContextMock = vi.fn();
 const isFlagEnabledMock = vi.fn();
 const logServerErrorMock = vi.fn();
+const logServerEventMock = vi.fn();
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ __fake: true }) }));
 vi.mock('@/lib/coachhelm/v3/insights/upsert-v3', () => ({
@@ -23,7 +24,10 @@ vi.mock('@/lib/coachhelm/v3/standing/loader', () => ({ loadStandingForMetric: vi
 vi.mock('@/lib/coachhelm/v3/counterfactual/compute', () => ({ computeCounterfactual: vi.fn(() => null) }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/baseline-loader', () => ({ loadPlayerScoringBaseline: vi.fn(async () => 72) }));
 vi.mock('@/lib/coachhelm/v3/counterfactual/player-cohort-loader', () => ({ loadPlayerCohort: vi.fn(async () => ({ gender: null })) }));
-vi.mock('@/lib/server-error-logger', () => ({ logServerError: (...a: unknown[]) => logServerErrorMock(...a) }));
+vi.mock('@/lib/server-error-logger', () => ({
+  logServerError: (...a: unknown[]) => logServerErrorMock(...a),
+  logServerEvent: (...a: unknown[]) => logServerEventMock(...a),
+}));
 vi.mock('@/lib/flags/is-enabled', () => ({ isFlagEnabled: (...a: unknown[]) => isFlagEnabledMock(...a) }));
 vi.mock('@/lib/coachhelm/v3/engine/root-cause-context', () => ({
   loadRootCauseContext: (...a: unknown[]) => loadRootCauseContextMock(...a),
@@ -112,10 +116,22 @@ beforeEach(() => {
 
 describe('BaseGenerator.run() — coach voice', () => {
   it('stores the coach copy in evidence and leaves title/content in the player voice', async () => {
-    await new ApproachLikeGenerator({ coach: { title: 'Coach title', content: 'The player misses short.' } }).run();
+    const coach = { title: 'Greens from 50-125 yds', content: 'The player misses short.' };
+    await new ApproachLikeGenerator({ coach }).run();
     expect(written().title).toBe('Greens hit from 50-125 yds');
     expect(written().content).toBe('content');
-    expect(written().evidence.coach_copy).toEqual({ title: 'Coach title', content: 'The player misses short.' });
+    expect(written().evidence.coach_copy).toEqual(coach);
+  });
+
+  it('does not store a coach copy whose numbers differ, or that says "you", and logs why', async () => {
+    logServerEventMock.mockClear();
+    await new ApproachLikeGenerator({ coach: { title: 'Greens from 50-150 yds', content: 'You miss short.' } }).run();
+    expect('coach_copy' in written().evidence).toBe(false);
+    expect(written().content).toBe('content');
+    const calls = (logServerEventMock.mock.calls as Array<[string, { action: string; metadata: { issues: string[] } }]>)
+      .filter(([, ctx]) => ctx.action.endsWith('.coach_copy'));
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[1].metadata.issues).toEqual(["title: numbers differ from the player's copy", 'content: second person']);
   });
 
   it('writes no coach_copy key when the generator has none', async () => {

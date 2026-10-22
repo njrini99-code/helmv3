@@ -107,6 +107,9 @@ the fixer cannot receive them until the builder lets go.
    needs the builder or Nick goes in the queue, not in a silent fix.
 7. Mark the PR ready (the one real CI run), wait for the event, land with
    `npm run pr:land -- <n>` when the required contexts are green on the head.
+   `pr:land` also refuses unless one CI run of that head ran all five unit
+   shards (a follow-up push runs shard 1 only); if it refuses, flip the PR to
+   draft and back to ready for a full run.
 8. Update the queue entry to `landed` and unsubscribe.
 
 A red check that is red on `main` too is not this PR's: port the existing fix or

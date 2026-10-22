@@ -8,6 +8,7 @@ import { createCalendarFeed, deleteCalendarFeed, getCalendarFeeds, regenerateCal
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { offsetMinutesFor } from '@/lib/golf/timezone';
 import { Avatar } from '../../ui/Avatar';
+import { AVAILABILITY_WORD } from '../roster/format';
 import { Button } from '../../ui/Button';
 import { DateField } from '../../ui/DateField';
 import { TimeField } from '../../ui/TimeField';
@@ -681,7 +682,7 @@ export function EventEditor({
                     <Avatar name={p.name} size={22} />
                     <span>
                       {p.name}
-                      {clashes.includes(p.id) && <small>Busy at this time</small>}
+                      {clashes.includes(p.id) ? <small>Busy at this time</small> : p.availability && p.availability !== 'available' ? <small>{AVAILABILITY_WORD[p.availability]}</small> : null}
                     </span>
                   </label>
                 ))}

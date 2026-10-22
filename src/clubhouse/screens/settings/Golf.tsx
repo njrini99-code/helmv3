@@ -32,7 +32,7 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
   const f = useDraft(details);
   useReportDirty('golf', f.dirty);
   const save = useSaveAction('settings.saveGolf', writes.saveGolf, SAVE_COPY.golf, (_r, saved) => f.commit(saved));
-  const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => f.setDraft((d) => ({ ...d, [k]: e.target.value }));
+  const set = (k: keyof ChGolfDetails) => (e: React.ChangeEvent<HTMLInputElement>) => { const value = e.target.value; f.setDraft((d) => ({ ...d, [k]: value })); };
   return (
     <Card
       id="set-golf"
@@ -46,7 +46,7 @@ function DetailsCard({ details, writes }: { details: ChGolfDetails; writes: ChSe
         <Field id="set-grad" label="Graduation year" inputMode="numeric" placeholder="2028" value={f.draft.graduationYear} onChange={set('graduationYear')} />
         <Field id="set-phone" label="Phone" type="tel" autoComplete="tel" value={f.draft.phone} onChange={set('phone')} />
         <Field id="set-home" label="Hometown" autoComplete="address-level2" value={f.draft.hometown} onChange={set('hometown')} />
-        <Field id="set-state" label="State" maxLength={2} placeholder="NC" value={f.draft.state} onChange={(e) => f.setDraft((d) => ({ ...d, state: e.target.value.toUpperCase() }))} />
+        <Field id="set-state" label="State" maxLength={2} placeholder="NC" value={f.draft.state} onChange={(e) => { const value = e.target.value.toUpperCase(); f.setDraft((d) => ({ ...d, state: value })); }} />
       </div>
     </Card>
   );

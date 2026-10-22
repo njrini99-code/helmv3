@@ -37,7 +37,8 @@ import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual
 import { isFloorExemptMetric } from '@/lib/coachhelm/v3/ranking/score';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
+import { coachCopyIssues } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { isCoachHelmFlagEnabled } from '@/lib/coachhelm/canary';
 import {
   diagnoseRootCause,
@@ -49,7 +50,7 @@ import {
 import { loadRootCauseContext } from './root-cause-context';
 import { attachTeamPool } from '@/lib/coachhelm/v3/team-pool/attach';
 
-import type { Diagnosis, DiagnosisDriver, InsightCause, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { Diagnosis, DiagnosisDriver, InsightCause, InsightCoachCopy, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 import type {
   ComposedContent,
@@ -636,6 +637,23 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
+  /**
+   * The coach's copy to store as `evidence.coach_copy`, or nothing. A copy
+   * whose numbers differ from the player's, or that says "you" or names a
+   * club, is not stored (the coach surfaces fall back to the player's text),
+   * and the miss is logged so the template can be fixed.
+   */
+  private async checkedCoachCopy(composed: ComposedContent): Promise<{ coach_copy?: InsightCoachCopy }> {
+    if (!composed.coach) return {};
+    const issues = coachCopyIssues(composed, composed.coach);
+    if (issues.length === 0) return { coach_copy: composed.coach };
+    await logServerEvent(`${this.name}: coach copy not stored (${issues.join('; ')})`, {
+      action: `v3.generator.${this.name}.coach_copy`,
+      metadata: { signature: composed.signature, issues },
+    }, 'warning');
+    return {};
+  }
+
   async run(): Promise<RunResult> {
     try {
       // Per-team toggle gate runs FIRST — saves the aggregate query
@@ -716,7 +734,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         confidence_factors: confidenceFactors,
         confidence: calcConfidence({ confidence_factors: confidenceFactors }),
         // Coach voice rides in evidence; title/content stay the player's.
-        ...(composed.coach ? { coach_copy: composed.coach } : {}),
+        ...(await this.checkedCoachCopy(composed)),
       };
 
       // A generator may pin priority:'low' for a descriptive standing row, but

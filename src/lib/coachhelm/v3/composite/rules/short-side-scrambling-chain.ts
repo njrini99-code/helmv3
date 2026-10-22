@@ -18,6 +18,7 @@
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 const MIN_ATTEMPTS = 10;
 const POOR_PROXIMITY_FT = 15;
@@ -87,14 +88,16 @@ const rule: CompositeRule = {
       1.5,
     );
     return {
-      title: 'Rough and sand recoveries are leaving long putts',
-      content:
-        `You attempted ${attempts} short-game shots from rough or bunker (${dominant}); ` +
-        `the average leave was ${avgProximity.toFixed(0)} ft, outside make-able range. ` +
-        `Whether these were short-sided misses is not recorded: check pin position and ` +
-        `miss side on the next few rounds before treating this as a short-side pattern. ` +
-        `Recommended: recovery reps from rough and sand to a 10-ft circle. The ` +
-        `measurable target is leave distance.`,
+      ...inBothVoices((v) => ({
+        title: 'Rough and sand recoveries are leaving long putts',
+        content:
+          `${v.Player} attempted ${attempts} short-game shots from rough or bunker (${dominant}); ` +
+          `the average leave was ${avgProximity.toFixed(0)} ft, outside make-able range. ` +
+          `Whether these were short-sided misses is not recorded: check pin position and ` +
+          `miss side on the next few rounds before treating this as a short-side pattern. ` +
+          `Recommended: recovery reps from rough and sand to a 10-ft circle. The ` +
+          `measurable target is leave distance.`,
+      })),
       signature: 'short_side_scrambling_chain',
       evidence: {
         metric: 'recovery_proximity_rough_sand',

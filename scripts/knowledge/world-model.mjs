@@ -114,7 +114,8 @@ function git(args) {
 
 /** Every tracked file, never a filesystem walk — see AGENTS.md's `.worktrees/` incident. */
 function trackedFiles() {
-  return git(['ls-files']).trim().split('\n').filter(Boolean);
+  // A path appears once per index stage mid-merge; the set keeps a conflicted file one node.
+  return [...new Set(git(['ls-files']).trim().split('\n').filter(Boolean))];
 }
 
 function readTracked(path) {

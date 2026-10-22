@@ -47,6 +47,8 @@ describe('Qualifier detail reads', () => {
     golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
     golf_holes: { data: [{ round_id: 'r1', hole_number: 1, par: 4, score: 4 }] },
     'rpc:get_qualifier_selection_reasons': { data: [] },
+    // Names come through golf_player_profiles, not an embed on the entries (security review S4).
+    'rpc:golf_player_profiles': { data: [entry.player] },
   });
   const read = () => loadQualifierDetail({ role: 'player', teamId: 't1', playerId: 'p1', qualifierId: Q });
 
@@ -129,6 +131,7 @@ describe('Qualifier form reads', () => {
       golf_qualifier_selections: { data: [] },
       golf_qualifier_round_courses: { data: [{ round_number: 1, course_id: 'c1', course_name: 'Hope Valley CC', tee_id: 'tee1' }] },
       golf_course_tees: { data: [{ id: 'tee1', tee_name: 'Blue', total_par: 72 }] },
+      'rpc:golf_player_profiles': { data: [entry.player] },
     };
     const { result, waves: depth } = await waves.run(loadQualifierForm({ teamId: 't1', qualifierId: Q }));
     expect(depth[0]).toEqual(['golf_qualifiers', 'golf_team_members']);

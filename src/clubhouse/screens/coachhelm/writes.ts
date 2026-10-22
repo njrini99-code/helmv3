@@ -2,6 +2,9 @@
 
 import { acceptFocusArea, createFocusAreaFromInsightV2, declineFocusArea } from '@/app/golf/actions/development';
 import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-feed';
+import { recordCoachHelmCorrection } from '@/app/golf/actions/coachhelm-corrections';
+import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
+import type { CorrectionInput, CorrectionResult } from '@/lib/coachhelm/v3/corrections/input';
 import { getCoursePlan, listCoursePlanCourses, type CoursePlanCoursesResult, type CoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
@@ -63,4 +66,32 @@ export interface ChCoursePlanReads {
 export const LIVE_COURSE_PLAN_READS: ChCoursePlanReads = {
   courses: (playerId) => listCoursePlanCourses(playerId),
   plan: (playerId, courseId) => getCoursePlan(playerId, courseId),
+};
+
+/**
+ * A correction on a read (03 §7.2, flag `coachhelm_corrections_v1`): the one action that records it. Append-only, so there is no
+ * reverse write; the newest answer by one author on one read is the one that counts. Preview and tests pass their own.
+ */
+export interface ChCorrectionWrites {
+  record(input: CorrectionInput): Promise<CorrectionResult>;
+}
+
+export const LIVE_CORRECTION_WRITES: ChCorrectionWrites = {
+  record: (input) => recordCoachHelmCorrection(input),
+};
+
+/** What a team re-check answers: how many players it read, the reads it wrote, and who it skipped or could not finish. */
+export type ChRecheckResult = Awaited<ReturnType<typeof refreshTeamAnalysisAsCoach>>;
+
+/**
+ * Re-check reads on the coach's board: the action Fairway's Triage desk "Scan team" calls, unchanged. It takes no team or
+ * player id: the action resolves the coach and their team from the session itself, checks the coach, and spends the
+ * engine's rate limit once for the batch. Preview and tests pass their own.
+ */
+export interface ChRecheckWrites {
+  recheck(): Promise<ChRecheckResult>;
+}
+
+export const LIVE_RECHECK_WRITES: ChRecheckWrites = {
+  recheck: () => refreshTeamAnalysisAsCoach(),
 };

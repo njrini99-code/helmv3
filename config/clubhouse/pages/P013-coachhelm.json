@@ -45,7 +45,8 @@
     "route": "src/clubhouse/routes/coachhelm.tsx",
     "styles": "src/clubhouse/styles/coachhelm.css",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm.test.tsx",
+      "src/clubhouse/__tests__/whats-new.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/coachhelm.md",
@@ -54,8 +55,8 @@
   "actions": [
     {
       "id": "ACT-P013-ASSIGN-FOCUS",
-      "label": "Assign an insight as a focus (coach)",
-      "component": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
+      "label": "Assign an insight as a focus (coach: the board, and a coach’s Deep dive of one player)",
+      "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "assign",
       "service": "src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
       "data": [
@@ -71,13 +72,14 @@
         "offline": 10703
       },
       "tests": [
-        "src/clubhouse/__tests__/coachhelm.test.tsx"
+        "src/clubhouse/__tests__/coachhelm.test.tsx",
+        "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx"
       ]
     },
     {
       "id": "ACT-P013-DISMISS-INSIGHT",
-      "label": "Dismiss an insight (coach)",
-      "component": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
+      "label": "Dismiss an insight (coach: the board, and a coach’s Deep dive of one player)",
+      "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "dismiss",
       "service": "src/app/golf/actions/insights-feed.ts#dismissInsight",
       "data": [
@@ -93,13 +95,14 @@
         "offline": 10703
       },
       "tests": [
-        "src/clubhouse/__tests__/coachhelm.test.tsx"
+        "src/clubhouse/__tests__/coachhelm.test.tsx",
+        "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx"
       ]
     },
     {
       "id": "ACT-P013-UNDO-DISMISS",
-      "label": "Undo a dismissal (coach)",
-      "component": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard",
+      "label": "Undo a dismissal (coach: the board, and a coach’s Deep dive of one player)",
+      "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "undo",
       "service": "src/app/golf/actions/insights-feed.ts#reactivateInsight",
       "data": [
@@ -114,7 +117,29 @@
         "offline": 10703
       },
       "tests": [
-        "src/clubhouse/__tests__/coachhelm.test.tsx"
+        "src/clubhouse/__tests__/coachhelm.test.tsx",
+        "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P013-RECHECK-READS",
+      "label": "Re-check the team's reads (coach)",
+      "component": "src/clubhouse/screens/coachhelm/Recheck.tsx#RecheckReads",
+      "handler": "run",
+      "service": "src/app/golf/actions/insights-coachhelm.ts#refreshTeamAnalysisAsCoach",
+      "data": [
+        "golf_coach_insights",
+        "golf_team_members"
+      ],
+      "bridge": {
+        "loading": 130213,
+        "success": 130747,
+        "failure": 130638,
+        "rateLimited": 130639,
+        "haptic": 131708
+      },
+      "tests": [
+        "src/clubhouse/__tests__/coachhelm-recheck.test.tsx"
       ]
     },
     {

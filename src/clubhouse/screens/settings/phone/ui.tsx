@@ -5,6 +5,7 @@ import { useId, useState, type ComponentProps, type InputHTMLAttributes, type Re
 import { Icon } from '../../../ui/Icon';
 import { Slider } from '../../../ui/Slider';
 import type { ChProblem } from '../model';
+import { useHydrationGuard } from '../../../lib/use-hydration-guard';
 import { SettingSwitch } from '../parts';
 import { PickerSheet } from './sheets';
 
@@ -183,11 +184,13 @@ export function FieldRow({
   help?: string;
 } & InputHTMLAttributes<HTMLInputElement>) {
   const described = error || help ? `${id}-h` : undefined;
+  // Read-only until hydrated, so text typed into the server markup is never wiped (see Field in ../parts).
+  const guard = useHydrationGuard(input.readOnly);
   return (
     <div className="ch-setm-fieldwrap">
       <label className={'ch-setm-row is-field' + (inline ? ' is-inline' : '')} htmlFor={id}>
         <span className="ch-setm-field__l">{label}</span>
-        <input id={id} className="ch-setm-field__i" aria-invalid={error ? true : undefined} aria-describedby={described} {...input} />
+        <input id={id} className="ch-setm-field__i" aria-invalid={error ? true : undefined} aria-describedby={described} {...input} {...guard} />
       </label>
       {(error || help) && (
         <span id={`${id}-h`} className={'ch-setm-field__h' + (error ? ' is-error' : '')} role={error ? 'alert' : undefined} data-ch-code={error?.code}>

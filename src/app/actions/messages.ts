@@ -20,6 +20,7 @@ import { getCoachTeamSwitchContext } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { assertGolfConversationAudience } from '@/lib/golf/conversation-audience';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { validateGolfReplyTarget } from '@/lib/golf/message-replies';
 
 type Sport = 'baseball' | 'golf';
@@ -1300,18 +1301,17 @@ export async function deleteBaseballMessage(messageId: string) {
 async function getGolfPlayerUserIdImpl(playerId: string): Promise<string | null> {
   const supabase = await createClient();
 
-  const { data: player, error } = await supabase
-    .from('golf_players')
-    .select('user_id')
-    .eq('id', playerId)
-    .single();
+  // Through golf_player_profiles: a player starting a DM from the roster may no
+  // longer read a teammate's golf_players row (security review S4).
+  const { data: profiles, error } = await readGolfPlayerProfiles(supabase, { playerIds: [playerId] });
 
-  if (error || !player) {
+  if (error) {
     await logServerError(`[getGolfPlayerUserId] Error: ${describeError(error)}`, { action: 'messages.getGolfPlayerUserId' });
     return null;
   }
 
-  return player.user_id;
+  // Not visible to the caller (or no such player): no account to message.
+  return profiles?.[0]?.user_id ?? null;
 }
 
 const observedGetGolfPlayerUserId = withAdminObserved(
@@ -1427,16 +1427,15 @@ async function searchGolfMessagesImpl(
     const senderIds = [...new Set(matchingMessages.map(m => m.sender_id))];
     const matchedConvIds = [...new Set(matchingMessages.map(m => m.conversation_id))];
 
-    // Batch fetch sender info (coaches and players)
+    // Batch fetch sender info (coaches and players). Players through
+    // golf_player_profiles: a player may no longer read a teammate's
+    // golf_players row (security review S4).
     const [{ data: coaches }, { data: players }] = await Promise.all([
       supabase
         .from('golf_coaches')
         .select('user_id, full_name, avatar_url')
         .in('user_id', senderIds),
-      supabase
-        .from('golf_players')
-        .select('user_id, first_name, last_name, avatar_url')
-        .in('user_id', senderIds),
+      readGolfPlayerProfiles(supabase, { userIds: senderIds }),
     ]);
 
     // Build sender lookup map

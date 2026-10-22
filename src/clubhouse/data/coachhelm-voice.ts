@@ -103,3 +103,47 @@ export function speak(text: string, viewer: ChViewer | undefined): string {
   const first = viewer.first.trim();
   return typeset(first ? toThirdPerson(text, first) : text);
 }
+
+/**
+ * The numbers a text states, in order, as written ("58", "4", "6", "0.4"): the check that two voices of one read agree. A thousands
+ * comma is read as part of the number, and a number's sign is left out (a coach's "lost 0.4" and a player's "−0.4" are the same 0.4).
+ */
+export function numbersIn(text: string): string[] {
+  return (text.match(/\d[\d,]*(?:\.\d+)?/g) ?? []).map((n) => n.replace(/,/g, ''));
+}
+
+/** The same numbers, as many times each, in any order (a retelling may move a clause). */
+export function sameNumbers(a: string, b: string): boolean {
+  const x = numbersIn(a).sort();
+  const y = numbersIn(b).sort();
+  return x.length === y.length && x.every((n, i) => n === y[i]);
+}
+
+/** The source text of a read, before it is spoken: the stored title and content. */
+export interface ChReadText {
+  title: string;
+  content: string;
+}
+
+/**
+ * The text a read is spoken from for this viewer (design call, "Coach voice vs player voice"; chs-40). A coach reads the engine's
+ * stored coach copy (`evidence.coach_copy`, written in neutral third person by the generators, `generator-base.ts`) when the row
+ * carries it; `speak` then only names the player and typesets it. Without it, or for a player, the row's own title and content,
+ * which `speak` turns into the coach's voice by its regex, as before. Each part falls back on its own, and a coach part whose
+ * numbers differ from the player's is not used: both voices of one read must state the same numbers.
+ */
+export function readTextFor(ins: { title: string; content: string; evidence?: unknown }, coach: boolean): ChReadText & { coachCopy: { title: boolean; content: boolean } } {
+  const own = { title: ins.title, content: ins.content, coachCopy: { title: false, content: false } };
+  if (!coach) return own;
+  const ev = ins.evidence && typeof ins.evidence === 'object' && !Array.isArray(ins.evidence) ? (ins.evidence as Record<string, unknown>) : null;
+  const cc = ev?.coach_copy && typeof ev.coach_copy === 'object' && !Array.isArray(ev.coach_copy) ? (ev.coach_copy as Record<string, unknown>) : null;
+  if (!cc) return own;
+  const usable = (stored: unknown, theirs: string): stored is string => typeof stored === 'string' && stored.trim() !== '' && sameNumbers(stored, theirs);
+  const title = usable(cc.title, ins.title);
+  const content = usable(cc.content, ins.content);
+  return {
+    title: title ? (cc.title as string).trim() : ins.title,
+    content: content ? (cc.content as string).trim() : ins.content,
+    coachCopy: { title, content },
+  };
+}

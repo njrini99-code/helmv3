@@ -69,7 +69,7 @@ describe('nav', () => {
     expect(activeNavItem('/golf/dashboard/roster/abc')?.id).toBe('roster');
     expect(isRebuilt('/golf/dashboard/')).toBe(true);
     expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBe('/golf/dashboard/stats?player=1');
-    expect(rebuiltHref('/golf/dashboard/rounds')).toBeNull();
+    expect(rebuiltHref('/golf/dashboard/documents')).toBeNull();
     // Players have their own Home (PlayerHome) and share Stats; their Roster is the coach's, read-only (owner 2026-10-01).
     expect(isRebuilt('/golf/dashboard', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(true);
@@ -319,6 +319,18 @@ describe('home model', () => {
     expect(H.homeSubline([rows[3]!], { roundsError: false, nextCompetition: null })).toBeNull();
     const many = rows.map((r) => ({ ...r, status: 'slipping' as const }));
     expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('4 players need a look: Theo, Jonah, Eli and Priya.');
+  });
+  it('leaves an injured or away player out of the subline, flagged or on track (availability)', () => {
+    const rows: H.ChSublineRow[] = [
+      { name: 'Theo Marchetti', status: 'improving', quietDays: 2 },
+      { name: 'Jonah Okafor', status: 'slipping', quietDays: 3, availability: 'injured' },
+      { name: 'Eli Brandt', status: 'steady', quietDays: 9, availability: 'away' },
+    ];
+    expect(H.homeSubline(rows, { roundsError: false, nextCompetition: null })).toBe('The team is on track.');
+    // Only out players: nothing to say, rather than calling no one on track.
+    expect(H.homeSubline(rows.slice(1), { roundsError: false, nextCompetition: null })).toBeNull();
+    // Available is the same as absent.
+    expect(H.homeSubline([{ ...rows[2]!, availability: 'available' }], { roundsError: false, nextCompetition: null })).toBe('Eli hasn’t posted a round in 9 days.');
   });
 });
 

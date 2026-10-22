@@ -1,7 +1,6 @@
 'use client';
 
 import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import NumberFlow from '@number-flow/react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
@@ -20,27 +19,19 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { CH_DUR, CH_EASE } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
-import type { NoteSaved } from './RosterPeek';
+import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
-import { figureParts, formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
+import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 
 export type { PhoneSort } from './sort';
-
-/** The trailing figure's roll: the base duration on the v2 ease-out (D-64), its fade on the quick one. */
-const ROLL = { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` } as const;
-const ROLL_FADE = { duration: CH_DUR.quick * 1000, easing: 'ease-out' } as const;
-/** How long after a chosen sort the figures may roll: the roll, and a frame or so for it to end on its own (Number Flow
- *  finishes a running roll at once when `animated` turns off). */
-const ROLL_HOLD_MS = CH_DUR.base * 1000 + 50;
 
 /**
  * The phone Roster (owner design, docs/clubhouse/phone/roster.md), inside the
@@ -63,6 +54,7 @@ export function RosterPhone({
   onRemove,
   onStatus,
   onNoteSaved,
+  availability,
   onRetry,
   children,
 }: {
@@ -77,6 +69,8 @@ export function RosterPhone({
   /** Mark the player active or inactive; it asks first (CH-3502). */
   onStatus: (p: ChRosterPlayer) => void;
   onNoteSaved: NoteSaved;
+  /** Roster's availability write (the profile's Availability panel). */
+  availability: AvailabilityControl;
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
@@ -106,34 +100,15 @@ export function RosterPhone({
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
+  // Counted among the active players, as on desktop: availability never changes the active roster.
+  const injuredCount = players.filter((p) => p.status === 'active' && p.availability === 'injured').length;
+  const awayCount = players.filter((p) => p.status === 'active' && p.availability === 'away').length;
   // Avg and SG order nothing while season stats are missing: the list falls back to Name (P003 #7).
   const sortBy: PhoneSort = data.statsError ? 'name' : sort;
   const { active, inactive } = useRosterSort(players, sortBy);
   // CH-3604: a chosen sort reorders inside a transition, so each moved row slides to its place (RosterPhoneList).
-  // Only a chosen sort rolls the figures (a refresh that changes an average takes the new figure at once), so the
-  // permission is set with the sort and lapses once the roll is over.
-  const [rolling, setRolling] = useState(false);
-  // The figures are plain text until a finger or focus lands on the sort, the only control that rolls them (pointerdown
-  // comes before the click, so the numerals are mounted at their values when the sort rolls them). Mounting a list's
-  // worth of Number Flow elements was about 20ms of a switch to Roster's long frame (WebKit, phone, 57–67ms with them,
-  // 37–52ms without, 2026-10-16), and a frame after the paint it still landed inside the switch.
-  const [flowLive, setFlowLive] = useState(false);
-  const goLive = () => {
-    if (!flowLive) setFlowLive(true);
-  };
-  const chooseSort = useCallback(
-    (v: PhoneSort) =>
-      startTransition(() => {
-        setSort(v);
-        setRolling(true);
-      }),
-    [setSort],
-  );
-  useEffect(() => {
-    if (!rolling) return;
-    const t = window.setTimeout(() => setRolling(false), ROLL_HOLD_MS);
-    return () => window.clearTimeout(t);
-  }, [rolling, sortBy]);
+  // The figures take the new sort's values at once: no digits roll and nothing counts up (owner rule, as on Qualifiers).
+  const chooseSort = useCallback((v: PhoneSort) => startTransition(() => setSort(v)), [setSort]);
 
   // The profile is a history entry, so the iOS edge swipe and the browser's back pop it (CH-1906).
   const popTo = useCallback((level: number) => level < 1 && onClose(), [onClose]);
@@ -171,6 +146,18 @@ export function RosterPhone({
                 <>
                   {' '}
                   · <span className="ch-num">{activeCount}</span> active
+                  {injuredCount > 0 && (
+                    <>
+                      {' '}
+                      · <span className="ch-num">{injuredCount}</span> injured
+                    </>
+                  )}
+                  {awayCount > 0 && (
+                    <>
+                      {' '}
+                      · <span className="ch-num">{awayCount}</span> away
+                    </>
+                  )}
                 </>
               )}
             </span>
@@ -235,7 +222,7 @@ export function RosterPhone({
           />
         ) : (
           <>
-            <div className="ch-rsm-sort" onPointerDownCapture={goLive} onFocusCapture={goLive}>
+            <div className="ch-rsm-sort">
               <span>Sort by</span>
               <Segmented<PhoneSort>
                 size="sm"
@@ -254,7 +241,7 @@ export function RosterPhone({
               />
             </div>
             <SectionBoundary surface="roster.list" label="The roster" code="CH-3205">
-              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} rolling={rolling} live={flowLive} onOpen={onOpen} />
+              <RosterPhoneList active={active} inactive={inactive} statsError={data.statsError} sort={sortBy} onOpen={onOpen} />
             </SectionBoundary>
           </>
         )}
@@ -280,7 +267,7 @@ export function RosterPhone({
             />
             <div className="ch-rsm-scroll">
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} />
+                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} availability={availability} helm={data.helm} />
               </SectionBoundary>
             </div>
           </PhoneScreen>
@@ -316,18 +303,12 @@ function RosterPhoneList({
   inactive,
   statsError,
   sort,
-  rolling,
-  live,
   onOpen,
 }: {
   active: ChRosterPlayer[];
   inactive: ChRosterPlayer[];
   statsError: boolean;
   sort: PhoneSort;
-  /** A sort was just chosen: the figures roll to it (RosterPhone). */
-  rolling: boolean;
-  /** The figures are Number Flow (a hand is on the sort), not text (RosterPhone). */
-  live: boolean;
   onOpen: (id: string) => void;
 }) {
   const reduced = useChReducedMotion();
@@ -337,10 +318,9 @@ function RosterPhoneList({
     drawn.current = sort;
   });
   const slide = !reduced && drawn.current !== sort;
-  // The text is what Number Flow draws, so nothing moves when they swap.
   const row = (p: ChRosterPlayer) => (
     <li key={p.id}>
-      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} roll={rolling && !reduced} live={live} />
+      <RosterPhoneRow p={p} statsError={statsError} sort={sort} onOpen={onOpen} slide={slide} />
     </li>
   );
   return (
@@ -368,8 +348,8 @@ function RosterPhoneList({
  * One player: avatar, name, class and note, a form spark from three rounds (D-57), and the figure the list is sorted by
  * (native-feel audit 2026-10-08, P1-3): strokes gained per round under SG, gains green and losses amber; otherwise the
  * scoring average with the handicap. Sorted by name, the name leads the row already, so the average and handicap stay.
- * The figure is one numeral that stays put across sorts, so a new sort rolls it to the new figure (`roll`) instead of
- * swapping it; it never counts up on first paint. `slide` lets the row travel to its new place (RosterPhoneList).
+ * The figure is plain tabular text that takes a new sort's value at once: no digits roll and nothing counts up (owner
+ * rule, as on Qualifiers). `slide` lets the row travel to its new place (RosterPhoneList).
  */
 export function RosterPhoneRow({
   p,
@@ -377,17 +357,12 @@ export function RosterPhoneRow({
   sort = 'avg',
   onOpen,
   slide = false,
-  roll = false,
-  live = true,
 }: {
   p: ChRosterPlayer;
   statsError: boolean;
   sort?: PhoneSort;
   onOpen: (id: string) => void;
   slide?: boolean;
-  roll?: boolean;
-  /** Number Flow is mounted; false draws the figure as plain text (the page's first frame). */
-  live?: boolean;
 }) {
   const note = rowNote(p, statsError);
   const bySg = sort === 'sg';
@@ -427,7 +402,7 @@ export function RosterPhoneRow({
           )}
           <span className="ch-rsm-row__v" data-sort={bySg ? 'sg' : undefined}>
             <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
-              <RollFigure value={bySg ? sg : p.avg} signed={bySg} roll={roll} live={live} />
+              {rowFigure(bySg ? sg : p.avg, bySg)}
             </b>
             <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
           </span>
@@ -437,27 +412,8 @@ export function RosterPhoneRow({
   );
 }
 
-/**
- * A row's figure as a rolling numeral (Number Flow): the sign is text in front of it (`figureParts`), so a loss reads
- * with a true minus, and its spoken value is the figure as written ("−0.9", "72.4"). No data is a dash, which does not
- * roll. With reduced motion or Animations off it changes at once.
- */
-export function RollFigure({ value, signed = false, roll, live = true }: { value: number | null; signed?: boolean; roll: boolean; live?: boolean }) {
-  const fig = figureParts(value, { signed });
-  if (!fig) return <>{NO_DATA}</>;
-  if (!live) return <span className="ch-rsm-flowtext">{fig.text}</span>;
-  return (
-    <NumberFlow
-      value={fig.size}
-      prefix={fig.prefix}
-      format={{ minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false }}
-      animated={roll}
-      transformTiming={ROLL}
-      spinTiming={ROLL}
-      opacityTiming={ROLL_FADE}
-    />
-  );
-}
+/** A row's figure as plain tabular text: a true minus and an explicit plus for strokes gained, no data a dash. */
+const rowFigure = (value: number | null, signed: boolean) => (value == null ? NO_DATA : signed ? formatSigned(value) : formatFixed(value));
 
 /**
  * "2 join requests · Grace Liu, Owen Park": one flat row at the top of the list (the count in a badge, the names under the

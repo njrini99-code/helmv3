@@ -2,12 +2,13 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { projectInsightForPlayer } from '@/lib/coachhelm/delivery/player-projection';
 import type { InsightCause } from '@/lib/coachhelm/v2/insights/types';
 import type { FocusAreaVerdict } from '@/lib/coachhelm/v3/verdicts/verdict';
-import { toChDeepInsight, type ChDeepDive } from '../data/coachhelm-dive-shape';
-import { shapeReadsLifecycle, type ChEngineFlags, type ChVerdictRow } from '../data/coachhelm-engine-shape';
+import { toChDeepInsight, toDiveCleared, type ChDeepDive, type ChDiveCleared } from '../data/coachhelm-dive-shape';
+import { shapeReadsLifecycle, type ChCorrectionAnswer, type ChCorrectionsInput, type ChEngineFlags, type ChVerdictRow } from '../data/coachhelm-engine-shape';
 import { toChInsight } from '../data/coachhelm-map';
 import { firstName, sortCoachPlayers, type ChCoachHelmData, type ChCoachPlayer, type ChPlayerHelm } from '../data/coachhelm-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
-import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, FULL_INPUTS } from './fixtures-coachhelm-views';
+import type { ChCorrectionWrites } from '../screens/coachhelm/writes';
+import { DIVE_BIG, DIVE_BREAK, DIVE_PENALTIES, DIVE_SLOPE, diveOf, FULL_INPUTS, PREVIEW_DIVE } from './fixtures-coachhelm-views';
 import { bigNumber, breakBias, HELM_PLAYERS, penalties, PREVIEW_HELM_COACH, PREVIEW_TOUR, slope } from './fixtures-coachhelm';
 
 /**
@@ -286,11 +287,11 @@ export const focusTooEarly = (insightId: string): ChVerdictRow => ({ ...focusWor
 const coachOf = (p: { name: string }): ChViewer => ({ role: 'coach', first: firstName(p.name) });
 
 /** One coach card through the loader's own steps: the player's reads shaped for their lifecycle, the head mapped with its engine. */
-function coachCard(p: { id: string; name: string }, reads: EvidenceInsight[], count: number, focus: ChVerdictRow | null, drillText: string | null = null): ChCoachPlayer {
+function coachCard(p: { id: string; name: string }, reads: EvidenceInsight[], count: number, focus: ChVerdictRow | null, drillText: string | null = null, corrections: ChCorrectionsInput | null = null): ChCoachPlayer {
   const viewer = coachOf(p);
   const head = reads[0]!;
   const shaped = shapeReadsLifecycle(reads, true, viewer, ENGINE_NOW);
-  const top = toChInsight(head, { drillText, tour: PREVIEW_TOUR, viewer, engine: { flags: ENGINE_ON, lifecycle: shaped.byId.get(head.id) ?? null, focus, now: ENGINE_NOW } });
+  const top = toChInsight(head, { drillText, tour: PREVIEW_TOUR, viewer, engine: { flags: ENGINE_ON, lifecycle: shaped.byId.get(head.id) ?? null, focus, now: ENGINE_NOW, corrections } });
   return { id: p.id, name: p.name, count, top, ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) };
 }
 
@@ -298,17 +299,37 @@ const DRILL_TEXT = 'Rehearse a downhill-only ladder: start 2 ft below the hole a
 const { jonah, eli, priya, theo } = HELM_PLAYERS;
 
 /** The coach's board with every engine flag on: Jonah Observed with a data gap and a Worked focus area; Eli Likely and Contradicted; Priya held back and under review; Theo a strength Seen repeatedly, with one read cleared. */
-export const PREVIEW_HELM_COACH_ENGINE: ChCoachHelmData = {
+const coachEngineBoard = (cx: ChCorrectionsInput | null = null): ChCoachHelmData => ({
   ...PREVIEW_HELM_COACH,
   players: {
     list: sortCoachPlayers([
-      coachCard(jonah, [ENGINE_SLOPE(slope(jonah.id))], 3, focusWorked('in-slope'), DRILL_TEXT),
-      coachCard(eli, [withConflict(ENGINE_PENALTIES(penalties(eli.id, 'in-pen-eli')), 'in-tee-eli'), teeStrategy(eli.id, 'in-tee-eli', 'in-pen-eli')], 2, focusTooEarly('in-pen-eli')),
-      coachCard(priya, [ENGINE_BREAK(breakBias(priya.id, 'in-brk-priya'))], 1, null),
-      coachCard(theo, [ENGINE_BIG(bigNumber(theo.id, 'in-dbl-theo')), ENGINE_CLEARED(theo.id)], 0, null),
+      coachCard(jonah, [ENGINE_SLOPE(slope(jonah.id))], 3, focusWorked('in-slope'), DRILL_TEXT, cx),
+      coachCard(eli, [withConflict(ENGINE_PENALTIES(penalties(eli.id, 'in-pen-eli')), 'in-tee-eli'), teeStrategy(eli.id, 'in-tee-eli', 'in-pen-eli')], 2, focusTooEarly('in-pen-eli'), null, cx),
+      coachCard(priya, [ENGINE_BREAK(breakBias(priya.id, 'in-brk-priya'))], 1, null, null, cx),
+      coachCard(theo, [ENGINE_BIG(bigNumber(theo.id, 'in-dbl-theo')), ENGINE_CLEARED(theo.id)], 0, null, null, cx),
     ]),
     error: false,
   },
+});
+export const PREVIEW_HELM_COACH_ENGINE: ChCoachHelmData = coachEngineBoard();
+
+/**
+ * The correction chips on the coach's cards (03 §7.2, `coachhelm_corrections_v1` on and the table there), every engine flag on.
+ * `?state=corrections` draws them unanswered; `corrections-<chip>` draws each card with that answer already recorded, as the
+ * loader reads it back after a reload; `corrections-later` is a read held back with both rounds to go. The not-available state
+ * the loader finds (the HELD table missing) draws no chips at all, which is `?state=engine`; `corrections-unavailable` draws the
+ * chips and answers every tap "not available", so the chips go, and `corrections-failed` fails every save, so the answer rolls back.
+ */
+const coachCx = (latest: ChCorrectionAnswer | null, laterRounds: number | null = null): ChCorrectionsInput => ({ role: 'coach', latest, laterRounds });
+export const PREVIEW_HELM_COACH_CORRECTIONS: Record<string, ChCoachHelmData> = {
+  corrections: coachEngineBoard(coachCx(null)),
+  'corrections-notthis': coachEngineBoard(coachCx({ kind: 'not_this', reason: 'not_important' })),
+  'corrections-wrongcause': coachEngineBoard(coachCx({ kind: 'wrong_cause', reason: null })),
+  'corrections-already': coachEngineBoard(coachCx({ kind: 'already_on_it', reason: null })),
+  'corrections-later': coachEngineBoard(coachCx({ kind: 'snooze', reason: null }, 2)),
+  'corrections-good': coachEngineBoard(coachCx({ kind: 'confirm', reason: null })),
+  'corrections-unavailable': coachEngineBoard(coachCx(null)),
+  'corrections-failed': coachEngineBoard(coachCx(null)),
 };
 /** Jonah's focus area did not move. `?state=engine-notmoved`. */
 export const PREVIEW_HELM_COACH_ENGINE_NOT_MOVED: ChCoachHelmData = {
@@ -331,14 +352,14 @@ const JONAH_READS: EvidenceInsight[] = [
 ].map(projectInsightForPlayer);
 const JONAH_FOCUS = new Map([['in-slope', focusWorked('in-slope')]]);
 
-function playerList() {
+function playerList(corrections: ChCorrectionsInput | null = null) {
   const shaped = shapeReadsLifecycle(JONAH_READS, true, ME, ENGINE_NOW);
   const card = (r: EvidenceInsight) =>
     toChInsight(r, {
       drillText: r.id === 'in-slope' ? DRILL_TEXT : null,
       tour: PREVIEW_TOUR,
       viewer: ME,
-      engine: { flags: ENGINE_ON, lifecycle: shaped.byId.get(r.id) ?? null, focus: JONAH_FOCUS.get(r.id) ?? null, now: ENGINE_NOW },
+      engine: { flags: ENGINE_ON, lifecycle: shaped.byId.get(r.id) ?? null, focus: JONAH_FOCUS.get(r.id) ?? null, now: ENGINE_NOW, corrections },
     });
   return { shaped, card };
 }
@@ -350,11 +371,69 @@ export const PREVIEW_HELM_PLAYER_ENGINE: ChPlayerHelm = (() => {
 })();
 
 /** The Deep dive with every engine flag on: `?view=deep-dive&state=engine`. */
-export const PREVIEW_DIVE_ENGINE: ChDeepDive = (() => {
-  const { shaped, card } = playerList();
+const diveWith = (corrections: ChCorrectionsInput | null): ChDeepDive => {
+  const { shaped, card } = playerList(corrections);
   const say = (t: string) => speak(t, ME);
   return diveOf(
     shaped.kept.map((r) => toChDeepInsight(r, card(r), FULL_INPUTS, say)),
-    { cleared: shaped.cleared },
+    { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) },
   );
-})();
+};
+export const PREVIEW_DIVE_ENGINE: ChDeepDive = diveWith(null);
+
+/** A read the recheck cleared, as the player's feed hands it: a putting band (putts) or a par type (holes). Synthetic. */
+const clearedRead = (id: string, label: string, category: 'putting' | 'scoring', at: string): EvidenceInsight =>
+  patch(
+    { ...slope('pl-jonah', id), category, title: label },
+    {
+      metric_label: label,
+      recheck:
+        category === 'putting'
+          ? { window: 'newest_15_rounds', rounds_n: 15, recent_value: 75.9, recent_n: 29, recent_unit: 'putts', recent_lower_90: 65.7, recent_upper_90: 84, old_value: 62, old_n: 95, benchmark: 72, polarity: 'higher_better', outcome: 'cleared', min_n: 20, computed_at: at }
+          : { window: 'newest_15_rounds', rounds_n: 12, recent_value: 3.08, recent_n: 48, recent_unit: 'holes', recent_lower_90: 2.96, recent_upper_90: 3.2, old_value: 3.41, old_n: 60, benchmark: 3.15, polarity: 'lower_better', outcome: 'cleared', min_n: 30, computed_at: at },
+    },
+  );
+
+/** The cleared rows of these reads, as the Deep dive's loader files them. */
+const diveCleared = (rows: EvidenceInsight[]): ChDiveCleared[] =>
+  shapeReadsLifecycle(rows.map(projectInsightForPlayer), true, ME, ENGINE_NOW).clearedReads.map((c) => toDiveCleared(c.read, c.line));
+
+/** Two reads cleared, each kept in its own area of the ledger beside the open reads (D6). `?view=deep-dive&state=cleared`. */
+export const PREVIEW_DIVE_CLEARED: ChDeepDive = diveOf([...PREVIEW_DIVE.list], {
+  cleared: diveCleared([clearedRead('in-cl-46', '4–6 ft putts', 'putting', '2026-10-12T03:00:00Z'), clearedRead('in-cl-p5', 'Par 5 scoring', 'scoring', '2026-10-05T03:00:00Z')]),
+});
+
+/** Five reads cleared: the newest three show in their areas, then "2 more cleared". `?view=deep-dive&state=manycleared`. */
+export const PREVIEW_DIVE_MANY_CLEARED: ChDeepDive = diveOf([...PREVIEW_DIVE.list], {
+  cleared: diveCleared([
+    clearedRead('in-cl-35', '3–5 ft putts', 'putting', '2026-10-14T03:00:00Z'),
+    clearedRead('in-cl-46', '4–6 ft putts', 'putting', '2026-10-12T03:00:00Z'),
+    clearedRead('in-cl-p5', 'Par 5 scoring', 'scoring', '2026-10-05T03:00:00Z'),
+    clearedRead('in-cl-610', '6–10 ft putts', 'putting', '2026-09-30T03:00:00Z'),
+    clearedRead('in-cl-p3', 'Par 3 scoring', 'scoring', '2026-09-21T03:00:00Z'),
+  ]),
+});
+
+/** The player's own chips on the Deep dive (Not this and Good read only): `?view=deep-dive&state=corrections`, and `corrections-good` answered. */
+export const PREVIEW_DIVE_CORRECTIONS: ChDeepDive = diveWith({ role: 'player', latest: null, laterRounds: null });
+export const PREVIEW_DIVE_CORRECTIONS_GOOD: ChDeepDive = diveWith({ role: 'player', latest: { kind: 'confirm', reason: null }, laterRounds: null });
+
+/** The preview's correction writes: every tap saves, unless the state says it answers not available or fails. */
+export function previewCorrectionWrites(state: string | undefined): ChCorrectionWrites {
+  return {
+    record: () =>
+      new Promise((done) =>
+        setTimeout(
+          () =>
+            done(
+              state === 'corrections-unavailable'
+                ? { status: 'not_available', reason: 'table_missing' }
+                : state === 'corrections-failed'
+                  ? { status: 'failed', error: 'Preview: this save is set to fail.' }
+                  : { status: 'recorded', id: 'preview-correction' },
+            ),
+          300,
+        ),
+      ),
+  };
+}

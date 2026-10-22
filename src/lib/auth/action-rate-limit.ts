@@ -21,6 +21,7 @@
  */
 
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
+import { COACHHELM_ENGINE_RATE_LIMITED } from '@/lib/auth/action-rate-limit-messages';
 
 export type ActionGateResult = { allowed: true } | { allowed: false; error: string };
 
@@ -52,6 +53,6 @@ export async function gateCoachHelmEngineCall(
     'coachhelm:engine',
     userId,
     COACHHELM_ENGINE_RATE_LIMIT,
-    'Too many analyze requests in the last minute — please wait a moment and try again.',
+    COACHHELM_ENGINE_RATE_LIMITED,
   );
 }

@@ -13,6 +13,7 @@ import { LEGACY_TAB_ROUTES } from '@/components/fairway/pages/team-hub/team-hub-
 import { EmptyState, Button, FeatureUnavailable } from '@/components/fairway';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseHubRoute } from '@/clubhouse/routes/hub';
 
@@ -157,14 +158,24 @@ export default async function TeamHubPage({
 
     // Teammates — the roster preview on the Teammates card (SAME membership
     // filter the standalone roster route uses; excludes the viewer). F083:
-    // active members only, so pending/removed rows never surface. Compact
-    // select: the card renders avatars + names, nothing more.
-    supabase
-      .from('golf_team_members')
-      .select('player:golf_players!inner (id, first_name, last_name, avatar_url)')
-      .eq('team_id', teamId)
-      .eq('status', 'active')
-      .neq('player_id', player.id),
+    // active members only, so pending/removed rows never surface. The names
+    // and avatars come through golf_player_profiles: a player may no longer
+    // read a teammate's golf_players row (security review S4).
+    (async () => {
+      const [members, profiles] = await Promise.all([
+        supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', teamId)
+          .eq('status', 'active')
+          .neq('player_id', player.id),
+        readGolfPlayerProfiles(supabase, { teamIds: [teamId] }),
+      ]);
+      if (members.error) return { data: null, error: members.error };
+      if (profiles.error) return { data: null, error: profiles.error };
+      const active = new Set((members.data ?? []).map((m) => m.player_id));
+      return { data: profiles.data.filter((p) => active.has(p.id)).map((p) => ({ player: p })), error: null };
+    })(),
   ]);
 
   // ── Trips (jsonb → string, text[] → csv) — verbatim from hub/page.tsx ──────

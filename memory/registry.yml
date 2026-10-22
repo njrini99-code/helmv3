@@ -774,6 +774,8 @@ features:
         - src/lib/cache/golf-stats-calculator.ts
         - src/lib/coachhelm/v2/stats/**
         - src/lib/golf/benchmarks/**
+        # Clubhouse Game detail's "CoachHelm sees…" counts (P005, spec D build A).
+        - src/clubhouse/data/stats-reads.ts
       db:
         - supabase/migrations/*stats*.sql
         - supabase/migrations/*strokes_gained*.sql
@@ -794,6 +796,7 @@ features:
         - supabase/migrations/*_standards.sql
       tests:
         - src/app/golf/actions/__tests__/stats-data.test.ts
+        - src/clubhouse/data/__tests__/stats-reads.test.ts
         - src/test/coachhelm/v2/**
         - src/test/coachhelm/v2/shot-analysis/**
     integrations:
@@ -1140,6 +1143,13 @@ features:
         # its name carries neither "conversation" nor "chat_", so none of the
         # globs above reach it (G-58).
         - supabase/migrations/20260907120000_golf_participants_mute_columns.sql
+        # Same gap (neither word in the name): who the creator of a conversation
+        # may add (security review S8, held; see supabase/migrations/HELD.md).
+        - supabase/migrations/20261017003000_golf_participant_insert_tenancy.sql
+        # The player hub's announcements and events reads (security review S3,
+        # held). Owned here, not by player_hub: its db globs already overlap
+        # calendar_events' (check-registry-globs).
+        - supabase/migrations/20261021100000_golf_player_hub_rpcs_staff_gate.sql
       tests:
         - e2e/messages.spec.ts
         - src/clubhouse/__tests__/messages*.test.*
@@ -1225,6 +1235,10 @@ features:
         - supabase/migrations/*golf_document*.sql
         - supabase/migrations/*baseball_documents*.sql
         - supabase/migrations/*documents_storage*.sql
+        # What a player may read of a teammate (security review S4, held; see
+        # supabase/migrations/HELD.md): the profile function the roster, team
+        # and RSVP reads call.
+        - supabase/migrations/20261017004000_golf_player_profiles_fn.sql
       tests:
         - src/app/golf/actions/__tests__/travel.test.ts
         - src/components/fairway/pages/team-hub/FairwayTeamHub.logic.test.ts

@@ -3,6 +3,7 @@ import { isClubhouseFor } from '@/clubhouse/gate';
 import { ClubhouseQualifiersRoute } from '@/clubhouse/routes/qualifiers';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { isUuid } from '@/lib/utils/uuid';
@@ -117,13 +118,30 @@ export default async function QualifierDetailPage({ params }: PageProps) {
     .from('golf_qualifiers')
     .select(`
       *,
-      entries:golf_qualifier_entries(
-        *,
-        player:golf_players(id, first_name, last_name)
-      )
+      entries:golf_qualifier_entries(*)
     `)
     .eq('id', id)
     .maybeSingle();
+
+  // The entrants' names come through golf_player_profiles, not an embed: a
+  // player may no longer read a teammate's golf_players row (security review
+  // S4). Read before the checks below so either failure throws the same way.
+  const entryRows = (qualifier?.entries ?? []) as Array<{ player_id: string }>;
+  const entrantProfiles = qualifierError
+    ? null
+    : await readGolfPlayerProfiles(supabase, { playerIds: entryRows.map((e) => e.player_id) });
+  if (entrantProfiles?.error) {
+    await logServerError(
+      `[qualifier detail] entrant names read failed — would have shown the field with no one in it: ${describeError(entrantProfiles.error)}`,
+      { action: 'qualifierDetail.entrants', featureArea: 'qualifiers' },
+    );
+    throw new Error("Couldn't load this qualifier. Please try again.");
+  }
+  const entrantById = profilesById(entrantProfiles?.data ?? []);
+  const entriesWithPlayer = entryRows.map((e) => {
+    const p = entrantById.get(e.player_id);
+    return { ...e, player: p ? { id: p.id, first_name: p.first_name, last_name: p.last_name } : null };
+  });
 
   if (qualifierError) {
     await logServerError(
@@ -139,7 +157,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
 
   // Validate and type the data properly
   const validEntries = Array.isArray(qualifier.entries)
-    ? qualifier.entries.filter((entry) =>
+    ? entriesWithPlayer.filter((entry) =>
         entry !== null &&
         typeof entry === 'object' &&
         'player' in entry &&

@@ -1,5 +1,6 @@
 import { toHoles, toReview, type ChHoleRow, type ChReviewRoundRow, type ChRoundReview, type ChShotRow } from '../data/round-review-shape';
 import { previewRoundId } from './fixtures-rounds';
+import { buildDebrief, type ChDebriefHistoryRow } from '../data/round-debrief-shape';
 
 /**
  * A round review from design/handoff/rounds-review.jsx: Finley GC, Blue tees
@@ -153,4 +154,34 @@ export const PREVIEW_REVIEW_TOTAL_ONLY = review({ holes: [] }, { ai_recap: null,
 export const PREVIEW_REVIEW_HOLE_BY_HOLE = review({ holes: toHoles(HOLES, []) });
 /** Posted without shots: the round has no strokes gained at all (CH-11313). */
 export const PREVIEW_REVIEW_NO_SG = review({}, { strokes_gained_total: null, strokes_gained_tee: null, strokes_gained_approach: null, strokes_gained_around_green: null, strokes_gained_putting: null });
+/**
+ * CoachHelm's 30-second debrief (chs-30) on the player's own round, built by the page's own shaping from twelve earlier rounds
+ * (synthetic: putts about 33, about +6 to par), the top open read (par 5s, 5.6 a hole) and its attached drill.
+ */
+const DEBRIEF_HISTORY: ChDebriefHistoryRow[] = [33, 34, 32, 35, 33, 31, 34, 33, 32, 34, 35, 33].map((putts, i) => ({
+  total_putts: putts,
+  total_fairways_hit: 7 + (i % 3),
+  total_fairways: 14,
+  total_gir: 8 + (i % 4),
+  total_gir_possible: 18,
+  score_to_par: 4 + (i % 5),
+}));
+export const PREVIEW_REVIEW_DEBRIEF: ChRoundReview = {
+  ...PREVIEW_REVIEW,
+  debrief: buildDebrief(PREVIEW_REVIEW, {
+    history: DEBRIEF_HISTORY,
+    read: { id: 'preview-read-par5', title: 'Par 5 scoring', metric: 'scoring_par_5', yourValue: 5.6 },
+    next: { drill: { title: 'Wedge ladder', minutes: 15 }, focus: null },
+  }),
+};
+/** The debrief with no earlier rounds, no open read and no next step: the round's counted facts alone. */
+export const PREVIEW_REVIEW_DEBRIEF_THIN: ChRoundReview = { ...PREVIEW_REVIEW, debrief: buildDebrief(PREVIEW_REVIEW, { history: [], read: null, next: null }) };
 export { HOLES as PREVIEW_REVIEW_HOLES, SHOTS as PREVIEW_REVIEW_SHOTS, FINLEY as PREVIEW_FINLEY, PATTERN as PREVIEW_FINLEY_PATTERN };
+
+const COACH_NOTE = 'Good patience on the back nine. The tee shot on 14 is the one to fix before Thursday: pick a target and commit to the club before you take the stance.';
+/** A coach opens a round that has no note yet (the coach is offered Add a note), and one that has a note. */
+export const PREVIEW_REVIEW_COACH_NOTED = review({ playerName: 'Jonah Okafor', coachNote: COACH_NOTE });
+/** The player reads the note their coach left; a player with no note sees nothing (PREVIEW_REVIEW). */
+export const PREVIEW_REVIEW_PLAYER_NOTED = review({ coachNote: COACH_NOTE });
+/** The note's read failed. */
+export const PREVIEW_REVIEW_NOTE_FAILED = review({ coachNoteError: true });

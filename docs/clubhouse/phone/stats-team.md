@@ -30,8 +30,8 @@ filter, notices and catalog.
 | The hero | The scoring average at 64px, its change (green better, amber worse, none when it rounds to zero) and what the loader says it is against ("vs previous 10"); a window with no comparison holds the line empty |
 | Scoring trend | Directly under the hero: `TeamTrendChart` (Recharts, on its own chunk, never on desktop) on the team's last ten round days, lower scores higher, the mean dashed, the newest day marked; a finger on it reads a round day. The page holds the 340:120 box and the written reading (CH-4805) |
 | The round | Greens, putts and scrambling as an inset group: value and change, with what each is read against where the data has one (the Tour's greens, 36 putts); the hole-coverage line under it |
-| Strokes gained by leg | The chosen leg's team figure (Number Flow, rolling on a pick), then the four legs and the team total as rows with bars either side of zero on the data's own scale. The rows are the leg picker (Base UI `Tabs`, vertical): a wash slides to the chosen row. Team total is the window's mean, never the legs added up |
-| Players, sorted by Avg or SG | Every player with a round: avatar, rounds, scoring average and strokes gained ("Early read" under three rounds). On SG the list ranks by the chosen leg and each value rolls to it; picking a leg moves the sort to SG (CH-4703) |
+| Strokes gained by leg | The chosen leg's team figure (plain tabular text, written at once on a pick: no digits roll), then the four legs and the team total as rows with bars either side of zero on the data's own scale. The rows are the leg picker (Base UI `Tabs`, vertical): a wash slides to the chosen row. Team total is the window's mean, never the legs added up |
+| Players, sorted by Avg or SG | Every player with a round: avatar, rounds, scoring average and strokes gained ("Early read" under three rounds). On SG the list ranks by the chosen leg and each value takes it at once; picking a leg moves the sort to SG (CH-4703) |
 | Team putting | Make rate by distance in an inset group, the Tour's rate as a mark; a band under it with 10 or more putts is amber |
 
 ## Differences from the board (Q-68)
@@ -57,6 +57,6 @@ The failed reads are the desktop's (CH-4201, CH-4202, CH-4203). No rounds in the
 
 A selection tick on a window, sort or leg change (CH-4701, CH-4703); a leg
 picked while the sort is Avg moves it to SG with no second tick. The leg wash
-slides on the base ease-out and Number Flow rolls on base; reduced motion and
-Animations off move both at once. Rows press with the shared press. Reduced
-motion turns the press off.
+slides on the base ease-out; the figures change at once (no digits roll, owner
+rule). Reduced motion and Animations off move the wash at once. Rows press
+with the shared press. Reduced motion turns the press off.

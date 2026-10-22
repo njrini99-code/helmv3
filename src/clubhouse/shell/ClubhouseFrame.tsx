@@ -232,6 +232,7 @@ function FrameRoot({ motionOff, fullScreen, homeRoot, children }: { motionOff: b
       data-phone-notabs={noTabs || fullScreen ? '' : undefined}
       data-phone-hero={hero ? '' : undefined}
       data-strip={sections?.open ? 'open' : undefined}
+      data-hydrated={hydrated ? '' : undefined}
     >
       {children}
       {/* The dim over the page while a phone screen is pushed, and what draws the page back with it (CH-1618). */}

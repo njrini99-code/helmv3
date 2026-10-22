@@ -3,7 +3,7 @@
 ```text
 Plan ID: HD-roster-availability
 Status: RELEASED
-Pages: Roster (P003): the player card and drawer status pill; later Home and Calendar
+Pages: Roster (P003): the player card and drawer status pill; Home (P002) and Calendar (P006) read the word since 2026-10-22
 Feature: roster_team (memory/registry.yml)
 Migration: supabase/migrations/20260929120000_golf_team_members_availability.sql
 Date: 2026-09-29
@@ -105,6 +105,18 @@ added 2026-09-29. The file was committed in 816c8c1a1 without a row or header; b
 - [ ] RLS verified
 - [ ] page wiring activated
 - [ ] held status discharged
+
+## Availability note: not used (2026-10-21)
+
+The writer shipped with the word only. `golf_team_members_select_v5` lets every teammate read every
+column of their team's rows through the API, so a note in `availability_note` would reach players,
+whatever the screens select. The app therefore never reads or writes `availability_note`:
+`loadRoster` leaves it out of its select, `setPlayerAvailability` refuses a note, and the panel has
+no note field (CH-3010 and CH-3102 are retired, never shipped). The column stays in place, empty.
+
+A note comes back only with a coach-only store, which needs a migration and so its own held plan
+here: for example a coach-only table keyed by membership with a SELECT policy for the team's coaches,
+or a column-level grant that hides the note from teammates. No migration is written for it yet.
 
 ## Released
 

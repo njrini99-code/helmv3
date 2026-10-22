@@ -1,5 +1,106 @@
 # P008 — Settings: changelog
 
+## 2026-10-21 — Text boxes read the event before the state updater
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-eager-event-read)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The name, team, season, state and golf boxes read the typed value in the
+change handler and hand it to the draft setter. Before, the read sat inside
+the state updater and could see the box after React had reset it, so a name
+typed around hydration was lost. ESLint now bans the pattern in
+`src/clubhouse`.
+
+## 2026-10-21 — A coach's title in Account › Profile
+
+```text
+Design package: spec C (coach parity, section B)
+PR/commit:      see git log (parity/roster-settings)
+Contract IDs:   none new; CH-8001 text (name, a coach's title, or photo)
+Actions:        none (saveProfile stays a client write under RLS)
+Data impact:    reads and writes golf_coaches.title (own row,
+                golf_coaches_update_own); no migration
+Held items:     none
+```
+
+### Changed
+
+- Desktop: a coach's Profile card pairs Full name with Title (placeholder
+  "Assistant coach", 100 characters, `autoComplete="organization-title"`,
+  help "With your name in Messages, on announcements and in Team settings.").
+- Phone: the Profile sheet has a Title row under Full name, coaches only.
+- `loadSettings` reads `full_name, avatar_url, title`; `ChProfileInput` gains
+  `title` ('' for players); `saveProfile` writes `title: trimmed || null` for a
+  coach. Players have no title and their write never names it.
+- No "Coaching profile" section: bio and phone have no reader, and a phone
+  would be readable by players in the same organization.
+
+### Why
+
+- The title is read with the coach's name in Messages, Hub announcements and
+  Team › Coaching staff, but could only be set at onboarding.
+
+### Verification
+
+- `settings.test.tsx` (desktop Title, save payload, none for a player; phone
+  sheet Title and save, none for a player), `settings-server.test.tsx` (the
+  coach select pinned, the write trimmed and blank as null).
+- Screenshots: see VERIFY.md Screenshots (1280 card, 390 sheet).
+
+## 2026-10-21 — Settings boxes use the shared hydration guard
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-login-hydration)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `Field` and `FieldRow` take their read-only-until-hydrated props from
+  `useHydrationGuard` (`lib/use-hydration-guard.ts`), shared with sign in.
+  No change on screen.
+
+## 2026-10-21 — Text typed before the page hydrates is no longer lost
+
+```text
+Design package: none (nightly journeys finding)
+PR/commit:      see git log (claude/clubhouse-webkit-name-save)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `Field` (desktop) and `FieldRow` (phone) are read-only until React has
+  hydrated them (`useHydrated`, now in `lib/use-hydrated.ts`; CoachHelm
+  re-exports it). `controls.css` keeps the box looking like any other while
+  it waits (`data-ch-hydrating`).
+
+### Why
+
+- The nightly journeys failed in WebKit: "a player changes their name" left
+  the first name at its saved value while the last name saved. Text typed
+  into the server markup is wiped when the controlled value is applied at
+  hydration, so the first box lost its text and the second, typed later,
+  kept it. A person or a test now waits for the box instead of losing text.
+
+### Verification
+
+- `field-hydration.test.tsx`: read-only in the server markup, editable after
+  `hydrateRoot`.
+
 ## 2026-10-19 — Settings on an iPad: every section in view
 
 ```text
@@ -671,6 +772,7 @@ without compressing the actions. Dirty/busy guards and preference behavior are
 preserved. See [popup evidence](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Desktop and phone sections enter immediately without an outgoing wait,

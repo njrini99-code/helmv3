@@ -85,6 +85,8 @@ export function SignInForm({
   const [showPassword, setShowPassword] = useState(false);
   // False until the client has mounted; gates submit so a pre-hydration tap cannot fire the action with React's empty initial state (#1245).
   const [hydrated, setHydrated] = useState(false);
+  // Email and password are deliberately not behind useHydrationGuard: a read-only box in the server HTML is skipped by the
+  // browser's and password managers' page-load fill, and sign in is where returning users rely on it. Submit is held instead.
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
@@ -125,10 +127,12 @@ export function SignInForm({
    * credential pair and record a failed attempt against a blank identity.
    */
   const adoptDomValues = useCallback(() => {
-    const emailEl = document.getElementById('golf-signin-email') as HTMLInputElement | null;
-    const passwordEl = document.getElementById('golf-signin-password') as HTMLInputElement | null;
-    if (emailEl?.value) setEmail((cur) => cur || emailEl.value);
-    if (passwordEl?.value) setPassword((cur) => cur || passwordEl.value);
+    // Read the boxes now, through their refs, not inside the state updater: an updater can run after React has put the
+    // controlled (empty) value back, and would then adopt nothing.
+    const typedEmail = emailRef.current?.value ?? '';
+    const typedPassword = passwordRef.current?.value ?? '';
+    if (typedEmail) setEmail((cur) => cur || typedEmail);
+    if (typedPassword) setPassword((cur) => cur || typedPassword);
   }, []);
   useEffect(() => {
     adoptDomValues();

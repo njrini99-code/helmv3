@@ -121,7 +121,7 @@ const FOCUS_AREA_CONFIGS: Record<FocusAreaCategory, FocusAreaConfig> = {
   ball_striking: {
     category: 'ball_striking',
     label: 'Ball Striking',
-    description: 'Driving accuracy, iron play, greens in regulation',
+    description: 'Driving accuracy, approach play, greens in regulation',
     icon: 'crosshair',
     relatedStats: ['fairways_hit_pct', 'gir_pct', 'approach_proximity'],
   },

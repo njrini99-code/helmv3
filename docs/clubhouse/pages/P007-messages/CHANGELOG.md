@@ -1,5 +1,20 @@
 # P007 — Messages: changelog
 
+## 2026-10-21 — Names come through the profile function
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-fqx3o0 (security review S4)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none (reads display columns only; email, phone, gpa, school, hometown and state are no longer fetched)
+Held items:     20261017004000_golf_player_profiles_fn.sql, 20261017005000_golf_players_select_drop_teammate_branch.sql
+```
+
+### Changed
+
+- No visible change. The conversation list and thread read other people's names and avatars through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`) instead of a `golf_players` embed (`src/clubhouse/data/messages.ts`). Until the function is applied the read falls back to the table.
+
 ## 2026-10-20 — The held-column probe runs once per server instance
 
 ```text

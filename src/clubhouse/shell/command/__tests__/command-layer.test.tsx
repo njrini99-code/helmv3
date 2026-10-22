@@ -175,7 +175,7 @@ describe('people across a team switch', () => {
 });
 
 describe('G then a letter, / and ?', () => {
-  it('G then R goes to Roster for a coach, and G then O to Rounds for a player only', () => {
+  it('G then R goes to Roster for a coach, and G then O to Rounds for both roles (a coach’s is Team rounds)', () => {
     mount('coach');
     key('g');
     key('r');
@@ -183,8 +183,9 @@ describe('G then a letter, / and ?', () => {
     push.mockClear();
     key('g');
     key('o');
-    expect(push).not.toHaveBeenCalled();
+    expect(push).toHaveBeenCalledWith('/golf/dashboard/rounds', { scroll: false });
     cleanup();
+    push.mockClear();
 
     mount('player');
     key('g');
@@ -234,7 +235,7 @@ describe('G then a letter, / and ?', () => {
     key('g');
     const hint = document.querySelector('.ch-cmd-hint');
     expect(hint?.textContent).toMatch(/Go to.*R\s*Roster/);
-    expect(hint?.textContent).not.toMatch(/Rounds/);
+    expect(hint?.textContent).not.toMatch(/Classes/);
     key('r');
     expect(document.querySelector('.ch-cmd-hint')).toBeNull();
     key('g');

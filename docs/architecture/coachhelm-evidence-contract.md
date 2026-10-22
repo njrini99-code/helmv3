@@ -2163,8 +2163,8 @@ read nothing extra and shot entry is unchanged.
   autosave, so it is offline-safe and retried like any shot. No new column,
   table or migration.
 - **`evidence.coach_copy`** (title and content in a coach's third-person
-  voice) is typed and stamped from `ComposedContent.coach`; no generator sets
-  it yet.
+  voice) is stamped from `ComposedContent.coach` (and `CompositeContent.coach`
+  for composites).
 
 ## Team pool benchmark (supercharge Slice 7a, 2026-10-20)
 
@@ -2585,3 +2585,33 @@ Each family's contract (`ANGLE_FAMILIES`):
   `short_approach_sg_scramble_chain`, `team_avg`, no 22 ft target). No
   composite is `urgent` (`compositeRulePriority` maps it to `high`). C4
   flyer lie is deleted in every mode (it never fired); 8 rules remain.
+
+## Coach voice: `evidence.coach_copy` (2026-10-21)
+
+Every v3 generator (the ten single-metric generators and the insight-angle
+families) and every composite rule writes the coach's copy of its read. The
+generator writes its title and content once, as a function of a `Voice`
+(`v3/engine/coach-voice.ts`), and `inBothVoices` renders it twice:
+
+- **Player** (`title`, `content`): exactly the text written before.
+- **Coach** (`evidence.coach_copy`): third person. The first mention is "the
+  player" (or "the player's"), later ones "they" / "their" / "them"; the
+  Clubhouse reader (`speak`) puts the first name in place of "the player", so
+  no name is stored. Actions are the coach's ("Have the player rehearse ...",
+  "Drill to assign: ..."). Titles carry no name (the name is in the eyebrow).
+  Where the player copy names a club ("tee fairway clubs", "under-clubbing",
+  "wedge"), the coach copy says shot type or carry instead ("non-driver tee
+  shots", "too little carry for the number", "short-approach").
+
+Rule-based templates only; no LLM. The numbers are the same interpolations in
+both voices. Before storing, `BaseGenerator.run()` and
+`synthesizeForPlayer` check the copy with `coachCopyIssues`: both parts
+non-empty, the same numbers as the player's copy (read the way the Clubhouse
+reader reads them), no second person and no club word. A copy that fails is
+not stored, and the miss is logged (`v3.generator.<name>.coach_copy`,
+`v3.composite.<rule>.coach_copy`), so coaches fall back to the player's text
+as before. Test: `v3/engine/__tests__/coach-copy.test.ts` runs every
+generator and composite rule over fixtures and asserts the same.
+
+No migration, backfill or flag: the field is additive and read only by the
+coach surfaces. Existing rows get the coach copy on their next re-analyze.

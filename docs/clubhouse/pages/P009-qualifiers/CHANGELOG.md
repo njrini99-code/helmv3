@@ -1,5 +1,35 @@
 # P009 — Qualifiers: changelog
 
+## 2026-10-21 — Text boxes read the event before the state updater
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-eager-event-read)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The rounds box reads the typed value in the change handler before the form
+setter, not inside the state updater. ESLint now bans the pattern in
+`src/clubhouse`.
+
+## 2026-10-21 — Entrant names come through the profile function
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-fqx3o0 (security review S4)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none (reads display columns only; email, phone, gpa, school, hometown and state are no longer fetched)
+Held items:     20261017004000_golf_player_profiles_fn.sql, 20261017005000_golf_players_select_drop_teammate_branch.sql
+```
+
+### Changed
+
+- No visible change. The leaderboard and entrant list read each entrant's name and avatar through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`) instead of a `golf_players` embed (`src/clubhouse/data/qualifiers.ts`). A failed names read is an error, not an empty field.
+
 ## 2026-10-21 — The standings spread starts in place
 
 ```text
