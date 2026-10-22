@@ -148,8 +148,9 @@ its rows together and does not map them one to one.
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
-| new-02 | Roster test CH-3009 flakes on `main` (came in with #2295): find and fix the root cause, no retry or skip | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
-| new-03 | The `presentation` CI check times out starting its web server (3 min): diagnose with measured numbers, fix | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-02 | Roster test CH-3009 flakes on `main` (came in with #2295): the menu focuses its first item on the next frame and the test pressed Escape first; the helper now waits for focus | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-03 | The `presentation` CI check times out starting its web server (3 min): readiness waited for the first compile of the popup lab (112 s on two cores, over 180 s on a runner); it now waits for a static file and the setup file compiles the routes | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-04 | Unit shard fails with "window is not defined" from `use-edge-swipe.ts` (`finish` timer of a committed swipe outlives the test file; main run 39714700693, #2217). Not reproduced locally; effect cleanup does not flush the commit path's timer and frame callbacks | Clubhouse fixes | open | | |
 
 <!-- markdownlint-enable MD013 -->
 

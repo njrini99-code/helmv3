@@ -7,6 +7,9 @@ import { chromium, type FullConfig } from '@playwright/test';
  * update to the pages still open, and on 2026-10-15 two CI runs failed when one reloaded the popup lab under a test's click
  * ("Clicking the checkbox did not change its state", only in the first project, right after a route compiled). With every route
  * compiled here and HELM_DEV_KEEP_ROUTES=1 on the server (next.config.mjs), nothing compiles while a test has a page open.
+ *
+ * The first route pays for compiling the app (101 s on two cores; on 2026-10-22 a CI runner needed over 180 s, which the
+ * Playwright config's server readiness check used to wait for), so each visit gets 300 s.
  */
 const ROUTES = ['/clubhouse-preview/popup-lab', '/clubhouse-preview/messages', '/clubhouse-preview/settings', '/clubhouse-preview/components', '/clubhouse-preview/components/gallery'];
 
@@ -20,7 +23,7 @@ export default async function warmClubhouseRoutes(config: FullConfig): Promise<v
       // A route's first render on a dev server can fail while it compiles (a 500 that a reload clears).
       let status = 0;
       for (let attempt = 0; attempt < 3 && status !== 200; attempt++) {
-        status = (await page.goto(baseURL + route, { waitUntil: 'load', timeout: 240_000 }).catch(() => null))?.status() ?? 0;
+        status = (await page.goto(baseURL + route, { waitUntil: 'load', timeout: 300_000 }).catch(() => null))?.status() ?? 0;
       }
       if (status !== 200) throw new Error(`clubhouse-quality setup: ${route} answered ${status || 'nothing'}`);
     }
