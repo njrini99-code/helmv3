@@ -277,8 +277,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         ? laggyDiagnosticStrokesImpact(agg.fairwayGap, agg.driver.attempts, agg.roundsCovered)
         : 0;
 
-    // The coach's copy says "non-driver tee shots" where the player's names
-    // clubs: reads speak of driver vs not-driver only.
+    // Both voices say "non-driver tee shots": reads speak of driver vs
+    // not-driver only, never a club.
     const copy = inBothVoices((v) => {
       if (agg.pattern === 'laggy') {
         return {
@@ -286,7 +286,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
           content:
             `Over the last ${agg.roundsCovered} rounds ${v.players} driver finds the ` +
             `fairway ${driverFw}% of the time (${agg.driver.attempts} attempts) ` +
-            `vs ${ndFw}% ${v.pick('with your tee fairway clubs', 'with their non-driver tee shots')} (${agg.nonDriver.attempts} ` +
+            `vs ${ndFw}% with ${v.your} non-driver tee shots (${agg.nonDriver.attempts} ` +
             `attempts), a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
             `only ${distGap} yards${distanceNote}. On par-4/5 holes where driver isn't pinning ` +
             `${v.them} to a much better approach distance, the layback is the higher-EV play.`,
@@ -297,7 +297,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
           title: 'Driver is performing: keep it in play',
           content:
             `Across the last ${agg.roundsCovered} rounds ${v.players} driver fairway% ` +
-            `(${driverFw}%) is within ${fwGapPp}pp of ${v.pick('your other tee clubs', 'their non-driver tee shots')} ` +
+            `(${driverFw}%) is within ${fwGapPp}pp of ${v.your} non-driver tee shots ` +
             `(${ndFw}%) while gaining ${distGap} yards on average${distanceNote}. This is the ` +
             `right risk/reward signature. ${v.pick('Default to driver', 'Have them default to driver')} on par-4/5 tees ` +
             `unless trouble makes the layback obvious.`,
@@ -310,7 +310,7 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         title: 'Driver vs layback: no clear preference',
         content:
           `Across ${agg.roundsCovered} rounds ${v.players} driver (${driverFw}% fw, ` +
-          `${agg.driver.attempts} attempts) and ${v.pick('tee fairway clubs', 'non-driver tee shots')} (${ndFw}% fw, ` +
+          `${agg.driver.attempts} attempts) and non-driver tee shots (${ndFw}% fw, ` +
           `${agg.nonDriver.attempts} attempts) are tracking close enough that ` +
           `neither the layback nor the driver-default insight crosses the ` +
           `evidence threshold. Course-by-course strategy can still help; ` +

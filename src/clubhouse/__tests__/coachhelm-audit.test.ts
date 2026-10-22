@@ -288,7 +288,7 @@ describe('CH13-13 whose voice the text is in', () => {
   it('toChInsight speaks for the viewer in the claim, the reasoning, the text of This week and the labels on the gauge', () => {
     const coach = toChInsight(slope(jonah), { viewer: { role: 'coach', first: 'Jonah' }, drillText: 'Have the player start 2 ft below the hole.' });
     expect(coach.lede).toBe('From 4–6\u00a0ft, Jonah is making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap.');
-    expect(coach.why).toContain("Jonah’s bag");
+    expect(coach.why).toContain("Jonah’s game");
     expect(coach.why).not.toMatch(/\byou('re)?\b/i);
     expect(coach.week?.text).toBe('Have Jonah start 2\u00a0ft below the hole.');
     const own = toChInsight(breakBias(jonah), { viewer: { role: 'coach', first: 'Jonah' } });

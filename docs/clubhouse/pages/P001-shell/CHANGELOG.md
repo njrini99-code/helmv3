@@ -66,6 +66,53 @@ existing mount effect. The accessibility scan (`scripts/clubhouse/a11y.mjs`)
 waits for it before it taps a page's opener, so a tap made before hydration
 no longer shows up as "could not tap". No styles read it.
 
+## 2026-10-20 — In the app, a pushed screen's swipe back is the in-page one
+
+```text
+Design package: none (no owner board); phone/shell-gestures.md, section 1
+PR/commit:      claude/clubhouse-edge-swipe
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     Swift compiles (Simulator SDK, unsigned) but the gesture is not
+                device-checked yet; needs an App Store build to reach phones
+```
+
+### Changed
+
+- `shell/edge-swipe.ts` `claimWebSwipe`, bound in `shell/use-edge-swipe.ts`:
+  while a `PhoneScreen` with a chevron Back is the top screen, the page posts
+  `{ webSwipe: true }` to the iOS shell's `helmNav` handler, and
+  `{ webSwipe: false }` once no screen holds it. Claims are counted and posted
+  after the commit, so a push over a push is one message. Nothing is posted
+  without the bridge (Mobile Safari, the desktop), for a covered screen or for a
+  form's "Cancel". The `{ overlayOpen }` message is unchanged.
+- `ios/App/App/GolfBridgeViewController.swift`: the shell turns its WKWebView
+  swipe off while the page holds it
+  (`!(onTrackingRoute || overlayOpen || webHandlesSwipe)`) and publishes the
+  effective value as `window.__helmNativeSwipe`, now and, through a
+  document-start script, for the next page load. Every main-frame load and any
+  URL outside `/golf/` drops the claim, and the page is asked again when a load
+  finishes, so a stale claim cannot leave a page with no back gesture. Old
+  builds ignore `webSwipe` and keep their own swipe.
+
+### Why
+
+- In the app the native swipe popped over a snapshot of the whole WebView,
+  dragging the shell's bars and the status area with the page. The web gesture
+  moves only the pushed screen and draws the page back beneath it, as Mobile
+  Safari already did. This lands the held item of the 2026-10-19 entry.
+
+### Verification
+
+- `shell/__tests__/edge-swipe.test.tsx` (counting, hand-over in one commit,
+  resync, no bridge, the chevron check) and `phone-shell-gestures.test.tsx`
+  (true on mount and false on unmount, a covered screen hands over, a Cancel and
+  no bridge post nothing). No visible change on the web, so no screenshots. The
+  Swift compiles (`xcodebuild` for the iOS Simulator SDK, Xcode 27.1, unsigned,
+  exit 0) and the built app opens the production sign-in page in the Simulator;
+  the gesture itself is not checked on a device yet.
+
 ## 2026-10-19 — The phone shell feels native: edge swipe back, pushes that keep the dock, no late bars, idle prefetch
 
 ```text

@@ -143,8 +143,9 @@ interface HelmNavWindow {
  * Whether the web gesture may run. Mobile Safari always (it has no native swipe of ours to compete with). The iOS app's
  * WebView has WKWebView's own back gesture on, which plays the pop itself over a snapshot; the web one runs there only
  * when the page has been told that gesture is off: the `helmNav` bridge exists and the shell has set
- * `window.__helmNativeSwipe` to false (the native shell turns it off for a round, a sheet, a dialog). Read when a finger
- * lands, because the shell changes it while the page is open.
+ * `window.__helmNativeSwipe` to false (the native shell turns it off for a round, a sheet, a dialog, and while a pushed
+ * screen holds the swipe through `claimWebSwipe`). Read when a finger lands, because the shell changes it while the page
+ * is open.
  */
 export function nativeSwipeIsOff(win: Window = window, inApp = false): boolean {
   const w = win as unknown as HelmNavWindow;
@@ -152,6 +153,75 @@ export function nativeSwipeIsOff(win: Window = window, inApp = false): boolean {
   // The bridge only exists in the app, so its presence is itself the answer to "is this the app".
   if (!inApp && !bridge) return true;
   return bridge && w.__helmNativeSwipe === false;
+}
+
+interface HelmNavPoster {
+  webkit?: { messageHandlers?: { helmNav?: { postMessage?: (body: { webSwipe: boolean }) => void } } };
+  __helmWebSwipeResync?: () => void;
+}
+
+type SwipePoster = { postMessage: (body: { webSwipe: boolean }) => void };
+
+/** How many mounted screens hold the swipe, and what the shell was last told (per bridge object). */
+let swipeClaims = 0;
+let toldShell: boolean | null = null;
+let toldBridge: SwipePoster | null = null;
+let flushQueued = false;
+
+function helmNavPoster(win: Window): SwipePoster | null {
+  const handler = (win as unknown as HelmNavPoster).webkit?.messageHandlers?.helmNav;
+  return handler && typeof handler.postMessage === 'function' ? (handler as SwipePoster) : null;
+}
+
+/** Tells the shell whether a screen holds the swipe once the commit that changed it is over, so a push over a push is one message, not off then on. */
+function flushSwipeClaim(): void {
+  flushQueued = false;
+  const handler = helmNavPoster(window);
+  if (!handler) return;
+  if (handler !== toldBridge) {
+    toldBridge = handler;
+    toldShell = null;
+  }
+  const want = swipeClaims > 0;
+  if (want === toldShell) return;
+  toldShell = want;
+  try {
+    handler.postMessage({ webSwipe: want });
+  } catch {
+    // A bridge that refuses the message leaves the native swipe as it was: on.
+  }
+}
+
+function scheduleSwipeClaim(): void {
+  if (flushQueued) return;
+  flushQueued = true;
+  queueMicrotask(flushSwipeClaim);
+}
+
+/**
+ * Holds the iPhone app's edge swipe for the web gesture while a pushed screen that can be swiped back is up
+ * (shell-gestures.md, "Who runs it"). It posts `{ webSwipe: true }` to the `helmNav` bridge; the shell then turns its
+ * own WKWebView swipe off and sets `window.__helmNativeSwipe` to false, which is what lets `nativeSwipeIsOff` run the web
+ * one. The returned release posts `{ webSwipe: false }` once no screen holds it. Claims are counted, so a screen pushed
+ * over another hands the swipe on without the shell turning its own back on in between. No bridge (Mobile Safari, the
+ * desktop): nothing is posted. An older shell ignores the key and keeps its own swipe. The shell drops the claim on every
+ * page load and asks again through `window.__helmWebSwipeResync`, so a claim never outlives the page that made it.
+ */
+export function claimWebSwipe(win: Window = window): () => void {
+  if (!helmNavPoster(win)) return () => {};
+  (win as unknown as HelmNavPoster).__helmWebSwipeResync = () => {
+    toldShell = null;
+    flushSwipeClaim();
+  };
+  swipeClaims += 1;
+  scheduleSwipeClaim();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    swipeClaims = Math.max(0, swipeClaims - 1);
+    scheduleSwipeClaim();
+  };
 }
 
 /** The routes the native shell leaves its own swipe off on (GolfBridgeViewController.isTrackingRoute). */
@@ -177,6 +247,14 @@ export function overlayIsOpen(doc: Document = document): boolean {
 export function findScreenBack(screen: ParentNode): HTMLButtonElement | null {
   const back = screen.querySelector<HTMLButtonElement>('.ch-pbar__back:not(.is-text)');
   return back && !back.disabled && back.getAttribute('aria-disabled') !== 'true' ? back : null;
+}
+
+/**
+ * Whether the screen's bar draws a chevron Back at all, disabled or not: the screens that hold the swipe in the app. A
+ * disabled Back still holds it, so the native swipe cannot go back past a screen that says not now.
+ */
+export function hasChevronBack(screen: ParentNode): boolean {
+  return screen.querySelector('.ch-pbar__back:not(.is-text)') != null;
 }
 
 /** Everything that decides whether a finger landing at the edge may start a swipe, in the order a person would hit it. */

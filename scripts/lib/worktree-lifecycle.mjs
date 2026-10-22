@@ -286,7 +286,22 @@ export function classifyWorktree(facts) {
   // checkout that has not released itself is never parkable, whatever its PR
   // says. This is the half that covers work BEFORE a PR exists — the residue
   // the #1681 fix left behind, registered then as WORKTREE_PARK_NO_PR_OWNERSHIP.
-  if (f.parkPolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE) {
+  //
+  // ONE narrow exception: a checkout with NO marker at all (it predates the
+  // marker, or the Desktop app or a hand-run `git worktree add` made it, not
+  // scripts/new-worktree.sh) whose branch's PR has MERGED, and whose tip is
+  // that PR's merged head or whose every change is proven in main. The work
+  // has landed, so no session has anything left to do there, and removing the
+  // directory loses nothing. Measured 2026-10-21: 16 of 28 checkouts were
+  // unmarked, 9 of them on merged PRs, and none could ever be parked, so the
+  // disk fell under its reserve. An explicit KEEP, an unreadable marker, and
+  // every unmarked checkout whose PR is not MERGED still stop here.
+  const landedUnmarked =
+    f.workspaceMarker === 'absent' &&
+    f.prLookup === 'OK' &&
+    f.prState === 'MERGED' &&
+    ((f.prHeadSha && f.localSha && f.prHeadSha === f.localSha) || f.contentInMain === true);
+  if (f.parkPolicy !== WORKTREE_POLICY_PARK_IF_REPRODUCIBLE && !landedUnmarked) {
     const how =
       f.workspaceMarker === 'absent'
         ? 'no .helm/workspace.json — a checkout that predates the marker, or was not made by scripts/new-worktree.sh'

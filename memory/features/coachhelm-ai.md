@@ -213,7 +213,19 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   - `v3/monday-brief/loader.ts` reads roster, visible reads and countable
     rounds; any failed read answers null (never a partial brief).
   - Clubhouse view `?view=monday-brief` (coach only; the route checks the
-    flag) and a "Monday brief" button on the coach board.
+    flag), the landing of the Monday email.
+  - Coach Brief (par-05), same flag: `?view=brief`
+    (`clubhouse/data/coachhelm-coach-brief*.ts`, `views/CoachBrief.tsx`), the
+    team view behind `/intelligence`. `loadBriefInputs` (shared with the
+    Monday brief) gives the roster, reads, rounds and every team pattern;
+    `computeMondayBrief(..., maxItems: Infinity)` lists every player's top
+    read. Beside it: live focus areas (session client), active goals and
+    standing (service client, scoped to the roster read), and the Track
+    record line with `coachhelm_track_record_v1`. A section's failed read is
+    named, never drawn empty; nothing is recorded as shown. The board's
+    button reads "Brief". `/intelligence` maps old views to `&section=`
+    (`intelligenceTarget`): signals to week (patterns filter to patterns),
+    players to working, effectiveness to record; `?player=` the board.
   - Delivery: `/api/cron/coachhelm-monday-brief`, vercel.json `0 5 * * 1`
     (Mondays 05:00 UTC). Flag off: returns before any read. On: emails the
     primary coach of each in-season team a non-empty brief through

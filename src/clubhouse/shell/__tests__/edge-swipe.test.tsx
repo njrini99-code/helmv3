@@ -1,12 +1,14 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CH_EDGE_COMMIT,
   CH_EDGE_FLICK_PX_PER_MS,
   CH_EDGE_SLOP_PX,
   CH_EDGE_ZONE_PX,
+  claimWebSwipe,
   createEdgeSwipe,
   edgeSwipeAllowed,
   findScreenBack,
+  hasChevronBack,
   isTrackingRoute,
   nativeSwipeIsOff,
   overlayIsOpen,
@@ -234,5 +236,82 @@ describe('the screen’s Back', () => {
     expect(findScreenBack(screen)).toBeNull();
     screen.innerHTML = '<p>no bar</p>';
     expect(findScreenBack(screen)).toBeNull();
+  });
+});
+
+describe('a screen holding the swipe in the app (helmNav { webSwipe })', () => {
+  /** The claim is told once the commit that changed it is over (a microtask). */
+  const settle = () => new Promise<void>((resolve) => queueMicrotask(resolve));
+  const win = window as unknown as { webkit?: unknown; __helmWebSwipeResync?: () => void };
+  afterEach(() => {
+    delete win.webkit;
+    delete win.__helmWebSwipeResync;
+  });
+  const bridge = () => {
+    const postMessage = vi.fn();
+    win.webkit = { messageHandlers: { helmNav: { postMessage } } };
+    return postMessage;
+  };
+
+  it('posts nothing outside the app (no bridge), and its release is harmless', async () => {
+    const release = claimWebSwipe();
+    await settle();
+    release();
+    await settle();
+    expect(win.__helmWebSwipeResync).toBeUndefined();
+  });
+
+  it('posts true for the first claim and false when the last one lets go, once each', async () => {
+    const postMessage = bridge();
+    const first = claimWebSwipe();
+    await settle();
+    expect(postMessage.mock.calls).toEqual([[{ webSwipe: true }]]);
+    // A screen pushed over it, then the one beneath lets go: the shell is not told again.
+    const second = claimWebSwipe();
+    first();
+    first();
+    await settle();
+    expect(postMessage).toHaveBeenCalledTimes(1);
+    second();
+    await settle();
+    expect(postMessage.mock.calls).toEqual([[{ webSwipe: true }], [{ webSwipe: false }]]);
+  });
+
+  it('a hand-over inside one commit is one message, not off then on', async () => {
+    const postMessage = bridge();
+    const below = claimWebSwipe();
+    await settle();
+    postMessage.mockClear();
+    below();
+    const above = claimWebSwipe();
+    await settle();
+    expect(postMessage).not.toHaveBeenCalled();
+    above();
+    await settle();
+    expect(postMessage.mock.calls).toEqual([[{ webSwipe: false }]]);
+  });
+
+  it('says it again when the shell asks after a page load (it dropped the claim)', async () => {
+    const postMessage = bridge();
+    const release = claimWebSwipe();
+    await settle();
+    postMessage.mockClear();
+    win.__helmWebSwipeResync?.();
+    expect(postMessage.mock.calls).toEqual([[{ webSwipe: true }]]);
+    release();
+    await settle();
+    postMessage.mockClear();
+    win.__helmWebSwipeResync?.();
+    expect(postMessage.mock.calls).toEqual([[{ webSwipe: false }]]);
+  });
+
+  it('only a chevron Back holds it, disabled or not; a Cancel does not', () => {
+    const screen = document.createElement('section');
+    screen.innerHTML = '<button class="ch-pbar__back is-text">Cancel</button>';
+    expect(hasChevronBack(screen)).toBe(false);
+    screen.innerHTML = '<button class="ch-pbar__back" disabled>Roster</button>';
+    expect(hasChevronBack(screen)).toBe(true);
+    screen.innerHTML = '<p>no bar</p>';
+    expect(hasChevronBack(screen)).toBe(false);
   });
 });

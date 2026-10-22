@@ -48,7 +48,7 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
 }
 
 /** One row: who, the read, its ladder word (or how many players) and the strokes a round, with one action. */
-function Row({ r }: { r: ChBriefRow }) {
+export function Row({ r }: { r: ChBriefRow }) {
   return (
     <li className={'ch-hmb-row is-' + r.kind} data-ch-code={r.kind === 'team_pattern' ? 'CH-13934' : 'CH-13933'}>
       <div className="ch-hmb-row__main">

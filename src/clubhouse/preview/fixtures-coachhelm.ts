@@ -70,7 +70,7 @@ export const slope = (playerId: string, id = 'in-slope'): EvidenceInsight =>
     priority: 'medium',
     title: 'Downhill putts from 4-6 ft: a real penalty',
     content:
-      "From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap. Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.",
+      "From 4-6 ft, you're making 58% of downhill putts vs 81% of level putts at the same distance, a 23-point gap. Short putts carry the highest leverage per attempt in your game (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.",
     evidence: evidence({
       metric: SLOPE_METRIC,
       metric_label: 'Make rate, downhill vs level, same distance',
@@ -178,7 +178,7 @@ export const teeInconclusive = (playerId: string, id = 'in-tee'): EvidenceInsigh
     priority: 'low',
     signature: 'v3:tee_strategy:inconclusive',
     title: 'Driver vs layback: no clear preference',
-    content: 'Across 12 rounds your driver (61% fw, 84 attempts) and tee fairway clubs (63% fw, 30 attempts) are tracking close enough that neither insight crosses the evidence threshold.',
+    content: 'Across 12 rounds your driver (61% fw, 84 attempts) and non-driver tee shots (63% fw, 30 attempts) are tracking close enough that neither insight crosses the evidence threshold.',
     evidence: evidence({
       metric: 'sg_tee_total',
       metric_label: 'Tee Strategy',

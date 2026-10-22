@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { COACH_MONDAY_BRIEF_HREF } from '../data/coachhelm-monday-brief-shape';
+import { COACH_BRIEF_HREF } from '../data/coachhelm-coach-brief-shape';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
@@ -37,10 +37,10 @@ export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state
   const reads = useMemo(() => previewCoursePlanReads(state), [state]);
   const corrections = useMemo(() => previewCorrectionWrites(state), [state]);
   const recheck = useMemo(() => previewRecheckWrites(state), [state]);
-  // `brieflink`: the board with coachhelm_monday_brief_v1 on, so the Monday brief link is drawn.
+  // `brieflink`: the board with coachhelm_monday_brief_v1 on, so the link to the Brief is drawn.
   return (
     <CorrectionWritesProvider value={corrections}>
-      <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} recheck={recheck} mondayBriefHref={state === 'brieflink' ? COACH_MONDAY_BRIEF_HREF : undefined} />
+      <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} recheck={recheck} briefHref={state === 'brieflink' ? COACH_BRIEF_HREF : undefined} />
     </CorrectionWritesProvider>
   );
 }

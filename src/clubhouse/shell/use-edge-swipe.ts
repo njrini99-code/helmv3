@@ -4,7 +4,7 @@ import { useEffect, useRef, type MutableRefObject, type RefObject } from 'react'
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
 import { chSpringCurve } from '../lib/motion';
-import { CH_EDGE_ENTRY_SETTLE_MS, CH_EDGE_ZONE_PX, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, type EdgeFrame, type EdgeRelease } from './edge-swipe';
+import { CH_EDGE_ENTRY_SETTLE_MS, CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, hasChevronBack, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 import { CH_UNDERLAY_SHIFT, handUnderlaySpring, placeUnderlay, slideUnderlay, underlayParts } from './phone-chrome';
 
 /**
@@ -31,13 +31,20 @@ const COVERED_SHIFT = CH_UNDERLAY_SHIFT;
  * same way and a commit simply pops it.
  *
  * It does not run beside a native gesture (edge-swipe.ts `nativeSwipeIsOff`), during a round, or with a sheet or dialog
- * open, and it needs the screen's own Back to run (a form's "Cancel" is not one).
+ * open, and it needs the screen's own Back to run (a form's "Cancel" is not one). In the iOS app, a screen with a chevron
+ * Back asks the shell for the swipe while it is the top screen (`claimWebSwipe`): the shell's own WKWebView swipe, which
+ * drags the whole app with the page, is off until it lets go.
  */
 export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enabled, reduced, exit }: { enabled: boolean; reduced: boolean; exit: MutableRefObject<EdgeExitHold> }): void {
   const mountedAt = useRef(0);
   useEffect(() => {
     mountedAt.current = performance.now();
   }, []);
+  useEffect(() => {
+    const el = screen.current;
+    if (!enabled || !el || !hasChevronBack(el)) return;
+    return claimWebSwipe();
+  }, [screen, enabled]);
   useEffect(() => {
     const el = screen.current;
     if (!enabled || !el) return;
