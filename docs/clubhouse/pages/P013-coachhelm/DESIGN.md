@@ -126,9 +126,10 @@ v2 grammar (D-70): selection for choosing a player or an insight; the light
 press on Assign as focus, with success when it lands and error when it does not;
 the warning before Dismiss; Accept carries the light press, and is the primary
 button for a lone proposal and secondary when there are more (one primary per
-screen, P013 D10), and Decline is silent, each with success or error from `useAction` (CH-13704);
-choosing a view in the sub-navigation, a read in the Deep dive's list and a
-round or a plan link under it are selections (CH-13780); other taps are silent.
+screen, P013 D10), and Decline is silent, each with success or error from
+`useAction` (CH-13704); choosing a view in the sub-navigation, a read in the
+Deep dive's list and a round or a plan link under it are selections (CH-13780);
+other taps are silent.
 
 ## Desktop
 
@@ -243,11 +244,11 @@ worth in strokes a round (the shared counterfactual from their scoring average).
 The Tour is the only benchmark (Q-88), the LPGA's for a women's team; strokes
 gained is named against the Tour too, as Stats says "vs Tour". The hero leads
 with the most to gain ("Strokes gained: total is worth about 2.1 strokes a
-round") and gives one count, against the Tour's denominator (P013 D4). A comparison
-that cannot be made says why in the row and is drawn as a dash (a team under
-five measured teammates, a Tour value that is not comparable): never a zero.
-Ranks are never averages, and percent wording starts at 20 teammates. The top
-card counts how many comparisons they are ahead on and the three biggest
+round") and gives one count, against the Tour's denominator (P013 D4). A
+comparison that cannot be made says why in the row and is drawn as a dash (a
+team under five measured teammates, a Tour value that is not comparable): never
+a zero. Ranks are never averages, and percent wording starts at 20 teammates.
+The top card counts how many comparisons they are ahead on and the three biggest
 projections, which overlap and are not added. Under five rounds it is an early
 read, with no projection.
 
@@ -285,22 +286,22 @@ screen. A read opens with **the Read**, four lines under its title
   when a newer round is not in it (CH-13903).
 
 The coach's rendering (through `speak`) has the same numbers; only the cause
-differs by role. Then
-the read's evidence: what was measured (the number in the colour of what it
-means, the metric, the dates, then the Board's own evidence with its sample and
-confidence word); how it has moved (since it was first seen, the outcome after
-it was worked on, the category's trend in words, and a line of the scores in the
-rounds listed); the rounds behind it (the newest eight of the total it names,
-each a link to its review once that screen is rebuilt); why CoachHelm thinks so
-(the drivers with their counts, why the confidence is what it is unless it is
-the stock "sample adequate", then the full write-up, its first sentence
-included); where it happened, only when the stored evidence carries a counted
-path with example holes (up to five, each with its round's day and course, the
-hole and the path in shot-type words; a hole on a round the player no longer
-has is left out, and with none the section is not drawn); and where it goes (the focus area or
-goal made from it, or one on the same stat, linking to Development). Strength
-against needs work follows the Board's doctrine. There is no coach control and
-no write: nothing to assign, dismiss or accept.
+differs by role. Then the read's evidence: what was measured (the number in the
+colour of what it means, the metric, the dates, then the Board's own evidence
+with its sample and confidence word); how it has moved (since it was first seen,
+the outcome after it was worked on, the category's trend in words, and a line of
+the scores in the rounds listed); the rounds behind it (the newest eight of the
+total it names, each a link to its review once that screen is rebuilt); why
+CoachHelm thinks so (the drivers with their counts, why the confidence is what
+it is unless it is the stock "sample adequate", then the full write-up, its
+first sentence included); where it happened, only when the stored evidence
+carries a counted path with example holes (up to five, each with its round's day
+and course, the hole and the path in shot-type words; a hole on a round the
+player no longer has is left out, and with none the section is not drawn); and
+where it goes (the focus area or goal made from it, or one on the same stat,
+linking to Development). Strength against needs work follows the Board's
+doctrine. There is no coach control and no write: nothing to assign, dismiss or
+accept.
 
 **Honesty rules (all three).** A read that failed is its own notice with Try
 again and is never drawn as nothing: the Deep dive's rounds, plans and category
