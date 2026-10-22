@@ -202,7 +202,7 @@ const COPY: Record<string, MeasureCopy> = {
     category: 'Strategy',
     meaning: 'How often you reach for driver off the tee. A profile of how you play the holes, not a grade.',
     measured: 'The share of tee shots hit with driver. Only driver and not-driver are told apart.',
-    floor: 'At least 40 tee shots with a recorded club.',
+    floor: 'At least 40 tee shots marked driver or not-driver.',
     scale: { min: 0, max: 1, anchor: null, low: 'Fewer drivers', high: 'More driver' },
     clamp: null,
     figure: (v) => ({ figure: pct(v), note: 'of tee shots with driver' }),

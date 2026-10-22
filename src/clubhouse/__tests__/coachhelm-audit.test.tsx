@@ -260,7 +260,7 @@ describe('the coach’s board, loaded', () => {
     const d = await load([slope(jonah.id)]);
     const top = d.players.list.find((p) => p.id === jonah.id)!.top;
     expect(top.lede).toMatch(/^From 4–6\u00a0ft, Jonah is making 58%/);
-    expect(top.why).toContain("Jonah’s bag");
+    expect(top.why).toContain("Jonah’s game");
     // What is drawn is about Jonah; only what a focus area is saved with (assignAs) stays the insight's own, in the second person.
     expect(JSON.stringify({ ...top, assignAs: undefined })).not.toMatch(/\byou('re)?\b/i);
     expect(top.assignAs.description).toMatch(/^From 4–6 ft, you’re making 58%/);

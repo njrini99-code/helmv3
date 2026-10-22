@@ -293,6 +293,44 @@ describe('a checkout is disposable only if its own workspace says so', () => {
     expect(v.verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
   });
 
+  describe('an unmarked checkout whose PR has landed', () => {
+    const landed = { ...clean, parkPolicy: null, workspaceMarker: 'absent', prLookup: 'OK', prNumber: 2201, prState: 'MERGED', upstream: null, remoteSha: null };
+
+    it('PARKS when its tip is the merged PR head', () => {
+      const v = classifyWorktree({ ...landed, prHeadSha: SHA_A });
+      expect(v.verdict).toBe(PARKABLE);
+      expect(v.reason).toMatch(/PR #2201 MERGED/);
+    });
+
+    it('PARKS when every change is proven in main', () => {
+      expect(classifyWorktree({ ...landed, prHeadSha: SHA_B, contentInMain: true }).verdict).toBe(PARKABLE);
+    });
+
+    it('KEEPS it when the tip moved past the merged head and nothing proves it is in main', () => {
+      expect(classifyWorktree({ ...landed, prHeadSha: SHA_B, contentInMain: false }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    });
+
+    it('KEEPS it when the PR is CLOSED, OPEN or missing', () => {
+      for (const prState of ['CLOSED', 'OPEN', 'NONE']) {
+        expect(classifyWorktree({ ...landed, prState, prHeadSha: SHA_A }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+      }
+    });
+
+    it('KEEPS it when the PR lookup failed', () => {
+      expect(classifyWorktree({ ...landed, prLookup: 'FAILED', prHeadSha: SHA_A }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    });
+
+    it('an explicit KEEP or an unreadable marker still wins over a merged PR', () => {
+      expect(classifyWorktree({ ...landed, workspaceMarker: 'present', parkPolicy: WORKTREE_POLICY_KEEP, prHeadSha: SHA_A }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+      expect(classifyWorktree({ ...landed, workspaceMarker: 'unreadable', prHeadSha: SHA_A }).verdict).toBe(KEEP_WORKSPACE_INTENT_REQUIRED);
+    });
+
+    it('uncommitted work or a live process still keeps it', () => {
+      expect(classifyWorktree({ ...landed, prHeadSha: SHA_A, dirtyCount: 1 }).verdict).toBe(ACTIVE);
+      expect(classifyWorktree({ ...landed, prHeadSha: SHA_A, hasLiveProcess: true }).verdict).toBe(ACTIVE);
+    });
+  });
+
   it('the new verdict is excluded from autonomous action', () => {
     expect(REQUIRES_HUMAN_VERDICTS.has(KEEP_WORKSPACE_INTENT_REQUIRED)).toBe(true);
     expect(mayActAutonomously(KEEP_WORKSPACE_INTENT_REQUIRED)).toBe(false);

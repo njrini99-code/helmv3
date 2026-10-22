@@ -1742,6 +1742,30 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/views/CoachBrief.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachBrief"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/views/CoachPlayerStates.tsx",
       "group": "screens",
       "exports": [
@@ -1823,7 +1847,8 @@
       "file": "src/clubhouse/screens/coachhelm/views/MondayBrief.tsx",
       "group": "screens",
       "exports": [
-        "MondayBrief"
+        "MondayBrief",
+        "Row"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -8507,6 +8532,12 @@
     {
       "file": "src/clubhouse/styles/coachhelm-brief.css",
       "classes": [
+        "ch-hbr",
+        "ch-hbr-goals",
+        "ch-hbr-goals__name",
+        "ch-hbr-goals__p",
+        "ch-hbr-goals__st",
+        "ch-hbr-sec",
         "ch-hmb-back",
         "ch-hmb-body",
         "ch-hmb-cleared",
@@ -17252,6 +17283,10 @@
     {
       "name": "coachhelm-track",
       "href": "/clubhouse-preview/coachhelm-track"
+    },
+    {
+      "name": "coachhelm-coach-brief",
+      "href": "/clubhouse-preview/coachhelm-coach-brief"
     },
     {
       "name": "coachhelm-brief",

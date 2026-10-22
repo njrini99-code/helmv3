@@ -170,6 +170,11 @@ const GROUPS: ReadonlyArray<{ id: ChStandGroupId; label: string; description: st
   { id: 'pressure', label: 'Pressure', description: 'Tournament and qualifier scoring against practice over the last 90 days, and what your opening hole costs.' },
 ];
 
+/** A metric's name in sentence case, as Standing prints it; null for an id that is not a metric (the coach Brief's goals use it). */
+export function standingLabel(metricId: string): string | null {
+  return (LABEL as Record<string, string | undefined>)[metricId] ?? null;
+}
+
 /** Which group a metric is in (the Fairway Standing drill's own split). */
 export function groupOf(metricId: string): ChStandGroupId {
   if (metricId.startsWith('sg_')) return 'sg';
