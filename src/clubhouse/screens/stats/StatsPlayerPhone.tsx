@@ -489,7 +489,7 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
         </>
       )}
       {data.goals.length === 0 ? (
-        <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
+        <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
       ) : (
         <ul className="ch-spm-dev">
           {data.goals.map((g) => {

@@ -19,7 +19,7 @@ const tone = (v: number) => (v >= 0 ? 'is-gain' : 'is-loss');
  * color; a leg under its show floor says what it needs instead of drawing a bar. A pointer over a row, a tap, or the arrow
  * keys read it in the line above the rows; a tap or a key pins it.
  */
-export function LegBars({ rows, baseline, teamName }: { rows: LegBarRow[]; baseline: string; teamName?: string | null }) {
+export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[]; baseline: string; teamName?: string | null; onOpen?: (label: string) => void }) {
   const pin = useChartPin(rows.length, 'y');
   const scale = sgScale(rows.flatMap((r) => [r.value, r.team]));
   const at = (v: number) => 50 + (v >= 0 ? 1 : -1) * sgShare(v, scale) * 50;
@@ -28,6 +28,7 @@ export function LegBars({ rows, baseline, teamName }: { rows: LegBarRow[]; basel
   const readout = (i: number | null) => (i == null ? null : legReadout(rows[i]!, teamName));
   const shown = readout(pin.active);
   const spoken = readout(pin.pinned);
+  const pinnedRow = pin.pinned != null ? rows[pin.pinned] : null;
   return (
     <div
       className="ch-lb"
@@ -77,6 +78,12 @@ export function LegBars({ rows, baseline, teamName }: { rows: LegBarRow[]; basel
         <p className="ch-lb__key" aria-hidden="true">
           <u /> {teamName ?? 'Team'} average
         </p>
+      )}
+      {/* Q12: a pinned leg offers its Game detail section (never while scrubbing, so the target holds still). Inside the chart's box, or the press that takes it would unpin the leg first. */}
+      {onOpen && pinnedRow && pinnedRow.value != null && (
+        <button type="button" className="ch-lb__open" onClick={() => onOpen(pinnedRow.label)}>
+          See {pinnedRow.label.toLowerCase()} in game detail
+        </button>
       )}
     </div>
   );

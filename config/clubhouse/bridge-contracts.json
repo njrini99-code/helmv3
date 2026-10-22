@@ -14676,7 +14676,7 @@
     "item": 9,
     "name": "COACH_THE_PULSE_HAS_NOTHING_FLAGGED",
     "chCode": "CH-13309",
-    "meaning": "Coach: the pulse has nothing flagged, and every read it is made from landed",
+    "meaning": "Coach: the pulse has nothing new, and every read it is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14687,7 +14687,7 @@
     "item": 10,
     "name": "COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET",
     "chCode": "CH-13310",
-    "meaning": "Coach: some players have no insight yet",
+    "meaning": "Coach: some players have no read yet",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14766,8 +14766,8 @@
     "item": 17,
     "name": "ASK_ROUNDS_RECORDED_NOTHING_FLAGGED",
     "chCode": "CH-13325",
-    "meaning": "Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed",
-    "status": "implemented",
+    "meaning": "Ask: Rounds recorded, nothing flagged",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15121,7 +15121,7 @@
     "name": "ASK_THE_PULSE_DOES_NOT_LOAD",
     "chCode": "CH-13223",
     "meaning": "Ask: The pulse does not load",
-    "status": "implemented",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15329,8 +15329,8 @@
     "item": 35,
     "name": "ASK_A_READ_THE_PULSE_IS_MADE",
     "chCode": "CH-13226",
-    "meaning": "Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
-    "status": "implemented",
+    "meaning": "Ask: a read the pulse is made from failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15842,6 +15842,50 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130742,
+    "page": "P013",
+    "category": 7,
+    "item": 42,
+    "name": "COACH_PLAYER_THE_PATH_LINE",
+    "chCode": "CH-13940",
+    "meaning": "Coach, player: the path line (design call D2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130743,
+    "page": "P013",
+    "category": 7,
+    "item": 43,
+    "name": "COACH_SINCE_YOU_WERE_LAST_HERE",
+    "chCode": "CH-13941",
+    "meaning": "Coach: since you were last here (design call D4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130744,
+    "page": "P013",
+    "category": 7,
+    "item": 44,
+    "name": "COACH_READS_RATED_NOT_ENOUGH_YET_ARE",
+    "chCode": "CH-13942",
+    "meaning": "Coach: reads rated Not enough yet are held back",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130745,
+    "page": "P013",
+    "category": 7,
+    "item": 45,
+    "name": "COACH_EVERY_READ_OF_A_PLAYER_IS",
+    "chCode": "CH-13943",
+    "meaning": "Coach: every read of a player is Not enough yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -16196,7 +16240,7 @@
     "name": "A_GAUGE",
     "chCode": "CH-13802",
     "meaning": "A gauge",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

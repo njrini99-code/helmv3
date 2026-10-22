@@ -66,7 +66,6 @@ describe('every Try again on the CoachHelm pages is a refresh that says it is wo
     ['CH-13280 the Deep dive did not load', () => <DeepDive load={{ status: 'failed' }} />, 'CH-13280'],
     ['CH-13221 the Ask context did not load', () => ask({ status: 'failed' }), 'CH-13221'],
     ['CH-13222 the chats did not load', () => ask(ready({ conversations: { list: [], error: true } })), 'CH-13222'],
-    ['CH-13223 the pulse did not load, on the desktop', () => ask(ready({ pulse: null })), 'CH-13223'],
     ['CH-13224 the conversation did not load', () => ask(ready({ threadFailed: true })), 'CH-13224'],
   ];
   it.each(cases)('%s', async (_name, node, code) => {

@@ -404,88 +404,6 @@
   }
 }
 
-/* "Since you were last here" */
-.ch-ask-find {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 18px;
-}
-.ch-ask-find__top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-}
-.ch-ask-find__top h3 {
-  margin: 0;
-  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-}
-.ch-ask-find__cov {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  text-align: right;
-}
-.ch-ask-find__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.ch-ask-find__item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-.ch-ask-find__card {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-  padding: 16px;
-  border: 0;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-bg-page);
-  color: var(--ch-text-primary);
-  text-align: left;
-}
-.ch-ask-find__card.is-ask {
-  cursor: pointer;
-  transition: background var(--ch-dur-quick) var(--ch-ease);
-}
-@media (hover: hover) {
-  .ch-ask-find__card.is-ask:hover {
-    background: var(--ch-bg-inset);
-  }
-}
-.ch-ask-find__cat {
-  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  color: var(--ch-green-600);
-}
-.ch-ask-find__head {
-  font: 500 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-}
-.ch-ask-find__ev {
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-}
-.ch-ask-find__q {
-  margin-top: auto;
-  font: 500 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
-  color: var(--ch-green-600);
-}
-.ch-ask-find__link {
-  align-self: flex-start;
-  padding: 2px 4px;
-  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
 .ch-ask-nothing {
   display: flex;
   align-items: flex-start;
@@ -1199,13 +1117,6 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
 }
 
-/* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
-@media (hover: hover) {
-  .ch-ask-find__link:hover {
-    color: var(--ch-text-primary);
-  }
-}
-
 /* -- W4c tablet tier (821px to 1180px) ------------------------------------------------------------------------------
    Ask was laid out for a canvas of 1000px and more: the chats panel is 280px and the evidence panel 380px. On an iPad
    the canvas is 618px (portrait, sidebar open) to 1116px, so the conversation was left a 300px column in which the three
@@ -1213,9 +1124,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
    on a narrow canvas the chats panel narrows to 216px and the evidence panel lays over the conversation's right edge, as a side sheet, instead of taking a
    third column from it. The container is the canvas (shell.css). */
 @media screen and (min-width: 821px) and (max-width: 1180px) {
-  .ch-ask-find__grid {
-    grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
-  }
+
   @container (max-width: 780px) {
     /* The chats panel gives up 64px to the conversation, whose composer needs about 330px to keep its send key. */
     .ch-ask-body.has-panel,
@@ -1225,14 +1134,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
     .ch-ask-hist > * {
       min-width: 192px;
     }
-    /* The title and its coverage note share a line in a 350px column, and the title lost: it wrapped to three lines. */
-    .ch-ask-find__top {
-      flex-wrap: wrap;
-      row-gap: 2px;
-    }
-    .ch-ask-find__cov {
-      text-align: left;
-    }
+
     .ch-ask-body.has-evidence {
       position: relative;
       grid-template-columns: 0 minmax(0, 1fr);
@@ -1246,4 +1148,11 @@ html:not([data-fw-theme='dark']) .ch-ask {
       box-shadow: var(--ch-elevation-floating);
     }
   }
+}
+
+/* Who Ask's answers cover, under the openers (the findings block moved to the Board's header line, D4). */
+.ch-ask-cov {
+  max-width: 64ch;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
 }

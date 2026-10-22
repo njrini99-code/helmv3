@@ -665,6 +665,25 @@ export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
 /** Two rounds match: the early-read note, and the figures still draw. */
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
 
+/**
+ * The leg grid as one real team reads it (Demo University Golf, Last 10; the values are the ones on the coach's Stats page): every
+ * leg is a clear gain or loss, the worst leg is deep, and the grid's scale (+2.0 to -4.9) is wider than the fixture team's, so the
+ * zero line, the bars and the median ticks are checked against numbers that fill the cells (`?state=demo`).
+ */
+const demoSpread = { sg: { n: 10, se: 0.9 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } };
+export const PREVIEW_TEAM_DEMO: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  grid: [
+    { id: 'cole', name: 'Cole Bennett', rounds: 10, legs: [1.9, -1.6, -0.2, -4.9], total: -4.8, change: 4.4, avg: 73.1, spread: demoSpread, last: { score: 74, toPar: 2, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'jackson', name: 'Jackson Hale', rounds: 10, legs: [1.2, -1.9, 0.1, -4.9], total: -5.4, change: -7.8, avg: 74.2, spread: demoSpread, last: { score: 77, toPar: 5, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'dylan', name: 'Dylan Brooks', rounds: 10, legs: [1.5, -2.7, -0.7, -3.3], total: -5.2, change: 0.5, avg: 74.0, spread: demoSpread, last: { score: 75, toPar: 3, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'tyler', name: 'Tyler Hayes', rounds: 10, legs: [2.0, -3.1, 0.3, -2.5], total: -3.3, change: 0.3, avg: 74.7, spread: demoSpread, last: { score: 76, toPar: 4, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'marcus', name: 'Marcus Reed', rounds: 10, legs: [1.0, -3.4, -0.7, -3.3], total: -6.4, change: -1.0, avg: 75.9, spread: demoSpread, last: { score: 78, toPar: 6, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'evan', name: 'Evan Park', rounds: 10, legs: [-0.2, -4.4, -0.6, -1.9], total: -7.1, change: 3.8, avg: 76.3, spread: demoSpread, last: { score: 75, toPar: 3, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'owen', name: 'Owen Cole', rounds: 10, legs: [-0.2, -4.5, 0.1, -2.1], total: -6.7, change: 0.9, avg: 76.0, spread: demoSpread, last: null },
+  ],
+};
+
 /** Both lengths: the per-18 note under the count line, and the team's rounds counted in whole rounds (a few are 9 holes). */
 /** The team on Last 20 (`?last=20`): the switch on Last 20, the Window figure and every "vs previous" caption saying 20. */
 export const PREVIEW_TEAM_LAST20: ChTeamStats = {

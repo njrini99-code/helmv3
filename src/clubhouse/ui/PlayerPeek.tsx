@@ -38,9 +38,9 @@ export function playerPeekActions(p: Pick<ChPlayerPeek, 'id'>): PeekAction[] {
 }
 
 /** Wraps a player's name (a link or a row) so it peeks. The child keeps its own tap. */
-export function PlayerPeek({ player, children }: { player: ChPlayerPeek; children: ReactNode }) {
+export function PlayerPeek({ player, within, children }: { player: ChPlayerPeek; within?: string; children: ReactNode }) {
   return (
-    <PeekTarget label={player.name} card={() => <PlayerPeekCard p={player} />} actions={playerPeekActions(player)}>
+    <PeekTarget label={player.name} card={() => <PlayerPeekCard p={player} />} actions={playerPeekActions(player)} within={within}>
       {children}
     </PeekTarget>
   );
