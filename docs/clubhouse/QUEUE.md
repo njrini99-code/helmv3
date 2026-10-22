@@ -1,8 +1,8 @@
 # Clubhouse work queue: what is left and who has it
 
-Updated 2026-10-21. This is the single list of open Clubhouse and CoachHelm
-work. Read it with [STATUS.md](STATUS.md) (current state, rollout, rollback)
-before you start anything.
+Updated 2026-10-22, after the merge trains landed. This is the single list
+of open Clubhouse and CoachHelm work. Read it with [STATUS.md](STATUS.md)
+(current state, rollout, rollback) before you start anything.
 
 The rows come from a missing-work audit, the "supercharge 04" output specs
 and the CoachHelm design call (D1 to D6). Those three live in the Claude
@@ -55,25 +55,29 @@ stop that.
 | done | Merged to `main` |
 | closed | No work: retired in the audit, by design, or found already done |
 
-## Trains (2026-10-21)
+## Trains (2026-10-21, landed 2026-10-22)
 
 <!-- markdownlint-disable MD013 -->
 
-| Train | PR | Area | Carries |
+| Train | PR | Area | Landed |
 | --- | --- | --- | --- |
-| 1 | #2310 | CoachHelm engine | #2283, #2288, #2306, #2292, #2300 |
-| 2 | #2312 | CoachHelm board UI | #2303, #2305, #2297, #2290, #2298 (#2294 already merged); stacked on train 1 |
-| 3 | not opened yet (another agent is opening it) | Clubhouse parity & pages | #2295, #2307, #2293, #2287 |
-| 4 | not opened yet (another agent is opening it) | Clubhouse fixes | #2279, #2282, #2284 |
+| 1 | #2310 (merged) | CoachHelm engine | #2306, #2292, #2300 and the Codex review fixes; #2283 and #2288 landed on their own |
+| 2 | #2312 (merged) | CoachHelm board UI | #2303, #2305, #2297, #2290, #2298; #2294 landed on its own |
+| 3 | #2316 (closed) | Clubhouse parity & pages | #2293, #2295 and #2317 (the rebuilt #2307) landed on their own; #2287 is still open on its own |
+| 4 | #2314 (merged) | Clubhouse fixes | #2282; #2279 and #2284 landed on their own |
 
 <!-- markdownlint-enable MD013 -->
 
-Held out: #2299 (coach Brief, par-05) needs a rebase on `main` after trains
-1 and 2 land, and fresh Bridge IDs and CH codes (reserved below). Parked
-drafts: #2289 (Classes import race, held migration), #2285 (announcement
-acknowledgements policy, held migrations), #2217 (iOS edge swipe). Not in a
-train: #2309 (v3 CoachHelm copy names no clubs; stacked on #2306 in train 1)
-and #2313 (the same for v2 copy).
+Threads landed nine of the trains' PRs on their own while the trains were
+being built, which made every train conflict again. That is what the claim
+rules above and rule 10 of `PROJECT_INSTRUCTIONS.md` stop.
+
+Still open: #2287 (Team Hub redesign, par-24, par-28). Held out: #2299
+(coach Brief, par-05) needs a rebase on `main` and fresh Bridge IDs and CH
+codes (reserved below). Parked drafts: #2289 (Classes import race, held
+migration), #2285 (announcement acknowledgements policy, held migrations),
+#2217 (iOS edge swipe). Not in a train: #2309 (v3 CoachHelm copy names no
+clubs); #2313 (the same for v2 copy) has landed.
 
 ## The queue
 
@@ -84,66 +88,66 @@ its rows together and does not map them one to one.
 
 | Row | What | Area | Status | PR | Claimed by |
 | --- | --- | --- | --- | --- | --- |
-| par-01 | Coach parity gap closed by #2295 (coach player pages, coach Home, roster availability, coach Title, roster print) | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-02 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-03 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-04 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
+| par-01 | Coach parity gap closed by #2295 (coach player pages, coach Home, roster availability, coach Title, roster print) | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-02 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-03 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-04 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-05 | Coach Brief: the team view behind `/intelligence` (`?view=brief`), behind `coachhelm_monday_brief_v1` | Clubhouse parity & pages | in progress | #2299 (held out of trains: rebase on main, fresh IDs and codes reserved below) | claude/coachhelm-coach-brief |
-| par-08 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-09 | Game Fingerprint: CoachHelm count lines under each Game detail section | Clubhouse parity & pages | in progress | #2307 (train 3, stacked on #2295) | claude/coach-parity-bridges |
-| par-10 | Team rounds: a coach's Rounds is a Clubhouse screen, not a redirect to Team stats | Clubhouse parity & pages | in progress | #2293 (train 3) | claude/project-thread-eitv8h |
-| par-11 | Coach note on a round review | Clubhouse parity & pages | in progress | #2293 (train 3) | claude/project-thread-eitv8h |
+| par-08 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-09 | Game Fingerprint: CoachHelm count lines under each Game detail section | Clubhouse parity & pages | done | #2307, #2295 (landed in #2317) | claude/coach-parity-bridges |
+| par-10 | Team rounds: a coach's Rounds is a Clubhouse screen, not a redirect to Team stats | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
+| par-11 | Coach note on a round review | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
 | par-12 | Team-grid leg figure opens that player's Game detail section | Clubhouse parity & pages | done | #2281 | |
-| par-15 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-16 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
+| par-15 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-16 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-17 | Coach's player Stats hero has a CoachHelm button | Clubhouse parity & pages | done | #2281 | |
-| par-18 | Goals: a player sets a goal on the Development tab | Clubhouse parity & pages | in progress | #2293 (train 3) | claude/project-thread-eitv8h |
-| par-19 | Goals: accept or dismiss suggested goals; coach pauses, resumes or abandons. The empty state is done (#2281) | Clubhouse parity & pages | in progress | #2293 (train 3); #2281 | claude/project-thread-eitv8h |
-| par-20 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-21 | Roster detail: CoachHelm block and strokes-by-leg line on the roster peek and phone profile | Clubhouse parity & pages | in progress | #2307 (train 3, stacked on #2295) | claude/coach-parity-bridges |
-| par-22 | What's new is a Clubhouse screen for a coach | Clubhouse parity & pages | in progress | #2293 (train 3) | claude/project-thread-eitv8h |
+| par-18 | Goals: a player sets a goal on the Development tab | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
+| par-19 | Goals: accept or dismiss suggested goals; coach pauses, resumes or abandons. The empty state is done (#2281) | Clubhouse parity & pages | done | #2293, #2281 | claude/project-thread-eitv8h |
+| par-20 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| par-21 | Roster detail: CoachHelm block and strokes-by-leg line on the roster peek and phone profile | Clubhouse parity & pages | done | #2307, #2295 (landed in #2317) | claude/coach-parity-bridges |
+| par-22 | What's new is a Clubhouse screen for a coach | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
 | par-23 | Retired in the audit (per #2293) | Clubhouse parity & pages | closed | | |
-| par-24 | Coach's Team Hub nav item shows the team's overdue tasks | Clubhouse parity & pages | in progress | #2287 (train 3) | claude/project-thread-ya6ije |
+| par-24 | Coach's Team Hub nav item shows the team's overdue tasks | Clubhouse parity & pages | in progress | #2287 | claude/project-thread-ya6ije |
 | par-26 | Retired in the audit (per #2293) | Clubhouse parity & pages | closed | | |
 | par-27 | Retired in the audit (per #2293) | Clubhouse parity & pages | closed | | |
-| par-28 | Players get a Tasks tab in Team Hub; task links land on it | Clubhouse parity & pages | in progress | #2287 (train 3) | claude/project-thread-ya6ije |
+| par-28 | Players get a Tasks tab in Team Hub; task links land on it | Clubhouse parity & pages | in progress | #2287 | claude/project-thread-ya6ije |
 | par-29 | Player-only round entry: by design (per #2295) | Clubhouse parity & pages | closed | | |
 | par-30 | Player-only classes and My qualifiers: by design (per #2295) | Clubhouse parity & pages | closed | | |
 | par-31 | Coach-only management screens: by design (per #2295) | Clubhouse parity & pages | closed | | |
 | chs-04 | Player Board shows 3 reads and 1 strength | CoachHelm board UI | done | #2215 | |
-| chs-11 | Verdict loop on focus areas (flag `coachhelm_verdicts_v1`, off) | CoachHelm engine | in progress | #2300 (train 1) | claude/coachhelm-verdict-loop |
+| chs-11 | Verdict loop on focus areas (flag `coachhelm_verdicts_v1`, off) | CoachHelm engine | done | #2300 (landed in #2310) | claude/coachhelm-verdict-loop |
 | chs-13 | Correction chips under a read's audit (flag off) | CoachHelm board UI | done | #2291 | |
 | chs-22 | CoachHelm data-gap prompt; left alone by #2293. Confirm scope in the audit before claiming | CoachHelm board UI | open | | |
 | chs-23 | As chs-22 | CoachHelm board UI | open | | |
-| chs-28 | Coach Monday brief, view and Monday 05:00 delivery (flag `coachhelm_monday_brief_v1`, production off) | CoachHelm engine | in progress | #2292 (train 1) | claude/coachhelm-monday-brief |
-| chs-29 | CoachHelm side of coach parity (#2295) | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| chs-30 | Round review: CoachHelm 30-second debrief | CoachHelm board UI | in progress | #2298 (train 2) | claude/coachhelm-round-debrief |
+| chs-28 | Coach Monday brief, view and Monday 05:00 delivery (flag `coachhelm_monday_brief_v1`, production off) | CoachHelm engine | done | #2292 (landed in #2310) | claude/coachhelm-monday-brief |
+| chs-29 | CoachHelm side of coach parity (#2295) | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| chs-30 | Round review: CoachHelm 30-second debrief | CoachHelm board UI | done | #2298 (landed in #2312) | claude/coachhelm-round-debrief |
 | chs-31 | Coach Board header: one sentence plus "Since you were last here" | CoachHelm board UI | done | #2294 | |
 | chs-32 | Coach Board path line (D2 grammar) | CoachHelm board UI | done | #2294 | |
 | chs-33 | Cut PriPill, ReadMeter, Gauge and the drill well from the card | CoachHelm board UI | done | #2294 | |
 | chs-34 | "No reads yet" becomes a By player row | CoachHelm board UI | done | #2294 | |
-| chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | in progress | #2297 (train 2) | claude/coachhelm-deepdive-ledger |
-| chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | in progress | #2290 (train 2) | claude/coachhelm-strokes-ladder |
+| chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
+| chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | done | #2290 (landed in #2312) | claude/coachhelm-strokes-ladder |
 | chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | open | | |
-| chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | in progress | #2297 (train 2) | claude/coachhelm-deepdive-ledger |
-| chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | in progress | #2303 (train 2); #2306 (train 1) | claude/coachhelm-coach-voice |
-| chs-43 | As chs-29 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| chs-44 | As chs-29 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
+| chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
+| chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | done | #2303, #2306 (landed in #2310, #2312) | claude/coachhelm-coach-voice |
+| chs-43 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| chs-44 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-56 | Team-grid leg figure opens Game detail (with par-12) | Clubhouse parity & pages | done | #2281 | |
 | chs-62 | Waits on a held migration (production rollout, per #2281) | Clubhouse parity & pages | held | | |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
-| doc-12 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
+| doc-12 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-13 | Team stats print: the leg grid narrows on paper | Clubhouse parity & pages | done | #2281 | |
-| doc-23 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| doc-28 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
+| doc-23 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
+| doc-28 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-34 | Waits on a held migration (production rollout, per #2281) | Clubhouse parity & pages | held | | |
 | doc-42 | Recruit film uploads on now the bucket takes video | Clubhouse fixes | done | #2286 | |
 | doc-45 | Name the production rollback deployment in STATUS | docs | done | #2296 | |
-| doc-50 | Phone Roster and Team stats figures render directly, no digit rolling | Clubhouse fixes | in progress | #2282 (train 4) | claude/clubhouse-no-digit-rolling |
+| doc-50 | Phone Roster and Team stats figures render directly, no digit rolling | Clubhouse fixes | done | #2282 (landed in #2314) | claude/clubhouse-no-digit-rolling |
 | doc-55 | Password reset email: the Clubhouse screens exist; applying the template to the auth project is an owner production setting | Clubhouse fixes | held | | |
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
-| doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | in progress | #2284 (train 4) | claude/clubhouse-audit-polish |
-| new-01 | Preview player self page uses the player shell | Clubhouse fixes | in progress | #2284 (train 4) | claude/clubhouse-audit-polish |
+| doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
+| new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
 
 <!-- markdownlint-enable MD013 -->
 
