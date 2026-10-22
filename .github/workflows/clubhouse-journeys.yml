@@ -52,8 +52,10 @@ jobs:
       packages: read
     runs-on: ubuntu-latest
     # Stack ~2 min, install ~3 min, first compiles ~10 min, journeys on two
-    # engines ~15 min, the scan of every preview state in two palettes ~25 min.
-    timeout-minutes: 80
+    # engines ~15 min, the scan of every preview state in two palettes 55-60 min
+    # (run 39617783087: it was still passing at its old 40 minute limit). The job
+    # budget sits above the steps' own limits added up (30 + 20 + 75 + setup).
+    timeout-minutes: 150
     env:
       NEXT_TELEMETRY_DISABLED: '1'
       NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
@@ -155,7 +157,7 @@ jobs:
       - name: Accessibility scan, light and dark
         if: success() || failure()
         continue-on-error: true
-        timeout-minutes: 40
+        timeout-minutes: 75
         env:
           CH_SCHEME: light,dark
         # `shell: bash` runs with pipefail, so the scan's exit code survives tee.

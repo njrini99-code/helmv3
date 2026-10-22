@@ -85,8 +85,8 @@ function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
 
 /**
  * Route loading for CoachHelm, in each role's own shape (gh-states.jsx): the
- * player's focus beside a short list; the coach's program pulse, then the
- * players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
+ * player's focus beside a short list; the coach's header with its "Since you
+ * were last here" line, then the players beside the focus. CH-13401 (player) and CH-13402 (coach). `chained`: the page's own Suspense draws it after the route's
  * `loading.tsx` skeleton, in the same place, so it does not fade in again over it (a second fade would dip the page).
  */
 export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player'; chained?: boolean }) {
@@ -105,7 +105,11 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           {coach && <Line h={14.4} w={56} sh={11} />}
           <Line h={33.5} w={176} sh={28} r={8} />
           {coach ? (
-            <Line h={21.75} w="74%" sh={13} />
+            <>
+              <Line h={21.75} w="74%" sh={13} />
+              {/* The header's "Since you were last here" line (D4). */}
+              <Line h={32} w={196} sh={13} />
+            </>
           ) : (
             // The player's line runs to two lines at the phone's width.
             <span className="ch-hl-sk__line is-two">
@@ -120,6 +124,7 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           {coach && <Skeleton width={62} height={24} radius={12} />}
           <Skeleton width={190} height={44} radius={10} />
           <Skeleton width={360} height={14} />
+          {coach && <Skeleton width={196} height={13} />}
           <div className="ch-hl-h__aside">
             <StripSkeleton coach={coach} phone={false} />
           </div>
@@ -127,20 +132,14 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
       )}
       {phone ? (
         coach ? (
-          <>
-            <div className="ch-hl-sk__pulse">
-              <Line h={22.8} w={128} sh={17} r={6} />
-              <RowsSkeleton rows={3} avatar={30} />
+          <div className="ch-hl-sk ch-hl-sk--coach">
+            <div className="ch-hl-sk__chips" aria-hidden="true">
+              {[132, 140, 120].map((w) => (
+                <Skeleton key={w} width={w} height={40} radius={20} />
+              ))}
             </div>
-            <div className="ch-hl-sk ch-hl-sk--coach">
-              <div className="ch-hl-sk__chips" aria-hidden="true">
-                {[132, 140, 120].map((w) => (
-                  <Skeleton key={w} width={w} height={40} radius={20} />
-                ))}
-              </div>
-              <PhoneFocusSkeleton claim={146} />
-            </div>
-          </>
+            <PhoneFocusSkeleton claim={146} />
+          </div>
         ) : (
           <div className="ch-hl-sk ch-hl-sk--player">
             <PhoneFocusSkeleton claim={194} />
@@ -160,16 +159,10 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
           </div>
         )
       ) : coach ? (
-        <>
-          <div className="ch-hl-sk__pulse">
-            <Skeleton width={110} height={11} />
-            <RowsSkeleton rows={2} avatar={30} />
-          </div>
-          <div className="ch-hl-sk ch-hl-sk--coach">
-            <RowsSkeleton rows={4} avatar={34} />
-            <FocusSkeleton />
-          </div>
-        </>
+        <div className="ch-hl-sk ch-hl-sk--coach">
+          <RowsSkeleton rows={4} avatar={34} />
+          <FocusSkeleton />
+        </div>
       ) : (
         <div className="ch-hl-sk ch-hl-sk--player">
           <FocusSkeleton />

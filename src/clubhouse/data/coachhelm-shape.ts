@@ -1,5 +1,7 @@
 import type { PulseItem, PulseSource } from '@/lib/coachhelm/v3/chat/program-pulse';
 import type { ChReadEngine } from './coachhelm-engine-shape';
+import type { ChPathLine } from './coachhelm-path';
+import type { ChNotEnough } from './coachhelm-firm';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
 
 /**
@@ -42,26 +44,17 @@ export interface ChHelmBar {
   weak: boolean;
 }
 
+/**
+ * The read's number against its comparison, as the evidence ledger's rows say it (design call D8: the gauge and its track are cut;
+ * the ledger states every number in words, so nothing is carried by a position or a colour).
+ */
 export interface ChHelmGauge {
-  /** 0 to 100 positions on the track. */
-  youPct: number;
-  cmpPct: number;
-  secPct: number | null;
   /** "23 pts" (the generator's own display). */
   you: string;
   /** "Tour 0.3" in place of a college comparison (Q-88: the Tour is the only benchmark); any other comparison keeps the generator's own label ("Your right-to-left make % (same band) 51%"). */
   cmp: string;
-  /** "PGA Tour avg 0.3", when the generator carries a Tour tick beside a comparison that is not a college one. */
+  /** "PGA Tour avg 0.3", when the generator carries a Tour value beside a comparison that is not a college one. */
   sec: string | null;
-  /**
-   * The insight's stance, drawn green: a strength. Every other insight is a
-   * finding to close, drawn amber whichever side of the comparison the number
-   * is on (the board colours by stance; the metric's direction only decides
-   * whether the insight counts as a strength).
-   */
-  good: boolean;
-  /** The track starts at zero, so the fill is a real magnitude; otherwise only the ticks show. */
-  fromZero: boolean;
 }
 
 /**
@@ -74,7 +67,7 @@ export interface ChTourBaseline {
   values: ReadonlyMap<string, number>;
 }
 
-/** How the gauge names the Tour's tick. */
+/** How the ledger names the Tour. */
 export const TOUR_LABEL: Record<ChTourBaseline['tour'], string> = { pga: 'Tour', lpga: 'LPGA Tour' };
 
 export interface ChHelmEvidence {
@@ -86,7 +79,7 @@ export interface ChHelmEvidence {
   sample: string;
   /** "90 days", "All rounds"; null when the generator gave no window. */
   window: string | null;
-  /** The confidence read: a level of three and its word (the canonical Solid, Early and Thin read, `lib/coachhelm/confidence-label.ts`); null when the evidence has none. */
+  /** The confidence read: a level of three and its word (the canonical Solid, Early and Thin read, `lib/coachhelm/confidence-label.ts`); null when the evidence has none. Drawn as the word only. */
   read: { level: 1 | 2 | 3; word: string } | null;
   /** "As of Sep 30": the day the read was last refreshed, else the day its window ended; null when the row says neither. */
   asOf: string | null;
@@ -129,6 +122,8 @@ export interface ChInsight {
   /** What that number counts, where the number alone does not say ("gap", "a round", "made", "of holes"); null otherwise. */
   valueUnit: string | null;
   evidence: ChHelmEvidence;
+  /** The path line (design call D2, `coachhelm-path.ts`): the card's second line. Null for a note, which states no finding. */
+  path: ChPathLine | null;
   week: ChHelmWeek | null;
   lifecycle: ChHelmLifecycle;
   /** The evidence's metric id, the focus area's target metric when assigned. */
@@ -303,6 +298,11 @@ export interface ChCoachHelmData {
   teamPatterns?: ChTeamPatterns;
   /** The coach may ask for a course plan for the chosen player (`coachhelm_course_plan_v1`, off). Absent: not offered. */
   coursePlan?: boolean;
+  /**
+   * Reads the support pass rated Not enough yet, held back from the cards into one collapsed line (`coachhelm-firm.ts`). Absent with
+   * `coachhelm_support_v1` off or none held back. A player all of whose reads are held back has no card and is not in `withoutSignals`.
+   */
+  notEnough?: ChNotEnough;
 }
 
 /** Names said before the rest are counted: "A, B, C and 2 more". */
@@ -338,8 +338,8 @@ export function withoutSignalsRuns(count: number, names: readonly string[] = [])
  */
 export const NEEDS_MAX = 3;
 export const WORKING_MAX = 1;
-/** Rows in the program pulse (two columns of three). */
-export const PULSE_MAX = 6;
+/** Items in the coach's "Since you were last here" line (design call D4: up to three). */
+export const PULSE_MAX = 3;
 
 export const PRI_LABEL: Record<ChHelmPri, string> = { high: 'Priority', medium: 'Worth closing', low: 'Minor' };
 

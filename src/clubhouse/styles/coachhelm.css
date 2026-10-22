@@ -31,7 +31,7 @@
 }
 .ch-hl-h__aside {
   grid-column: 2;
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 4;
   align-self: end;
   padding-bottom: 2px;
 }
@@ -106,28 +106,6 @@
   color: var(--ch-text-secondary);
 }
 
-/* Priority. Amber for what is worth closing; red is kept for under par and the flag (D-42), so the board's red Priority is amber here. */
-.ch-hl-pri {
-  padding: 5px 10px;
-  border-radius: 999px;
-  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
-  background: var(--ch-ivory-150);
-  color: var(--ch-text-secondary);
-}
-.ch-hl-pri.is-high {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
-  box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.3);
-}
-.ch-hl-pri.is-medium {
-  background: var(--ch-champagne-100);
-  color: #7a5a12;
-}
-.ch-hl-pri.is-ok {
-  background: var(--ch-positive-100);
-  color: var(--ch-positive-600);
-}
-
 /* Evidence */
 .ch-hl-ev {
   display: flex;
@@ -179,100 +157,7 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.ch-hl-g {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 6px;
-}
-.ch-hl-g__t {
-  position: relative;
-  height: 10px;
-  border-radius: 5px;
-  background: rgb(28 25 18 / 0.07);
-}
-.ch-hl-g__f {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: var(--ch-radius-xs);
-  background: linear-gradient(90deg, rgb(154 101 18 / 0.2), var(--ch-chart-loss));
-}
-.ch-hl-g:not(.is-fromzero) .ch-hl-g__f {
-  display: none;
-}
-.ch-hl-g__cmp,
-.ch-hl-g__sec {
-  position: absolute;
-  top: -6px;
-  bottom: -6px;
-  width: 2px;
-  margin-left: -1px;
-  border-radius: 1px;
-  background: var(--ch-ink-900);
-}
-.ch-hl-g__sec {
-  background: var(--ch-ink-400);
-}
-.ch-hl-g__you {
-  position: absolute;
-  top: 50%;
-  width: 14px;
-  height: 14px;
-  margin: -7px 0 0 -7px;
-  border-radius: 50%;
-  background: var(--ch-ivory-25);
-  box-shadow:
-    0 0 0 3px var(--ch-chart-loss),
-    0 2px 6px rgb(0 0 0 / 0.2);
-}
-.ch-hl-g.is-good .ch-hl-g__f {
-  background: linear-gradient(90deg, rgb(31 107 69 / 0.2), var(--ch-green-600));
-}
-.ch-hl-g.is-good .ch-hl-g__you {
-  box-shadow:
-    0 0 0 3px var(--ch-green-600),
-    0 2px 6px rgb(0 0 0 / 0.2);
-}
-/* A legend, read left to right beside the player's number; spread to the far edge, "Tour 0.3" sat at the track's end, away
-   from its tick (2026-10-19). */
-.ch-hl-g__lg {
-  display: flex;
-  justify-content: flex-start;
-  gap: 8px 22px;
-  flex-wrap: wrap;
-  font: 400 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-}
-.ch-hl-g__lg > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ch-hl-g__lg i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.ch-hl-g__lg i.is-you {
-  background: var(--ch-chart-loss);
-}
-.ch-hl-g.is-good .ch-hl-g__lg i.is-you {
-  background: var(--ch-green-fill-600);
-}
-.ch-hl-g__lg i.is-cmp,
-.ch-hl-g__lg i.is-sec {
-  width: 2px;
-  height: 12px;
-  border-radius: 1px;
-  background: var(--ch-ink-900);
-}
-.ch-hl-g__lg i.is-sec {
-  background: var(--ch-ink-400);
-}
-.ch-hl-g__lg b {
-  font-weight: 600;
-  color: var(--ch-text-primary);
-}
+
 .ch-hl-ev__f {
   display: flex;
   align-items: center;
@@ -282,60 +167,251 @@
   font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-hl-conf {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 500;
-  color: var(--ch-ink-700);
-}
-.ch-hl-conf__d {
-  display: flex;
-  gap: 3px;
-}
-.ch-hl-conf__d i {
-  width: 5px;
-  height: 12px;
-  border-radius: 2px;
-  background: rgb(28 25 18 / 0.12);
-}
-.ch-hl-conf__d i.is-on {
-  background: var(--ch-green-fill-600);
-}
 
-/* This week */
-/* The week's drill: a recessed ivory panel ruled in green at its left, so the one action reads as set apart without
-   another green fill (owner: green only for the field, selection and the scoreboard). */
-.ch-hl-drill {
+/* The path line (design call D2): the claim's second line, inside the card. Words only; the firmness word is the weight. */
+.ch-hl-path {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 18px 20px 18px 22px;
-  border-radius: var(--ch-radius-lg);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
-  color: var(--ch-text-primary);
-}
-.ch-hl-drill__k {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
-  color: var(--ch-green-600);
+  max-width: 62ch;
 }
-.ch-hl-drill p {
-  font: 400 calc(15.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+.ch-hl-path__l {
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
-.ch-hl-drill__t b {
+.ch-hl-path__l b {
   font-weight: 600;
+  color: var(--ch-text-primary);
 }
-.ch-hl-drill__t em {
-  font-style: normal;
-  font-size: calc(13 * var(--ch-type-k));
+.ch-hl-path.is-out_of_date .ch-hl-path__l b {
   color: var(--ch-text-tertiary);
+}
+.ch-hl-path__n {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font: 500 calc(12 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-path__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.ch-hl-path__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ch-text-secondary);
+}
+.ch-hl-path__step {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(28 25 18 / 0.06);
+}
+.ch-hl-path__sep {
+  color: var(--ch-text-tertiary);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-path__l,
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-path__n,
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-path__sep {
+  color: var(--ch-on-green-ink-muted);
+}
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-path__l b,
+:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-path__chip {
+  color: var(--ch-on-green-ink);
+}
+
+/* The evidence ledger: the read's number and its comparison as flush rows, figures tabular, no track (D8). */
+.ch-hl-ledger {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font: 500 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-ledger li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+}
+.ch-hl-ledger li:first-child {
+  border-top: 0;
+  padding-top: 0;
+  color: var(--ch-text-primary);
+}
+.ch-hl-ledger b {
+  font: 600 15px/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+/* This week: flush under the evidence, the second action and not a second card (the drill well is cut). */
+.ch-hl-week {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 62ch;
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-ink-700);
+}
+.ch-hl-week__k {
+  font: 600 calc(12 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-green-600);
+}
+.ch-hl-week__t em {
+  font-style: normal;
+  color: var(--ch-text-tertiary);
+}
+
+/* "Since you were last here" (D4): the program pulse as one collapsed line in the header. */
+.ch-hl-since {
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-since.is-loading {
+  min-height: 20px;
+}
+.ch-hl-since__b {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-since__b:focus-visible {
+  border-radius: var(--ch-radius-xs);
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hl-since__b .ch-num {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-since__l {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hl-since__l li {
+  max-width: 64ch;
+  padding: 6px 0;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+}
+.ch-hl-since__l li b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-since__retry {
+  all: unset;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ch-green-700);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ch-hl-since__retry:focus-visible {
+  border-radius: var(--ch-radius-xs);
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hl-since__retry:disabled {
+  cursor: default;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-since__gap {
+  padding-top: 6px;
+  color: var(--ch-text-tertiary);
+}
+
+/* CH-13942: reads rated Not enough yet, one collapsed line under the board that opens in place (round 2C). */
+.ch-hl-ney {
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-ney__b {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-ney__b:focus-visible {
+  border-radius: var(--ch-radius-xs);
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hl-ney__b .ch-num {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-ney__m {
+  margin: 0 0 4px;
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-ney__l {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-hl-ney__l li {
+  max-width: 64ch;
+  padding: 8px 0;
+  border-top: 1px solid var(--ch-border-subtle);
+}
+.ch-hl-ney__l li b {
+  font-weight: 600;
+  color: var(--ch-text-primary);
+}
+.ch-hl-ney__w {
+  display: block;
+  color: var(--ch-text-tertiary);
+}
+
+/* By player: a player with no read yet is a quiet row, not a button. */
+.ch-hl-pl.is-none {
+  cursor: default;
+}
+.ch-hl-pl.is-none b {
+  color: var(--ch-text-secondary);
+}
+@media (hover: hover) {
+  .ch-hl-pl.is-none:hover {
+    background: none;
+  }
+}
+.ch-hl-pl__more {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgb(28 25 18 / 0.06);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl.is-phone .ch-hl-pl__more {
+  width: 28px;
+  height: 28px;
+}
+.ch-hl.is-phone .ch-hl-pl.is-none em {
+  display: inline;
 }
 
 /* Why we think this */
@@ -517,115 +593,6 @@
   gap: 8px;
 }
 
-/* Coach: the program pulse */
-.ch-hl-pulse {
-  padding: 22px 26px 10px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
-}
-/* The pulse is the board's headline read, so it takes a real title, not a caption label. */
-.ch-hl-pulse > h2 {
-  margin: 0 0 12px;
-  font: var(--ch-type-serif-s);
-  letter-spacing: -0.004em;
-  color: var(--ch-text-primary);
-}
-.ch-hl-pulse ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 32px;
-}
-.ch-hl-pulse li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  column-gap: 12px;
-  row-gap: 4px;
-  align-items: center;
-  padding: 14px 0;
-  box-shadow: var(--ch-seam-x);
-}
-.ch-hl-pulse__ic {
-  grid-row: 1 / 3;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--ch-raised-bg);
-  box-shadow: var(--ch-key-raised-shadow);
-  color: var(--ch-text-secondary);
-}
-.ch-hl-pulse li.is-warn .ch-hl-pulse__ic {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
-}
-.ch-hl-pulse li.is-good .ch-hl-pulse__ic {
-  background: var(--ch-positive-100);
-  color: var(--ch-green-700);
-}
-.ch-hl-pulse li b {
-  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-}
-.ch-hl-pulse li > span:last-child {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-}
-.ch-hl-pulse__none {
-  padding: 4px 0 16px;
-  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-}
-/*
- * The pulse streams in beside the top card (CH-13405), so its card holds its place: the slot keeps the height of three rows (the
- * desktop's six items in two columns), whether the rows, a notice or the skeleton are in it, and nothing below moves when they land. A
- * pulse of more rows than that (the phone's single column past three) grows the card, which is the one case that shifts.
- */
-.ch-hl-pulse__slot {
-  display: flex;
-  flex-direction: column;
-  min-height: var(--ch-hl-pulse-h, 197px);
-}
-/* The all-clear at the foot of the held space (every read came in, four items or fewer): a quiet ruled line, so the
-   card's reserved room reads as a finished statement instead of a gap. Two classes: base.css's `.ch-root p` zeroes margins. */
-.ch-hl-pulse .ch-hl-pulse__clear {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: auto;
-  padding: 14px 0 2px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
-  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-}
-.ch-hl-pulse__clear svg {
-  flex: none;
-  color: var(--ch-chart-gain);
-}
-.ch-hl-pulse__sk {
-  display: flex;
-  flex-direction: column;
-}
-.ch-hl-pulse__skrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 65px;
-  border-top: 1px solid rgb(28 25 18 / 0.07);
-}
-.ch-hl-pulse__skrow > span {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.ch-hl-pulse .ch-notice {
-  margin-bottom: 12px;
-}
-
 /* Coach: by player, then the player's focus */
 .ch-hl-cgrid {
   display: grid;
@@ -792,15 +759,7 @@
   gap: 18px;
   padding-top: 6px;
 }
-.ch-hl-sk__pulse {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 20px 24px 16px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
-}
+
 /* Desktop loading holds the loaded page's measured heights (WebKit, 1440 and 1000, 2026-10-07): the framed page head
    159px with its sans title and live line, and the pulse section: its 22.8px heading, 12px to its rule, and the rows'
    reserved room (CH-13405; the Ledger, below). */
@@ -808,9 +767,7 @@
   .ch-hl[aria-busy='true'][data-canopy] > .ch-hl-h {
     min-height: 159px;
   }
-  .ch-hl-sk__pulse {
-    min-height: calc(34.8px + var(--ch-hl-pulse-h, 197px));
-  }
+
   /* Standing's and the Deep dive's line runs to two lines beside the views (WebKit 1440: a 183px head). */
   .ch-hl[aria-busy='true'][data-canopy]:is([data-ch-code='CH-13470'], [data-ch-code='CH-13480']) > .ch-hl-h {
     min-height: 183px;
@@ -865,29 +822,7 @@
     flex-wrap: wrap;
     gap: 10px;
   }
-  .ch-hl-conf {
-    margin-left: 0;
-  }
-  .ch-hl-drill {
-    padding: 16px;
-  }
-  .ch-hl-drill p {
-    font-size: calc(14.5 * var(--ch-type-k));
-  }
-  .ch-hl-pulse {
-    padding: 18px 18px 6px;
-    background: var(--ch-sheet-bg);
-  }
-  .ch-hl-pulse ol {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  /* The pulse's evidence line can run to a paragraph (a list of players and their numbers); the board's is one line. */
-  .ch-hl-pulse li > span:last-child {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-  }
+
   .ch-hl-plist {
     flex-direction: row;
     overflow-x: auto;
@@ -1004,51 +939,17 @@
    rule, and a chosen player is a soft tint, not a lifted plate. The week's drill keeps its well; pills, keys, counts
    and buttons keep their own material. The loading shapes flatten the same way. Phone keeps its approved boards. */
 @media (min-width: 821px) {
-  .ch-hl[data-canopy] :is(.ch-hl-pulse, .ch-hl-focus, .ch-hl-ev, .ch-hl-prop, .ch-hl-sk__pulse, .ch-hl-sk__card) {
+  .ch-hl[data-canopy] :is(.ch-hl-focus, .ch-hl-ev, .ch-hl-prop, .ch-hl-sk__card) {
     padding: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
   }
-  /* The pulse's reserved room (CH-13405) on the canvas: the preview's four items need 197px at 1440 and 202px at 1000,
-     so it holds 202px and the section is 236.8px at both; its loading shape holds the same (above). */
-  .ch-hl[data-canopy] {
-    --ch-hl-pulse-h: 202px;
-  }
   /* A section's head: its heading over the engraved rule. */
-  .ch-hl[data-canopy] :is(.ch-hl-pulse > h2, .ch-hl-prop > .ch-hl-note) {
+  .ch-hl[data-canopy] :is(.ch-hl-prop > .ch-hl-note) {
     margin: 0;
     padding: 0 0 12px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse ol {
-    column-gap: 44px;
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse li {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
-  }
-  /* The first row of each column sits on the heading's rule, so it draws no seam of its own. */
-  .ch-hl[data-canopy] .ch-hl-pulse li:first-child {
-    box-shadow: none;
-  }
-  @container chhl (min-width: 641px) {
-    .ch-hl[data-canopy] .ch-hl-pulse li:nth-child(2) {
-      box-shadow: none;
-    }
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse .ch-hl-pulse__clear,
-  .ch-hl[data-canopy] .ch-hl-pulse__skrow {
-    border-top-color: var(--ch-ledger-rule-soft);
-  }
-  /* What stands in for the rows (the pulse's notice, its quiet line, its loading rows) clears the rule as a row does. */
-  .ch-hl[data-canopy] .ch-hl-pulse__slot > .ch-notice:first-child {
-    margin-top: 14px;
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse__none {
-    padding-top: 14px;
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse__skrow:first-child {
-    border-top-color: transparent;
   }
 
   /* A column's head: a short label (By player, Also worth knowing, Working) or the focus's category and stance, each on
@@ -1131,17 +1032,17 @@
     border-top-color: var(--ch-ledger-rule-soft);
   }
   /* A section on the board ends with the same room the page gives between sections. */
-  .ch-hl[data-canopy] > :is(.ch-hl-pulse, .ch-hl-prop, .ch-hl-sk__pulse) {
+  .ch-hl[data-canopy] > :is(.ch-hl-prop) {
     margin-bottom: 16px;
   }
 
   /* Loading draws the same heads: each section's and column's engraved rule where the loaded page draws it, with the
      label's bar centred above it, and the rows where the loaded rows land. */
-  .ch-hl[data-canopy] :is(.ch-hl-sk__pulse, .ch-hl-sk--coach > .ch-hl-sk__col, .ch-hl-sk--player > .ch-hl-sk__col) {
+  .ch-hl[data-canopy] :is(.ch-hl-sk--coach > .ch-hl-sk__col, .ch-hl-sk--player > .ch-hl-sk__col) {
     padding-top: 0;
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
   }
-  .ch-hl[data-canopy] :is(.ch-hl-sk__pulse, .ch-hl-sk--player > .ch-hl-sk__col) > .ch-skel:first-child {
+  .ch-hl[data-canopy] :is(.ch-hl-sk--player > .ch-hl-sk__col) > .ch-skel:first-child {
     margin: 6px 0 16px;
   }
   .ch-hl[data-canopy] .ch-hl-sk--coach > .ch-hl-sk__col {
@@ -1211,30 +1112,6 @@
   font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-on-green-ink-soft);
 }
-/* The stance on the green: a quiet chip, gilt for what is worth closing; Priority keeps its amber, Working its green. */
-:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri {
-  background: rgb(255 255 255 / 0.09);
-  color: var(--ch-on-green-ink);
-  box-shadow: none;
-}
-:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-high {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
-}
-/* P013-A3: the stance in gilt that catches the light on its sun side (static: nothing moves). */
-:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-medium {
-  background: linear-gradient(
-    calc(90deg - var(--ch-sun-dir, 0) * 90deg),
-    color-mix(in oklab, var(--ch-champagne-300) 70%, var(--ch-light-key)),
-    var(--ch-champagne-300) 70%
-  );
-  color: var(--ch-green-800);
-  box-shadow: inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 60%, transparent);
-}
-:is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head .ch-hl-pri.is-ok {
-  background: var(--ch-positive-100);
-  color: var(--ch-positive-600);
-}
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy, too vibe coded"; the Coach Home board, round 3:
    "fewer containers, one feature card"). On the phone the page opens on the Ledger's intro under the engraved double
@@ -1273,7 +1150,7 @@
   }
 
   /* A section's head: the heading under the double rule, as Home's Today. */
-  .ch-hl.is-phone .ch-hl-pulse > h2,
+  
   .ch-hl.is-phone .ch-hl-prop > h2,
   .ch-hl.is-phone .ch-hl-sec > h2 {
     margin: 0 0 4px;
@@ -1283,38 +1160,6 @@
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
-  }
-
-  /* Program pulse: its rows on the parchment between soft seams; each row's glyph is a flat tinted key. */
-  .ch-hl.is-phone .ch-hl-pulse {
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-pulse li {
-    padding: 14px 0;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
-  }
-  .ch-hl.is-phone .ch-hl-pulse li:first-child {
-    box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-pulse__ic {
-    background: var(--ch-ledger-row-hover);
-    box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-pulse .ch-hl-pulse__clear,
-  .ch-hl.is-phone .ch-hl-pulse__skrow {
-    border-top-color: var(--ch-ledger-rule-soft);
-  }
-  .ch-hl.is-phone .ch-hl-pulse__skrow:first-child {
-    border-top-color: transparent;
-  }
-  .ch-hl.is-phone .ch-hl-pulse__none {
-    padding-top: 10px;
-  }
-  .ch-hl.is-phone .ch-hl-pulse__slot > .ch-notice:first-child {
-    margin-top: 8px;
   }
 
   /* The coach's players: chips drawn with a hairline, not lifted plates; the chosen one is the green. */
@@ -1366,15 +1211,7 @@
   .ch-hl.is-phone .ch-hl-ev__f {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hl.is-phone .ch-hl-g__you {
-    background: var(--ch-workspace);
-  }
-  .ch-hl.is-phone .ch-hl-drill {
-    padding: 16px 0 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
-  }
+
   .ch-hl.is-phone .ch-hl-why {
     border-top-color: var(--ch-ledger-rule-soft);
   }
@@ -1437,25 +1274,7 @@
     gap: 9px;
     height: 43.5px;
   }
-  .ch-hl.is-phone .ch-hl-sk__pulse {
-    gap: 4px;
-    padding: 12px 0 0;
-    border-top: var(--ch-ledger-rule-double);
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-hl.is-phone .ch-hl-sk__pulse .ch-hl-sk__col {
-    gap: 0;
-    min-height: var(--ch-hl-pulse-h, 197px);
-    padding-top: 0;
-  }
-  .ch-hl.is-phone .ch-hl-sk__pulse .ch-hl-sk__col > div {
-    min-height: 65px;
-  }
-  .ch-hl.is-phone .ch-hl-sk__pulse .ch-hl-sk__col > div + div {
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
-  }
+
   .ch-hl.is-phone .ch-hl-sk--coach {
     gap: 18px;
   }
@@ -1540,10 +1359,7 @@
     max-width: 60ch;
     font: 400 16.5px/1.55 var(--ch-font-sans);
   }
-  .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-pri {
-    padding: 6px 11px;
-    font-size: calc(12 * var(--ch-type-k));
-  }
+
   /* The evidence sits straight under the plate: no soft rule between them, the plate is the divider. */
   .ch-hl[data-canopy] .ch-hl-ev {
     gap: 16px;
@@ -1555,64 +1371,12 @@
     color: var(--ch-text-primary);
   }
 
-  /* The reading: the player's number large over a thicker track, the comparison at the far end. The legend is the
-     reading's caption and stays in the DOM after the track, so a screen reader hears the track then the words. */
-  .ch-hl[data-canopy] .ch-hl-g {
-    gap: 18px;
-    padding-top: 0;
-  }
-  .ch-hl[data-canopy] .ch-hl-g__lg {
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    order: -1;
-    font: 500 13.5px/1.1 var(--ch-font-sans);
-  }
-  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child {
-    align-items: flex-end;
-  }
-  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child > i {
-    margin-bottom: 9px;
-  }
-  .ch-hl[data-canopy] .ch-hl-g__lg > span:first-child b {
-    font-size: calc(38 * var(--ch-type-k));
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: -0.035em;
-    background: linear-gradient(180deg, color-mix(in oklab, var(--ch-chart-loss) 78%, white), var(--ch-chart-loss-on-tint));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__lg > span:first-child b {
-    background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
-  }
-  .ch-hl[data-canopy] .ch-hl-g__t,
   .ch-hl[data-canopy] .ch-hl-bars__t {
     height: 12px;
     border-radius: 6px;
     box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
   }
-  .ch-hl[data-canopy] .ch-hl-g__f {
-    border-radius: var(--ch-radius-sm);
-    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-chart-loss) 30%, transparent), var(--ch-chart-loss));
-  }
-  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__f {
-    background: linear-gradient(90deg, color-mix(in oklab, var(--ch-green-500) 30%, transparent), var(--ch-green-600));
-  }
-  .ch-hl[data-canopy] .ch-hl-g__cmp,
-  .ch-hl[data-canopy] .ch-hl-g__sec {
-    top: -7px;
-    bottom: -7px;
-  }
-  .ch-hl[data-canopy] .ch-hl-g__you {
-    width: 18px;
-    height: 18px;
-    margin: -9px 0 0 -9px;
-    box-shadow: 0 0 0 3.5px var(--ch-chart-loss), var(--ch-elevation-mark-ink);
-  }
-  .ch-hl[data-canopy] .ch-hl-g.is-good .ch-hl-g__you {
-    box-shadow: 0 0 0 3.5px var(--ch-green-600), var(--ch-elevation-mark-ink);
-  }
+
   .ch-hl[data-canopy] .ch-hl-bars {
     gap: 12px;
   }
@@ -1631,26 +1395,9 @@
   .ch-hl[data-canopy] .ch-hl-bars__t i.is-weak {
     background: linear-gradient(90deg, color-mix(in oklab, var(--ch-chart-loss) 70%, white), var(--ch-chart-loss));
   }
-  .ch-hl[data-canopy] .ch-hl-conf__d i {
-    width: 6px;
-    height: 13px;
-  }
-  .ch-hl[data-canopy] .ch-hl-conf__d i.is-on {
-    background: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-700));
-  }
-
-  /* The drill: set apart by its well and its "This week" mark, never a coloured rule at its edge (the owner's standing rule:
-     no side rails anywhere, 2026-10-19). */
-  .ch-hl[data-canopy] .ch-hl-drill {
-    box-shadow: var(--ch-well-soft-shadow);
-  }
-  .ch-hl[data-canopy] .ch-hl-drill__k {
-    color: var(--ch-green-700);
-    font-size: calc(12.5 * var(--ch-type-k));
-  }
 
   /* A section's head: its heading over the engraved rule, with a short gold lead on the rule. */
-  .ch-hl[data-canopy] :is(.ch-hl-pulse > h2, .ch-hl-plist > h2, .ch-hl-sec > h2) {
+  .ch-hl[data-canopy] :is(.ch-hl-plist > h2, .ch-hl-sec > h2) {
     background: linear-gradient(var(--ch-champagne-500), var(--ch-champagne-500)) 0 100% / 40px 3px no-repeat;
   }
   .ch-hl[data-canopy] .ch-hl-plist > h2,
@@ -1658,30 +1405,6 @@
     font: 600 13px/1 var(--ch-font-sans);
     letter-spacing: 0;
     color: var(--ch-green-700);
-  }
-
-  /* The pulse's rows: the glyph is a small plate that takes its tone (amber for what needs a look, green for what is
-     going well), and a row answers the cursor. */
-  .ch-hl[data-canopy] .ch-hl-pulse li {
-    grid-template-columns: 34px minmax(0, 1fr);
-    column-gap: 14px;
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse__ic {
-    width: 34px;
-    height: 34px;
-    background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-150));
-    box-shadow: inset 0 0 0 1px var(--ch-ledger-rule), var(--ch-elevation-mark-ink);
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse li.is-warn .ch-hl-pulse__ic {
-    background: linear-gradient(160deg, var(--ch-warning-100), color-mix(in oklab, var(--ch-warning-100) 70%, var(--ch-warning-600)));
-    box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.32), var(--ch-elevation-mark-warn);
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse li.is-good .ch-hl-pulse__ic {
-    background: linear-gradient(160deg, var(--ch-positive-100), color-mix(in oklab, var(--ch-positive-100) 70%, var(--ch-green-600)));
-    box-shadow: inset 0 0 0 1px var(--ch-green-ring), var(--ch-elevation-mark);
-  }
-  .ch-hl[data-canopy] .ch-hl-pulse li b {
-    font-size: calc(14.5 * var(--ch-type-k));
   }
 
   /* Players: the chosen one carries a green rail and a green count; the rest answer the cursor. */
@@ -1736,44 +1459,25 @@
     font-size: calc(12 * var(--ch-type-k));
   }
   .ch-hl-role,
-  .ch-hl-pri,
   .ch-hl-row__b em {
     font-size: calc(12 * var(--ch-type-k));
   }
 }
 
-/* Dark (Clubhouse at night): ink hairlines, tracks and tints drawn for ivory paper turn to ivory ink at the same weight;
-   the warm and green gauge fills start from their night colours. `:where()` keeps each at its light rule's specificity. */
-:where(html[data-fw-theme='dark']) .ch-hl-pri.is-high {
-  box-shadow: inset 0 0 0 1px rgb(227 169 79 / 0.3);
-}
-:where(html[data-fw-theme='dark']) .ch-hl-pri.is-medium {
-  color: var(--ch-champagne-300);
-}
 :where(html[data-fw-theme='dark']) .ch-hl-ev {
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
 }
-:where(html[data-fw-theme='dark']) .ch-hl-bars__t,
-:where(html[data-fw-theme='dark']) .ch-hl-g__t {
+:where(html[data-fw-theme='dark']) .ch-hl-bars__t {
   background: rgb(237 231 216 / 0.09);
 }
-:where(html[data-fw-theme='dark']) .ch-hl-g__f {
-  background: linear-gradient(90deg, rgb(227 169 79 / 0.2), var(--ch-chart-loss));
-}
-:where(html[data-fw-theme='dark']) .ch-hl-g.is-good .ch-hl-g__f {
-  background: linear-gradient(90deg, rgb(107 187 140 / 0.2), var(--ch-green-600));
-}
+
 :where(html[data-fw-theme='dark']) .ch-hl-ev__f,
 :where(html[data-fw-theme='dark']) .ch-hl-why,
 :where(html[data-fw-theme='dark']) .ch-hl-row,
-:where(html[data-fw-theme='dark']) .ch-hl-prop__r,
-:where(html[data-fw-theme='dark']) .ch-hl-pulse .ch-hl-pulse__clear,
-:where(html[data-fw-theme='dark']) .ch-hl-pulse__skrow {
+:where(html[data-fw-theme='dark']) .ch-hl-prop__r {
   border-top-color: var(--ch-border-hairline);
 }
-:where(html[data-fw-theme='dark']) .ch-hl-conf__d i {
-  background: rgb(237 231 216 / 0.16);
-}
+
 @media (hover: hover) {
   :where(html[data-fw-theme='dark']) .ch-hl-row:hover,
   :where(html[data-fw-theme='dark']) .ch-hl-pl:hover {
@@ -1830,11 +1534,6 @@ html:not([data-fw-theme='dark']) .ch-hl {
 /* Inside a green board the ledger's heading ink is the board's own, not the page's darker step. */
 .ch-hl .ch-scoreboard {
   --ch-ledger-ink: var(--ch-text-primary);
-}
-/* The measured gauge (Board and Deep dive): a green-tinted track you can see (owner, 2026-10-16). */
-.ch-hl .ch-hl-g__t {
-  background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
-  box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }
 
 /* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
@@ -1946,6 +1645,122 @@ html:not([data-fw-theme='dark']) .ch-hl {
   font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-wrap: pretty;
+}
+/* The correction chips under a read's audit (03 §7.2, coachhelm_corrections_v1): quiet outlined pills on the card's paper, the
+   answer left as one line with Change after a tap, and a held-back read's one line. True buttons, 44px tall on the phone. */
+.ch-hl-cx {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ch-border-hairline);
+}
+.ch-hl-cx__k {
+  margin: 0;
+  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-cx__chips,
+.ch-hl-cx__why {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ch-hl-cx__why[hidden] {
+  display: none;
+}
+.ch-hl-cx__why {
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--ch-bg-subtle);
+}
+.ch-hl-cx__c {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--ch-border-control);
+  border-radius: 999px;
+  background: var(--ch-bg-surface);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), border-color var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-hl-cx__c.is-on {
+  border-color: var(--ch-border-strong);
+  background: var(--ch-bg-selected);
+}
+.ch-hl-cx__c:active {
+  background: var(--ch-bg-hover);
+}
+.ch-hl-cx__c:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.ch-hl-cx__c:focus-visible,
+.ch-hl-cx__chg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+.ch-hl-cx.is-done {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.ch-hl-cx__done {
+  margin: 0;
+  font: 400 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hl-cx__chg {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 4px;
+  border-radius: 6px;
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--ch-border-strong);
+}
+.ch-hl-cx.is-done .ch-hl-cx__chg {
+  align-self: center;
+  flex-shrink: 0;
+}
+.ch-hl-cx__chg:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.ch-hl-cx__err {
+  margin: 0;
+  font: 500 calc(13.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  color: var(--ch-warning-600);
+}
+.ch-hl-later {
+  margin: 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--ch-border-hairline);
+  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+@media (hover: hover) {
+  .ch-hl-cx__c:hover {
+    background: var(--ch-bg-hover);
+  }
+}
+@media (max-width: 820px) {
+  .ch-hl-cx__c,
+  .ch-hl-cx__chg {
+    min-height: 44px;
+  }
 }
 .ch-hl-cleared {
   display: flex;

@@ -1178,23 +1178,7 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
     color: var(--ch-on-green-ink-muted);
   }
-  .ch-hd-dos__h .ch-hl-pri {
-    background: rgb(255 255 255 / 0.09);
-    color: var(--ch-on-green-ink);
-    box-shadow: none;
-  }
-  .ch-hd-dos__h .ch-hl-pri.is-high {
-    background: var(--ch-warning-100);
-    color: var(--ch-warning-600);
-  }
-  .ch-hd-dos__h .ch-hl-pri.is-medium {
-    background: var(--ch-champagne-300);
-    color: var(--ch-green-800);
-  }
-  .ch-hd-dos__h .ch-hl-pri.is-ok {
-    background: var(--ch-positive-100);
-    color: var(--ch-positive-600);
-  }
+
   /* The four lines sit in the green head here, so they take its on-green inks and its hairline (not the card's). */
   .ch-hd-dos__h .ch-hd-read > div {
     border-top-color: rgb(255 255 255 / 0.1);
@@ -1231,9 +1215,7 @@
   .ch-hd-scroll .ch-hl-ev__f {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hd-scroll .ch-hl-g__you {
-    background: var(--ch-workspace);
-  }
+
   .ch-hd-tr > li {
     border-top-color: var(--ch-ledger-rule-soft);
   }
@@ -1256,12 +1238,7 @@
   .ch-hd-dx__d > div {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hd-scroll .ch-hl-drill {
-    padding: 16px 0 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
-  }
+
   .ch-hd-plan {
     gap: 0;
   }

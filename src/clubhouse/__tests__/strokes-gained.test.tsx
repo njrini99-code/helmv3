@@ -171,12 +171,46 @@ describe('bar scale', () => {
     expect(sgTint(null, 3)).toBe('var(--ch-ivory-100)');
   });
 
-  it('the team grid uses that scale in the page: a −2.6 cell sits at 6.7% of its track on a scale of 3, not at the end a fixed 1.2 gave', () => {
-    // P004-A1: the ledger draws the value as a dot on a track scaled to the grid, not a tint; the worst loss keeps a wash.
+  it('the team grid uses that scale in the page: a −2.6 cell is a bar from the zero line out to 6.7% of its track on a scale of 3, not at the end a fixed 1.2 gave', () => {
+    // The ledger draws the value as a bar from the zero line on one shared scale, not a tint; the worst loss keeps a wash.
     showTeam(team({ grid: [{ ...PREVIEW_TEAM_STATS.grid[0]!, legs: [-2.6, 0.3, 0.1, 0.2] }] }));
     const cell = document.querySelector('.ch-lg__r:not(.ch-lg__r--h) .ch-lg__cell') as HTMLElement;
-    expect((cell.querySelector('.ch-lg__dot') as HTMLElement).style.left).toBe('6.7%');
+    const loss = cell.querySelector('.ch-lg__bar') as HTMLElement;
+    expect(loss.className).toContain('is-loss');
+    expect(loss.style.left).toBe('6.7%');
+    expect(loss.style.width).toBe('43.3%');
     expect(cell.className).toContain('is-worst');
+    // A gain starts at the zero line (50%) and grows right: 0.3 of 3 is 5%.
+    const gain = document.querySelectorAll('.ch-lg__r:not(.ch-lg__r--h) .ch-lg__cell')[1]!.querySelector('.ch-lg__bar') as HTMLElement;
+    expect(gain.className).toContain('is-gain');
+    expect(gain.style.left).toBe('50%');
+    expect(gain.style.width).toBe('5%');
+    // The key names the bars, the tick and the scale (a full bar is the half-track scale, here 3).
+    const key = document.querySelector('.ch-lg__key')!.textContent ?? '';
+    expect(key).toContain('Loses strokes');
+    expect(key).toContain('Gains strokes');
+    expect(key).toContain('Team median');
+    expect(key).toContain('±3');
+  });
+
+  it('a team grid figure opens that player\'s Game detail for its leg, and the row still opens the profile (Q12)', () => {
+    showTeam(team({ grid: [{ ...PREVIEW_TEAM_STATS.grid[0]!, id: 'p1', name: 'Cole Bennett', legs: [1.9, -1.6, null, -4.9] }] }));
+    const cells = [...document.querySelectorAll('.ch-lg__r:not(.ch-lg__r--h) .ch-lg__cell')];
+    const hrefs = cells.map((c) => c.querySelector('a.ch-lg__cl')?.getAttribute('href') ?? null);
+    expect(hrefs[0]).toContain('player=p1');
+    expect(hrefs[0]).toContain('tab=game');
+    expect(hrefs[0]!.endsWith('#gm-tee')).toBe(true);
+    expect(hrefs[1]!.endsWith('#gm-approach')).toBe(true);
+    expect(hrefs[2]).toBeNull();
+    expect(hrefs[3]!.endsWith('#gm-putting')).toBe(true);
+    expect(cells[1]!.querySelector('a.ch-lg__cl')!.getAttribute('aria-label')).toBe('Cole Bennett, approach −1.6: open game detail');
+    expect(document.querySelectorAll('a.ch-lg__a')).toHaveLength(1);
+  });
+
+  it('a coach on a player\'s stats can open that player\'s CoachHelm reads', () => {
+    showPlayer(player({ viewer: 'coach', id: 'p9' }));
+    const link = screen.getByRole('link', { name: /CoachHelm/ });
+    expect(link.getAttribute('href')).toContain('coachhelm?player=p9');
   });
 
   it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {

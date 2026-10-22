@@ -259,9 +259,6 @@
   font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-hg-m__f .ch-hl-conf {
-  margin-left: 0;
-}
 .ch-hg-m__how {
   margin-top: -4px;
 }

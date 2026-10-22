@@ -1288,6 +1288,17 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-hovercard__act svg {
   color: var(--ch-text-secondary);
 }
+/* Held to a table's name cell (the leg grid), never wider than it: the three keys share one row when the cell is wide
+   enough and wrap onto a second when it is narrow (the grid's player column can be 200px), and long text wraps. */
+.ch-hovercard--fit {
+  padding: 12px;
+  overflow-wrap: anywhere;
+}
+.ch-hovercard--fit .ch-hovercard__act {
+  flex: 1 1 auto;
+  gap: 4px;
+  padding: 0 4px;
+}
 :where(html[data-fw-theme='dark']) .ch-peek::backdrop {
   background: rgb(0 0 0 / 0.5);
 }
