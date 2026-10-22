@@ -19,6 +19,7 @@
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 const MIN_OPPORTUNITIES = 10;
 const MIN_RATE = 0.20;
@@ -92,13 +93,15 @@ const rule: CompositeRule = {
     // raw 90-day count would otherwise systematically out-rank them.
     const strokesPerRound = (compounded * 0.5) / rounds;
     return {
-      title: 'Bogeys turning into doubles too often',
-      content:
-        `Of your last ${opps} bogey-or-worse holes, the next hole was a ` +
-        `double-or-worse ${compounded} times (${ratePct}%). The bogey ` +
-        `isn't the problem; the over-correction is. After a bogey, ` +
-        `force a 30-second reset before the next tee shot and commit to ` +
-        `your stock target rather than chasing.`,
+      ...inBothVoices((v) => ({
+        title: 'Bogeys turning into doubles too often',
+        content:
+          `Of ${v.players} last ${opps} bogey-or-worse holes, the next hole was a ` +
+          `double-or-worse ${compounded} times (${ratePct}%). The bogey ` +
+          `isn't the problem; the over-correction is. After a bogey, ` +
+          `${v.pick('force', 'have them force')} a 30-second reset before the next tee shot and commit to ` +
+          `${v.your} stock target rather than chasing.`,
+      })),
       signature: 'doubles_after_bogey',
       evidence: {
         metric: 'compound_mistake_rate',

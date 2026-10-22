@@ -25,6 +25,7 @@
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** The counted SG-per-approach row for 50–125 yd (`insight-angles/approach-sg.ts`). */
 export const COUNTED_SHORT_APPROACH_METRIC = 'approach_sg_per_shot_50_125';
@@ -73,20 +74,24 @@ function composeCounted(match: CompositeMatch): CompositeContent {
   const team = Number(sg.sg_team ?? 0);
   const gap = team - you;
   const scramble = Math.round(Number(sg.scramble_pct ?? 0));
-  const parts: string[] = [];
-  if (sg.green_pct !== null && sg.green_pct !== undefined) {
-    parts.push(`you found the green ${sg.green_pct}% of the time (team ${sg.team_green_pct ?? 'n/a'}%)`);
-  }
-  if (sg.proximity_ft !== null && sg.proximity_ft !== undefined) {
-    parts.push(`on the green you were ${sg.proximity_ft} ft from the hole on average (team ${sg.team_proximity_ft ?? 'n/a'} ft)`);
-  }
-  const drivers = parts.length ? ` ${parts.join('; ').replace(/^./, (c) => c.toUpperCase())}.` : '';
   return {
-    title: 'Short approaches + scrambling are stacking up',
-    content:
-      `From 50–125 yd you lose ${gap.toFixed(2)} strokes per approach against your teammates' pooled approaches (hits and misses counted).${drivers} ` +
-      `When you miss the green you save par ${scramble}% of the time. The two stack: a long first putt and a weak recovery both feed bogey. ` +
-      `Wedge distance-control reps from 50–125 yd first, then re-check the scrambling rate.`,
+    ...inBothVoices((v) => {
+      const parts: string[] = [];
+      if (sg.green_pct !== null && sg.green_pct !== undefined) {
+        parts.push(`${v.you} found the green ${sg.green_pct}% of the time (team ${sg.team_green_pct ?? 'n/a'}%)`);
+      }
+      if (sg.proximity_ft !== null && sg.proximity_ft !== undefined) {
+        parts.push(`on the green ${v.you} were ${sg.proximity_ft} ft from the hole on average (team ${sg.team_proximity_ft ?? 'n/a'} ft)`);
+      }
+      const drivers = parts.length ? ` ${parts.join('; ').replace(/^./, (c) => c.toUpperCase())}.` : '';
+      return {
+        title: 'Short approaches + scrambling are stacking up',
+        content:
+          `From 50–125 yd ${v.player} ${v.pick('lose', 'loses')} ${gap.toFixed(2)} strokes per approach against ${v.your} teammates' pooled approaches (hits and misses counted).${drivers} ` +
+          `When ${v.you} miss the green ${v.you} save par ${scramble}% of the time. The two stack: a long first putt and a weak recovery both feed bogey. ` +
+          `${v.pick('Wedge', 'Short-approach')} distance-control reps from 50–125 yd first, then re-check the scrambling rate.`,
+      };
+    }),
     signature: 'short_approach_proximity_gap:counted',
     evidence: {
       metric: COUNTED_SHORT_APPROACH_CHAIN_METRIC,
@@ -172,16 +177,18 @@ const rule: CompositeRule = {
     const proximity = Math.round(Number(match.signals.approach_proximity_ft ?? 0));
     const scramble = Math.round(Number(match.signals.scramble_pct ?? 0));
     return {
-      title: 'Short approaches + scrambling are stacking up',
-      content:
-        `From 50-125 yd, the approaches that hit the green are finishing ` +
-        `${proximity} ft from the hole on average (on-green only; dial-in ` +
-        `target ~${DIAL_IN_TARGET_FT} ft, estimated), and you are saving par ` +
-        `${scramble}% of the time when you miss. The two stack: a long first ` +
-        `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
-        `share a club or a yardage (full swing vs partial wedge) before naming ` +
-        `the cause. Recommended: wedge distance-control reps to a 20-ft circle ` +
-        `first, then re-check the scrambling rate.`,
+      ...inBothVoices((v) => ({
+        title: 'Short approaches + scrambling are stacking up',
+        content:
+          `From 50-125 yd, the approaches that hit the green are finishing ` +
+          `${proximity} ft from the hole on average (on-green only; dial-in ` +
+          `target ~${DIAL_IN_TARGET_FT} ft, estimated), and ${v.pick('you are', 'the player is')} saving par ` +
+          `${scramble}% of the time when ${v.you} miss. The two stack: a long first ` +
+          `putt and a weak recovery both feed bogey. Check whether the long leaves ` +
+          `share ${v.pick('a club or a yardage (full swing vs partial wedge)', 'a yardage or a swing length (full swing vs partial swing)')} before naming ` +
+          `the cause. Recommended: ${v.pick('wedge', 'short-approach')} distance-control reps to a 20-ft circle ` +
+          `first, then re-check the scrambling rate.`,
+      })),
       signature: 'short_approach_proximity_gap',
       evidence: {
         metric: 'approach_proximity_50_125ft',

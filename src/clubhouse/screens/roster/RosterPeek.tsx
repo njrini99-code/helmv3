@@ -2,19 +2,22 @@
 
 import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, School, X } from 'lucide-react';
 import { AnimatePresence, m } from 'motion/react';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
-import type { ChRosterPlayer } from '../../data/roster';
+import { coachPlayerHref } from '../../data/coachhelm-views-shape';
+import type { ChAvailability, ChRosterHelm, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
-import { useAction } from '../../lib/use-action';
+import { Segmented } from '../../ui/Segmented';
+import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { formatHcp } from './format';
+import { AVAILABILITY_WORD, formatHcp, legsCaption, relativeAgo } from './format';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -29,11 +32,17 @@ export function RosterPeek({
   notesLocked,
   onClose,
   onNoteSaved,
+  availability,
+  helm,
 }: {
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
   onClose: () => void;
   onNoteSaved: NoteSaved;
+  /** Roster's availability write, shared with the row menu so one change at a time is in flight. */
+  availability: AvailabilityControl;
+  /** What CoachHelm reads in each player's rounds (loadRoster); off draws no block. */
+  helm: ChRosterHelm;
 }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
@@ -64,14 +73,28 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} helm={helm} />
         </m.aside>
       )}
     </AnimatePresence>
   );
 }
 
-function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void; onNoteSaved: NoteSaved }) {
+function PeekBody({
+  p,
+  notesLocked,
+  onClose,
+  onNoteSaved,
+  availability,
+  helm,
+}: {
+  p: ChRosterPlayer;
+  notesLocked: boolean;
+  onClose: () => void;
+  onNoteSaved: NoteSaved;
+  availability: AvailabilityControl;
+  helm: ChRosterHelm;
+}) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
@@ -88,6 +111,19 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52), as the phone's Plan 1:1.
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const profileHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}`);
+  // The Development counts open the player's Development tab.
+  const devHref = rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(p.id)}&tab=dev`);
+  const devCode = p.focusAreas == null || p.goals == null ? 'CH-3208' : undefined;
+  const devCounts = (
+    <>
+      <span>
+        <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {p.focusAreas === 1 ? 'area' : 'areas'}
+      </span>
+      <span>
+        <b className="ch-num">{p.goals ?? NO_DATA}</b> {p.goals === 1 ? 'goal' : 'goals'}
+      </span>
+    </>
+  );
 
   return (
     <>
@@ -104,7 +140,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         </span>
         <h2 className="ch-display">{p.name}</h2>
         <span className="ch-rs-peek__sub">
-          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null].filter(Boolean).join(' · ') || 'Player'}
+          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
+            'Player'}
         </span>
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
@@ -144,6 +181,7 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
           </div>
         ))}
       </dl>
+      <LegsCaption p={p} />
 
       <div className="ch-rs-peek__sec">
         <div className="ch-rs-peek__l">
@@ -182,15 +220,20 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
           <b>Development</b>
         </div>
         {/* A count that didn't load shows as a dash, never 0 (CH-3208). */}
-        <div className="ch-rs-peek__dev" data-ch-code={p.focusAreas == null || p.goals == null ? 'CH-3208' : undefined}>
-          <span>
-            <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {p.focusAreas === 1 ? 'area' : 'areas'}
-          </span>
-          <span>
-            <b className="ch-num">{p.goals ?? NO_DATA}</b> {p.goals === 1 ? 'goal' : 'goals'}
-          </span>
-        </div>
+        {devHref ? (
+          <Link className="ch-rs-peek__dev" href={devHref} data-ch-code={devCode}>
+            {devCounts}
+          </Link>
+        ) : (
+          <div className="ch-rs-peek__dev" data-ch-code={devCode}>
+            {devCounts}
+          </div>
+        )}
       </div>
+
+      <HelmBlock p={p} helm={helm} />
+
+      <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />
 
       <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
 
@@ -203,6 +246,81 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
       )}
       {p.joined && <span className="ch-rs-peek__since">{p.joined}</span>}
     </>
+  );
+}
+
+/** The roster's strokes-by-leg caption under the figures (spec D build B); nothing without a season's strokes gained. */
+export function LegsCaption({ p }: { p: ChRosterPlayer }) {
+  const c = legsCaption(p);
+  if (!c) return null;
+  return (
+    <p className="ch-rs-peek__legs">
+      {c.lead}
+      <span className={`ch-num is-${c.tone}`}>{c.figure}</span>
+      {c.tail}
+    </p>
+  );
+}
+
+/** "3 costing strokes · 1 working", "No reads yet", or dashes when the counts did not load (CH-3212). */
+function HelmCounts({ p, helm }: { p: ChRosterPlayer; helm: Exclude<ChRosterHelm, { status: 'off' }> }) {
+  const c = helm.status === 'on' ? helm.byPlayer[p.id] : null;
+  if (helm.status === 'on' && !c) return <span>No reads yet</span>;
+  return (
+    <span>
+      <b className="ch-num">{c ? c.costing : NO_DATA}</b> costing strokes · <b className="ch-num">{c ? c.working : NO_DATA}</b> working
+    </span>
+  );
+}
+
+/** Where View insights goes: the coach's Deep dive of this player, once that view is rebuilt. */
+const insightsHref = (p: ChRosterPlayer) => rebuiltHref(coachPlayerHref('deep-dive', p.id), 'coach');
+
+/**
+ * CoachHelm in the player panel (spec D build B): how many of the player's current reads are costing strokes and how many are
+ * working, counted as the Board counts them, and View insights. Off for the coach: not drawn.
+ */
+function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
+  if (helm.status === 'off') return null;
+  const href = insightsHref(p);
+  return (
+    <div className="ch-rs-peek__sec">
+      <div className="ch-rs-peek__l">
+        <b>CoachHelm</b>
+        <span>What it reads in {p.firstName}&rsquo;s rounds</span>
+      </div>
+      <div className="ch-rs-peek__dev" data-ch-code={helm.status === 'failed' ? 'CH-3212' : undefined}>
+        <HelmCounts p={p} helm={helm} />
+        {href && (
+          <Link className="ch-rs-peek__go" href={href}>
+            View insights <span aria-hidden="true">→</span>
+          </Link>
+        )}
+      </div>
+      {helm.status === 'failed' && <p className="ch-rs-peek__cap">Didn&rsquo;t load. Refresh to try again.</p>}
+    </div>
+  );
+}
+
+/** The same counts as a panel on the phone profile, after Recent rounds; View insights is the panel's 44px link. */
+export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
+  if (helm.status === 'off') return null;
+  const href = insightsHref(p);
+  return (
+    <section className="ch-rsm-panel ch-rsm-helm" aria-labelledby={`helm-${p.id}`}>
+      <div className="ch-rsm-panel__h">
+        <b id={`helm-${p.id}`}>CoachHelm</b>
+        {href && (
+          <Link href={href} className="ch-rsm-panel__link">
+            View insights <span aria-hidden="true">→</span>
+          </Link>
+        )}
+      </div>
+      <div className="ch-rs-peek__dev" data-ch-code={helm.status === 'failed' ? 'CH-3212' : undefined}>
+        <HelmCounts p={p} helm={helm} />
+      </div>
+      {helm.status === 'failed' && <p className="ch-rs-peek__cap">Didn&rsquo;t load. Refresh to try again.</p>}
+    </section>
   );
 }
 
@@ -274,6 +392,64 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
           </span>
         )
       )}
+    </div>
+  );
+}
+
+/** What Roster hands the panel: its availability write, and whether one is in flight. */
+export interface AvailabilityControl {
+  set: (p: ChRosterPlayer, to: ChAvailability) => void;
+  pending: boolean;
+}
+
+/** What `useAction('roster.setAvailability')` says (CH-3009 on failure). */
+export function availabilityCopy(name: string, to: ChAvailability): ActionCopy {
+  const word = AVAILABILITY_WORD[to].toLowerCase();
+  return {
+    done: `${name} marked ${word}`,
+    failed: `Couldn’t mark ${name} ${word}`,
+    hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
+    code: 'CH-3009',
+  };
+}
+
+const AVAILABILITY_OPTIONS: ReadonlyArray<{ value: ChAvailability; label: string }> = [
+  { value: 'available', label: 'Available' },
+  { value: 'injured', label: 'Injured' },
+  { value: 'away', label: 'Away' },
+];
+
+/**
+ * Can they play: Available, Injured or Away, the word only. Display only, on the coach's roster; it never changes team
+ * access, which Mark inactive does (the caption says so where the control is). Shared by the desktop panel and the
+ * phone profile. The choice is written at once (optimistic, Roster's `roster.setAvailability`). There is no note:
+ * teammates can read every column of their team's rows, so a reason has nowhere coach-only to live yet
+ * (docs/clubhouse/held/data/roster-availability.md).
+ */
+export function AvailabilityPanel({ p, control, block = false }: { p: ChRosterPlayer; control: AvailabilityControl; block?: boolean }) {
+  const id = `avail-${p.id}`;
+  const [now] = useState(() => new Date());
+  return (
+    <div className="ch-rs-peek__sec ch-rs-avail">
+      <div className="ch-rs-peek__l">
+        <b id={`${id}-l`}>Availability</b>
+        {p.availabilityUpdated && <span>Updated {relativeAgo(p.availabilityUpdated, now)}</span>}
+      </div>
+      {/* CH-3405: while a change is in flight the control says so and refuses another for this player. */}
+      <div className="ch-rs-avail__seg" aria-busy={control.pending || undefined} data-ch-code={control.pending ? 'CH-3405' : undefined}>
+        <Segmented<ChAvailability>
+          size="sm"
+          block={block}
+          label={`Availability for ${p.name}`}
+          value={p.availability}
+          options={AVAILABILITY_OPTIONS}
+          onChange={(to) => {
+            if (control.pending) return;
+            control.set(p, to);
+          }}
+        />
+      </div>
+      <p className="ch-rs-avail__cap">Shows on your roster only. It never changes their team access; Mark inactive does.</p>
     </div>
   );
 }

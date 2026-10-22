@@ -1,7 +1,9 @@
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { isCountableRound, type CountableRoundInput } from '@/lib/golf/round-countable';
 import { LADDER_RUNGS, type LadderRung } from '@/lib/coachhelm/v3/support/ladder';
 import { shapeLifecycle, shortDate, type LifecycleWord, type ShapeableRead } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import type { LifecycleEvidence } from '@/lib/coachhelm/v3/lifecycle/types';
+import { CORRECTION_KINDS, PLAYER_CORRECTION_KINDS, SNOOZE_CHECKPOINTS, type CorrectionKind, type CorrectionReason } from '@/lib/coachhelm/v3/corrections/types';
 import { coachVerdictLine, playerVerdictLine } from '@/lib/coachhelm/v3/verdicts/verdict-copy';
 import type { FocusAreaVerdict, VerdictWord } from '@/lib/coachhelm/v3/verdicts/verdict';
 import type { ChViewer } from './coachhelm-voice';
@@ -92,6 +94,72 @@ export interface ChReadEngine {
   verdict?: ChEngineVerdict;
   /** "Why do you think so?" (layout 6): the read's audit lines, from the stored evidence. */
   audit?: ChAuditLine[];
+  /** The correction chips under the audit (03 §7.2), only with `coachhelm_corrections_v1` on and the table there. */
+  corrections?: ChCorrections;
+}
+
+/** One answer on a read, as the author recorded it last (the newest correction by one author on one read is the one that counts). */
+export interface ChCorrectionAnswer {
+  kind: CorrectionKind;
+  reason: CorrectionReason | null;
+}
+
+/** What the loader read for one read: the chips are on for this viewer, with their own last answer. */
+export interface ChCorrectionsInput {
+  role: 'coach' | 'player';
+  latest: ChCorrectionAnswer | null;
+  /** Show later still in force: rounds left to post before the read comes back. Null when it is not held back. */
+  laterRounds: number | null;
+}
+
+/** The correction chips a card draws under its audit (03 §7.2; `recordCoachHelmCorrection`). */
+export interface ChCorrections extends ChCorrectionsInput {
+  insightId: string;
+  /** The chips this viewer may use: all five for the player's coach, Not this and Good read for the player on their own read. */
+  kinds: CorrectionKind[];
+}
+
+export function correctionsOf(insightId: string, input: ChCorrectionsInput): ChCorrections {
+  const kinds = input.role === 'coach' ? [...CORRECTION_KINDS] : CORRECTION_KINDS.filter((k) => PLAYER_CORRECTION_KINDS.has(k));
+  // A player cannot hold a read back, so only a coach's answer can leave one hidden.
+  const laterRounds = input.role === 'coach' && input.latest?.kind === 'snooze' ? input.laterRounds : null;
+  return { insightId, role: input.role, kinds, latest: input.latest, laterRounds };
+}
+
+/**
+ * Rounds left before a read held back with Show later comes back: {@link SNOOZE_CHECKPOINTS} rounds newer than the answer, less
+ * the ones posted since. Null once they are in (the read is shown again, and its chips with it).
+ */
+export function laterRoundsLeft(roundsSince: number): number | null {
+  const left = SNOOZE_CHECKPOINTS - Math.max(0, Math.floor(roundsSince));
+  return left > 0 ? left : null;
+}
+
+/** A completed, non-test round as the checkpoint counter orders them (round_date desc, created_at desc), with what the countable rule reads. */
+export interface SnoozeRoundRow extends CountableRoundInput {
+  id: string;
+  round_date: string | null;
+  created_at: string | null;
+}
+
+/**
+ * Countable rounds posted since a Show later answer, the way the lifecycle engine counts a checkpoint (`evaluateCheckpoint`): the
+ * rounds that sort ahead of the answer's saved anchor (`checkpoint_round_id`, the newest completed round when it was given) in
+ * round-date order, not the rounds created after it, so a round started before the answer and finished after still counts and a
+ * back-dated round does not. `rounds` is the player's completed, non-test rounds, newest first. An answer saved with no anchor
+ * (the player had no round then) counts every countable round. An anchor that is no longer in the list (deleted) falls back to
+ * countable rounds created after the answer, so a hold never lasts forever.
+ */
+export function snoozeRoundsSince(
+  anchorRoundId: string | null,
+  answeredAt: string,
+  rounds: readonly SnoozeRoundRow[],
+): number {
+  const countable = (r: SnoozeRoundRow) => Boolean(r.round_date) && isCountableRound(r);
+  if (!anchorRoundId) return rounds.filter(countable).length;
+  const at = rounds.findIndex((r) => r.id === anchorRoundId);
+  if (at < 0) return rounds.filter((r) => countable(r) && (r.created_at ?? '') > answeredAt).length;
+  return rounds.slice(0, at).filter(countable).length;
 }
 
 export const LADDER_WORD: Record<LadderRung, string> = {
@@ -451,6 +519,8 @@ export interface ChLifecycleShaped<T> {
   byId: Map<string, ChEngineLifecycle>;
   /** The Cleared lines, in the list's order (04 example 5): shown until the step archives them. */
   cleared: string[];
+  /** The same Cleared lines with the read each is about, for a surface that files them by area (the Deep dive's ledger). */
+  clearedReads: Array<{ read: T; line: string }>;
 }
 
 /**
@@ -466,7 +536,7 @@ export function shapeReadsLifecycle<
     evidence: unknown;
   },
 >(ranked: readonly T[], on: boolean, viewer: ChViewer | undefined, nowIso: string): ChLifecycleShaped<T> {
-  if (!on) return { kept: [...ranked], byId: new Map(), cleared: [] };
+  if (!on) return { kept: [...ranked], byId: new Map(), cleared: [], clearedReads: [] };
   const voice = viewer?.role === 'coach' ? 'coach' : 'player';
   const reads: Array<ShapeableRead & { src: T }> = ranked.map((r) => ({
     id: r.id,
@@ -494,7 +564,7 @@ export function shapeReadsLifecycle<
   }
   // A Cleared read is out of the list, but a surface that draws it anyway (the coach's one card a player) says Cleared.
   for (const c of shaped.cleared) byId.set(c.read.id, { word: 'Cleared', line: c.line, pair: null });
-  return { kept, byId, cleared: shaped.cleared.map((c) => c.line) };
+  return { kept, byId, cleared: shaped.cleared.map((c) => c.line), clearedReads: shaped.cleared.map((c) => ({ read: c.read.src, line: c.line })) };
 }
 
 /** True when nothing is set: the card draws exactly what it drew before. */

@@ -7,4 +7,8 @@ describe('routeLabel (swap audit F-39)', () => {
     expect(routeLabel('/golf/dashboard/my-qualifiers/abc')).toBe('My qualifiers');
     expect(routeLabel('/golf/dashboard')).toBeNull();
   });
+
+  it('gives What’s new its apostrophe, which a slug cannot carry', () => {
+    expect(routeLabel('/golf/dashboard/whats-new')).toBe('What’s new');
+  });
 });

@@ -2,8 +2,13 @@
 # .githooks/pre-push — fast local push hygiene.
 #
 # CI owns the project-wide checks. Locally, keep only checks that are cheap,
-# range-scoped, and useful before a push: whitespace errors in the pushed
-# commits and an optional gitleaks scan of that same commit range.
+# range-scoped, and useful before a push: whitespace errors in what the branch
+# itself changes and an optional gitleaks scan of the pushed commits.
+#
+# Both checks leave out what is already on origin/main. A branch that merges
+# main brings main's commits into the pushed range; flagging those (whitespace
+# that landed on main elsewhere) blocked pushes for problems the branch did not
+# make, and pushed agents into whitespace-only commits or skipping the hook.
 #
 # Skip for a single push: HELM_SKIP_PREPUSH=1 git push
 
@@ -33,6 +38,7 @@ if [ "${#STDIN_LINES[@]}" -eq 0 ]; then
 fi
 
 RANGES=()
+DIFF_BASES=()
 FAILED=0
 
 for line in "${STDIN_LINES[@]}"; do
@@ -61,6 +67,10 @@ for line in "${STDIN_LINES[@]}"; do
   fi
 
   RANGES+=("${base}..${local_sha}")
+  # The whitespace check reads the branch's own net change: against where it
+  # meets origin/main, so main's merged-in changes are not checked again.
+  diff_base="$(git merge-base origin/main "$local_sha" 2>/dev/null || true)"
+  DIFF_BASES+=("${diff_base:-$base}")
 done
 
 if [ "${#RANGES[@]}" -eq 0 ]; then
@@ -70,21 +80,26 @@ fi
 
 echo "pre-push: checking ${#RANGES[@]} pushed commit range(s)."
 
-for range in "${RANGES[@]}"; do
-  if git diff --check "$range" --; then
-    echo "✓ git diff --check OK ($range)"
+for i in "${!RANGES[@]}"; do
+  local_sha="${RANGES[$i]##*..}"
+  own="${DIFF_BASES[$i]}..${local_sha}"
+  if git diff --check "${DIFF_BASES[$i]}" "$local_sha" --; then
+    echo "✓ git diff --check OK ($own)"
   else
-    echo "✗ git diff --check FAILED ($range)"
+    echo "✗ git diff --check FAILED ($own)"
     FAILED=1
   fi
 done
 
 if command -v gitleaks >/dev/null 2>&1; then
+  # Leave out commits already on origin/main when that ref exists here.
+  NOT_MAIN=""
+  git rev-parse -q --verify origin/main >/dev/null && NOT_MAIN=" --not origin/main"
   for range in "${RANGES[@]}"; do
     if [ -f "$REPO_ROOT/.gitleaks.toml" ]; then
-      gitleaks git --redact --config "$REPO_ROOT/.gitleaks.toml" --log-opts="$range" .
+      gitleaks git --redact --config "$REPO_ROOT/.gitleaks.toml" --log-opts="${range}${NOT_MAIN}" .
     else
-      gitleaks git --redact --log-opts="$range" .
+      gitleaks git --redact --log-opts="${range}${NOT_MAIN}" .
     fi
     status=$?
     if [ "$status" -eq 0 ]; then

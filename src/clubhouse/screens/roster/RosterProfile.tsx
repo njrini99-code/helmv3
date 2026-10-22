@@ -2,7 +2,7 @@
 
 import { CalendarPlus, Flag, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
-import type { ChRosterPlayer } from '../../data/roster';
+import type { ChRosterHelm, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
@@ -10,8 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { CoachNote, type NoteSaved } from './RosterPeek';
-import { formatHcp, rowNote } from './format';
+import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
+import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
 
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,
@@ -24,17 +24,30 @@ export function RosterProfile({
   notesLocked,
   statsError,
   onNoteSaved,
+  availability,
+  helm,
 }: {
   p: ChRosterPlayer;
   notesLocked: boolean;
   statsError: boolean;
   onNoteSaved: NoteSaved;
+  availability: AvailabilityControl;
+  /** What CoachHelm reads in each player's rounds (loadRoster); off draws no panel. */
+  helm: ChRosterHelm;
 }) {
-  const note = rowNote(p, statsError);
+  // The trend's legend is about form: availability has the identity line and its own panel here, so it is left out.
+  const note = rowNote({ ...p, availability: 'available' }, statsError);
   const messageHref = rebuiltHref(`/golf/dashboard/messages?player=${p.id}`);
   const planHref = rebuiltHref(`/golf/dashboard/calendar?new=1&with=${p.id}`);
   const roundsHref = rebuiltHref(`/golf/dashboard/stats?player=${p.id}&window=season&tab=rounds`);
-  const identity = [p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.status === 'inactive' ? 'Inactive' : null].filter(Boolean).join(' · ');
+  const identity = [
+    p.classYear,
+    p.gradYear ? `Class of ${p.gradYear}` : null,
+    p.status === 'inactive' ? 'Inactive' : null,
+    p.availability && p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const place = [p.hometown, p.highSchool].filter(Boolean).join(' · ');
   const facts = [
     ['Hometown', p.hometown],
@@ -82,6 +95,7 @@ export function RosterProfile({
           <dd className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</dd>
         </div>
       </dl>
+      <LegsCaption p={p} />
 
       {statsError ? (
         <InlineNotice
@@ -148,6 +162,8 @@ export function RosterProfile({
         </section>
       )}
 
+      <HelmPanel p={p} helm={helm} />
+
       {facts.length > 0 && (
         <section className="ch-rsm-panel ch-rsm-about" aria-labelledby={`about-${p.id}`}>
           <b id={`about-${p.id}`}>About</b>
@@ -161,6 +177,10 @@ export function RosterProfile({
           </dl>
         </section>
       )}
+
+      <section className="ch-rsm-panel ch-rsm-note ch-rsm-avail" aria-labelledby={`avail-${p.id}-l`}>
+        <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} block />
+      </section>
 
       <section className="ch-rsm-panel ch-rsm-note">
         <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />

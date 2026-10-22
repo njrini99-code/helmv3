@@ -30,8 +30,11 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          (pickGolfDashboardRole, not "has a coach row") is the
                          coach -> resolveClubhouseTeam, and no team (or not a
                          coach team)
-                         -> the no-team page (CH-13308), else ONE <Suspense>,
-                         not keyed by view, around an async CoachHelmView
+                         -> the no-team page (CH-13308); ?view=profile|
+                         standing|deep-dive with ?player= -> ONE <Suspense>
+                         around an async CoachPlayerPage (spec A, below); else
+                         ONE <Suspense>, not keyed by view, around an async
+                         CoachHelmView
                          (?view=ask the Ask sub-tab: loadCoachHelmGate, then
                          loadAskCoachHelm -> Ask; else loadCoachCoachHelm ->
                          CoachBoard), its fallback the skeleton of the view the
@@ -46,19 +49,48 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          needed: without one there is no tour and nothing
                          proposed). The boundary is the same one for every view
                          (perf, 2026-10-01): a switch keeps the view on screen,
-                         dimmed, and swaps once; the skeleton is for a hard load.
+                         dimmed, and swaps once; the skeleton is for a hard
+                         load.
                          A view's address never chooses whose data it reads: the
                          player id is the session's. ?insight=<id> (Deep dive
                          only) is a name to open, passed to the screen and
                          checked against the player's own list.
 Server loaders:          src/clubhouse/data/coachhelm.ts loadCoachCoachHelm and
                          loadPlayerCoachHelm (one read for the role; each failed
-                         read logs through chLogServer('coachhelm', …) and never
-                         throws for a partial read), with coachhelm-shape.ts
-                         (types, partition, ordering, the pulse rows) and
-                         coachhelm-map.ts (generator output to what is drawn).
+                         read logs through chLogServer('coachhelm', …) and
+                         never throws for a partial read), with
+                         coachhelm-shape.ts (types, partition, ordering, the
+                         pulse rows), coachhelm-map.ts (generator output to what
+                         is drawn) and
+                         coachhelm-firm.ts (with coachhelm_support_v1 on, the
+                         coach board's reads rated Not enough yet held back into
+                         one line, CH-13942 and CH-13943).
                          loadPlayerHelmGate is the switch the board and every
                          view share.
+Coach player pages:      CoachPlayerPage({ coachId, teamId, playerId, drill,
+                         insight }) -> data/coachhelm-player.ts
+                         loadCoachPlayerScope: not a uuid -> not-member with no
+                         read; loadCoachHelmGate (off -> CoachBoard's CH-13305,
+                         failed -> CH-13209); golf_team_members (team_id,
+                         player_id, status active; session client) -> none ->
+                         CH-13311 page (CoachPlayerNotOnTeam), error ->
+                         CH-13209 (CoachPlayerFailed); golf_players (name,
+                         graduation_year), loadPlayerHelmGate and the newest
+                         golf_rounds round_date -> the header; the player's
+                         team off -> the view with load off (CH-13313). In
+                         scope: a second <Suspense> (the view's skeleton with
+                         the name) around CoachPlayerRead -> the view's loader,
+                         each taking only the branded ChCoachPlayerScope:
+                         loadCoachPlayerProfile (loadGenome + loadVisible
+                         counts, no exposure), loadCoachPlayerStanding
+                         (loadPlayerStanding with the coach viewer, then the
+                         open read per metric from loadVisible),
+                         loadCoachPlayerDeepDive (getInsightsForCoach with
+                         player_id, the Board's helpers for drills, assigned,
+                         declined and the newest round, getThemesForCoach).
+                         The views take voice = { role: 'coach', ...head }; the
+                         Deep dive's action row is parts.tsx FocusActions with
+                         LIVE_COACHHELM_WRITES, the board's own.
 View loaders (player):   coachhelm-profile.ts loadPlayerProfile,
                          coachhelm-standing.ts loadPlayerStanding and
                          coachhelm-dive.ts loadPlayerDeepDive, each
@@ -98,17 +130,23 @@ Route error:             src/app/golf/(dashboard)/dashboard/coachhelm/error.tsx
 ## End-to-end graph
 
 ```text
-UI (Assign as focus, Dismiss, Undo in CoachBoard; Accept and Decline in the player's Proposals; the player and insight pickers; Try again on a notice)
+UI (Assign as focus, Dismiss, Undo in CoachBoard; Accept and Decline in the
+    player's Proposals; the player and insight pickers; Try again on a notice)
 ↓
-Action (a handler in CoachBoard or Proposals calls run() on a useAction and does nothing after it)
+Action (a handler in CoachBoard or Proposals calls run() on a useAction and
+    does nothing after it)
 ↓
-Client controller: useAction (offline refusal CH-1903, slow notice CH-1902, chReport + error toast with Retry + haptic).
-                   Every follow-up (the Assigned chip, hiding a dismissed card, restoring it, the Started or Declined chip) is
-                   INSIDE the action function, so Retry does it too.
+Client controller: useAction (offline refusal CH-1903, slow notice CH-1902,
+                   chReport + error toast with Retry + haptic). Every
+                   follow-up (the Assigned chip, hiding a dismissed card,
+                   restoring it, the Started or Declined chip) is INSIDE the
+                   action function, so Retry does it too.
 ↓
-Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method per server action
+Writes: LIVE_COACHHELM_WRITES and LIVE_PLAYER_WRITES (writes.ts), one method
+    per server action
 ↓
-Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2, acceptFocusArea, declineFocusArea),
+Server actions: src/app/golf/actions/development.ts (createFocusAreaFromInsightV2,
+                acceptFocusArea, declineFocusArea),
                 src/app/golf/actions/insights-feed.ts (dismissInsight, reactivateInsight)
 ↓
 Data: golf_player_focus_areas, golf_coach_insights, golf_insight_action
@@ -132,7 +170,8 @@ component) -> the view's loader, for session.player.id
 ↓
 Reads (the shared client unless the lib's own loader says otherwise; every
 failure logs through chLogServer('coachhelm', …)):
-  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the Board's insight read, carried as `sees`)
+  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the
+               Board's insight read, carried as `sees`)
   standing  -> loadPlayerStandingMap (golf_player_standing; the lib's
                service-role client, scoped by the player id and filtered to
                it), golf_player_stats_cache (rounds played and the scoring
@@ -155,6 +194,14 @@ Contract outcomes: CONTRACT.md (CH-13260, CH-13270, CH-13271, CH-13280 to
 ↓
 Tests: coachhelm-profile.test.tsx, coachhelm-standing.test.tsx,
        coachhelm-dive.test.tsx, coachhelm-views.test.tsx
+
+A coach's view of one player (spec A): the same three reads, for the player
+of the coach's branded scope (data/coachhelm-player.ts), with the Deep dive on
+getInsightsForCoach (player_id) and getThemesForCoach instead of the player's
+own, and the open reads behind Standing and the Game profile's count from
+loadVisible (the Board's read, no exposure). Contract outcomes: CH-13209,
+CH-13311, CH-13313, 130104, 130807. Tests: coachhelm-coach-player.test.tsx,
+data/__tests__/coachhelm-player.test.ts.
 ```
 
 ## Actions
@@ -168,9 +215,10 @@ Choosing a player or an insight is page state, not an action record.
 
 | Action | Control | Handler | Service | Data | Contracts |
 | --- | --- | --- | --- | --- | --- |
-| ACT-P013-ASSIGN-FOCUS | Assign as focus (coach) | `assign.run(cur)` in `CoachBoard` | `writes.assign` → `createFocusAreaFromInsightV2` (the insight's own title, first sentence, area type and metric) | golf_player_focus_areas, golf_insight_action | saving 130203 · chip 130901 · proposal 130902 · existing focus is done 130903 · refused 130601 · Retry 131401 · offline 130702 |
-| ACT-P013-DISMISS-INSIGHT | Dismiss (coach) | warning haptic, then `dismiss.run(cur)` | `writes.dismiss` → `dismissInsight` | golf_coach_insights, golf_insight_action | saving 130203 · notice 130701 · refused 130602 · Retry 131401 · counts follow 130105 |
-| ACT-P013-UNDO-DISMISS | Undo in the dismissed notice (coach) | `undo.run(cur)` | `writes.undo(id, lifecycle)` → `reactivateInsight(id, lifecycle)` | golf_coach_insights | saving 130203 · refused 130603 · Retry 131401 · restores the state it had 131403 |
+| ACT-P013-ASSIGN-FOCUS | Assign as focus (coach: the board's card and each read of a coach's Deep dive of one player) | `fa.assign.run(target)` in `FocusActions` (`useFocusActions`, parts.tsx) | `writes.assign` → `createFocusAreaFromInsightV2` (the insight's own title, first sentence, area type and metric) | golf_player_focus_areas, golf_insight_action | saving 130203 · chip 130901 · proposal 130902 · existing focus is done 130903 · refused 130601 · Retry 131401 · offline 130702 |
+| ACT-P013-DISMISS-INSIGHT | Dismiss (coach, both pages) | warning haptic, then `fa.dismiss.run(target)` | `writes.dismiss` → `dismissInsight` | golf_coach_insights, golf_insight_action | saving 130203 · notice 130701 · refused 130602 · Retry 131401 · counts follow 130105 |
+| ACT-P013-UNDO-DISMISS | Undo in the dismissed notice (coach, both pages) | `fa.undo.run(target)` | `writes.undo(id, lifecycle)` → `reactivateInsight(id, lifecycle)` | golf_coach_insights | saving 130203 · refused 130603 · Retry 131401 · restores the state it had 131403 |
+| ACT-P013-RECHECK-READS | Re-check reads under the board (coach) | `run()` in `RecheckReads` (`Recheck.tsx`; not `useAction`, whose five-second "Still saving…" toast would misread a team run), then `useRefresh` | `writes.recheck` → `refreshTeamAnalysisAsCoach()` (no id from the client: the action resolves the coach and team from the session, rate-limits once for the batch, and re-runs the engine for each active player) | golf_coach_insights, golf_team_members | running 130213 · done 130747 · refused 130638 · rate-limited 130639 · haptic 131708 |
 | ACT-P013-ACCEPT-FOCUS | Accept on a proposed focus area (player) | `accept.run()` in `ProposalRow` | `writes.accept` → `acceptFocusArea(id)` (the player's own `proposed` row, RLS and a status guard) | golf_player_focus_areas | saving CH-13404 · chip CH-13902 · refused CH-13004 · Retry 131401 · offline 130702 |
 | ACT-P013-DECLINE-FOCUS | Decline on a proposed focus area (player) | `decline.run()` in `ProposalRow` | `writes.decline` → `declineFocusArea(id)` | golf_player_focus_areas | saving CH-13404 · chip CH-13902 · refused CH-13005 · Retry 131401 · offline 130702 |
 | ACT-P013-TRY-AGAIN | Try again on a failed-read notice | `InlineNotice` → `router.refresh` | the server route, read again | (every read) | recovery 131402 · failed notices 130604 to 130606 |
@@ -181,9 +229,9 @@ Choosing a player or an insight is page state, not an action record.
 | --- | --- | --- |
 | `screens/coachhelm/PlayerBoard.tsx` | The player's page: header, the proposals, the focus, Also worth knowing, Working; it writes only the player's own answer | CH-13201, CH-13204, CH-13301 to CH-13304, CH-13701, CH-13801, CH-13805 |
 | `screens/coachhelm/Proposals.tsx` | "Proposed for you": each focus a coach proposed, with Accept and Decline and the answered chip | CH-13004, CH-13005, CH-13205, CH-13204, CH-13404, CH-13704, CH-13807, CH-13902 |
-| `screens/coachhelm/CoachBoard.tsx` | The coach's page: header, pulse, By player, the chosen player's focus and the three writes | CH-13001 to CH-13003, CH-13202 to CH-13204, CH-13305 to CH-13307, CH-13309, CH-13310, CH-13403, CH-13601, CH-13703, CH-13901 |
-| `screens/coachhelm/parts.tsx` | `FocusCard`, `Evidence` (`Gauge`, bars, `ReadMeter`), `PriPill`, `InsightRow`, `PulseList`, `Head` | CH-13802, CH-13803, CH-13804, CH-13806 |
-| `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES` and `LIVE_PLAYER_WRITES`; preview and tests pass their own set | — |
+| `screens/coachhelm/CoachBoard.tsx` | The coach's page: header, pulse, By player, the chosen player's focus and the three writes | CH-13001 to CH-13003, CH-13202 to CH-13204, CH-13305 to CH-13307, CH-13309, CH-13310, CH-13403, CH-13601, CH-13703, CH-13901, CH-13942, CH-13943 |
+| `screens/coachhelm/parts.tsx` | `FocusCard`, `Evidence` (`Gauge`, bars, `ReadMeter`), `PriPill`, `InsightRow`, `PulseList`, `Head`; `useFocusActions` and `FocusActions`, the coach's action row on the board and on a coach's Deep dive (spec A) | CH-13001 to CH-13003, CH-13207, CH-13403, CH-13601, CH-13802, CH-13803, CH-13804, CH-13806, CH-13901, CH-13904, CH-13906, CH-13907 |
+| `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES`, `LIVE_PLAYER_WRITES` and `LIVE_RECHECK_WRITES` (Re-check reads, `Recheck.tsx`: CH-13006, CH-13007, CH-13406, CH-13705, CH-13944, CH-13945); preview and tests pass their own set | — |
 | `screens/coachhelm/CoachHelmSkeleton.tsx` | Route skeleton, one shape per role | CH-13401, CH-13402 |
 | `screens/coachhelm/views/Frame.tsx` | The page every player view is drawn in (phone top bar, sub-navigation, header; `after` holds a pushed phone screen outside the page's size container) and `HelmOff` | CH-13304, CH-13801 |
 | `screens/coachhelm/views/PlayerHelmTabs.tsx` | The player's sub-navigation: Board, Game profile, Standing, Deep dive as one radiogroup, a row of chips on the phone, and the Development link | CH-13930, CH-13931 |
@@ -191,15 +239,16 @@ Choosing a player or an insight is page state, not an action record.
 | `screens/coachhelm/views/Standing.tsx` | Standing: every tracked stat against the Tour and the team, the projections and the most to gain | CH-13270, CH-13271, CH-13304, CH-13370 to CH-13373, CH-13880 |
 | `screens/coachhelm/views/DeepDive.tsx` | Deep dive: the list of reads beside one read in full (a pushed screen on the phone) | CH-13280 to CH-13283, CH-13304, CH-13380 to CH-13384, CH-13780, CH-13890, CH-13903, CH-13980 to CH-13982 |
 | `screens/coachhelm/views/Skeletons.tsx`, `KeepReading.tsx` | Each view's skeleton at final height; the closing links between views | CH-13460, CH-13470, CH-13480 |
-| `routes/coachhelm.tsx` | Route adapter, the player's view dispatch (`playerDrill`) and the coach's no-team page | CH-13308 |
+| `screens/coachhelm/views/CoachPlayerStates.tsx` | A coach's view of one player: the "isn't on your team" page and the page's "didn't load" | CH-13209, CH-13311 |
+| `routes/coachhelm.tsx` | Route adapter, the player's view dispatch (`playerDrill`), a coach's view of one player (`CoachPlayerPage`, `CoachPlayerRead`) and the coach's no-team page | CH-13308, CH-13305, CH-13313 |
 
 ## Hooks
 
 | Path | Type | Used by |
 | --- | --- | --- |
-| `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | CoachBoard (three actions), Proposals (two) |
+| `src/clubhouse/lib/use-action.ts` (`useAction`, `normalise`) | Clubhouse | `useFocusActions` in parts.tsx (three actions: CoachBoard and a coach's DeepDive), Proposals (two) |
 | `src/clubhouse/lib/use-phone.ts` (`useChPhone`) | Clubhouse | PlayerBoard, CoachBoard, every player view |
-| `src/clubhouse/ui/Toast.tsx` (`useToast`) | Clubhouse | CoachBoard (the existing-focus toast) |
+| `src/clubhouse/ui/Toast.tsx` (`useToast`) | Clubhouse | `useFocusActions` (the existing-focus toast) |
 | `src/clubhouse/shell/phone-chrome.tsx` (`PhoneTop`, `usePhoneStackHistory`) | Clubhouse | PlayerBoard, CoachBoard, the player views; `usePhoneStackHistory` in DeepDive (the open read is a history entry, CH-13980) |
 | `src/clubhouse/shell/PhoneScreen.tsx`, `ui/PhoneBar.tsx` | Clubhouse | DeepDive (the pushed read on the phone) |
 | `src/clubhouse/lib/haptics.ts`, `track.ts` | Clubhouse | throughout |
@@ -238,8 +287,10 @@ Tables:   golf_coach_insights (visible rows, evidence), golf_insight_player_feed
 RPCs:     none read by these loaders (the delivery actions have their own reads)
 Storage:  none
 Realtime: none
-Cache:    none, except the pulse's per-request React cache; a Try again reads the page again (router.refresh)
-RLS:      the RLS-scoped client throughout; the server actions check the caller first
+Cache:    none, except the pulse's per-request React cache; a Try again reads
+          the page again (router.refresh)
+RLS:      the RLS-scoped client throughout; the server actions check the
+          caller first
 Read path:  the loaders, on the server, in rounds (132101); a coach's are the resolved team's active players' (130802),
             a player's are their own (130803)
 Write path: the server actions above, through writes.ts

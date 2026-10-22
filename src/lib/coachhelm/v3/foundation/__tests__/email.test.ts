@@ -33,7 +33,7 @@ describe('coachhelm/v3/foundation/email.sendEmail — outbound gate', () => {
     const result = await sendEmail({ to: 'coach@example.com', subject: 'Weekly recap', html: '<p>x</p>' });
 
     expect(sendMock).not.toHaveBeenCalled();
-    expect(result).toEqual({ delivered: false, error: 'customer_email_disabled' });
+    expect(result).toEqual({ delivered: false, error: 'customer_email_disabled', suppressed: true });
   });
 
   it('does not call resend.emails.send when HELM_CUSTOMER_EMAIL_ENABLED is "false"', async () => {

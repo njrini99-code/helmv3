@@ -11,7 +11,7 @@
  * a new golf_coach_insights row keyed on a v3:composite: signature.
  */
 
-import type { InsightCategory, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightCategory, InsightCoachCopy, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
 // P0-05: the structured-diagnosis types are defined alongside InsightEvidence
 // (its canonical home) to avoid an import cycle, and re-exported here so v3
@@ -69,6 +69,12 @@ export interface CompositeMatch {
 export interface CompositeContent {
   title: string;
   content: string;
+  /**
+   * The same title/content for a coach, in the third person
+   * (`engine/coach-voice.ts`). Stored as `evidence.coach_copy` when it passes
+   * `coachCopyIssues`; omitted → coaches see `title`/`content`.
+   */
+  coach?: InsightCoachCopy;
   /** Generator-specific signature stable part. Runner prefixes "v3:composite:<rule_id>:" */
   signature: string;
   evidence: InsightEvidence;

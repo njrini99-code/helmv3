@@ -252,11 +252,11 @@ flags:
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
-    expires_at: "2026-10-23"
+    expires_at: "2026-12-31"
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -297,11 +297,11 @@ flags:
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
-    expires_at: "2026-10-23"
+    expires_at: "2026-12-31"
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -578,7 +578,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -642,8 +642,11 @@ flags:
       round in the window (or a moved window), not a changed sample count;
       empty window dates are filled from the rounds read; and the nightly
       roster sweep re-analyzes players whose newest countable round is newer
-      than their newest read (deterministic generators only, no LLM). Off
-      until the owner reviews the shorter feeds and the Watching counts.
+      than their newest read (deterministic generators only, no LLM). Round
+      review: a player's own round shows the 30-second debrief (one number
+      that moved, the top open read, the round's counted facts, one next
+      step) where the recap stood. Off until the owner reviews the shorter
+      feeds and the Watching counts.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -651,7 +654,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -691,7 +694,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the next analysis run rewrites each row's diagnosis with the old
@@ -727,7 +730,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the next analysis run rewrites each row's evidence without
@@ -763,7 +766,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -798,7 +801,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the coach board draws no Team patterns section, and the next
@@ -838,7 +841,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -931,7 +934,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -973,7 +976,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -984,6 +987,37 @@ flags:
       rules for v3 reads and the flag checks once the Cleared / Contradicted
       / Under review lines render in Clubhouse and the step has run stably
       for a month.
+
+  # CoachHelm engine gap (review 2026-10-19 §5 item 1, ported from #2073
+  # 899adc9dc): the nightly roster sweep never re-ran an idle player.
+  - feature_id: coachhelm_stale_refresh_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Adds an idle-player pass to the nightly roster sweep: an analyzed player
+      whose newest analysis (newest visible-read refresh stamp or engine run)
+      is 14 or more days old, who still has an open read and a completed
+      round inside the engine's 90-day window, is re-analyzed with the same
+      deterministic engine run the sweep already uses (no model calls), at
+      most 6 players a night in a rotation through the stale players (oldest
+      first), after the freshness picks and under the same time budget.
+      Reads through the HELM_COACHHELM_TEAMS canary. Off: the sweep runs
+      exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on after the owner reviews the idle-player count in the PR. Once
+      the pass has run for a month without pinning the cap or failing
+      sweeps, make it unconditional in the roster sweep and delete this flag
+      in the same change. Turning it off stops the extra runs at once; reads
+      it refreshed stay as they are until their next run.
 
   # CoachHelm supercharge Slice 4: the closed loop (prescription fields,
   # criterion, verdicts). /mnt/project-files/coachhelm/supercharge/
@@ -1000,10 +1034,13 @@ flags:
       focus area reaches its horizon, writes verdict (worked, moved, did not
       move, got worse) from a one-sided 90% bound against the shrunk
       baseline, and puts one in-app bell row in front of the area's coach on
-      "got worse" (no push, nothing to the player). Turning it on changes no
-      screen: no surface reads the new columns yet, and status and
-      outcome_status are never written. Off: nothing is read or written by
-      this code and the focus-area create inserts exactly as before.
+      "got worse" (no push, nothing to the player). On screen, Clubhouse
+      draws the verdict under the read it came from and, on Stats ›
+      Development, on each focus area itself: its target, its progress
+      counted live ("22 of 40 putts in") and the verdict word with its line.
+      Status and outcome_status are never written. Off: nothing is read or
+      written by this code, the focus-area create inserts exactly as before
+      and every screen is unchanged.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -1011,7 +1048,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1038,9 +1075,12 @@ flags:
       loadCoachWeightsForPlayer, for families with no calibrated outcome
       weight. Turning it on reorders a coach's feeds for the player's primary
       coach once that coach has recorded corrections; player surfaces stay
-      neutral (a coach's corrections are not readable by players). No
-      surface draws the chips yet. Off: the action writes nothing and returns
-      not available, and ranking is byte-identical to before.
+      neutral (a coach's corrections are not readable by players). On, the
+      Clubhouse coach card draws the five chips under a read's audit and the
+      player's Board and Deep dive draw Not this and Good read on their own
+      reads (no chips while the held table is missing). Off: nothing is read
+      or drawn, the action writes nothing and returns not available, and
+      ranking is byte-identical to before.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -1048,7 +1088,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1081,7 +1121,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1110,7 +1150,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1120,3 +1160,36 @@ flags:
       fill in once coachhelm_support_v1 (ladder), coachhelm_recheck_v1
       (rechecks) and coachhelm_corrections_v1 (corrections) are on. Remove
       the flag once the page has served coaches for a season.
+  - feature_id: coachhelm_monday_brief_v1
+    owner: golf/coachhelm
+    purpose: >-
+      The coach Monday brief (CoachHelm task chs-28; supercharge 04 section 4
+      and Layout 1). Reason: the design call's "Monday before practice" moment
+      wants one screen that says who needs a conversation and what the team
+      practises, instead of a card per player. Effect when on: the Clubhouse
+      coach view /golf/dashboard/coachhelm?view=monday-brief and its link on
+      the coach board show up to five items (the team pattern when one
+      exists, then player reads at Likely or above, one per player, most
+      strokes first) and a counts line (new, cleared, contradicted, out of
+      date); and the Monday 05:00 UTC cron /api/cron/coachhelm-monday-brief
+      emails each opted-in primary coach a non-empty brief. Strengths,
+      Watching, Working hypothesis and reads two or more rounds behind are
+      never in it. Off: no link, the address shows the board, and the cron
+      returns before it reads or sends anything. Email also needs
+      HELM_CUSTOMER_EMAIL_ENABLED, which is off in production. Clubhouse is
+      off in production, so the view reaches coaches only once it is on.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: true
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on in production only after coachhelm_support_v1 has written
+      ladders (until then every brief is empty and nothing is sent) and the
+      owner has decided to re-enable customer email. Remove the flag once the
+      brief has served coaches for a season.
