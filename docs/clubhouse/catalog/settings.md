@@ -46,7 +46,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8001 | Saving the profile (name or photo) fails | "Couldn't save your profile" + the reason or "Check your connection and try again.", Retry. On success: "Profile saved" | `useAction('settings.saveProfile')` | settings.test › CH-8001 |
+| CH-8001 | Saving the profile (name, a coach's title, or photo) fails | "Couldn't save your profile" + the reason or "Check your connection and try again.", Retry. On success: "Profile saved" | `useAction('settings.saveProfile')` | settings.test › CH-8001 |
 | CH-8002 | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails | "Couldn't upload that photo" + "Use a JPEG, PNG, GIF or WebP photo." / "Photos must be under 2 MB." / "Check your connection and try again." | `writes.uploadAvatar`, toast in `ProfileCard` | settings.test › CH-8002 |
 | CH-8003 | Sending the email-change confirmation fails | "Couldn't start the email change", Retry. On success: "Confirmation sent to name@school.edu" and a notice to check that inbox | `useAction('settings.changeEmail')` | settings.test › CH-8003 |
 | CH-8004 | Changing the password fails, including a wrong current password | "Couldn't update your password" + "Your current password is incorrect." when that's why. On success: "Password updated" and the fields clear | `useAction('settings.changePassword')`, re-auth first | settings.test › CH-8004 |

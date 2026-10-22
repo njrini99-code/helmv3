@@ -1,15 +1,20 @@
 'use client';
 
 import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { Archive, Check, ChevronDown, ChevronRight, ChevronUp, Flag } from 'lucide-react';
+import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { stanceOf, type ChBoardMissing, type ChHelmAssigned, type ChHelmEvidence, type ChInsight } from '../../data/coachhelm-shape';
 import { NARROWING_PREFIX, type ChPathLine } from '../../data/coachhelm-path';
 import { haptic } from '../../lib/haptics';
+import { normalise, useAction } from '../../lib/use-action';
+import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SerifText } from '../../ui/SerifText';
+import { useToast } from '../../ui/Toast';
 import { CorrectionChips, ReadLater } from './Corrections';
 import { EngineState, WhyAudit } from './EngineState';
+import type { ChCoachHelmWrites } from './writes';
 
 /**
  * The path line (design call D2): the card's second line, inside the card, in one fixed grammar: what was seen · count of
@@ -236,15 +241,16 @@ export function BoardPartial({ missing, what, focus = true }: { missing: ChBoard
  *  structure instead of a title block over a separate strip. */
 /** `phone`: the shell's top bar already carries the page's h1 ("CoachHelm"), so the large title here is the same words set as
  *  text, still labelling the main landmark: one h1 per screen (P013 D8). */
-/** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). */
+/** `who`: the coach's role line. A player's page has none (wave 7: a player is never told their own role). A coach's view of one
+ *  player puts "CoachHelm" there instead, and the player's name as the `title` (spec A). */
 /** `below`: one more line under the sentence, inside the header (the coach's "Since you were last here", D4). */
-export function Head({ who, children, aside, below, phone = false }: { who?: 'Coach'; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
+export function Head({ who, title = 'CoachHelm', children, aside, below, phone = false }: { who?: ReactNode; title?: ReactNode; children: ReactNode; aside?: ReactNode; below?: ReactNode; phone?: boolean }) {
   const Title = phone ? 'p' : 'h1';
   return (
     <header className={'ch-hl-h' + (aside ? ' has-aside' : '')} data-canopy-head="">
       {who && <span className="ch-hl-role">{who}</span>}
       <Title id="ch-hl-title" className="ch-hl-h__t">
-        CoachHelm
+        {title}
       </Title>
       <p>
         {children}
@@ -252,5 +258,184 @@ export function Head({ who, children, aside, below, phone = false }: { who?: 'Co
       {below}
       {aside && <div className="ch-hl-h__aside">{aside}</div>}
     </header>
+  );
+}
+
+/** The read a coach acts on, and whose it is: the player's id and first name (the toasts and the action row say it). */
+export interface ChFocusTarget {
+  playerId: string;
+  first: string;
+  ins: ChInsight;
+}
+
+/**
+ * The coach's three writes on a read (Assign as focus, Dismiss, Undo), as the board and a coach's Deep dive of one player both make
+ * them (spec A): the same useAction wiring, codes and follow-ups, kept here so the two pages cannot drift. The follow-ups (marking
+ * assigned, hiding a dismissed read, restoring it) live inside the action, so a toast's Retry completes them too. CH-13702: Assign is a
+ * primary Button, so its tap is the light press; the write's success and error haptics come from useAction.
+ *
+ * `acting`: the read a write is in flight for (set inside the action, so a Retry sets it too), so only that read's row says
+ * "Assigning", "Dismissing" or "Undoing"; every other row's controls wait meanwhile (`busy`), because the one write in flight is the
+ * hook's. `assigned` and `dismissed`: what this visit changed, by read id, over what the page loaded.
+ */
+export function useFocusActions(writes: ChCoachHelmWrites) {
+  const toast = useToast();
+  const [acting, setActing] = useState<{ insightId: string; kind: 'assign' | 'dismiss' | 'undo' } | null>(null);
+  const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
+  const [dismissed, setDismissed] = useState<Record<string, true>>({});
+  const assign = useAction(
+    'coachhelm.assign',
+    async (t: ChFocusTarget) => {
+      const i = t.ins;
+      setActing({ insightId: i.id, kind: 'assign' });
+      try {
+        // The focus area is the player's to read: it is saved with the insight's own wording, not the coach's rewrite of it.
+        const res = await writes.assign({ playerId: t.playerId, insightId: i.id, title: i.assignAs.title, description: i.assignAs.description, areaType: i.areaType, targetMetric: i.metric, currentValue: i.current });
+        if (normalise(res).success) {
+          setAssigned((m) => ({ ...m, [i.id]: 'proposed' }));
+          return res;
+        }
+        // The player already has an active focus on this metric: that is the outcome the coach wanted, not a failure.
+        if (res.error === ACTIVE_FOCUS_DUPLICATE_ERROR) {
+          setAssigned((m) => ({ ...m, [i.id]: 'active' }));
+          toast({ title: `${t.first} already has a focus on this` });
+          return { success: true };
+        }
+        return res;
+      } finally {
+        setActing(null);
+      }
+    },
+    (t: ChFocusTarget) => ({ done: '', failed: `Couldn’t assign the focus to ${t.first}`, hint: 'Nothing was saved. Try again.', code: 'CH-13001' }),
+  );
+  const dismiss = useAction(
+    'coachhelm.dismiss',
+    async (t: ChFocusTarget) => {
+      setActing({ insightId: t.ins.id, kind: 'dismiss' });
+      try {
+        const res = await writes.dismiss(t.ins.id);
+        if (normalise(res).success) setDismissed((d) => ({ ...d, [t.ins.id]: true }));
+        return res;
+      } finally {
+        setActing(null);
+      }
+    },
+    { done: '', failed: 'Couldn’t dismiss the insight', hint: 'It’s still on the board. Try again.', code: 'CH-13002' },
+  );
+  const undo = useAction(
+    'coachhelm.undo',
+    async (t: ChFocusTarget) => {
+      setActing({ insightId: t.ins.id, kind: 'undo' });
+      try {
+        const res = await writes.undo(t.ins.id, t.ins.lifecycle);
+        if (normalise(res).success)
+          setDismissed((d) => {
+            const { [t.ins.id]: _gone, ...rest } = d;
+            return rest;
+          });
+        return res;
+      } finally {
+        setActing(null);
+      }
+    },
+    { done: '', failed: 'Couldn’t undo the dismissal', hint: 'It’s still dismissed. Try again.', code: 'CH-13003' },
+  );
+  const busy = assign.pending || dismiss.pending || undo.pending;
+  /** Whether this kind of write is in flight for this read. */
+  const here = (kind: 'assign' | 'dismiss' | 'undo', insightId: string | undefined) => acting?.kind === kind && acting.insightId === insightId;
+  return { assign, dismiss, undo, busy, here, assigned, dismissed };
+}
+
+export type ChFocusActions = ReturnType<typeof useFocusActions>;
+
+/** What could not be checked about this read, in the coach's words. */
+export function focusStatusSaid(missing: ChBoardMissing | undefined, who: string): string {
+  const said: string[] = [];
+  if (missing?.assigned || missing?.declined) said.push(`Whether ${who} already has a focus from this read, or declined one, couldn’t be checked.`);
+  if (missing?.newest) said.push('Whether this read is still current couldn’t be checked.');
+  return said.join(' ');
+}
+
+/**
+ * The coach's action row on one read (CoachBoard's card, and each read of a coach's Deep dive of one player): Assign as focus
+ * (primary), Dismiss (ghost), and `extra` after them (the board's "All of Jonah's reads", the Deep dive's "Message Jonah"). A read
+ * assigned here or already made a focus shows the Assigned chip (CH-13601); a declined one offers Propose again (CH-13907); a read
+ * older than the newest round offers no Assign (CH-13906); a read beside it that failed leaves Assign out and says why (CH-13207);
+ * a card that states no finding offers nothing (CH-13904). Dismissed, the row is the notice with Undo (CH-13901). `where`: which page
+ * the notice names ("your board" on the coach's own board; "the board" on a player's Deep dive).
+ */
+export function FocusActions({ fa, target, missing, where, extra }: { fa: ChFocusActions; target: ChFocusTarget; missing?: ChBoardMissing; where: 'board' | 'dive'; extra?: ReactNode }) {
+  const { ins, first } = target;
+  if (fa.dismissed[ins.id]) {
+    return (
+      <div className="ch-hl-dis" role="status" data-ch-code="CH-13901">
+        <Icon icon={Archive} size={16} />
+        <span>
+          <b>Insight dismissed.</b> It no longer shows on {where === 'board' ? 'your board' : 'the board'} or on {first}’s. Undo brings it back.
+        </span>
+        <Button size="sm" variant="ghost" busy={fa.here('undo', ins.id)} disabled={fa.busy && !fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)}>
+          {fa.here('undo', ins.id) ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
+        </Button>
+      </div>
+    );
+  }
+  if (ins.kind === 'note') {
+    // CH-13904: nothing to assign or dismiss on a card that states no finding.
+    return (
+      <div className="ch-hl-cact">
+        <p className="ch-hl-cact__m" data-ch-code="CH-13904">
+          This card states no finding, so there is nothing to assign.
+        </p>
+      </div>
+    );
+  }
+  // Assigned: from this visit, or a focus area the page found already made from the read.
+  const mine = fa.assigned[ins.id] ?? ins.assigned;
+  // A read older than the newest round is not assigned (it is still dismissed if the coach wants it gone).
+  const stale = !!ins.stale;
+  // A read beside the cards that failed (CH-13207): whether this read was already assigned, was declined, or is still current is not
+  // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
+  const statusUnknown = !mine && !!(missing?.assigned || missing?.declined || missing?.newest);
+  return (
+    <div className="ch-hl-cact">
+      {/* A strength is assignable too, as a keep-doing focus. */}
+      {mine ? (
+        <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
+          <Icon icon={Check} size={15} />
+          Assigned as {first}’s focus
+        </span>
+      ) : statusUnknown ? (
+        <RefreshNotice code="CH-13207" title="Assign as focus isn’t offered right now" body={`${focusStatusSaid(missing, first)} Dismiss still works. Try again in a moment.`} />
+      ) : stale ? null : (
+        <Button variant="primary" leftIcon={Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
+          {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">Assigning…</span> : ins.declined ? 'Propose again' : 'Assign as focus'}
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        leftIcon={Archive}
+        busy={fa.here('dismiss', ins.id)}
+        disabled={fa.busy && !fa.here('dismiss', ins.id)}
+        onClick={() => {
+          // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
+          haptic('warning');
+          void fa.dismiss.run(target);
+        }}
+      >
+        {fa.here('dismiss', ins.id) ? <span data-ch-code="CH-13403">Dismissing…</span> : 'Dismiss'}
+      </Button>
+      {extra}
+      {mine === 'proposed' && <p className="ch-hl-cact__m">{first} sees it as a proposal and accepts it to start.</p>}
+      {!mine && !stale && !statusUnknown && ins.declined && (
+        <p className="ch-hl-cact__m" data-ch-code="CH-13907">
+          {first} declined this as a focus. Propose again sends it back as a new proposal.
+        </p>
+      )}
+      {!mine && stale && (
+        <p className="ch-hl-cact__m" data-ch-code="CH-13906">
+          This read is older than {first}’s newest round, so it can’t be assigned as a focus yet.
+        </p>
+      )}
+    </div>
   );
 }

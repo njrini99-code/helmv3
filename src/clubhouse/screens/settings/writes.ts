@@ -84,7 +84,7 @@ export function createLiveWrites(ctx: {
     async saveProfile(p) {
       const { error, count } =
         ctx.role === 'coach'
-          ? await sb.from('golf_coaches').update({ full_name: p.fullName.trim(), avatar_url: p.avatarUrl }, { count: 'exact' }).eq('user_id', ctx.userId)
+          ? await sb.from('golf_coaches').update({ full_name: p.fullName.trim(), avatar_url: p.avatarUrl, title: p.title.trim() || null }, { count: 'exact' }).eq('user_id', ctx.userId)
           : await sb.from('golf_players').update({ first_name: p.firstName.trim(), last_name: p.lastName.trim(), avatar_url: p.avatarUrl }, { count: 'exact' }).eq('user_id', ctx.userId);
       return changed(error, count, 'Your profile');
     },
