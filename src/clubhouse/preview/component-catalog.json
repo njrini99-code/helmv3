@@ -3394,7 +3394,6 @@
       "group": "screens",
       "exports": [
         "PhoneSort",
-        "RollFigure",
         "RosterPhone",
         "RosterPhoneRow"
       ],
@@ -11364,7 +11363,6 @@
         "ch-rsm-code",
         "ch-rsm-facts",
         "ch-rsm-figs",
-        "ch-rsm-flowtext",
         "ch-rsm-head",
         "ch-rsm-helm",
         "ch-rsm-hero",
