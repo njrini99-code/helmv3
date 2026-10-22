@@ -33,6 +33,20 @@ describe('parseInviteEmails', () => {
     expect(parseInviteEmails('Eli Park <eli@x.edu>, "Mia" <mia@x.edu>').valid).toEqual(['eli@x.edu', 'mia@x.edu']);
   });
 
+  it('leaves no name fragment behind to flag as unreadable', () => {
+    expect(parseInviteEmails('Eli Park <eli@x.edu>')).toEqual({ valid: ['eli@x.edu'], invalid: [] });
+    expect(parseInviteEmails('"Park, Eli" <eli@x.edu>; Mia J. Cole <mia@x.edu>')).toEqual({
+      valid: ['eli@x.edu', 'mia@x.edu'],
+      invalid: [],
+    });
+    expect(parseInviteEmails('<eli@x.edu>')).toEqual({ valid: ['eli@x.edu'], invalid: [] });
+  });
+
+  it('does not take a plain address before a named contact as part of the name', () => {
+    expect(parseInviteEmails('ann@x.edu Eli Park <eli@x.edu>')).toEqual({ valid: ['ann@x.edu', 'eli@x.edu'], invalid: [] });
+    expect(parseInviteEmails('ann@x.edu\nEli Park <eli@x.edu> nope').invalid).toEqual(['nope']);
+  });
+
   it('keeps what it could not read, once each, for the sheet to flag', () => {
     expect(parseInviteEmails('eli@x.edu nope nope mia@x').invalid).toEqual(['nope', 'mia@x']);
     expect(parseInviteEmails('').valid).toEqual([]);

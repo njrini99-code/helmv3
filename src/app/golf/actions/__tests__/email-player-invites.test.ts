@@ -15,6 +15,7 @@ const state = vi.hoisted(() => ({
   canEmail: true,
   gate: { allowed: true } as { allowed: true } | { allowed: false; error: string },
   send: { status: 'done', sent: 2, failed: [] as string[] } as { status: string; sent?: number; failed?: string[] },
+  readError: null as { table: string } | null,
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -22,7 +23,12 @@ vi.mock('@/lib/supabase/server', () => ({
     auth: { getUser: async () => ({ data: { user: state.user } }) },
     from: (table: string) => ({
       select: () => ({
-        eq: () => ({ maybeSingle: async () => ({ data: table === 'golf_coaches' ? state.coach : state.team, error: null }) }),
+        eq: () => ({
+          maybeSingle: async () =>
+            state.readError?.table === table
+              ? { data: null, error: new Error('connection reset') }
+              : { data: table === 'golf_coaches' ? state.coach : state.team, error: null },
+        }),
       }),
     }),
   })),
@@ -45,6 +51,7 @@ beforeEach(() => {
   state.canEmail = true;
   state.gate = { allowed: true };
   state.send = { status: 'done', sent: 2, failed: [] };
+  state.readError = null;
   mail.canEmailPlayerInvites.mockImplementation(() => state.canEmail);
   mail.sendGolfPlayerInviteEmails.mockReset();
   mail.sendGolfPlayerInviteEmails.mockImplementation(async () => state.send);
@@ -87,6 +94,17 @@ describe('emailPlayerInvites', () => {
     state.coach = { id: 'coach-1', organization_id: 'org-1', full_name: null };
     state.teamId = null;
     expect(await emailPlayerInvites(['eli@x.edu'])).toMatchObject({ success: false, error: 'Coach not assigned to a team' });
+    expect(mail.sendGolfPlayerInviteEmails).not.toHaveBeenCalled();
+  });
+
+  it('does not read a failed lookup as a missing coach or code', async () => {
+    for (const table of ['golf_coaches', 'golf_teams']) {
+      state.readError = { table };
+      const result = await emailPlayerInvites(['eli@x.edu']);
+      expect(result).toMatchObject({ success: false });
+      expect(result).not.toMatchObject({ error: 'Coach profile not found' });
+      expect(result).not.toMatchObject({ code: 'no_code' });
+    }
     expect(mail.sendGolfPlayerInviteEmails).not.toHaveBeenCalled();
   });
 

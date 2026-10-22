@@ -89,6 +89,14 @@ describe('restyleClock', () => {
     expect(restyleClock('3:30 to 5:00 PM', '24')).toBe('15:30 to 17:00');
   });
 
+  it('puts a start that crosses noon or midnight in the half before its end\'s', () => {
+    expect(restyleClock('11:30 – 12:45 PM', '24')).toBe('11:30 – 12:45');
+    expect(restyleClock('Mon 11:00–12:30 PM', '24')).toBe('Mon 11:00–12:30');
+    expect(restyleClock('11:30–12:45 AM', '24')).toBe('23:30–00:45');
+    expect(restyleClock('12:00–1:15 PM', '24')).toBe('12:00–13:15');
+    expect(restyleClock('12:30–12:45 PM', '24')).toBe('12:30–12:45');
+  });
+
   it('rewrites both ends when each says its half', () => {
     expect(restyleClock('11:30 AM–12:45 PM', '24')).toBe('11:30–12:45');
     expect(restyleClock('3:30 PM – 5:00 PM', '24')).toBe('15:30 – 17:00');

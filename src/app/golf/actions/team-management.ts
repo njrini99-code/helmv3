@@ -221,11 +221,12 @@ async function emailPlayerInvitesImpl(
       return { success: false, error: 'You must be signed in to invite players' };
     }
 
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id, full_name')
       .eq('user_id', user.id)
       .maybeSingle();
+    if (coachError) throw coachError;
     if (!coach) {
       return { success: false, error: 'Coach profile not found' };
     }
@@ -248,7 +249,8 @@ async function emailPlayerInvitesImpl(
       return { success: false, error: gate.error, code: 'rate_limited' };
     }
 
-    const { data: team } = await supabase.from('golf_teams').select('name, join_code').eq('id', teamId).maybeSingle();
+    const { data: team, error: teamError } = await supabase.from('golf_teams').select('name, join_code').eq('id', teamId).maybeSingle();
+    if (teamError) throw teamError;
     if (!team?.join_code || team.join_code.length < 6) {
       return { success: false, error: 'This team has no code yet. Make one in Settings, then invite players.', code: 'no_code' };
     }

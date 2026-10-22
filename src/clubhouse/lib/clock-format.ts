@@ -63,8 +63,23 @@ function to24(hour: number, half: string): number {
  */
 const CLOCK = /(^|[^\d:.])(?:(\d{1,2}):(\d{2})(?![\d:])(?:\s?([AaPp])[Mm](?![A-Za-z]))?|(\d{1,2})\s?([AaPp])[Mm](?![A-Za-z]))/g;
 
-/** What may sit between the two ends of a range, then the end's own half: "9:00–10:15 AM" gives the start its half from the end. */
-const RANGE_END = /^\s*(?:–|—|-|to)\s*\d{1,2}:\d{2}\s?([AaPp])[Mm]\b/;
+/**
+ * What may sit between the two ends of a range, then the end's own hour and half: "9:00–10:15 AM" gives the start its half
+ * from the end. The hour is kept to tell a start that crosses noon or midnight from one in the same half.
+ */
+const RANGE_END = /^\s*(?:–|—|-|to)\s*(\d{1,2}):\d{2}\s?([AaPp])[Mm]\b/;
+
+/**
+ * The half a range's start takes when it names none: its end's, unless the start's hour is later on the clock face than the
+ * end's (12 counts as 0), which puts it in the half before ("11:30–12:45 PM" starts in the AM, "11:30–12:45 AM" in the PM).
+ */
+function rangeStartHalf(startHour: number, after: string): string | undefined {
+  const end = RANGE_END.exec(after);
+  if (!end) return undefined;
+  const endHalf = end[2]!;
+  if (startHour % 12 <= Number(end[1]) % 12) return endHalf;
+  return endHalf.toLowerCase() === 'p' ? 'a' : 'p';
+}
 
 /**
  * Rewrites the clock times in a server-written 12-hour label to 24 hours:
@@ -89,7 +104,7 @@ export function restyleClock(text: string, clock: ChClock): string {
     const h = Number(h1);
     const m = Number(m1);
     if (m > 59) return whole;
-    const half = half1 ?? RANGE_END.exec(text.slice(offset + whole.length))?.[1];
+    const half = half1 ?? rangeStartHalf(h, text.slice(offset + whole.length));
     if (!half) return whole;
     return h >= 1 && h <= 12 ? `${pre}${pad(to24(h, half))}:${pad(m)}` : whole;
   });

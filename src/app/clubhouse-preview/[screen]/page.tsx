@@ -153,7 +153,8 @@ import '@/clubhouse/styles/coachhelm-dive.css';
 import '@/clubhouse/styles/coachhelm-track.css';
 import '@/clubhouse/styles/coachhelm-brief.css';
 import { ChPhoneHintProvider } from '@/clubhouse/lib/use-phone';
-import { phoneHint } from '@/clubhouse/lib/phone-hint';
+import { clockHint, phoneHint } from '@/clubhouse/lib/phone-hint';
+import { ChClockProvider } from '@/clubhouse/lib/use-clock';
 
 /**
  * Dev-only Clubhouse preview: every screen and state rendered from the
@@ -601,6 +602,8 @@ export default async function ClubhousePreview({
     <PreviewBell state={bell}>
       {/* The phone hint from the request, as the dashboard layout passes it, so a phone's first paint is the phone layout. */}
       <ChPhoneHintProvider phone={await phoneHint()}>
+      {/* The device's clock from the request's cookie, as the live shell mounts it, so Settings › Time format works here. */}
+      <ChClockProvider clock={await clockHint()}>
       <ClubhouseFrame
         userData={screen === 'coachhelm-player' || screen === 'coachhelm-views' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : user}
         // &round=1: the player has a round in progress (P001-C1: the dock's Resume accessory, the sidebar's card).
@@ -616,6 +619,7 @@ export default async function ClubhousePreview({
         {/* &ask=push: the iPhone app's push ask, open (CH-1911). */}
         {ask === 'push' && <PreviewPushAsk role={user.role} />}
       </ClubhouseFrame>
+      </ChClockProvider>
       </ChPhoneHintProvider>
     </PreviewBell>
   );
