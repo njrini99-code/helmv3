@@ -1,5 +1,16 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — Coach: the Monday brief (flag off)
+
+```text
+Design package: none (supercharge 04 section 4 and Layout 1; design call
+                "Monday before practice")
+PR/commit:      see git log (claude/coachhelm-monday-brief)
+Contract IDs:   CH-13932 to CH-13939
+Actions:        Open (a link to the player on the board); none written
+Data impact:    none written; reads the visible v3 reads, the roster's
+                countable rounds and the Slice 7b team pattern
+
 ## 2026-10-21 — One count of what CoachHelm sees (spec D)
 
 ```text

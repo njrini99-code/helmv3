@@ -478,7 +478,6 @@ async function pickStaleRefreshes(
   budgetMs: number,
 ): Promise<StaleRefreshPass | null> {
   const nowMs = startedAt;
-  const since = new Date(nowMs - STALE_REFRESH_DAYS * 86_400_000).toISOString();
   const reads: StaleAnchorRow[] = [];
   const lastRunAt = new Map<string, number>();
   for (const chunk of chunkIds(candidateIds)) {
@@ -497,7 +496,8 @@ async function pickStaleRefreshes(
             .select('player_id, created_at')
             .eq('insight_type', 'post_round_v2')
             .in('player_id', chunk)
-            .gte('created_at', since)
+            // No date floor: a run older than the stale window still decides a player's newest analysis, so
+            // eligibility, order and staleDays use it rather than an older read stamp.
             .order('id', { ascending: true })
             .range(from, to),
         );

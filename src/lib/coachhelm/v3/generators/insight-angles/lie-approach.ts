@@ -79,6 +79,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 export const LIE_BANDS: readonly ApproachBucket[] = ['50_125ft', '125_175ft', '175_plus_ft'];
 /** Band labels (the same words PR #2073's context narrowing uses). */
@@ -552,11 +553,11 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
       baseline: agg.baseline,
       weeks: 12,
     });
-    const fwLine =
+    const fwLine = (v: Voice) =>
       r.fairway_pct !== null && r.peer_fairway_pct !== null
         ? r.exposure_qualifies
-          ? ` You also hit fewer fairways than your teammates (${r.fairway_pct}% vs their median ${r.peer_fairway_pct}%), a smaller cost of its own; the larger one is the shot from the rough.`
-          : ` You hit ${r.fairway_pct}% of fairways (teammates' median ${r.peer_fairway_pct}%), so the leak is the shot from the rough, not how often you get there.`
+          ? ` ${v.You} also hit fewer fairways than ${v.your} teammates (${r.fairway_pct}% vs ${v.pick('their', 'the teammates\'')} median ${r.peer_fairway_pct}%), a smaller cost of its own; the larger one is the shot from the rough.`
+          : ` ${v.You} hit ${r.fairway_pct}% of fairways (teammates' median ${r.peer_fairway_pct}%), so the leak is the shot from the rough, not how often ${v.you} get there.`
         : '';
     const evidence: AngleEvidence = {
       ...angleReadFields('lie_rough_execution', r.round_ids, tourLine),
@@ -591,9 +592,11 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
     };
     return {
       category: 'approach',
-      title: `Rough approaches cost you more than the lie explains`,
-      content:
-        `${qualifying.map(bandText).join('; ')}. After charging what the rough costs a Tour player at those distances, you still lose an extra ${excess.toFixed(2)} strokes per rough approach, about ${r.rough_cost_per_round.toFixed(1)} strokes a round over your ${r.rough_per_18.toFixed(1)} rough approaches per 18.${fwLine} ${excludedNote}`,
+      ...inBothVoices((v) => ({
+        title: `Rough approaches cost ${v.pick('you ', '')}more than the lie explains`,
+        content:
+          `${qualifying.map(bandText).join('; ')}. After charging what the rough costs a Tour player at those distances, ${v.player} still ${v.pick('lose', 'loses')} an extra ${excess.toFixed(2)} strokes per rough approach, about ${r.rough_cost_per_round.toFixed(1)} strokes a round over ${v.your} ${r.rough_per_18.toFixed(1)} rough approaches per 18.${fwLine(v)} ${excludedNote}`,
+      })),
       priority: r.rough_cost_per_round >= 0.5 ? 'medium' : 'low',
       signature: 'lie_approach:rough_execution',
       evidence,
@@ -653,10 +656,12 @@ export function composeLieApproach(agg: LieApproachAggregate): ComposedContent &
   };
   return {
     category: 'tee',
-    title: `Missed fairways are feeding rough approaches`,
-    content:
-      `You hit ${r.fairway_pct}% of fairways vs a teammates' median of ${r.peer_fairway_pct}% (${r.fairway_holes} par-4/5 holes), which leaves ${r.rough_all_per_18.toFixed(1)} approaches a round in the rough. ` +
-      `At your distances the rough costs even a Tour player about ${(r.tour_rough_penalty ?? 0).toFixed(2)} strokes per shot, so as a rough estimate (not every missed fairway ends in the rough) closing the fairway gap would be worth about ${r.exposure_cost_per_round.toFixed(1)} strokes a round. ${excludedNote}`,
+    ...inBothVoices((v) => ({
+      title: `Missed fairways are feeding rough approaches`,
+      content:
+        `${v.Player} ${v.pick('hit', 'hits')} ${r.fairway_pct}% of fairways vs a teammates' median of ${r.peer_fairway_pct}% (${r.fairway_holes} par-4/5 holes), which leaves ${r.rough_all_per_18.toFixed(1)} approaches a round in the rough. ` +
+        `At ${v.your} distances the rough costs even a Tour player about ${(r.tour_rough_penalty ?? 0).toFixed(2)} strokes per shot, so as a rough estimate (not every missed fairway ends in the rough) closing the fairway gap would be worth about ${r.exposure_cost_per_round.toFixed(1)} strokes a round. ${excludedNote}`,
+    })),
     priority: r.exposure_cost_per_round >= 0.5 ? 'medium' : 'low',
     signature: 'lie_approach:fairway_exposure',
     evidence,

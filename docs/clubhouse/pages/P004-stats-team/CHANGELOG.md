@@ -16,6 +16,22 @@ The phone's strokes gained figure under the legs and each player's SG were
 Number Flow numerals. They are now plain tabular text written at once
 (`formatSigned`, a true minus), and the hidden copy beside the rolling one is
 gone. Replays 1bff7a784 and c2710104e onto main.
+## 2026-10-21 — CoachHelm verdict loop on the focus areas (chs-11)
+
+```text
+Design package: none (supercharge 04 example 11 and layout 5)
+PR/commit:      claude/coachhelm-verdict-loop
+Contract IDs:   none
+Actions:        none
+Data impact:    none on the team page
+Held items:     none
+```
+
+The shared stats files (`StatsPlayer.tsx`, `StatsPlayerPhone.tsx`,
+`stats.css`, the new `FocusLoop.tsx`) change for the player page only:
+with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
+and verdict. The team page is unchanged. See the P005 entry of the same
+date.
 
 ## 2026-10-22 — Player pages carry a CoachHelm count line (see P005)
 

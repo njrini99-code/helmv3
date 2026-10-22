@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
+import { loadFocusLoops } from './focus-loop';
+import type { ChFocusLoop } from './focus-loop-shape';
 import type { ChSgTour } from '../lib/sg';
 import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
@@ -186,7 +188,8 @@ export interface ChPlayerProfile {
   cacheError: boolean;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
-  focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
+  /** `loop`: the focus area's target, progress and verdict (CoachHelm chs-11), only with `coachhelm_verdicts_v1` on and a prescription stamped. */
+  focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null; loop?: ChFocusLoop }>;
   goals: Array<{ id: string; title: string; metric: string | null; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
   /** The goals CoachHelm suggests to the player, newest first (the player's own view only; none for a coach). */
   goalSuggestions?: ChGoalSuggestion[];
@@ -340,6 +343,13 @@ export async function loadPlayerProfile(input: {
   const bench = benchRes ?? new Map<string, number>();
   if (focusRes.error) chLogServer('stats', 'focusAreas', focusRes.error, 'development');
   if (goalsRes.error) chLogServer('stats', 'goals', goalsRes.error, 'development');
+  // CoachHelm chs-11: each focus area's prescription and verdict loop (flag `coachhelm_verdicts_v1`; off, nothing is read).
+  const loops = await loadFocusLoops(
+    supabase,
+    input.playerId,
+    (focusRes.data ?? []).filter((f) => f.status === 'active').map((f) => f.id),
+    input.viewer === 'coach' ? { role: 'coach', first: p.first_name || fullName(p) } : { role: 'player' },
+  );
   if (suggestionsRes?.error) chLogServer('stats', 'goalSuggestions', suggestionsRes.error, 'development');
   // One failed rounds read (the player's or a teammate's) is a failed read: no rounds, flagged, and nothing read for them, as one combined
   // read always was. (A round is one row: a round both reads returned is counted once.)
@@ -592,6 +602,7 @@ export async function loadPlayerProfile(input: {
       target: f.target_value,
       metric: f.target_metric,
       status: f.status,
+      ...(loops.has(f.id) ? { loop: loops.get(f.id) } : {}),
     })),
     goals: (goalsRes.data ?? []).map((g) => ({
       id: g.id,
