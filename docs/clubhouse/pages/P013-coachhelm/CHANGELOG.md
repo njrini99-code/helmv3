@@ -11,14 +11,6 @@ Data impact:    none written; reads through getWhatsNewForCoach (golf_player_ins
                 golf_validated_patterns, golf_player_focus_areas, 7 days)
 Held items:     none
 
-## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
-
-```text
-Design package: round 2C (coordinator decision under the owner's delegation)
-PR/commit:      see git log (claude/coachhelm-board-decision)
-Contract IDs:   CH-13942, CH-13943 (new)
-Actions:        none changed
-Data impact:    none (reads only the ladder the support pass stores)
 ## 2026-10-21 — One count of what CoachHelm sees (spec D)
 
 ```text
@@ -32,113 +24,6 @@ Held items:     none
 
 ### Changed
 
-- With `coachhelm_support_v1` on, the coach Board shows only reads at
-  Working hypothesis or firmer. Reads rated Not enough yet are one collapsed
-  line under the board, "Not enough yet (N)", that opens in place to each
-  read with its Watching count-down (CH-13942).
-- A ranked head rated Not enough yet gives way to the player's firmest other
-  read. A player all of whose reads are held back is a quiet By player row,
-  "Not enough yet" (CH-13943), not a card and not "No reads yet".
-- Flag off: unchanged. Player surfaces: unchanged. Preview:
-  `?state=notenough`.
-
-## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
-
-```text
-Design package: design call D2, D4, Board spec, path line copy tables, §7
-PR/commit:      see git log (claude/coachhelm-board-decision)
-Contract IDs:   CH-13940, CH-13941 (new); CH-13203, CH-13206, CH-13309,
-                CH-13310, CH-13405 (reworded); CH-13223, CH-13226,
-                CH-13325 (retired)
-Actions:        none changed
-Data impact:    none (reads only what the rows already store)
-Held items:     none
-```
-
-### Changed
-
-- The program pulse block is gone from the coach Board. The header keeps its
-  one sentence and adds a collapsed "Since you were last here" line that
-  opens up to three items, flush (CH-13941). Its loading, failed, gap and
-  empty states are lines in the same place. Nothing sits between the header
-  and By player; Team patterns and the partial notice moved under the board.
-- The card's second line is the path line (CH-13940): what was seen · count
-  of denominator · rounds · firmness word, from the engine's stored cause, or
-  the symptom and "Not yet traced shot by shot". A stored narrowing adds its
-  steps as chips. The placeholder cause is never drawn, on any line.
-- The priority pill, the three-bar meter, the gauge and the drill well are
-  cut from the card. The eyebrow says the stance in words only when it is
-  news (Priority, Working, Assigned, Acknowledged, Out of date, Note); the
-  evidence is a ledger of flush rows; This week is flush under it.
-- A player with no read yet is a By player row, "No reads yet", instead of
-  the footer under the card (CH-13310).
-- Ask's greeting no longer draws the findings block; it keeps the openers
-  and the line saying who the answers cover.
-
-## 2026-10-21 — Correction chips under a read's audit (flag off)
-
-```text
-Design package: none (supercharge 03 section 7.2; 04 section 1.4)
-PR/commit:      see git log (claude/coachhelm-correction-chips)
-Contract IDs:   CH-13970 to CH-13972 (new)
-Actions:        recordCoachHelmCorrection (its first UI caller)
-Data impact:    writes golf_coachhelm_corrections through the action; reads
-                the viewer's own rows; both behind coachhelm_corrections_v1
-Held items:     20261020121000_golf_coachhelm_corrections.sql
-```
-
-### Added
-
-- `/golf/dashboard/whats-new` is a Clubhouse screen for a coach instead of a
-  redirect to Home: the team's CoachHelm activity of the past seven days
-  (insights detected, matured and resolved, patterns validated, focus areas
-  started and finished), newest first, grouped by day in the team's own time
-  zone. A row names the player and what happened, shows the insight's or focus
-  area's own words (three lines at most), and opens that player's Stats (a focus
-  area opens their Development tab). A filter narrows to Insights, Patterns or
-  Focus areas, with the counts.
-- Reached from the command palette ("What’s new", under CoachHelm), as the old
-  page was; it is not a sidebar section.
-- A failed feed says so (CH-13231) and never reads as a quiet week; a refresh
-  that fails keeps the week on screen and says it may be out of date (CH-13230);
-  a category at its row ceiling says older updates may be missing (CH-13332).
-
-### Fixed
-
-- Every day label and time is made on the server in the team's zone, so the
-  first paint cannot disagree with hydration (the Fairway feed threw React #418
-  on exactly that).
-
-### Notes
-
-A player's `/whats-new` still opens Home (a coach-only feature in Fairway too).
-Reads one action, the Fairway page's own, so the visibility rules on insights
-are the same in both UIs.
-
-- Under "Why do you think so?" on the coach's card: Not this (with a reason
-  picker: It's wrong, Not important, Already known, or No reason), Wrong
-  cause, Already on it, Show later and Good read (CH-13970). On the player's
-  Board and Deep dive, their own read gets Not this and Good read, the two
-  kinds the action takes from a player.
-- A tap shows the answer at once as one quiet line with Change (CH-13971)
-  and rolls back with an error line if the save fails. The action is
-  append-only, so there is no Undo; Change records a new answer, which is
-  the one that counts.
-- Show later holds the read back at once: its title stays with "Held back
-  for now. It comes back after 2 more rounds are posted." (CH-13972). After
-  a reload the loader counts the rounds posted since the answer.
-- With the flag off nothing is read and nothing is drawn. With the held
-  table missing the loader draws no chips, and a tap answered "not
-  available" takes the chips away without an error.
-- Preview: `coachhelm?state=corrections`, `corrections-notthis`,
-  `corrections-wrongcause`, `corrections-already`, `corrections-later`,
-  `corrections-good`, `corrections-unavailable`, `corrections-failed`;
-  `coachhelm-views?view=deep-dive&state=corrections` and `corrections-good`.
-
-### Verified
-
-- `screens/coachhelm/__tests__/corrections.test.tsx`.
-- Phone screenshots (390 × 844), light and dark, of the preview states.
 - No visible change on CoachHelm. The coach's Game profile line ("what
   CoachHelm sees") now counts with `countReads` (data/coachhelm-classify.ts),
   the function Stats' Game detail line (P005) and the roster's CoachHelm
@@ -201,6 +86,101 @@ Held items:     none
   what it draws.
 - DESIGN.md's non-goal "a coach's version of the Game profile, Standing or
   Deep dive" is superseded.
+
+## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
+
+```text
+Design package: round 2C (coordinator decision under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13942, CH-13943 (new)
+Actions:        none changed
+Data impact:    none (reads only the ladder the support pass stores)
+Held items:     none
+```
+
+### Changed
+
+- With `coachhelm_support_v1` on, the coach Board shows only reads at
+  Working hypothesis or firmer. Reads rated Not enough yet are one collapsed
+  line under the board, "Not enough yet (N)", that opens in place to each
+  read with its Watching count-down (CH-13942).
+- A ranked head rated Not enough yet gives way to the player's firmest other
+  read. A player all of whose reads are held back is a quiet By player row,
+  "Not enough yet" (CH-13943), not a card and not "No reads yet".
+- Flag off: unchanged. Player surfaces: unchanged. Preview:
+  `?state=notenough`.
+
+## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
+
+```text
+Design package: design call D2, D4, Board spec, path line copy tables, §7
+PR/commit:      see git log (claude/coachhelm-board-decision)
+Contract IDs:   CH-13940, CH-13941 (new); CH-13203, CH-13206, CH-13309,
+                CH-13310, CH-13405 (reworded); CH-13223, CH-13226,
+                CH-13325 (retired)
+Actions:        none changed
+Data impact:    none (reads only what the rows already store)
+Held items:     none
+```
+
+### Changed
+
+- The program pulse block is gone from the coach Board. The header keeps its
+  one sentence and adds a collapsed "Since you were last here" line that
+  opens up to three items, flush (CH-13941). Its loading, failed, gap and
+  empty states are lines in the same place. Nothing sits between the header
+  and By player; Team patterns and the partial notice moved under the board.
+- The card's second line is the path line (CH-13940): what was seen · count
+  of denominator · rounds · firmness word, from the engine's stored cause, or
+  the symptom and "Not yet traced shot by shot". A stored narrowing adds its
+  steps as chips. The placeholder cause is never drawn, on any line.
+- The priority pill, the three-bar meter, the gauge and the drill well are
+  cut from the card. The eyebrow says the stance in words only when it is
+  news (Priority, Working, Assigned, Acknowledged, Out of date, Note); the
+  evidence is a ledger of flush rows; This week is flush under it.
+- A player with no read yet is a By player row, "No reads yet", instead of
+  the footer under the card (CH-13310).
+- Ask's greeting no longer draws the findings block; it keeps the openers
+  and the line saying who the answers cover.
+
+## 2026-10-21 — Correction chips under a read's audit (flag off)
+
+```text
+Design package: none (supercharge 03 section 7.2; 04 section 1.4)
+PR/commit:      see git log (claude/coachhelm-correction-chips)
+Contract IDs:   CH-13970 to CH-13972 (new)
+Actions:        recordCoachHelmCorrection (its first UI caller)
+Data impact:    writes golf_coachhelm_corrections through the action; reads
+                the viewer's own rows; both behind coachhelm_corrections_v1
+Held items:     20261020121000_golf_coachhelm_corrections.sql
+```
+
+### Added
+
+- Under "Why do you think so?" on the coach's card: Not this (with a reason
+  picker: It's wrong, Not important, Already known, or No reason), Wrong
+  cause, Already on it, Show later and Good read (CH-13970). On the player's
+  Board and Deep dive, their own read gets Not this and Good read, the two
+  kinds the action takes from a player.
+- A tap shows the answer at once as one quiet line with Change (CH-13971)
+  and rolls back with an error line if the save fails. The action is
+  append-only, so there is no Undo; Change records a new answer, which is
+  the one that counts.
+- Show later holds the read back at once: its title stays with "Held back
+  for now. It comes back after 2 more rounds are posted." (CH-13972). After
+  a reload the loader counts the rounds posted since the answer.
+- With the flag off nothing is read and nothing is drawn. With the held
+  table missing the loader draws no chips, and a tap answered "not
+  available" takes the chips away without an error.
+- Preview: `coachhelm?state=corrections`, `corrections-notthis`,
+  `corrections-wrongcause`, `corrections-already`, `corrections-later`,
+  `corrections-good`, `corrections-unavailable`, `corrections-failed`;
+  `coachhelm-views?view=deep-dive&state=corrections` and `corrections-good`.
+
+### Verified
+
+- `screens/coachhelm/__tests__/corrections.test.tsx`.
+- Phone screenshots (390 × 844), light and dark, of the preview states.
 
 ## 2026-10-21 — useHydrated moved to the shared lib
 
@@ -618,11 +598,8 @@ Held items:     none
 - `placeholder-cause.test.ts` (both production spellings) and
   `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
   observed and hypothesis cases are unchanged). No screenshot: the card loses
-  one block and no layout rule changed.
-
   one block and no layout rule
   changed.
-  one block and no layout rule changed.
 
 ## 2026-10-19 — CoachHelm: no side rails, one place for the view switch
 
@@ -763,18 +740,11 @@ Held items:     none
 
 ### Why
 
-- The same control behaved differently from page to page: a save greyed its
-  button out at 42%, five places drew their own spinner, icon-only buttons had
-  no words on desktop and a scroller gave no sign there was more. They now come
-  from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
+- The same control behaved differently from page to page: a save greyed its button out at 42%, five places drew their own spinner, icon-only buttons had no words on desktop and a scroller gave no sign there was more. They now come from the shared owners (`Button` busy, `Spinner`, `Tooltip`, `use-hscroll`).
 
 ### Verification
 
-- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`;
-  the busy ring was captured at 390 and 1280, light and dark, on
-  `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips
-  and edge fades on the messages, roster and CoachHelm previews. Pages other
-  than the one captured were checked in source only.
+- Targeted tests for this page and `ui/__tests__/controls-consistency.test.tsx`; the busy ring was captured at 390 and 1280, light and dark, on `/clubhouse-preview/classes` (the same Button owner draws it here); tooltips and edge fades on the messages, roster and CoachHelm previews. Pages other than the one captured were checked in source only.
 
 ## 2026-10-19 — Off, empty and first-run CoachHelm told apart; Deep dive empties join the shared state
 
@@ -789,41 +759,18 @@ Held items:     none
 
 ### Changed
 
-- CoachHelm turned off for a player, or off for everyone for a coach, is the
-  restricted state: a lock and who can change it, with no action that would
-  fail. A coach's own switch-off keeps Open CoachHelm settings.
-- First-run boards, Game profile and Standing draw rows under the sentence;
-  the coach's board draws portrait rows.
-- First-run boards, Game profile and Standing draw rows under the sentence; the
-  coach's board draws portrait rows.
-- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan)
-  use the shared compact state; `.ch-hd-none` is gone.
+- CoachHelm turned off for a player, or off for everyone for a coach, is the restricted state: a lock and who can change it, with no action that would fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence; the coach's board draws portrait rows.
+- Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan) use the shared compact state; `.ch-hd-none` is gone.
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
 ### Why
 
-- Every empty page was one template: a green tile, a headline, a sentence and
-  a button in blank space. The waiting form draws the shape of what will fill
-  the space (rules, rings, a baseline; no bars, no fake text) under one
-  sentence that names what fills it and who does it, and a filter that hides
-  everything is told apart from a first run, a lock and a failed read.
-- Every empty page was one template: a green tile, a headline, a sentence and a
-  button in blank space. The waiting form draws the shape of what will fill the
-  space (rules, rings, a baseline; no bars, no fake text) under one sentence
-  that names what fills it and who does it, and a filter that hides everything
-  is told apart from a first run, a lock and a failed read.
+- Every empty page was one template: a green tile, a headline, a sentence and a button in blank space. The waiting form draws the shape of what will fill the space (rules, rings, a baseline; no bars, no fake text) under one sentence that names what fills it and who does it, and a filter that hides everything is told apart from a first run, a lock and a failed read.
 
 ### Verification
 
-- `states.test.tsx` (the waiting form, its four kinds, the danger tone
-  unchanged) and this page's tests; captured at 390 and 1280, light and dark,
-  before and after, on `/clubhouse-preview/coachhelm?state=empty` and
-  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the
-  restricted state) was captured after only, phone, light. The Deep dive
-  empties have unit tests but no capture.
-  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted
-  state) was captured after only, phone, light. The Deep dive empties have unit
-  tests but no capture.
+- `states.test.tsx` (the waiting form, its four kinds, the danger tone unchanged) and this page's tests; captured at 390 and 1280, light and dark, before and after, on `/clubhouse-preview/coachhelm?state=empty` and `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted state) was captured after only, phone, light. The Deep dive empties have unit tests but no capture.
 
 ## 2026-10-18 — Wave 10: inviting from an empty CoachHelm
 

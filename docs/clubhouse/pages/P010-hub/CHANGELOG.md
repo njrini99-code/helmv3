@@ -1,29 +1,5 @@
 # P010 — Team Hub: changelog
 
-## 2026-10-21 — Team Hub's counts shared with Coach Home
-
-```text
-Design package: none (Coach Home spec B §2, counts as the Hub)
-PR/commit:      parity/coach-home (local)
-Contract IDs:   none changed
-Actions:        none
-Data impact:    none
-Held items:     none
-```
-
-### Changed (data/hub.ts, no behaviour change)
-
-- The reply counts and the task status rule are pure helpers (`rsvpCounts`,
-  `taskStatus`) that the coach's loader now calls, with the same logic.
-- New pure counts for Coach Home's "Waiting on you": `rsvpQueue`,
-  `overdueTaskCount`, `unackedPostCount`.
-- The team clock comes from `data/home-clock.ts` (moved out of `home.ts`), so
-  Home can read the Hub's counts without an import cycle.
-
-### Verification
-
-- `hub.test.tsx`, `hub-paged-reads.test.ts`, `wiring-p010-hub.test.tsx`;
-  parity on the Hub's coach fixtures in `home-coach-parity.test.tsx`.
 ## 2026-10-21 — Home as widgets, not RSVPs
 
 ```text
@@ -132,6 +108,31 @@ Held items:     coach nav badge (audit par-24): new read on every shell load
   within 1px, so nothing moves on load. To make that hold, the strip is one
   line that scrolls sideways (the clipped edge fades) and is its own row of the
   head, so its height never depends on what it says.
+
+## 2026-10-21 — Team Hub's counts shared with Coach Home
+
+```text
+Design package: none (Coach Home spec B §2, counts as the Hub)
+PR/commit:      parity/coach-home (local)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed (data/hub.ts, no behaviour change)
+
+- The reply counts and the task status rule are pure helpers (`rsvpCounts`,
+  `taskStatus`) that the coach's loader now calls, with the same logic.
+- New pure counts for Coach Home's "Waiting on you": `rsvpQueue`,
+  `overdueTaskCount`, `unackedPostCount`.
+- The team clock comes from `data/home-clock.ts` (moved out of `home.ts`), so
+  Home can read the Hub's counts without an import cycle.
+
+### Verification
+
+- `hub.test.tsx`, `hub-paged-reads.test.ts`, `wiring-p010-hub.test.tsx`;
+  parity on the Hub's coach fixtures in `home-coach-parity.test.tsx`.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 

@@ -41,25 +41,6 @@ Not done here: a coach assigning a goal to a player (no Fairway screen does it
 either; `createGoal` and `createTeamGoal` support it). The Goals empty-state
 copy is draft PR #2281's.
 
-## 2026-10-21 — Leg links open the right Game detail section on the phone
-
-```text
-Design package: none (review fix, PR #2281)
-PR/commit:      claude/project-thread-d87uyy
-Contract IDs:   none
-Actions:        none
-Data impact:    none
-Held items:     none
-```
-
-### Fixed
-
-- On the phone, `?tab=game#gm-approach` (and `#gm-short`, `#gm-putting`, `#gm-tee`,
-  `#gm-scoring`) from the team grid's leg figures now opens that section of Game
-  detail and scrolls to it. The phone draws only the section chosen in the chips
-  (Scoring by default), so the scroll found nothing and gave up. Game detail reads
-  the hash itself on the phone, and follows it if it changes while the page is open.
-  A hash that names no section changes nothing. Desktop is unchanged.
 ## 2026-10-21 — CoachHelm count line on Game detail (spec D build A)
 
 ```text
@@ -97,6 +78,26 @@ Held items:     none
 
 - `stats-reads.test.ts`, `coachhelm-classify.test.ts`,
   `game-detail-reads.test.tsx`; VERIFY.md 2026-10-21.
+
+## 2026-10-21 — Leg links open the right Game detail section on the phone
+
+```text
+Design package: none (review fix, PR #2281)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Fixed
+
+- On the phone, `?tab=game#gm-approach` (and `#gm-short`, `#gm-putting`, `#gm-tee`,
+  `#gm-scoring`) from the team grid's leg figures now opens that section of Game
+  detail and scrolls to it. The phone draws only the section chosen in the chips
+  (Scoring by default), so the scroll found nothing and gave up. Game detail reads
+  the hash itself on the phone, and follows it if it changes while the page is open.
+  A hash that names no section changes nothing. Desktop is unchanged.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
@@ -380,46 +381,14 @@ Held items:     none
 
 ### Changed (2026-10-19, L6a)
 
-- The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px
-  wide and scrolled sideways at 1280). The columns size to the room, and where
-  the canvas is under 820px GIR and putts, both on Game detail, step out before
-  anything scrolls. A long course keeps one line with an ellipsis (the full name
-  on hover) and its round type beside it; the figures stay right-aligned in
-  tabular numerals, and a row lifts on hover where hover exists.
-- Putting rings: the five distance labels are upright, the band on the left and
-  its make rate right-aligned, and every leader starts on one ray from the cup
-  and steps down with its label, so no two cross and none runs through another
-  label.
-- The Par swatch in the scoring key has a hairline ring, so parchment on
-  parchment reads as a swatch.
-- Game detail opens with every More detail collapsed (it opened expanded on
-  desktop). A figure with no data no longer carries its caption underneath
-  ("Tour 62%", "18 approaches" under an em dash).
-- Empty panels are the shared compact empty state, not a bare sentence: the five
-  Game detail panels with nothing logged (drives, missed greens, missed putts,
-  long first putts, putts with a break), the scoring-trend scoreboard and the
-  form chart with no rounds, and the proximity bands that need more shots (now a
-  title, with the bands and their counts as its sentence). A title carries no
-  full stop.
-- One number voice: percentages are whole numbers everywhere on the page (the
-  Tour column of the putting table, Best GIR and the share of holes that are
-  doubles or worse used to carry a decimal), through the new `formatPct`; the
-  scoring average's to par is `formatToPar` (E for even, a true minus) and the
-  chart ticks use `formatSigned`, not hand-built signs.
-- The scoring form ribbon reads like a scorecard: a finger or pointer dragged
-  across it, or the arrow keys (Home, End and Escape too) once it has focus,
-  snaps to the nearest round and reads that round's date, course and score with
-  to par in the ribbon's own header line, in place of its note, with the round's
-  column lifted; a polite live region says the same. A vertical swipe still
-  scrolls the page. Nothing animates, so reduced motion needs no swap.
-- Print: a stats page prints as plain pages. The shell's chrome and the page's
-  own controls (tabs, filter, window switch, back link, actions) are gone; the
-  page is white and light even from dark mode; a head line gives GolfHelm, the
-  subject (the player here; the team and season on the team page) and the day it
-  was printed; rows, cards and sections are not cut across sheets; rules and
-  fills keep their ink. The page keeps its desktop view on paper instead of
-  flipping to the phone view at paper width, and the shell's skip link is not
-  printed.
+- The Rounds table fits its canvas at 1024, 1100, 1280 and 1440 (it was 1040px wide and scrolled sideways at 1280). The columns size to the room, and where the canvas is under 820px GIR and putts, both on Game detail, step out before anything scrolls. A long course keeps one line with an ellipsis (the full name on hover) and its round type beside it; the figures stay right-aligned in tabular numerals, and a row lifts on hover where hover exists.
+- Putting rings: the five distance labels are upright, the band on the left and its make rate right-aligned, and every leader starts on one ray from the cup and steps down with its label, so no two cross and none runs through another label.
+- The Par swatch in the scoring key has a hairline ring, so parchment on parchment reads as a swatch.
+- Game detail opens with every More detail collapsed (it opened expanded on desktop). A figure with no data no longer carries its caption underneath ("Tour 62%", "18 approaches" under an em dash).
+- Empty panels are the shared compact empty state, not a bare sentence: the five Game detail panels with nothing logged (drives, missed greens, missed putts, long first putts, putts with a break), the scoring-trend scoreboard and the form chart with no rounds, and the proximity bands that need more shots (now a title, with the bands and their counts as its sentence). A title carries no full stop.
+- One number voice: percentages are whole numbers everywhere on the page (the Tour column of the putting table, Best GIR and the share of holes that are doubles or worse used to carry a decimal), through the new `formatPct`; the scoring average's to par is `formatToPar` (E for even, a true minus) and the chart ticks use `formatSigned`, not hand-built signs.
+- The scoring form ribbon reads like a scorecard: a finger or pointer dragged across it, or the arrow keys (Home, End and Escape too) once it has focus, snaps to the nearest round and reads that round's date, course and score with to par in the ribbon's own header line, in place of its note, with the round's column lifted; a polite live region says the same. A vertical swipe still scrolls the page. Nothing animates, so reduced motion needs no swap.
+- Print: a stats page prints as plain pages. The shell's chrome and the page's own controls (tabs, filter, window switch, back link, actions) are gone; the page is white and light even from dark mode; a head line gives GolfHelm, the subject (the player here; the team and season on the team page) and the day it was printed; rows, cards and sections are not cut across sheets; rules and fills keep their ink. The page keeps its desktop view on paper instead of flipping to the phone view at paper width, and the shell's skip link is not printed.
 
 ## 2026-10-18 — Pickers and controls: filter date range, saving
 
@@ -434,16 +403,7 @@ Held items:     none
 
 ### Changed (2026-10-18, L2 pickers and controls)
 
-- The browser's own date and time inputs are gone. The filter's From and To
-  (each with Clear; To opens on From) shows the value as the app writes it ("Thu
-  15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter
-  hour (times): a popover under the field on desktop, a bottom sheet on the
-  phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow",
-  "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't
-  read what was typed. Today carries a dot, the chosen day is the segmented
-  control's lit chip, days outside the range are off, and arrows, PageUp and
-  PageDown, Home and End and Enter work in the grid. The saved value is the same
-  `yyyy-mm-dd` / `HH:mm` string as before.
+- The browser's own date and time inputs are gone. The filter's From and To (each with Clear; To opens on From) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
 
 ## 2026-10-18 — Wave 10: an early read in plain words
 
