@@ -4,6 +4,8 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadTeamStats } from '../data/stats-team';
 import { loadPlayerProfile } from '../data/stats-player';
+import { loadCoachPlayerScope } from '../data/coachhelm-player';
+import { loadStatsReads, readsForScope, type ChStatsReads } from '../data/stats-reads';
 import { parseFilter, type ChFilterQuery } from '../data/stats-filter';
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
@@ -29,15 +31,21 @@ export async function ClubhouseStatsRoute({ player, window, tab, query }: { play
   const win = filter.window;
 
   if (team.role === 'player') {
-    const profile = await loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter });
-    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} /> : <NotOnTeam coach={false} />;
+    // Game detail's "CoachHelm sees…" reads beside the profile, for the session's own player id (never the address's).
+    const [profile, reads] = await Promise.all([
+      loadPlayerProfile({ viewer: 'player', teamId: team.teamId, playerId: team.playerId, window: win, filter }),
+      loadStatsReads({ role: 'player', playerId: team.playerId }),
+    ]);
+    return profile ? <StatsPlayer data={profile} coachId={null} initialTab={tab} reads={reads} /> : <NotOnTeam coach={false} />;
   }
 
   if (player) {
     // An id that is not shaped like one is not on any team; it never reaches the database (which would answer 22P02).
     if (!isUuid(player)) return <NotOnTeam coach />;
-    const profile = await loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter });
-    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} /> : <NotOnTeam coach />;
+    // The coach's reads wait for the scope check (this coach's own team, CoachHelm on for both), and run beside the profile.
+    const reads = loadCoachPlayerScope({ coachId: team.coachId, teamId: team.teamId, playerId: player }).then(readsForScope, (): ChStatsReads => ({ status: 'failed' }));
+    const [profile, shown] = await Promise.all([loadPlayerProfile({ viewer: 'coach', teamId: team.teamId, playerId: player, window: win, filter }), reads]);
+    return profile ? <StatsPlayer data={profile} coachId={team.coachId} initialTab={tab} reads={shown} /> : <NotOnTeam coach />;
   }
   return <StatsTeam data={await loadTeamStats({ teamId: team.teamId, window: win, filter })} />;
 }

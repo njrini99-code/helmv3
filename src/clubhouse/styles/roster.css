@@ -785,6 +785,54 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
+/* The Development counts open the player's Development tab (spec D build B): the same line, as a quiet link. */
+a.ch-rs-peek__dev {
+  align-self: flex-start;
+  border-radius: var(--ch-radius-sm);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  a.ch-rs-peek__dev:hover > span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+a.ch-rs-peek__dev:focus-visible,
+.ch-rs-peek__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* CoachHelm in the panel: View insights in the text-link green after the counts. */
+.ch-rs-peek__go {
+  margin-left: auto;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ch-green-700);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-rs-peek__go:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+/* Strokes gained by leg under the figures, and the CoachHelm counts' "Didn't load". The figure takes the gain or loss ink. */
+.ch-rs-peek__legs,
+.ch-rs-peek__cap {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-peek__legs {
+  margin-top: -8px;
+}
+.ch-rs-peek__legs .is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rs-peek__legs .is-loss {
+  color: var(--ch-chart-loss);
+}
 .ch-rs-peek__memo {
   background: var(--ch-ivory-50);
 }
@@ -1238,6 +1286,17 @@
   }
   .ch-rsm-panel__link:active {
     background: var(--ch-ledger-row-press);
+  }
+  /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
+  .ch-rsm-helm .ch-rs-peek__dev {
+    padding-top: 12px;
+  }
+  .ch-rsm-helm .ch-rs-peek__cap {
+    padding-top: 4px;
+  }
+  /* Close under the figures it reads, not a profile part of its own (the profile's parts are 30px apart). */
+  .ch-rsm-figs + .ch-rs-peek__legs {
+    margin-top: -20px;
   }
   .ch-rsm-trend {
     padding: 14px 0 0;
