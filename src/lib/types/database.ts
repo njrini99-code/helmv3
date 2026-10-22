@@ -14934,6 +14934,45 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_player_availability_coach_notes: {
+        Row: {
+          note: string
+          player_id: string
+          team_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          note: string
+          player_id: string
+          team_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          note?: string
+          player_id?: string
+          team_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_availability_coach_notes_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_player_availability_coach_notes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_player_classes: {
         Row: {
           building: string | null
