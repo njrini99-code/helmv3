@@ -19,6 +19,21 @@ minus and a dash for no data. Rows still slide to their new places on a chosen
 sort. The text-first swap (`useArrivalPainted`, `.ch-rsm-flowtext`) and
 `figureParts` went with Number Flow. Replays 1bff7a784 and c2710104e onto
 main.
+## 2026-10-22 — The availability word is parsed in one place
+
+```text
+Design package: none (coach dashboard parity)
+PR/commit:      claude/coach-parity-availability
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same read, same values)
+Held items:     none
+```
+
+### Changed
+
+- `ChAvailability` and its parsing moved to `data/availability.ts` so Home and
+  Calendar read the same word the roster does; the roster behaves as before.
 
 ## 2026-10-21 — CoachHelm block and strokes by leg (spec D build B)
 
