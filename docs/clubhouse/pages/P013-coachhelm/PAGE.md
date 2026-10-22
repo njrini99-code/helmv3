@@ -158,6 +158,9 @@ Start a round (a player). A control whose target is not rebuilt is not drawn
 player's sub-navigation and from `?view=development` (where every stored
 dev-plan notification points); a round's review, from a round under a read in
 the Deep dive, once that screen is rebuilt.
+From a coach's view of one player: back to the board open on that player,
+Messages with the player, the coach's round review, Stats' Development for the
+player and CoachHelm settings (when it is off for the player's team).
 
 ## Ownership
 
