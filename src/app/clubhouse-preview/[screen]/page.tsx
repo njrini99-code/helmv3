@@ -141,6 +141,9 @@ import { TrackRecord } from '@/clubhouse/screens/coachhelm/views/TrackRecord';
 import { PREVIEW_MONDAY_BRIEF, PREVIEW_MONDAY_BRIEF_EMPTY } from '@/clubhouse/preview/fixtures-coachhelm-brief';
 import { MondayBrief } from '@/clubhouse/screens/coachhelm/views/MondayBrief';
 import { PREVIEW_HELM_COACH_CORRECTIONS, PREVIEW_HELM_COACH_ENGINE, PREVIEW_HELM_COACH_ENGINE_NOT_MOVED, PREVIEW_HELM_PLAYER_ENGINE } from '@/clubhouse/preview/fixtures-coachhelm-engine';
+import { coachBriefLoad } from '@/clubhouse/preview/fixtures-coachhelm-coach-brief';
+import { CoachBrief } from '@/clubhouse/screens/coachhelm/views/CoachBrief';
+import { isBriefSection } from '@/clubhouse/data/coachhelm-coach-brief-shape';
 import '@/clubhouse/styles/coachhelm.css';
 import '@/clubhouse/styles/coachhelm-ask.css';
 import '@/clubhouse/styles/coachhelm-views.css';
@@ -191,6 +194,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/coachhelm-coach-player ?view=deep-dive | standing | profile ?state=notonteam | scopefailed | failed | off | loading | failwrites | duplicate, &q=in-pen | in-slope | in-brk | in-dbl   (a coach's views of Jonah, spec A)
  *   /clubhouse-preview/coachhelm-track ?state=early | empty | unavailable | failed | off | loading   (the coach's Track record; synthetic counts)
  *   /clubhouse-preview/coachhelm-brief ?state=empty | failed | off | loading   (the coach's Monday brief; synthetic reads through computeMondayBrief)
+ *   /clubhouse-preview/coachhelm-coach-brief ?state=thin | noreads | partial | failed | off | loading, &section=patterns | working | record | goals   (the coach's Brief behind /intelligence)
  *   /clubhouse-preview/recruiting ?state=empty | nomatch | failed | loading | sparse | noteam | detail | add | edit | delete | docsfailed | failwrites | failstage | slow   (the coach; eight prospects, Mason Reilly first)
  *   any screen &bell=empty | failed | slow   (the top-bar notifications feed)
  *   any coach screen &teams=2   (a head coach on two teams: the team switcher; picking one fails here, there is no session)
@@ -566,6 +570,10 @@ export default async function ClubhousePreview({
         ) : (
           <TrackRecord load={trackLoad({ early: PREVIEW_TRACK_RECORD_EARLY, empty: PREVIEW_TRACK_RECORD_EMPTY, unavailable: PREVIEW_TRACK_RECORD_UNAVAILABLE }[state ?? ''] ?? PREVIEW_TRACK_RECORD)} />
         ),
+    },
+    'coachhelm-coach-brief': {
+      path: '/golf/dashboard/coachhelm',
+      node: state === 'loading' ? <CoachHelmSkeleton view="coach" /> : <CoachBrief load={coachBriefLoad(state)} section={isBriefSection(section) ? section : null} />,
     },
     'coachhelm-brief': {
       path: '/golf/dashboard/coachhelm',

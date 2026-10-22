@@ -18,6 +18,8 @@ let search = '';
 vi.mock('next/headers', () => ({ headers: async () => new Headers(search ? { 'x-helm-search': search } : {}) }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: async () => session }));
 vi.mock('../gate', () => ({ isClubhouseFor: (role: string | null) => !!role && flagOn }));
+let briefOn = false;
+vi.mock('@/lib/coachhelm/v3/monday-brief/flag', () => ({ isMondayBriefEnabled: () => briefOn }));
 
 const { redirectToClubhouse } = await import('../routes/alias');
 const HUB = '/golf/dashboard/team-hub';
@@ -26,6 +28,7 @@ beforeEach(() => {
   redirect.mockClear();
   session = { coach: {} };
   flagOn = true;
+  briefOn = false;
   search = '';
 });
 
@@ -148,6 +151,29 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
     await expect(IntelligenceLayout({ children: null })).rejects.toThrow(`REDIRECT /golf/dashboard/coachhelm?player=${TID}&view=ask`);
     search = '?view=genome&other=1';
     await expect(IntelligenceLayout({ children: null })).rejects.toThrow(new RegExp('REDIRECT /golf/dashboard/coachhelm$'));
+  });
+
+  it('CH-13998 with the coach Brief on, /intelligence and its old sub-links open the Brief at the part they were for', async () => {
+    const { default: IntelligenceLayout } = await import('@/app/golf/(dashboard)/dashboard/intelligence/layout');
+    briefOn = true;
+    const lands = async (q: string) => {
+      search = q;
+      redirect.mockClear();
+      await IntelligenceLayout({ children: null }).catch(() => {});
+      return redirect.mock.calls[0]?.[0];
+    };
+    const BRIEF = '/golf/dashboard/coachhelm?view=brief';
+    expect(await lands('')).toBe(BRIEF);
+    // /alerts and /insights (Signals) land on this week's reads; /patterns on the team pattern.
+    expect(await lands('?view=signals&filter=alerts')).toBe(BRIEF);
+    expect(await lands('?view=signals&filter=insights&id=in-1')).toBe(BRIEF);
+    expect(await lands('?view=signals&filter=patterns')).toBe(`${BRIEF}&section=patterns`);
+    // /development (Players) on what players are working on; /analytics/coachhelm (Effectiveness) on the track record.
+    expect(await lands('?view=players')).toBe(`${BRIEF}&section=working`);
+    expect(await lands('?view=effectiveness')).toBe(`${BRIEF}&section=record`);
+    // A player link still opens the board on that player, and chat is still Ask.
+    expect(await lands(`?view=players&player=${TID}`)).toBe(`/golf/dashboard/coachhelm?player=${TID}`);
+    expect(await lands('?view=chat')).toBe('/golf/dashboard/coachhelm?view=ask');
   });
 
   it('a string target ignores the query (genome compare keeps nothing)', async () => {

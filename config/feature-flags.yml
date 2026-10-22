@@ -1174,7 +1174,13 @@ flags:
       date); and the Monday 05:00 UTC cron /api/cron/coachhelm-monday-brief
       emails each opted-in primary coach a non-empty brief. Strengths,
       Watching, Working hypothesis and reads two or more rounds behind are
-      never in it. Off: no link, the address shows the board, and the cron
+      never in it. The same flag gates the coach Brief
+      (/golf/dashboard/coachhelm?view=brief, par-05), the team view that
+      grows the Monday brief: every player's top read, the team pattern,
+      focus areas, the track record line and goals with standing; with it
+      on, /intelligence and its old sub-links land on the matching section
+      of the Brief, and the board's button opens the Brief. Off: no link,
+      the addresses show the board (as /intelligence did), and the cron
       returns before it reads or sends anything. Email also needs
       HELM_CUSTOMER_EMAIL_ENABLED, which is off in production. Clubhouse is
       off in production, so the view reaches coaches only once it is on.
