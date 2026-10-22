@@ -1,4 +1,4 @@
-import type { ChHubAnnouncement, ChHubTrip, ChTeamHub } from '../data/hub';
+import type { ChHubAnnouncement, ChHubDay, ChHubTrip, ChTeamHub } from '../data/hub';
 
 /** Team Hub sample data: design/handoff/hub-data.js (Varsity, the week of 14 October). */
 
@@ -32,6 +32,25 @@ const ANNS: ChHubAnnouncement[] = [
   { id: 'a3', title: 'Team dinner after the qualifier', urgency: 'normal', body: 'Carolina Inn, 7:30 PM on Thursday. Parents welcome, RSVP by Wednesday.', by: 'Maya Reyes', byRole: 'Head coach', when: 'Oct 9', createdAt: '2026-10-09T15:00:00Z', needAck: false, acked: false, ackCount: 4, recipients: 6, documentCount: 0 },
 ];
 
+const WEEK: ChHubDay[] = [
+  { date: '2026-10-14', weekday: 'Tue', day: 14, trip: null, events: [{ id: 'p1', title: 'Short-game block', time: '3:30 PM', place: 'Green 2', kind: 'practice' }] },
+  { date: '2026-10-15', weekday: 'Wed', day: 15, trip: null, events: [{ id: 'r1', title: 'Course prep · 9 holes', time: '3:30 PM', place: 'Finley GC', kind: 'practice' }] },
+  {
+    date: '2026-10-16',
+    weekday: 'Thu',
+    day: 16,
+    trip: null,
+    events: [
+      { id: 'q1', title: 'Fall qualifier · round 1', time: '8:42 AM', place: 'Finley GC', kind: 'qualifier' },
+      { id: 'r2', title: 'Team dinner', time: '7:30 PM', place: 'Carolina Inn', kind: 'team_event' },
+    ],
+  },
+  { date: '2026-10-17', weekday: 'Fri', day: 17, trip: null, events: [{ id: 'r3', title: 'Recovery nine', time: '3:30 PM', place: 'Finley GC', kind: 'practice' }] },
+  { date: '2026-10-18', weekday: 'Sat', day: 18, trip: null, events: [] },
+  { date: '2026-10-19', weekday: 'Sun', day: 19, trip: null, events: [] },
+  { date: '2026-10-20', weekday: 'Mon', day: 20, trip: null, events: [] },
+];
+
 const TRIPS: ChHubTrip[] = [
   {
     id: 'cfi',
@@ -58,6 +77,7 @@ const TRIPS: ChHubTrip[] = [
     travelerCount: 5,
     mine: true,
     upcoming: true,
+    inDays: 20,
   },
   {
     id: 'sea',
@@ -84,6 +104,7 @@ const TRIPS: ChHubTrip[] = [
     travelerCount: 5,
     mine: false,
     upcoming: true,
+    inDays: 31,
   },
 ];
 
@@ -94,6 +115,7 @@ const BASE = {
   season: 'Fall 2026',
   announcements: { rows: ANNS, error: false },
   trips: { rows: TRIPS, error: false },
+  week: { days: WEEK, error: false },
   documents: {
     error: false,
     folders: [
@@ -147,12 +169,19 @@ export const PREVIEW_HUB_PLAYER: ChTeamHub = {
   tasks: {
     error: false,
     rows: [
-      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: null },
+      { id: 't4', title: 'Submit eligibility form', detail: 'Compliance', dueDate: '2026-10-10', due: 'Oct 10', status: 'overdue', done: null },
       { id: 't2', title: 'Post two practice rounds', detail: 'Qualifier eligibility', dueDate: '2026-10-15', due: 'Tomorrow', status: 'pending', done: null },
+      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: null },
       { id: 't3', title: 'Upload class schedule', detail: 'Fall term', dueDate: '2026-10-01', due: 'Oct 1', status: 'completed', done: null },
     ],
   },
 };
+
+const EL = { id: 't4', title: 'Submit eligibility form', late: true };
+const ROUNDS = { id: 't2', title: 'Post two practice rounds', late: false };
+const WAIVER = { id: 't1', title: 'Sign travel waiver', late: false };
+const R1 = { id: 'r1', title: 'Course prep · 9 holes' };
+const R3 = { id: 'r3', title: 'Recovery nine' };
 
 export const PREVIEW_HUB_COACH: ChTeamHub = {
   ...BASE,
@@ -189,11 +218,35 @@ export const PREVIEW_HUB_COACH: ChTeamHub = {
   tasks: {
     error: false,
     rows: [
-      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: [3, 5] },
+      { id: 't4', title: 'Submit eligibility form', detail: 'Compliance', dueDate: '2026-10-10', due: 'Oct 10', status: 'overdue', done: [0, 6] },
       { id: 't2', title: 'Post two practice rounds', detail: 'Qualifier eligibility', dueDate: '2026-10-15', due: 'Tomorrow', status: 'pending', done: [4, 6] },
+      { id: 't1', title: 'Sign travel waiver', detail: 'Carolina Fall Invitational', dueDate: '2026-10-17', due: 'Fri 17', status: 'pending', done: [3, 5] },
       { id: 't3', title: 'Upload class schedule', detail: 'Fall term', dueDate: '2026-10-01', due: 'Oct 1', status: 'completed', done: [6, 6] },
     ],
   },
+  pulse: {
+    rounds30: 34,
+    active14: 5,
+    players: 6,
+    byPlayer: [
+      { id: 'sofia', name: 'Sofia Alvarez', rounds: 9, recent: true },
+      { id: 'theo', name: 'Theo Marchetti', rounds: 8, recent: true },
+      { id: 'ava', name: 'Ava Lindqvist', rounds: 7, recent: true },
+      { id: 'eli', name: 'Eli Brandt', rounds: 6, recent: true },
+      { id: 'priya', name: 'Priya Natarajan', rounds: 4, recent: true },
+      { id: 'jonah', name: 'Jonah Okafor', rounds: 0, recent: false },
+    ],
+  },
+  // Who owes what, in agreement with the rows above: one reply missing per event, Jonah's acknowledgement, and the
+  // open assignments behind each task's figure (t4 0/6, t2 4/6, t1 3/5).
+  ledger: [
+    { id: 'ava', name: 'Ava Lindqvist', replies: [], posts: [], tasks: [EL], rounds: { n: 7, recent: true } },
+    { id: 'eli', name: 'Eli Brandt', replies: [], posts: [], tasks: [EL, WAIVER], rounds: { n: 6, recent: true } },
+    { id: 'jonah', name: 'Jonah Okafor', replies: [R1, R3], posts: [{ id: 'a1', title: 'Pairings and tee times for Thursday' }], tasks: [EL, ROUNDS, WAIVER], rounds: { n: 0, recent: false } },
+    { id: 'priya', name: 'Priya Natarajan', replies: [{ id: 'r2', title: 'Team dinner' }], posts: [], tasks: [EL, ROUNDS], rounds: { n: 4, recent: true } },
+    { id: 'sofia', name: 'Sofia Alvarez', replies: [], posts: [], tasks: [EL], rounds: { n: 9, recent: true } },
+    { id: 'theo', name: 'Theo Marchetti', replies: [], posts: [], tasks: [EL], rounds: { n: 8, recent: true } },
+  ],
 };
 
 const empty = (d: ChTeamHub): ChTeamHub => ({
@@ -205,6 +258,8 @@ const empty = (d: ChTeamHub): ChTeamHub => ({
   tasks: { rows: [], error: false },
   documents: { folders: [], error: false },
   updates: { rows: [], error: false },
+  week: { days: d.week.days.map((x) => ({ ...x, events: [], trip: null })), error: false },
+  ledger: d.ledger?.map((r) => ({ ...r, replies: [], posts: [], tasks: [] })),
 });
 export const PREVIEW_HUB_PLAYER_EMPTY = empty(PREVIEW_HUB_PLAYER);
 export const PREVIEW_HUB_COACH_EMPTY = empty(PREVIEW_HUB_COACH);
@@ -219,6 +274,9 @@ const failed = (d: ChTeamHub): ChTeamHub => ({
   tasks: { rows: [], error: true },
   documents: { folders: [], error: true },
   updates: { rows: [], error: true },
+  week: { days: [], error: true },
+  pulse: d.pulse === undefined ? undefined : null,
+  ledger: d.ledger ? [] : undefined,
 });
 export const PREVIEW_HUB_PLAYER_FAILED = failed(PREVIEW_HUB_PLAYER);
 export const PREVIEW_HUB_COACH_FAILED = failed(PREVIEW_HUB_COACH);

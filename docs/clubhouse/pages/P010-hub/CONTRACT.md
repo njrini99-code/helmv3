@@ -29,8 +29,8 @@ Team Hub opens on Home, or on the tab in `?tab=`, for a coach and for a player. 
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 100101 | — | `HUB_READY` | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement. |
-| 100102 | — | `TAB_LINK_OPENS_A_TAB` | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home. |
+| 100101 | — | `HUB_READY` | Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents and Tasks, for a coach and a player; Announcements and Tasks carry a small count when a post waits to be acknowledged or a task is late). Under the title one line says what the team is waiting on (a coach: players, replies due, posts awaiting acknowledgement, days to the next trip, open tasks; a player: replies due, posts to acknowledge, days to their trip, open tasks), each figure opening the tab it counts; a figure that is zero, or whose read failed, is left out. Home is a set of widgets (twelve columns on desktop, one in rank order on a phone): the next trip as the one dark tile (days to go, the plan as a rail, who is traveling, a pager to the next trip, Edit trip for a coach; with no trip ahead, the week's next event); this week as seven days to step through, the chosen day's events with replies as a count for a coach and the reply choices for a player, and what follows later this week; for a coach, Waiting on (each player's replies owed, posts not acknowledged, open tasks with late ones in amber and rounds in 30 days, sortable, a name opening the items), the latest post with its acknowledged count and a disc for each player not yet acknowledged, and the tasks' done, left and overdue with the three soonest; for a player, their queue (replies, posts and tasks answered in place, an answered row staying put), the latest post with Got it, and the newest files. Updates sits on both. A coach also gets New announcement. |
+| 100102 | — | `TAB_LINK_OPENS_A_TAB` | ?tab=home\|ann\|travel\|docs\|tasks opens that tab; a value that is not a tab opens Home. A player's Tasks tab lists their own tasks; the coach's Tasks tab also opens with a board of the team's done, left and overdue. |
 | 100103 | — | `TASK_LINK_OPENS_THE_TASK` | ?task={id} (a task notification, carried through the old /tasks address) scrolls that task's row into view on the coach's Tasks tab or the player's Your tasks and lights it once (a fade; with reduced motion a still wash until the row is used). A task that is not in the shown rows, or a value that is not an id, is ignored; completing the task or a later render never scrolls back to it. |
 
 ## 02 — Initial loading / skeleton
@@ -76,7 +76,7 @@ search or filter, so it has no filtered empty state.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 100401 | CH-10301 | `NO_EVENTS_NEED_A_REPLY` | No events need a reply |
+| 100401 | CH-10301 | `NO_EVENTS_NEED_A_REPLY` | No events this week |
 | 100402 | CH-10302 | `NO_UPDATES` | No updates |
 | 100403 | CH-10303 | `NO_TASKS` | No tasks |
 | 100404 | CH-10304 | `NO_DOCUMENTS` | No documents |
@@ -268,7 +268,7 @@ Status: DEFINED
 
 Nothing refreshes in the background: the page is as fresh as its last read. After a coach's change lands, the page reads again (101501); every date and time is resolved on the server in the team's zone.
 
-Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
+A coach's Team Hub item carries a badge too: the team's overdue tasks that a player still has to finish (due before today on the team's clock, with an assignment not completed), one head count read with the shell and not polled, so it is as fresh as the last page load or refresh; a failed read hides it and is logged. Team Hub's badge (a player's posts, open tasks and new trips; the shell's polled count) is read again at once when a
 player's Got it, task tick or untick lands, as production's hub does; a refused write leaves it alone. A player's Travel
 tab, and no other tab or opening of the page, marks travel seen once a visit (`markTravelSeen`, what production's Travel page does on a visit, now that
 `/golf/dashboard/travel` opens that tab), and the badge is read again. Opening an update marks that notification read in

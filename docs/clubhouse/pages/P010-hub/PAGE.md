@@ -75,7 +75,7 @@ and read the next trip. Both: open a tab, open an update, try a failed section a
 1. Home: what needs the viewer now. A player's replies and the post waiting on them; a coach's replies
    so far this week and how many have read the newest post.
 2. The next trip as a pass, and Updates (the bell's feed).
-3. The tabs: every announcement, every trip, the documents by folder, and the coach's task list.
+3. The tabs: every announcement, every trip, the documents by folder, and the tasks (a coach's task list with the team's progress board, a player's own).
 
 ### User should notice first
 
