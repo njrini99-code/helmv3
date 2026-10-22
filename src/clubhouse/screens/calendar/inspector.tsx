@@ -30,6 +30,7 @@ import { getAttendanceReport, markAttendance, type AttendanceMark } from '@/app/
 import { respondToEvent } from '@/app/golf/actions/calendar-events';
 import { readRsvpLockCode, rsvpLockMessage } from '@/hooks/useRSVP';
 import { Avatar } from '../../ui/Avatar';
+import { AVAILABILITY_WORD } from '../roster/format';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -540,7 +541,10 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
                     const row = (
                       <div key={pid} className="ch-in__person">
                         <Avatar name={name} size={26} />
-                        <span>{name}</span>
+                        <span>
+                          {name}
+                          {person?.availability && person.availability !== 'available' && <span className="ch-in__out"> &middot; {AVAILABILITY_WORD[person.availability]}</span>}
+                        </span>
                         {e.rsvpRequired && (
                           <Badge tone={t} dot>
                             {l}

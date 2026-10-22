@@ -3,6 +3,8 @@ import { ArrowRight, UserPlus } from 'lucide-react';
 import { Icon } from '../../ui/Icon';
 import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLatestRound, ChLeaderRow } from '../../data/home';
+import { isOut } from '../../data/availability';
+import { AVAILABILITY_WORD } from '../roster/format';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -21,8 +23,12 @@ const STATUS: Record<ChLeaderRow['status'], string> = {
   early: 'Early read',
 };
 
-/** "No rounds 9 days" outranks the form word when a player has gone quiet. */
+/** A quiet stretch means something only for a player who can play: injured or away reads as that word, in plain ink. */
+const quietFor = (p: ChLeaderRow) => !isOut(p.availability) && p.quietDays != null && p.quietDays >= QUIET_DAYS;
+
+/** "Injured" or "Away" first; then "No rounds 9 days" outranks the form word when a player has gone quiet. */
 function statusText(p: ChLeaderRow): string {
+  if (p.availability && isOut(p.availability)) return AVAILABILITY_WORD[p.availability];
   if (p.quietDays != null && p.quietDays >= QUIET_DAYS) return `No rounds ${p.quietDays} days`;
   return STATUS[p.status];
 }
@@ -30,7 +36,7 @@ function statusText(p: ChLeaderRow): string {
 /** The player peek (P003-C1) from what Home already holds: the row, and the player's newest round if it is in the latest few. */
 export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlayerPeek {
   const last = rounds.find((r) => r.playerId === p.playerId);
-  const quiet = p.quietDays != null && p.quietDays >= QUIET_DAYS;
+  const quiet = quietFor(p);
   return {
     id: p.playerId,
     name: p.name,
@@ -80,7 +86,7 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
           {name}
           <span className="ch-h-lb__meta">
             {p.classYear && <>{p.classYear} &middot; </>}
-            <span className={'ch-h-lb__status is-' + (p.quietDays != null && p.quietDays >= QUIET_DAYS ? 'quiet' : p.status)}>{statusText(p)}</span>
+            <span className={'ch-h-lb__status is-' + (isOut(p.availability) ? 'out' : quietFor(p) ? 'quiet' : p.status)}>{statusText(p)}</span>
           </span>
         </span>
       </span>

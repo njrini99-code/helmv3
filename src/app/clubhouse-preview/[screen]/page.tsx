@@ -8,6 +8,7 @@ import { PlayerHome } from '@/clubhouse/screens/home/PlayerHome';
 import { PreviewHub } from '@/clubhouse/preview/PreviewHub';
 import { PreviewRounds } from '@/clubhouse/preview/PreviewRounds';
 import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
+import { previewViewer } from '@/clubhouse/preview/viewer';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
 import { RoundReviewSkeleton, RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
@@ -557,7 +558,8 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const viewer = screen === 'home-player' || screen === 'hub-player' || screen === 'roster-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'rounds' || screen === 'classes' || screen === 'track' || screen === 'setup' || (screen === 'round' && !state?.startsWith('coach')) || screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const who = previewViewer(screen, state);
+  const viewer = who === 'theo' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : who === 'jonah' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
   const user = teams === '2' && viewer.role === 'coach' ? { ...viewer, coachTeams: [{ id: 'preview-team', name: 'Varsity', gender: 'mens' }, { id: 'preview-team-w', name: 'Varsity Women', gender: 'womens' }], canSwitchTeams: true } : viewer;
 
   return (
