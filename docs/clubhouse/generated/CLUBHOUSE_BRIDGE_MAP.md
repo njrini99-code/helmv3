@@ -109,9 +109,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
 | P002 | 5 | 1 | 1 | 15 |  | 22 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 68 |
-| P003 | 2 | 3 | 3 | 9 | 3 | 21 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 80 |
+| P003 | 2 | 3 | 3 | 9 | 3 | 22 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
-| P005 | 4 | 4 | 2 | 23 | 3 | 24 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 97 |
+| P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 37 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 101 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 135 |
@@ -353,13 +353,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30619 | CH-3008 | 06 Server / system error | `CHANGING_A_PLAYERS_STATUS_FAILS` | implemented | Changing a player's status (Active or Inactive) fails |
 | 30620 | CH-3009 | 06 Server / system error | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | implemented | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
 | 30621 | CH-3010 | 06 Server / system error | `THE_AVAILABILITY_NOTE_DOESNT_SAVE` | deprecated | Retired 2026-10-21, never shipped: the availability note |
+| 30622 | CH-3212 | 06 Server / system error | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | implemented | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |
 | 30803 |  | 08 Permission / authorization | `REFUSED_CHANGE_SHOWN_AND_UNDONE` | implemented | When the server refuses a removal, an approval, a decline or a note (not on your team, already processed, a saved round in progress, not authorized), its sentence is shown in the error toast and the screen goes back: the player stays and the dialog stays open, the request returns to its place, and the text stays in the field. |
 | 30804 |  | 08 Permission / authorization | `PLAYER_ROSTER_IS_READ_ONLY` | implemented | A player on this address gets their own team's roster as plain text: name, class year and handicap of the active members. No card or row is a link or a button (none takes focus), and nothing on the screen leads to a teammate's profile, stats or notes, or invites, exports, approves, removes or messages anyone. |
 | 30805 |  | 08 Permission / authorization | `PLAYER_ROSTER_READS_NO_COACH_DATA` | implemented | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
-| 30806 |  | 08 Permission / authorization | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | implemented | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
+| 30806 |  | 08 Permission / authorization | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | implemented | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to the roster with ?player= set to them, which on the phone opens that player's profile (30102; desktop ignores ?player= and shows the list). |
 | 30901 |  | 09 Success | `CHANGE_LANDED` | implemented | A change that lands names itself in a toast (added, declined, note saved, removed) with one success haptic; a removal also closes the dialog and the player's panel or profile. |
 | 31101 | CH-3501 | 11 Destructive | `REMOVE_FROM_TEAM` | implemented | Remove from team (row menu; on the phone, the profile's ⋯ sheet) |
 | 31102 | CH-3502 | 11 Destructive | `MARK_INACTIVE_MARK_ACTIVE` | implemented | Mark inactive / Mark active (coach only: row menu; on the phone, the profile's ⋯ sheet) |
@@ -526,6 +527,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50622 | CH-5008 | 06 Server / system error | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | implemented | Dismissing a suggested goal fails |
 | 50623 | CH-5009 | 06 Server / system error | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | implemented | A coach pauses, resumes or abandons a goal and it fails |
 | 50624 | CH-5214 | 06 Server / system error | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | implemented | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
+| 50625 | CH-5215 | 06 Server / system error | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | implemented | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
 | 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 50703 | CH-5903 | 07 Network / offline | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | implemented | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
