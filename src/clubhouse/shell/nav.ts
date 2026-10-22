@@ -24,7 +24,7 @@ export interface ChNavItem {
   href: string;
   icon: LucideIcon;
   section?: ChNavSection;
-  /** `hub`: the player's unread announcements, tasks and trips, as the current app's Team Hub badge counts them. */
+  /** `hub`: a player's unread announcements, tasks and trips, as the current app's Team Hub badge counts them; a coach's overdue tasks. */
   badge?: 'messages' | 'joinRequests' | 'hub';
 }
 
@@ -41,7 +41,7 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'calendar', label: 'Calendar', href: '/golf/dashboard/calendar', icon: CalendarDays },
   { id: 'messages', label: 'Messages', href: '/golf/dashboard/messages', icon: MessageSquare, badge: 'messages' },
   // Team Hub sits under Team, with the roster (owner, 2026-10-16).
-  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, section: 'Team' },
+  { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
   { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },

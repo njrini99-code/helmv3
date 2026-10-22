@@ -11,8 +11,9 @@ export function badgeCount(
   if (item.badge === 'messages')
     return badges.messages > 0 ? badges.messages : null;
   if (item.badge === 'hub') {
-    // The same sum as the current app's Team Hub badge (src/lib/golf/nav-registry.ts).
-    const n = badges.announcements + badges.tasks + badges.travel;
+    // A player: the same sum as the current app's Team Hub badge (src/lib/golf/nav-registry.ts). A coach's polled counts
+    // are zero here, so the sum is the shell's overdue tasks alone (read with the page, not polled).
+    const n = badges.announcements + badges.tasks + badges.travel + (shell.overdueTasks ?? 0);
     return n > 0 ? n : null;
   }
   if (item.badge === 'joinRequests')

@@ -125,12 +125,12 @@ describe('swap audit §14 aliases (D6, D8)', () => {
 describe('an old address keeps its query when it moves (the proxy hands layouts x-helm-search; 100103 for tasks)', () => {
   const TID = '6f1e2d3c-4b5a-4968-8776-5a4b3c2d1e0f';
 
-  it('a task notification opens that task: on the coach’s Tasks tab, on the player’s Team Hub', async () => {
+  it('a task notification opens that task on the Tasks tab, for a coach and a player', async () => {
     const { default: TasksLayout } = await import('@/app/golf/(dashboard)/dashboard/tasks/layout');
     search = `?task=${TID}`;
     await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks&task=${TID}`);
     session = { player: {} };
-    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?task=${TID}`);
+    await expect(TasksLayout({ children: null })).rejects.toThrow(`REDIRECT ${HUB}?tab=tasks&task=${TID}`);
   });
 
   it('with no task, or a value that is not an id, Tasks opens as before', async () => {
@@ -139,7 +139,7 @@ describe('an old address keeps its query when it moves (the proxy hands layouts 
     search = '?task=' + encodeURIComponent('x"><script>');
     await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}\\?tab=tasks$`));
     session = { player: {} };
-    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}$`));
+    await expect(TasksLayout({ children: null })).rejects.toThrow(new RegExp(`REDIRECT ${HUB}\\?tab=tasks$`));
   });
 
   it('/intelligence keeps ?player and turns view=chat into Ask; other views are dropped', async () => {

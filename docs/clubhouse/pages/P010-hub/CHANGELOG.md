@@ -24,6 +24,114 @@ Held items:     none
 
 - `hub.test.tsx`, `hub-paged-reads.test.ts`, `wiring-p010-hub.test.tsx`;
   parity on the Hub's coach fixtures in `home-coach-parity.test.tsx`.
+## 2026-10-21 — Home as widgets, not RSVPs
+
+```text
+Design package: Team Hub widgets mock (artifact 6L4BaAFz56ry5mSMAqHCne)
+PR/commit:      PR #2287 from claude/project-thread-ya6ije
+Contract IDs:   100101 reworded (Home's widgets), catalog CH-10201/10301/10303
+Actions:        none (the tiles call the writes Home already had)
+Data impact:    one coach read added to the hub load (this week's events);
+                the ledger reuses reads the loader already made
+Held items:     none
+```
+
+### Changed
+
+- Owner: "Don't center around RSVPs … more like widgets or cool interactive
+  components." Home is now a bento of tiles, each answering one question and
+  acting in place. The band and the RSVP section are gone from Home.
+- Next trip (the one dark tile): days to go, the plan as a rail (leaves,
+  stays, home), who is traveling, Edit trip for a coach; a pager steps to the
+  trip after it. With no trip ahead it counts down to the week's next event.
+- This week: seven days to step through (arrow keys too), a dot an event, gold
+  a day on the road. The chosen day lists its events; one that takes replies
+  shows "5 of 6 replied" to a coach and the reply choices to a player. Later
+  this week lists what follows, a press opening its day.
+- Waiting on (coach): one row a player with replies owed, posts not
+  acknowledged, open tasks (late in amber) and rounds in 30 days. Opens on who
+  owes the most; a heading sorts, again to turn it round; a name opens what
+  they owe by title. On a phone it is a list whose rows open.
+- Latest post: a coach sees the acknowledged count, a track and a disc for each
+  player not yet acknowledged (press one to name them); a player reads it and
+  says Got it here.
+- Tasks (coach): done, left, overdue, a track and the three soonest open tasks,
+  each opening on the Tasks tab.
+- Your queue (player): replies, posts and tasks in one list, answered in place.
+  An answered row stays, showing its answer; four show until Show all.
+- Files (player): the newest four, opened with a press. Updates as before.
+- A task link with no tab (an older notification's `?task=`) opens the Tasks
+  tab and lights the row there, since Home's tiles hold no task rows.
+
+### Verification
+
+- hub.test and hub-redesign tests moved onto the tiles; new widget tests (trip
+  pager, week keys and reply, queue, Waiting on sort and open, failed tile) and
+  rule tests (`queueOf`, `firstBusyDay`, `ledgerSorted`).
+- Dev preview in Chromium at 1440, 1100 and 390, light and dark, populated,
+  empty and failed. Gold trip text measured 2.8:1, so the words take text ink
+  and only the plane is gold; amber on the tile 5.7:1.
+
+## 2026-10-21 — Redesign: contrast, a summary strip, players' Tasks
+
+```text
+Design package: Team Hub redesign artifact (current beside proposed)
+PR/commit:      draft PR from claude/project-thread-ya6ije (frozen: no merge)
+Contract IDs:   100101 and 100102 reworded (tabs, strip, band, player Tasks)
+Actions:        none
+Data impact:    reads only: the loader leaves out rows flagged is_test
+Held items:     coach nav badge (audit par-24): new read on every shell load
+```
+
+### Changed
+
+- Diagnosis first: text contrast was already 8.7:1. What was missing was value
+  structure: the surfaces differed 1.10:1 and the hairlines 1.24:1, so nothing
+  led. Each tab now has one dark green surface (desktop) and a stronger rule
+  (`--ch-ledger-rule-strong`, 1.8:1, decorative).
+- A strip under the title says what the team is waiting on, one line; each
+  figure opens the tab it counts. Zero figures and failed reads are left out,
+  never shown as zero.
+- Home leads with a band (desktop): a trip leaving within two days, else the
+  next event that takes replies (a player's first one still owed), else the next
+  trip, else a quiet line with its next step. Replaced the same day by Home's
+  widgets (entry above).
+- Announcements: the lead post is the dark surface. Travel: the next pass is,
+  with a days-to-go count.
+- Tabs show a count when a post waits to be acknowledged or a task is late.
+  Overdue is amber (red stays for under par).
+- Tasks: a coach's board (done, left, overdue and a track) above the list; each
+  row shows "3/6" progress in place of the ring. A player now has a Tasks tab
+  (audit par-28); `/tasks` and task notification links land on `?tab=tasks` for
+  both roles.
+- A coach's Team Hub item in the sidebar and phone nav now carries a badge:
+  overdue tasks a player still has to finish (audit par-24). One head count read
+  with the shell (`countOverdueTasks`, `data/shell.ts`), no migration and no
+  polling; it hides when the read fails. See the perf note in the PR.
+- QA rows already flagged `is_test` no longer show (the "Safe to delete" post).
+  Nothing was deleted.
+
+### Why
+
+- The owner found the page flat and thin: no contrast, little detail. The fix
+  adds structure and the figures a coach or player looks for, from data the page
+  already loads.
+
+### Verification
+
+- 30 new unit tests (strip, band rules, board, player Tasks tab, countdown,
+  test-row hiding); hub, alias and wiring tests updated for the player Tasks
+  tab.
+- Dev preview (`/clubhouse-preview/hub`, `hub-player`) in Chromium at 1440, 1100
+  and 390, light and dark, every tab. WebKit is the nightly's. Contrast
+  measured: ivory on the green 11.0:1, muted on-green 6.2:1, amber on the
+  workspace 5.2:1.
+- The loading skeleton draws the loaded head's own parts (chip, title, team
+  line, the strip's row, a coach's action). Measured loaded against skeleton at
+  1440, 1100 and 390 for both roles: the head and the tabs' position agree
+  within 1px, so nothing moves on load. To make that hold, the strip is one
+  line that scrolls sideways (the clipped edge fades) and is its own row of the
+  head, so its height never depends on what it says.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 

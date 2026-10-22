@@ -228,3 +228,24 @@ keeps representative viewport/browser evidence; the complete state/opener
 ledger and review limitations are in the
 [premium audit](../../PREMIUM_AUDIT.md) and its machine evidence file.
 Captured states are not all visually approved.
+
+## Redesign — 2026-10-21
+
+Chromium (headless) against the dev preview (`/clubhouse-preview/hub` and
+`hub-player`, every `?tab=`) at 1440, 1100 and 390, light and dark: the strip,
+the Home band, the dark lead post, the dark travel pass, the task board and
+the player's Tasks tab were looked at after the change. Contrast was measured
+with a script (ivory on the green 11.0:1, muted on-green 6.2:1, amber on the
+workspace 5.2:1, strong rule 1.82:1). The loading
+skeleton was compared with the loaded page (head height and where the tabs
+start) at 1440, 1100 and 390 for both roles: within 1px. WebKit is the
+nightly's; this pass did not run it. The screenshots are attached to the pull
+request thread.
+
+## Home widgets — 2026-10-21
+
+Chromium (headless) against the dev preview at 1440, 1100 and 390, light and
+dark, populated, empty and failed, both roles: the trip tile and its pager, the
+week (day picked by press and by arrow keys), Waiting on (sorted, a row
+opened), the post discs, the tasks tile, the queue and files. WebKit was not
+run in this pass. Screenshots are in the pull request thread.
