@@ -1,5 +1,20 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — CoachHelm count line on Game detail (see P005)
+
+```text
+Design package: none (coach parity, spec D build A; P005's)
+PR/commit:      claude/coach-parity-bridges
+Contract IDs:   none (P005's)
+Actions:        none (P005's)
+Data impact:    none
+Held items:     none
+```
+
+`screens/stats/` gained `reads-line` and Game detail's count line, used by
+the player profile only (`GameDetail`, `StatsPlayer`, `StatsPlayerPhone`).
+Nothing on Team stats changed. Logged on P005.
+
 ## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
 
 ```text
