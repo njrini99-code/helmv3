@@ -45,10 +45,6 @@ Held items:     none
 
 ### Changed
 
-- The player by leg grid moved out of `loadTeamStats` into an exported
-  `teamGrid`, and `sgLegs` is exported, so coach Home reads the same four legs
-  the Stats page does. Output is unchanged; the Stats tests pin it.
-
 - Each leg cell draws a bar from a strong zero line to the player's value on the
   grid's one scale (loss left in amber, gain right in green), with a 2px tick at
   the team median, in place of the 4px dot on a hairline. A key above the grid
