@@ -17,6 +17,54 @@ with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
 and verdict. The team page is unchanged. See the P005 entry of the same
 date.
 
+## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
+
+```text
+Design package: none (owner, 2026-10-21: "these sliders are hard to read")
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none
+Actions:        none
+Data impact:    none (each grid row gains `last`, the newest scored round in the
+                window, from the rounds the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- Each leg cell draws a bar from a strong zero line to the player's value on the
+  grid's one scale (loss left in amber, gain right in green), with a 2px tick at
+  the team median, in place of the 4px dot on a hairline. A key above the grid
+  names the bars, the tick and the scale ("Full bar is ±N strokes"). Contrast is
+  computed from the tokens by a test: bars, zero line and tick hold 3:1 and the
+  numbers 4.5:1 on the cell, the chosen column, the worst-loss wash and both,
+  light and dark.
+- The player hover card on the grid read "Last round —" for every player: the
+  grid rows never carried a last round. They now do, and the card shows it.
+- On the grid the hover card opens under the player's name cell and is never
+  wider than it (`within` on `PlayerPeek`; up to the usual 328px), so it does
+  not cover the numbers or bars beside it, even in the 200px player column the
+  grid allows at its 760px minimum. In a narrow cell its keys wrap onto a
+  second row. Other peeks are unchanged.
+- Preview: `/clubhouse-preview/stats?state=demo` shows the Demo University
+  fixture.
+- Missing-work audit rows (par-17, chs-56, par-19, doc-13):
+  - A coach's player Stats page has a CoachHelm button next to Message and
+    Schedule 1:1 (`coachhelm?player=`), the same page Roster's View insights
+    opens.
+  - Each leg figure on the team grid opens that player's Game detail on the
+    matching section (`?player=&tab=game#gm-tee`, `-approach`, `-short`,
+    `-putting`); the name still opens the profile. On a player's Overview, a
+    pinned leg offers "See approach in game detail" (decisions Q12). On a
+    desktop the page scrolls to the section once the Game detail tab is in; on
+    the phone, which draws one section at a time, the address picks that
+    section and scrolls to it (see P005).
+  - The goals empty state no longer sends a player to a page that loops back
+    ("Goals you and your coach set show here"; a coach reads "{name} has no
+    goals yet"). Setting goals is still Fairway-only.
+  - Team stats already printed (the audit row missed `@media print` at the foot
+    of stats.css); the leg grid's 760px minimum cut Total and Trend off the
+    sheet, so it now narrows on paper. The new key prints; the cell links do not.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text

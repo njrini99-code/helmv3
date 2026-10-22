@@ -1540,18 +1540,18 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130739 | CH-13970 | 07 Network / offline | `COACH_PLAYER_CORRECTION_CHIPS` | implemented | Coach, player: correction chips |
 | 130740 | CH-13971 | 07 Network / offline | `COACH_PLAYER_ANSWER_RECORDED` | implemented | Coach, player: answer recorded |
 | 130741 | CH-13972 | 07 Network / offline | `COACH_READ_HELD_BACK` | implemented | Coach: read held back |
-| 130742 | CH-13932 | 07 Network / offline | `COACH_THE_MONDAY_BRIEF` | implemented | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
-| 130743 | CH-13933 | 07 Network / offline | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | implemented | Monday brief: a player read at Likely or above |
-| 130744 | CH-13934 | 07 Network / offline | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | implemented | Monday brief: the team pattern row |
-| 130745 | CH-13935 | 07 Network / offline | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | implemented | Monday brief: nothing to raise this week |
+| 130742 | CH-13940 | 07 Network / offline | `COACH_PLAYER_THE_PATH_LINE` | implemented | Coach, player: the path line (design call D2) |
+| 130743 | CH-13941 | 07 Network / offline | `COACH_SINCE_YOU_WERE_LAST_HERE` | implemented | Coach: since you were last here (design call D4) |
+| 130744 | CH-13942 | 07 Network / offline | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | implemented | Coach: reads rated Not enough yet are held back |
+| 130745 | CH-13943 | 07 Network / offline | `COACH_EVERY_READ_OF_A_PLAYER_IS` | implemented | Coach: every read of a player is Not enough yet |
 | 130746 | CH-13936 | 07 Network / offline | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | implemented | Monday brief: CoachHelm is off for the team |
 | 130747 | CH-13937 | 07 Network / offline | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | implemented | Monday brief: a read it is made from failed |
 | 130748 | CH-13938 | 07 Network / offline | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | implemented | Coach board: the link to the Monday brief |
 | 130749 | CH-13939 | 07 Network / offline | `MONDAY_BRIEF_THE_COUNTS_LINE` | implemented | Monday brief: the counts line |
-| 130750 | CH-13940 | 07 Network / offline | `COACH_PLAYER_THE_PATH_LINE` | implemented | Coach, player: the path line (design call D2) |
-| 130751 | CH-13941 | 07 Network / offline | `COACH_SINCE_YOU_WERE_LAST_HERE` | implemented | Coach: since you were last here (design call D4) |
-| 130752 | CH-13942 | 07 Network / offline | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | implemented | Coach: reads rated Not enough yet are held back |
-| 130753 | CH-13943 | 07 Network / offline | `COACH_EVERY_READ_OF_A_PLAYER_IS` | implemented | Coach: every read of a player is Not enough yet |
+| 130750 | CH-13932 | 07 Network / offline | `COACH_THE_MONDAY_BRIEF` | implemented | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130751 | CH-13933 | 07 Network / offline | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | implemented | Monday brief: a player read at Likely or above |
+| 130752 | CH-13934 | 07 Network / offline | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | implemented | Monday brief: the team pattern row |
+| 130753 | CH-13935 | 07 Network / offline | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | implemented | Monday brief: nothing to raise this week |
 | 130754 | CH-13944 | 07 Network / offline | `RECHECK_READS` | implemented | Re-check reads (coach) |
 | 130755 | CH-13945 | 07 Network / offline | `RECHECK_LANDS` | implemented | Re-check lands |
 | 130756 | CH-13996 | 07 Network / offline | `DEEP_DIVE_WHERE_IT_HAPPENED` | implemented | Deep dive: where it happened (chs-38) |

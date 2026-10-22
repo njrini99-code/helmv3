@@ -41,6 +41,7 @@ import {
   PREVIEW_PLAYER_NOMATCH,
   PREVIEW_TEAM_EARLY_FILTER,
   PREVIEW_TEAM_FILTERED,
+  PREVIEW_TEAM_DEMO,
   PREVIEW_TEAM_LAST20,
   PREVIEW_TEAM_NINES,
   PREVIEW_TEAM_NOMATCH,
@@ -150,7 +151,7 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
  *   /clubhouse-preview/roster ?state=empty | failed | partial | loading
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
- *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
+ *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
  *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
@@ -341,6 +342,8 @@ export default async function ClubhousePreview({
           <StatsTeam data={PREVIEW_TEAM_NINES} />
         ) : state === 'last20' ? (
           <StatsTeam data={PREVIEW_TEAM_LAST20} />
+        ) : state === 'demo' ? (
+          <StatsTeam data={PREVIEW_TEAM_DEMO} />
         ) : state === 'crash' ? (
           // Malformed sections, so every SectionBoundary (CH-4204 to CH-4208) catches and reports once.
           <StatsTeam data={{ ...PREVIEW_TEAM_STATS, figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }} />
@@ -366,7 +369,7 @@ export default async function ClubhousePreview({
         ) : state === 'loops-self' ? (
           <StatsPlayer data={PREVIEW_PLAYER_LOOPS_SELF} coachId={null} />
         ) : (
-          <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} />
+          <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? { ...PREVIEW_PLAYER, viewer: 'player', nav: null } : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} initialTab={tab} />
         ),
     },
     calendar: {

@@ -1,5 +1,13 @@
 # Clubhouse changelog
 
+## 2026-10-21 — A fitted hover card is never wider than its cell
+
+`PeekTarget` with `within` (the team stats grid's player cell) opened no narrower
+than 288px, so in a cell under 288px (the grid allows 200px) the card spilled over
+the next column and covered the figures it was fitted to protect. It is now the
+cell's width up to 328px (`hoverCardWidth` in `ui/Peek.tsx`), its keys wrap in a
+narrow cell and its text wraps (`styles/ui.css`, `.ch-hovercard--fit`).
+
 ## 2026-10-21 — Component catalog stops recording CSS line numbers
 
 ```text

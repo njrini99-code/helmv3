@@ -24,6 +24,26 @@ after the coach. An area with no prescription, a database without the
 columns and the flag off draw the focus area exactly as before. Preview:
 `/clubhouse-preview/player?state=loops|loops-self`.
 
+## 2026-10-21 — Leg links open the right Game detail section on the phone
+
+```text
+Design package: none (review fix, PR #2281)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Fixed
+
+- On the phone, `?tab=game#gm-approach` (and `#gm-short`, `#gm-putting`, `#gm-tee`,
+  `#gm-scoring`) from the team grid's leg figures now opens that section of Game
+  detail and scrolls to it. The phone draws only the section chosen in the chips
+  (Scoring by default), so the scroll found nothing and gave up. Game detail reads
+  the hash itself on the phone, and follows it if it changes while the page is open.
+  A hash that names no section changes nothing. Desktop is unchanged.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text
