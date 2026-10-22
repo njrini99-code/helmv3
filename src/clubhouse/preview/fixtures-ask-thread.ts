@@ -111,6 +111,23 @@ export const ASK_EV_FAILED = envelope({ summary: 'Could not read rounds.', cover
 
 export const ASK_EV_EMPTY = envelope({ summary: 'No open signals for Theo Marchetti.', coverage: 'empty', coverage_note: 'No open signals for Theo Marchetti right now.' });
 
+/** The open-signals tool for one player (`get_player_insights`): the reads an answer names, each opening the player's Deep dive. */
+const readsFor = (playerId: string, name: string) =>
+  envelope({
+    summary: `3 open signals for ${name}.`,
+    detail: {
+      player: { player_id: playerId, name },
+      insights: [
+        { insight_id: 'in-slope', type: 'weakness', category: 'putting', title: 'Downhill putts, 4 to 6 feet', content: 'Makes 41% downhill against 74% uphill.', metric_label: 'Downhill make rate', value_display: '41%', created_at: '2026-09-28T12:00:00Z' },
+        { insight_id: 'in-pen', type: 'weakness', category: 'course_management', title: 'Penalties off the tee', content: 'About one penalty a round.', metric_label: 'Penalties per round', value_display: '1.1', created_at: '2026-09-27T12:00:00Z' },
+        { insight_id: 'in-app', type: 'strength', category: 'approach', title: 'Approach from 125 to 175 yards', content: 'Finishes inside the Tour’s proximity.', metric_label: 'Proximity, 125–175 yd', value_display: '27 ft', created_at: '2026-09-26T12:00:00Z' },
+      ],
+    },
+  });
+export const ASK_EV_READS = readsFor('p-jonah', 'Jonah Okafor');
+/** The same reads for a player who is not on this coach's team (an id the roster does not hold): drawn, never linked. */
+export const ASK_EV_READS_OTHER = readsFor('p-not-on-team', 'Cole Avery');
+
 const user = (id: string, text: string): UIMessage => ({ id, role: 'user', parts: [{ type: 'text', text }] }) as unknown as UIMessage;
 const assistant = (id: string, parts: unknown[]): UIMessage => ({ id, role: 'assistant', parts }) as unknown as UIMessage;
 const step = (n: number, label: string, tool = 'get_team_overview') => ({ type: 'data-progress', id: `progress-${n}`, data: { label, tool } });
@@ -254,6 +271,17 @@ export const ASK_MSGS_LONG: UIMessage[] = [
   assistant('a5', [text('Anytime.')]),
 ];
 
+/** An answer that names a player's reads (CH-13914): each opens that player's Deep dive on the coach Player page. */
+export const ASK_MSGS_READS: UIMessage[] = [
+  user('u1', 'What should Jonah work on first?'),
+  assistant('a1', [step(1, 'Reading open signals', 'get_player_insights'), ev('reads', ASK_EV_READS, 'get_player_insights'), text('Start with **downhill putts from 4 to 6 feet**: it is the read that costs Jonah Okafor the most. Penalties off the tee are next.')]),
+];
+/** The same answer about a player not on the team: the reads are drawn as rows with no link. */
+export const ASK_MSGS_READS_OTHER: UIMessage[] = [
+  user('u1', 'What should Cole work on first?'),
+  assistant('a1', [step(1, 'Reading open signals', 'get_player_insights'), ev('reads', ASK_EV_READS_OTHER, 'get_player_insights'), text('Start with **downhill putts from 4 to 6 feet**, then penalties off the tee.')]),
+];
+
 export const ASK_FOCUS_JONAH: EvidenceFocus = { messageId: 'a2', key: ASK_PROPOSAL.idempotency_key, label: 'Jonah Okafor, downhill putts, 4 to 6 feet', playerId: 'p-jonah' };
 
 /** The sentences a failed answer shows (describeChatError on what the route sends). */
@@ -280,6 +308,8 @@ export const ASK_THREAD_STATES: Record<string, { messages: UIMessage[]; busy?: b
   readfail: { messages: ASK_MSGS_READFAIL },
   partial: { messages: ASK_MSGS_PARTIAL },
   long: { messages: ASK_MSGS_LONG },
+  reads: { messages: ASK_MSGS_READS },
+  readsother: { messages: ASK_MSGS_READS_OTHER },
   error: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'rate' },
   errorfault: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'fault' },
   errorbudget: { messages: [user('u1', 'Who should play the qualifier on Oct 6?')], error: 'budget' },

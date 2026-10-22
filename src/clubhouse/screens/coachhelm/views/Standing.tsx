@@ -2,10 +2,11 @@
 
 import { ArrowRight, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ladderHeadlineFor, type ChLadderRow } from '../../../data/coachhelm-ladder-shape';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
-import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
+import type { ChGameLoad } from '../../../data/coachhelm-profile-shape';
+import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, STANDING_GAME_ID, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { Button } from '../../../ui/Button';
@@ -15,9 +16,23 @@ import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
+import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';
 
-const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team.';
+const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team, and how you play.';
+
+/**
+ * `?view=profile` (Game profile's old address) opens Standing at "How you play" (CH-13913): once, as the page opens, with no
+ * animation (a landing, not a move the person made). Only when the section is drawn; nothing happens on any other address.
+ */
+function useLandOnGame(at: 'game' | undefined) {
+  // A passive effect, keyed by the address alone: it runs after the shell's own layout-effect reset to the top (RouteFrame,
+  // CH-1904), so the landing is the last word, and a re-render on the same address never moves the page again.
+  useEffect(() => {
+    if (at !== 'game') return;
+    document.getElementById(STANDING_GAME_ID)?.scrollIntoView?.({ block: 'start' });
+  }, [at]);
+}
 
 /** The page's own words for whose page it is (spec A): the player's, as they always were, or a coach's about the player by first name. */
 function wordsFor(voice: ChViewVoice) {
@@ -267,9 +282,13 @@ function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoic
  *
  * `voice`: a coach's Standing of one player (spec A) is the same page about the player by first name, against "the team average",
  * with no Start a round, and a way from each stat with an open read to that read in the Deep dive.
+ *
+ * `game`: "How you play", the Game profile folded in as Standing's last section (CH-13915), read on its own beside the rows; absent,
+ * the section is not drawn. `at`: `game` when the address was Game profile's (`?view=profile`), which opens the page there.
  */
-export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChStanding>; voice?: ChViewVoice }) {
+export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChViewLoad<ChStanding>; voice?: ChViewVoice; game?: ChGameLoad; at?: 'game' }) {
   const phone = useChPhone();
+  useLandOnGame(at);
   const coach = voice.role === 'coach' ? voice : null;
   const startHref = coach ? null : coachHelmLinks.startRound();
   const f = coach?.first;
@@ -320,6 +339,8 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
               ) : undefined
             }
           />
+          {/* With no stats yet the page is its empty state; how they play is drawn under it only once a measure has a read. */}
+          {game?.status === 'ready' && game.data.state !== 'empty' && <HowYouPlay load={game} voice={voice} />}
         </>
       ) : (
         <SectionBoundary surface="coachhelm.standing" label={w.label} code="CH-13204">
@@ -366,24 +387,19 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
           <p className="ch-hl-note">
             {f ? 'Ranks come from the team’s overnight refresh and use the teammates who have the stat.' : 'Ranks come from your team’s refresh overnight and use the teammates who have the stat.'} The Tour mark is the Tour’s value for the same stat; where it is not comparable, the row says so and draws none.
           </p>
+          {game && <HowYouPlay load={game} voice={voice} />}
           {f ? (
             <KeepReading
               id="ch-hs-next-t"
               title={`Also for ${f}`}
-              line={`This is where ${f} stands. The next two say how ${f} plays, and what is behind the biggest gaps.`}
-              items={[
-                { href: helmViewHref('profile', voice), title: 'Game profile', note: `How ${f} plays` },
-                { href: helmViewHref('deep-dive', voice), title: 'Deep dive', note: `The insights behind ${f}’s biggest gaps` },
-              ]}
+              line={`This is where ${f} stands and how ${f} plays. The Deep dive says what is behind the biggest gaps.`}
+              items={[{ href: helmViewHref('deep-dive', voice), title: 'Deep dive', note: `The insights behind ${f}’s biggest gaps` }]}
             />
           ) : (
             <KeepReading
               id="ch-hs-next-t"
-              line="This is where you stand. The next two say how you play, and what is behind your biggest gaps."
-              items={[
-                { href: PLAYER_HELM_HREF.profile, title: 'Game profile', note: 'How you play, in your own words' },
-                { href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind your biggest gaps' },
-              ]}
+              line="This is where you stand and how you play. The Deep dive says what is behind your biggest gaps."
+              items={[{ href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind your biggest gaps' }]}
             />
           )}
         </SectionBoundary>
