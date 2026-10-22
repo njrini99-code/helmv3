@@ -75,9 +75,9 @@ rules above and rule 10 of `PROJECT_INSTRUCTIONS.md` stop.
 Still open: #2287 (Team Hub redesign, par-24, par-28). Held out: #2299
 (coach Brief, par-05) needs a rebase on `main` and fresh Bridge IDs and CH
 codes (reserved below). Parked drafts: #2289 (Classes import race, held
-migration), #2285 (announcement acknowledgements policy, held migrations),
-#2217 (iOS edge swipe). Not in a train: #2309 (v3 CoachHelm copy names no
-clubs); #2313 (the same for v2 copy) has landed.
+migration), #2285 (announcement acknowledgements policy, held migrations)
+and #2217 (iOS edge swipe). Not in a train: #2309 (v3 CoachHelm copy names
+no clubs); #2313 (the same for v2 copy) has landed.
 
 ## The queue
 
