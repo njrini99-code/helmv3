@@ -426,4 +426,3 @@ describe('short_side_scrambling_chain', () => {
     expect(c.evidence.strokes_impact).toBeLessThanOrEqual(1.5);
   });
 });
-
