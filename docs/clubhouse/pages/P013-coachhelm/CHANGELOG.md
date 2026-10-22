@@ -1,44 +1,5 @@
 # P013 — CoachHelm: changelog
 
-## 2026-10-21 — Coach: the Monday brief (flag off)
-
-```text
-Design package: none (supercharge 04 section 4 and Layout 1; design call
-                "Monday before practice")
-PR/commit:      see git log (claude/coachhelm-monday-brief)
-Contract IDs:   CH-13932 to CH-13939
-Actions:        Open (a link to the player on the board); none written
-Data impact:    none written; reads the visible v3 reads, the roster's
-                countable rounds and the Slice 7b team pattern
-Held items:     none
-## 2026-10-21 — Coach voice from the stored coach copy (chs-40)
-
-```text
-Design package: design call, "Coach voice vs player voice" (D1)
-PR/commit:      see git log (claude/coachhelm-coach-voice)
-Contract IDs:   none (CH-13940 and the card's title and claim, reworded)
-Actions:        none changed
-Data impact:    none (reads evidence.coach_copy, which the rows store)
-## 2026-10-21 — Coach can re-check the team's reads
-
-```text
-Design package: round 3B brief (coordinator, under the owner's delegation)
-PR/commit:      see git log (claude/coachhelm-recheck-team)
-Contract IDs:   CH-13006, CH-13007, CH-13406, CH-13705, CH-13944,
-                CH-13945 (new)
-Actions:        ACT-P013-RECHECK-READS (new)
-Data impact:    none new (the existing refreshTeamAnalysisAsCoach writes)
-## 2026-10-21 — Deep dive: one read ledger, cleared reads kept, where it happened
-
-```text
-Design package: design call (clubhouse-coachhelm-design-call.md: Player Deep
-                dive, States, Ranking and limits, D6)
-PR/commit:      see git log (claude/coachhelm-deepdive-ledger)
-Contract IDs:   CH-13996 (new); CH-13890, CH-13992, CH-13282, CH-13480
-                (changed)
-Actions:        none (read only)
-Data impact:    none written; the rounds the example holes are on are read in
-                the same golf_rounds read as the rounds behind the reads
 ## 2026-10-21 — Standing: Where strokes go replaces Most to gain
 
 ```text
@@ -50,6 +11,87 @@ Contract IDs:   CH-13273, CH-13374 (new); CH-13271, CH-13371, CH-13470,
 Actions:        none (read only)
 Data impact:    none written; reads the Deep dive's own feed of the player's
                 reads (no exposure recorded) beside the standing
+
+## 2026-10-21 — Deep dive: one read ledger, cleared reads kept, where it happened
+
+```text
+Design package: design call (clubhouse-coachhelm-design-call.md: Player Deep
+                dive, States, Ranking and limits, D6)
+PR/commit:      see git log (claude/coachhelm-deepdive-ledger)
+Contract IDs:   CH-13996 (new); CH-13890, CH-13992, CH-13282, CH-13480
+                (changed)
+Actions:        none (read only)
+Data impact:    none written; the rounds the example holes are on are read in
+                the same golf_rounds read as the rounds behind the reads
+Held items:     none
+```
+
+### Changed
+
+- The summary is one sentence ("CoachHelm has 5 reads on your game, 2 of
+  them in your plan."); the Needs work, What's working and In your plan
+  tiles are gone. With plans that did not load the plan clause is left out.
+- Needs work and What's working are replaced by one flush read ledger
+  grouped by area (Off the tee, Approach, Around the green, Putting, Course
+  and scoring). Each row has its stance word and its firmness word: the claim
+  ladder's word for a coach with the support pass on, else the confidence
+  word (the player's feed drops the ladder, so a player sees Solid, Early or
+  Thin read). An out-of-date read keeps its row with the firmness word greyed.
+- A read the recheck cleared stays in its area as a line ("Cleared Oct 12",
+  the read, the recheck's numbers) instead of a Cleared section beside the
+  list; the newest three show, then "N more cleared" shows the rest.
+
+### Added
+
+- "Where it happened" in the read (CH-13996): up to five example holes, each
+  with its round's day and course, the hole and the counted path in shot-type
+  words, read only from a stored counted sequence (`evidence.cause` in the
+  counted state, a shot-sequence basis, or an insight angle's sequence that
+  meets the Observed floors). Without one the section is not drawn.
+- Preview: `?view=deep-dive&state=cleared`, `state=manycleared` and
+  `state=holes&insight=in-pen`.
+
+### Why
+
+- Design call, Player Deep dive: three count tiles before the claim, and a
+  rail of groups as a panel, do with more containers what one ledger does;
+  a cleared read must not disappear without trace (D6); example holes are
+  the evidence list for a counted path.
+
+## 2026-10-21 — Coach can re-check the team's reads
+
+```text
+Design package: round 3B brief (coordinator, under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-recheck-team)
+Contract IDs:   CH-13006, CH-13007, CH-13406, CH-13705, CH-13944,
+                CH-13945 (new)
+Actions:        ACT-P013-RECHECK-READS (new)
+Data impact:    none new (the existing refreshTeamAnalysisAsCoach writes)
+Held items:     none
+```
+
+### Changed
+
+- The coach Board has one quiet secondary action under it, "Re-check
+  reads", that re-runs CoachHelm for every active player on the team: the
+  action Fairway's Triage desk "Scan team" calls, which Clubhouse coaches
+  could not reach (CH-13944). No team or player id is sent.
+- Running: "Re-checking 5 players…" (CH-13406). Done: "Re-checked 5
+  players · 3 new reads", then the board reads its data again (CH-13945).
+  Rate-limited: the action's own words (CH-13007). Failed or offline: one
+  line, the board as it was (CH-13006). Outcome haptics only (CH-13705).
+- Not drawn with CoachHelm off or no players; players never see it.
+  Preview: `?state=recheck-running`, `recheck-done`, `recheck-quiet`,
+  `recheck-ratelimited`, `recheck-failed` (tap the button).
+
+## 2026-10-21 — Coach voice from the stored coach copy (chs-40)
+
+```text
+Design package: design call, "Coach voice vs player voice" (D1)
+PR/commit:      see git log (claude/coachhelm-coach-voice)
+Contract IDs:   none (CH-13940 and the card's title and claim, reworded)
+Actions:        none changed
+Data impact:    none (reads evidence.coach_copy, which the rows store)
 Held items:     none
 ```
 
@@ -63,104 +105,18 @@ Held items:     none
   differ from the player's text is not used.
 - The focus area a coach assigns is still saved in the player's own words.
   Player surfaces are unchanged. Preview: `?state=coachcopy`.
-- The coach Board has one quiet secondary action under it, "Re-check
-  reads", that re-runs CoachHelm for every active player on the team: the
-  action Fairway's Triage desk "Scan team" calls, which Clubhouse coaches
-  could not reach (CH-13944). No team or player id is sent.
-- Running: "Re-checking 5 players…" (CH-13406). Done: "Re-checked 5
-  players · 3 new reads", then the board reads its data again (CH-13945).
-  Rate-limited: the action's own words (CH-13007). Failed or offline: one
-  line, the board as it was (CH-13006). Outcome haptics only (CH-13705).
-- Not drawn with CoachHelm off or no players; players never see it.
-  Preview: `?state=recheck-running`, `recheck-done`, `recheck-quiet`,
-  `recheck-ratelimited`, `recheck-failed` (tap the button).
 
-## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
+## 2026-10-21 — Coach: the Monday brief (flag off)
 
 ```text
-Design package: round 2C (coordinator decision under the owner's delegation)
-PR/commit:      see git log (claude/coachhelm-board-decision)
-Contract IDs:   CH-13942, CH-13943 (new)
-Actions:        none changed
-Data impact:    none (reads only the ladder the support pass stores)
+Design package: none (supercharge 04 section 4 and Layout 1; design call
+                "Monday before practice")
+PR/commit:      see git log (claude/coachhelm-monday-brief)
+Contract IDs:   CH-13932 to CH-13939
+Actions:        Open (a link to the player on the board); none written
+Data impact:    none written; reads the visible v3 reads, the roster's
+                countable rounds and the Slice 7b team pattern
 Held items:     none
-```
-
-### Changed
-
-- With `coachhelm_support_v1` on, the coach Board shows only reads at
-  Working hypothesis or firmer. Reads rated Not enough yet are one collapsed
-  line under the board, "Not enough yet (N)", that opens in place to each
-  read with its Watching count-down (CH-13942).
-- A ranked head rated Not enough yet gives way to the player's firmest other
-  read. A player all of whose reads are held back is a quiet By player row,
-  "Not enough yet" (CH-13943), not a card and not "No reads yet".
-- Flag off: unchanged. Player surfaces: unchanged. Preview:
-  `?state=notenough`.
-
-## 2026-10-21 — Coach Board leads with the decision (design call D2, D4)
-
-```text
-Design package: design call D2, D4, Board spec, path line copy tables, §7
-PR/commit:      see git log (claude/coachhelm-board-decision)
-Contract IDs:   CH-13940, CH-13941 (new); CH-13203, CH-13206, CH-13309,
-                CH-13310, CH-13405 (reworded); CH-13223, CH-13226,
-                CH-13325 (retired)
-Actions:        none changed
-Data impact:    none (reads only what the rows already store)
-Held items:     none
-```
-
-### Changed
-
-- The program pulse block is gone from the coach Board. The header keeps its
-  one sentence and adds a collapsed "Since you were last here" line that
-  opens up to three items, flush (CH-13941). Its loading, failed, gap and
-  empty states are lines in the same place. Nothing sits between the header
-  and By player; Team patterns and the partial notice moved under the board.
-- The card's second line is the path line (CH-13940): what was seen · count
-  of denominator · rounds · firmness word, from the engine's stored cause, or
-  the symptom and "Not yet traced shot by shot". A stored narrowing adds its
-  steps as chips. The placeholder cause is never drawn, on any line.
-- The priority pill, the three-bar meter, the gauge and the drill well are
-  cut from the card. The eyebrow says the stance in words only when it is
-  news (Priority, Working, Assigned, Acknowledged, Out of date, Note); the
-  evidence is a ledger of flush rows; This week is flush under it.
-- A player with no read yet is a By player row, "No reads yet", instead of
-  the footer under the card (CH-13310).
-- Ask's greeting no longer draws the findings block; it keeps the openers
-  and the line saying who the answers cover.
-- The hero names the part of the round that loses the most against the Tour,
-  once, with no number ("Your approach shots cost you the most strokes
-  against the Tour"). With no losing part it keeps the old count headline.
-- "Most to gain" is gone. Under the hero, "Where strokes go": four flush rows
-  (Off the tee, Approach, Around the green, Putting), each the strokes a round
-  against the Tour from the player's strokes-gained rows, two decimals with a
-  true minus, a thin bar against the largest (losses amber, gains green).
-- "Because" opens the open reads in that part in place (one row at a time,
-  height and opacity on the base duration), each with its firmness words
-  ("Solid read · Counted") and the counted sequence or why it is not traced
-  yet, linking to the read in the Deep dive.
-- A part with no figure says why in words (CH-13374). Reads that did not load
-  are said once under the ladder, and nothing opens (CH-13273). That includes
-  the team, Tour and newest-round lookups behind the reads: failing, they fail
-  the reads rather than draw them against no Tour or as current.
-- The reads behind "Because" are the ones the Deep dive delivers: the ladder
-  asks the Deep dive's feed (same ranking, feedback, folding and 30-read limit,
-  recording nothing as shown), so no link opens to a read the Deep dive does
-  not draw.
-- The Strokes gained group no longer draws the four parts of the round (the
-  ladder draws them; no number twice on one screen). It keeps Strokes gained:
-  total, and a group left with nothing is not drawn. The other groups with
-  You / Tour / Team are unchanged, and the hero's counts still include the
-  four. The loading shape follows the shorter card.
-- Preview: `/clubhouse-preview/coachhelm-views?view=standing` with
-  `&state=thin` and `&state=readsfailed`.
-
-### Why
-
-- The design call: the hero, Most to gain and the group rows drew the same top
-  gap three times on one screen.
 
 ## 2026-10-21 — Coach Board holds back reads rated Not enough yet (flag)
 
@@ -256,35 +212,6 @@ Held items:     20261020121000_golf_coachhelm_corrections.sql
 
 - `screens/coachhelm/__tests__/corrections.test.tsx`.
 - Phone screenshots (390 × 844), light and dark, of the preview states.
-- The summary is one sentence ("CoachHelm has 5 reads on your game, 2 of
-  them in your plan."); the Needs work, What's working and In your plan
-  tiles are gone. With plans that did not load the plan clause is left out.
-- Needs work and What's working are replaced by one flush read ledger
-  grouped by area (Off the tee, Approach, Around the green, Putting, Course
-  and scoring). Each row has its stance word and its firmness word: the claim
-  ladder's word for a coach with the support pass on, else the confidence
-  word (the player's feed drops the ladder, so a player sees Solid, Early or
-  Thin read). An out-of-date read keeps its row with the firmness word greyed.
-- A read the recheck cleared stays in its area as a line ("Cleared Oct 12",
-  the read, the recheck's numbers) instead of a Cleared section beside the
-  list; the newest three show, then "N more cleared" shows the rest.
-
-### Added
-
-- "Where it happened" in the read (CH-13996): up to five example holes, each
-  with its round's day and course, the hole and the counted path in shot-type
-  words, read only from a stored counted sequence (`evidence.cause` in the
-  counted state, a shot-sequence basis, or an insight angle's sequence that
-  meets the Observed floors). Without one the section is not drawn.
-- Preview: `?view=deep-dive&state=cleared`, `state=manycleared` and
-  `state=holes&insight=in-pen`.
-
-### Why
-
-- Design call, Player Deep dive: three count tiles before the claim, and a
-  rail of groups as a panel, do with more containers what one ledger does;
-  a cleared read must not disappear without trace (D6); example holes are
-  the evidence list for a counted path.
 
 ## 2026-10-21 — useHydrated moved to the shared lib
 
