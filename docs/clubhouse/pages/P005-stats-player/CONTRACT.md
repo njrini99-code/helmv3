@@ -212,6 +212,7 @@ that fails to render at all is the shell's route error view (10603 to 10607).
 | 50622 | CH-5008 | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | Dismissing a suggested goal fails |
 | 50623 | CH-5009 | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | A coach pauses, resumes or abandons a goal and it fails |
 | 50624 | CH-5214 | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
+| 50625 | CH-5215 | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
 
 ## 07 — Network / offline
 
