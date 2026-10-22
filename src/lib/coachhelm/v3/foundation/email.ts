@@ -61,6 +61,12 @@ export interface SendEmailResult {
   delivered: boolean;
   id?: string;
   error?: string;
+  /**
+   * Not delivered on purpose: the kill switch, no API key, or Resend
+   * answering an idempotent replay. Any other undelivered result is a real
+   * failure the caller should count.
+   */
+  suppressed?: boolean;
 }
 
 /**
@@ -78,7 +84,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     source: 'coachhelm/v3/foundation/email.sendEmail',
   });
   if (!gate.allowed) {
-    return { delivered: false, error: gate.reason };
+    return { delivered: false, error: gate.reason, suppressed: true };
   }
 
   const client = getEmailClient();
@@ -86,6 +92,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     return {
       delivered: false,
       error: 'RESEND_API_KEY not configured — email not sent',
+      suppressed: true,
     };
   }
 
@@ -111,7 +118,8 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined,
     );
     if (error) {
-      return { delivered: false, error: error.message };
+      const idempotent = /idempot/i.test(`${(error as { name?: string }).name ?? ''} ${error.message}`);
+      return { delivered: false, error: error.message, ...(idempotent ? { suppressed: true } : {}) };
     }
     return { delivered: true, id: data?.id };
   } catch (err) {

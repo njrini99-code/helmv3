@@ -16095,6 +16095,94 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130746,
+    "page": "P013",
+    "category": 7,
+    "item": 46,
+    "name": "MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE",
+    "chCode": "CH-13936",
+    "meaning": "Monday brief: CoachHelm is off for the team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130747,
+    "page": "P013",
+    "category": 7,
+    "item": 47,
+    "name": "MONDAY_BRIEF_A_READ_IT_IS_MADE",
+    "chCode": "CH-13937",
+    "meaning": "Monday brief: a read it is made from failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130748,
+    "page": "P013",
+    "category": 7,
+    "item": 48,
+    "name": "COACH_BOARD_THE_LINK_TO_THE_MONDAY",
+    "chCode": "CH-13938",
+    "meaning": "Coach board: the link to the Monday brief",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130749,
+    "page": "P013",
+    "category": 7,
+    "item": 49,
+    "name": "MONDAY_BRIEF_THE_COUNTS_LINE",
+    "chCode": "CH-13939",
+    "meaning": "Monday brief: the counts line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130750,
+    "page": "P013",
+    "category": 7,
+    "item": 50,
+    "name": "COACH_THE_MONDAY_BRIEF",
+    "chCode": "CH-13932",
+    "meaning": "Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130751,
+    "page": "P013",
+    "category": 7,
+    "item": 51,
+    "name": "MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY",
+    "chCode": "CH-13933",
+    "meaning": "Monday brief: a player read at Likely or above",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130752,
+    "page": "P013",
+    "category": 7,
+    "item": 52,
+    "name": "MONDAY_BRIEF_THE_TEAM_PATTERN_ROW",
+    "chCode": "CH-13934",
+    "meaning": "Monday brief: the team pattern row",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130753,
+    "page": "P013",
+    "category": 7,
+    "item": 53,
+    "name": "MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK",
+    "chCode": "CH-13935",
+    "meaning": "Monday brief: nothing to raise this week",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,

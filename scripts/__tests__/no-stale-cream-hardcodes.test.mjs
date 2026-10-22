@@ -73,6 +73,7 @@ const ALLOWLIST = new Set([
   'src/lib/email/team-invite.ts',
   'src/lib/notifications/email.ts',
   'src/lib/coachhelm/v3/recap/template.ts',
+  'src/lib/coachhelm/v3/monday-brief/email.ts',
   'src/app/golf/actions/task-reminders.ts',
 ]);
 

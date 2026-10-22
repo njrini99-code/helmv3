@@ -33,6 +33,7 @@
 
 import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadCompletedHoles, loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { meanInterval } from '@/lib/coachhelm/v3/stats/interval';
 import type {
@@ -176,35 +177,46 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     const restDisp = formatHoleDelta(agg.rest_avg);
 
     const r0 = (x: number) => Math.round(x).toString();
-    const causes: Array<{ label: string; pct: number; action: string }> = [
-      { label: 'putting (3-putts on the opener)', pct: agg.cause_putt_pct, action: 'a few lag putts in warm-up will settle it' },
-      { label: 'tee/approach execution', pct: agg.cause_tee_pct, action: 'hit balls before you tee off, not just chip-and-putt' },
-      { label: 'opening-hole penalties', pct: agg.cause_penalty_pct, action: 'play the opener conservatively off the tee' },
+    const causes: Array<{ label: string; pct: number; action: (v: Voice) => string }> = [
+      { label: 'putting (3-putts on the opener)', pct: agg.cause_putt_pct, action: () => 'a few lag putts in warm-up will settle it' },
+      {
+        label: 'tee/approach execution',
+        pct: agg.cause_tee_pct,
+        action: (v: Voice) => `${v.pick('hit balls', 'have them hit balls')} before ${v.you} tee off, not just chip-and-putt`,
+      },
+      {
+        label: 'opening-hole penalties',
+        pct: agg.cause_penalty_pct,
+        action: (v: Voice) => `${v.pick('play', 'have them play')} the opener conservatively off the tee`,
+      },
     ].sort((a, b) => b.pct - a.pct);
     const lead = causes[0];
-    const causeClause =
+    const causeClause = (v: Voice) =>
       agg.playerValue > 0 && lead && lead.pct > 0
-        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label}: ${lead.action}.`
+        ? ` ${r0(lead.pct)}% of those lost strokes are ${lead.label}: ${lead.action(v)}.`
         : '';
 
-    const title = `Opening hole gap: ${deltaDisp} strokes vs round avg`;
-    const content =
-      `Across your last ${agg.rounds_with_hole1} rounds, hole 1 plays ` +
-      `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
-      `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
-      causeClause +
-      (agg.delta_ci_low != null && agg.delta_ci_high != null
-        ? ` 95% range +${agg.delta_ci_low.toFixed(2)} to +${agg.delta_ci_high.toFixed(2)} strokes.`
-        : '') +
-      ` Tour avg is ~0.1 strokes (Research doc §9).` +
-      staleDataSuffix(agg.last_round_date);
+    const copy = inBothVoices((v) => ({
+      title: `Opening hole gap: ${deltaDisp} strokes vs round avg`,
+      content:
+        `Across ${v.players} last ${agg.rounds_with_hole1} rounds, hole 1 plays ` +
+        `${absDelta} strokes ${direction} than same-par holes 2-18 ` +
+        `(hole 1 = ${hole1Disp}/hole; matched rest of round = ${restDisp}/hole).` +
+        causeClause(v) +
+        (agg.delta_ci_low != null && agg.delta_ci_high != null
+          ? ` 95% range +${agg.delta_ci_low.toFixed(2)} to +${agg.delta_ci_high.toFixed(2)} strokes.`
+          : '') +
+        ` Tour avg is ~0.1 strokes (Research doc §9).` +
+        staleDataSuffix(agg.last_round_date),
+    }));
 
     return {
-      title,
+      title: copy.title,
+      coach: copy.coach,
       // Opening-hole tax in strokes: at or under 0 is a strength, up to the
       // ~0.1 PGA tax is normal, beyond it is a leak (matches `priority`).
       framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.1 ? 'neutral' : 'leak',
-      content,
+      content: copy.content,
       // Opening-hole gap vs the ~0.1 PGA tax: at/under is fine; a large opener tax escalates.
       priority: agg.playerValue <= 0.1 ? 'low' : agg.playerValue <= 0.4 ? 'medium' : 'high',
       signature: `warmup_hole:hole_1`,

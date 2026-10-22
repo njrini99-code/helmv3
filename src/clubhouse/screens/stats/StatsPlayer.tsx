@@ -36,6 +36,8 @@ import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
+import type { ChFocusLoop } from '../../data/focus-loop-shape';
+import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
@@ -498,7 +500,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
 }
 
 /** One focus area or goal as a track from where it started to its target, the player's current value marked on it. */
-function DevTrack({ title, state, line, baseline, current, target, metric, done = false, extra }: { title: string; state?: string | null; line: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; done?: boolean; extra?: ReactNode }) {
+function DevTrack({ title, state, line, baseline, current, target, metric, done = false, extra, loop }: { title: string; state?: string | null; line: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; done?: boolean; extra?: ReactNode; loop?: ChFocusLoop }) {
   const progress = progressOf(baseline, current, target);
   return (
     <li className={'ch-dv' + (done ? ' is-done' : '')}>
@@ -524,6 +526,7 @@ function DevTrack({ title, state, line, baseline, current, target, metric, done 
           <i className="ch-dv__flag" />
         </div>
       )}
+      <FocusLoop loop={loop} />
     </li>
   );
 }
@@ -572,6 +575,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                   target={f.target}
                   metric={devMetric(f.title, f.metric)}
                   extra={!coach && f.status === 'proposed' ? <ProposalAnswer id={f.id} title={f.title} /> : undefined}
+                  loop={f.loop}
                 />
               ))}
             </ul>

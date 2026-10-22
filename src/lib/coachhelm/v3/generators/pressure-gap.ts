@@ -15,6 +15,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
@@ -296,17 +297,17 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
 
     // One scale (per 18 holes), so the sort compares like with like. Stable
     // rank breaks ties deterministically.
-    const components: Array<{ label: string; val: number; rank: number }> = [
-      { label: 'double bogeys', val: agg.doubles_per18_delta, rank: 0 },
-      { label: '3-putts', val: agg.three_putts_per18_delta, rank: 1 },
-      { label: 'penalties', val: agg.penalty_per18_delta, rank: 2 },
-      { label: 'your opening 3 holes', val: agg.opening3_strokes_delta, rank: 3 },
+    const components: Array<{ key: string; label: string; val: number; rank: number }> = [
+      { key: 'doubles', label: 'double bogeys', val: agg.doubles_per18_delta, rank: 0 },
+      { key: 'three_putts', label: '3-putts', val: agg.three_putts_per18_delta, rank: 1 },
+      { key: 'penalties', label: 'penalties', val: agg.penalty_per18_delta, rank: 2 },
+      { key: 'opening3', label: 'opening 3 holes', val: agg.opening3_strokes_delta, rank: 3 },
     ].sort((a, b) => b.val - a.val || a.rank - b.rank);
     const lead = components[0];
-    const driverClause =
+    const driverClause = (v: Voice) =>
       agg.playerValue > 0 && lead && lead.val > 0
-        ? lead.label === 'your opening 3 holes'
-          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
+        ? lead.key === 'opening3'
+          ? ` Most of that gap is ${v.your} ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
           : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per 18 holes vs practice.`
         : '';
     const anchorSentence = ` The ${agg.tour_label} gap is ~${agg.tour_gap} strokes.`;
@@ -314,19 +315,22 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       ? ` (95% noise band ±${agg.noise_band.toFixed(1)})`
       : '';
 
-    const title = `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`;
-    const content =
-      `Across the last 90 days you averaged ${competitiveDisp} in ` +
-      `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap${noise}. ` +
-      `You play ${direction} when it counts.` + driverClause + anchorSentence;
+    const copy = inBothVoices((v) => ({
+      title: `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`,
+      content:
+        `Across the last 90 days ${v.player} averaged ${competitiveDisp} in ` +
+        `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
+        `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap${noise}. ` +
+        `${v.You} play ${direction} when it counts.` + driverClause(v) + anchorSentence,
+    }));
 
     return {
-      title,
+      title: copy.title,
+      coach: copy.coach,
       // Practice-to-tournament gap in strokes: at or under 0 is a strength, a
       // small gap is normal, past half a stroke it is a leak.
       framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.5 ? 'neutral' : 'leak',
-      content,
+      content: copy.content,
       // Severity against the team's Tour gap (Q-88): over it is high, at or
       // under practice is low, in between medium. This is the rule before the
       // 2026-09-28 cohort anchor, which was adopted because it flagged most

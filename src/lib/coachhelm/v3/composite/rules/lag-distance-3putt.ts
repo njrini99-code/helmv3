@@ -19,6 +19,7 @@
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** The counted angle rows the Slice 5b path reads (`insight-angles/angle-data.ts`). */
 export const COUNTED_THREE_PUTT_METRIC = 'three_putts_per_18';
@@ -69,12 +70,14 @@ function composeCounted(match: CompositeMatch): CompositeContent {
   const lagPct = Number(sg.lag_pct ?? 0);
   const lagTeam = Number(sg.lag_team_pct ?? 0);
   return {
-    title: 'Long lag leaves and 3-putts (counted)',
-    content:
-      `You 3-putt ${three.toFixed(1)} times a round vs ${ref.toFixed(1)} for ${String(sg.three_ref_label || 'the benchmark')}, ` +
-      `and your lag putts from 30+ ft finish inside 5 ft ${String(sg.lag_display)} of the time against ${lagTeam}% for your teammates' pooled lag putts. ` +
-      `Both are counted from your putts, not estimated. Lag distance drives 3-putt rate, so the lag leave is the first thing to work on: ` +
-      `lag ladder from 30, 40 and 50 ft, scored on putts finishing inside 5 ft.`,
+    ...inBothVoices((v) => ({
+      title: 'Long lag leaves and 3-putts (counted)',
+      content:
+        `${v.Player} ${v.pick('3-putt', '3-putts')} ${three.toFixed(1)} times a round vs ${ref.toFixed(1)} for ${String(sg.three_ref_label || 'the benchmark')}, ` +
+        `and ${v.your} lag putts from 30+ ft finish inside 5 ft ${String(sg.lag_display)} of the time against ${lagTeam}% for ${v.your} teammates' pooled lag putts. ` +
+        `Both are counted from ${v.your} putts, not estimated. Lag distance drives 3-putt rate, so the lag leave is the first thing to work on: ` +
+        `lag ladder from 30, 40 and 50 ft, scored on putts finishing inside 5 ft.`,
+    })),
     signature: 'lag_distance_3putt:counted',
     evidence: {
       metric: COUNTED_CHAIN_METRIC,
@@ -189,15 +192,17 @@ const rule: CompositeRule = {
     const threePuttRate = Number(match.signals.three_putt_rate ?? 0);
     const threePuttPct = Math.round(threePuttRate * 100);
     return {
-      title: 'Lag putts → 3-putt cascade',
-      content:
-        `Your lag putts (15+ ft) aren't finishing inside tap-in range, and you're ` +
-        `only making ${shortPct}% from 3-5 ft, so an estimated ${threePuttPct}% of your ` +
-        `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
-        `a comebacker your short stroke isn't closing. Fix the leave first: 30-foot ` +
-        `lag drills to a 3-foot circle around the cup (the goal is leave-distance, ` +
-        `not make rate), then drill the 3-5 ft comebackers so the second putt stops ` +
-        `costing you a stroke.`,
+      ...inBothVoices((v) => ({
+        title: 'Lag putts → 3-putt cascade',
+        content:
+          `${v.Players} lag putts (15+ ft) aren't finishing inside tap-in range, and ${v.youre} ` +
+          `only making ${shortPct}% from 3-5 ft, so an estimated ${threePuttPct}% of ${v.your} ` +
+          `long looks are turning into 3-putts. That's the cascade: a long miss leaves ` +
+          `a comebacker ${v.your} short stroke isn't closing. Fix the leave first: 30-foot ` +
+          `lag drills to a 3-foot circle around the cup (the goal is leave-distance, ` +
+          `not make rate), then drill the 3-5 ft comebackers so the second putt stops ` +
+          `costing ${v.them} a stroke.`,
+      })),
       signature: 'lag_distance_3putt',
       evidence: {
         metric: 'three_putt_chain',

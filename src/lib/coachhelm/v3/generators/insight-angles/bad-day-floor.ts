@@ -75,6 +75,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 import {
   FIELD_DAY_LABEL,
   buildFieldDayContext,
@@ -549,11 +550,16 @@ export function composeBadDayFloor(agg: FloorAggregate): ComposedContent & { cat
   };
   return {
     category: 'scoring',
-    title: 'Your bad rounds sit further from your typical round than your teammates\'',
-    content:
-      `Over ${r.rounds.length} rounds your median is ${fmtToPar(r.median)} per 18 and your P80 round is ${fmtToPar(r.p80)}, a gap of ${r.floor_gap.toFixed(1)} strokes vs ${peerGap.toFixed(1)} for a typical teammate (${r.peer_n} teammates). ` +
-      `On the ${r.bad_rounds} bad rounds vs the ${r.middle_rounds} middle rounds, the extra ${diff.toFixed(1)} strokes (bad-round average minus middle-round average) split into ${r.split.penalties.toFixed(1)} penalty strokes, ${r.split.double_or_worse.toFixed(1)} beyond bogey on double-or-worse holes and ${r.split.everything_else.toFixed(1)} everything else.` +
-      `${areaLine}${nineNote}`,
+    ...inBothVoices((v) => ({
+      title: v.pick(
+        'Your bad rounds sit further from your typical round than your teammates\'',
+        'Bad rounds sit further from the typical round than teammates\' do',
+      ),
+      content:
+        `Over ${r.rounds.length} rounds ${v.players} median is ${fmtToPar(r.median)} per 18 and ${v.your} P80 round is ${fmtToPar(r.p80)}, a gap of ${r.floor_gap.toFixed(1)} strokes vs ${peerGap.toFixed(1)} for a typical teammate (${r.peer_n} teammates). ` +
+        `On the ${r.bad_rounds} bad rounds vs the ${r.middle_rounds} middle rounds, the extra ${diff.toFixed(1)} strokes (bad-round average minus middle-round average) split into ${r.split.penalties.toFixed(1)} penalty strokes, ${r.split.double_or_worse.toFixed(1)} beyond bogey on double-or-worse holes and ${r.split.everything_else.toFixed(1)} everything else.` +
+        `${areaLine}${nineNote}`,
+    })),
     priority: roughStrokes >= 0.5 ? 'medium' : 'low',
     signature: 'bad_day_floor:score_to_par',
     evidence,

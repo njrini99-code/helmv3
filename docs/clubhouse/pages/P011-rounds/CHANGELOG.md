@@ -1,5 +1,9 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — TeamRounds.tsx: no blank line at the end of the file
+
+- Whitespace only, from the merge train; no behavior change.
+
 ## 2026-10-21 — Team rounds for coaches, and the coach's note on a round
 
 ```text

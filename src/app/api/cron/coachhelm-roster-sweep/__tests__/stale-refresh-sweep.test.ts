@@ -214,6 +214,18 @@ describe('roster sweep — idle-player stale refresh', () => {
     expect(ran()).toEqual(['player-new']);
   });
 
+  it('an engine run older than the window still sets how stale a player is', async () => {
+    enabledFlags.add(STALE_REFRESH_FLAG);
+    // player-ran: read 100 days old, but the engine ran 20 days ago; player-older: newest analysis 60 days ago.
+    addIdle('player-ran', 100, { roundDaysAgo: 25 });
+    addIdle('player-older', 60, { roundDaysAgo: 25 });
+    tables.golf_insight_generation_log!.push({
+      id: 'g-old', player_id: 'player-ran', insight_type: 'post_round_v2', created_at: daysAgo(20),
+    });
+    await callGet();
+    expect(ran()).toEqual(['player-new', 'player-older', 'player-ran']);
+  });
+
   it('a player with no round inside the engine window is not picked', async () => {
     enabledFlags.add(STALE_REFRESH_FLAG);
     addIdle('player-gone', 30, { roundDaysAgo: 120 });

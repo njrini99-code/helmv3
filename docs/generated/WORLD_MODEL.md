@@ -331,6 +331,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/admin-digest` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-calibration` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-insight-lifecycle` | vercel_cron | `coach_intelligence_triage` |
+| `vercel_cron:/api/cron/coachhelm-monday-brief` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-roster-sweep` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-safety-net` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-validation` | vercel_cron | `coach_intelligence_triage` |
