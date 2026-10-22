@@ -53,6 +53,7 @@ import {
   type SplitHalfInput,
 } from './angle-data';
 import { AngleGenerator, type AngleLoaders } from './angle-generator';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import {
   APPROACH_BAND_LABEL,
   PAR3_BANDS,
@@ -333,7 +334,7 @@ export function composeSgFamily(agg: SgAggregate): ComposedContent & { category:
   };
   const d = r.drivers;
   const t = pool.drivers;
-  const greenLine = `You found the green ${pctLine(d)}; the team ${t.green_pct ?? 0}%.`;
+  const greenLine = (v: Voice) => `${v.You} found the green ${pctLine(d)}; the team ${t.green_pct ?? 0}%.`;
   const proxLine =
     d.proximity_ft !== null && t.proximity_ft !== null
       ? ` On the green, ${d.proximity_ft} ft from the hole on average (team ${t.proximity_ft} ft).`
@@ -424,10 +425,12 @@ export function composeSgFamily(agg: SgAggregate): ComposedContent & { category:
 
   return {
     category: 'approach',
-    title: `${what} lose strokes to your team`,
-    content:
-      `${what} lose ${gap.toFixed(2)} strokes per shot against your teammates' pooled shots (${r.n} of yours, ${pool.attempts} of theirs), about ${strokes.toFixed(1)} strokes a round over ${r.attempts_per_18.toFixed(1)} a round. ` +
-      `${greenLine}${proxLine}${shortLine}${bandLine}`,
+    ...inBothVoices((v) => ({
+      title: `${what} lose strokes to ${v.pick('your', 'the')} team`,
+      content:
+        `${what} lose ${gap.toFixed(2)} strokes per shot against ${v.pick(`your teammates' pooled shots (${r.n} of yours, ${pool.attempts} of theirs)`, `the player's teammates' pooled shots (${r.n} from the player, ${pool.attempts} from the team)`)}, about ${strokes.toFixed(1)} strokes a round over ${r.attempts_per_18.toFixed(1)} a round. ` +
+        `${greenLine(v)}${proxLine}${shortLine}${bandLine}`,
+    })),
     priority: strokes >= 0.5 ? 'medium' : 'low',
     signature: isPar3 ? 'par3_tee:all' : `approach_sg:${r.family.replace('approach_sg_', '')}`,
     evidence,

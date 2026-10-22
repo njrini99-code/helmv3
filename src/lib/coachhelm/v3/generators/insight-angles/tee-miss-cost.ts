@@ -86,6 +86,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 export const TEE_MIN_ROUNDS = 5;
 export const TEE_MIN_SHOTS = 40;
@@ -606,11 +607,16 @@ export function composeTeeMiss(agg: TeeMissAggregate): ComposedContent {
     },
   };
   return {
-    title: `Your ${r.worse} tee misses cost more than your ${r.better} ones`,
-    content:
-      `A ${r.worse} miss costs you ${wCost.toFixed(2)} strokes on the hole compared with finding the fairway (same par and driver/non-driver), vs ${bCost.toFixed(2)} for a ${r.better} miss ` +
-      `(${w.costed} ${r.worse} and ${b.costed} ${r.better} misses). ${nextLine} ` +
-      `As a rough estimate, if your ${r.worse} misses cost what your ${r.better} ones do, that would be worth about ${r.cost_per_round.toFixed(1)} strokes a round (the holes differ, so this is not a measured saving). ${coverageNote}`,
+    ...inBothVoices((v) => ({
+      title: v.pick(
+        `Your ${r.worse} tee misses cost more than your ${r.better} ones`,
+        `${r.worse.charAt(0).toUpperCase()}${r.worse.slice(1)} tee misses cost more than ${r.better} ones`,
+      ),
+      content:
+        `A ${r.worse} miss costs ${v.player} ${wCost.toFixed(2)} strokes on the hole compared with finding the fairway (same par and driver/non-driver), vs ${bCost.toFixed(2)} for a ${r.better} miss ` +
+        `(${w.costed} ${r.worse} and ${b.costed} ${r.better} misses). ${nextLine} ` +
+        `As a rough estimate, if ${v.your} ${r.worse} misses cost what ${v.your} ${r.better} ones do, that would be worth about ${r.cost_per_round.toFixed(1)} strokes a round (the holes differ, so this is not a measured saving). ${coverageNote}`,
+    })),
     priority: r.cost_per_round >= 0.5 ? 'medium' : 'low',
     signature: `tee_miss_cost:${r.worse}`,
     evidence,
