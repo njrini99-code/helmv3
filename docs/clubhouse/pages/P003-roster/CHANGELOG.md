@@ -19,6 +19,7 @@ minus and a dash for no data. Rows still slide to their new places on a chosen
 sort. The text-first swap (`useArrivalPainted`, `.ch-rsm-flowtext`) and
 `figureParts` went with Number Flow. Replays 1bff7a784 and c2710104e onto
 main.
+
 ## 2026-10-22 — The availability word is parsed in one place
 
 ```text
