@@ -159,6 +159,27 @@ describe('rule 1: regressed', () => {
     expect(v.because.length).toBeGreaterThan(0);
   });
 
+  // 2026-10-21: pattern-miner-starvation:* info telemetry showed REGRESSED
+  // (danger) because its stale analysis still read FIX HERE. The classifier
+  // already calls it telemetry, so a recurrence is expected noise.
+  it("regressed AND the classifier says telemetry/empty_state/integrity_ok -> 'expected-recurrence', whatever the analysis says", () => {
+    for (const klass of ['telemetry', 'empty_state', 'integrity_ok'] as const) {
+      for (const analysis of [null, makeAnalysis('fix-here')]) {
+        const v = deriveLifecycle(
+          baseInput({ regressed: true, actionable: false, klass, analysis, resolution: makeResolution({ resolvedAt: iso(6 * DAY) }) }),
+        );
+        expect(v.state).toBe('expected-recurrence');
+      }
+    }
+  });
+
+  it('regressed provider faults and access denials still report regressed (a returning outage is news)', () => {
+    for (const klass of ['integration', 'access'] as const) {
+      const v = deriveLifecycle(baseInput({ regressed: true, actionable: false, klass }));
+      expect(v.state).toBe('regressed');
+    }
+  });
+
   it('regressed with any OTHER analysis category (or none) still reports regressed', () => {
     for (const analysis of [null, makeAnalysis('fix-here'), makeAnalysis('already-fixed'), makeAnalysis('needs-more-evidence'), makeAnalysis('uncategorized')]) {
       const v = deriveLifecycle(baseInput({ regressed: true, analysis }));

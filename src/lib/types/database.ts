@@ -21863,6 +21863,34 @@ export type Database = {
         }[]
       }
       golf_normalize_name: { Args: { p: string }; Returns: string }
+      golf_player_invited_to_event: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
+      golf_player_profiles: {
+        Args: {
+          p_player_ids?: string[]
+          p_team_ids?: string[]
+          p_user_ids?: string[]
+        }
+        Returns: {
+          avatar_url: string
+          first_name: string
+          graduation_year: number
+          handicap: number
+          handicap_index: number
+          id: string
+          last_name: string
+          user_id: string
+        }[]
+      }
+      golf_qualifier_selection_reasons: {
+        Args: { p_qualifier_id: string }
+        Returns: {
+          coach_reasoning: string
+          player_id: string
+        }[]
+      }
       golf_readable_round_ids: { Args: never; Returns: string[] }
       golf_set_course_image: {
         Args: { p_course_id: string; p_image_url: string }
@@ -21880,6 +21908,10 @@ export type Database = {
           organization_state: string
           season: string
         }[]
+      }
+      golf_user_in_conversation_team_audience: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
       }
       golf_user_on_conversation_team: {
         Args: { p_conversation_id: string; p_user_id: string }
