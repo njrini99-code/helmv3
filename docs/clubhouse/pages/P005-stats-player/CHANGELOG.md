@@ -61,6 +61,44 @@ Held items:     none
   the hash itself on the phone, and follows it if it changes while the page is open.
   A hash that names no section changes nothing. Desktop is unchanged.
 
+## 2026-10-21 — CoachHelm count line on Game detail (spec D build A)
+
+```text
+Design package: none (spec D, Game Fingerprint and roster detail bridges)
+PR/commit:      claude/coach-parity-bridges
+Contract IDs:   CH-5215 (new)
+Actions:        none
+Data impact:    reads only: golf_coach_insights (visible rows, no exposure),
+                golf_teams, golf_pga_standards, golf_rounds,
+                golf_insight_player_feedback (the player's own)
+Held items:     none
+```
+
+### Changed
+
+- Each Game detail section with current CoachHelm reads says how many are
+  costing strokes and how many are working, under its rule, and links to the
+  Deep dive: "CoachHelm sees 2 reads costing strokes on approach and 1 working.
+  Deep dive →". Same words for a coach and a player. A section with none, or
+  CoachHelm off, draws nothing.
+- When the reads do not load, one line under the section chips says so
+  (CH-5215).
+- Old player-page links (`/players/[id]`, `/game`, `/genome`) now open the
+  player's Stats on Game detail (`&tab=game`).
+- PARITY.md: SC17 is shown as the count line; SG6 corrected (the pressure gap
+  and opening hole are computed but not drawn).
+
+### Why
+
+- Spec D: the Fairway game fingerprint's "What CoachHelm sees" strips were the
+  one part of the page Clubhouse did not carry. The count is `countReads`, the
+  one the coach's Game profile line and the roster use, so they never disagree.
+
+### Verification
+
+- `stats-reads.test.ts`, `coachhelm-classify.test.ts`,
+  `game-detail-reads.test.tsx`; VERIFY.md 2026-10-21.
+
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 
 ```text

@@ -2019,6 +2019,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/clubhouse/data/stats-reads.ts",
+        "pattern": "src/clubhouse/data/stats-reads.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/clubhouse/routes/auth.tsx",
         "pattern": "src/clubhouse/routes/auth.tsx",
         "category": "services"
@@ -2553,6 +2558,11 @@
       {
         "id": "tests:src/clubhouse/__tests__/thread-anchor.test.tsx",
         "pattern": "src/clubhouse/__tests__/thread-anchor.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/data/__tests__/stats-reads.test.ts",
+        "pattern": "src/clubhouse/data/__tests__/stats-reads.test.ts",
         "category": "tests"
       },
       {
@@ -24293,6 +24303,18 @@
     },
     {
       "source": "stats_analytics",
+      "target": "services:src/clubhouse/data/stats-reads.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/stats-reads.ts"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
       "target": "services:src/lib/cache/golf-stats-calculator.ts",
       "kind": "feature_service",
       "evidence": [
@@ -24360,6 +24382,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "tests:src/clubhouse/data/__tests__/stats-reads.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/__tests__/stats-reads.test.ts"
         }
       ]
     },
