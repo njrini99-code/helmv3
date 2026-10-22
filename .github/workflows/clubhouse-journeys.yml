@@ -92,10 +92,25 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium webkit
 
+      # Run 39797724221 (2026-10-22) died here with "Ineffective mark-compacts near
+      # heap limit" at the job's 8 GB heap. ci.yml's Build met the
+      # same limit (#2246, #2239) and runs with 12 GB plus 10 GiB of best-effort swap;
+      # this build shares the runner with the local Supabase stack, so it gets both.
+      - name: Add swap
+        continue-on-error: true
+        run: |
+          free -m
+          sudo fallocate -l 10G /mnt/helm-swap
+          sudo chmod 600 /mnt/helm-swap
+          sudo mkswap /mnt/helm-swap
+          sudo swapon /mnt/helm-swap
+          free -m
+
       - name: Production build against the local stack
         timeout-minutes: 30
         env:
           VERCEL_ENV: preview
+          NODE_OPTIONS: --max-old-space-size=12288
         run: node scripts/serialize.mjs -- ./node_modules/.bin/next build --webpack
 
       - name: Start the production server
