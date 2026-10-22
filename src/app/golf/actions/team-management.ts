@@ -14,6 +14,9 @@ import {
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
+import { gateUserAction } from '@/lib/auth/action-rate-limit';
+import { isInviteEmail, MAX_INVITE_EMAILS, normalizeInviteEmail } from '@/lib/golf/invite-emails';
+import { canEmailPlayerInvites, sendGolfPlayerInviteEmails } from '@/lib/golf/player-invite-email';
 import { getCoachTeamId } from './golf-action-shared';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import type { ActionResult } from './golf-action-shared';
@@ -187,6 +190,93 @@ export async function invitePlayerToTeam(
   _email: string // Email parameter reserved for future email invitations
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   return observedInvitePlayerToTeam(_email);
+}
+
+const INVITE_EMAILS_RATE_LIMIT = { maxAttempts: 10, windowMs: 60 * 60 * 1000 } as const;
+const inviteEmailsSchema = z.array(z.string().max(320)).min(1).max(MAX_INVITE_EMAILS);
+
+/**
+ * Emails the team's join link and code to players the coach names (Clubhouse › Roster › Invite players). The coach's own
+ * team (the cookie-aware resolver, as the other roster actions), never one the client names. Nothing about the addresses
+ * is revealed back: it does not say whether one already has an account. The send is the owner-gated customer email
+ * (src/lib/golf/player-invite-email.ts), so with email paused it says so and sends nothing.
+ */
+async function emailPlayerInvitesImpl(
+  emails: string[]
+): Promise<ActionResult<{ sent: number; failed: string[] }>> {
+  try {
+    const parsed = inviteEmailsSchema.safeParse(emails);
+    if (!parsed.success) {
+      return { success: false, error: `Add between 1 and ${MAX_INVITE_EMAILS} email addresses.`, code: 'invalid_emails' };
+    }
+    const bad = parsed.data.filter((e) => !isInviteEmail(e));
+    if (bad.length > 0) {
+      return { success: false, error: 'Check the email addresses and try again.', code: 'invalid_emails' };
+    }
+    const addresses = [...new Set(parsed.data.map(normalizeInviteEmail))];
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to invite players' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id, full_name')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Coach profile not found' };
+    }
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    if (!canEmailPlayerInvites()) {
+      return { success: false, error: 'Email invites are off right now. Share the team code or link instead.', code: 'email_off' };
+    }
+
+    const gate = await gateUserAction(
+      'golf:player-invite-email',
+      user.id,
+      INVITE_EMAILS_RATE_LIMIT,
+      'You have sent a lot of invites. Try again in a little while, or share the team code or link.',
+    );
+    if (!gate.allowed) {
+      return { success: false, error: gate.error, code: 'rate_limited' };
+    }
+
+    const { data: team } = await supabase.from('golf_teams').select('name, join_code').eq('id', teamId).maybeSingle();
+    if (!team?.join_code || team.join_code.length < 6) {
+      return { success: false, error: 'This team has no code yet. Make one in Settings, then invite players.', code: 'no_code' };
+    }
+
+    const result = await sendGolfPlayerInviteEmails({
+      emails: addresses,
+      coachName: coach.full_name,
+      teamId,
+      teamName: team.name ?? 'your team',
+      joinCode: team.join_code,
+    });
+    if (result.status !== 'done') {
+      return { success: false, error: 'Email invites are off right now. Share the team code or link instead.', code: 'email_off' };
+    }
+    return { success: true, data: { sent: result.sent, failed: result.failed } };
+  } catch (error) {
+    return formatSafeErrorResponse(error);
+  }
+}
+const observedEmailPlayerInvites = withAdminObserved(
+  'emailPlayerInvites',
+  { sport: 'golf', feature: 'roster_management' },
+  emailPlayerInvitesImpl,
+);
+export async function emailPlayerInvites(
+  emails: string[]
+): Promise<ActionResult<{ sent: number; failed: string[] }>> {
+  return observedEmailPlayerInvites(emails);
 }
 async function updatePlayerStatusImpl(
   playerId: string,

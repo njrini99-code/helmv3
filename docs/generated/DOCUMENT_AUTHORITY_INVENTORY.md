@@ -772,7 +772,7 @@ them would bury everything above.
 | `docs/clubhouse/catalog/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/recruiting.md` | current | - | - | - | - |
-| `docs/clubhouse/catalog/roster.md` | current | - | - | - | - |
+| `docs/clubhouse/catalog/roster.md` | current | - | - | - | 1 |
 | `docs/clubhouse/catalog/rounds.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/settings.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |

@@ -6,8 +6,12 @@
  * caller (and a test) decides what day it is; nothing here reads the clock but `localToday`.
  *
  * The app's voice is English and 12-hour with Sunday first (screens/calendar/model.ts: fmtHour, weekStart); Settings
- * has no clock or week preference, so these follow the calendar rather than the browser's locale.
+ * has a clock preference (12 or 24 hours, lib/use-clock.tsx) and no week preference, so these follow the calendar and that
+ * choice rather than the browser's locale.
  */
+
+import { clockFromMinutes } from '../lib/clock-format';
+import type { ChClock } from '../lib/clock-cookie';
 
 export const DOW_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 const DOW_LONG = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
@@ -250,12 +254,10 @@ export function addMinutes(value: string | null | undefined, minutes: number): s
   return toHm(t + minutes);
 }
 
-/** "3:30 PM", the calendar's own wording (fmtHour). Empty for no value. */
-export function formatTime(value: string | null | undefined): string {
+/** "3:30 PM", the calendar's own wording (fmtHour), or "15:30" with the 24-hour clock. Empty for no value. */
+export function formatTime(value: string | null | undefined, clock: ChClock = '12'): string {
   const t = parseHm(value);
-  if (t === null) return '';
-  const h = Math.floor(t / 60);
-  return `${((h + 11) % 12) + 1}:${pad(t % 60)} ${h < 12 ? 'AM' : 'PM'}`;
+  return t === null ? '' : clockFromMinutes(t, clock);
 }
 
 /**

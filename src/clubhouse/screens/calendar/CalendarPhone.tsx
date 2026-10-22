@@ -12,6 +12,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
@@ -270,6 +271,7 @@ function DayPage({
   /** The day on show's New event (coach); the neighbouring days drawn beside it for a swipe have none. */
   onNew?: (date: string) => void;
 }) {
+  const clock = useChClock();
   const anchor = date;
   const list = events.filter((e) => e.date === anchor).sort(byStart);
   const team = list.filter((e) => e.type !== 'class' && e.type !== 'busy');
@@ -279,8 +281,8 @@ function DayPage({
   const nowAt = isToday ? list.findIndex((e) => !e.allDay && (e.start ?? 0) > now.hour) : -1;
   const nowLast = isToday && nowAt === -1 && list.some((e) => !e.allDay && (e.end ?? 0) <= now.hour);
   const nowLine = (
-    <div className="ch-calm-now" role="separator" aria-label={`Now, ${fmtHour(now.hour)}`}>
-      <span className="ch-num">{fmtHour(now.hour)}</span>
+    <div className="ch-calm-now" role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`}>
+      <span className="ch-num">{fmtHour(now.hour, true, clock)}</span>
     </div>
   );
   return (
@@ -339,15 +341,15 @@ function DayPage({
                   <button
                     type="button"
                     className={`ch-calm-ev is-${e.type}` + (past ? ' is-past' : '') + (live ? ' is-live' : '') + (selId === e.id ? ' is-sel' : '') + (e.cancelled ? ' is-cancelled' : '')}
-                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e) : `${fmtHour(e.start!)} to ${fmtHour(e.end!)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
+                    aria-label={`${title}, ${e.allDay ? 'all day' : e.span?.start != null ? rangeLabel(e, clock) : `${fmtHour(e.start!, true, clock)} to ${fmtHour(e.end!, true, clock)}`}${past ? ', ended' : ''}${flagged.has(e.id) ? ', schedule overlap' : ''}${reply ? ', needs your reply' : ''}${e.cancelled ? ', cancelled' : ''}`}
                     onClick={() => {
                       haptic('select');
                       onOpen(e.id, e.date);
                     }}
                   >
                     <span className="ch-calm-ev__t ch-num">
-                      {startLabel(e, false)}
-                      {!e.allDay && <em>{fmtHour(e.end!, false)}</em>}
+                      {startLabel(e, false, clock)}
+                      {!e.allDay && <em>{fmtHour(e.end!, false, clock)}</em>}
                     </span>
                     {/* The day's rail, as on Home's Today: a dot in the event's colour, a ring for time that isn't free. */}
                     <span className="ch-calm-ev__rail" aria-hidden="true">

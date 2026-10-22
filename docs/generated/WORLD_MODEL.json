@@ -22784,6 +22784,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/auth/action-rate-limit"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
           "anchor": "src/lib/supabase/untyped"
         },
         {

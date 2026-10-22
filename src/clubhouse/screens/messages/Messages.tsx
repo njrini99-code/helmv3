@@ -23,6 +23,7 @@ import { completeAnnouncementTask, createEnrichedAnnouncement, getAnnouncementDe
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { getPreviewUrl } from '@/app/golf/actions/documents';
 import { validateFile, type PendingAttachment } from '@/lib/storage/attachments';
+import { useChClock } from '../../lib/use-clock';
 import { isTransientNetworkErrorMessage } from '@/lib/transient-network-error';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import type { ChMessagesData } from '../../data/messages';
@@ -51,6 +52,7 @@ const KEY_BY_EMOJI = Object.fromEntries(MESSAGE_REACTIONS.map((r) => [r.emoji, r
  * actions and RLS decide, and this screen reports what they say.
  */
 export function Messages({ data }: { data: ChMessagesData }) {
+  const hours = useChClock();
   const router = useRouter();
   const params = useSearchParams();
   const toast = useToast();
@@ -546,6 +548,7 @@ export function Messages({ data }: { data: ChMessagesData }) {
     viewer: { userId: data.viewerUserId, role: data.role, name: data.viewerName },
     signers: data.signers,
     timeZone: data.timeZone,
+    clock: hours,
     now,
     teamName: data.teamName,
     convs,

@@ -2234,6 +2234,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30580,
+    "page": "P003",
+    "category": 5,
+    "item": 80,
+    "name": "AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL",
+    "chCode": "CH-3180",
+    "meaning": "An address typed or pasted in Email them can’t be read as an email address",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30601,
     "page": "P003",
     "category": 6,
@@ -2487,6 +2498,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30680,
+    "page": "P003",
+    "category": 6,
+    "item": 80,
+    "name": "EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE",
+    "chCode": "CH-3080",
+    "meaning": "Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2498,6 +2520,17 @@
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
     ]
+  },
+  {
+    "id": 30780,
+    "page": "P003",
+    "category": 7,
+    "item": 80,
+    "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
+    "chCode": "CH-3980",
+    "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
     "id": 30801,
@@ -2889,6 +2922,17 @@
     "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
     "chCode": "CH-3809",
     "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31880,
+    "page": "P003",
+    "category": 18,
+    "item": 80,
+    "name": "EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH",
+    "chCode": "CH-3880",
+    "meaning": "Email them is one labelled field (\"Or email them\"). Each address is a chip with its own \"Remove eli@school.edu\" button, an unreadable one adds \", can’t be read as an email address\" and one that did not send \", didn’t send\"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -7872,6 +7916,17 @@
     "name": "CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE",
     "chCode": "CH-8901",
     "meaning": "Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`), so no email setting can send anything",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/settings.md"
+  },
+  {
+    "id": 80780,
+    "page": "P008",
+    "category": 7,
+    "item": 80,
+    "name": "SETTINGS_PREFERENCES_TIME_FORMAT",
+    "chCode": "CH-8980",
+    "meaning": "Settings › Preferences › Time format (a device preference, like the distance unit)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
