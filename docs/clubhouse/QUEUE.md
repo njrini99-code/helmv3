@@ -374,13 +374,14 @@ the queue above.
 
 <!-- markdownlint-enable MD013 -->
 
-Two open PRs sit in CoachHelm board UI at once: #2328 (branch
-`claude/coachhelm-standing-ask`) and #2333 (branch
-`claude/coachhelm-round-prompts`). The rule is one thread per area. Both change
-`src/clubhouse/data/coachhelm.ts`, `docs/clubhouse/catalog/coachhelm.md`, the
-P013 `CONTRACT.md`, `config/clubhouse/bridge-contracts.json` and the generated
-Clubhouse files, so the second to merge must merge main and regenerate. The
-coordinator sequences them; this page records the state and does not choose.
+Two open PRs sit in CoachHelm board UI: PR #2328 (branch
+`claude/coachhelm-standing-ask`) and PR #2333 (branch
+`claude/coachhelm-round-prompts`), both from the CoachHelm thread. Order
+decided by the coordinator 2026-10-22: #2328 lands first, then #2333, and that
+thread refreshes #2333 (merge main, regenerate) after #2328 lands. They change
+the same files: `src/clubhouse/data/coachhelm.ts`,
+`docs/clubhouse/catalog/coachhelm.md`, the P013 `CONTRACT.md`,
+`config/clubhouse/bridge-contracts.json` and the generated Clubhouse files.
 
 ## Reserving Bridge IDs and CH codes
 
