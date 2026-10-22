@@ -140,7 +140,28 @@ export function cloneInView(el: HTMLElement, viewH: number, depth: number): HTML
   return copy;
 }
 
-function playPop() {
+/**
+ * A push still sliding in when Back comes (motion pass 2026-10-22): how far it had come, from 0 to 1 along its spring,
+ * with the page transition ended where it stood so the pop can take over from there. 1 when no push is running. A
+ * view transition can't be reversed, and the pop drawn over one still playing showed both at once: the page
+ * uncovered slid in from the right as if pushed, under the copy sliding out.
+ */
+export function takeRunningPush(): number {
+  if (typeof document === 'undefined' || typeof document.getAnimations !== 'function') return 1;
+  const running = document.getAnimations().filter((a) => {
+    const pseudo = (a.effect as KeyframeEffect | null)?.pseudoElement ?? '';
+    return pseudo.startsWith('::view-transition') && a.playState === 'running';
+  });
+  if (!running.length) return 1;
+  const incoming = running.find((a) => (a.effect as KeyframeEffect | null)?.pseudoElement === '::view-transition-new(ch-page)');
+  const pushing = (incoming as CSSAnimation | undefined)?.animationName === 'ch-vt-push-in';
+  const curve = chSpringCurve('smooth');
+  const at = pushing ? Number(incoming?.currentTime ?? curve.ms) : curve.ms;
+  for (const a of running) a.finish();
+  return curve.ease(Math.min(1, Math.max(0, at / curve.ms)));
+}
+
+function playPop(from = 1) {
   const frame = document.getElementById('ch-content');
   const root = frame?.closest<HTMLElement>('.ch-root');
   if (!frame || !root || document.documentElement.hasAttribute('data-ch-ua-pop') || motionOff()) return;
@@ -166,8 +187,10 @@ function playPop() {
   // The next frame, once the router's synchronous commit has put the page beneath in place.
   requestAnimationFrame(() => {
     const under = document.getElementById('ch-content');
-    under?.animate?.([{ transform: `translateX(${parallax})` }, { transform: 'none' }], timing);
-    const out = copy.animate?.([{ transform: 'none' }, { transform: 'translateX(100%)' }], timing);
+    // From where a push still sliding in had it (takeRunningPush): the page goes back the way it came, without a jump.
+    const share = Math.min(1, Math.max(0, from));
+    under?.animate?.([{ transform: `translateX(calc(${parallax} * ${share}))` }, { transform: 'none' }], timing);
+    const out = copy.animate?.([{ transform: `translateX(${((1 - share) * 100).toFixed(2)}%)` }, { transform: 'translateX(100%)' }], timing);
     if (!out) return copy.remove();
     out.finished.then(() => copy.remove(), () => copy.remove());
   });
@@ -178,8 +201,9 @@ function onPopState() {
   const kind = classifyNav({ from: shownPath, to: location.pathname, tabRoots: tabRoots(), back: true });
   // Drawn here rather than by a view transition (playPop), so the keyframes never run as well.
   if (kind === 'pop' && window.matchMedia?.(PHONE).matches) {
+    const from = takeRunningPush();
     mark('fade');
-    playPop();
+    playPop(from);
   } else mark(kind);
 }
 

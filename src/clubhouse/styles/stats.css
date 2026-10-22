@@ -2373,14 +2373,20 @@
     gap: 3px;
     min-width: 0;
   }
+  /* The player's name is the page's title, so it wraps to a second, balanced line rather than losing its surname to an
+     ellipsis (look-and-feel pass 2026-10-22). Past two lines it clamps, which only an unusually long name reaches. */
   .ch-spm-head h1 {
+    display: -webkit-box;
     overflow: hidden;
     font: 400 calc(34 * var(--ch-type-k))/1.05 var(--ch-font-serif);
     letter-spacing: -0.008em;
     font-variation-settings: normal;
     color: var(--ch-text-primary);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
   }
   .ch-spm-head p {
     font: var(--ch-type-caption);
@@ -4172,7 +4178,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     border-top: 0;
   }
   .ch-stm.is-team .ch-stm-head h1 {
-    font: 650 calc(34 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: 600 calc(34 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     font-variation-settings: normal;
     color: var(--ch-text-primary);
@@ -4205,7 +4211,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-hero__v {
     grid-area: v;
-    font: 560 64px/1 var(--ch-font-sans);
+    font: 600 64px/1 var(--ch-font-sans);
     letter-spacing: -0.035em;
     color: var(--ch-text-primary);
   }
@@ -4435,7 +4441,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     padding: 16px 16px 0;
   }
   .ch-stm.is-team .ch-stm-sgfig b {
-    font: 560 40px/1 var(--ch-font-sans);
+    font: 600 40px/1 var(--ch-font-sans);
     letter-spacing: -0.04em;
     color: var(--ch-text-primary);
   }

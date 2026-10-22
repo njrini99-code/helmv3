@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 
-import { classifyNav } from '../lib/nav-motion';
+import { classifyNav, takeRunningPush } from '../lib/nav-motion';
 import { chSpringCurve } from '../lib/motion';
 import { prefetchAllowed } from '../shell/use-prefetch-tabs';
 import { RosterPhoneRow } from '../screens/roster/RosterPhone';
@@ -106,6 +106,47 @@ describe('the push and the pop', () => {
     const block = shell.slice(start, shell.indexOf("@media (prefers-reduced-motion: reduce)", start));
     expect(block).toContain('@media (max-width: 820px)');
     expect(shell).toMatch(/html\[data-ch-ua-pop\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(\*\)/);
+  });
+});
+
+describe('Back during a push (look-and-feel pass 2026-10-22, mot-04)', () => {
+  type Fake = { effect: { pseudoElement: string }; playState: string; animationName?: string; currentTime: number; finish: () => void };
+  const real = document.getAnimations;
+
+  function running(list: Fake[]) {
+    Object.defineProperty(document, 'getAnimations', { configurable: true, value: () => list });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(document, 'getAnimations', { configurable: true, value: real });
+  });
+
+  it('pops from the whole width when no push is moving', () => {
+    running([]);
+    expect(takeRunningPush()).toBe(1);
+  });
+
+  it('finishes a push in flight and pops from where it stood, on the same spring', () => {
+    const curve = chSpringCurve('smooth');
+    const finish = vi.fn();
+    const at = Math.round(curve.ms * 0.3);
+    running([
+      { effect: { pseudoElement: '::view-transition-new(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-in', currentTime: at, finish },
+      { effect: { pseudoElement: '::view-transition-old(ch-page)' }, playState: 'running', animationName: 'ch-vt-push-out', currentTime: at, finish },
+      { effect: { pseudoElement: '' }, playState: 'running', currentTime: at, finish: vi.fn() },
+    ]);
+    const share = takeRunningPush();
+    expect(finish).toHaveBeenCalledTimes(2);
+    expect(share).toBeCloseTo(curve.ease(at / curve.ms), 5);
+    expect(share).toBeGreaterThan(0);
+    expect(share).toBeLessThan(1);
+  });
+
+  it('treats a running fade (a pop or a tab switch) as done', () => {
+    const finish = vi.fn();
+    running([{ effect: { pseudoElement: '::view-transition-new(ch-page)' }, playState: 'running', animationName: 'ch-vt-in', currentTime: 40, finish }]);
+    expect(takeRunningPush()).toBe(1);
+    expect(finish).toHaveBeenCalled();
   });
 });
 

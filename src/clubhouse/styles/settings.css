@@ -1192,7 +1192,7 @@
     color: var(--ch-text-primary);
   }
   .ch-setm-field__i::placeholder {
-    color: var(--ch-ink-400);
+    color: var(--ch-text-placeholder);
   }
   .ch-setm-field__h {
     display: block;

@@ -806,7 +806,7 @@
   transition: border-color var(--ch-ox-t-quick);
 }
 .ch-ox-big input::placeholder {
-  color: #b7b0a0;
+  color: var(--ch-text-placeholder);
 }
 @media (hover: hover) {
   .ch-ox-big input:hover {
@@ -2236,7 +2236,7 @@ html[data-fw-theme='dark'] .ch-ox-big input {
   border-bottom-color: var(--ch-border-control);
 }
 html[data-fw-theme='dark'] .ch-ox-big input::placeholder {
-  color: var(--ch-ink-400);
+  color: var(--ch-text-placeholder);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-ox-big input:hover {

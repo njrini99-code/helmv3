@@ -132,6 +132,10 @@
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
   --ch-text-disabled: var(--ch-ink-300);
+  /* Sample text in an empty field (look-and-feel pass 2026-10-22): readable at 4.5:1 or more on a card and a sheet, and
+     about 4:1 on the page, while still a clear step under typed ink, so a sample never reads as a value. The disabled
+     ink it replaces in a few fields (2:1) and the 400 ink (2.75:1 on the page) were too faint to read at a glance. */
+  --ch-text-placeholder: #736f66;
   --ch-text-on-accent: #ffffff;
   --ch-accent: var(--ch-green-600);
   --ch-accent-hover: var(--ch-green-700);
@@ -540,6 +544,7 @@
  */
 html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color-scheme: dark;
+  --ch-text-placeholder: #8f897c;
   /* The sidebar's selected plate at night (overnight polish, 2026-10-15): the day plate's gradient ran from the night
      ivory to the day's, a white bar with dark ink on the dark frame. A raised green plate under ivory ink instead. */
   --ch-nav-well-bg: linear-gradient(180deg, #24432f, #1a3524);

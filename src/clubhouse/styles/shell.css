@@ -2953,7 +2953,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: color-mix(in oklab, var(--ch-text-primary) 4.5%, transparent);
     box-shadow: none;
   }
-  /* A list row's type, not a card's label: 16px, a shade over regular (the current page and team keep their 600). */
+  /* A list row's type, not a card's label: 16px regular, as an iOS list row (the current page and team keep their 600). */
   .ch-more__row,
   button.ch-more__row {
     position: relative;
@@ -2961,7 +2961,7 @@ html[data-fw-theme='dark'] .ch-offline {
     min-height: 50px;
     border-top: 0;
     font-size: calc(16 * var(--ch-type-k));
-    font-weight: 450;
+    font-weight: 400;
     letter-spacing: -0.01em;
   }
   /* 16px padding, the 24px icon column and the 14px gap: the hairline starts where the label does. */
@@ -3180,7 +3180,7 @@ html[data-fw-theme='dark'] .ch-offline {
     border-radius: 9px;
     background: var(--ch-champagne-300);
     color: var(--ch-frame);
-    font: 650 calc(12 * var(--ch-type-k))/calc(14 * var(--ch-type-k)) var(--ch-font-sans);
+    font: 600 calc(12 * var(--ch-type-k))/calc(14 * var(--ch-type-k)) var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     text-align: center;
   }
@@ -3283,7 +3283,7 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
   }
   .ch-bst__head b {
-    font: 650 calc(24 * var(--ch-type-k))/1.1 var(--ch-font-sans);
+    font: 600 calc(24 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.02em;
   }
   .ch-bst__all {

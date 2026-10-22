@@ -3329,13 +3329,13 @@ html:not([data-fw-theme='dark']) .ch-qf {
 }
 /* The darker ramp would print a placeholder like a value typed in; it keeps the lightest step (wave-6 #1). */
 html:not([data-fw-theme='dark']) .ch-qf :is(.ch-input, .ch-textarea)::placeholder {
-  color: var(--ch-ink-400);
+  color: var(--ch-text-placeholder);
 }
 .ch-qf .ch-qf-facts dt {
   font-weight: 600;
 }
 .ch-qf .ch-qf-facts dt + dd {
-  font-weight: 650;
+  font-weight: 600;
 }
 /* A qualifier on desktop: the facts and each section sit on bright sheets over the parchment, so the copy reads on a
    white ground, not on the tinted page (same owner note). */

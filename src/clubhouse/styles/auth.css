@@ -600,7 +600,7 @@
   -webkit-appearance: none;
 }
 .ch-au-input input::placeholder {
-  color: var(--ch-ink-400);
+  color: var(--ch-text-placeholder);
 }
 /* Keychain AutoFill: WebKit paints a filled field its own light fill and dark ink (an !important user-agent style), a
    white bar in the dark field (owner, 2026-10-16). The fill is covered by an inset shadow of the field's own surface,

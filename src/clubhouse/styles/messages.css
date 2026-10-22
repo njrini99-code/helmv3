@@ -798,7 +798,7 @@
   color: var(--ch-on-fill-50);
 }
 .ch-rx__head b {
-  font: 650 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
 }
 .ch-rx__glyph {
   display: grid;

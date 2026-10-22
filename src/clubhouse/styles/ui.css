@@ -12,7 +12,7 @@
   padding: 0 var(--ch-btn-pad-x);
   border: 0;
   border-radius: var(--ch-radius-md);
-  font: 550 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   letter-spacing: -0.012em;
   white-space: nowrap;
   text-decoration: none;
