@@ -215,4 +215,3 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
     </main>
   );
 }
-

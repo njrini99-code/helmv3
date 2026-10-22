@@ -136,7 +136,8 @@ describe('20104 20103 “Waiting on you”: its words and where each part opens 
     // The Hub's RSVPs rows each say how many haven't replied; Home sums the same rows.
     expect(rsvpQueue(hub.rsvps.rows)).toEqual({ missing: 3, events: hub.rsvps.rows.map((r) => ({ eventId: r.eventId, missing: r.counts!.none })) });
     expect(overdueTaskCount(hub.tasks.rows)).toBe(hub.tasks.rows.filter((t) => t.status === 'overdue').length);
-    expect(overdueTaskCount([...hub.tasks.rows, { ...hub.tasks.rows[0]!, status: 'overdue' }])).toBe(1);
+    // One more overdue row is one more (the Hub's fixture already has its own overdue task, t4).
+    expect(overdueTaskCount([...hub.tasks.rows, { ...hub.tasks.rows[0]!, status: 'overdue' }])).toBe(overdueTaskCount(hub.tasks.rows) + 1);
     // a1 asks for an acknowledgement Jonah hasn't given; a2 and a3 don't ask.
     expect(unackedPostCount(hub.announcements.rows)).toBe(1);
     expect(unackedPostCount([{ needAck: true, notAcked: null }])).toBeNull();
