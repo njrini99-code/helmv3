@@ -1,3 +1,7 @@
+---
+title: A committed edge swipe leaves nothing running when its screen goes
+---
+
 ## 2026-10-22 — A committed edge swipe leaves nothing running when its screen goes
 
 ```text
