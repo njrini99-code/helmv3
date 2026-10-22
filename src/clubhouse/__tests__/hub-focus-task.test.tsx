@@ -61,8 +61,9 @@ describe('100103 Team Hub · a notification’s task', () => {
     expect(rowOf('Sign travel waiver').className).not.toMatch(/is-focus/);
   });
 
-  it('a player on Home: the task in Your tasks is scrolled to; the wash clears when its fade ends', async () => {
+  it('a player’s ?task= with no tab opens Tasks: the row is scrolled to; the wash clears when its fade ends', async () => {
     render(hub(PREVIEW_HUB_PLAYER, undefined, 't1'));
+    expect(screen.getByRole('tab', { name: /^Tasks/ }).getAttribute('aria-selected')).toBe('true');
     await waitFor(() => expect(scrolled).toHaveLength(1));
     const row = rowOf('Sign travel waiver');
     expect(scrolled[0]!.el).toBe(row);

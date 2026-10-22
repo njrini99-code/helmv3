@@ -38,6 +38,27 @@ Held items:     none
 - `component-catalog.json` tokens no longer carry `line`. Any stylesheet edit
   shifted every later token's line, so each Clubhouse PR that landed made the
   committed catalog stale on every other open PR. Nothing read the field.
+## 2026-10-21 — Team Hub Home is widgets
+
+Team Hub's Home is a twelve-column bento of tiles (`screens/hub/widgets.tsx`,
+`.ch-hw*` in `styles/hub.css`). `ReplyChoices`, `Acknowledgement`,
+`repliesLine` and a new `useTaskSave` are exported from `screens/hub/parts.tsx`
+so a tile acts as the tabs do; `Rsvps`, `HubBand` and `homeBand` are removed.
+
+## 2026-10-21 — A coach's Team Hub item has a badge
+
+`CH_NAV_COACH`'s Team Hub item is `badge: 'hub'`, and `badgeCount` adds the
+shell's `overdueTasks` (a coach's overdue tasks with open work, read once by
+`loadClubhouseShell`) to the polled counts, which are zero for a coach.
+
+## 2026-10-21 — Stronger rule token; players get a Tasks tab in Team Hub
+
+`--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both
+high-contrast sets) is a hairline at 1.8:1 against the workspace, for lines
+that divide a page's sections where the plain rule (1.2:1) lets the page read
+flat. It is decorative, not a 3:1 boundary. Team Hub uses it first (P010).
+`HUB_TABS.player` now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks`
+opens for a player.
 
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 

@@ -78,7 +78,7 @@ Logistics first.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10201 | RSVPs don't load | Player: "Your events didn’t load." Coach: "This week’s replies didn’t load." + Try again; never "You’re all caught up". With another read failed too, the page's one notice carries Try again (the shell's CH-1209: "Some of this page didn’t load" naming the parts) and each failed section keeps only its title under its heading (`covered`); this applies to CH-10201 to CH-10204, CH-10206 and CH-10207 | `Rsvps`, `RefreshNotice`, `PageRefreshNotice` in `TeamHub` | hub.test › CH-10201, CH-1209 |
+| CH-10201 | RSVPs don't load | Home's week tile: "This week didn’t load."; a player's queue: "Your events didn’t load." + Try again; never an empty week. With another read failed too, the page's one notice carries Try again (the shell's CH-1209: "Some of this page didn’t load" naming the parts) and each failed section keeps only its title under its heading (`covered`); this applies to CH-10201 to CH-10204, CH-10206 and CH-10207 | `WeekTile`, `QueueTile`, `RefreshNotice`, `PageRefreshNotice` in `TeamHub` | hub.test › CH-10201, CH-1209 |
 | CH-10202 | Updates don't load | "Updates didn’t load." + "Your notifications are safe; the bell may still have them. Try again." | `Updates` | hub.test › CH-10202 |
 | CH-10203 | Tasks don't load | "Your tasks didn’t load." (coach: "Tasks didn’t load.") | `Tasks` | hub.test › CH-10203 |
 | CH-10204 | Documents don't load | "Documents didn’t load." + "Your files are safe." | `Documents` | hub.test › CH-10204 |
@@ -95,9 +95,9 @@ Logistics first.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-10301 | No events need a reply | Player: "You’re all caught up" + "New team events that need a reply show here." (an event the player is not invited to, or that has started, was cancelled or is past its RSVP deadline, is not listed). Coach: "No events need RSVPs" + Create event | `Rsvps` | hub.test › CH-10301 |
+| CH-10301 | No events this week | Home's week tile: "Nothing on the calendar this week" + "Events you add show here, with who has replied." (coach, with Create event) or "Team events show here as your coaches add them." (player) | `WeekTile` | hub.test › CH-10301 |
 | CH-10302 | No updates | "Nothing new" + "Posts, trips, tasks and qualifier moves show here as they happen." | `Updates` | hub.test › CH-10302 |
-| CH-10303 | No tasks | Player: "No tasks right now". Coach: "No tasks assigned" + "Assign a task and see who has done it." | `Tasks` | hub.test › CH-10303 |
+| CH-10303 | No tasks | Player: "No tasks right now" (Tasks tab); Home's queue with nothing asked: "Nothing is asked of you". Coach: "No tasks assigned" + "Assign a task and see who has done it." | `Tasks`, `QueueTile`, `TasksTile` | hub.test › CH-10303 |
 | CH-10304 | No documents | "No documents yet" + who fills it, flush at the panel's edge under the drop zone (no card) | `Documents` | hub.test › CH-10304 |
 | CH-10305 | A coach with nothing posted (v2 first run, gh-states EMPTY.hub.coach) | "Nothing posted yet" + Plan a trip; New announcement stays the head's one primary action, not repeated in the empty (states audit b9, 2026-10-08). Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10305 |
 | CH-10306 | A player with nothing from their coaches (EMPTY.hub.player) | "No team updates yet" + "Announcements, trips and documents from your coaches will show up here." Only when every read answered and was empty, Updates included; a failed Updates read shows CH-10202 instead | `TeamHub` | hub.test › CH-10306 |
