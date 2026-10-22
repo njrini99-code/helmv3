@@ -1,5 +1,26 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Brand decision recorded; preview player page frame
+
+White cards and Instrument Sans stay (owner decision); STATUS item 7 and
+`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
+`/clubhouse-preview/player?state=self` with the player, not the coach shell.
+
+## 2026-10-21 — Phone Roster and Team stats figures render directly
+
+Owner rule: no digit rolling. The phone Roster row figure and the Team stats
+strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
+gone from both screens.
+
+## 2026-10-21 — Lint bans reading the event inside a state updater
+
+`no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /
+`e.currentTarget` read inside a `set*(...)` updater. The updater runs later
+and can see a box React has already reset, which lost the Settings name on
+WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
+trips, Qualifiers, the component playground). A test pins the ban
+(`no-lazy-event-read.test.ts`).
+
 ## 2026-10-21 — A fitted hover card is never wider than its cell
 
 `PeekTarget` with `within` (the team stats grid's player cell) opened no narrower
@@ -24,24 +45,6 @@ Held items:     none
 - `component-catalog.json` tokens no longer carry `line`. Any stylesheet edit
   shifted every later token's line, so each Clubhouse PR that landed made the
   committed catalog stale on every other open PR. Nothing read the field.
-## 2026-10-21 — Lint bans reading the event inside a state updater
-
-`no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /
-`e.currentTarget` read inside a `set*(...)` updater. The updater runs later
-and can see a box React has already reset, which lost the Settings name on
-WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
-trips, Qualifiers, the component playground). A test pins the ban
-(`no-lazy-event-read.test.ts`).
-## 2026-10-21 — Phone Roster and Team stats figures render directly
-
-Owner rule: no digit rolling. The phone Roster row figure and the Team stats
-strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
-gone from both screens.
-## 2026-10-21 — Brand decision recorded; preview player page frame
-
-White cards and Instrument Sans stay (owner decision); STATUS item 7 and
-`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
-`/clubhouse-preview/player?state=self` with the player, not the coach shell.
 
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 
