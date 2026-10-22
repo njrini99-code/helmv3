@@ -889,6 +889,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-standing-how-you-play-ask-reads.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
