@@ -267,7 +267,7 @@ export function RosterPhone({
             />
             <div className="ch-rsm-scroll">
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} availability={availability} />
+                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} availability={availability} helm={data.helm} />
               </SectionBoundary>
             </div>
           </PhoneScreen>

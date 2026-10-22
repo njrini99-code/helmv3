@@ -2465,6 +2465,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30622,
+    "page": "P003",
+    "category": 6,
+    "item": 22,
+    "name": "COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER",
+    "chCode": "CH-3212",
+    "meaning": "CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -4333,6 +4344,17 @@
     "name": "THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD",
     "chCode": "CH-5214",
     "meaning": "The player's suggested goals don't load (the read of `golf_goal_suggestions` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50625,
+    "page": "P005",
+    "category": 6,
+    "item": 25,
+    "name": "COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL",
+    "chCode": "CH-5215",
+    "meaning": "CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },

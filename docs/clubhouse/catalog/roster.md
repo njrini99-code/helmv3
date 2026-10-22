@@ -65,6 +65,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn’t load, so this one can’t be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
 | CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn’t load." + "Your team is safe. Try again; the error has been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
 | CH-3211 | The player's roster list crashes | "The roster couldn’t be shown." … The header, search and sort stay | `SectionBoundary roster.team` | roster-player.test › CH-3211 |
+| CH-3212 | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) | The panel's CoachHelm block (and the phone profile's CoachHelm panel) reads "— costing strokes · — working" + "Didn’t load. Refresh to try again.", never 0 or "No reads yet"; View insights stays | `RosterPeek` `HelmBlock`, `HelmPanel`; logged `clubhouse.coachhelm.gate` / `visible` / `newestRounds`, or `clubhouse.roster.coachhelm` | roster.test › CH-3212; roster-peek-reads.test |
 
 ## 33xx Empty
 

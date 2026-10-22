@@ -19,6 +19,41 @@ minus and a dash for no data. Rows still slide to their new places on a chosen
 sort. The text-first swap (`useArrivalPainted`, `.ch-rsm-flowtext`) and
 `figureParts` went with Number Flow. Replays 1bff7a784 and c2710104e onto
 main.
+## 2026-10-21 — CoachHelm block and strokes by leg (spec D build B)
+
+```text
+Design package: none (spec D, Game Fingerprint and roster detail bridges)
+PR/commit:      parity/bridges (not pushed)
+Contract IDs:   CH-3212 (new)
+Actions:        none
+Data impact:    reads only: golf_coach_insights (visible rows, no exposure),
+                golf_teams, golf_pga_standards, golf_rounds; no new column
+Held items:     none
+```
+
+### Changed
+
+- The player panel has a CoachHelm section after Development: "3 costing
+  strokes · 1 working" and View insights to the coach's Deep dive of the
+  player, "No reads yet" with none, dashes and "Didn’t load. Refresh to try
+  again." when the counts did not load (CH-3212), nothing with CoachHelm off.
+  The phone profile has the same as a panel after Recent rounds.
+- Under the figures, one caption names the strokes-gained leg that loses the
+  most ("Loses most putting, −1.1 a round") or, with none losing, where the
+  player gains most.
+- The panel's Development counts link to the player's Development tab.
+
+### Why
+
+- Spec D: Fairway's roster detail page is covered by the panel, the coach's
+  player pages and Stats, except for what CoachHelm reads in the player's
+  rounds and the strokes-by-leg summary. The counts are `countReads`, so the
+  roster, the Board and the Game profile never disagree.
+
+### Verification
+
+- `roster-peek-reads.test.tsx`, `roster.test.tsx` › CH-3212, `alias.test.ts`;
+  VERIFY.md 2026-10-21.
 
 ## 2026-10-21 — Availability is the word only: the note is pulled
 

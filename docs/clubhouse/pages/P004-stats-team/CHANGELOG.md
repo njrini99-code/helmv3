@@ -16,6 +16,22 @@ The phone's strokes gained figure under the legs and each player's SG were
 Number Flow numerals. They are now plain tabular text written at once
 (`formatSigned`, a true minus), and the hidden copy beside the rolling one is
 gone. Replays 1bff7a784 and c2710104e onto main.
+## 2026-10-22 — Player pages carry a CoachHelm count line (see P005)
+
+```text
+Design package: none (spec D, coach dashboard parity)
+PR/commit:      claude/coach-parity-bridges
+Contract IDs:   CH-5215 (P005)
+Actions:        none
+Data impact:    reads only (counts of visible CoachHelm reads; no exposure recorded)
+Held items:     none
+```
+
+### Changed
+
+- The stats route loads the CoachHelm read counts for a player's Game detail
+  (`loadStatsReads`) and passes them down; no change to the team page itself.
+  The wording and behavior are in P005's changelog.
 
 ## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
 

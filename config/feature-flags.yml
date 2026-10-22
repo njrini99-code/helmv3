@@ -252,11 +252,11 @@ flags:
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
-    expires_at: "2026-10-23"
+    expires_at: "2026-12-31"
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -297,11 +297,11 @@ flags:
     type: temporary_migration
     status: active
     created_at: "2026-09-23"
-    expires_at: "2026-10-23"
+    expires_at: "2026-12-31"
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -578,7 +578,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -651,7 +651,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -691,7 +691,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the next analysis run rewrites each row's diagnosis with the old
@@ -727,7 +727,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the next analysis run rewrites each row's evidence without
@@ -763,7 +763,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -798,7 +798,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: >-
       Off: the coach board draws no Team patterns section, and the next
@@ -838,7 +838,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -931,7 +931,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -973,7 +973,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -984,6 +984,37 @@ flags:
       rules for v3 reads and the flag checks once the Cleared / Contradicted
       / Under review lines render in Clubhouse and the step has run stably
       for a month.
+
+  # CoachHelm engine gap (review 2026-10-19 §5 item 1, ported from #2073
+  # 899adc9dc): the nightly roster sweep never re-ran an idle player.
+  - feature_id: coachhelm_stale_refresh_v1
+    owner: golf/coachhelm
+    purpose: >-
+      Adds an idle-player pass to the nightly roster sweep: an analyzed player
+      whose newest analysis (newest visible-read refresh stamp or engine run)
+      is 14 or more days old, who still has an open read and a completed
+      round inside the engine's 90-day window, is re-analyzed with the same
+      deterministic engine run the sweep already uses (no model calls), at
+      most 6 players a night in a rotation through the stale players (oldest
+      first), after the freshness picks and under the same time budget.
+      Reads through the HELM_COACHHELM_TEAMS canary. Off: the sweep runs
+      exactly as before.
+    type: release
+    status: active
+    created_at: "2026-10-21"
+    expires_at: null
+    default: false
+    environment:
+      production: false
+      preview: false
+      development: false
+    kill_switch_behavior: null
+    cleanup_plan: >-
+      Turn on after the owner reviews the idle-player count in the PR. Once
+      the pass has run for a month without pinning the cap or failing
+      sweeps, make it unconditional in the roster sweep and delete this flag
+      in the same change. Turning it off stops the extra runs at once; reads
+      it refreshed stay as they are until their next run.
 
   # CoachHelm supercharge Slice 4: the closed loop (prescription fields,
   # criterion, verdicts). /mnt/project-files/coachhelm/supercharge/
@@ -1011,7 +1042,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1051,7 +1082,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1084,7 +1115,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
@@ -1113,7 +1144,7 @@ flags:
     default: false
     environment:
       production: false
-      preview: false
+      preview: true
       development: false
     kill_switch_behavior: null
     cleanup_plan: >-
