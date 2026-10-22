@@ -353,6 +353,15 @@ describe('Roster · reads that fail', () => {
     expect(code('CH-3208')!.textContent).not.toMatch(/\b0\b/);
   });
 
+  it('CH-3212 CoachHelm counts that do not load read as dashes and say so, never 0 or "No reads yet"', async () => {
+    const user = userEvent.setup();
+    wrap(roster({ helm: { status: 'failed' } }));
+    await openPeek(user);
+    await expectCode('CH-3212');
+    expect(code('CH-3212')!.textContent).not.toMatch(/\b0\b|No reads yet/);
+    expect(screen.getByText('Didn’t load. Refresh to try again.')).toBeTruthy();
+  });
+
   it('CH-3209 notes do not load: the field is locked so a blank can never overwrite a note', async () => {
     tables.current = { golf_team_members: { data: [{ status: 'active', jersey_number: null, joined_at: null, player: { id: 'p1', first_name: 'Theo', last_name: 'M' } }] }, golf_coach_player_intent: { error: { message: 'boom' } } };
     const data = await loadRoster({ teamId: 't1', coachId: 'c1' });

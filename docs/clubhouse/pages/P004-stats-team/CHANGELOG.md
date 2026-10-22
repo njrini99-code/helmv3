@@ -1,5 +1,22 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-22 — Player pages carry a CoachHelm count line (see P005)
+
+```text
+Design package: none (spec D, coach dashboard parity)
+PR/commit:      claude/coach-parity-bridges
+Contract IDs:   CH-5215 (P005)
+Actions:        none
+Data impact:    reads only (counts of visible CoachHelm reads; no exposure recorded)
+Held items:     none
+```
+
+### Changed
+
+- The stats route loads the CoachHelm read counts for a player's Game detail
+  (`loadStatsReads`) and passes them down; no change to the team page itself.
+  The wording and behavior are in P005's changelog.
+
 ## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
 
 ```text

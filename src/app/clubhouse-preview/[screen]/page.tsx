@@ -33,7 +33,7 @@ import { Roster } from '@/clubhouse/screens/roster/Roster';
 import { RosterNoTeam } from '@/clubhouse/screens/roster/RosterNoTeam';
 import { TeamRoster } from '@/clubhouse/screens/roster/TeamRoster';
 import { RosterSkeleton } from '@/clubhouse/screens/roster/RosterSkeleton';
-import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
+import { PREVIEW_PLAYER_ROSTER, PREVIEW_PLAYER_ROSTER_EMPTY, PREVIEW_PLAYER_ROSTER_FAILED, PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_EMPTY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_HELM_FAILED, PREVIEW_ROSTER_HELM_OFF, PREVIEW_ROSTER_PARTIAL } from '@/clubhouse/preview/fixtures-roster';
 import { StatsTeam } from '@/clubhouse/screens/stats/StatsTeam';
 import { StatsPlayer } from '@/clubhouse/screens/stats/StatsPlayer';
 import { StatsSkeletonFor } from '@/clubhouse/screens/stats/StatsRouteSkeleton';
@@ -43,6 +43,9 @@ import {
   PREVIEW_PLAYER_FILTERED,
   PREVIEW_PLAYER_NINES,
   PREVIEW_PLAYER_SUGGESTED,
+  PREVIEW_PLAYER_READS,
+  PREVIEW_READS_FAILED,
+  PREVIEW_SELF_READS,
   PREVIEW_PLAYER_NOMATCH,
   PREVIEW_TEAM_EARLY_FILTER,
   PREVIEW_TEAM_FILTERED,
@@ -156,10 +159,10 @@ import { phoneHint } from '@/clubhouse/lib/phone-hint';
  *   /clubhouse-preview/classes ?state=clear | empty | failed | partial | mixed | noteam | loading | failwrites | failsync | read-notschedule | read-fault | read-none | read-warn   (Jonah)
  *   /clubhouse-preview/setup ?state=failcourses | failtees | failholes | failstart | noqualifiers | qualifiersfailed   (new round)
  *   /clubhouse-preview/track ?state=approach | putt | holed | checkpointfail | last | meters | exit | card | summary | submitting | posted | submitfail | saved | phone | saving | retrying   (the shot screen; the last four fake the round's save line, CH-11901)
- *   /clubhouse-preview/roster ?state=empty | failed | partial | availability | loading
+ *   /clubhouse-preview/roster ?state=empty | failed | partial | availability | helm-failed | helm-off | loading   (helm-: the panel's CoachHelm counts didn't load, or CoachHelm is off)
  *   /clubhouse-preview/roster-player ?state=empty | failed | noteam | loading   (the player's read-only roster; Theo)
  *   /clubhouse-preview/stats  ?state=empty | failed | partial | crash | loading | filtered | nomatch | earlyfilter | nines | last20 | demo   (the round filter: a filter on, none matching, two rounds, nine-hole rounds in; Last 20)
- *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading
+ *   /clubhouse-preview/player ?state=failed | early | self | filtered | nomatch | nines | loading | readsfailed | readsoff   (reads: Game detail's CoachHelm count lines)
  *   /clubhouse-preview/calendar ?state=empty | firstrun | failed | partial | loading, &view=, &date=, &event=
  *   /clubhouse-preview/calendar-player
  *   /clubhouse-preview/messages ?state=empty | rail | failed | thread-failed | loading | loading-route | files-failed | add-failed
@@ -339,7 +342,11 @@ export default async function ClubhousePreview({
                     ? PREVIEW_ROSTER_PARTIAL
                     : state === 'availability'
                       ? PREVIEW_ROSTER_AVAILABILITY
-                      : PREVIEW_ROSTER
+                      : state === 'helm-failed'
+                        ? PREVIEW_ROSTER_HELM_FAILED
+                        : state === 'helm-off'
+                          ? PREVIEW_ROSTER_HELM_OFF
+                          : PREVIEW_ROSTER
             }
           />
         ),
@@ -399,7 +406,12 @@ export default async function ClubhousePreview({
         ) : state === 'nines' ? (
           <StatsPlayer data={PREVIEW_PLAYER_NINES} coachId="preview-coach" />
         ) : (
-          <StatsPlayer data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? PREVIEW_PLAYER_SUGGESTED : PREVIEW_PLAYER} coachId={state === 'self' ? null : 'preview-coach'} initialTab={tab} />
+          <StatsPlayer
+            data={state === 'early' ? PREVIEW_PLAYER_EARLY : state === 'self' ? PREVIEW_PLAYER_SUGGESTED : PREVIEW_PLAYER}
+            coachId={state === 'self' ? null : 'preview-coach'}
+            initialTab={tab}
+            reads={state === 'readsoff' ? { status: 'off' } : state === 'readsfailed' ? PREVIEW_READS_FAILED : state === 'self' ? PREVIEW_SELF_READS : PREVIEW_PLAYER_READS}
+          />
         ),
     },
     calendar: {

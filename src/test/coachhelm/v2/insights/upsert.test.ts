@@ -68,6 +68,21 @@ function createFakeSupabase(opts: {
   let updateCallIndex = 0;
 
   const fromFn = vi.fn((table: string) => {
+    // Ownership lookups (resolvePlayerOwnership): "no team", so the row lands
+    // with coach_id/team_id null. Not recorded in `calls`. Before 2026-10-21
+    // these tables were not faked and the thrown lookup fell back to nulls;
+    // that fallback now fails closed, so the fake answers them.
+    if (table === 'golf_team_members' || table === 'golf_team_coach_staff') {
+      const ownership = {
+        select: () => ownership,
+        eq: () => ownership,
+        in: () => ownership,
+        order: () => ownership,
+        limit: () => ownership,
+        maybeSingle: async () => ({ data: null, error: null }),
+      };
+      return ownership;
+    }
     const state: {
       op?: OpKind;
       payload?: unknown;
