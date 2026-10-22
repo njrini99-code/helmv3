@@ -1,3 +1,5 @@
+# Settings › Preferences › Time format (12 or 24-hour)
+
 ## 2026-10-22 — Settings › Preferences › Time format (12 or 24-hour)
 
 ```text

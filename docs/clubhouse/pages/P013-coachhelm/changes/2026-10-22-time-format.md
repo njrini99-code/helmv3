@@ -1,3 +1,5 @@
+# Ask's "as of" time follows the device clock (24-hour option)
+
 ## 2026-10-22 — Ask's "as of" time follows the device clock (24-hour option)
 
 ```text

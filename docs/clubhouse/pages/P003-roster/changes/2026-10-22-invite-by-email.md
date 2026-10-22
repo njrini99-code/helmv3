@@ -1,3 +1,5 @@
+# Invite players by email
+
 ## 2026-10-22 — Invite players by email
 
 ```text

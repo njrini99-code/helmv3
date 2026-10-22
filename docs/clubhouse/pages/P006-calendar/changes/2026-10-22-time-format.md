@@ -1,3 +1,5 @@
+# Calendar times follow the device clock (24-hour option)
+
 ## 2026-10-22 — Calendar times follow the device clock (24-hour option)
 
 ```text

@@ -2932,7 +2932,7 @@
     "item": 80,
     "name": "EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH",
     "chCode": "CH-3880",
-    "meaning": "Email them is one labelled field (\"Or email them\"). Each address is a chip with its own \"Remove eli@school.edu\" button, an unreadable one adds \", can’t be read as an email address\" and one that did not send \", didn’t send\"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert",
+    "meaning": "Email them is one labelled field (\"Or email them\"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds \", can’t be read as an email address\" and one that did not send \", didn’t send\"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
