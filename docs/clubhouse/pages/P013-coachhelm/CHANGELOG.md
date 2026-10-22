@@ -1,5 +1,34 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-21 — No club names in read copy
+
+```text
+Design package: none (owner rule: shot type, and driver vs not-driver only)
+PR/commit:      see git log (claude/coachhelm-no-clubs-copy)
+Contract IDs:   none (copy only)
+Actions:        none
+Data impact:    none; the engine writes the new wording on its next run
+Held items:     none
+```
+
+### Changed
+
+- Reads name the shot type, and driver vs not-driver off the tee, and no
+  club: "non-driver tee shots" for "tee fairway clubs", "too little carry for
+  the number" for "under-clubbing", "short-approach" and "short pitch shots"
+  for "wedge", "your game" for "your bag", "laying back off the tee" for
+  "the layback club". The numbers and the analysis are unchanged.
+- Profile: the driver usage floor reads "At least 40 tee shots marked driver
+  or not-driver."
+- Preview: the team pattern fixture is "Approaches 50–125 yd", and the tee
+  strategy and slope fixtures carry the new wording.
+
+### Verified
+
+- `src/lib/coachhelm/v3/engine/__tests__/no-club-words.test.ts`.
+- Phone screenshots (390 × 844), light and dark, of the coach board's team
+  patterns and engine states and the player's Profile.
+
 ## 2026-10-21 — Coach: the Brief behind /intelligence (flag off)
 
 ```text

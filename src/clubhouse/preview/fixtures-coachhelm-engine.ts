@@ -230,7 +230,7 @@ const teeStrategy = (playerId: string, id: string, partner: string): EvidenceIns
     { ...bigNumber(playerId, id), category: 'course_management', title: 'Driver off the tee gains 0.15 a hole', priority: 'medium' },
     {
       metric: 'tee_strategy_driver_gain',
-      metric_label: 'Driver against the other tee club',
+      metric_label: 'Driver against non-driver tee shots',
       conflict: {
         with_insight_id: partner,
         kind: 'opposing_strategy',

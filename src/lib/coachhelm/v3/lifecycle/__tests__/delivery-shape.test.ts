@@ -73,7 +73,7 @@ describe('lines', () => {
     expect(lines).toContain('5 of 7 penalties in the last 9 rounds came right after a driver tee shot.');
     expect(lines).toContain('Net still favours driver, by about 0.9 strokes a round.');
     expect(strategyPairLines({ ...strategy('p'), net_strokes: null, resolution: 'net_unknown' }, 'player').at(-1)).toBe(
-      'Talk to your coach about where to take less club.',
+      'Talk to your coach about where to lay back off the tee.',
     );
   });
 

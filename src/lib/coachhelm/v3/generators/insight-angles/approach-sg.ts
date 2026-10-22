@@ -415,9 +415,9 @@ export function composeSgFamily(agg: SgAggregate): ComposedContent & { category:
         ...(d.proximity_ft !== null ? [{ metric: 'proximity_when_hit_ft', label: 'Proximity when the green was hit', value: d.proximity_ft, unit: 'feet' as const, sample_n: d.greens, source: 'golf_shots.distance_to_hole_after' }] : []),
       ],
       recommended_action: isPar3
-        ? 'Par-3 club choice: play to the middle of the green on the longer holes and judge each tee shot by greens hit.'
+        ? 'Par-3 tee shots: play to the middle of the green on the longer holes and judge each tee shot by greens hit.'
         : (d.short_pct ?? 0) > (t.short_pct ?? 100)
-          ? `Distance control from ${r.label.replace('approaches from ', '')}: take the longer club when between, scored on misses short.`
+          ? `Distance control from ${r.label.replace('approaches from ', '')}: play to the longer carry when between numbers, scored on misses short.`
           : `Approach reps from ${r.label.replace('approaches from ', '')}, scored on greens hit and leave distance.`,
       confidence_reason: '',
     },
