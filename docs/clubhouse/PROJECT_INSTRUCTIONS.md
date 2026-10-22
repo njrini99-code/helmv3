@@ -28,9 +28,10 @@ and 4: land with `pr:land`, deploy), these win.
    unless the owner says so in that conversation.
 8. Clubhouse stays off in production (`golf_clubhouse_ui` is
    `production: false`). Do not change that.
-9. Push rarely. GitHub Actions runs at most 20 jobs at once on this account
-   and one push to a PR costs about 55 runner-minutes. Use local checks
-   (`npm run check:changed`, `npm run clubhouse:check`) as the inner loop.
+9. Push rarely. GitHub Actions runs at most 40 jobs at once on this account
+   (GitHub Pro) and a full CI run costs about 40 runner-minutes. Use local
+   checks (`npm run check:changed`, `npm run clubhouse:check`) as the inner
+   loop.
 10. Do not land, merge, rebase or push to another thread's PR or branch. The
     owner folds ready PRs into merge trains.
 11. When a row is done, update its status and PR in QUEUE.md in the same PR.
