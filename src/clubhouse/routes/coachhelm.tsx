@@ -184,20 +184,20 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
         </Suspense>
       );
     }
-<<<<<<< HEAD
-    // The Monday brief is the coach's alone, and only with its flag on; with it off the address is the board.
-    if (view === 'monday-brief' && isMondayBriefEnabled()) {
-      return (
-        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
-          <CoachMondayBriefView coachId={team.coachId} teamId={team.teamId} />
-=======
     // A coach's view of one player: the address names the player, and the page checks it against this team before any read.
     const coachDrill = playerHelmDrill(view);
     if (coachDrill && typeof player === 'string') {
       return (
         <Suspense fallback={coachPlayerSkeleton(coachDrill, null, true)}>
           <CoachPlayerPage coachId={team.coachId} teamId={team.teamId} playerId={player} drill={coachDrill} insight={coachDrill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} />
->>>>>>> origin/main
+        </Suspense>
+      );
+    }
+    // The Monday brief is the coach's alone, and only with its flag on; with it off the address is the board.
+    if (view === 'monday-brief' && isMondayBriefEnabled()) {
+      return (
+        <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
+          <CoachMondayBriefView coachId={team.coachId} teamId={team.teamId} />
         </Suspense>
       );
     }
