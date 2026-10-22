@@ -1,5 +1,123 @@
 # P002 — Home: changelog
 
+## 2026-10-22 — Home leaves out a player who is injured or away
+
+```text
+Design package: none (coach dashboard parity, availability on Home and Calendar)
+PR/commit:      claude/coach-parity-availability
+Contract IDs:   none
+Actions:        none
+Data impact:    reads golf_team_members.availability beside the roster the page already reads; no migration
+Held items:     none
+```
+
+### Changed
+
+- The leaderboard row of an injured or away player reads "Injured" or "Away" in
+  plain ink instead of "No rounds N days", and the player peek stops saying
+  "No round in N days". The greeting subline skips them in both halves (needs a
+  look, on track), the same rule as the roster's Needs a look. A player marked
+  available, or with no value, reads as before.
+- `loadCoachHome` selects `availability` with the roster it already reads (no
+  extra read); an unknown value reads as available.
+
+## 2026-10-21 — Coach Home parity: the team's game, Waiting on you, CoachHelm, Nudge
+
+```text
+Design package: coach-parity spec B (spec-B-coach-home.md, decided)
+PR/commit:      parity/coach-home (local)
+Contract IDs:   20104, 20105 new; 20103, 22301 extended;
+                20414, 20415, 20619-20622 minted (CH-2314, CH-2315,
+                CH-2218 to CH-2221)
+Actions:        ACT-P002-QUEUE-JOINS, -REPLIES, -TASKS, -POSTS,
+                ACT-P002-NUDGE-NEXT, ACT-P002-OPEN-LEG-PLAYER,
+                ACT-P002-OPEN-COACHHELM-PLAYER
+Data impact:    reads only, no migration: golf_teams,
+                golf_round_stats_cache, golf_pga_standards,
+                golf_team_join_requests, golf_tasks,
+                golf_task_assignments, the announcements with their
+                recipients and acknowledgements
+Held items:     none
+```
+
+### Changed
+
+- The team's game (desktop under the team's form, phone after Team scoring):
+  the four parts on the form's own Last 10, as a ruled ledger (desktop) or
+  rows between hairlines (phone). Each part's stat with the Tour's mark,
+  strokes gained per round, the change against the same players' previous ten
+  (coloured only past one standard error), and who gains and loses most from
+  Team Stats' ranking, names linking to the player's Game tab. Reuses
+  `legRows` (moved to `data/leg-rows.ts`), `teamGrid` and `teamRankRows`; no
+  new stats math. States CH-2218, CH-2219, CH-2221, CH-2314, CH-2315.
+- Waiting on you (desktop under the head, phone in the hero, the first run
+  too): join requests, replies missing, overdue tasks and posts awaiting
+  acknowledgement, each counted as its screen counts it and opening it. A part
+  that fails is left out and the row says so (CH-2220). Read in
+  `data/home-queue.ts` with Team Hub's pure counts.
+- CoachHelm from a player: the player peek's fourth action and the phone's
+  round sheet open `coachhelm?view=deep-dive&player=`.
+- The desktop week's Next row adds "5 of 6 going · Eli hasn't replied" and a
+  Nudge (the phone day card's own prefilled Messages link) while the event
+  still takes replies.
+- The desktop skeleton draws the four parts' ledger.
+- Preview states: home `cachefailed`, `tourfailed`, `queuefailed`, `noholes`,
+  `unranked`; the default and empty states carry the queue.
+
+### Why
+
+- Owner: "there's a lot in the player dash that isn't in the coach... fix it
+  all." Player Home had the four parts and its own asks; Coach Home had neither.
+
+### Verification
+
+- `home.test.tsx`, `home-coach-parity.test.tsx`, `home-data-completeness`,
+  `home-consumer-truthfulness`, `home-reads` (three round trips kept),
+  `wiring-p002-home`, `peek.test.tsx`; screenshots at 1280 and 390 under
+  `/home/user/shots-coach-home/`.
+
+## 2026-10-21 — The team form is drawn at once
+
+```text
+Design package: none (motion decision Q-153, three votes, 3 to 0)
+PR/commit:      claude/clubhouse-no-first-paint-draw-ins
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The team-form line no longer wipes in left to right and its end dot no longer
+fades in after 520 ms. The chart is drawn in place on first paint (`home.css`,
+`TeamForm.tsx`; Q-153). Motion report 2026-10-20-home.md box 3 reported this
+as a FAIL.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (display basis only; no query or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Team form (desktop and phone): the scoring, greens and putts changes are
+  green or amber only past one standard error of the difference, and read
+  "Better than previous 10" or "Worse than previous 10"; otherwise the signed
+  number stays in neutral ink with "No clear change". The loader adds the
+  standard errors from the rounds it already reads.
+- The leaderboard's form word follows the same rule (`formStatus`), so a
+  player whose form line is neutral reads Steady, not Improving.
+- Player home, your scoring: the caption reads "−1.4 · Better than previous
+  N" (or "No clear change vs previous N") in place of a bare change, N being
+  the rounds it is set against.
+- Putts use the cached basis: a round's putts count only when recorded (more
+  than zero), on the team form, the latest round and the player's own home.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
@@ -884,6 +1002,7 @@ Before/after normal-content captures are in page VERIFY logs. Physical-device
 and owner visual acceptance remain open in [POPUP_AUDIT](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 LatestRound passes the reduced preference through chSwap, eliminating the

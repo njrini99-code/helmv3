@@ -8,6 +8,7 @@
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { InsightCategory, InsightEvidence, InsightPriority } from '@/lib/coachhelm/v2/insights/types';
+import type { ReadFloorShortfall } from './read-floors';
 
 /**
  * Per-generator aggregate output. Subclasses extend with their own
@@ -23,6 +24,13 @@ export interface GeneratorAggregate {
    * v3 metric). Standing comparison + counterfactual both read this.
    */
   playerValue: number;
+  /**
+   * Slice 0b: the rounds that contributed observations to `sampleN`. When
+   * set, the base stamps the read's window from exactly these rounds
+   * (`engine/read-window.ts`); when absent it falls back to the composed
+   * window range.
+   */
+  windowRoundIds?: readonly string[];
 }
 
 /**
@@ -90,6 +98,11 @@ export interface RunResult {
    * rather than flattening it to text twice.
    */
   error?: unknown;
+  /**
+   * Slice 0b: set on a `no_data` exit when the read fell below its family
+   * floor (`engine/read-floors.ts`) — the Watching count-down for the run log.
+   */
+  watching?: ReadFloorShortfall;
 }
 
 /**
@@ -105,6 +118,21 @@ export interface ComposedContent {
   /** Optional severity, threaded by BaseGenerator into the upsert. Absent →
    *  the DB default 'medium' stands. A generator sets it from its verdict. */
   priority?: InsightPriority;
+  /**
+   * The generator's own verdict framing (PR #2073). With the root-cause flag
+   * on, `strength` / `neutral` rows get no cause (there is no problem to
+   * trace); `leak` rows do. Omitted → derived from `your_value` vs
+   * `comparison_value` when the polarity is trustworthy
+   * (`resolveInsightFraming` in `root-cause.ts`).
+   */
+  framing?: 'leak' | 'strength' | 'neutral';
+  /**
+   * The same title/content for a coach, in the third person (PR #2073;
+   * written with `inBothVoices`, `engine/coach-voice.ts`). Stored as
+   * `evidence.coach_copy` when it passes `coachCopyIssues` (same numbers, no
+   * "you", no club). Omitted → coaches see `title`/`content`.
+   */
+  coach?: { title: string; content: string };
 }
 
 /** Convenience re-exports for generator authors. */

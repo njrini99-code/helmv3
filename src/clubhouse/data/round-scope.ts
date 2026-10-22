@@ -22,6 +22,15 @@ export function hasHoleScores(r: { total_only?: boolean }): boolean {
   return r.total_only !== true;
 }
 
+/**
+ * A round's putts as the Stats pages count them (`cachedPutts`): a round whose holes carry no putt count is written 0 putts (or, once
+ * 20261017110000 is applied, none), and the Fairway pages leave such a round out of putts per round, so 0 is "not recorded", never a
+ * round holed in no putts. The cache's total is the round's own whenever it has one, so this is the same basis read from golf_rounds.
+ */
+export function recordedPutts(putts: number | null | undefined): number | null {
+  return typeof putts === 'number' && putts > 0 ? putts : null;
+}
+
 /** The rounds the hole-level figures read: the window's rounds without the ones posted as a total only. Order is kept. */
 export function holeRounds<T extends { total_only?: boolean }>(rounds: readonly T[]): T[] {
   return rounds.filter(hasHoleScores);

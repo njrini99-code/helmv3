@@ -1,5 +1,5 @@
 import 'server-only';
-import { getInsightsForPlayer, getThemesForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { getInsightsForPlayer, getThemesForCoach, getThemesForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { loadActiveGoals, loadRecentlyAchievedGoals } from '@/lib/coachhelm/v3/goals/loader';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
@@ -7,9 +7,12 @@ import type { AssembledThemes } from '@/lib/coachhelm/v3/themes/types';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
-import { isNote, kindOf } from './coachhelm-classify';
+import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
-import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
+import { readCorrections } from './coachhelm-corrections';
+import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
 import { speak } from './coachhelm-voice';
 import type { ChViewLoad } from './coachhelm-views-shape';
@@ -20,8 +23,11 @@ type Supabase = Awaited<ReturnType<typeof createClient>>;
 
 const log = (what: string, err: unknown) => chLogServer('coachhelm', what, err, 'coachhelm');
 
-/** The rounds the reads name, through the session's client and for this player only: completed, not a test round. A failed read is `null`, never "no rounds". */
-async function readRounds(supabase: Supabase, playerId: string, ids: string[]): Promise<Map<string, DiveRoundRow> | null> {
+/**
+ * The rounds the reads name, through the session's client and for this player only: completed, not a test round. A failed read is `null`,
+ * never "no rounds". `playerId` is the session's, or a coach's branded scope's (`data/coachhelm-player.ts`), never an address's.
+ */
+export async function readRounds(supabase: Supabase, playerId: string, ids: string[]): Promise<Map<string, DiveRoundRow> | null> {
   const out = new Map<string, DiveRoundRow>();
   for (const chunk of chunkIds([...new Set(ids)])) {
     const res = await supabase
@@ -40,8 +46,11 @@ async function readRounds(supabase: Supabase, playerId: string, ids: string[]): 
   return out;
 }
 
-/** The focus areas and goals a player has, which an insight links to. Goals read through the service client, scoped by this player id. `null`: a read failed. */
-async function readPlans(supabase: Supabase, playerId: string): Promise<{ focusAreas: DiveFocusRow[]; goals: Goal[] } | null> {
+/**
+ * The focus areas and goals a player has, which an insight links to. Goals read through the service client, scoped by this player id, so
+ * the id is the session's or a coach's branded scope's (`data/coachhelm-player.ts`), never an address's. `null`: a read failed.
+ */
+export async function readPlans(supabase: Supabase, playerId: string): Promise<{ focusAreas: DiveFocusRow[]; goals: Goal[] } | null> {
   try {
     const [focus, active, achieved] = await Promise.all([
       supabase
@@ -61,10 +70,13 @@ async function readPlans(supabase: Supabase, playerId: string): Promise<{ focusA
   }
 }
 
-/** The category reads. `null`: they did not load (the action answers `success: false`, or throws). */
-async function readThemes(playerId: string): Promise<AssembledThemes | null> {
+/**
+ * The category reads. `null`: they did not load (the action answers `success: false`, or throws). A coach's go through
+ * `getThemesForCoach`, which admits a coach of the player (`verifyPlayerAccess`, as the coach feed does).
+ */
+export async function readThemes(playerId: string, role: 'player' | 'coach' = 'player'): Promise<AssembledThemes | null> {
   try {
-    const res = await getThemesForPlayer(playerId);
+    const res = role === 'coach' ? await getThemesForCoach({ player_id: playerId }) : await getThemesForPlayer(playerId);
     if (res.success && res.data) return res.data;
     log('dive.themes', res.error ?? 'no themes');
     return null;
@@ -74,7 +86,7 @@ async function readThemes(playerId: string): Promise<AssembledThemes | null> {
   }
 }
 
-const EMPTY = (rounds: number | null, tour: ChDeepDive['tour']): ChDeepDive => ({ list: [], tour, rounds, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: { insights: 0, needs: 0, working: 0, inPlan: 0 } });
+export const EMPTY_DIVE = (rounds: number | null, tour: ChDeepDive['tour']): ChDeepDive => ({ list: [], tour, rounds, themes: {}, roundsFailed: false, plansFailed: false, themesFailed: false, counts: { insights: 0, needs: 0, working: 0, inPlan: 0 } });
 
 /**
  * The player's Deep dive (`?view=deep-dive`), read after the route has checked CoachHelm is on for them. `playerId` is the session's,
@@ -88,6 +100,17 @@ const EMPTY = (rounds: number | null, tour: ChDeepDive['tour']): ChDeepDive => (
  */
 export async function loadPlayerDeepDive(input: { playerId: string }): Promise<ChViewLoad<ChDeepDive>> {
   const { playerId } = input;
+  // CH13-21: only the cards this page draws count as shown, and with coachhelm_recheck_v1 on it knows that only once the lifecycle
+  // shaping has dropped the cleared reads, the retired contradictions and a pair's second member. Every return says which ids it drew
+  // (the Board's `drawnLater` pattern); a page that fails draws none.
+  let drew: (ids: readonly string[]) => void = () => {};
+  const drawnIds = new Promise<readonly string[]>((resolve) => {
+    drew = resolve;
+  });
+  const done = (page: ChViewLoad<ChDeepDive>, ids: readonly string[] = []): ChViewLoad<ChDeepDive> => {
+    drew(ids);
+    return page;
+  };
   try {
     const supabase = await createClient();
     // Everything that does not need the feed reads beside it (perf, 2026-10-01): the team (its tour), the plans the insights link to and
@@ -99,48 +122,73 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     const themesRead = handled(readThemes(playerId));
     let feed: EvidenceInsight[];
     try {
-      // CH13-21: only the cards this page draws count as shown.
-      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawn: (i) => !isNote(i) });
+      // includeMore: the Deep dive lists every read, the ones past the Board's 3 + 1 included (coachhelm_reads_v1_copy; no effect
+      // with the flag off).
+      feed = await getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => drawnIds, includeMore: true });
     } catch (err) {
       log('dive.feed', err);
-      return { status: 'failed' };
+      return done({ status: 'failed' });
     }
     const team = await teamRead;
     const tourName: ChDeepDive['tour'] = team.tour?.tour === 'lpga' ? 'LPGA Tour' : 'Tour';
     if (feed.length === 0) {
       const [visible, dismissed] = await Promise.all([loadVisible(supabase, [playerId]), loadPlayerDismissed(supabase, playerId)]);
-      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return { status: 'failed' };
-      return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
+      if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return done({ status: 'failed' });
+      return done({ status: 'ready', data: EMPTY_DIVE(await countCountableRounds(supabase, playerId), tourName) });
     }
     // A card that states no finding is not drawn on the Board, and is not here.
     const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
-    if (drawn.length === 0) return { status: 'ready', data: EMPTY(await countCountableRounds(supabase, playerId), tourName) };
+    if (drawn.length === 0) return done({ status: 'ready', data: EMPTY_DIVE(await countCountableRounds(supabase, playerId), tourName) });
 
-    const [drills, assigned, newest, rounds, plans, themes] = await Promise.all([
+    // The engine's states, each behind its flag (surfaces A): with every flag off `shaped.kept` is `drawn` and nothing is added.
+    const flags = readEngineFlags();
+    const now = new Date().toISOString();
+    const viewer = { role: 'player' } as const;
+    const shaped = shapeReadsLifecycle(drawn, flags.recheck, viewer, now);
+    const [drills, assigned, newest, rounds, plans, themes, focus, corrections] = await Promise.all([
       drillTextByInsight(supabase, drawn),
       assignedByInsight(
         supabase,
         drawn.map((i) => i.id),
       ),
       newestRounds(supabase, [playerId], earliestStaleFloor(drawn)),
-      readRounds(supabase, playerId, drawn.flatMap((i) => roundIdsToRead(i.evidence))),
+      // The rounds the reads name, and the rounds their example holes are on (chs-38), in one read.
+      readRounds(supabase, playerId, drawn.flatMap((i) => [...roundIdsToRead(i.evidence), ...exampleRoundIds(i.evidence)])),
       plansRead,
       themesRead,
+      readFocusVerdicts(
+        supabase,
+        shaped.kept.map((i) => i.id),
+        flags.verdicts,
+      ),
+      // The player's own Not this / Good read on their reads (coachhelm_corrections_v1; null with it off or the table missing).
+      readCorrections(supabase, { role: 'player', teamIds: team.teamId ? [team.teamId] : [], reads: shaped.kept.map((i) => ({ id: i.id, playerId })) }),
     ]);
     const newestRound = newest.days.get(playerId) ?? null;
-    const say = (t: string) => speak(t, { role: 'player' });
-    const list = orderDive(drawn.map((raw) => {
-      const base = toChInsight(raw, { drillText: drills.texts.get(raw.id) ?? null, assigned: assigned.byInsight.get(raw.id) ?? null, tour: team.tour, newestRound, viewer: { role: 'player' } });
-      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say);
+    // One viewer for the card, the words and the Read: the signed-in player (a player never sees an inferred cause).
+    const say = (t: string) => speak(t, viewer);
+    const list = orderDive(shaped.kept.map((raw) => {
+      const base = toChInsight(raw, {
+        drillText: drills.texts.get(raw.id) ?? null,
+        assigned: assigned.byInsight.get(raw.id) ?? null,
+        tour: team.tour,
+        newestRound,
+        viewer,
+        engine: { flags, lifecycle: shaped.byId.get(raw.id) ?? null, focus: focus.get(raw.id) ?? null, now, corrections: corrections?.get(raw.id) ?? null },
+      });
+      return toChDeepInsight(raw, base, { rounds: rounds ?? new Map(), focusAreas: plans?.focusAreas ?? [], goals: plans?.goals ?? [], themes }, say, viewer.role);
     }));
     // A failed team read (or Tour read) leaves every read without its Tour comparison: the page says so, not "no comparison".
     const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
-    return {
-      status: 'ready',
-      data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}) },
-    };
+    return done(
+      {
+        status: 'ready',
+        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
+      },
+      list.map((i) => i.base.id),
+    );
   } catch (err) {
     log('dive', err);
-    return { status: 'failed' };
+    return done({ status: 'failed' });
   }
 }

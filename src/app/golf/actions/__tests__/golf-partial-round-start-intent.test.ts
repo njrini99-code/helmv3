@@ -84,7 +84,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -105,11 +105,19 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     expect(tables.golf_rounds.find((r) => r.id === EXISTING_ROUND)?.status).toBe('in_progress');
   });
 
+  it('returns the course the round is linked to, so the client knows it has one (CoachHelm Slice 8b course nudge)', async () => {
+    const tables = baseTables();
+    seed(tables);
+    const result = await savePartialRound(newRoundPayload, undefined, { startIntent: true });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.courseId).toBe(COURSE);
+  });
+
   it('still inserts a fresh round for the same non-empty match when startIntent is NOT set (legacy callers unaffected)', async () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -214,7 +222,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -240,7 +248,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -257,7 +265,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     const tables = baseTables();
     tables.golf_rounds.push({
       id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+      course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
       qualifier_id: null, qualifier_round_number: null,
       updated_at: '2026-09-02T02:00:00Z',
     });
@@ -332,7 +340,7 @@ describe('savePartialRound no-id branch — startIntent (R8)', () => {
     tables.golf_rounds.push(
       {
         id: EXISTING_ROUND, player_id: 'player-1', team_id: 'team-1', course_id: COURSE,
-        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress',
+        course_name: 'Winchester CC', round_date: '2026-09-02', status: 'in_progress', round_type: 'practice',
         qualifier_id: null, qualifier_round_number: null,
         updated_at: '2026-09-02T02:00:00Z',
       },

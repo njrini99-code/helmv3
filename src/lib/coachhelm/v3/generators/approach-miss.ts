@@ -29,11 +29,14 @@
  * metrics is a follow-up RPC; the PGA green-hit anchors below are APPROXIMATE.
  */
 
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { INSIGHT_ANGLES_FLAG } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import { staleDataSuffix, ATTEMPT_FLOOR } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { wilsonInterval, rateIntervalText, type RateInterval } from '@/lib/coachhelm/v3/stats/interval';
 import { missedGreenCost, rateGapStrokes } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, PLAYER_VOICE, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { round } from '@/lib/golf/stat-formulas';
 import {
   greenHitAnchor,
@@ -43,6 +46,7 @@ import {
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import {
   loadApproachShots,
+  approachFoundGreen,
   bucketApproachDistance,
   type ApproachBucket,
   type ApproachShot,
@@ -57,6 +61,7 @@ import {
   dominantAxis,
   approachAxisReading,
   axisReadingToText,
+  classifyMiss,
   type ApproachAxis,
   type AxisReading,
   type AxisTally,
@@ -119,10 +124,19 @@ const MIN_GREENS_FOR_PROXIMITY = 3;
  *  Exported (additive — same behavior, just visible) so
  *  `context/adapters/shot-source-adapter.test.ts` can reuse the exact
  *  predicate instead of forking a copy that could drift from this one. */
+/**
+ * Slice 5b (`01` row 3): with `coachhelm_insight_angles_v1` on, approach
+ * bands leave out every approach from the tee (par-3 tee shots, recorded as
+ * `shot_type='approach'` with `lie_before='tee'`); par-3 tee shots are their
+ * own family (`insight-angles/approach-sg.ts`). Off: unchanged. Pure.
+ */
+export function bandApproachShots(shots: readonly ApproachShot[], splitPar3Tee: boolean): ApproachShot[] {
+  if (!splitPar3Tee) return [...shots];
+  return shots.filter((s) => (s.lie_before ?? '').toLowerCase() !== 'tee');
+}
+
 export function reachedGreen(s: ApproachShot): boolean {
-  const r = (s.result ?? '').toLowerCase();
-  if (r === 'green' || r === 'hole' || r === 'gir') return true;
-  return (s.lie_after ?? '').toLowerCase() === 'green';
+  return approachFoundGreen(s);
 }
 
 /** On-green finish → feet. On-green rows are stored in feet; the ×3 only converts the
@@ -134,16 +148,6 @@ function onGreenFinishFeet(s: ApproachShot): number {
   return s.distance_unit_after === 'yards'
     ? Number(s.distance_to_hole_after) * 3
     : Number(s.distance_to_hole_after);
-}
-
-/** Classify a raw miss_direction into its short/long and left/right poles. A
- *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
- *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both. */
-function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
-  const v = (raw ?? '').toLowerCase();
-  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
-  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
-  return { sl, lr };
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -200,7 +204,7 @@ const PAR_MIX_MIN_MINORITY = 5;
  * the composition and the par-4 rate — the one taken while actually hunting a
  * green — and lets the coach read it.
  */
-export function parMixSentence(split: ParSplit): string | null {
+export function parMixSentence(split: ParSplit, v: Voice = PLAYER_VOICE): string | null {
   const known = split.par4.attempts + split.par5.attempts;
   if (known === 0) return null;
   if (split.par4.attempts < PAR_MIX_MIN_MINORITY || split.par5.attempts < PAR_MIX_MIN_MINORITY) {
@@ -214,15 +218,15 @@ export function parMixSentence(split: ParSplit): string | null {
   if (par5Share >= PAR_MIX_DOMINANT_SHARE) {
     return (
       ` ${(par5Share * 100).toFixed(0)}% of these (${split.par5.attempts} of ${known}) were second shots on par 5s,` +
-      ` where laying up to a wedge number is often the right play and a lay-up records as a missed green.` +
-      ` On par 4s, where you have to go at it, you found the green ${split.par4.greenHitPct?.toFixed(0)}%` +
+      ` where laying up to ${v.pick('a wedge number', 'a preferred yardage')} is often the right play and a lay-up records as a missed green.` +
+      ` On par 4s, where ${v.you} have to go at it, ${v.you} found the green ${split.par4.greenHitPct?.toFixed(0)}%` +
       ` of the time over ${split.par4.attempts} approaches.`
     );
   }
 
   return (
     ` ${(par4Share * 100).toFixed(0)}% of these (${split.par4.attempts} of ${known}) were par-4 approaches,` +
-    ` where you found the green ${split.par4.greenHitPct?.toFixed(0)}% of the time;` +
+    ` where ${v.you} found the green ${split.par4.greenHitPct?.toFixed(0)}% of the time;` +
     ` the ${split.par5.attempts} par-5 second shots converted ${split.par5.greenHitPct?.toFixed(0)}%.`
   );
 }
@@ -340,6 +344,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
    * not printed (audit row 25). Below the floor the run retracts the row.
    */
   readonly minSampleN = ATTEMPT_FLOOR;
+  /** Reads the last 90 days ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = 90;
   protected override readonly requiresStanding = false;
   /**
    * ...but DO attach standing when the table has it.
@@ -400,7 +406,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
   }
 
   async aggregate(): Promise<ApproachMissAggregate | null> {
-    const shots = await loadApproachShots(this.playerId);
+    const shots = bandApproachShots(await loadApproachShots(this.playerId), isFlagEnabled(INSIGHT_ANGLES_FLAG));
     const inBucket = shots.filter(
       (s) => bucketApproachDistance(s.distance_to_hole_before, s.distance_unit_before) === this.bucket,
     );
@@ -448,6 +454,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     return {
       sampleN: inBucket.length,
+      // Slice 0b: the rounds behind this band's attempts stamp its window.
+      windowRoundIds: [...new Set(inBucket.map((s) => s.round_id))],
       last_round_date: lastRoundDate,
       // am-3 (armed-landmine guard): `playerValue` is contractually "the unit of
       // the v3 metric" — and `approach_proximity_*ft` is registered as FEET
@@ -498,15 +506,15 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     const prox = agg.proximity_when_hit_feet;
 
     // Title leads with reach (green-hit %); proximity-when-hit rides along when reliable.
-    const title =
+    const title = (v: Voice) =>
       prox != null
-        ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when you do`
+        ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when ${v.you} do`
         : `${label} approach: ${ghDisp} greens hit`;
 
     // Reach sentence + (when enough greens) the dial-in sentence — this is what tells the
     // coach whether the leak is finding greens or controlling distance once there.
-    const reachSentence =
-      `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
+    const reachSentence = (v: Voice) =>
+      `Across ${v.players} last ${agg.attempts} approaches from ${label} ${v.you} found the green ` +
       `${ghDisp} of the time${rateIntervalText(agg.green_hit_ci)}${anchorClause ? ` (${anchorClause})` : ''}.`;
     // NO TOUR COMPARISON HERE, deliberately. `prox` is averaged over
     // GREEN-FINDING SHOTS ONLY (see aggregate()), while the Tour proximity
@@ -517,10 +525,10 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // out-dials the Tour from 175+ yards — flattering and false. The reach
     // sentence above still carries a like-for-like comparison (green-hit % vs
     // Tour green-hit %), which is where the honest benchmark lives.
-    const dialInSentence =
+    const dialInSentence = (v: Voice) =>
       prox != null
-        ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
-          `(over ${agg.green_hit_n} greens), that's the dial-in once you're on.`
+        ? ` When ${v.you} do reach it ${v.you} finish ${prox.toFixed(0)} ft from the hole ` +
+          `(over ${agg.green_hit_n} greens), that's the dial-in once ${v.youre} on.`
         : ` Too few greens hit from here (${agg.green_hit_n}) to read a reliable proximity yet. The gap is ` +
           `finding the green, not distance control on it.`;
     const penaltySentence =
@@ -537,7 +545,7 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // the structured root cause and the prose cannot disagree.
     const slDom = dominantAxis(agg.miss_short_long);
     const lrDom = dominantAxis(agg.miss_left_right);
-    let axisSentence = '';
+    let axisSentence = (_v: Voice) => '';
     let reading: AxisReading | null = null;
     let axisMeta: { axis: ApproachAxis; share: number; n: number } | null = null;
     if (slDom) {
@@ -547,7 +555,10 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     }
     if (axisMeta) {
       reading = approachAxisReading(axisMeta.axis, axisMeta.share, axisMeta.n);
-      axisSentence = ' ' + axisReadingToText(reading);
+      const { axis, share, n } = axisMeta;
+      const recordText = axisReadingToText(reading);
+      axisSentence = (v) =>
+        ' ' + (v.coach ? axisReadingToText(approachAxisReading(axis, share, n, 'coach')) : recordText);
     }
     const metricLabel = `Greens hit from ${label}`;
     const diagnosis: Diagnosis | undefined =
@@ -583,13 +594,15 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     // The 175+ band is the one that pools a green-hunting shot with a par-5
     // lay-up; the shorter bands are green-hunting either way, so the split is
     // only worth the words where it changes the reading.
-    const parMix = agg.bucket === '175_plus_ft' ? (parMixSentence(agg.par_split) ?? '') : '';
+    const parMix = (v: Voice) => (agg.bucket === '175_plus_ft' ? (parMixSentence(agg.par_split, v) ?? '') : '');
 
     return {
-      title,
-      content:
-        reachSentence + dialInSentence + parMix + penaltySentence + axisSentence +
-        staleDataSuffix(agg.last_round_date),
+      ...inBothVoices((v) => ({
+        title: title(v),
+        content:
+          reachSentence(v) + dialInSentence(v) + parMix(v) + penaltySentence + axisSentence(v) +
+          staleDataSuffix(agg.last_round_date),
+      })),
       // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,

@@ -1,6 +1,7 @@
 import 'server-only';
 import type { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { PUTT_MAKE_BANDS, PUTT_REPORT_BAND_OF, puttMakeBandFor, type PuttMakeBandId, type PuttReportBandId } from '@/lib/golf/putt-make';
 import { fetchAllRowsTogether } from './paging';
 import { chLogServer } from '../lib/track-server';
 import { lastTenFloor, seasonStartDate, type ChRound } from './season';
@@ -10,6 +11,7 @@ import {
   hasRange,
   PICK_LIST_MAX,
   previousRounds,
+  previousWords,
   roundKind,
   selectRounds,
   type ChFilter,
@@ -89,15 +91,20 @@ export interface ChSgChange {
   delta: number | null;
   /** "vs previous 10", "No earlier rounds", ...; empty when the window has no previous one by design (season, qualifiers). */
   context: string;
+  /**
+   * The standard error of the change (stats-signal `changeSe`, from both windows' per-18 round values): the chip is green or amber only
+   * when the change clears it (decision Q4). Absent or null: the change is drawn in neutral ink, "No clear change".
+   */
+  se?: number | null;
 }
 
 /**
- * `earlier` is how many matching rounds come before the last 10. Both means
+ * `earlier` is how many matching rounds come before the last N. Both means
  * need three rounds with shots (MIN_SG_ROUNDS), so "no earlier rounds" is
  * said only when there are none, and a thin earlier stretch says so instead.
  */
-export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number): ChSgChange {
-  if (current != null && previous != null) return { delta: current - previous, context: 'vs previous 10' };
+export function sgChange(current: number | null, previous: number | null, window: ChWindow, earlier: number, se: number | null = null, last = 10): ChSgChange {
+  if (current != null && previous != null) return { delta: current - previous, context: previousWords(last), se };
   if (window !== 'last10' || current == null) return { delta: null, context: '' };
   return { delta: null, context: earlier <= 0 ? 'No earlier rounds' : 'Too few earlier rounds with shots' };
 }
@@ -208,17 +215,22 @@ export type ChTour = 'pga' | 'lpga';
  * men's values, and a metric the tour has no value for has no benchmark (Q-88: never D1, always Tour).
  */
 export async function loadTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+  return (await readTourBenchmarks(supabase, tour, surface)).bench;
+}
+
+/** `loadTourBenchmarks` with its failure told apart from a tour with no rows: `error` when the read failed (logged). */
+export async function readTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<{ bench: Map<string, number>; error: boolean }> {
+  const bench = new Map<string, number>();
   const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
   if (error) {
     chLogServer(surface, 'tourBenchmarks', error);
-    return out;
+    return { bench, error: true };
   }
   for (const r of data ?? []) {
     const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) out.set(r.metric_id, v);
+    if (v != null && Number.isFinite(v)) bench.set(r.metric_id, v);
   }
-  return out;
+  return { bench, error: false };
 }
 
 export function tourForGender(gender: string | null | undefined): ChTour {
@@ -253,44 +265,54 @@ export interface ChPuttBand {
 
 interface PuttBandDef {
   label: string;
-  /** Upper edge in feet, inclusive: "3–5 ft" is (3, 5], as the calculator and the cache writer cut them. The last band is open. */
-  hi: number;
+  /** The shared fine bands (`@/lib/golf/putt-make`, cut (lo, hi]) this band is made of: one for the nine, several for the six. */
+  fine: readonly PuttMakeBandId[];
   /** The golf_pga_standards metric whose Tour make rate grades this band; null where the tour publishes none. */
   metric: string | null;
 }
 
+/** "3–5 ft", "35+ ft": a band's name from the shared edges, so a label can never disagree with the cut. */
+function bandLabel(lo: number, hi: number | null): string {
+  return hi === null ? `${lo}+ ft` : `${lo}–${hi} ft`;
+}
+
+const fineBand = (id: PuttMakeBandId) => PUTT_MAKE_BANDS.find((b) => b.id === id)!;
+
+function bandDef(fine: readonly PuttMakeBandId[], metric: string | null): PuttBandDef {
+  const lo = fineBand(fine[0]!).lo;
+  const hi = fineBand(fine[fine.length - 1]!).hi;
+  return { label: bandLabel(lo, hi), fine, metric };
+}
+
+/** The Tour standard (golf_pga_standards metric) for each of the six reporting bands; the Tour publishes none for 0–3 ft. */
+const TOUR_METRIC_OF: Record<PuttReportBandId, string | null> = {
+  '0_3': null,
+  '3_5': 'putts_made_3_5ft_pct',
+  '5_10': 'putts_made_5_10ft_pct',
+  '10_15': 'putts_made_10_15ft_pct',
+  '15_25': 'putts_made_15_25ft_pct',
+  '25_plus': 'putts_made_25_plus_ft_pct',
+};
+
 /** Make rate by distance in the bands golf_pga_standards grades (3–5 up to 25+), so a band's Tour mark is the same distances. */
-export const PUTT_BANDS: PuttBandDef[] = [
-  { label: '0–3 ft', hi: 3, metric: null },
-  { label: '3–5 ft', hi: 5, metric: 'putts_made_3_5ft_pct' },
-  { label: '5–10 ft', hi: 10, metric: 'putts_made_5_10ft_pct' },
-  { label: '10–15 ft', hi: 15, metric: 'putts_made_10_15ft_pct' },
-  { label: '15–25 ft', hi: 25, metric: 'putts_made_15_25ft_pct' },
-  { label: '25+ ft', hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
-];
+export const PUTT_BANDS: PuttBandDef[] = (Object.keys(TOUR_METRIC_OF) as PuttReportBandId[]).map((id) =>
+  bandDef(
+    PUTT_MAKE_BANDS.filter((b) => PUTT_REPORT_BAND_OF[b.id] === id).map((b) => b.id),
+    TOUR_METRIC_OF[id],
+  ),
+);
 
 /**
  * The calculator's nine bands (Putting by distance on the production page). The Tour publishes five standards, so
  * 15–20 and 20–25 ft are graded against the 15–25 standard and the last three against the 25+ standard, as
  * production's own table does; 0–3 ft has none.
  */
-export const PUTT_BANDS_NINE: PuttBandDef[] = [
-  { label: '0–3 ft', hi: 3, metric: null },
-  { label: '3–5 ft', hi: 5, metric: 'putts_made_3_5ft_pct' },
-  { label: '5–10 ft', hi: 10, metric: 'putts_made_5_10ft_pct' },
-  { label: '10–15 ft', hi: 15, metric: 'putts_made_10_15ft_pct' },
-  { label: '15–20 ft', hi: 20, metric: 'putts_made_15_25ft_pct' },
-  { label: '20–25 ft', hi: 25, metric: 'putts_made_15_25ft_pct' },
-  { label: '25–30 ft', hi: 30, metric: 'putts_made_25_plus_ft_pct' },
-  { label: '30–35 ft', hi: 35, metric: 'putts_made_25_plus_ft_pct' },
-  { label: '35+ ft', hi: Infinity, metric: 'putts_made_25_plus_ft_pct' },
-];
+export const PUTT_BANDS_NINE: PuttBandDef[] = PUTT_MAKE_BANDS.map((b) => bandDef([b.id], TOUR_METRIC_OF[PUTT_REPORT_BAND_OF[b.id]]));
 
 /** The putts in `rows` counted into the bands, with each band's Tour make rate where there is one. */
 export function bandPutts(rows: ChPuttRow[], bench: Map<string, number>, bands: PuttBandDef[] = PUTT_BANDS): ChPuttBand[] {
-  return bands.map((b, i) => {
-    const lo = i ? bands[i - 1]!.hi : -Infinity;
-    const inBand = rows.filter((r) => r.feet > lo && r.feet <= b.hi);
+  return bands.map((b) => {
+    const inBand = rows.filter((r) => b.fine.includes(puttMakeBandFor(r.feet)));
     return { label: b.label, attempts: inBand.length, made: inBand.filter((r) => r.made).length, bench: b.metric ? (bench.get(b.metric) ?? null) : null };
   });
 }

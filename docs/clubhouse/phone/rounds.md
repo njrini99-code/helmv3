@@ -1,6 +1,7 @@
 # Design: Rounds (player, desktop and phone)
 
 <!-- clubhouse:release-audit:start -->
+
 ## Phone acceptance audit — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.
@@ -91,14 +92,14 @@ both roles.
 
 | Board piece | Read |
 | --- | --- |
-| Back ("Rounds") | Player: the library. Coach: that player's rounds on Stats (`stats?player=<id>&tab=rounds`, D-53), labelled with the player's name |
+| Back ("Rounds") | Player: the library. Coach: Team rounds when the round was opened from it, otherwise that player's rounds on Stats (`stats?player=<id>&tab=rounds`, D-53), labelled with the player's name |
 | Hero: day, date and type; course; tee swatch, yards, rating and slope; score, to par, "Strokes" | `golf_rounds` (the canonical total), `golf_course_tees.total_yards` by `tee_id`, `course_rating` and `course_slope`. A coach sees the player's name first in the line |
 | Front 9, Back 9, Putts (per hole), Fairways, Greens | Each nine from `golf_holes` when every hole in it has a score (else "—"); the rest from the round's totals |
 | Scorecard: Score, Putts (three flagged), FIR, GIR; tap a hole | `golf_holes`. A par 3 never counts a fairway |
 | The hole's shots: kind and club, from → where it finished, the miss, the putt's read | `golf_shots` for the round, by hole and shot number |
 | Scoring distribution | The holes against par |
 | Round recap | `golf_rounds.ai_recap`, written when the round was posted (407 rounds have one); hidden when absent |
-| Coach notes | **Gap (Q-72f).** The board's card reads coach notes. The only store is the CoachHelm review's annotation (`golf_round_reviews.coach_notes`), and none has ever been written. The card shows instead what the player wrote when posting (`golf_rounds.notes`, on 181 rounds), labelled "Your notes" or "Jonah's notes" |
+| Coach notes | `golf_round_reviews.coach_notes`, read by `loadRoundReview` and written by `saveRoundCoachNote` (a round with no CoachHelm review gets a row marked `pending` that holds only the note). The player's card reads "From your coach" and is absent when there is no note; a coach of the player's team gets Add a note / Edit in the card (CH-11523, CH-11023). The player's own notes keep their card (`golf_rounds.notes`, labelled "Your notes" or "Jonah's notes") |
 | Recap Focus and Keep | **Gap (Q-72f).** Their source is the CoachHelm review's takeaway and practice priority. All 295 stored reviews are unpublished drafts, so they are not shown here |
 
 The review's states: the card didn't load (CH-11204), the shots didn't load
@@ -176,8 +177,12 @@ Board: `Player - Rounds - Mobile.html`, the tracking frames.
   (or the holed score), never a pill under the top bar.
 - Sheets (penalty, change a shot, leave this shot, exit, scorecard, round
   complete) are bottom sheets that drag to close.
-- Not yet: the numeric pad has no Done key on iOS (the Fairway screen adds a bar
-  for it); an iPhone pass.
+- The number pad's Done key (2026-10-20, release blocker 19): in the app, round
+  entry holds the system's keyboard accessory bar (‹ › Done) up from mount to
+  unmount (`useRoundDoneKey`, `pinKeyboardAccessoryBar`), so every field, sheets
+  included, can put its keyboard away; Mobile Safari draws that bar itself. Not
+  yet felt on a device.
+- Not yet: an iPhone pass.
 
 ## Tap in on the phone (draft, no owner board)
 

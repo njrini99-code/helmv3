@@ -9,6 +9,7 @@ import * as React from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { SquarePen, Users } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 
 import { fairwayScope } from '@/lib/redesign/flag';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
@@ -219,10 +220,9 @@ export function FairwayMessages() {
         .from('golf_coaches')
         .select('user_id, full_name, avatar_url, title')
         .in('user_id', userIds),
-      supabase
-        .from('golf_players')
-        .select('user_id, first_name, last_name, avatar_url, graduation_year')
-        .in('user_id', userIds),
+      // Players through golf_player_profiles: a player may no longer read a
+      // teammate's golf_players row (security review S4).
+      readGolfPlayerProfiles(supabase, { userIds }),
     ]);
 
     if (coachesError || playersError) {
@@ -623,12 +623,12 @@ export function FairwayMessages() {
       data-fw-keyboard-aware
       className={fairwayScope(
         mobileShowChat
-          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:h-dvh md:pt-0'
+          ? 'flex h-[calc(100dvh-var(--keyboard-height,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient pt-[env(safe-area-inset-top,0px)] md:-mb-52 md:h-dvh md:pt-0'
           : // DASH-18: the list sits under the shared top bar on mobile (its height +
             // the top safe area, which the bar itself pads), so it no longer
             // pads the safe area or draws its own title row there. A coach also
             // keeps the Team hub tab row under the bar (0px for players).
-            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset)-var(--fw-hub-subnav-offset,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:h-dvh'
+            'flex h-[calc(100dvh-var(--fw-mobile-nav-height)-var(--golf-mobile-header-offset)-var(--fw-hub-subnav-offset,0px))] flex-col overflow-hidden bg-canvas bg-canvas-gradient md:-mb-52 md:h-dvh'
       )}
     >
       <div className="flex w-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -653,7 +653,7 @@ export function FairwayMessages() {
               <h1 className="font-fw-sans text-h2 font-semibold tracking-tight text-text-primary md:text-h3">Messages</h1>
               <div className="flex items-center gap-1">{composeActions}</div>
             </div>
-            <PullToRefresh onRefresh={handleConversationsRefresh} className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
+            <PullToRefresh onRefresh={handleConversationsRefresh} className="no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-3 py-3">
               <MessageConversationRail
                 conversations={conversations}
                 selectedId={selectedConversationId}

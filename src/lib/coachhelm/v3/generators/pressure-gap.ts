@@ -15,6 +15,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
@@ -26,6 +27,9 @@ import {
   PRACTICE_ROUND_TYPE,
   PRESSURE_ROUND_TYPES,
 } from '@/lib/golf/metrics/pressure-gap';
+import { buildFieldDayContext, pressureFieldSummary, type PressureFieldSummary } from '@/lib/coachhelm/v3/field-day/field';
+import { loadTeamFieldRounds } from '@/lib/coachhelm/v3/field-day/loader';
+import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -71,6 +75,12 @@ interface PressureGapAggregate extends GeneratorAggregate {
   /** SV-1 contributing competitive round dates — required (with stddev) for the
    *  base's computeMeasuredFactors to return factors_measured:true. */
   round_dates?: string[];
+  /**
+   * Slice 7b (`coachhelm_team_pattern_v1`): each side's score relative to
+   * the team on the day, where 3 or more teammates played the same course
+   * that day. Audit detail only; the gap and its gate are unchanged.
+   */
+  field_day?: PressureFieldSummary;
 }
 
 /**
@@ -108,7 +118,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     // Pull last 90 days of completed rounds for this player; bucket in TS.
     const since = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10);
     const { data, error } = await fromUntyped(supabase, 'golf_rounds')
-      .select('id, round_type, score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts')
+      .select('id, round_type, score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts, team_id')
       .eq('player_id', this.playerId)
       .eq('is_test', false)
       .eq('status', 'completed')
@@ -123,6 +133,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
           front_nine: number | null;
           back_nine: number | null;
           total_putts: number | null;
+          team_id?: string | null;
         }> | null;
         error: { message: string } | null;
       };
@@ -232,8 +243,25 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const playerCohort = await loadPlayerCohort(this.playerId);
     const tour = TOUR_STANDARDS[tourFor(playerCohort.gender)];
 
+    // Slice 7b: the same-day field (flag on only). The team is the one most of
+    // the bucketed rounds were posted under; a failed read leaves no context.
+    let fieldDay: PressureFieldSummary | undefined;
+    if (teamPatternEnabled()) {
+      const teamCounts = new Map<string, number>();
+      for (const r of rounds) if (bucketOf.has(r.id) && r.team_id) teamCounts.set(r.team_id, (teamCounts.get(r.team_id) ?? 0) + 1);
+      const teamId = [...teamCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+      const fieldRounds = teamId ? await loadTeamFieldRounds(supabase, teamId, since) : null;
+      if (fieldRounds) {
+        const ctx = buildFieldDayContext(fieldRounds);
+        const ids = (b: 'p' | 'c') => rounds.filter((r) => bucketOf.get(r.id) === b).map((r) => r.id);
+        fieldDay = pressureFieldSummary(ids('p'), ids('c'), ctx);
+      }
+    }
+
     return {
       sampleN: practiceN + competitiveN,
+      // Slice 0b: the practice and pressure rounds in the gap stamp the window.
+      windowRoundIds: rounds.filter((r) => bucketOf.has(r.id)).map((r) => r.id),
       playerValue: delta,
       practice_avg: practiceAvg,
       competitive_avg: competitiveAvg,
@@ -255,6 +283,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       stddev,
       stddev_scale: 5, // ~5 strokes spread on score-to-par reads as "high variance"
       round_dates: roundDates,
+      ...(fieldDay ? { field_day: fieldDay } : {}),
     };
   }
 
@@ -268,17 +297,17 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
 
     // One scale (per 18 holes), so the sort compares like with like. Stable
     // rank breaks ties deterministically.
-    const components: Array<{ label: string; val: number; rank: number }> = [
-      { label: 'double bogeys', val: agg.doubles_per18_delta, rank: 0 },
-      { label: '3-putts', val: agg.three_putts_per18_delta, rank: 1 },
-      { label: 'penalties', val: agg.penalty_per18_delta, rank: 2 },
-      { label: 'your opening 3 holes', val: agg.opening3_strokes_delta, rank: 3 },
+    const components: Array<{ key: string; label: string; val: number; rank: number }> = [
+      { key: 'doubles', label: 'double bogeys', val: agg.doubles_per18_delta, rank: 0 },
+      { key: 'three_putts', label: '3-putts', val: agg.three_putts_per18_delta, rank: 1 },
+      { key: 'penalties', label: 'penalties', val: agg.penalty_per18_delta, rank: 2 },
+      { key: 'opening3', label: 'opening 3 holes', val: agg.opening3_strokes_delta, rank: 3 },
     ].sort((a, b) => b.val - a.val || a.rank - b.rank);
     const lead = components[0];
-    const driverClause =
+    const driverClause = (v: Voice) =>
       agg.playerValue > 0 && lead && lead.val > 0
-        ? lead.label === 'your opening 3 holes'
-          ? ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
+        ? lead.key === 'opening3'
+          ? ` Most of that gap is ${v.your} ${lead.label}: +${lead.val.toFixed(1)} strokes per round vs practice.`
           : ` Most of that gap is ${lead.label}: +${lead.val.toFixed(1)} per 18 holes vs practice.`
         : '';
     const anchorSentence = ` The ${agg.tour_label} gap is ~${agg.tour_gap} strokes.`;
@@ -286,16 +315,22 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       ? ` (95% noise band ±${agg.noise_band.toFixed(1)})`
       : '';
 
-    const title = `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`;
-    const content =
-      `Across the last 90 days you averaged ${competitiveDisp} in ` +
-      `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
-      `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap${noise}. ` +
-      `You play ${direction} when it counts.` + driverClause + anchorSentence;
+    const copy = inBothVoices((v) => ({
+      title: `Pressure gap: ${deltaDisp} strokes (tournament vs practice)`,
+      content:
+        `Across the last 90 days ${v.player} averaged ${competitiveDisp} in ` +
+        `${agg.competitive_count} competitive rounds vs ${practiceDisp} in ` +
+        `${agg.practice_count} practice rounds, a ${absDelta}-stroke gap${noise}. ` +
+        `${v.You} play ${direction} when it counts.` + driverClause(v) + anchorSentence,
+    }));
 
     return {
-      title,
-      content,
+      title: copy.title,
+      coach: copy.coach,
+      // Practice-to-tournament gap in strokes: at or under 0 is a strength, a
+      // small gap is normal, past half a stroke it is a leak.
+      framing: agg.playerValue <= 0 ? 'strength' : agg.playerValue <= 0.5 ? 'neutral' : 'leak',
+      content: copy.content,
       // Severity against the team's Tour gap (Q-88): over it is high, at or
       // under practice is low, in between medium. This is the rule before the
       // 2026-09-28 cohort anchor, which was adopted because it flagged most
@@ -325,6 +360,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
           three_putts_per18_delta: agg.three_putts_per18_delta,
           penalty_per18_delta: agg.penalty_per18_delta,
           opening3_strokes_delta: agg.opening3_strokes_delta,
+          ...(agg.field_day ? { field_day: agg.field_day } : {}),
         },
         strokes_impact: 0,
         strokes_impact_method: 'peer_delta',

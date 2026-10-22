@@ -8,22 +8,17 @@ export const metadata: Metadata = {
 
 const HUB = '/golf/dashboard/team-hub';
 
-// Clubhouse: Tasks is a coach's Team Hub tab; a player's tasks are on Team Hub's Home. A notification's `?task=<id>`
-// comes along, so Team Hub scrolls to that task.
+// Clubhouse: Tasks is a Team Hub tab for both roles (a player's tasks are also on its Home). A notification's
+// `?task=<id>` comes along, so Team Hub scrolls to that task.
 export default async function TasksLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await redirectToClubhouse({
-    coach: (q) => {
-      const task = aliasId(q, 'task');
-      return `${HUB}?${new URLSearchParams(task ? { tab: 'tasks', task } : { tab: 'tasks' })}`;
-    },
-    player: (q) => {
-      const task = aliasId(q, 'task');
-      return task ? `${HUB}?${new URLSearchParams({ task })}` : HUB;
-    },
-  });
+  const toTasks = (q: Parameters<typeof aliasId>[0]) => {
+    const task = aliasId(q, 'task');
+    return `${HUB}?${new URLSearchParams(task ? { tab: 'tasks', task } : { tab: 'tasks' })}`;
+  };
+  await redirectToClubhouse({ coach: toTasks, player: toTasks });
   return children;
 }

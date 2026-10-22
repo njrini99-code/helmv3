@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getDetailedStats } from '@/app/golf/actions/stats-data';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { chLogServer } from '../lib/track-server';
+import { loadFocusLoops } from './focus-loop';
+import type { ChFocusLoop } from './focus-loop-shape';
 import type { ChSgTour } from '../lib/sg';
 import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
@@ -27,8 +29,8 @@ import {
   type ChWindow,
 } from './stats-common';
 import { holeRounds } from './round-scope';
-import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions } from './stats-filter';
-import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, type ChWindowSeason } from './stats-weight';
+import { effectiveWindow, filterFor, roundKind, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
+import { bigNumberRate, effectiveCount, perEighteen, summarizeWindow, weightedMean, windowChangeSe, type ChWindowSeason } from './stats-weight';
 import { approachBands, inStatsContext, loadApproachShots, loadHoles, loadSpray, statsActionContext, type ChApproachBand, type ChSpray } from './stats-detail';
 import {
   openingDelta,
@@ -36,6 +38,7 @@ import {
   personalBests,
   pressureGap,
   toughestHoles,
+  triplePlusCount,
   windowCompare,
   type ChBests,
   type ChCompare,
@@ -138,11 +141,23 @@ export interface ChProfileExtra {
    * say so ("Hole stats from 3 of 5 rounds"). Absent: every round has its holes.
    */
   holeRounds?: number;
+  /** Holes at triple bogey or worse in the detail read's rounds (a part of double or worse); null when the hole read failed. Absent: not read. */
+  triplePlus?: number | null;
+}
+
+/** A goal CoachHelm suggests: the stat (a metric id), the target it proposes and how many days the goal would run. */
+export interface ChGoalSuggestion {
+  id: string;
+  metric: string;
+  target: number | null;
+  days: number;
 }
 
 export interface ChPlayerProfile {
   viewer: ChViewer;
   window: ChWindow;
+  /** How many rounds Last N counts (read with `window: 'last10'`). */
+  last: ChLast;
   /** The round filter in force (the address's), and what its sheet can list: this player's loaded rounds only. */
   filter: ChFilter;
   filterOptions: ChFilterOptions;
@@ -173,8 +188,13 @@ export interface ChPlayerProfile {
   cacheError: boolean;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
-  focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null }>;
-  goals: Array<{ id: string; title: string; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
+  /** `loop`: the focus area's target, progress and verdict (CoachHelm chs-11), only with `coachhelm_verdicts_v1` on and a prescription stamped. */
+  focusAreas: Array<{ id: string; title: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; status: string | null; loop?: ChFocusLoop }>;
+  goals: Array<{ id: string; title: string; metric: string | null; state: string | null; current: number | null; target: number | null; baseline: number | null }>;
+  /** The goals CoachHelm suggests to the player, newest first (the player's own view only; none for a coach). */
+  goalSuggestions?: ChGoalSuggestion[];
+  /** The suggestions read failed: they are missing, not absent. */
+  goalSuggestionsError?: boolean;
   devError: boolean;
   nav: { index: number; total: number; prev: string; next: string } | null;
   roundsError: boolean;
@@ -237,11 +257,24 @@ export async function loadPlayerProfile(input: {
   const goalsRead = Promise.resolve(
     supabase
       .from('golf_goals')
-      .select('id, title, state, current_value, target_value, baseline_value')
+      .select('id, title, metric_id, state, current_value, target_value, baseline_value')
       .eq('player_id', input.playerId)
       .order('created_at', { ascending: false })
       .limit(20),
   );
+  // The player's pending suggested goals (par-19), their own view only; the table's policy shows a coach none.
+  const suggestionsRead = coach
+    ? null
+    : Promise.resolve(
+        supabase
+          .from('golf_goal_suggestions')
+          .select('id, metric_id, suggested_target_value, suggested_window_days')
+          .eq('player_id', input.playerId)
+          .eq('state', 'pending')
+          .gt('expires_at', now.toISOString())
+          .order('suggested_at', { ascending: false })
+          .limit(3),
+      );
   // CH-5208: without the team's row its tour is unknown, so no benchmark is claimed (a women's team is never graded against the men's).
   const benchRead = teamRead.then((t) => (t.error ? null : loadTourBenchmarks(supabase, tourForGender(t.data?.gender), 'stats')));
   const sharedContext = statsActionContext(supabase, input.playerId);
@@ -265,6 +298,7 @@ export async function loadPlayerProfile(input: {
 
   // These are awaited a little later; a rejection in the meantime is theirs to raise there, not an unhandled one here.
   for (const pending of [ownRoundsRead, othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, sharedContext]) pending.catch(() => undefined);
+  suggestionsRead?.catch(() => undefined);
 
   const [teamRes, playerRes, memberRes] = await Promise.all([teamRead, playerRead, memberRead]);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
@@ -305,10 +339,18 @@ export async function loadPlayerProfile(input: {
     loadApproachShots(supabase, scopeIds),
     scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
   ]);
-  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead]);
+  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
   const bench = benchRes ?? new Map<string, number>();
   if (focusRes.error) chLogServer('stats', 'focusAreas', focusRes.error, 'development');
   if (goalsRes.error) chLogServer('stats', 'goals', goalsRes.error, 'development');
+  // CoachHelm chs-11: each focus area's prescription and verdict loop (flag `coachhelm_verdicts_v1`; off, nothing is read).
+  const loops = await loadFocusLoops(
+    supabase,
+    input.playerId,
+    (focusRes.data ?? []).filter((f) => f.status === 'active').map((f) => f.id),
+    input.viewer === 'coach' ? { role: 'coach', first: p.first_name || fullName(p) } : { role: 'player' },
+  );
+  if (suggestionsRes?.error) chLogServer('stats', 'goalSuggestions', suggestionsRes.error, 'development');
   // One failed rounds read (the player's or a teammate's) is a failed read: no rounds, flagged, and nothing read for them, as one combined
   // read always was. (A round is one row: a round both reads returned is counted once.)
   const roundsFailed = ownRes.error || othersRes.error;
@@ -374,7 +416,10 @@ export async function loadPlayerProfile(input: {
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
   const prevList = previousInFilter(mine, f);
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f));
+  // The change is painted only when it clears its standard error, from both windows' per-18 rounds with strokes gained (Q4).
+  const sgOf = (r: ChRound) => r.strokes_gained_total;
+  const sgSe = prevList ? windowChangeSe(holeWin, holeRounds(prevList), sgOf, 'sg') : null;
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe, f.last);
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
@@ -484,6 +529,7 @@ export async function loadPlayerProfile(input: {
     attestingCoach,
     viewer: input.viewer,
     window: f.window,
+    last: f.last,
     filter: f,
     filterOptions: filterOptions(mine),
     id: p.id,
@@ -519,6 +565,7 @@ export async function loadPlayerProfile(input: {
       puttsError: putts.error,
       truncated: holeWin.length > DETAIL_MAX_ROUNDS,
       holeRounds: holeWin.length,
+      triplePlus: holes.error ? null : triplePlusCount(holes.rows),
     },
     rounds: winRounds.map((r) => {
       const c = cache.byRound.get(r.id);
@@ -555,15 +602,25 @@ export async function loadPlayerProfile(input: {
       target: f.target_value,
       metric: f.target_metric,
       status: f.status,
+      ...(loops.has(f.id) ? { loop: loops.get(f.id) } : {}),
     })),
     goals: (goalsRes.data ?? []).map((g) => ({
       id: g.id,
       title: g.title,
+      metric: g.metric_id,
       state: g.state,
       current: g.current_value,
       target: g.target_value,
       baseline: g.baseline_value,
     })),
+    ...(suggestionsRes
+      ? {
+          goalSuggestions: suggestionsRes.error
+            ? []
+            : (suggestionsRes.data ?? []).map((g) => ({ id: g.id, metric: g.metric_id, target: g.suggested_target_value, days: g.suggested_window_days })),
+          goalSuggestionsError: !!suggestionsRes.error,
+        }
+      : {}),
     devError: !!focusRes.error || !!goalsRes.error,
     nav,
     roundsError: seasonRes.error,

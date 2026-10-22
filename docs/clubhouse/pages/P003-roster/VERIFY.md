@@ -1,5 +1,23 @@
 # P003 — Roster: verification
 
+## 2026-10-21 — CoachHelm block and strokes by leg (spec D build B)
+
+The panel's and the phone profile's CoachHelm block (counts, No reads yet,
+CH-3212 dashes), the strokes-by-leg line and the Development link.
+`screens/roster/__tests__/roster-peek-reads.test` (11), `roster.test` › CH-3212,
+`alias.test` (the roster/[id] and players/[id] targets). Vitest, `npm run
+test:file -- src/clubhouse`: 275 files, 5112 tests pass, 1 skipped (exit 0).
+`npm run typecheck:fast` exit 0; ESLint on the changed files exit 0; `npm run
+clubhouse:check`, `npm run docs:check`, `npm run markdown:ratchet` and `git diff
+--check` exit 0. Not run: `npm run build`, `npm run test:rls` (no migration or
+policy), a live read against production.
+
+Chromium (headless, dev server, placeholder Supabase env) on
+`/clubhouse-preview/roster`: the panel at 1280 with the block on and failed, and
+the phone profile at 390 (legs line, CoachHelm panel). Shots are outside the
+repo, in the coach-parity shots-bridges folder. Not checked: WebKit, dark mode,
+a real coach session.
+
 <!-- clubhouse:release-audit:start -->
 ## 2026-10-06 — Smoothness repair
 
@@ -244,9 +262,11 @@ before, after, baseline or evidence.
   - Resolved 2026-10-02: the desktop player panel and row menu now carry the
     player's thread target (`?player=`), matching the phone and P007 entry
     contract.
-  - The join-request notification links to `roster?tab=requests`; Roster ignores
+  - The join-request notification links to `roster?tab=requests`; Roster ignored
     `tab`, though the requests are the
-    first thing under the header.
+    first thing under the header. Fixed: the phone opens the requests sheet
+    (#2201, 2026-10-18); desktop focuses the requests card and drops the param
+    (2026-10-20, `screens/roster/__tests__/roster-requests-link.test.tsx`).
   - `docs/clubhouse/screens/roster.md` said the page reads in one pass; it is
     two parallel rounds (corrected).
   - The Clubhouse roster files are not mapped to a feature in

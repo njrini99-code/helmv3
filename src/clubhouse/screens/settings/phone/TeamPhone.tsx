@@ -204,8 +204,8 @@ function TeamSheet({ open, onClose, team, writes }: { open: boolean; onClose: ()
       note="Shown to your players, and on invites and exports."
     >
       <div className="ch-setm-card">
-        <FieldRow id="set-team-name" label="Team name" inline value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
-        <FieldRow id="set-team-season" label="Season" inline placeholder="2026–27" value={draft.season} onChange={(e) => setDraft((d) => ({ ...d, season: e.target.value }))} />
+        <FieldRow id="set-team-name" label="Team name" inline value={draft.name} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, name: value })); }} />
+        <FieldRow id="set-team-season" label="Season" inline placeholder="2026–27" value={draft.season} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, season: value })); }} />
       </div>
       {org && (
         <Group title="School">

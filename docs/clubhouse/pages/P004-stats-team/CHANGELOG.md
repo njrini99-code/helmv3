@@ -1,5 +1,342 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — Phone Team stats figures no longer roll
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   CH-4703
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+Owner rule, already applied on Qualifiers: no count-up and no digits rolling.
+The phone's strokes gained figure under the legs and each player's SG were
+Number Flow numerals. They are now plain tabular text written at once
+(`formatSigned`, a true minus), and the hidden copy beside the rolling one is
+gone. Replays 1bff7a784 and c2710104e onto main.
+
+## 2026-10-21 — CoachHelm verdict loop on the focus areas (chs-11)
+
+```text
+Design package: none (supercharge 04 example 11 and layout 5)
+PR/commit:      claude/coachhelm-verdict-loop
+Contract IDs:   none
+Actions:        none
+Data impact:    none on the team page
+Held items:     none
+```
+
+The shared stats files (`StatsPlayer.tsx`, `StatsPlayerPhone.tsx`,
+`stats.css`, the new `FocusLoop.tsx`) change for the player page only:
+with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
+and verdict. The team page is unchanged. See the P005 entry of the same
+date.
+
+## 2026-10-22 — Player pages carry a CoachHelm count line (see P005)
+
+```text
+Design package: none (spec D, coach dashboard parity)
+PR/commit:      claude/coach-parity-bridges
+Contract IDs:   CH-5215 (P005)
+Actions:        none
+Data impact:    reads only (counts of visible CoachHelm reads; no exposure recorded)
+Held items:     none
+```
+
+### Changed
+
+- The stats route loads the CoachHelm read counts for a player's Game detail
+  (`loadStatsReads`) and passes them down; no change to the team page itself.
+  The wording and behavior are in P005's changelog.
+
+## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
+
+```text
+Design package: none (coach dashboard parity, spec B)
+PR/commit:      claude/project-thread-icincd
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same rounds, same cuts; the grid is built by `teamGrid`)
+
+## 2026-10-21 — Goals on the player's Development tab (see P005)
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none (P005's)
+Actions:        none (P005's)
+Data impact:    none
+Held items:     none
+```
+
+`screens/stats/` gained `GoalSheet`, `Goals` and `goal-words`, used by the
+player profile only. Nothing on Team stats changed. Logged on P005.
+
+## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
+
+```text
+Design package: none (owner, 2026-10-21: "these sliders are hard to read")
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none
+Actions:        none
+Data impact:    none (each grid row gains `last`, the newest scored round in the
+                window, from the rounds the page already loaded)
+Held items:     none
+```
+
+### Changed
+
+- The player by leg grid moved out of `loadTeamStats` into an exported
+  `teamGrid`, and `sgLegs` is exported, so coach Home reads the same four legs
+  the Stats page does. Output is unchanged; the Stats tests pin it.
+
+- Each leg cell draws a bar from a strong zero line to the player's value on the
+  grid's one scale (loss left in amber, gain right in green), with a 2px tick at
+  the team median, in place of the 4px dot on a hairline. A key above the grid
+  names the bars, the tick and the scale ("Full bar is ±N strokes"). Contrast is
+  computed from the tokens by a test: bars, zero line and tick hold 3:1 and the
+  numbers 4.5:1 on the cell, the chosen column, the worst-loss wash and both,
+  light and dark.
+- The player hover card on the grid read "Last round —" for every player: the
+  grid rows never carried a last round. They now do, and the card shows it.
+- On the grid the hover card opens under the player's name cell and is never
+  wider than it (`within` on `PlayerPeek`; up to the usual 328px), so it does
+  not cover the numbers or bars beside it, even in the 200px player column the
+  grid allows at its 760px minimum. In a narrow cell its keys wrap onto a
+  second row. Other peeks are unchanged.
+- Preview: `/clubhouse-preview/stats?state=demo` shows the Demo University
+  fixture.
+- Missing-work audit rows (par-17, chs-56, par-19, doc-13):
+  - A coach's player Stats page has a CoachHelm button next to Message and
+    Schedule 1:1 (`coachhelm?player=`), the same page Roster's View insights
+    opens.
+  - Each leg figure on the team grid opens that player's Game detail on the
+    matching section (`?player=&tab=game#gm-tee`, `-approach`, `-short`,
+    `-putting`); the name still opens the profile. On a player's Overview, a
+    pinned leg offers "See approach in game detail" (decisions Q12). On a
+    desktop the page scrolls to the section once the Game detail tab is in; on
+    the phone, which draws one section at a time, the address picks that
+    section and scrolls to it (see P005).
+  - The goals empty state no longer sends a player to a page that loops back
+    ("Goals you and your coach set show here"; a coach reads "{name} has no
+    goals yet"). Setting goals is still Fairway-only.
+  - Team stats already printed (the audit row missed `@media print` at the foot
+    of stats.css); the leg grid's 760px minimum cut Total and Trend off the
+    sheet, so it now narrows on paper. The new key prints; the cell links do
+    not.
+
+## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
+
+```text
+Design package: none (stats visuals follow-ups; decision Q5 in the stats visuals
+                log)
+PR/commit:      claude/project-thread-d87uyy
+Contract IDs:   none (wording: switch label, "vs previous N")
+Actions:        none
+Data impact:    none (Last 5 and Last 20 cut the same loaded rounds; putt bands
+                cut at the same edges)
+Held items:     none
+```
+
+### Changed
+
+- The range switch reads Last 5, Last 10, Last 20, Season and Qualifiers. Last
+  10 is still the default and leaves the address as it was; Last 5 and Last 20
+  add `?last=5` or `?last=20`. Everything that said "previous 10" says "previous
+  N" for the cut in force (the tape, the strokes gained chip, the Window figure
+  on the header). Earlier-rounds wording ("Comparing starts at 13 rounds")
+  follows N.
+- Team putting by distance counts its bands from `lib/golf/putt-make.ts` (the
+  cut Fairway, the calculator and CoachHelm share), not a copy. Band edges and
+  counts are unchanged; a test pins it.
+- Removed the unused `FigureCards`, `ScoreBoardTrend`, `LegRoute` and
+  `FieldTable` and their styles (`.ch-board`, `.ch-route`, `.ch-ft`): the figure
+  tape, the round trend, the strokes gained bars and the ranked dot plot
+  replaced them, and nothing imported them. CH-4604 and CH-5604 (a new window's
+  figures crossfade) lived only in `FigureCard`, so the bridge registry now
+  lists them reserved; the tape and the profile's figures change in place.
+- Phone (820px and below): the switch's segments grow from their own label
+  widths (`flex: 1 1 auto`), not equal shares, so "Qualifiers" is no longer
+  clipped beside 5, 10 and 20 at 390px (fixer, PR #2257; screenshots in
+  `stats-visuals/screenshots-2257/`). Preview:
+  `/clubhouse-preview/stats?state=last20`.
+
+### Known limit
+
+- Every Last N reads the same rolling year as Last 10 (Q-122). Last 20 and the
+  20 before it need forty rounds in the last twelve months; a player with fewer
+  gets a shorter previous stretch, and none under 23 ("Comparing starts at 23
+  rounds"). The read is not widened for Last 20.
+
+## 2026-10-20 — Team ranking dot plot (stats visuals 5)
+
+```text
+Design package: none (stats visuals plan, spec 4.5, decision Q10)
+PR/commit:      uncommitted (local/stats-pr5-rank)
+Contract IDs:   40101, 42001 (wording)
+Actions:        none
+Data impact:    grid rows gain spread (from rounds already read)
+Held items:     none
+```
+
+### Changed
+
+- New "Who gains and loses" section (`TeamRank`) after the figures and the
+  trend, before the leg cards and the grid: a ranked dot plot, one row per
+  player, one figure at a time from a compact menu (strokes gained, each leg,
+  scoring). Each dot is the player's mean with a whisker of one standard
+  error ("likely range"); a dashed line is the team's mean; zero is the
+  stronger grid line on strokes gained.
+- Rows are in order of the dot. A player closer than one standard error of
+  the difference to the head of the run above shares its rank ("T3") and
+  keeps their order (`rankWithTies`; a chain of near neighbors does not stretch
+  a tie). Better is to the right for every figure; the scoring
+  average runs the other way and says "lower is better" once in the caption.
+- Floors follow `sampleState`: an early read is a hollow dot with no gain or
+  loss color and a note naming who; under the show floor a player's row sits
+  below the axis with "Needs 3 rounds" (5 for around the green and putting)
+  and no dot or rank.
+- A pointer, a tap or the arrow keys read a player in the line above
+  ("Sofia Alvarez · +1.2 a round · T1 of 6 · 10 rounds · likely range +0.5
+  to +1.9 · team −0.5"); a tap or a key pins and announces it and shows
+  "Open player"; a second tap on the pinned row, or Enter, opens the player.
+- Phone: the same plot as an inset panel between strokes gained by leg and
+  Players, with 44px rows, short names ("Theo M.") and the native menu.
+- The grid ledger stays as the table view and the CSV export.
+- Data: each grid row carries `spread` (whole rounds and the standard error
+  of the mean for strokes gained, each leg and the scoring average) from the
+  player's per-18 round values in rounds the loader already reads; the
+  pooled spread under five rounds. No query, table or migration change.
+
+## 2026-10-20 — No visible change (stats visuals 6)
+
+```text
+Design package: none (stats visuals plan, piece 6; entry in P005)
+PR/commit:      uncommitted (local/stats-pr6-mix)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` lost the old scoring mix rules
+  (`ch-mix`, `ch-zmix`) and gained `.ch-sv-mix-*`, and `charts.tsx` lost
+  `ScoreMix`; the team page used neither.
+
+## 2026-10-20 — No visible change (stats visuals 4)
+
+```text
+Design package: none (stats visuals piece 4; the page entry is in P005)
+PR/commit:      uncommitted (local/stats-pr4-putt)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `MakeCurve` and `MakeRows` left `charts.tsx` for the
+  player profile's `PuttBands.tsx`, and `stats.css` gained the `.ch-sv-pb-*`
+  block and lost the unused `.ch-mk` rules, both files this page shares with the
+  player profile. Team putting (rings on desktop, bars on the phone) is its own
+  component and is unchanged.
+
+## 2026-10-20 — No visible change (stats visuals 3)
+
+```text
+Design package: none (stats visuals plan, piece 3; the page's own entry is in P005)
+PR/commit:      uncommitted (local/stats-pr3-trend)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. `stats.css` gained the stats-owned `.ch-sv-rt` block
+  and `OverviewZones` and `StatsPlayerPhone` draw the new trend; the team page
+  keeps its own interactive `TeamTrendChart` and `ScoreLine` is not used by it.
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+```text
+Design package: none (stats visuals plan, section 4.6 and 7; decision Q4)
+PR/commit:      uncommitted (local/stats-pr2-deltas)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (no query, table or migration changes)
+Held items:     none
+```
+
+### Changed
+
+- Every change on the team page (the figure tape, the lead chip, the phone
+  hero and figure rows) is green or amber only when it is larger than one
+  standard error of the difference, and reads "Better than previous 10" or
+  "Worse than previous 10". Otherwise the signed number stays in neutral ink
+  with "No clear change vs previous 10". A change with no standard error gets
+  no colour.
+- The loader adds an `se` beside each figure's existing delta, from the
+  rounds it already reads (no new query): strokes gained and score use the
+  paired players' rounds with the pooled spread below five rounds, greens and
+  scrambling their per-round rates, putts and birdies only from five rounds.
+- A tape caption that is not "vs previous 10" ("Tour averages 66%", "Eagles
+  not counted") moves to the note line under the change's words.
+- On the preview team, scoring and greens read as clear changes; strokes
+  gained, putts, scrambling and birdies read "No clear change".
+- The leaderboard's form word (Improving, Steady, Slipping) follows the same
+  rule through `formStatus`, so it agrees with its form line.
+
+## 2026-10-20 — No visible change (stats visuals 1)
+
+```text
+Design package: none (stats visuals plan, piece 1; the page's own entry is in P005)
+PR/commit:      uncommitted (claude/stats-visuals-ofvosr)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Nothing on the team page. The strokes gained bars moved from `charts.tsx` to
+  `SgBars.tsx` and `stats.css` gained the stats-owned `.ch-sv-*` block, both
+  files this page shares with the player profile. The team page still draws its
+  own leg grid and tabs.
+
+## 2026-10-19 — Team stats: putting beside the bests, no top bars
+
+```text
+Design package: none (owner: a visual pass on Stats and CoachHelm)
+PR/commit:      see git log (agent/clubhouse-stats-coachhelm-visuals)
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- Team putting and Season bests stay two columns down to an 860px canvas
+  (was 1080px). A 1280 window with the sidebar open is about 950px wide,
+  where the putting rings sat alone with half the row empty.
+- The 3px coloured bar across each figure card's top is gone. The change
+  under the number already says better or worse; a status is a dot or a
+  word. Its own commit, so it reverts cleanly (the owner's call left open on
+  #2202).
+
+### Verified
+
+WebKit at 390, 834, 1024, 1180, 1280 and 1440: no sideways scroll in the
+default, empty, partial and filtered states.
+
 ## 2026-10-19 — Team stats on an iPad: the tape in two rows and a leaderboard that fits
 
 ```text
@@ -13,15 +350,23 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, `stats.css` end block): on a canvas under 721px the five-figure tape takes two rows (three, then two) instead of five 110px cards whose figures overlapped their changes. Under 861px the leaderboard's leg grid drops its 760px minimum width and narrows the leg columns, so it no longer scrolls sideways on an 834px portrait or a 1024px Pro.
+- Tablet tier (821 to 1180px, `stats.css` end block): on a canvas under 721px
+  the five-figure tape takes two rows (three, then two) instead of five 110px
+  cards whose figures overlapped their changes. Under 861px the leaderboard's
+  leg grid drops its 760px minimum width and narrows the leg columns, so it no
+  longer scrolls sideways on an 834px portrait or a 1024px Pro.
 
 ### Why
 
-- An iPad portrait with the sidebar open leaves a 618px canvas; the page was tuned from about 860px up. 1181px and wider is unchanged.
+- An iPad portrait with the sidebar open leaves a 618px canvas; the page was
+  tuned from about 860px up. 1181px and wider is unchanged.
 
 ### Verification
 
-- WebKit, touch, 834x1194 / 1024x768 open and folded; the leaderboard's scrollWidth equals its clientWidth at both; the rules sit in a `screen and (821px to 1180px)` media query, so 1181px and wider and print do not match them.
+- WebKit, touch, 834x1194 / 1024x768 open and folded; the leaderboard's
+  scrollWidth equals its clientWidth at both; the rules sit in a `screen and
+  (821px to 1180px)` media query, so 1181px and wider and print do not match
+  them.
 
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
@@ -36,12 +381,20 @@ Held items:     none
 
 ### Changed (2026-10-19, L6a)
 
-- Putting rings: upright labels with the make rate right-aligned, and leaders that no longer cross or run through a label.
+- Putting rings: upright labels with the make rate right-aligned, and leaders
+  that no longer cross or run through a label.
 - The Par swatch in the scoring key has a hairline ring.
-- The Scrambling dial has a reference tick like Greens' dial. The Tour has no overall scrambling figure, so the tick is the previous window's rate, the same one the change under it is measured against.
-- A tape figure with no data (an em dash) drops its unit, its "vs previous 10" caption and its coverage note.
-- The strokes-gained trend's axis ticks use the shared signed formatter (a true minus, an explicit plus, a plain 0).
-- Print: Team stats prints as plain pages: controls gone, a head line with GolfHelm, the team and season and the day, white and light even from dark mode, each section whole on its sheet, rules and fills in ink, and the desktop view kept at paper width.
+- The Scrambling dial has a reference tick like Greens' dial. The Tour has no
+  overall scrambling figure, so the tick is the previous window's rate, the same
+  one the change under it is measured against.
+- A tape figure with no data (an em dash) drops its unit, its "vs previous 10"
+  caption and its coverage note.
+- The strokes-gained trend's axis ticks use the shared signed formatter (a true
+  minus, an explicit plus, a plain 0).
+- Print: Team stats prints as plain pages: controls gone, a head line with
+  GolfHelm, the team and season and the day, white and light even from dark
+  mode, each section whole on its sheet, rules and fills in ink, and the desktop
+  view kept at paper width.
 
 ## 2026-10-18 — Pickers and controls: filter date range
 
@@ -56,7 +409,16 @@ Held items:     none
 
 ### Changed (2026-10-18, L2 pickers and controls)
 
-- The browser's own date and time inputs are gone. The filter's From and To (each with Clear; To opens on From) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- The browser's own date and time inputs are gone. The filter's From and To
+  (each with Clear; To opens on From) shows the value as the app writes it ("Thu
+  15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter
+  hour (times): a popover under the field on desktop, a bottom sheet on the
+  phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow",
+  "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't
+  read what was typed. Today carries a dot, the chosen day is the segmented
+  control's lit chip, days outside the range are off, and arrows, PageUp and
+  PageDown, Home and End and Enter work in the grid. The saved value is the same
+  `yyyy-mm-dd` / `HH:mm` string as before.
 
 ## 2026-10-18 — Wave 10: the first run's next step
 
@@ -683,6 +1045,7 @@ In-page jumps on the phone player stats view ease through the shared smooth
 scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 The shared segmented indicator uses zero-duration motion when disabled.

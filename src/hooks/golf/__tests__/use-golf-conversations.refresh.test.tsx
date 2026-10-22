@@ -34,10 +34,15 @@ beforeEach(() => {
   mock.fail = false;
   mock.coaches = [];
   mock.players = [];
-  mock.rpc.mockReset().mockImplementation(async () => ({ data: mock.fail ? null : [{
-    id: 'conversation', created_at: '2026-09-08T12:00:00Z', updated_at: '2026-09-08T12:00:00Z',
-    participant_ids: ['viewer', 'legacy-coach'], is_group: false, unread_count: 0,
-  }], error: mock.fail ? { message: 'Temporary network failure' } : null }));
+  mock.rpc.mockReset().mockImplementation(async (name: string) => {
+    const error = mock.fail ? { message: 'Temporary network failure' } : null;
+    // Players are read through golf_player_profiles (security review S4); everything else asks for the inbox.
+    if (name === 'golf_player_profiles') return { data: mock.fail ? null : mock.players, error };
+    return { data: mock.fail ? null : [{
+      id: 'conversation', created_at: '2026-09-08T12:00:00Z', updated_at: '2026-09-08T12:00:00Z',
+      participant_ids: ['viewer', 'legacy-coach'], is_group: false, unread_count: 0,
+    }], error };
+  });
   mock.identities.mockReset().mockResolvedValue({ participants: [] });
 });
 
@@ -111,7 +116,7 @@ describe('conversation refresh recovery', () => {
       is_group: false,
       unread_count: 0,
     }));
-    mock.rpc.mockReset().mockResolvedValueOnce({ data: rows, error: null });
+    mock.rpc.mockReset().mockImplementation(async (name: string) => ({ data: name === 'golf_player_profiles' ? [] : rows, error: null }));
 
     const { result } = renderHook(() => useGolfConversations());
     await waitFor(() => expect(result.current.conversations).toHaveLength(205));

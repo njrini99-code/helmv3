@@ -145,6 +145,14 @@ export interface ShotRecord {
   approachMissDirection?: ApproachMissDirection;
   approachMissLieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
   distanceFromGreenYards?: number;
+  /**
+   * CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): on a tee shot that
+   * finished in the rough or an 'other' lie, whether the next shot was a
+   * recovery (blocked, punch out) — true — or a clear shot — false. Absent
+   * when nobody was asked. Stored as `golf_shots.lie_after_recovery` once the
+   * held migration is applied; see `lib/golf/data-prompts/recovery.ts`.
+   */
+  lieAfterRecovery?: boolean;
 }
 
 /**

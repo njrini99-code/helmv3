@@ -561,12 +561,14 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(hero.querySelector('.ch-stm-hero__v')!.textContent).toBe('73.6');
     // Drawn against par, as the stat line's gauge drew it (no bare numbers).
     expect(hero.querySelector('.ch-stm-hero__par')!.textContent).toBe('+1.6 to par');
-    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 vs previous 10');
-    // Scoring down 0.9 is better (green); putts up 0.3 is worse (amber).
+    // A change is green or amber only when it clears its standard error (stats visuals Q4): scoring down 0.9 against 0.76 is
+    // better (green), greens up 3 against 2.4 too; putts up 0.3 against 0.42 and scrambling up 4 against 5.6 are no clear change.
+    expect(hero.querySelector('.ch-stm-hero__c')!.textContent).toBe('−0.9 Better than previous 10');
     expect(hero.querySelector('.ch-stm-hero__c b')!.className).toMatch(/ch-gain/);
     const rows = [...document.querySelectorAll('.ch-stm-figrow')];
     expect(rows.map((r) => r.querySelector('dt > span')!.textContent)).toEqual(['Greens in regulation', 'Putts per round', 'Scrambling']);
-    expect(rows[1]!.querySelector('.ch-stm-figrow__d')!.className).toMatch(/ch-loss/);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.className.match(/ch-(gain|loss)/)?.[0] ?? null)).toEqual(['ch-gain', null, null]);
+    expect(rows.map((r) => r.querySelector('.ch-stm-figrow__d')!.textContent)).toEqual(['+3', '+0.3', '+4']);
     // No bare numbers: each figure says what it is read against where the data has a reference (the Tour's greens, 36 putts).
     expect(rows.map((r) => r.querySelector('.ch-stm-figrow__ref')?.textContent ?? null)).toEqual(['Tour average 66%', 'Two putts a green is 36', null]);
     for (const h of ['Scoring trend', 'The round', 'Strokes gained by leg', 'Players', 'Team putting']) expect(screen.getByRole('heading', { level: 2, name: h })).toBeTruthy();
@@ -627,26 +629,22 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-stm-hero__c b')?.textContent).toBe('−0.9');
   });
 
-  it('the strokes gained figures are text until a hand or focus is on the leg rows, then Number Flow, with the same text', () => {
+  it('the strokes gained figures are plain text with a true minus, before and after a leg is picked', () => {
     wrap(stats());
-    // Number Flow is a <span> in tests (src/test/setup.tsx); the text form has no element inside its aria-hidden span.
-    const sgfig = () => document.querySelector('.ch-stm-sgfig b [aria-hidden="true"]')!;
-    const rowFlows = () => document.querySelectorAll('.ch-stm-row__v [aria-hidden="true"] > span').length;
+    const sgfig = () => document.querySelector('.ch-stm-sgfig b')!;
+    expect(sgfig().textContent).toBe('−0.5');
     expect(sgfig().childElementCount).toBe(0);
-    expect(sgfig().textContent).toBe('−0.5');
-    expect(rowFlows()).toBe(0);
     fireEvent.pointerDown(within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Approach/ }));
-    expect(sgfig().childElementCount).toBe(1);
     expect(sgfig().textContent).toBe('−0.5');
-    expect(rowFlows()).toBeGreaterThan(0);
-    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−0.5');
+    expect(sgfig().childElementCount).toBe(0);
+    expect(document.querySelector('.ch-stm-row__v [aria-hidden="true"]')).toBeNull();
   });
 
   it('CH-4703 a strokes gained leg row picks the leg: one selection tick, the team figure reads it, and the players rank by it', async () => {
     const user = userEvent.setup();
     wrap(stats());
     const legs = within(document.getElementById('ch-stm-legs')!.closest('section')!);
-    const figure = () => document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent;
+    const figure = () => document.querySelector('.ch-stm-sgfig b')!.textContent;
     const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
     // The team total by default: the window's own mean.
     expect(figure()).toBe('−0.5');
@@ -661,7 +659,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('radio', { name: 'SG, strokes gained' }).getAttribute('aria-checked')).toBe('true');
     expect(names()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Priya Natarajan', 'Jonah Okafor', 'Luca Ferraro']);
     expect(document.getElementById('ch-stm-players')!.parentElement!.textContent).toContain('by Approach SG');
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+0.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v > span')!.textContent).toBe('+0.7 SG');
     expect(screen.getByRole('link', { name: /Luca Ferraro/ }).textContent).toMatch(/Early read/);
     // The chosen leg again is silent; the tabs point at no panel that isn't there.
     await user.click(legs.getByRole('tab', { name: /^Approach/ }));
@@ -670,12 +668,12 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // Back on Avg, the list orders by scoring average and each row shows its total.
     await user.click(screen.getByRole('radio', { name: 'Avg, scoring average' }));
     expect(names().slice(0, 3)).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist']);
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+1.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v > span')!.textContent).toBe('+1.7 SG');
   });
 
   it('the team total leg is the window’s mean, never the legs added up', () => {
     wrap(stats({ team: { ...PREVIEW_TEAM_STATS.team, sgMean: -1.4 } }));
-    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−1.4');
+    expect(document.querySelector('.ch-stm-sgfig b')!.textContent).toBe('−1.4');
     const total = within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Team total/ });
     expect(total.querySelector('b')!.textContent).toBe('−1.4');
   });
@@ -970,7 +968,7 @@ describe('Stats team · the page', () => {
   it('42001 the window switch moves with the arrow keys, a leg card takes Enter, and a grid row focuses its player', async () => {
     const user = userEvent.setup();
     wrap(stats({ window: 'last10' }));
-    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    screen.getByRole('radio', { name: 'Last 20' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));

@@ -1,5 +1,6 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import type { ChSgTour } from '../lib/sg';
+import type { ChDebrief } from './round-debrief-shape';
 import type { EditableRoundType } from '@/lib/golf/round-type-options';
 import type { ChRoundTypeCurrent, ChRoundTypeOptions, ChRoundTypeViewer } from '../screens/rounds/entry/round-type';
 import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } from './rounds-shape';
@@ -93,6 +94,13 @@ export interface ChRoundReview {
   recapPending?: boolean;
   /** What the player wrote about the round when posting it. */
   notes: string | null;
+  /**
+   * The note a coach of the player's team left on this round (golf_round_reviews.coach_notes); null when there is none.
+   * A player sees it; a coach sees it and may write it (`canNote`).
+   */
+  coachNote: string | null;
+  /** The note's read failed: the page says it could not check for a note, not that there is none. */
+  coachNoteError?: boolean;
   holes: ChReviewHole[];
   /** The holes read failed: the totals still show, the card and shots don't. */
   holesError: boolean;
@@ -104,6 +112,11 @@ export interface ChRoundReview {
   playerError?: boolean;
   /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
   tourError?: boolean;
+  /**
+   * CoachHelm's 30-second debrief on the player's own round (chs-30, `round-debrief-shape.ts`): set only with
+   * `coachhelm_reads_v1_copy` on and something to say. Absent, the review draws its recap block as before.
+   */
+  debrief?: ChDebrief | null;
 }
 
 /**
@@ -271,6 +284,8 @@ export function toReview(
     teeError?: boolean;
     playerError?: boolean;
     tourError?: boolean;
+    coachNote?: string | null;
+    coachNoteError?: boolean;
   },
 ): ChRoundReview {
   const c = withCanonicalRoundTotal(r);
@@ -303,6 +318,8 @@ export function toReview(
     recap: r.ai_recap?.trim() || null,
     ...(r.status === 'completed' && !r.ai_recap?.trim() ? { recapPending: true } : {}),
     notes: r.notes?.trim() || null,
+    coachNote: input.coachNote?.trim() || null,
+    ...(input.coachNoteError ? { coachNoteError: true } : {}),
     holes: input.holes,
     holesError: input.holesError,
     shotsError: input.shotsError,

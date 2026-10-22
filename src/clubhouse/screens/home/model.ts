@@ -1,6 +1,7 @@
 import type { ChCoachHome } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
+import { isOut, type ChAvailability } from '../../data/availability';
 
 /**
  * Coach Home's derived copy, kept pure so it can be tested without a
@@ -57,6 +58,8 @@ export interface ChSublineRow {
   name: string;
   status: ChForm;
   quietDays: number | null;
+  /** Injured or away: left out of "needs a look" and "on track" alike (the coach already knows). Absent reads as available. */
+  availability?: ChAvailability;
 }
 
 function reason(r: ChSublineRow): string {
@@ -76,8 +79,10 @@ function list(parts: string[]): string {
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
  * players are never counted as on track. Null when the rounds read failed.
  */
-export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; nextCompetition: { title: string; when: string } | null }): string | null {
+export function homeSubline(allRows: ChSublineRow[], opts: { roundsError: boolean; nextCompetition: { title: string; when: string } | null }): string | null {
   if (opts.roundsError) return null;
+  // A player who is out is neither flagged for a quiet stretch nor counted on track (same rule as the roster's Needs a look).
+  const rows = allRows.filter((r) => !isOut(r.availability));
   const flagged = rows.filter((r) => r.status === 'slipping' || (r.quietDays != null && r.quietDays >= QUIET_DAYS));
   const onTrack = rows.filter((r) => !flagged.includes(r) && r.status !== 'early');
   const early = rows.filter((r) => !flagged.includes(r) && r.status === 'early');
@@ -103,10 +108,17 @@ export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; 
  * notice, so the sentence never names a part with no gap under it. The phone draws team scoring where the desktop
  * draws the leaderboard.
  */
-export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone'>, phone: boolean): string[] {
+export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone' | 'legs' | 'queue'>, phone: boolean): string[] {
   const parts: string[] = [];
+  const q = data.queue;
+  // "Waiting on you" (CH-2220): a part of it that didn't load is never counted as 0.
+  if (q && (q.joinRequests == null || q.replies == null || q.overdueTasks == null || q.unackedPosts == null)) parts.push('what’s waiting on you');
   if (data.week.error) parts.push('this week’s schedule');
   if (phone && data.latestRounds.error && !data.phone.form) parts.push('team scoring');
+  // The team's four parts are drawn under the form: their notices (CH-2218, CH-2219) only where they are.
+  const legs = data.phone.form ? data.legs : null;
+  if (legs?.cacheError) parts.push('up-and-down figures');
+  if (legs?.tourError) parts.push('Tour marks');
   if (data.latestRounds.error) parts.push('recent rounds');
   if (!phone && data.leaderboard.error) parts.push('the leaderboard');
   return parts;

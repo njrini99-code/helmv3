@@ -251,6 +251,13 @@
   box-shadow: 0 0 0 1px var(--ch-border-hairline);
   cursor: default;
 }
+/* The brief read-only while React hydrates (Settings fields) is not a state to show: the box looks like any other. */
+.ch-input[readonly][data-ch-hydrating]:not(:focus) {
+  background: var(--ch-ivory-25);
+  color: var(--ch-text-primary);
+  box-shadow: 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  cursor: text;
+}
 /* A date or time draws its value in WebKit's own part, which globals.css paints a fixed warm-900 for Fairway: in the
    dark theme that was near-black on the dark field (the New event sheet's date and times looked empty). */
 .ch-input[type='date']::-webkit-date-and-time-value,

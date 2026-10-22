@@ -1,6 +1,7 @@
 # P011 — Rounds: verification
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current release evidence — 2026-10-06
 
 Round library/setup/tracking/review, scorecard and recovery/discard sheets.
@@ -346,6 +347,30 @@ migration `20260820170000`, not re-proved; no pgTAP ran), the line on a
 phone, and `e2e/golf-round.spec.ts` (its offline case still has no
 assertions).
 
+## The number pad's Done key (2026-10-20, release blocker 19)
+
+Source and unit tests only; nothing changes in a browser, so there are no
+screenshots for it.
+
+- What: in the app, `NewRound` and `ContinueRound` call `useRoundDoneKey`, which
+  pins the native keyboard accessory bar (`pinKeyboardAccessoryBar` in
+  `src/lib/utils/capacitor.ts`) from mount to unmount. The plugin call is
+  `Keyboard.setAccessoryBarVisible`, which the shipped binary already has
+  (`@capacitor/keyboard` 8, in `ios/App/CapApp-SPM/Package.swift`), so no new
+  binary is needed.
+- Tests: `src/clubhouse/screens/rounds/entry/__tests__/use-done-key.test.tsx`
+  (pins on mount, releases on unmount, nothing on the web, both entry screens
+  hold it) and `src/lib/utils/__tests__/capacitor-accessory-bar.test.ts` (a pin
+  survives text fields and blurs, the last release falls back to the focused
+  field, a hand-over does not flicker, a pin taken before the plugin loads shows
+  the bar on install, a failing plugin call keeps the count).
+- Not verified: on a device or the Simulator (the original change's machine had
+  no working `simctl`; this replay ran on Linux). The device pass should open a
+  new round and a continued one, focus the distance box, a yardage, Add a
+  course's rating and slope, and the edit-shot sheet's distances, and see ‹ ›
+  Done over each keyboard, Done closing it. Pair it with the Fairway ledger's
+  RE-F3.
+
 ## Screenshots
 
 Evidence log. The images stay in `.helm/screenshots/clubhouse/` (never
@@ -430,6 +455,18 @@ before, after, baseline or evidence.
 | `P011__course-picker__player__1440x900__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 1440x900px, browse; synthetic preview fixture (fixtures-setup.ts) |
 | `P011__course-picker__player__390x844__browse__after__0db5a9b.png` | after | 0db5a9b | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
 | `P011__course-picker__player__390x844__browse__before__22e5426.png` | before | 22e5426 | course-picker (player), 390x844px, browse; synthetic preview fixture (fixtures-setup.ts) |
+| `P011__round-entry__player__390__reload__before__6f8be23.png` | before | 6f8be23 | Round-entry preview, Reload banner, 390x844 light: the preview switches and the banner above the shot screen, the entry card and action bar below the fold; /clubhouse-preview/entry?state=reload, headless Chromium |
+| `P011__round-entry__player__390__error__before__6f8be23.png` | before | 6f8be23 | Round-entry preview, error banner, 390x844 light, same layout as the Reload before; /clubhouse-preview/entry?state=error, headless Chromium |
+| `P011__round-entry__player__390__reload__after__b8920a4.png` | after | b8920a4 | The Reload banner in the shot screen under its top bar, the Shot result card and the action bar on the screen's foot, no choice under the bar; /clubhouse-preview/entry?state=reload, headless Chromium |
+| `P011__round-entry__player__390__error__after__b8920a4.png` | after | b8920a4 | The error banner in the same place, card and bar on the foot; /clubhouse-preview/entry?state=error, headless Chromium |
+| `P011__season-ribbon__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 1440px, default, before: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-ribbon (player), 1440px, default, after: season ribbon, better is up, real ticks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-ribbon (player), 390px, default, before: season ribbon on the phone, better is up; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-ribbon__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-ribbon (player), 390px, default, after: season ribbon on the phone, better is up; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-figures__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | season-figures (player), 1440px, default, before: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__season-figures__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-figures (player), 1440px, default, after: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__month-spark__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | month-spark (player), 1440px, default, before: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__month-spark__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | month-spark (player), 1440px, default, after: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
@@ -536,12 +573,93 @@ case names its Bridge ID in its title. No implementation file changed.
 Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
 `node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
 
-**Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs the dev server and a browser, not a vitest case. 110804 has
-its test, but one of the refusals the contract lists does not happen: asked to discard another player's round in progress, the
-action deletes nothing (the delete is filtered by player) and then answers `{ success: true }`, because its "already removed" probe
-(`round-partial.ts`, after the delete) is also filtered by player and finds nothing. The data is safe; the answer is not the refusal
-the contract describes. It is reachable only with a forged id, since the library lists the player's own rounds.
+**Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs
+the dev server and a browser, not a vitest case. 110804 has its test, but one of
+the refusals the contract lists does not happen: asked to discard another
+player's round in progress, the action deletes nothing (the delete is filtered
+by player) and then answers `{ success: true }`, because its "already removed"
+probe (`round-partial.ts`, after the delete) is also filtered by player and
+finds nothing. The data is safe; the answer is not the refusal the contract
+describes. It is reachable only with a forged id, since the library lists the
+player's own rounds.
+
+**Wording that predates the code.** 112101 describes the library's reads in
+sequence; the loader now starts the clock, the posted rounds and the in-progress
+rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and
+111202's meanings said "no test covers this"; they now say where the test is.
+
+## 2026-10-20 — Round-entry preview: a Shot result choice under the action bar
+
+`clubhouse:a11y -- rounds` (headless Chromium, reduced motion, 1280x800 and
+390x844, dev server on placeholder env) failed two pages before the fix, in
+light and in dark: at 390x844, `/clubhouse-preview/entry?state=reload` and
+`?state=error`, target-size (serious) on `button[role="radio"]:nth-child(1)`,
+"partially obscured (smallest space is 108.7px by 13px)". The radio is Fairway,
+the first Shot result choice.
+
+Measured in Chromium at 390x844 on 6f8be23 (`?state=reload`): the preview
+switches and the banner took 0 to 265px above the shot screen; `main.ch-rt`
+(min-height 100dvh) ran 265 to 1109; the entry card started at 884, below the
+fold, and the sticky action bar (`.ch-rt-bar`, 80px) could rise only to its
+panel's top, so it sat at 884 to 964 over the card's first row (919 to 965). On
+a real round RoundRuntime draws these banners in RoundTracking's `statusSlot`,
+inside the shot screen, where the hero takes up their height. Before #2202 the
+bar also carried a visible hint line (about 24px taller) and covered that row
+whole, which axe does not report; #2202 moved the hint into the button, and the
+row began to show under the bar.
+
+After b8920a4 (banners in the status slot, the preview switches after the shot
+screen): `main.ch-rt` 0 to 844, card 619 to 764, bar 764 to 844, Fairway 654 to
+700, clear of the bar; the no-banner entry state has the same card and bar.
+
+Both runs are `clubhouse:a11y -- rounds` with `CH_ENGINES=chromium` and
+`CH_MOTION=reduce`:
+
+- `CH_SCHEME=dark`: before (6f8be23) exit 1, 34 ok and 2 with violations
+  (entry reload and error at 390); after (b8920a4) exit 0, 36 clean.
+- `CH_SCHEME=light`: before exit 1, the same 2 of 36; after exit 0, 36
+  clean.
+
+`src/app/clubhouse-preview/entry/__tests__/preview-entry-layout.test.tsx` (3
+cases, jsdom) pins the order the layout depends on: each banner inside
+`main.ch-rt`, ahead of the hole strip and the Shot result group, and the shot
+screen first with the switches after it. It fails on 6f8be23 (3 of 3) and passes
+on b8920a4. jsdom has no layout, so the overlap itself is the axe run's to
+measure. Not run: WebKit, motion on, other widths and heights, an iPhone.
+
+Checks on b8920a4: `npm run check:changed` exit 0 (eslint, tsgo, the new test
+and its related tests), `npm run clubhouse:check` exit 0,
+`clubhouse:shots -- check` exit 0.
 
 **Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
 rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
 "no test covers this"; they now say where the test is.
+
+## 2026-10-20 — No data lost: Exit's Discard offline, and the engine under a dropped connection
+
+Replayed from draft PR #2207 (release review blocker 2). The screen-level cases
+that `rounds-contracts.test.tsx` already forces (above) were not replayed; these
+add what it does not reach. No implementation file changed.
+
+- 110702: Exit's Discard offline after a hole whose save was refused (the hole
+  exists only on the device): CH-1903, nothing sent, no navigation, the device
+  copy unchanged (`round-entry-wiring.test`; pass).
+- 110702: the library's live discard whose request throws: the device copy is
+  not cleared and the round is not marked discarded (`rounds.test`; pass).
+- 110702: the engine's discard whose request throws: the device copy, the queued
+  entry and the round stay, and the round keeps saving
+  (`use-new-round-session.preservation.test`; pass).
+- 111201: the engine's create throws: no round id is adopted, the start guard is
+  released, and the next start sends the same payload
+  (`use-new-round-session.preservation.test`; pass).
+- 111202: every attempt of a hole's checkpoint throws: the device copy holds the
+  hole's score, putts and shots; Try again sends that hole and only then is the
+  copy cleared (`use-new-round-session.preservation.test`; pass).
+
+Each guard was broken on purpose and the new test failed: the library's discard
+clearing the device copy before the request (`rounds.test` failed), Exit's
+Discard ignoring offline (`round-entry-wiring.test` failed), and the engine's
+thrown discard leaving the round marked discarded
+(`use-new-round-session.preservation.test` failed); the code was restored after
+each. Run: `npm run test:file` on the three files, exit 0, 98 tests. Not
+covered: a real device going offline, and the app killed with a hole unsaved.

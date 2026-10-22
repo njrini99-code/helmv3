@@ -37,6 +37,7 @@ const emptySpray = () => ({ driving: emptyGroup('driving'), approach: emptyGroup
 
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { ChPlayerProfile } from '../data/stats-player';
+import { deltaTone, halvesChange } from '../lib/stats-signal';
 import { loadPlayerProfile } from '../data/stats-player';
 import { calculateStatsFromShots } from '@/lib/utils/golf-stats-calculator-shots';
 import { loadTeamStats } from '../data/stats-team';
@@ -46,7 +47,7 @@ import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import { sgBaseline } from '../lib/sg';
 import { ClubhouseMarker } from '../shell/context';
@@ -335,7 +336,8 @@ describe('Stats player · haptics and accessibility', () => {
 
   it('CH-5803 the strokes gained route and hero figures read as text', () => {
     show(player());
-    const route = screen.getAllByRole('img').find((i) => /Strokes gained per round by leg/.test(i.getAttribute('aria-label') ?? ''))!;
+    // A focusable group now (the arrow keys read each leg), no longer a flat image.
+    const route = screen.getAllByRole('group').find((i) => /Strokes gained per round by leg/.test(i.getAttribute('aria-label') ?? ''))!;
     expect(route.getAttribute('aria-label')).toMatch(/Off the tee .+, Approach .+, Around green .+, Putting .+/);
     const figs = document.querySelector('.ch-pf-hero__figs')!;
     for (const child of figs.children) for (const el of child.children) expect(['DT', 'DD']).toContain(el.tagName);
@@ -365,6 +367,18 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     );
   const top = () => screen.getByTestId('phone-top');
 
+  it('Game detail on the phone says the round lengths the filter chose, as the desktop does (stats visuals 7.5)', () => {
+    // The phone did not pass the filter's holes, so its "How this is measured" said "18 holes only" whatever the filter was.
+    phone(player({ filter: { ...PREVIEW_PLAYER.filter, holes: 'all' } }));
+    const how = [...document.querySelectorAll('.ch-gm-how p')].map((p) => p.textContent ?? '');
+    expect(how.length).toBeGreaterThan(0);
+    expect(how.some((t) => t.includes('18- and 9-hole rounds'))).toBe(true);
+    expect(how.some((t) => t.includes('18 holes only'))).toBe(false);
+    cleanup();
+    phone(player({ filter: { ...PREVIEW_PLAYER.filter, holes: '9' } }));
+    expect([...document.querySelectorAll('.ch-gm-how p')].some((p) => p.textContent!.includes('9-hole rounds; per-round figures are per 18 holes'))).toBe(true);
+  });
+
   it('51901 the phone view replaces desktop: who, three figures, one game section at a time', async () => {
     const user = userEvent.setup();
     phone(player());
@@ -377,10 +391,15 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
     const trend = figs.querySelector('dd.is-words')!;
     expect(trend.textContent).toMatch(/^\d+\.\d (lower|higher)$|^level$|^—$/);
-    if (trend.textContent!.endsWith('lower')) expect(trend.classList.contains('ch-gain')).toBe(true);
-    if (trend.textContent!.endsWith('higher')) expect(trend.classList.contains('ch-loss')).toBe(true);
-    // The sub-line names the halves it compares (wave 7, item 7).
-    if (trend.textContent !== '—') expect(trend.nextElementSibling!.textContent).toMatch(/^Newest (\d+ vs first \d+|round vs first)$/);
+    // Green or amber only when the change clears its standard error (stats visuals Q4): the fixture's halves do not, so neutral ink
+    // and "No clear change" ahead of the halves it compares (wave 7, item 7).
+    const signal = deltaTone(PREVIEW_PLAYER.win.formChange, halvesChange(PREVIEW_PLAYER.win.trend)?.se, true);
+    expect(signal).toBe('');
+    expect(trend.classList.contains('ch-gain') || trend.classList.contains('ch-loss')).toBe(false);
+    if (trend.textContent !== '—') {
+      expect(trend.nextElementSibling!.querySelector('.ch-stm-figs__clear')!.textContent).toBe('No clear change');
+      expect(trend.nextElementSibling!.textContent).toMatch(/^No clear changeNewest (\d+ vs first \d+|round vs first)$/);
+    }
     // Drawn against their references under the figures: scoring from par, strokes gained from the Tour's zero; the trend is words.
     const gauges = document.querySelector('.ch-stm-overview .ch-stm-gauges')!;
     expect(gauges.getAttribute('aria-hidden')).toBe('true');
@@ -420,11 +439,12 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     const trend = () => screen.queryByRole('heading', { level: 2, name: 'Scoring trend' });
     phone(player({ rounds: [first!, second!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.getByRole('img', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
+    // The trend is a focusable group now (the arrow keys read each round), no longer a flat image.
+    expect(screen.getByRole('group', { name: /Scores over the last 2 rounds/ })).toBeTruthy();
     cleanup();
     phone(player({ rounds: [first!] }));
     expect(trend()).toBeTruthy();
-    expect(screen.queryByRole('img', { name: /Scores over/ })).toBeNull();
+    expect(screen.queryByRole('group', { name: /Scores over/ })).toBeNull();
     expect(screen.getByText(/One round so far/).textContent).toBe(`One round so far: ${first!.score} on ${first!.date}. The trend draws from the second.`);
     cleanup();
     phone(player({ rounds: [] }));
@@ -540,6 +560,18 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('C-24 CH-5213 the round cache does not load: the phone says so above the figures', () => {
     phone(player({ cacheError: true }));
     expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
+  });
+
+  it('CH-5215 CoachHelm’s reads do not load: Game detail says so once under the section chips and draws no count line', () => {
+    wrap(
+      <PhoneChromeProvider>
+        <SlotHost />
+        <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={PREVIEW_READS_FAILED} />
+      </PhoneChromeProvider>,
+    );
+    expect(code('CH-5215')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
+    expect(document.querySelector('.ch-gm__reads')).toBeNull();
   });
 
   it('CH-5302 no rounds in the window', () => {
@@ -909,6 +941,14 @@ describe('Stats player · the loader', () => {
     expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
   });
 
+  it('a goal carries its metric_id from golf_goals into the profile, so a human-titled goal still formats by its metric', async () => {
+    tables.current = profileTables({
+      golf_goals: { data: [{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric_id: 'gir_pct', state: 'active', current_value: 62, target_value: 70, baseline_value: 55 }] },
+    });
+    const profile = await loadAs();
+    expect(profile!.goals).toEqual([{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric: 'gir_pct', state: 'active', current: 62, target: 70, baseline: 55 }]);
+  });
+
   it('52301 CH-5203 focus areas and goals that fail to read are logged and flagged, never thrown', async () => {
     tables.current = profileTables({ golf_player_focus_areas: { error: { message: 'boom' } }, golf_goals: { error: { message: 'boom' } } });
     const profile = await loadAs();
@@ -1013,7 +1053,7 @@ describe('Stats player · the page', () => {
     const user = userEvent.setup();
     createFocusArea.mockResolvedValue({ success: true });
     show(player());
-    screen.getByRole('radio', { name: 'Last 10' }).focus();
+    screen.getByRole('radio', { name: 'Last 20' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?player=jonah&window=season', { scroll: false });
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Season' }));

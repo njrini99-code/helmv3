@@ -12125,6 +12125,80 @@ export type Database = {
           },
         ]
       }
+      golf_coachhelm_corrections: {
+        Row: {
+          alternative_cause_label: string | null
+          author_role: string
+          author_user_id: string
+          checkpoint_round_id: string | null
+          created_at: string
+          free_text: string | null
+          id: string
+          insight_id: string
+          kind: string
+          player_id: string
+          reason: string | null
+          team_id: string | null
+        }
+        Insert: {
+          alternative_cause_label?: string | null
+          author_role: string
+          author_user_id: string
+          checkpoint_round_id?: string | null
+          created_at?: string
+          free_text?: string | null
+          id?: string
+          insight_id: string
+          kind: string
+          player_id: string
+          reason?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          alternative_cause_label?: string | null
+          author_role?: string
+          author_user_id?: string
+          checkpoint_round_id?: string | null
+          created_at?: string
+          free_text?: string | null
+          id?: string
+          insight_id?: string
+          kind?: string
+          player_id?: string
+          reason?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_corrections_checkpoint_round_id_fkey"
+            columns: ["checkpoint_round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_corrections_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_corrections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_corrections_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coachhelm_llm_budget: {
         Row: {
           budget_usd: number
@@ -12216,6 +12290,138 @@ export type Database = {
           },
           {
             foreignKeyName: "golf_coachhelm_llm_calls_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coachhelm_player_state: {
+        Row: {
+          attempts_since: Json
+          checkpoint_count: number
+          created_at: string
+          last_checkpoint_at: string | null
+          last_checkpoint_round_id: string | null
+          player_id: string
+          rounds_since: number
+          updated_at: string
+        }
+        Insert: {
+          attempts_since?: Json
+          checkpoint_count?: number
+          created_at?: string
+          last_checkpoint_at?: string | null
+          last_checkpoint_round_id?: string | null
+          player_id: string
+          rounds_since?: number
+          updated_at?: string
+        }
+        Update: {
+          attempts_since?: Json
+          checkpoint_count?: number
+          created_at?: string
+          last_checkpoint_at?: string | null
+          last_checkpoint_round_id?: string | null
+          player_id?: string
+          rounds_since?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_player_state_last_checkpoint_round_id_fkey"
+            columns: ["last_checkpoint_round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_player_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coachhelm_run_log: {
+        Row: {
+          candidates: number
+          created_at: string
+          engine_version: string
+          families: Json
+          id: string
+          m_gated: number
+          m_recorded: number
+          m_refused: number
+          newest_round_id: string | null
+          player_id: string
+          run_at: string
+          rungs: Json
+          shown: number
+          support_version: string
+          supported: number
+          suppressed: Json
+          testable: number
+          tests_in_run: number
+          trigger: string
+          watching: Json
+        }
+        Insert: {
+          candidates?: number
+          created_at?: string
+          engine_version?: string
+          families?: Json
+          id?: string
+          m_gated?: number
+          m_recorded?: number
+          m_refused?: number
+          newest_round_id?: string | null
+          player_id: string
+          run_at?: string
+          rungs?: Json
+          shown?: number
+          support_version?: string
+          supported?: number
+          suppressed?: Json
+          testable?: number
+          tests_in_run?: number
+          trigger?: string
+          watching?: Json
+        }
+        Update: {
+          candidates?: number
+          created_at?: string
+          engine_version?: string
+          families?: Json
+          id?: string
+          m_gated?: number
+          m_recorded?: number
+          m_refused?: number
+          newest_round_id?: string | null
+          player_id?: string
+          run_at?: string
+          rungs?: Json
+          shown?: number
+          support_version?: string
+          supported?: number
+          suppressed?: Json
+          testable?: number
+          tests_in_run?: number
+          trigger?: string
+          watching?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_run_log_newest_round_id_fkey"
+            columns: ["newest_round_id"]
+            isOneToOne: false
+            referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_run_log_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
@@ -12347,6 +12553,7 @@ export type Database = {
       golf_conversation_participants: {
         Row: {
           conversation_id: string
+          hidden_at: string | null
           id: string
           joined_at: string | null
           last_read_at: string | null
@@ -12356,6 +12563,7 @@ export type Database = {
         }
         Insert: {
           conversation_id: string
+          hidden_at?: string | null
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
@@ -12365,6 +12573,7 @@ export type Database = {
         }
         Update: {
           conversation_id?: string
+          hidden_at?: string | null
           id?: string
           joined_at?: string | null
           last_read_at?: string | null
@@ -14860,15 +15069,22 @@ export type Database = {
       golf_player_focus_areas: {
         Row: {
           area_type: string
+          assigned_by: string | null
+          baseline_n: number | null
+          baseline_shrunk: number | null
           baseline_value: number | null
+          check_after_rounds: number | null
           coach_id: string | null
           completed_at: string | null
           created_at: string | null
+          criterion: Json | null
           current_value: number | null
           description: string | null
+          drill_ids: string[] | null
           evidence_revision: string | null
           from_insight_id: string | null
           from_review_id: string | null
+          horizon: Json | null
           id: string
           notes: string | null
           outcome_status: string | null
@@ -14887,18 +15103,26 @@ export type Database = {
           team_id: string | null
           title: string
           updated_at: string | null
+          verdict: Json | null
         }
         Insert: {
           area_type: string
+          assigned_by?: string | null
+          baseline_n?: number | null
+          baseline_shrunk?: number | null
           baseline_value?: number | null
+          check_after_rounds?: number | null
           coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          criterion?: Json | null
           current_value?: number | null
           description?: string | null
+          drill_ids?: string[] | null
           evidence_revision?: string | null
           from_insight_id?: string | null
           from_review_id?: string | null
+          horizon?: Json | null
           id?: string
           notes?: string | null
           outcome_status?: string | null
@@ -14917,18 +15141,26 @@ export type Database = {
           team_id?: string | null
           title: string
           updated_at?: string | null
+          verdict?: Json | null
         }
         Update: {
           area_type?: string
+          assigned_by?: string | null
+          baseline_n?: number | null
+          baseline_shrunk?: number | null
           baseline_value?: number | null
+          check_after_rounds?: number | null
           coach_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          criterion?: Json | null
           current_value?: number | null
           description?: string | null
+          drill_ids?: string[] | null
           evidence_revision?: string | null
           from_insight_id?: string | null
           from_review_id?: string | null
+          horizon?: Json | null
           id?: string
           notes?: string | null
           outcome_status?: string | null
@@ -14947,6 +15179,7 @@ export type Database = {
           team_id?: string | null
           title?: string
           updated_at?: string | null
+          verdict?: Json | null
         }
         Relationships: [
           {
@@ -16742,6 +16975,7 @@ export type Database = {
           id: string
           is_penalty: boolean | null
           lie_after: string | null
+          lie_after_recovery: boolean | null
           lie_before: string | null
           miss_direction: string | null
           notes: string | null
@@ -16770,6 +17004,7 @@ export type Database = {
           id?: string
           is_penalty?: boolean | null
           lie_after?: string | null
+          lie_after_recovery?: boolean | null
           lie_before?: string | null
           miss_direction?: string | null
           notes?: string | null
@@ -16798,6 +17033,7 @@ export type Database = {
           id?: string
           is_penalty?: boolean | null
           lie_after?: string | null
+          lie_after_recovery?: boolean | null
           lie_before?: string | null
           miss_direction?: string | null
           notes?: string | null
@@ -17352,6 +17588,9 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          availability: string
+          availability_note: string | null
+          availability_updated_at: string | null
           created_at: string | null
           id: string
           jersey_number: number | null
@@ -17364,6 +17603,9 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          availability?: string
+          availability_note?: string | null
+          availability_updated_at?: string | null
           created_at?: string | null
           id?: string
           jersey_number?: number | null
@@ -17376,6 +17618,9 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          availability?: string
+          availability_note?: string | null
+          availability_updated_at?: string | null
           created_at?: string | null
           id?: string
           jersey_number?: number | null
@@ -20563,6 +20808,7 @@ export type Database = {
           banner_url: string | null
           conference: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           division: string | null
           id: string
@@ -20580,6 +20826,7 @@ export type Database = {
           banner_url?: string | null
           conference?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           division?: string | null
           id?: string
@@ -20597,6 +20844,7 @@ export type Database = {
           banner_url?: string | null
           conference?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           division?: string | null
           id?: string
@@ -21124,6 +21372,7 @@ export type Database = {
           sg_total: number
         }[]
       }
+      can_delete_organization: { Args: { p_org_id: string }; Returns: boolean }
       can_insert_baseball_team_member: {
         Args: {
           p_status: Database["public"]["Enums"]["team_member_status"]
@@ -21174,6 +21423,10 @@ export type Database = {
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
+      }
+      coach_organization_is_claimable: {
+        Args: { p_org_id: string }
+        Returns: boolean
       }
       current_coach_id: { Args: never; Returns: string }
       current_player_id: { Args: never; Returns: string }
@@ -21566,6 +21819,14 @@ export type Database = {
         Args: { p_announcement_id: string }
         Returns: boolean
       }
+      golf_coachhelm_shown_reads: {
+        Args: { p_since: string; p_team_id: string }
+        Returns: {
+          insight_id: string
+          last_shown_at: string
+          shown_ladder: string
+        }[]
+      }
       golf_conversation_created_by_me: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -21581,17 +21842,6 @@ export type Database = {
       golf_conversation_on_my_team: {
         Args: { p_conversation_id: string }
         Returns: boolean
-      }
-      golf_event_attendance_counts: {
-        Args: { p_event_ids: string[] }
-        Returns: {
-          accepted: number
-          coach_invited: number
-          declined: number
-          event_id: string
-          invited: number
-          pending: number
-        }[]
       }
       golf_join_team_with_code: {
         Args: { p_code: string }
@@ -21713,6 +21963,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      helm_debug_record_trace_steps: {
+        Args: { p_steps: Json; p_trace_id: string }
+        Returns: number
+      }
       helm_debug_start_trace: {
         Args: {
           p_environment: string
@@ -21789,6 +22043,10 @@ export type Database = {
         Returns: string
       }
       helm_lifting_can_edit_org: { Args: { p_org: string }; Returns: boolean }
+      helm_lifting_can_invite_coach: {
+        Args: { p_org: string }
+        Returns: boolean
+      }
       helm_lifting_can_view_org: {
         Args: { p_org: string; p_sport: string }
         Returns: boolean

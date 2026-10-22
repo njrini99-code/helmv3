@@ -10,9 +10,10 @@ import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
 import { diveCounts, orderDive, themesByCategory, toChDeepInsight, type ChDeepDive, type ChDeepInsight, type ChDiveInputs, type DiveFocusRow, type DiveRoundRow } from '../data/coachhelm-dive-shape';
 import { speak } from '../data/coachhelm-voice';
 import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
+import type { ChLadderReads } from '../data/coachhelm-ladder-shape';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from '../data/coachhelm-standing-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
-import { bigNumber, breakBias, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
+import { bigNumber, breakBias, MANY_FINDINGS, MANY_NEWEST_ROUND, MANY_STALE, MANY_STRENGTHS, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
 
 /**
  * Sample data for the player's CoachHelm views (Game profile, Standing, Deep dive). Each fixture is the stored shape the loader reads
@@ -24,7 +25,7 @@ export const VIEWS_NOW = new Date('2026-10-01T15:00:00Z');
 
 // ── Game profile ───────────────────────────────────────────────────────────
 
-const FULL_VECTOR: GenomeVector = {
+export const FULL_VECTOR: GenomeVector = {
   miss_side_bias: { value: -0.42, confidence: 0.85, label: 'Left bias' },
   pressure_delta: { value: 0.82, confidence: 0.5, label: 'Tightens up' },
   // Labels are the live dimensions' own (scrambling-rate.ts: Reliable from 27.6%, Wizard from 40.6%).
@@ -36,7 +37,7 @@ const FULL_VECTOR: GenomeVector = {
   driver_usage: { value: 0.62, confidence: 0.95, label: 'Mixed' },
 };
 
-const genome = (vector: GenomeVector, rounds = 14): LoadedGenome => ({ player_id: 'pl-jonah', vector, computed_at: '2026-09-30T02:30:00Z', rounds_basis: rounds });
+export const genome = (vector: GenomeVector, rounds = 14): LoadedGenome => ({ player_id: 'pl-jonah', vector, computed_at: '2026-09-30T02:30:00Z', rounds_basis: rounds });
 const PARTIAL_VECTOR: GenomeVector = {
   ...FULL_VECTOR,
   pressure_delta: { value: null, confidence: null },
@@ -100,9 +101,36 @@ export const STANDING_ROWS: PlayerStanding[] = [
   standingRow('opening_hole_delta', 0.3, 0, null),
 ];
 
-const BASELINE: ChStandBaselineRead = { status: 'ok', roundsPlayed: 14, scoringAverage: 77.2 };
+export const BASELINE: ChStandBaselineRead = { status: 'ok', roundsPlayed: 14, scoringAverage: 77.2 };
 
-export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE);
+/**
+ * The open reads behind Where strokes go, as the loader hands them over (title in their voice, the confidence word, the cause
+ * state's word and line). Synthetic. Approach has two, putting and the tee one each, around the green none; the scoring read is
+ * not a part of the round and is not on the ladder.
+ */
+export const LADDER_READS: ChLadderReads = {
+  status: 'ok',
+  list: [
+    { id: 'ld-app-1', category: 'approach', title: 'Approaches from 125–175 yd finish 47 ft away', priority: 'high', word: 'Solid read', cause: { word: 'Counted', line: '9 of 14 missed greens went short, then into the rough, across 5 rounds.' } },
+    { id: 'ld-app-2', category: 'approach', title: 'You hit 58% of greens in regulation', priority: 'medium', word: 'Early read', cause: null },
+    { id: 'ld-putt-1', category: 'putting', title: 'Putts from 5–10 ft drop 38% of the time', priority: 'high', word: 'Solid read', cause: { word: 'Not traced yet', line: '6 of the 10 misses it needs; 4 more misses and the why is checked.' } },
+    { id: 'ld-tee-1', category: 'tee', title: 'Tee shots miss right on 1 hole in 3', priority: 'medium', word: 'Early read', cause: { word: 'Data gap', line: 'Miss direction is recorded on only 4 of the tee misses. Tag it on the next 6 and the why is checked again.' } },
+    { id: 'ld-score-1', category: 'scoring', title: 'Par 5s cost you 0.3 strokes against your par 4s', priority: 'low', word: 'Thin read, n=8', cause: null },
+  ],
+};
+
+export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE, LADDER_READS);
+/**
+ * Thin data: four rounds, with strokes gained only for approach and putting (no tee or around-the-green figure yet, said in words),
+ * and one thin read behind putting.
+ */
+export const PREVIEW_STANDING_THIN: ChStanding = toChStanding(
+  STANDING_ROWS.filter((r) => ['sg_approach', 'sg_putting', 'putts_made_3_5ft_pct', 'putts_made_5_10ft_pct', 'gir_pct'].includes(r.metric_id)),
+  { status: 'ok', roundsPlayed: 4, scoringAverage: 79.1 },
+  { status: 'ok', list: [{ id: 'ld-thin-1', category: 'putting', title: 'Putts from 3–5 ft drop 71% of the time', priority: 'medium', word: 'Thin read, n=11', cause: null }] },
+);
+/** The reads behind the ladder did not load: the strokes still draw, nothing opens, and the ladder says so once. */
+export const PREVIEW_STANDING_READSFAILED: ChStanding = toChStanding(STANDING_ROWS, BASELINE, { status: 'failed' });
 /** Three rounds in: every comparison draws, no projection does, and the page says it is an early read. */
 export const PREVIEW_STANDING_EARLY: ChStanding = toChStanding(STANDING_ROWS.slice(0, 8), { status: 'ok', roundsPlayed: 3, scoringAverage: 80.4 });
 export const PREVIEW_STANDING_EMPTY: ChStanding = toChStanding([], { status: 'ok', roundsPlayed: 2, scoringAverage: null });
@@ -254,9 +282,9 @@ export const DIVE_THEMES: AssembledThemes = {
   ],
 };
 
-const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.';
+export const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.';
 const diveSay = (t: string) => speak(t, { role: 'player' });
-const diveBase = (raw: EvidenceInsight, drillText: string | null = null) => toChInsight(raw, { drillText, tour: PREVIEW_TOUR, viewer: { role: 'player' } });
+export const diveBase = (raw: EvidenceInsight, drillText: string | null = null) => toChInsight(raw, { drillText, tour: PREVIEW_TOUR, viewer: { role: 'player' } });
 export type Inputs = Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>;
 export const FULL_INPUTS: Inputs = { rounds: new Map(DIVE_ROUND_ROWS.map((r) => [r.id, r])), focusAreas: DIVE_FOCUS, goals: DIVE_GOALS, themes: DIVE_THEMES };
 export const BARE_INPUTS: Inputs = { rounds: FULL_INPUTS.rounds, focusAreas: [], goals: [], themes: null };
@@ -280,5 +308,58 @@ export const PREVIEW_DIVE_PARTS_FAILED: ChDeepDive = diveOf([deep(DIVE_SLOPE, FA
 export const PREVIEW_DIVE_YOUNG: ChDeepDive = diveOf([deep(DIVE_BREAK, BARE_INPUTS), deep(DIVE_BIG, BARE_INPUTS)], { themes: {} });
 export const PREVIEW_DIVE_EMPTY: ChDeepDive = diveOf([], { rounds: 14, themes: {} });
 export const PREVIEW_DIVE_NO_ROUNDS: ChDeepDive = diveOf([], { rounds: 0, themes: {} });
+
+/**
+ * The penalties read with a team pool as its primary comparison (Slice 7a, written only with `coachhelm_team_pool_v1` on): the
+ * Read's What line says the team line instead of the Tour. Synthetic numbers. `?view=deep-dive&state=teampool&insight=in-pen`.
+ */
+const TEAM_LINE = { source: 'team_pool', label: 'Team pool', value: 0.6, n: 212, unit: 'count', n_unit: 'rounds', n_noun: 'rounds', players: 8, window_start: null, window_end: '2026-09-28' } as const;
+export const DIVE_PENALTIES_TEAM: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
+  comparison: {
+    primary: TEAM_LINE,
+    lines: [TEAM_LINE, { source: 'tour', label: DIVE_PENALTIES.evidence.comparison_label, value: DIVE_PENALTIES.evidence.comparison_value, n: null, unit: 'count' }],
+  },
+});
+export const PREVIEW_DIVE_TEAM_POOL: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_TEAM, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+
+/**
+ * The penalties read with a counted path and its example holes (chs-38): the root-cause pass stored the path and five holes, one of
+ * them on a round this player no longer has, so four are listed. Synthetic. `?view=deep-dive&state=holes&insight=in-pen`.
+ */
+export const DIVE_PENALTIES_HOLES: EvidenceInsight = evidenceOf(DIVE_PENALTIES, {
+  cause: {
+    state: 'observed_sequence',
+    population: 'penalties',
+    window: '2026-07-13 to 2026-09-28',
+    path: ['tee shot', 'penalty stroke', 'bogey or worse'],
+    occurrences: 6,
+    denominator: 9,
+    distinct_rounds: 4,
+    example_holes: [
+      { round_id: 'rd-01', hole_number: 7 },
+      { round_id: 'rd-03', hole_number: 12 },
+      { round_id: 'rd-gone', hole_number: 4 },
+      { round_id: 'rd-05', hole_number: 3 },
+      { round_id: 'rd-08', hole_number: 16 },
+    ],
+    event_strokes: null,
+    checked: { holes_with_full_record: 180, of: 198, fields_missing: [] },
+    alternatives: [],
+    data_gap: null,
+    coach_override: null,
+  },
+});
+export const PREVIEW_DIVE_HOLES: ChDeepDive = diveOf([deep(DIVE_SLOPE, FULL_INPUTS, DRILL), deep(DIVE_PENALTIES_HOLES, FULL_INPUTS), deep(DIVE_BREAK, FULL_INPUTS), deep(DIVE_BIG, FULL_INPUTS)]);
+
+/** The same crowded player as `PREVIEW_HELM_PLAYER_MANY`, on the Deep dive. `?state=many`. */
+export const PREVIEW_DIVE_MANY: ChDeepDive = diveOf([
+  deep(DIVE_SLOPE, FULL_INPUTS, DRILL),
+  deep(DIVE_PENALTIES, FULL_INPUTS),
+  ...MANY_FINDINGS.map((r) => deep({ ...r, evidence: { ...r.evidence, source_round_ids: DIVE_ROUND_ROWS.slice(0, 8).map((x) => x.id), window_start: '2026-07-05', window_end: '2026-10-01' } }, FULL_INPUTS)),
+  deep(DIVE_BREAK, FULL_INPUTS),
+  toChDeepInsight(MANY_STALE, toChInsight(MANY_STALE, { tour: PREVIEW_TOUR, viewer: { role: 'player' }, newestRound: MANY_NEWEST_ROUND }), FULL_INPUTS, diveSay),
+  deep(DIVE_BIG, FULL_INPUTS),
+  ...MANY_STRENGTHS.map((r) => deep(r, FULL_INPUTS)),
+]);
 
 export const diveLoad = (data: ChDeepDive): ChViewLoad<ChDeepDive> => ({ status: 'ready', data });

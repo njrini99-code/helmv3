@@ -11,6 +11,7 @@
 
 import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /**
  * This rule reports its distinct-round count AS `evidence.sample_n`, so its
@@ -71,15 +72,17 @@ const rule: CompositeRule = {
     const lateAvg = Number(match.signals.late_avg ?? 0);
 
     return {
-      title: 'Closing 6 holes are leaking strokes',
-      content:
-        `Across your last ${rounds} rounds, holes 1-12 average ${earlyAvg.toFixed(2)} ` +
-        `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par, ` +
-        `that's +${delta.toFixed(2)} strokes/hole on the closing stretch. ` +
-        `This is a pattern worth watching, not a diagnosis. Late-round drop-off ` +
-        `can come from energy, focus, or just where the harder holes fall on your ` +
-        `course. Try a routine reset before hole 13 (hydrate, recommit to your ` +
-        `pre-shot) and see if the gap holds over more rounds.`,
+      ...inBothVoices((v) => ({
+        title: 'Closing 6 holes are leaking strokes',
+        content:
+          `Across ${v.players} last ${rounds} rounds, holes 1-12 average ${earlyAvg.toFixed(2)} ` +
+          `to par while holes 13-18 average ${lateAvg.toFixed(2)} to par, ` +
+          `that's +${delta.toFixed(2)} strokes/hole on the closing stretch. ` +
+          `This is a pattern worth watching, not a diagnosis. Late-round drop-off ` +
+          `can come from energy, focus, or just where the harder holes fall on ${v.your} ` +
+          `course. ${v.pick('Try', 'Have them try')} a routine reset before hole 13 (hydrate, recommit to ${v.your} ` +
+          `pre-shot) and see if the gap holds over more rounds.`,
+      })),
       signature: 'closing_hole_fatigue',
       evidence: {
         metric: 'closing_hole_delta',

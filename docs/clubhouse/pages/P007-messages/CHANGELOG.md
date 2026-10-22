@@ -1,5 +1,53 @@
 # P007 — Messages: changelog
 
+## 2026-10-21 — Names come through the profile function
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-fqx3o0 (security review S4)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none (reads display columns only; email, phone, gpa, school, hometown and state are no longer fetched)
+Held items:     20261017004000_golf_player_profiles_fn.sql, 20261017005000_golf_players_select_drop_teammate_branch.sql
+```
+
+### Changed
+
+- No visible change. The conversation list and thread read other people's names and avatars through `readGolfPlayerProfiles` (`src/lib/golf/player-profiles.ts`) instead of a `golf_players` embed (`src/clubhouse/data/messages.ts`). Until the function is applied the read falls back to the table.
+
+## 2026-10-20 — The held-column probe runs once per server instance
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-readiness (replayed from draft PR #2207)
+Contract IDs:   none changed
+Actions:        canHideGolfConversations, hideGolfConversation
+                (src/app/golf/actions/conversation-hide.ts)
+Data impact:    none (one fewer failing read per load while the column
+                is missing)
+Held items:     20261008160000_golf_conversation_hidden_at.sql (still held)
+```
+
+### Changed
+
+- No visible change (Q8). While migration 20261008160000 is held, every
+  Messages load ran `canHideGolfConversations`' read of the missing `hidden_at`
+  column, which failed each time (42703; Sentry JAVASCRIPT-NEXTJS-1A0, ignored
+  but still sent). A server instance now remembers the missing column for five
+  minutes and answers false without the read; a hide that meets the missing
+  column records it too. Only that answer is kept: any other failure, a
+  signed-out caller and every yes are asked again.
+
+### Why
+
+- After the migration is applied, Delete conversation appears within five
+  minutes, on the first probe past the expiry.
+
+### Verification
+
+- `src/test/actions/hide-golf-conversation.test.ts`: the new cases fail against
+  the uncached probe and pass with the cache.
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text
@@ -679,6 +727,7 @@ Clubhouse Animations preference; disabled animation means an immediate jump.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Whole-app release audit
 
 Reconciled page purpose, design acceptance, contract status, wiring and

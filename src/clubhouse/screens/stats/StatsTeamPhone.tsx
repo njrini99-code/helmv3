@@ -1,10 +1,9 @@
 'use client';
 
-import NumberFlow from '@number-flow/react';
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { createContext, useContext, useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { Avatar } from '../../ui/Avatar';
@@ -15,15 +14,15 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
-import { CH_DUR, CH_EASE } from '../../lib/motion';
-import { useChReducedMotion } from '../../lib/reduced-motion';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { holeCoverage } from '../../data/round-scope';
@@ -40,53 +39,6 @@ export type ChLegPick = 'total' | ChLeg;
 // Recharts loads on its own chunk after the page has painted, and never on desktop (this module is imported there too).
 // The page holds the chart's box and its accessible summary, so nothing waits on it or moves when it lands.
 const TeamTrendChart = dynamic(() => import('./TeamTrendChart'), { ssr: false, loading: () => null });
-
-/** Number Flow on the Clubhouse curve: digits roll over base, fade over quick (D-64); instant when reduced. */
-const FLOW_TIMING = {
-  transformTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  spinTiming: { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(',')})` },
-  opacityTiming: { duration: CH_DUR.quick * 1000, easing: 'ease-out' },
-} as const;
-const ONE_PLACE = { minimumFractionDigits: 1, maximumFractionDigits: 1 } as const;
-
-/**
- * Whether the rolling figures are Number Flow yet. They are plain text until a finger or focus lands on the leg rows, the
- * only control that changes them: pointerdown comes before the click, so the elements are mounted showing the current
- * values when the pick rolls them. Mounting nine Number Flow elements (each its own shadow root and measuring) was the
- * second long frame of a switch to Stats.
- */
-const FlowLive = createContext(false);
-
-/**
- * A signed strokes-gained value whose digits roll when it changes (a leg picked; never on first paint, never on a
- * window change, which remounts it). Intl draws a hyphen, so the sign is ours: a true minus, a plus, none at 0.0
- * (formatSigned's rule). Assistive technology reads the formatted text; the rolling digits are hidden from it.
- */
-function SignedFlow({ value, suffix = '' }: { value: number; suffix?: string }) {
-  const reduced = useChReducedMotion();
-  const live = useContext(FlowLive);
-  const text = formatSigned(value);
-  const sign = text.startsWith('+') ? '+' : text.startsWith(MINUS) ? MINUS : '';
-  return (
-    <>
-      <span className="ch-sr-only">
-        {text}
-        {suffix}
-      </span>
-      <span aria-hidden="true">
-        {/* The text is what Number Flow draws (the sign, then the size to one place), so nothing moves when they swap. */}
-        {live ? (
-          <NumberFlow value={Number(Math.abs(value).toFixed(1))} format={ONE_PLACE} prefix={sign} suffix={suffix} animated={!reduced} {...FLOW_TIMING} />
-        ) : (
-          <>
-            {text}
-            {suffix}
-          </>
-        )}
-      </span>
-    </>
-  );
-}
 
 const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(leg));
 
@@ -118,15 +70,11 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
     if (data.puttsError) failed.push('team putting');
   }
   const covered = failed.length > 1;
-  // A window or filter change remounts the rolling figures, so only a leg change rolls them; new rounds swap in at once.
+  // A window or filter change remounts the sections below, so their state starts clean for the new scope.
   const scope = JSON.stringify(data.filter);
   // The legs, players and putting start below the first screen (the legs at 802px of 852), so a switch to Stats renders
-  // them a frame after the page has painted: their NumberFlows, peeks and rows were most of the switch's long frame.
+  // them a frame after the page has painted: their peeks and rows were most of the switch's long frame.
   const below = useArrivalPainted();
-  const [flowLive, setFlowLive] = useState(false);
-  const goLive = () => {
-    if (!flowLive) setFlowLive(true);
-  };
   // CH-4703: picking a leg is one selection tick, and ranks the players by it (the SG sort).
   const pickLeg = (next: ChLegPick) => {
     if (next === leg) return;
@@ -137,7 +85,6 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
   return (
     // Sections that crash together are told once, under the controls (CH-1210).
     <SectionGroup>
-      <FlowLive.Provider value={flowLive}>
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
@@ -197,7 +144,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
               {below && (
                 <>
                   <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} onIntent={goLive} />
+                    <Legs key={scope} data={data} leg={leg} onLeg={pickLeg} />
+                  </SectionBoundary>
+                  <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+                    <TeamRank key={scope} data={data} phone />
                   </SectionBoundary>
                   <SectionBoundary surface="stats.team.players" label="Players" code="CH-4206">
                     <Players key={scope} data={data} leg={leg} sort={sort} onSort={setSort} />
@@ -211,14 +161,16 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
           )
         )}
       </div>
-      </FlowLive.Provider>
     </SectionGroup>
   );
 }
 
-/** The class a change takes: green when it moved the good way, amber the other, none when it rounds to zero (D-42, F-54). */
+/**
+ * The class a change takes: green when it moved the good way by more than its standard error, amber the other way, none when it
+ * is no clear change (stats visuals Q4; D-42, F-54).
+ */
 function toneClass(f: ChFigure): string {
-  const t = changeTone(f.delta, f.lowerIsBetter, f.digits);
+  const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
   return t === 'is-gain' ? 'ch-gain' : t === 'is-loss' ? 'ch-loss' : '';
 }
 
@@ -243,7 +195,7 @@ function Hero({ figures }: { figures: readonly ChFigure[] }) {
       <dd className="ch-stm-hero__c" aria-hidden={none ? true : undefined}>
         {!none && (
           <>
-            <b className={'ch-num ' + toneClass(f)}>{formatSigned(f.delta, f.digits)}</b> {f.context}
+            <b className={'ch-num ' + toneClass(f)}>{formatSigned(f.delta, f.digits)}</b> {deltaWords(f.delta, deltaTone(f.delta, f.se, f.lowerIsBetter), f.context || 'vs previous 10')}
           </>
         )}
       </dd>
@@ -345,7 +297,7 @@ function RoundFigures({ data }: { data: ChTeamStats }) {
  * of zero on the data's own scale, the total under them on the same scale. The rows are the leg picker (Base UI Tabs,
  * vertical): a wash slides to the chosen row, its figure rolls, and the players below rank by it.
  */
-function Legs({ data, leg, onLeg, onIntent }: { data: ChTeamStats; leg: ChLegPick; onLeg: (leg: ChLegPick) => void; onIntent: () => void }) {
+function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: (leg: ChLegPick) => void }) {
   const baseline = sgBaseline(data.tour);
   const legs = LEGS_LIST.map((l, i) => ({ l, v: data.legTotals[i] ?? null }));
   const known = legs.filter((x): x is { l: ChLeg; v: number } => x.v != null);
@@ -387,13 +339,13 @@ function Legs({ data, leg, onLeg, onIntent }: { data: ChTeamStats; leg: ChLegPic
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
-          <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : <SignedFlow value={picked.v} />}</b>
+          <b className={'ch-num ' + (picked.v == null ? '' : picked.v >= 0 ? 'ch-gain' : 'ch-loss')}>{picked.v == null ? NO_DATA : formatSigned(picked.v)}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
             mounted, two layouts of the whole arriving page inside React's commit (28ms of a switch's 163ms of script at
             4x CPU, Chromium, production build, 2026-10-15). Every row is 44px, so the wash's place is its index. */}
-        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical" onPointerDownCapture={onIntent} onFocusCapture={onIntent}>
+        <div className="ch-stm-legs" role="tablist" aria-label="Strokes gained leg" aria-orientation="vertical">
           {rows.map(({ key, label, v, total }) => {
             const on = key === picked.key;
             return (
@@ -482,7 +434,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                     </span>
                     <span className="ch-stm-row__v ch-num">
                       <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
-                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : <SignedFlow value={sg} suffix=" SG" />}</span>
+                      <span className={sg == null ? '' : sg >= 0 ? 'ch-gain' : 'ch-loss'}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
                     <LinkPending />

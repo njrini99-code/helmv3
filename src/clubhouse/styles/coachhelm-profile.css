@@ -259,9 +259,6 @@
   font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
-.ch-hg-m__f .ch-hl-conf {
-  margin-left: 0;
-}
 .ch-hg-m__how {
   margin-top: -4px;
 }
@@ -619,12 +616,22 @@
     color: var(--ch-on-green-ink);
   }
 
-  /* An early read: one line set off by a gilt rule, not a box. */
+  /* An early read: one line led by a gilt dot, not a box and not a rule at its edge (no side rails, 2026-10-19). */
   .ch-hg-early {
-    padding: 2px 0 2px 12px;
+    padding: 0;
     border-radius: 0;
     background: none;
-    box-shadow: inset 2px 0 0 var(--ch-champagne-300);
+    box-shadow: none;
+  }
+  .ch-hg-early::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--ch-champagne-500);
+    vertical-align: 0.12em;
   }
 
   /* Every measure: the section's head under the double rule, then the measures as rows. */
@@ -1039,5 +1046,34 @@ main[data-canopy] .ch-hg-hero.is-second,
 @media (hover: hover) {
   .ch-hg-m__how summary:hover svg {
     color: var(--ch-text-primary);
+  }
+}
+
+/* On a wide canvas the green board is two columns: the headline at the left, what stands out at the right, so a lone group
+   no longer leaves half the board empty beside it (2026-10-19). */
+@media (min-width: 821px) {
+  @container chhl (min-width: 901px) {
+    main[data-canopy] .ch-hg-hero.ch-scoreboard:has(> .ch-hg-stand) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.85fr);
+      grid-template-rows: auto auto 1fr;
+      gap: 16px 44px;
+      align-items: start;
+    }
+    main[data-canopy] .ch-hg-hero.ch-scoreboard:has(> .ch-hg-stand) > * {
+      grid-column: 1;
+    }
+    main[data-canopy] .ch-hg-hero.ch-scoreboard:has(> .ch-hg-stand) > .ch-hg-hero__k {
+      grid-column: 1 / -1;
+    }
+    main[data-canopy] .ch-hg-hero.ch-scoreboard > .ch-hg-stand {
+      grid-column: 2;
+      grid-row: 2 / span 2;
+      grid-template-columns: minmax(0, 1fr);
+      padding-top: 0;
+    }
+    main[data-canopy] .ch-hg-hero.ch-scoreboard .ch-hg-stand__c + .ch-hg-stand__c {
+      padding-left: 16px;
+    }
   }
 }

@@ -40,16 +40,23 @@ type AccessoryBarKeyboard = {
   setAccessoryBarVisible: (opts: { isVisible: boolean }) => Promise<void>;
 };
 
+/** Surfaces holding the accessory bar up (`pinKeyboardAccessoryBar`). */
+let accessoryPins = 0;
+/** The installed bar's "show what the focused field wants" (null until `initCapacitor` has loaded the plugin). */
+let accessoryRecheck: (() => void) | null = null;
+
 /**
  * Keep the accessory bar (with its Done key) hidden everywhere EXCEPT while a
- * numeric/decimal input has focus. Text inputs keep the clean bar-less
- * keyboard; number pads get Done back. Focus moving between two numeric
- * fields keeps the bar up instead of flickering it off and on.
+ * numeric/decimal input has focus, or while a surface pins it
+ * (`pinKeyboardAccessoryBar`). Text inputs keep the clean bar-less keyboard;
+ * number pads get Done back. Focus moving between two numeric fields keeps the
+ * bar up instead of flickering it off and on.
  * Returns a cleanup that removes the listeners.
  */
 export function installNumericAccessoryBar(keyboard: AccessoryBarKeyboard, doc: Document = document): () => void {
   let visible = false;
-  const apply = (next: boolean) => {
+  const apply = (wanted: boolean) => {
+    const next = wanted || accessoryPins > 0;
     if (next === visible) return;
     visible = next;
     keyboard.setAccessoryBarVisible({ isVisible: next }).catch(() => {
@@ -58,11 +65,40 @@ export function installNumericAccessoryBar(keyboard: AccessoryBarKeyboard, doc: 
   };
   const onFocusIn = (e: FocusEvent) => apply(wantsKeyboardAccessoryBar(e.target as Element | null));
   const onFocusOut = (e: FocusEvent) => apply(wantsKeyboardAccessoryBar(e.relatedTarget as Element | null));
+  const recheck = () => apply(wantsKeyboardAccessoryBar(doc.activeElement));
   doc.addEventListener('focusin', onFocusIn);
   doc.addEventListener('focusout', onFocusOut);
+  accessoryRecheck = recheck;
+  // A surface that pinned the bar before the plugin loaded (a cold open straight into round entry) gets it now.
+  recheck();
   return () => {
     doc.removeEventListener('focusin', onFocusIn);
     doc.removeEventListener('focusout', onFocusOut);
+    if (accessoryRecheck === recheck) accessoryRecheck = null;
+  };
+}
+
+/**
+ * Hold the accessory bar (with its Done key) up for every field while a surface
+ * is mounted: round entry, where a number pad must always be able to close.
+ * Pinned on mount, long before a field is focused, so the bar never races the
+ * keyboard (the focus-time toggle above sends its plugin call while iOS is
+ * already raising the keyboard, and has not been checked on a device). Text
+ * fields get the bar too while pinned, as in Mobile Safari. Returns the
+ * release; the last release puts the bar back to what the focused field wants,
+ * a microtask later so a surface handing over to the next (one unmounts as the
+ * other mounts) does not flicker it. Does nothing until the native plugin is
+ * installed, and so nothing on the web, where Safari draws its own bar.
+ */
+export function pinKeyboardAccessoryBar(): () => void {
+  accessoryPins += 1;
+  accessoryRecheck?.();
+  let released = false;
+  return () => {
+    if (released) return;
+    released = true;
+    accessoryPins -= 1;
+    queueMicrotask(() => accessoryRecheck?.());
   };
 }
 
@@ -77,7 +113,8 @@ export async function initCapacitor(): Promise<void> {
   if (!isNativeApp()) return;
   try {
     const { Keyboard } = await import('@capacitor/keyboard');
-    await Keyboard.setAccessoryBarVisible({ isVisible: false });
+    // A surface may already have pinned the bar (a cold open into round entry); the install below shows it then.
+    if (accessoryPins === 0) await Keyboard.setAccessoryBarVisible({ isVisible: false });
     if (!accessoryBarInstalled && typeof document !== 'undefined') {
       accessoryBarInstalled = true;
       installNumericAccessoryBar(Keyboard);
@@ -85,6 +122,23 @@ export async function initCapacitor(): Promise<void> {
   } catch {
     // Keyboard plugin not available on this platform
   }
+}
+
+/**
+ * Open this app's page in the phone's Settings app (iOS: notifications, and the rest of what the app may do), for
+ * a permission the person turned down, which only Settings can turn back on. `app-settings:` is
+ * UIApplication.openSettingsURLString: the app's WebView hands a top-level navigation to a URL that is not the app's
+ * to iOS (Capacitor's WebViewDelegationHandler), so this needs no plugin. The iOS app only; returns false elsewhere.
+ */
+export function openNativeAppSettings(): boolean {
+  if (!canOpenNativeAppSettings()) return false;
+  window.location.href = 'app-settings:';
+  return true;
+}
+
+/** Whether `openNativeAppSettings` can open anything here: the iOS app. */
+export function canOpenNativeAppSettings(): boolean {
+  return isNativeApp() && Capacitor.getPlatform() === 'ios';
 }
 
 /**

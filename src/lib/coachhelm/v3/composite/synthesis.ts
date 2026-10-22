@@ -26,9 +26,15 @@ import type { InsightPriority } from '@/lib/coachhelm/insight-types';
 import { COMPOSITE_RULES } from './registry';
 import { loadRecentInsightsForPlayer } from './loader';
 import { loadCompositeContext } from './hole-sequence-loader';
-import type { CompositeMatch, CompositeRule, EvidenceInsight } from './types';
+import type { CompositeContext, CompositeMatch, CompositeRule, EvidenceInsight } from './types';
 import { enforcePriorityConfidenceGate } from '@/lib/coachhelm/v3/engine/generator-base';
 import { describeError } from '@/lib/utils/describe-error';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { INSIGHT_ANGLES_FLAG } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
+import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
+import { coachCopyIssues } from '@/lib/coachhelm/v3/engine/coach-voice';
+import { compositeFamilyKey, sampleUnitFor } from '@/lib/coachhelm/v3/engine/read-floors';
+import type { InsightSampleUnit } from '@/lib/coachhelm/v2/insights/types';
 
 const COMPOSITE_PREFIX = 'composite';
 
@@ -55,7 +61,7 @@ const INFERRED_CONFIDENCE_CEILING = 0.6;
  * Diagnostic `strokes_impact` backfill for composites (tee-strat-1/lag3putt-3).
  *
  * Composite rules that don't compute their own leverage hard-code
- * `strokes_impact: 0` (bunker-miss-side, flyer-lie, lag-distance,
+ * `strokes_impact: 0` (bunker-miss-side, lag-distance,
  * short-side-scrambling-chain, short-approach-proximity-gap).
  * They never run through the generator-base counterfactual backfill, so they
  * ship `strokes_impact = 0` and rank LAST on every flat surface (Hub card,
@@ -135,6 +141,69 @@ export function sourceWindowSpan(
   }
   if (start === null && end === null) return null;
   return { window_start: start ?? '', window_end: end ?? '' };
+}
+
+/**
+ * Which context rows each context-only rule reads (Slice 0b). Each of these
+ * rules uses every row of its array, so the rounds in that array are the
+ * rounds behind the read.
+ */
+const CTX_SOURCE_BY_RULE: Readonly<Record<string, keyof CompositeContext>> = {
+  closing_hole_fatigue: 'hole_scores',
+  front_9_starter: 'hole_scores',
+  doubles_after_bogey: 'hole_scores',
+  short_side_scrambling_chain: 'short_game_shots',
+};
+
+/**
+ * The rounds a composite read (Slice 0b), for its stamped window. A context
+ * rule: the rounds in the context array it reads. An insight rule: the union
+ * of its source reads' `source_round_ids`; null when any source lacks them
+ * (written before the stamp), so the stamp falls back to the composed window
+ * range. Pure + exported for tests.
+ */
+export function compositeWindowRoundIds(
+  ruleId: string,
+  match: CompositeMatch,
+  insights: EvidenceInsight[],
+  ctx: CompositeContext | undefined,
+): string[] | null {
+  const ctxKey = CTX_SOURCE_BY_RULE[ruleId];
+  if (match.source_insight_ids.length === 0) {
+    if (!ctx || !ctxKey) return null;
+    const rows = ctx[ctxKey] as ReadonlyArray<{ round_id: string }>;
+    const ids = [...new Set(rows.map((r) => r.round_id).filter(Boolean))];
+    return ids.length > 0 ? ids : null;
+  }
+  const ids = new Set<string>();
+  for (const sourceId of match.source_insight_ids) {
+    const source = insights.find((i) => i.id === sourceId);
+    const rounds = source?.evidence?.source_round_ids;
+    if (!Array.isArray(rounds) || rounds.length === 0) return null;
+    rounds.forEach((r) => ids.add(r));
+  }
+  return ids.size > 0 ? [...ids] : null;
+}
+
+/**
+ * What a composite's `sample_n` counts (Slice 0b). Context rules have a fixed
+ * unit; insight rules take the min of two source reads' `sample_n`, so the
+ * unit is the unit of the source whose count it took. Pure + exported.
+ */
+export function compositeSampleUnit(
+  ruleId: string,
+  evidence: Pick<InsightEvidence, 'sample_n'>,
+  sourceInsightIds: string[],
+  insights: EvidenceInsight[],
+): InsightSampleUnit | null {
+  const fixed = sampleUnitFor(compositeFamilyKey(ruleId));
+  if (fixed) return fixed;
+  for (const sourceId of sourceInsightIds) {
+    const source = insights.find((i) => i.id === sourceId);
+    if (!source || Number(source.evidence?.sample_n) !== Number(evidence.sample_n)) continue;
+    return source.evidence?.sample_unit ?? sampleUnitFor(source.insight_type);
+  }
+  return null;
 }
 
 /**
@@ -221,8 +290,8 @@ export function normalizeCompositeEvidence(
  * another composite that fired already covers exactly these source insights.
  *
  * The `length > 0` guard is load-bearing: ctx-driven composites (closing-hole-
- * fatigue, doubles-after-bogey, front-9-starter, short-side-scrambling-chain,
- * flyer-lie-over-the-green) read raw round/shot data and carry
+ * fatigue, doubles-after-bogey, front-9-starter, short-side-scrambling-chain)
+ * read raw round/shot data and carry
  * `source_insight_ids: []`. An empty array `.every()`s as a vacuous subset of
  * every set, so without this guard a single insight-driven composite would
  * suppress ALL ctx composites — silently deleting correct insights (and whole
@@ -294,6 +363,8 @@ export interface SynthesisResult {
    * must block the stale sweep below.
    */
   refusals: number;
+  /** Slice 0b: matches held back below their family floor (Watching). */
+  below_floor?: number;
   /** Stale composite rows archived by the post-run scope sweep (regrade LIFE-P2). */
   stale_retracted?: number;
 }
@@ -332,6 +403,19 @@ export function gatedCompositePriority(
   return enforcePriorityConfidenceGate(rulePriority, confidence) ?? rulePriority;
 }
 
+/**
+ * Slice 5b (`02` §10.5): no composite is urgent by construction; urgency is
+ * strokes at stake × support, as for any read. With the angles flag on an
+ * `urgent` rule writes `high` (still under the confidence gate); off, the
+ * rule's own priority stands. Pure.
+ */
+export function compositeRulePriority(
+  rulePriority: CompositeRule['priority'],
+  countedFamilies: boolean,
+): CompositeRule['priority'] {
+  return countedFamilies && rulePriority === 'urgent' ? 'high' : rulePriority;
+}
+
 export async function synthesizeForPlayer(playerId: string): Promise<SynthesisResult> {
   const result: SynthesisResult = {
     player_id: playerId,
@@ -366,7 +450,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
   // that need raw data (closing-hole fatigue, doubles-after-bogey, etc.)
   // don't each hit the DB. Failure-isolated — empty arrays on error so
   // those rules quietly no-op.
-  let ctx;
+  let ctx: CompositeContext;
   try {
     ctx = await loadCompositeContext(playerId);
   } catch (err) {
@@ -374,8 +458,12 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
       `synthesizeForPlayer: ctx load failed for ${playerId}: ${describeError(err)}`,
       { action: 'v3.composite.synthesis.ctx' },
     );
-    ctx = { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
+    ctx = { hole_scores: [], short_game_shots: [] };
   }
+  // Slice 5b: with the angles flag on, C6 and C8 read the counted families
+  // and no composite is urgent by construction (02 §10.5).
+  const countedFamilies = isFlagEnabled(INSIGHT_ANGLES_FLAG);
+  ctx = { ...ctx, counted_families: countedFamilies };
 
   // Pass 1: collect all matches with their owning rule.
   const matches: Array<{ rule: CompositeRule; match: CompositeMatch }> = [];
@@ -449,10 +537,35 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         { ...composed.evidence, strokes_impact: strokesImpact },
         sourceWindowSpan(match.source_insight_ids, insights),
       );
+      // Slice 0b: stamp the window the composite read (always) and hold it
+      // back under its floor (flag-gated). A held-back composite is not
+      // re-emitted, so the scope sweep below archives its old row.
+      const read = await stampAndCheckRead(
+        supabase,
+        playerId,
+        compositeFamilyKey(rule.id),
+        calibrated,
+        compositeWindowRoundIds(rule.id, match, insights, ctx),
+        compositeSampleUnit(rule.id, calibrated, match.source_insight_ids, insights),
+      );
+      if (read.shortfall) {
+        result.below_floor = (result.below_floor ?? 0) + 1;
+        continue;
+      }
+      // The coach's voice (`evidence.coach_copy`), stored only when it states
+      // the player copy's numbers, in the third person, with no club named.
+      const coachIssues = composed.coach ? coachCopyIssues(composed, composed.coach) : [];
+      if (composed.coach && coachIssues.length > 0) {
+        await logServerEvent(`synthesizeForPlayer: rule ${rule.id} coach copy not stored (${coachIssues.join('; ')})`, {
+          action: `v3.composite.${rule.id}.coach_copy`,
+          metadata: { issues: coachIssues },
+        }, 'warning');
+      }
       const evidence = {
-        ...calibrated,
+        ...read.evidence,
         composite_rule_id: rule.id,
         source_insight_ids: match.source_insight_ids,
+        ...(composed.coach && coachIssues.length === 0 ? { coach_copy: composed.coach } : {}),
       };
       const sig = `${COMPOSITE_PREFIX}:${rule.id}:${composed.signature}`;
       // Track BEFORE the gate check: a philosophy-gated match still owns its
@@ -482,7 +595,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         signature: `v3:${sig}`,
         title: composed.title,
         content: composed.content,
-        priority: gatedCompositePriority(rule.priority, calibrated.confidence),
+        priority: gatedCompositePriority(compositeRulePriority(rule.priority, countedFamilies), calibrated.confidence),
         evidence: evidence as typeof composed.evidence,
       });
       if (upsertResult !== GATED_OUT) {

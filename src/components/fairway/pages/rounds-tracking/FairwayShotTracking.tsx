@@ -30,11 +30,40 @@ import { FairwayCompletedHole } from './FairwayCompletedHole';
 import { FairwayEditShotModal } from './FairwayEditShotModal';
 import { FairwayPenaltyModal } from './FairwayPenaltyModal';
 import { FairwayUnsavedNavModal } from './FairwayUnsavedNavModal';
+import { FairwayDataGapPrompt } from './FairwayDataGapPrompt';
+import { useDataGapPrompt } from './useDataGapPrompt';
+import { FairwayRecoveryPrompt } from './FairwayRecoveryPrompt';
+import { useRecoveryPrompt } from './useRecoveryPrompt';
+import { FairwayCourseNudge } from './FairwayCourseNudge';
+import type { CourseNudgeView } from './useCourseNudge';
+import { isRoundStartMoment } from '@/lib/golf/data-prompts/recovery';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 
 // The logic lives in useShotTracking (shared with Clubhouse); this file draws it.
 export { resolveDistanceAfterShot, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 
-export default function FairwayShotTracking(props: ShotTrackingProps) {
+export interface FairwayShotTrackingProps extends ShotTrackingProps {
+  /**
+   * Open one-tap data-gap asks (CoachHelm Slice 8a, `loadDataGapAsks`). The
+   * round entry pages pass them only with `coachhelm_data_gap_prompt_v1` on;
+   * absent or empty, the screen draws nothing for them.
+   */
+  dataGapAsks?: readonly DataGapAsk[];
+  /**
+   * CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): ask, after a rough or
+   * 'other' tee shot, whether the next shot was a recovery. The round
+   * clients pass true only with the flag on; absent, nothing is drawn.
+   */
+  recoveryPrompt?: boolean;
+  /**
+   * CoachHelm Slice 8b: the course nudge (`useCourseNudge`), shown here at
+   * the round's start only (first hole, no shot yet). Null or absent, nothing
+   * is drawn.
+   */
+  courseNudge?: CourseNudgeView | null;
+}
+
+export default function FairwayShotTracking({ dataGapAsks, recoveryPrompt = false, courseNudge = null, ...props }: FairwayShotTrackingProps) {
   const {
     safeAreaHandledAbove = false,
     statusSlot,
@@ -100,7 +129,23 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
     handleTapIn,
     handleRetryHoleCheckpoint,
     handleSelectShot,
+    handleTagPuttMiss,
+    handleTagRecovery,
   } = useShotTracking(props, { haptic });
+
+  const dataGapPrompt = useDataGapPrompt({
+    asks: dataGapAsks,
+    holeNumber: currentHole?.number,
+    shotHistory,
+    onTag: handleTagPuttMiss,
+  });
+
+  const recoveryPromptView = useRecoveryPrompt({
+    enabled: recoveryPrompt,
+    holeNumber: currentHole?.number,
+    shotHistory,
+    onTag: handleTagRecovery,
+  });
 
 
   // ── D-HOLESWIPE (owner decision): swipe between holes ─────────────────────
@@ -254,6 +299,14 @@ export default function FairwayShotTracking(props: ShotTrackingProps) {
 
             {/* Live entry / completed review */}
             <div className="min-w-0">
+          <FairwayDataGapPrompt prompt={dataGapPrompt} />
+          <FairwayRecoveryPrompt prompt={recoveryPromptView} />
+          {courseNudge && isRoundStartMoment({
+            holeScores: holes.map((h) => h.score),
+            currentHoleIndex,
+            startHole,
+            shotCount: shotHistory.length,
+          }) && <FairwayCourseNudge nudge={courseNudge} />}
           {isHoleComplete ? (
             <FairwayCompletedHole
               shotHistory={shotHistory}

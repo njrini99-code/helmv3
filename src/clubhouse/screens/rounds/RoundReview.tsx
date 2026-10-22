@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
@@ -9,6 +9,7 @@ import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundRev
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
+import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -37,6 +38,8 @@ import { RoundCard } from './card/RoundCard';
 import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 import { SideScroll } from '../../ui/SideScroll';
+import { rebuiltHref } from '../../shell/nav';
+import type { ChDebrief } from '../../data/round-debrief-shape';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -355,6 +358,64 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
   );
 }
 
+/** Where "Why?" goes: the read on the player's own Deep dive, when the Deep dive is rebuilt for them. */
+export function debriefWhyHref(readId: string): string | null {
+  return rebuiltHref(`/golf/dashboard/coachhelm?view=deep-dive&insight=${encodeURIComponent(readId)}`, 'player');
+}
+
+/**
+ * CoachHelm's 30-second debrief on the player's own round (chs-30; supercharge 04 example 9, layout 3): the one number that moved
+ * against their own average, the top open read and what this round did to it, the round's counted facts, and one next step. It
+ * stands where the recap stood; each line the data cannot say is left out (`round-debrief-shape.ts`).
+ */
+function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
+  const why = d.read ? debriefWhyHref(d.read.id) : null;
+  return (
+    <section className="ch-rv-recap ch-rv-debrief" aria-labelledby="ch-rv-debrief-k">
+      <h3 className="ch-rv-recap__k" id="ch-rv-debrief-k">
+        Round debrief
+      </h3>
+      <dl className="ch-rv-debrief__l">
+        {d.moved && (
+          <div>
+            <dt>Moved</dt>
+            <dd>
+              <b className={'ch-num is-' + d.moved.tone}>{d.moved.value}</b> {d.moved.line}
+            </dd>
+          </div>
+        )}
+        {d.read && (
+          <div>
+            <dt>Your read</dt>
+            <dd>
+              <b>{d.read.title}</b>
+              {d.read.change ? ` ${d.read.change}` : null}
+            </dd>
+          </div>
+        )}
+        {d.facts && (
+          <div>
+            <dt>The round</dt>
+            <dd className="ch-num">{d.facts}</dd>
+          </div>
+        )}
+        {d.next && (
+          <div>
+            <dt>Next</dt>
+            <dd>{d.next}</dd>
+          </div>
+        )}
+      </dl>
+      {why && (
+        <Link href={why} className="ch-rv-debrief__why">
+          Why?
+          <Icon icon={ChevronRight} size={14} />
+        </Link>
+      )}
+    </section>
+  );
+}
+
 export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview; typeEdit?: ChReviewTypeEdit | null }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
@@ -377,11 +438,16 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const dist = useMemo(() => distribution(r.holes), [r.holes]);
   // The stored recap, or the one written now for a completed round that has none (useRoundRecap, as the Fairway page
   // does); then D13: less any sentence its own figures contradict (recap-check.ts).
-  const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true);
+  // With the debrief drawn in its place (chs-30), no recap is asked for.
+  const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true && !r.debrief);
   const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
-  const back = reviewBack(r);
+  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library: the note is
+  // read after mount (session storage), so the first paint is the server's.
+  const [fromList, setFromList] = useState(false);
+  useEffect(() => setFromList(openedFromLibrary(r.id)), [r.id]);
+  const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
@@ -389,10 +455,10 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
   const misses = useMemo(() => teeMisses(r.holes), [r.holes]);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
-  // (screens/rounds/return-state.ts); anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
+  // (screens/rounds/return-state.ts), and so does a coach's from Team rounds; anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
   // A tab with no history behind it (a copied note in a new tab) has nothing to step back to: it goes to the address.
   const stepBack = () => {
-    if (coach || window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
+    if (window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
     router.back();
     return true;
   };
@@ -422,7 +488,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
 
   return (
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
+      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach && !fromList ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
           href={back.href}
@@ -752,14 +818,17 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               </SectionBoundary>
             </Zone>
 
-            {(recap || r.notes) && (
+            {(r.debrief || recap || r.notes || r.coachNote || r.coachNoteError || coach) && (
               <Zone
                 n={6}
                 alt
                 title="In words"
-                def={<>What CoachHelm read in the round, and {coach ? 'what the player wrote' : 'what you wrote'} when posting it.</>}
+                def={<>What CoachHelm read in the round, {coach ? 'what the player wrote' : 'what you wrote'} when posting it, and the note {coach ? 'you leave' : 'your coach left'}.</>}
               >
-                {recap && (
+                {r.debrief ? (
+                  <RoundDebrief debrief={r.debrief} />
+                ) : (
+                  recap && (
                   // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
                   <section className="ch-rv-recap" aria-labelledby="ch-rv-recap-k">
                     <h3 className="ch-rv-recap__k" id="ch-rv-recap-k">
@@ -770,6 +839,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
                     </span>
                   </section>
+                  )
                 )}
                 {r.notes && (
                   <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
@@ -782,6 +852,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     <p>{r.notes}</p>
                   </section>
                 )}
+                <CoachNote roundId={r.id} note={r.coachNote} error={r.coachNoteError} canWrite={coach} playerFirst={r.playerName ? (r.playerName.split(' ')[0] ?? null) : null} />
               </Zone>
             )}
           </>

@@ -8,8 +8,7 @@ import { createContext, useContext, useEffect, useId, useMemo, useState, useTran
 import { useRouter } from 'next/navigation';
 import type { ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
-import type { ChWindow } from '../../data/stats-common';
-import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, withWindow, type ChFilter } from '../../data/stats-filter';
+import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -27,12 +26,14 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
-import { gridPeek, teamPlayerHref } from './links';
+import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { TeamRank } from './TeamRank';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -50,16 +51,16 @@ const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
-const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChWindow }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
+const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
 
 /** The frame's window change (offline refusal, slow notice, then the new window), for the phone view. */
 export function useGoWindow() {
   const { filter, go } = useContext(GoFilter);
-  return (w: ChWindow) => go(withWindow(filter, w));
+  return (r: ChRange) => go(withScope(filter, r));
 }
 
 /** The window the switch shows: the one being loaded, from the tap, not from when its figures land (F-55). */
-export function useShownWindow(): ChWindow {
+export function useShownWindow(): ChRange {
   return useContext(GoFilter).shown;
 }
 
@@ -108,7 +109,7 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     start(() => router.push(statsHref('/golf/dashboard/stats', next), { scroll: false }));
   };
   return (
-    <GoFilter.Provider value={{ filter: current, go, shown: (loading ?? current).window }}>
+    <GoFilter.Provider value={{ filter: current, go, shown: rangeOf(loading ?? current) }}>
       <main className={'ch-st' + (isPhone ? ' is-phone' : '')} aria-busy={pending} data-ch-code={pending ? 'CH-4402' : undefined} data-canopy={isPhone || tone !== 'canopy' ? undefined : ''} data-hero-tone={tone}>
         {/* The server renders desktop; at phone width it stays hidden until the phone view takes over at hydration. */}
         {isPhone ? phone : <div className="ch-st-desk">{children}</div>}
@@ -129,7 +130,7 @@ export function TeamHeadActions({ filter, teamName, grid }: { filter: ChFilter; 
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([[head.join(','), ...lines].join('\n')], { type: 'text/csv' }));
-      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${filter.window}${isFiltered(filter) ? '-filtered' : ''}.csv`;
+      a.download = `${teamName.replace(/\W+/g, '-').toLowerCase()}-stats-${rangeOf(filter)}${isFiltered(filter) ? '-filtered' : ''}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
       haptic('success');
@@ -197,6 +198,11 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
 
       {/* The other figures sit under the trend as one open tape (server-rendered, passed in so the island keeps its focus state). */}
       {tape}
+
+      {/* Who gains and who loses (spec 4.5): after the figures and the trend, before the legs and the grid, its table view. */}
+      <SectionBoundary surface="stats.team.rank" label="Who gains and loses" code="CH-4206">
+        <TeamRank data={data} />
+      </SectionBoundary>
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
         <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
@@ -317,8 +323,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
   const leadValue = lead?.value ?? null;
   const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : leadValue.toFixed(lead!.digits);
-  const leadFlat = lead?.delta != null && Math.abs(lead.delta) < 0.05;
-  const leadGood = lead?.delta != null && !leadFlat && (lead.lowerIsBetter ? lead.delta < 0 : lead.delta > 0);
+  // Coloured only when the change clears its standard error (Q4); otherwise neutral ink and "No clear change", the number kept.
+  const leadTone = lead ? deltaTone(lead.delta, lead.se, lead.lowerIsBetter) : '';
   const uid = useId().replace(/:/g, '');
   // The scrubber: a pointer on the plot reads the week under it (mouse and pen; a finger scrolls the page).
   const [scrub, setScrub] = useState<number | null>(null);
@@ -361,10 +367,10 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               </span>
             )}
             {lead?.delta != null && (
-              <span className={`ch-sgt__chg ch-num ${leadFlat ? 'is-flat' : leadGood ? 'is-good' : 'is-bad'}`}>
-                <Icon icon={leadFlat ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
+              <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' ? 'is-good' : leadTone === 'is-loss' ? 'is-bad' : 'is-flat'}`}>
+                <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
                 {formatSigned(lead.delta, lead.digits)}
-                <em>{lead.context}</em>
+                <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>
               </span>
             )}
           </span>
@@ -699,6 +705,11 @@ function LegGrid({
   const scale = sgScale(data.grid.flatMap((g) => g.legs));
   const medians = LEGS_LIST.map((_, i) => median(data.grid.map((g) => g.legs[i] ?? null)));
   const at = (v: number) => `${Math.max(0, Math.min(100, 50 + (v / scale) * 50)).toFixed(1)}%`;
+  // The bar runs from the zero line to the value: right of it for a gain, left for a loss, one scale for every cell.
+  const bar = (v: number): { left: string; width: string } => {
+    const w = Math.min(50, (Math.abs(v) / scale) * 50);
+    return { left: v >= 0 ? '50%' : `${(50 - w).toFixed(1)}%`, width: `${w.toFixed(1)}%` };
+  };
   return (
     <section className="ch-lg">
       <div className="ch-sgt__head">
@@ -708,6 +719,13 @@ function LegGrid({
             Strokes gained per round by leg &middot; {gridBasis(data.filter)} &middot; needs three rounds &middot; sorted by {leg.toLowerCase()}
           </span>
         </div>
+        {/* The key for the bars: which way is which, what the tick is, and what a full bar is. */}
+        <p className="ch-lg__key">
+          <span><i className="ch-lg__k ch-lg__k--loss" aria-hidden="true" />Loses strokes</span>
+          <span><i className="ch-lg__k ch-lg__k--gain" aria-hidden="true" />Gains strokes</span>
+          <span><i className="ch-lg__k ch-lg__k--med" aria-hidden="true" />Team median</span>
+          <span className="ch-num">Full bar is &plusmn;{scale} strokes</span>
+        </p>
       </div>
       {rows.length === 0 ? (
         <EmptyState code="CH-4305" compact title="No player rounds in this window." />
@@ -740,7 +758,7 @@ function LegGrid({
                   <Avatar name={g.name} size={30} />
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
-                    <PlayerPeek player={gridPeek(g)}>
+                    <PlayerPeek player={gridPeek(g)} within="[role=cell]">
                       <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
                         <b>{g.name}</b>
                         <LinkPending />
@@ -755,10 +773,12 @@ function LegGrid({
                   const med = medians[i];
                   return (
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
+                      {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
+                      {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
                       <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
+                        {v != null && <i className={'ch-lg__bar ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={bar(v)} />}
                         {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
-                        {v != null && <i className={'ch-lg__dot ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={{ left: at(v) }} />}
                       </span>
                     </span>
                   );

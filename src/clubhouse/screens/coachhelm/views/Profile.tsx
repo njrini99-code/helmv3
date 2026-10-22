@@ -1,21 +1,52 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Lock, Plus } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronRight, Lock, Plus } from 'lucide-react';
 import { useId } from 'react';
 import type { ChMeasure, ChProfile } from '../../../data/coachhelm-profile-shape';
-import { PLAYER_HELM_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
+import { helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { ReadMeter } from '../parts';
 import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { KeepReading } from './KeepReading';
 
 const LINE = 'What CoachHelm reads in your rounds, and the shape of your game.';
+
+/**
+ * The page's own words for whose page it is (spec A): the player's, as they always were, or a coach's about the player by first name.
+ * The engine's words go through `speak` in the loader; these are the screen's.
+ */
+function wordsFor(voice: ChViewVoice) {
+  if (voice.role !== 'coach') {
+    return {
+      shape: 'The shape of your game',
+      soFar: 'What your rounds say so far',
+      rest: 'The rest fill in as you post more; none is estimated in the meantime.',
+      failed: { title: 'Your game profile didn’t load', body: 'Nothing is lost. Your profile is still saved; try again in a moment.' },
+      empty: {
+        title: 'Your game profile starts with a few rounds',
+        body: 'CoachHelm reads how you play from the rounds you post. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then.',
+      },
+      label: 'Your game profile',
+    };
+  }
+  const f = voice.first;
+  return {
+    shape: `The shape of ${f}’s game`,
+    soFar: `What ${f}’s rounds say so far`,
+    rest: `The rest fill in as ${f} posts more; none is estimated in the meantime.`,
+    failed: { title: `${f}’s game profile didn’t load`, body: 'Nothing is lost. The profile is still saved; try again in a moment.' },
+    empty: {
+      title: `${f}’s game profile starts with a few rounds`,
+      body: `CoachHelm reads how ${f} plays from the rounds ${f} posts. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then.`,
+    },
+    label: `${f}’s game profile`,
+  };
+}
 
 /**
  * A measure on its own scale. The track is decoration (the figure and the words carry every number); a gap from its "no
@@ -75,7 +106,8 @@ function Measure({ m }: { m: ChMeasure }) {
           {m.bound && <p className="ch-hg-m__edge">{m.bound}</p>}
           {m.meaning && <p className="ch-hg-m__mean">{m.meaning}</p>}
           <div className="ch-hg-m__f">
-            {m.read ? <ReadMeter read={m.read} /> : <span>No read yet</span>}
+            {/* Confidence is the word only (design call D8 cuts the three-bar meter). */}
+            <span>{m.read ? m.read.word : 'No read yet'}</span>
           </div>
           {(m.measured || m.floor) && (
             <details className="ch-hg-m__how">
@@ -147,18 +179,41 @@ function Sees({ sees }: { sees: NonNullable<ChProfile['sees']> }) {
   );
 }
 
-function Hero({ p }: { p: ChProfile }) {
+/**
+ * A coach's one line under the hero (spec A), in place of the player's two-column list: how many of the player's current reads are
+ * costing strokes and how many are working, and the way to all of them in the Deep dive.
+ */
+function SeenRow({ seen, voice }: { seen: NonNullable<ChProfile['seen']>; voice: ChViewVoice }) {
+  if (seen.error) return <RefreshNotice code="CH-13261" title="What CoachHelm sees didn’t load" body="The measures below are still right; try again in a moment." />;
+  const { costing, working } = seen;
+  if (costing === 0 && working === 0) return null;
+  const reads = (n: number) => (n === 1 ? 'read' : 'reads');
+  const said = costing > 0 ? `${costing} ${reads(costing)} costing strokes${working > 0 ? ` and ${working} working` : ''}` : `${working} ${reads(working)} working`;
+  return (
+    <Link className="ch-hv-link ch-hv-seen" href={helmViewHref('deep-dive', voice)}>
+      <b className="ch-num">CoachHelm sees {said}</b>
+      <strong className="ch-hv-seen__go">
+        Deep dive
+        <Icon icon={ArrowRight} size={16} />
+      </strong>
+    </Link>
+  );
+}
+
+function Hero({ p, voice = PLAYER_VOICE }: { p: ChProfile; voice?: ChViewVoice }) {
+  const w = wordsFor(voice);
   const meta = [`Last ${p.windowDays} days`, p.rounds != null ? `${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}` : null, p.refreshed ? `Refreshed ${p.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const none = p.strengths.length === 0 && p.watchouts.length === 0;
   return (
     // The shape of the game on the team board's green (owner, 2026-10-16: "more green"), with how much of it is read so far.
     <section className={'ch-hg-hero' + (p.sees?.list.some((i) => !i.stale) ? ' is-second' : ' ch-scoreboard')} aria-labelledby="ch-hg-hero-t">
       <div className="ch-hg-hero__k">
-        <span>The shape of your game</span>
+        <span>{w.shape}</span>
         {/* A no-break space before each dot, so a wrapped line never starts with one. */}
         <span className="ch-num">{meta.join('\u00a0· ')}</span>
       </div>
-      <h2 id="ch-hg-hero-t">{p.courseProfile ?? 'What your rounds say so far'}</h2>
+      {/* A no-break space before each dot, so a wrapped line never starts with one. */}
+      <h2 id="ch-hg-hero-t">{p.courseProfile?.replaceAll(' · ', '\u00a0· ') ?? w.soFar}</h2>
       {none ? (
         <p className="ch-hg-hero__none">Nothing stands out yet. A strength or a watch-out shows once a measure is clearly high or low, with enough rounds behind it.</p>
       ) : (
@@ -200,7 +255,7 @@ function Hero({ p }: { p: ChProfile }) {
             <b className="ch-num">
               {p.ready} of {p.measures.length}
             </b>{' '}
-            measures have enough rounds so far. The rest fill in as you post more; none is estimated in the meantime.
+            measures have enough rounds so far. {w.rest}
           </p>
         </div>
       )}
@@ -212,21 +267,26 @@ function Hero({ p }: { p: ChProfile }) {
  * The player's Game profile (P013, `?view=profile`): the genome the Fairway page reads, as the shape of their game in words, then
  * every measure with its value, what it means, how sure the read is and how it is measured. The player's own and read-only: the
  * one thing it asks for is more rounds.
+ *
+ * `voice`: a coach's Game profile of one player (spec A) is the same page about the player by first name, with one line of what
+ * CoachHelm sees in place of the two-column list, no Start a round, and its ways on to the player's other two views.
  */
-export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
-  const startHref = coachHelmLinks.startRound();
+export function Profile({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChProfile>; voice?: ChViewVoice }) {
+  const coach = voice.role === 'coach' ? voice : null;
+  const startHref = coach ? null : coachHelmLinks.startRound();
+  const w = wordsFor(voice);
 
   if (load.status === 'off') {
     return (
-      <PlayerHelmFrame view="profile" line={LINE} off>
-        <HelmOff reason={load.reason} />
+      <PlayerHelmFrame view="profile" line={LINE} off voice={voice}>
+        <HelmOff reason={load.reason} voice={voice} />
       </PlayerHelmFrame>
     );
   }
   if (load.status === 'failed') {
     return (
-      <PlayerHelmFrame view="profile" line={LINE}>
-        <RefreshNotice code="CH-13260" title="Your game profile didn’t load" body="Nothing is lost. Your profile is still saved; try again in a moment." />
+      <PlayerHelmFrame view="profile" line={LINE} voice={voice}>
+        <RefreshNotice code="CH-13260" title={w.failed.title} body={w.failed.body} />
       </PlayerHelmFrame>
     );
   }
@@ -234,14 +294,14 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
   const ready = p.measures.filter((m) => !m.locked);
   const locked = p.measures.filter((m) => m.locked);
   return (
-    <PlayerHelmFrame view="profile" line={LINE}>
+    <PlayerHelmFrame view="profile" line={LINE} voice={voice}>
       {p.state === 'empty' ? (
         <>
           <EmptyState
             code="CH-13360"
             shape="rows"
-            title="Your game profile starts with a few rounds"
-            body="CoachHelm reads how you play from the rounds you post. Each measure has its own minimum, so they fill in one at a time. Nothing is estimated before then."
+            title={w.empty.title}
+            body={w.empty.body}
             action={
               startHref ? (
                 <Button variant="primary" leftIcon={Plus} href={startHref.href}>
@@ -261,9 +321,10 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
           </section>
         </>
       ) : (
-        <SectionBoundary surface="coachhelm.profile" label="Your game profile" code="CH-13204">
-          {p.sees && <Sees sees={p.sees} />}
-          <Hero p={p} />
+        <SectionBoundary surface="coachhelm.profile" label={w.label} code="CH-13204">
+          {!coach && p.sees && <Sees sees={p.sees} />}
+          <Hero p={p} voice={voice} />
+          {coach && p.seen && <SeenRow seen={p.seen} voice={voice} />}
           <section className="ch-hg-sec" aria-labelledby="ch-hg-all">
             <div className="ch-hg-sec__h">
               <h2 id="ch-hg-all">Every measure</h2>
@@ -273,9 +334,13 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
                 measures as full cards, the locked ones as compact tiles that say what each still needs. */}
             {ready.length > 0 && (
               <>
-                <h3 className="ch-hg-grp">
-                  With a read <span className="ch-num">{ready.length}</span>
-                </h3>
+                {/* The split is only news when both halves are there: with nothing still filling in, a lone "With a read"
+                    under "Every measure" read as a tab with nothing beside it (2026-10-19). */}
+                {locked.length > 0 && (
+                  <h3 className="ch-hg-grp">
+                    With a read <span className="ch-num">{ready.length}</span>
+                  </h3>
+                )}
                 <ol className="ch-hg-grid">
                   {ready.map((m) => (
                     <Measure key={m.id} m={m} />
@@ -296,14 +361,26 @@ export function Profile({ load }: { load: ChViewLoad<ChProfile> }) {
               </>
             )}
             <div className="ch-hg-tail">
-              <KeepReading
-                id="ch-hg-next-t"
-                line="This is the shape of your game. The next two say where it puts you and what to do about it."
-                items={[
-                  { href: PLAYER_HELM_HREF.standing, title: 'Standing', note: 'Against the Tour and your team' },
-                  { href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind it, with their evidence' },
-                ]}
-              />
+              {coach ? (
+                <KeepReading
+                  id="ch-hg-next-t"
+                  title={`Also for ${coach.first}`}
+                  line={`This is the shape of ${coach.first}’s game. The next two say where it stands and what to work on.`}
+                  items={[
+                    { href: helmViewHref('standing', voice), title: 'Standing', note: 'Against the Tour and the team, in strokes a round' },
+                    { href: helmViewHref('deep-dive', voice), title: 'Deep dive', note: 'Every read, with its evidence, to assign from' },
+                  ]}
+                />
+              ) : (
+                <KeepReading
+                  id="ch-hg-next-t"
+                  line="This is the shape of your game. The next two say where it puts you and what to do about it."
+                  items={[
+                    { href: PLAYER_HELM_HREF.standing, title: 'Standing', note: 'Against the Tour and your team' },
+                    { href: PLAYER_HELM_HREF['deep-dive'], title: 'Deep dive', note: 'The insights behind it, with their evidence' },
+                  ]}
+                />
+              )}
             </div>
           </section>
         </SectionBoundary>

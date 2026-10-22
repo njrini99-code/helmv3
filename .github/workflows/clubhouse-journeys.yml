@@ -1,0 +1,189 @@
+name: Clubhouse journeys
+
+# Clubhouse write journeys, nightly, against a Supabase stack started on this
+# runner: a round from setup to submit, a Calendar event published and edited,
+# a qualifier's squad confirmed with a coach's pick, a Team Hub announcement
+# posted and acknowledged, Settings names saved, and the team chat sent and
+# answered (e2e/clubhouse-round.spec.ts, e2e/clubhouse-journeys.spec.ts), in
+# Chromium and WebKit. Each spec seeds its own users through the local service
+# role and checks in the database what the screens wrote, then removes all of
+# it. The same `next dev` then serves the Clubhouse accessibility scan
+# (scripts/clubhouse/a11y.mjs) in the light and the dark palette.
+#
+# NEVER ON A PULL REQUEST: the account runs 20 concurrent jobs and this one
+# holds a runner for most of an hour. Nightly on main's head and on demand
+# (`gh workflow run clubhouse-journeys.yml --ref <branch>` once this file is on
+# main). Not a required check; a red run blocks the next Clubhouse release, not
+# a merge. No secrets: nothing here can reach production (the stack action
+# asserts a loopback URL, and the specs refuse any other Supabase host).
+#
+# Why a production build for the journeys: on `next dev` they failed at random
+# (local stack, 2026-10-18). A route compiled on its first request sends a hot
+# update that reloads the page under the test (every failed "Continue at hole
+# 2" lined up with "Compiling .../rounds/continue/[id]" and "Fast Refresh had
+# to perform a full reload"), and with HELM_DEV_KEEP_ROUTES=1 the dev server
+# grew past its memory threshold and restarted 4 times in one run, dropping
+# every compiled route. Against `next build --webpack` + `next start` the
+# same suite passed 16/16 twice in 2 minutes (19 minutes and flaky on dev).
+# VERCEL_ENV=preview makes the build resolve flags as a preview does, so the
+# Clubhouse UI is on; nothing here deploys. The accessibility scan still runs
+# on `next dev`: it reads the /clubhouse-preview fixtures, which a production
+# server answers 404.
+
+on:
+  schedule:
+    - cron: '47 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: clubhouse-journeys-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  journeys:
+    name: Clubhouse write journeys and dark accessibility scan
+    # packages: read lets the stack action log in to ghcr.io for the higher
+    # pull rate limit (see .github/actions/local-supabase-stack).
+    permissions:
+      contents: read
+      packages: read
+    runs-on: ubuntu-latest
+    # Stack ~2 min, install ~3 min, first compiles ~10 min, journeys on two
+    # engines ~15 min, the scan of every preview state in two palettes 55-60 min
+    # (run 39617783087: it was still passing at its old 40 minute limit). The job
+    # budget sits above the steps' own limits added up (30 + 20 + 75 + setup).
+    timeout-minutes: 150
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3100
+      CH_BASE: http://127.0.0.1:3100
+      # The local stack's superuser: the seed and its removal set
+      # session_replication_role (e2e/helpers/clubhouse-local-seed.ts).
+      SUPABASE_DB_URL: postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres
+      NODE_OPTIONS: --max-old-space-size=8192
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+
+      # Everything below talks to the runner's own Postgres; the action ends
+      # with a loopback assertion.
+      - name: Start local Supabase stack
+        uses: ./.github/actions/local-supabase-stack
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Production build against the local stack
+        timeout-minutes: 30
+        env:
+          VERCEL_ENV: preview
+        run: node scripts/serialize.mjs -- ./node_modules/.bin/next build --webpack
+
+      - name: Start the production server
+        env:
+          VERCEL_ENV: preview
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/next start --hostname 127.0.0.1 --port 3100 > /tmp/next-start.log 2>&1 &
+          echo $! > /tmp/next-start.pid
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null --max-time 30 "$CH_BASE/golf/login"; then
+              echo "Server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/next-start.pid)" 2>/dev/null; then
+              echo "::error::next start died during startup"
+              cat /tmp/next-start.log
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::next start did not answer /golf/login within 2 minutes"
+          cat /tmp/next-start.log
+          exit 1
+
+      - name: Write journeys in Chromium and WebKit
+        timeout-minutes: 20
+        run: ./node_modules/.bin/playwright test --config playwright.clubhouse-journeys.config.ts
+
+      - name: Stop the production server, start next dev for the scan
+        if: success() || failure()
+        env:
+          HELM_DEV_KEEP_ROUTES: '1'
+        run: |
+          set -euo pipefail
+          kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
+          sleep 2
+          ./node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100 > /tmp/next-dev.log 2>&1 &
+          echo $! > /tmp/next-dev.pid
+          for i in $(seq 1 120); do
+            if curl -sf -o /dev/null --max-time 120 "$CH_BASE/golf/login"; then
+              echo "Dev server ready after ${i} attempt(s)."
+              exit 0
+            fi
+            if ! kill -0 "$(cat /tmp/next-dev.pid)" 2>/dev/null; then
+              echo "::error::next dev died during startup"
+              cat /tmp/next-dev.log
+              exit 1
+            fi
+            sleep 5
+          done
+          echo "::error::next dev did not answer /golf/login within 10 minutes"
+          cat /tmp/next-dev.log
+          exit 1
+
+      # Every /clubhouse-preview state at 1280 and 390px, light and dark
+      # (docs/clubhouse/ALL_PAGE_AUDIT.md logs the local runs). Advisory until
+      # its dark run is clean: see the latest entry there.
+      - name: Accessibility scan, light and dark
+        if: success() || failure()
+        continue-on-error: true
+        timeout-minutes: 75
+        env:
+          CH_SCHEME: light,dark
+        # `shell: bash` runs with pipefail, so the scan's exit code survives tee.
+        shell: bash
+        run: node scripts/clubhouse/a11y.mjs 2>&1 | tee /tmp/clubhouse-a11y.log
+
+      - name: Stop the servers
+        if: always()
+        run: |
+          kill "$(cat /tmp/next-dev.pid)" 2>/dev/null || true
+          kill "$(cat /tmp/next-start.pid)" 2>/dev/null || true
+
+      - name: Upload reports, failure traces and server log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: clubhouse-journeys-${{ github.run_id }}
+          path: |
+            test-results/clubhouse-journeys/
+            playwright-report/clubhouse-journeys/
+            /tmp/next-dev.log
+            /tmp/next-start.log
+            /tmp/clubhouse-a11y.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true

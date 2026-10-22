@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, BarChart3, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -12,10 +12,11 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
-import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
+import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { withPointSpan } from '../../ui/point-span';
-import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { useNow } from '../../lib/use-now';
@@ -25,6 +26,8 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
+import { CoachQueue } from './CoachQueue';
+import { TeamLegsPhone } from './TeamLegs';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
@@ -68,6 +71,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             {data.subline}
           </p>
         )}
+        <CoachQueue queue={data.queue} covered={covered} phone />
         <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
@@ -95,6 +99,12 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
           </FailedSec>
         ) : null}
+
+        {phone.form && data.legs && (
+          <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+            <TeamLegsPhone legs={data.legs} covered={covered} />
+          </SectionBoundary>
+        )}
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
@@ -329,8 +339,9 @@ function Form({ form }: { form: ChTeamForm }) {
   const x = (i: number) => 4 + (pts.length > 1 ? (i * (W - 8)) / (pts.length - 1) : (W - 8) / 2);
   const y = (v: number) => 6 + ((v - lo) / (hi - lo || 1)) * (H - 12);
   const d = pts.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  // Lower scores and fewer putts are better; more greens are better. A change that rounds to zero as shown ("0.0") is no change: plain, not amber (F-54).
-  const tone = (delta: number | null, lowerIsBetter: boolean, digits: number) => changeTone(delta, lowerIsBetter, digits);
+  // Lower scores and fewer putts are better; more greens are better. A change is green or amber only when it clears its standard
+  // error (stats visuals Q4); otherwise plain, and the average's says "No clear change" (F-54's zero is inside that).
+  const avgTone = deltaTone(form.delta, form.deltaSe, true);
   return (
     <section className="ch-hm-form" aria-labelledby="ch-hm-form">
       <div className="ch-hm-form__top">
@@ -338,9 +349,9 @@ function Form({ form }: { form: ChTeamForm }) {
           <em id="ch-hm-form">Team scoring average</em>
           <b className="ch-num">{withPointSpan(formatFixed(form.avg))}</b>
         </span>
-        <span className={'ch-hm-delta ch-num ' + tone(form.delta, true, 1)}>
+        <span className={'ch-hm-delta ch-num ' + avgTone}>
           {form.delta != null && formatSigned(form.delta)}
-          {form.delta != null && <em>vs previous 10</em>}
+          {form.delta != null && <em>{deltaWords(form.delta, avgTone, 'vs previous 10')}</em>}
           <em className="ch-hm-form__basis">{formBasis(form.basis)}</em>
         </span>
       </div>
@@ -360,12 +371,12 @@ function Form({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.gir.delta, false, 0)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + tone(form.putts.delta, true, 1)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>
@@ -509,6 +520,8 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
+  // The player peek's CoachHelm action, after Player stats (spec B §3).
+  const helm = round ? coachHelmPlayerHref(round.playerId) : null;
   return (
     <Modal
       open={!!round}
@@ -516,7 +529,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
-        (message || recap || stats) && (
+        (message || recap || stats || helm) && (
           <>
             {message && (
               <Button leftIcon={MessageSquare} href={message}>
@@ -534,6 +547,11 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
                   Player stats
                 </Button>
               )
+            )}
+            {helm && (
+              <Button leftIcon={BrainCircuit} href={helm}>
+                CoachHelm
+              </Button>
             )}
           </>
         )

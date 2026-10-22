@@ -4,12 +4,15 @@ import { Icon } from '../../ui/Icon';
 import type { ChGauge } from '../../data/stats-team';
 import { gappedPath, lastValue } from '../../lib/chart';
 import { formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 
 export type TapeItem = {
   label: string;
   value: string;
   unit?: string;
   delta: number | null;
+  /** The change's standard error: the cell is green or amber only when the change clears it (Q4); null or absent, neutral. */
+  se?: number | null;
   deltaDigits: number;
   lowerIsBetter: boolean;
   context: string;
@@ -35,24 +38,29 @@ const PAD = 5;
 /**
  * P004: the team's other figures as one open tape under the trend: a hairline between each, the value, how it moved, and
  * its weekly line at one height and one scale rule, so five different measures read as a set. Every line reads up as
- * better (a lower score or fewer putts are drawn higher), and the colour says whether the last stretch helped.
+ * better (a lower score or fewer putts are drawn higher). The colour says whether the change against the previous 10 is
+ * larger than its standard error (`deltaTone`, decision Q4): green better, amber worse, neutral ink and "No clear change"
+ * otherwise, the signed change still shown.
  */
-export function TeamTape({ items }: { items: TapeItem[] }) {
+export function TeamTape({ items, against = 'vs previous 10' }: { items: TapeItem[]; /** What a change is against, in the window's words ("vs previous 5"). */ against?: string }) {
   return (
     <ul className="ch-tp" aria-label="Team figures">
       {items.map((it) => (
-        <TapeCell key={it.label} it={it} />
+        <TapeCell key={it.label} it={it} against={against} />
       ))}
     </ul>
   );
 }
 
-function TapeCell({ it }: { it: TapeItem }) {
+function TapeCell({ it, against }: { it: TapeItem; against: string }) {
   const d = it.delta;
   // A figure with no value keeps no caption: "vs previous 10" and the coverage note under an em dash describe a number that is not there.
   const none = it.value === NO_DATA;
-  const flat = d != null && Math.abs(d) < (it.deltaDigits ? 0.05 : 0.5);
-  const good = d != null && !flat && (it.lowerIsBetter ? d < 0 : d > 0);
+  const signal = deltaTone(d, it.se, it.lowerIsBetter);
+  // A change is always against the previous N (the loader has one only then); a figure whose caption says something else
+  // (the Tour's average, "Eagles not counted") keeps that caption on the note line, under the change's words.
+  const words = d != null ? deltaWords(d, signal, against) : it.context;
+  const note = [d != null && it.context !== against ? it.context : null, it.note].filter(Boolean).join(' · ') || undefined;
   const vals = it.series.filter((v): v is number => v != null);
   const lo = Math.min(...vals);
   const hi = Math.max(...vals);
@@ -66,7 +74,7 @@ function TapeCell({ it }: { it: TapeItem }) {
   const path = vals.length > 1 ? gappedPath(it.series, x, y) : '';
   const end = lastValue(it.series);
   const first = it.series.findIndex((v) => v != null);
-  const tone = d == null || flat ? 'is-flat' : good ? 'is-good' : 'is-bad';
+  const tone = signal === 'is-gain' ? 'is-good' : signal === 'is-loss' ? 'is-bad' : 'is-flat';
   const gid = useId().replace(/:/g, '');
   const ink = tone === 'is-good' ? 'var(--ch-chart-gain)' : tone === 'is-bad' ? 'var(--ch-chart-loss)' : 'var(--ch-text-tertiary)';
   return (
@@ -80,11 +88,11 @@ function TapeCell({ it }: { it: TapeItem }) {
       <span className={`ch-tp__d ch-num ${tone}`}>
         {d != null ? (
           <>
-            <Icon icon={flat ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={13} />
+            <Icon icon={signal === '' ? Minus : d > 0 ? ArrowUpRight : ArrowDownRight} size={13} />
             {formatSigned(d, it.deltaDigits)}
           </>
         ) : null}
-        {!none && <em>{it.context}</em>}
+        {!none && <em>{words}</em>}
       </span>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className={`ch-tp__svg ${tone}`} aria-hidden="true">
         <defs>
@@ -101,7 +109,7 @@ function TapeCell({ it }: { it: TapeItem }) {
         )}
         {end && <circle cx={x(end.i)} cy={y(end.v)} r={3.2} className="ch-tp__dot" vectorEffect="non-scaling-stroke" />}
       </svg>
-      {it.note && !none && <span className="ch-tp__n">{it.note}</span>}
+      {note && !none && <span className="ch-tp__n">{note}</span>}
     </li>
   );
 }

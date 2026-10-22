@@ -110,10 +110,13 @@ function git(args) {
  * not a blind spot: nothing routes to it, and its own header states what it is.
  */
 function tracked() {
-  return git(['ls-files', '*.md', '*.mdx'])
+  // `git ls-files` prints a path once per index stage while a merge is
+  // unresolved (stages 1-3), so regenerating mid-merge listed a conflicted
+  // file three times and every fixer needed a second "regenerate" commit.
+  return [...new Set(git(['ls-files', '*.md', '*.mdx'])
     .trim()
     .split('\n')
-    .filter(Boolean)
+    .filter(Boolean))]
     .filter((f) => f !== 'docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md')
     .sort();
 }
@@ -335,6 +338,19 @@ function runRefs() {
   console.log(L.join('\n').replace(/\n{3,}/g, '\n\n').trim());
 }
 
+function printSummary(byCategory) {
+  console.log('| Category | Files | Routed | Claims authority | Dead refs |');
+  console.log('| --- | --- | --- | --- | --- |');
+  for (const c of CATEGORIES) {
+    const list = byCategory.get(c);
+    if (!list.length) continue;
+    console.log(
+      `| \`${c}\` | ${list.length} | ${list.filter((r) => r.routed).length} | ` +
+        `${list.filter((r) => r.claimsAuthority).length} | ${list.reduce((a, r) => a + r.deadRefs, 0)} |`,
+    );
+  }
+}
+
 function main() {
   const check = process.argv.includes('--check');
   if (process.argv.includes('--dead-refs')) return runDeadRefs();
@@ -346,6 +362,8 @@ function main() {
 
   const byCategory = new Map(CATEGORIES.map((c) => [c, []]));
   for (const r of rows) byCategory.get(r.category).push(r);
+
+  if (process.argv.includes('--summary')) return printSummary(byCategory);
 
   const L = [];
   L.push('# Document authority inventory');
@@ -374,25 +392,17 @@ function main() {
   L.push('the main CI-throughput bottleneck as of 2026-09-23. Run `npm run docs:refs` for');
   L.push('the same counts computed fresh, printed to stdout, never committed.');
   L.push('');
+  L.push('There is deliberately no summary table either (2026-10-21): its per-category');
+  L.push('totals changed whenever any document was added, so two open PRs adding a');
+  L.push('document of the same kind always conflicted here. Run');
+  L.push('`npm run knowledge:doc-inventory -- --summary` for the same table computed fresh,');
+  L.push('printed to stdout, never committed.');
+  L.push('');
   L.push('There is deliberately no last-touch-SHA column: this file is tracked, so the');
   L.push('commit recording every other file\'s SHA would change them and a `--check`');
   L.push('gate would fail on its own commit. For per-file staleness use the rule');
   L.push('`.claude/rules/shipping.md` already sets — record an anchor SHA in the');
   L.push('document and run `git rev-list --count <sha>..HEAD -- <path>`.');
-  L.push('');
-
-  L.push('## Summary');
-  L.push('');
-  L.push('| Category | Files | Routed | Claims authority | Dead refs |');
-  L.push('| --- | --- | --- | --- | --- |');
-  for (const c of CATEGORIES) {
-    const list = byCategory.get(c);
-    if (!list.length) continue;
-    L.push(
-      `| \`${c}\` | ${list.length} | ${list.filter((r) => r.routed).length} | ` +
-        `${list.filter((r) => r.claimsAuthority).length} | ${list.reduce((a, r) => a + r.deadRefs, 0)} |`,
-    );
-  }
   L.push('');
 
   L.push('## Files');

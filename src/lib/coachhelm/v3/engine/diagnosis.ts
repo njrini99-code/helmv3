@@ -121,8 +121,17 @@ const AXIS_WORD: Record<ApproachAxis, string> = {
  *   component), not all misses — pure cross-axis misses are excluded by
  *   dominantAxis, and the sentence must say so (regrade VAL-P3: '82% of
  *   those 11 misses' on a card whose own green-hit line implies 21).
+ * @param wording `coach` is the coach's copy (`evidence.coach_copy`): the
+ *   same observation and the same numbers, with the check and action worded
+ *   on carry and target instead of clubs (reads speak of shot type only).
  */
-export function approachAxisReading(axis: ApproachAxis, share: number, n: number): AxisReading {
+export function approachAxisReading(
+  axis: ApproachAxis,
+  share: number,
+  n: number,
+  wording: 'record' | 'coach' = 'record',
+): AxisReading {
+  const coach = wording === 'coach';
   const pct = Math.round(share * 100);
   const read = axis === 'short' || axis === 'long' ? 'distance read' : 'line read';
   const observation =
@@ -131,28 +140,42 @@ export function approachAxisReading(axis: ApproachAxis, share: number, n: number
     case 'short':
       return {
         observation,
-        check:
-          'The record does not say why: the same short pattern comes from ' +
-          'under-clubbing, a headwind, a front-edge target, a deliberate lay-up, ' +
-          'or a lie that cost carry. Check the club and target on the next few ' +
-          'approaches from this range before naming a cause.',
-        action:
-          'Recommended: have the player call the carry number that covers the ' +
-          'flag from this range and log the club, then review the next ten ' +
-          'approaches from here together.',
+        check: coach
+          ? 'The record does not say why: the same short pattern comes from ' +
+            'too little carry for the number, a headwind, a front-edge target, a deliberate lay-up, ' +
+            'or a lie that cost carry. Check the carry number and target on the next few ' +
+            'approaches from this range before naming a cause.'
+          : 'The record does not say why: the same short pattern comes from ' +
+            'under-clubbing, a headwind, a front-edge target, a deliberate lay-up, ' +
+            'or a lie that cost carry. Check the club and target on the next few ' +
+            'approaches from this range before naming a cause.',
+        action: coach
+          ? 'Recommended: have the player call the carry number that covers the ' +
+            'flag from this range and log it, then review the next ten ' +
+            'approaches from here together.'
+          : 'Recommended: have the player call the carry number that covers the ' +
+            'flag from this range and log the club, then review the next ten ' +
+            'approaches from here together.',
       };
     case 'long':
       return {
         observation,
-        check:
-          'The record does not say why: the same long pattern comes from ' +
-          'over-clubbing, a helping wind, a back-pin target, firm greens, or a ' +
-          'flyer lie. Check the club and conditions on the next few approaches ' +
-          'from this range before naming a cause.',
-        action:
-          'Recommended: have the player log club and pin position from this ' +
-          'range for the next ten approaches, then compare the carry numbers to ' +
-          'the distances actually played.',
+        check: coach
+          ? 'The record does not say why: the same long pattern comes from ' +
+            'too much carry for the number, a helping wind, a back-pin target, firm greens, or a ' +
+            'flyer lie. Check the carry number and conditions on the next few approaches ' +
+            'from this range before naming a cause.'
+          : 'The record does not say why: the same long pattern comes from ' +
+            'over-clubbing, a helping wind, a back-pin target, firm greens, or a ' +
+            'flyer lie. Check the club and conditions on the next few approaches ' +
+            'from this range before naming a cause.',
+        action: coach
+          ? 'Recommended: have the player log the carry number and pin position from this ' +
+            'range for the next ten approaches, then compare the carry numbers to ' +
+            'the distances actually played.'
+          : 'Recommended: have the player log club and pin position from this ' +
+            'range for the next ten approaches, then compare the carry numbers to ' +
+            'the distances actually played.',
       };
     case 'left':
     case 'right':
@@ -184,4 +207,16 @@ export function axisReadingToText(reading: AxisReading): string {
  */
 export function approachAxisDriver(axis: ApproachAxis, share: number, n: number): string {
   return axisReadingToText(approachAxisReading(axis, share, n));
+}
+
+/** Classify a raw miss_direction into its short/long and left/right poles. A
+ *  direction may contribute to BOTH axes (e.g. 'short_right' → short + right);
+ *  a pure 'short' contributes short + L/R-neutral. Unknown → neutral on both.
+ *  Shared by approach-miss (the band tally) and context-narrowing (the
+ *  per-slice shape step) so both read a miss the same way. */
+export function classifyMiss(raw: string | null): { sl: keyof AxisTally; lr: keyof AxisTally } {
+  const v = (raw ?? '').toLowerCase();
+  const sl: keyof AxisTally = v.includes('short') ? 'negative' : v.includes('long') ? 'positive' : 'neutral';
+  const lr: keyof AxisTally = v.includes('left') ? 'negative' : v.includes('right') ? 'positive' : 'neutral';
+  return { sl, lr };
 }

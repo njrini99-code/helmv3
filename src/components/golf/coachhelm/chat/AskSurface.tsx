@@ -128,6 +128,23 @@ export function AskSurface({
   };
 
   /**
+   * "Start a new chat" under a lost-conversation error: the same fresh thread
+   * as "New", and `c` (and any `q`) gone from the address bar. The conversation
+   * is lost, so a reload that kept `?c=` would open it again and hit the same
+   * error. `history.replaceState` for the reason `adoptConversationInUrl` gives.
+   */
+  const startNewAfterLostConversation = () => {
+    setHistoryOpen(false);
+    setAdoptedId(null);
+    setThread((t) => ({ key: t.key + 1, conversationId: null, fresh: true }));
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('c') && !url.searchParams.has('q')) return;
+    url.searchParams.delete('c');
+    url.searchParams.delete('q');
+    window.history.replaceState(embedded ? null : window.history.state, '', url.toString());
+  };
+
+  /**
    * Put the freshly-minted conversation in the address bar.
    *
    * `history.replaceState`, not `router.replace`: a router navigation re-runs
@@ -338,6 +355,7 @@ export function AskSurface({
             conversationId={thread.conversationId}
             initialMessages={thread.fresh ? NO_MESSAGES : initialMessages}
             onConversationId={adoptConversationInUrl}
+            onStartNew={startNewAfterLostConversation}
             variant="page"
             // The page's pending question belongs to the thread it arrived
             // with. A later "New" must not seed, or re-send, it.

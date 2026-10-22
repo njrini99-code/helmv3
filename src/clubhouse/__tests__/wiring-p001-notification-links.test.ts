@@ -107,7 +107,7 @@ describe('P001 notification links resolve to a Clubhouse screen', () => {
 
   it('an old address keeps the item it names when it moves', async () => {
     expect(await land(`/golf/dashboard/tasks?task=${ID}`, 'coach')).toBe(`/golf/dashboard/team-hub?tab=tasks&task=${ID}`);
-    expect(await land(`/golf/dashboard/tasks?task=${ID}`, 'player')).toBe(`/golf/dashboard/team-hub?task=${ID}`);
+    expect(await land(`/golf/dashboard/tasks?task=${ID}`, 'player')).toBe(`/golf/dashboard/team-hub?tab=tasks&task=${ID}`);
     expect(await land(`/golf/dashboard/rounds/${ID}/review`, 'player')).toBe(`/golf/dashboard/rounds/${ID}`);
     expect(await land('/golf/dashboard/team', 'coach')).toBe('/golf/dashboard/settings?section=team');
   });
@@ -126,6 +126,7 @@ describe('P001 the query a notification carries is read by its screen', () => {
     expect(parseHubTab('ann', 'coach')).toBe('ann');
     expect(parseHubTab('ann', 'player')).toBe('ann');
     expect(parseHubTab('tasks', 'coach')).toBe('tasks');
+    expect(parseHubTab('tasks', 'player')).toBe('tasks');
     const page = readFileSync(join(DASH, 'team-hub/page.tsx'), 'utf8');
     expect(page).toMatch(/<ClubhouseHubRoute tab=\{legacyTab\} task=/);
   });
@@ -146,8 +147,9 @@ describe('P001 the query a notification carries is read by its screen', () => {
     expect(readFileSync(join(ROOT, 'src/clubhouse/screens/messages/Messages.tsx'), 'utf8')).toContain("params.get('conversation')");
   });
 
-  it('Roster reads ?tab=requests (the phone opens the requests sheet; desktop draws the requests card at the top)', () => {
+  it('Roster reads ?tab=requests (the phone opens the requests sheet; desktop focuses the requests card)', () => {
     expect(readFileSync(join(ROOT, 'src/clubhouse/screens/roster/RosterPhone.tsx'), 'utf8')).toContain("searchParams.get('tab') === 'requests'");
+    expect(readFileSync(join(ROOT, 'src/clubhouse/screens/roster/Roster.tsx'), 'utf8')).toContain("searchParams.get('tab') === 'requests'");
     expect(isRebuilt('/golf/dashboard/roster', 'coach')).toBe(true);
   });
 });

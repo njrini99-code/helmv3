@@ -72,6 +72,16 @@ const fingerprint: PlayerFingerprint = {
           evidence: { metric_label: 'Fairways hit', strokes_impact: null, sample_n: 60, confidence: 0.9 },
           drills: [],
         } as unknown as SectionData['insights'][number],
+        {
+          id: 'i-rounds-to-zero',
+          player_id: 'p-1',
+          category: 'tee',
+          title: 'Tee shot shape',
+          content: null,
+          signature: 's-rounds-to-zero',
+          evidence: { metric_label: 'Tee shape', strokes_impact: 0.004, sample_n: 50, confidence: 0.9 },
+          drills: [],
+        } as unknown as SectionData['insights'][number],
       ],
     }),
     approach: section('approach'),
@@ -92,7 +102,44 @@ const fingerprint: PlayerFingerprint = {
         } as unknown as SectionData['insights'][number],
       ],
     }),
-    scoring: section('scoring'),
+    scoring: section('scoring', {
+      sparse: false,
+      metrics: [{ label: 'Scoring avg', value: '72.1', tone: 'neutral' }],
+      insights: [
+        {
+          id: 'i-rough',
+          player_id: 'p-1',
+          category: 'scoring',
+          title: 'Short-side scrambling',
+          content: null,
+          signature: 's-rough',
+          evidence: {
+            metric_label: 'Short-side saves',
+            strokes_impact: 0.4,
+            strokes_impact_method: 'rough_estimate',
+            sample_n: 30,
+            confidence: 0.9,
+          },
+          drills: [],
+        } as unknown as SectionData['insights'][number],
+        {
+          id: 'i-peer',
+          player_id: 'p-1',
+          category: 'scoring',
+          title: 'Closing holes',
+          content: null,
+          signature: 's-peer',
+          evidence: {
+            metric_label: 'Closing-hole gap',
+            strokes_impact: 0.8,
+            strokes_impact_method: 'peer_delta',
+            sample_n: 30,
+            confidence: 0.9,
+          },
+          drills: [],
+        } as unknown as SectionData['insights'][number],
+      ],
+    }),
     pressure: section('pressure'),
   },
   trend: {
@@ -135,5 +182,13 @@ describe('print report (FP-08)', () => {
     expect(tee.textContent).not.toMatch(/a round/);
     // A real impact still prints.
     expect(screen.getByTestId('print-insights-putting').textContent).toMatch(/0\.6 a round/);
+  });
+
+  it('labels a rough_estimate impact as one and leaves a measured one plain', async () => {
+    render(await PlayerGamePrintPage({ params: Promise.resolve({ playerId: 'p-1' }) }));
+    const scoring = screen.getByTestId('print-insights-scoring').textContent ?? '';
+    expect(scoring).toMatch(/0\.4 a round \(rough estimate\)/);
+    expect(scoring).toMatch(/0\.8 a round/);
+    expect(scoring).not.toMatch(/0\.8 a round \(rough estimate\)/);
   });
 });

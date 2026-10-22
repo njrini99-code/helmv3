@@ -2,8 +2,8 @@
 
 import { useId } from 'react';
 import type { ChTeamForm } from '../../data/home';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { useInViewOnce } from '../../lib/use-in-view';
+import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { withPointSpan } from '../../ui/point-span';
 import { formBasis, partOf } from './HomePhone';
 
@@ -13,14 +13,13 @@ const PAD_BOTTOM = 14;
 
 /**
  * P002: the team's scoring form on the coach's desktop Home, the same Last 10 figures the phone strip and Team stats read: the
- * average with its change, the team's average on each of its last round days as a line (drawn once, left to right, the first time it
- * is seen), and the week's rounds, greens and putts. Nothing here is computed beyond a scale: it is `data.phone.form` as it is.
+ * average with its change, the team's average on each of its last round days  as a line (drawn in place at first paint, Q-139), and the week's rounds, greens and putts. Nothing here is computed beyond a scale: it is `data.phone.form` as it is.
  */
 export function TeamForm({ form }: { form: ChTeamForm }) {
   const id = useId();
-  const [ref, seen] = useInViewOnce<HTMLDivElement>(0.2);
   const pts = form.line;
-  const tone = changeTone(form.delta, true, 1);
+  // A change is green or amber only when it clears its standard error (stats visuals Q4); otherwise neutral, "No clear change".
+  const tone = deltaTone(form.delta, form.deltaSe, true);
   const drawn = pts.length > 1;
   const best = drawn ? Math.min(...pts) : 0;
   const worst = drawn ? Math.max(...pts) : 0;
@@ -36,7 +35,7 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
         <span className={'ch-h-form__delta ch-num ' + tone}>
           {form.delta != null ? (
             <>
-              {formatSigned(form.delta)} <em>vs previous 10</em>
+              {formatSigned(form.delta)} <em>{deltaWords(form.delta, tone, 'vs previous 10')}</em>
             </>
           ) : (
             <em>No earlier ten to compare</em>
@@ -45,7 +44,7 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
         <span className="ch-h-form__basis">{formBasis(form.basis)}</span>
       </div>
       {drawn && (
-        <div ref={ref} className={'ch-h-form__plot' + (seen ? ' is-in' : '')}>
+        <div className="ch-h-form__plot">
           <svg className="ch-h-form__svg" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label={`The team’s average on each of its last ${pts.length} round days, from ${formatFixed(pts[0]!)} to ${formatFixed(last)}`}>
             <defs>
               <linearGradient id={`${id}-f`} x1="0" y1="0" x2="0" y2="1">
@@ -68,12 +67,12 @@ export function TeamForm({ form }: { form: ChTeamForm }) {
         <div>
           <dt>GIR</dt>
           <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : NO_DATA}</dd>
-          <dd className={'ch-num ' + changeTone(form.gir.delta, false, 0)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
           <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
-          <dd className={'ch-num ' + changeTone(form.putts.delta, true, 1)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
+          <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
     </section>

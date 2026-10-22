@@ -2,6 +2,7 @@
 // A plain server module, not a server-action surface (no server directive, no actions).
 
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { withoutLieAfterRecovery } from '@/lib/golf/data-prompts/recovery';
 import { resolveCoachTeamIdWithCookie } from '@/lib/golf/resolve-team-server';
 import type { ShotRecord } from '@/lib/types/golf';
 import { z } from 'zod';
@@ -94,6 +95,9 @@ export const comprehensiveShotSchema = z.object({
   puttDistanceFeet: z.number().min(0).optional(),
   approachMissDirection: z.string().optional(),
   approachMissLieType: z.preprocess(toMissLieVocabulary, z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional()),
+  // CoachHelm Slice 8b recovery tap (coachhelm_data_prompts_v2); written only
+  // on a rough/'other' tee shot (lib/golf/data-prompts/recovery.ts).
+  lieAfterRecovery: z.boolean().optional(),
 });
 export function formatIssuePath(path: readonly PropertyKey[]): string {
   return path.map(String).join('.');
@@ -359,6 +363,8 @@ interface RoundShotPayload {
   putt_made: boolean | null;
   is_penalty: boolean;
   penalty_type: string | null;
+  /** Slice 8b recovery tap; present only when answered (`lieAfterRecoveryPayload`). */
+  lie_after_recovery?: boolean;
 }
 export interface RoundShotGroupPayload {
   hole_number: number;
@@ -654,7 +660,7 @@ async function submitRoundDirectFallback({
         round_id: roundId,
         hole_id: holeId,
         hole_number: group.hole_number,
-        ...shot,
+        ...withoutLieAfterRecovery(shot),
       })))
       .select('id, hole_number, shot_number');
 

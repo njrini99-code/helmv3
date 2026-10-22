@@ -1,11 +1,12 @@
 'use client';
 
 import { AnimatePresence } from 'motion/react';
-import { ChevronRight, Compass, Flag, Plus, Target } from 'lucide-react';
+import { ChevronRight, Compass, Flag, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
-import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
-import { PLAYER_HELM_DEVELOPMENT_HREF, type ChViewLoad } from '../../../data/coachhelm-views-shape';
+import { clearedShown, DIVE_AREAS, type ChDeepDive, type ChDeepInsight, type ChDiveCleared, type ChDiveRound, type ChDiveTheme, type ChDiveTone, type ChDiveWhere } from '../../../data/coachhelm-dive-shape';
+import { meaningfulReason, readLines, writeUpFor } from '../../../data/coachhelm-read-shape';
+import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChSessionState } from '../../../lib/session-state';
 import { useChPhone } from '../../../lib/use-phone';
@@ -19,17 +20,20 @@ import { PageRefreshNotice, RefreshNotice } from '../../../ui/RefreshNotice';
 import { PhoneBar } from '../../../ui/PhoneBar';
 import { SectionBoundary } from '../../../ui/SectionBoundary';
 import { EmptyState } from '../../../ui/States';
-import { BoardPartial, Evidence } from '../parts';
+import { BoardPartial, Evidence, FocusActions, useFocusActions, type ChFocusActions } from '../parts';
+import { LIVE_COACHHELM_WRITES, type ChCoachHelmWrites } from '../writes';
 import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
+import { EngineState, WhyAudit } from '../EngineState';
+import { CorrectionChips, ReadLater } from '../Corrections';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
 
 /**
- * The write-up without the drill, when "This week" draws it (P013 D6): a sentence that opens with the drill's first three words is
+ * The write-up without the drill, when the read's Next line draws it (P013 D6): a sentence that opens with the drill's first three words is
  * the drill again. Nothing else is touched; with no drill, or no such sentence, the write-up is as written.
  */
 export function withoutDrill(why: string, drill: string | null | undefined): string | null {
@@ -42,7 +46,41 @@ export function withoutDrill(why: string, drill: string | null | undefined): str
 
 const LINE = 'Every read CoachHelm has made on your game: what it measured, the rounds behind it, how it has moved, and where it goes in your plan.';
 
-const developmentHref = () => rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
+/** Where a read's plan rows go: the player's Development, or on a coach's page the player's Development on Stats (spec A). */
+const developmentHref = (voice: ChViewVoice = PLAYER_VOICE) =>
+  voice.role === 'coach' ? rebuiltHref(`/golf/dashboard/stats?player=${encodeURIComponent(voice.playerId)}&tab=dev`, 'coach') : rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
+
+/**
+ * The page's own words for whose page it is (spec A): the player's, as they always were, or a coach's about the player by first name.
+ * The engine's words go through `speak` in the loader; these are the screen's.
+ */
+function wordsFor(voice: ChViewVoice) {
+  if (voice.role !== 'coach') {
+    return {
+      scores: 'Your scores in the rounds below',
+      removed: 'They may be rounds you have since removed.',
+      stats: 'your stats',
+      trends: { title: 'Your category trends didn’t load', part: 'your category trends' },
+      plans: { title: 'Your focus areas and goals didn’t load', part: 'your focus areas and goals' },
+      noPlan: 'This read is not part of a focus area or a goal yet. Development is where you turn one into a plan.',
+      label: 'Your deep dive',
+      list: 'Your insights',
+      inPlan: 'In your plan',
+    };
+  }
+  const f = voice.first;
+  return {
+    scores: `${f}’s scores in the rounds below`,
+    removed: `They may be rounds ${f} has since removed.`,
+    stats: `${f}’s stats`,
+    trends: { title: 'The category trends didn’t load', part: 'the category trends' },
+    plans: { title: `${f}’s focus areas and goals didn’t load`, part: `${f}’s focus areas and goals` },
+    noPlan: 'This read is not part of a focus area or a goal yet. Assign it above, or open Development.',
+    label: `${f}’s deep dive`,
+    list: `${f}’s insights`,
+    inPlan: 'In a plan',
+  };
+}
 
 /** To par per 18 holes, oldest to newest: a line that rises as the scores come down. Decoration; the caption and the label say every number. */
 function Strip({ values }: { values: number[] }) {
@@ -81,7 +119,8 @@ function Section({ id, title, aside, children, code }: { id: string; title: stri
   );
 }
 
-function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean; covered?: boolean }) {
+function Trend({ i, theme, themesFailed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepInsight; theme: ChDiveTheme | undefined; themesFailed: boolean; covered?: boolean; voice?: ChViewVoice }) {
+  const w = wordsFor(voice);
   const strip = i.rounds.strip;
   const first = strip[0];
   const last = strip[strip.length - 1];
@@ -91,7 +130,7 @@ function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; 
   const any = !!(i.movement || i.outcome || trend || strip.length > 0);
   return (
     <Section id={`${i.base.id}-trend`} title="How it has moved">
-      {themesFailed && <RefreshNotice code="CH-13283" title="Your category trends didn’t load" body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." covered={covered} />}
+      {themesFailed && <RefreshNotice code="CH-13283" title={w.trends.title} body="The rest of this read is below. The trend for the category is missing for now. Try again in a moment." covered={covered} />}
       {any ? (
         <ul className="ch-hd-tr">
           {i.movement && (
@@ -118,7 +157,7 @@ function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; 
           )}
           {strip.length > 0 && first != null && last != null && (
             <li className={'ch-hd-strip ' + paint(stripTone)}>
-              <span className="ch-hd-tr__k">Your scores in the rounds below</span>
+              <span className="ch-hd-tr__k">{w.scores}</span>
               <Strip values={strip} />
               <span className="ch-hd-strip__c ch-num">
                 {toPar(first)} to {toPar(last)} <em>oldest to newest, to par per 18 holes</em>
@@ -140,7 +179,8 @@ function Trend({ i, theme, themesFailed, covered = false }: { i: ChDeepInsight; 
   );
 }
 
-function Rounds({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolean; covered?: boolean }) {
+function Rounds({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepInsight; failed: boolean; covered?: boolean; voice?: ChViewVoice }) {
+  const w = wordsFor(voice);
   const { total, list } = i.rounds;
   const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${total} ${total === 1 ? 'round' : 'rounds'}`) : undefined;
   return (
@@ -160,8 +200,8 @@ function Rounds({ i, failed, covered = false }: { i: ChDeepInsight; failed: bool
           title={total > 0 ? 'None of the rounds can be listed' : 'No rounds are named'}
           body={
             total > 0
-              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. They may be rounds you have since removed.`
-              : 'This read does not name the rounds it was made from. It uses your stats over the window above, so there is no list to show.'
+              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. ${w.removed}`
+              : `This read does not name the rounds it was made from. It uses ${w.stats} over the window above, so there is no list to show.`
           }
         />
       )}
@@ -197,21 +237,23 @@ function RoundRow({ r }: { r: ChDiveRound }) {
 }
 
 function Why({ i }: { i: ChDeepInsight }) {
-  const d = i.diagnosis;
-  const why = i.base.why ? withoutDrill(i.base.why, i.base.week?.text) : null;
-  if (!d && !why) return null;
+  // The cause and its basis are the read's Why line, above (an inferred one is never the player's). Here: what it counted, why the
+  // read is as sure as it is (not the generators' stock "sample adequate"), and the generator's own words in full (its first
+  // sentence too, which the read's What line now says in numbers).
+  const drivers = i.diagnosis?.drivers ?? [];
+  const reason = meaningfulReason(i.diagnosis?.reason);
+  // A cause this viewer is not shown is not said here either: its sentences leave the write-up with it.
+  const told = writeUpFor([i.base.lede, i.base.why].filter(Boolean).join(' '), i.read.why.level !== null);
+  const why = told ? withoutDrill(told, i.base.week?.text) : null;
+  const box = drivers.length > 0 || !!reason;
+  if (!box && !why) return null;
   return (
     <Section id={`${i.base.id}-why`} title="Why CoachHelm thinks so">
-      {d && (
+      {box && (
         <div className="ch-hd-dx">
-          {/* A hypothesis is inferred from where you stand against others, never a thing CoachHelm saw: it is marked so it is not read as fact. */}
-          <span className={'ch-hd-dx__lvl is-' + d.level} data-ch-code="CH-13982">
-            {d.level === 'observed' ? 'Measured in your shots' : 'Likely, not measured'}
-          </span>
-          <p className="ch-hd-dx__c">{sentence(d.cause)}</p>
-          {d.drivers.length > 0 && (
+          {drivers.length > 0 && (
             <dl className="ch-hd-dx__d">
-              {d.drivers.map((x) => (
+              {drivers.map((x) => (
                 <div key={x.label}>
                   <dt>{x.label}</dt>
                   <dd className="ch-num">
@@ -222,12 +264,12 @@ function Why({ i }: { i: ChDeepInsight }) {
               ))}
             </dl>
           )}
-          {d.reason && <p className="ch-hd-dx__r">{sentence(d.reason)}</p>}
+          {reason && <p className="ch-hd-dx__r">{sentence(reason)}</p>}
         </div>
       )}
       {why && (
         <div className="ch-hd-full">
-          {d && <span className="ch-hd-full__k">The full write-up</span>}
+          {box && <span className="ch-hd-full__k">The full write-up</span>}
           <p className="ch-hd-why">{why}</p>
         </div>
       )}
@@ -235,8 +277,116 @@ function Why({ i }: { i: ChDeepInsight }) {
   );
 }
 
-function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolean; covered?: boolean }) {
-  const href = developmentHref();
+/**
+ * Where it happened (chs-38): up to five holes the counted path was recorded on, each with its round's day and course, the hole and
+ * the path in shot-type words. Drawn only when the read's evidence stores a counted sequence with example holes this player still
+ * has; otherwise the section is left out, never an empty state.
+ */
+function Where({ id, where }: { id: string; where: ChDiveWhere | null }) {
+  if (!where || where.holes.length === 0) return null;
+  return (
+    <Section id={`${id}-where`} title="Where it happened" aside={where.counted ?? undefined} code="CH-13996">
+      <ol className="ch-hd-where">
+        {where.holes.map((h) => {
+          const body = (
+            <>
+              <span className="ch-hd-where__d ch-num">{h.date}</span>
+              <span className="ch-hd-where__b">
+                <b>
+                  {h.course ?? 'Round'} <span className="ch-num">· hole {h.hole}</span>
+                </b>
+                <span>{h.what}</span>
+              </span>
+            </>
+          );
+          return (
+            <li key={h.key}>
+              {h.href ? (
+                <Link className="ch-hd-where__i is-link" href={h.href} onClick={() => haptic('select')} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
+                  {body}
+                  <Icon icon={ChevronRight} size={15} />
+                </Link>
+              ) : (
+                <div className="ch-hd-where__i">{body}</div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </Section>
+  );
+}
+
+/**
+ * The read in four lines (P013, the Read): What (the number, its sample, the comparison by name, strokes a round only when the
+ * row estimates them, the confidence word), Why (the cause with its basis and counts, or not traced yet), Next (the drill or the
+ * row's own action, never the generator's placeholder) and When (the newest round in it, and Out of date when a newer one is not).
+ * A hypothesis is marked so it is never read as fact (CH-13982); a read from before the newest round says so (CH-13903).
+ */
+function Read({ i, tour, voice = PLAYER_VOICE }: { i: ChDeepInsight; tour: string; voice?: ChViewVoice }) {
+  const r = i.read;
+  const what = readLines(r, tour, undefined, voice.role).what;
+  const n = r.next;
+  const cause = i.base.engine?.cause;
+  return (
+    <dl className="ch-hd-read">
+      <div>
+        <dt>What</dt>
+        <dd className="ch-num">{what}</dd>
+      </div>
+      <div>
+        <dt>Why</dt>
+        {cause ? (
+          // With the root-cause flag on, the cause state the engine stored says the Why: a counted path, or exactly why it is not
+          // traced (a count-down or a data gap). An inferred cause is never the player's (Q3), so theirs reads as not traced.
+          <dd className={cause.state === 'counted' ? undefined : 'is-none'} data-ch-code="CH-13993">
+            {cause.word}: {cause.line}
+          </dd>
+        ) : (
+          <dd className={r.why.level ? undefined : 'is-none'}>
+            {r.why.basis && (
+              <span className={'ch-hd-dx__lvl ch-hd-read__lvl is-' + r.why.level} data-ch-code="CH-13982">
+                {r.why.basis}
+              </span>
+            )}
+            {r.why.basis && ' '}
+            {r.why.text}
+          </dd>
+        )}
+      </div>
+      <div>
+        <dt>Next</dt>
+        <dd className={n.none ? 'is-none' : undefined}>
+          {n.drill && (
+            <span className="ch-hd-read__drill">
+              <Icon icon={Target} size={14} />
+              <b>{n.drill}</b>
+              {n.meta && <em className="ch-num"> · {n.meta}</em>}
+            </span>
+          )}
+          {n.drill && n.text && ' '}
+          {n.text ? sentence(n.text) : n.none}
+        </dd>
+      </div>
+      <div>
+        <dt>When</dt>
+        <dd className="ch-num">
+          {r.when.through ? sentence(r.when.through) : !r.when.stale && '—'}
+          {r.when.through && r.when.stale && ' '}
+          {r.when.stale && (
+            <span className="ch-hd-read__stale" role="note" data-ch-code="CH-13903">
+              {r.when.stale}
+            </span>
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function Plan({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepInsight; failed: boolean; covered?: boolean; voice?: ChViewVoice }) {
+  const href = developmentHref(voice);
+  const w = wordsFor(voice);
   const { focus, goal } = i.plan;
   const row = (kind: 'focus' | 'goal', icon: typeof Target, label: string, title: string, word: string, line: string | null, live: boolean) => {
     const body = (
@@ -258,7 +408,7 @@ function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolea
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
       {failed ? (
-        <RefreshNotice code="CH-13282" title="Your focus areas and goals didn’t load" body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." covered={covered} />
+        <RefreshNotice code="CH-13282" title={w.plans.title} body="Whether this read is part of one is missing for now. The read is not affected. Try again in a moment." covered={covered} />
       ) : focus || goal ? (
         <ul className="ch-hd-plan">
           {focus && row('focus', Target, focus.fromThis ? 'Focus area made from this' : 'Focus area on the same stat', focus.title, focus.word, null, focus.live)}
@@ -269,7 +419,7 @@ function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolea
           compact
           code="CH-13384"
           title="No plan yet"
-          body="This read is not part of a focus area or a goal yet. Development is where you turn one into a plan."
+          body={w.noPlan}
           action={
             href ? (
               <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
@@ -283,18 +433,43 @@ function Plan({ i, failed, covered = false }: { i: ChDeepInsight; failed: boolea
   );
 }
 
-/** One read in full. Re-mounted per insight (key), so each opens at its top. */
-function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
+/**
+ * One read in full. Re-mounted per insight (key), so each opens at its top. `fa`: a coach's page (spec A) puts the coach's one action
+ * row right after the read's head and its four lines (the board's own, `FocusActions`), with Message after Dismiss.
+ */
+function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDeepDive; voice?: ChViewVoice; fa?: ChFocusActions }) {
   const b = i.base;
   const tone: ChDiveTone = b.kind === 'strength' ? 'good' : 'warn';
+  const w = wordsFor(voice);
+  const coach = voice.role === 'coach' ? voice : null;
+  const message = coach ? rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(coach.playerId)}`, 'coach') : null;
   // The read's parts that did not load, as its notices draw them: two or more are said once, under the read's head, with one
   // Try again (CH-1209), and each part keeps only its title where it would be (states audit, 2026-10-08).
   const failed = [
-    d.themesFailed && 'your category trends',
+    d.themesFailed && w.trends.part,
     d.roundsFailed && i.rounds.total > 0 && 'the rounds behind this read',
-    d.plansFailed && 'your focus areas and goals',
+    d.plansFailed && w.plans.part,
   ].filter((x): x is string => !!x);
   const covered = failed.length > 1;
+  const cx = b.engine?.corrections;
+  // Show later is the coach's, so a player's own read is never held back here; the state is kept for a coach-drawn dossier.
+  const [held, setHeld] = useState<number | null>(cx?.laterRounds ?? null);
+  if (held != null && cx) {
+    return (
+      <article className="ch-hd-dos" aria-labelledby={`${b.id}-t`}>
+        <header className="ch-hd-dos__h">
+          <div className="ch-hl-focus__k">
+            <span>{b.category}</span>
+          </div>
+          <h2 id={`${b.id}-t`}>
+            <SerifText text={b.title} />
+          </h2>
+        </header>
+        <ReadLater rounds={held} />
+        <CorrectionChips c={cx} held={held} onHeld={setHeld} />
+      </article>
+    );
+  }
   return (
     <article className="ch-hd-dos" aria-labelledby={`${b.id}-t`}>
       <header className="ch-hd-dos__h">
@@ -305,14 +480,33 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
         <h2 id={`${b.id}-t`}>
           <SerifText text={b.title} />
         </h2>
-        {b.lede && <p className="ch-hl-lede">{b.lede}</p>}
-        {/* A read from before the newest round is never drawn as current (CH-13903). */}
-        {b.stale && (
-          <p className="ch-hl-stale" role="note" data-ch-code="CH-13903">
-            A round played {b.stale.newestRound} isn’t in this read yet, so it may not match the rounds posted since.
-          </p>
-        )}
+        {/* The four lines are what is read first; the parts below are their evidence. */}
+        <Read i={i} tour={d.tour} voice={voice} />
       </header>
+      {/* A coach's one action row, under the read's lines and outside the read's head: on the phone the head is the green
+          feature card, and the row's ghost controls are drawn for the page's paper, not for the card. */}
+      {coach && fa && (
+        <FocusActions
+          fa={fa}
+          target={{ playerId: coach.playerId, first: coach.first, ins: b }}
+          missing={d.missing}
+          where="dive"
+          extra={
+            message ? (
+              <Link className="ch-hd-msg" href={message} onClick={() => haptic('select')}>
+                <Icon icon={MessageSquare} size={15} />
+                Message {coach.first}
+              </Link>
+            ) : undefined
+          }
+        />
+      )}
+      {/* What the engine now knows, flush under the read (each part only with its flag on; the cause is the Why line above), and
+          "Why do you think so?", the read's audit lines. */}
+      <EngineState engine={i.base.engine && { ...i.base.engine, cause: undefined }} />
+      <WhyAudit lines={i.base.engine?.audit} />
+      {/* The correction chips, under the audit (03 §7.2), only when the loader put them on the read. */}
+      {cx && <CorrectionChips c={cx} held={held} onHeld={setHeld} />}
       <PageRefreshNotice parts={failed} />
 
       <Section id={`${b.id}-meas`} title="What was measured">
@@ -322,42 +516,25 @@ function Dossier({ i, d }: { i: ChDeepInsight; d: ChDeepDive }) {
             <span>{i.measured.label}</span>
           </div>
           {i.measured.span && <p className="ch-hd-meas__s ch-num">{i.measured.span}</p>}
-          {i.closes && (
-            <p className="ch-hd-meas__w">
-              Closing the gap to {i.closes.anchor === 'team' ? 'your team’s average' : `the ${d.tour}`} is worth about <b className="ch-num">{i.closes.strokes} strokes</b> a round.
-            </p>
-          )}
         </div>
-        <Evidence ev={{ ...b.evidence, label: '' }} />
+        <Evidence ev={{ ...b.evidence, label: '' }} who={coach?.first} />
       </Section>
 
-      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} covered={covered} />
-      <Rounds i={i} failed={d.roundsFailed} covered={covered} />
+      <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} covered={covered} voice={voice} />
+      <Rounds i={i} failed={d.roundsFailed} covered={covered} voice={voice} />
       <Why i={i} />
+      <Where id={b.id} where={i.where} />
 
-      {b.week && (
-        <div className="ch-hl-drill">
-          <span className="ch-hl-drill__k">
-            <Icon icon={Target} size={14} />
-            This week
-          </span>
-          {b.week.title && (
-            <p className="ch-hl-drill__t">
-              <b>{b.week.title}</b>
-              {b.week.meta && <em> · {b.week.meta}</em>}
-            </p>
-          )}
-          {b.week.text && <p>{b.week.text}</p>}
-        </div>
-      )}
-
-      <Plan i={i} failed={d.plansFailed} covered={covered} />
+      <Plan i={i} failed={d.plansFailed} covered={covered} voice={voice} />
     </article>
   );
 }
 
-/** A read in the list: its category and stance, its title and its number, in the stance's colour. Picking one is a selection haptic (CH-13780). */
-function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => void }) {
+/**
+ * A read on the ledger: its stance dot, its title, its stance and firmness words, and its number. Picking one is a selection haptic
+ * (CH-13780). An out-of-date read keeps its row, its firmness word greyed (design call, States).
+ */
+function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: boolean; onPick: () => void; dismissed?: boolean }) {
   return (
     <li>
       <button
@@ -371,11 +548,11 @@ function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => 
       >
         <span className="ch-hd-it__d" aria-hidden="true" />
         <span className="ch-hd-it__b">
-          <em>
-            {i.base.category}
-            <span> · {i.stance.word}</span>
-          </em>
           <b>{i.base.title}</b>
+          <em>
+            <span>{dismissed ? 'Dismissed' : i.stance.word}</span>
+            {i.firmness && <span className="ch-hd-it__f"> · {i.firmness}</span>}
+          </em>
         </span>
         <span className="ch-hd-it__v ch-num">
           {i.base.value}
@@ -392,50 +569,76 @@ function Item({ i, on, onPick }: { i: ChDeepInsight; on: boolean; onPick: () => 
   );
 }
 
-function Group({ id, title, note, items, pickedId, onPick }: { id: string; title: string; note: string; items: ChDeepInsight[]; pickedId: string | null; onPick: (id: string) => void }) {
-  if (items.length === 0) return null;
+/** A cleared read, kept in its area as one line (D6): "Cleared Oct 12", what it was about, and the recheck's numbers. */
+function ClearedRow({ c }: { c: ChDiveCleared }) {
   return (
-    <section className="ch-hd-grp" aria-labelledby={id}>
-      <div className="ch-hd-grp__h">
-        <h3 id={id}>{title}</h3>
-        <span className="ch-num">{items.length}</span>
-      </div>
-      <p>{note}</p>
-      <ul>
-        {items.map((i) => (
-          <Item key={i.base.id} i={i} on={i.base.id === pickedId} onPick={() => onPick(i.base.id)} />
-        ))}
-      </ul>
-    </section>
+    <li className="ch-hd-cl">
+      <span className="ch-hd-it__d" aria-hidden="true" />
+      <span className="ch-hd-cl__b">
+        <b>{c.title}</b>
+        <em>{c.word}</em>
+        {c.line && <span className="ch-num">{c.line}</span>}
+      </span>
+    </li>
   );
 }
 
-function Hero({ d }: { d: ChDeepDive }) {
-  const { insights, needs, working, inPlan } = d.counts;
+/**
+ * The read ledger (chs-35; design call "Player Deep dive"): one flush list grouped by area, in the order a hole is played, each read
+ * in the page's own order within its area. Cleared reads stay in their area; the newest three are shown, then "N more cleared".
+ */
+function Ledger({ list, cleared = [], pickedId, onPick, dismissed }: { list: readonly ChDeepInsight[]; cleared?: readonly ChDiveCleared[]; pickedId: string | null; onPick: (id: string) => void; dismissed?: Readonly<Record<string, true>> }) {
+  const [all, setAll] = useState(false);
+  const shown = clearedShown(cleared, all);
+  const more = cleared.length - shown.size;
+  const areas = DIVE_AREAS.map((a) => ({ ...a, reads: list.filter((i) => i.area === a.id), done: cleared.filter((c) => c.area === a.id && shown.has(c.id)) })).filter((a) => a.reads.length > 0 || a.done.length > 0);
   return (
-    <section className="ch-hd-hero ch-scoreboard" aria-labelledby="ch-hd-hero-t">
-      <div className="ch-hd-hero__main">
-        <span className="ch-hd-hero__k">What CoachHelm has found</span>
-        <h2 id="ch-hd-hero-t">
-          CoachHelm has <span className="ch-hd-hero__n ch-num">{insights}</span> {insights === 1 ? 'read' : 'reads'} on your game.
-        </h2>
-        <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. In your plan counts reads from both lists, so it overlaps them. A read from before your newest round says so.</p>
-      </div>
-      <dl className="ch-hd-hero__f">
-        <div className="is-needs">
-          <dt>Needs work</dt>
-          <dd className="ch-num">{needs}</dd>
-        </div>
-        <div className="is-working">
-          <dt>What’s working</dt>
-          <dd className="ch-num">{working}</dd>
-        </div>
-        <div className="is-plan">
-          <dt>In your plan</dt>
-          {/* Plans that did not load are not "none": a dash, never a zero. */}
-          <dd className="ch-num">{d.plansFailed ? '—' : inPlan}</dd>
-        </div>
-      </dl>
+    <>
+      {areas.map((a) => (
+        <section key={a.id} className="ch-hd-grp" aria-labelledby={`ch-hd-area-${a.id}`}>
+          <div className="ch-hd-grp__h">
+            <h3 id={`ch-hd-area-${a.id}`}>{a.label}</h3>
+            {a.reads.length > 0 && <span className="ch-num">{a.reads.length}</span>}
+          </div>
+          <ul>
+            {a.reads.map((i) => (
+              <Item key={i.base.id} i={i} on={i.base.id === pickedId} onPick={() => onPick(i.base.id)} dismissed={!!dismissed?.[i.base.id]} />
+            ))}
+            {a.done.map((c) => (
+              <ClearedRow key={c.id} c={c} />
+            ))}
+          </ul>
+        </section>
+      ))}
+      {more > 0 && (
+        <button type="button" className="ch-hd-more" onClick={() => setAll(true)} data-ch-code="CH-13992">
+          <span className="ch-num">{more}</span> more cleared
+        </button>
+      )}
+    </>
+  );
+}
+
+/**
+ * "CoachHelm has 5 reads on your game, 2 of them in your plan." One sentence; plans that did not load leave the plan clause out, never a
+ * zero. `first`: a coach's page about one player (spec A) names the player ("on Jonah's game", "in Jonah's plan").
+ */
+export function heroLine(d: Pick<ChDeepDive, 'counts' | 'plansFailed'>, first: string | null = null): string {
+  const { insights, inPlan } = d.counts;
+  const whose = first ? `${first}’s` : 'your';
+  const head = `CoachHelm has ${insights} ${insights === 1 ? 'read' : 'reads'} on ${whose} game`;
+  if (d.plansFailed || inPlan === 0) return `${head}.`;
+  if (insights === 1) return `${head}, and it is in ${whose} plan.`;
+  return `${head}, ${inPlan === insights ? 'all' : inPlan} of them in ${whose} plan.`;
+}
+
+function Hero({ d, voice = PLAYER_VOICE }: { d: ChDeepDive; voice?: ChViewVoice }) {
+  const first = voice.role === 'coach' ? voice.first : null;
+  return (
+    <section className="ch-hd-hero" aria-labelledby="ch-hd-hero-t">
+      <h2 id="ch-hd-hero-t" className="ch-num">
+        {heroLine(d, first)}
+      </h2>
     </section>
   );
 }
@@ -445,11 +648,20 @@ function Hero({ d }: { d: ChDeepDive }) {
  * phone is the list, and a read is a pushed screen that the iOS back swipe pops (CH-13980). `initialId` is the read `?insight=` names,
  * used only if it is one of this player's own (CH-13981). Their own and read-only: there is no coach control, no dismiss and no assign.
  * Each part beside the insights (rounds, plans, category trends) says in place when it did not load; none takes the page down.
+ *
+ * `voice`: a coach's Deep dive of one player (spec A) is the same page about the player by first name, with the coach's action row
+ * under each read (Assign as focus, Dismiss, Message; `writes`, the board's own), an inferred cause marked Likely, not measured, and
+ * rounds and plans linking to the coach's screens. The read kept for the tab is kept per player.
  */
-export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDive>; initialId?: string | null }) {
+export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes = LIVE_COACHHELM_WRITES }: { load: ChViewLoad<ChDeepDive>; initialId?: string | null; voice?: ChViewVoice; writes?: ChCoachHelmWrites }) {
   const phone = useChPhone();
   const reduced = useChReducedMotion();
-  const startHref = coachHelmLinks.startRound();
+  const coach = voice.role === 'coach' ? voice : null;
+  const f = coach?.first;
+  const w = wordsFor(voice);
+  const startHref = coach ? null : coachHelmLinks.startRound();
+  // The coach's writes on a read, held across reads (a read assigned or dismissed here stays so while the coach looks at another).
+  const fa = useFocusActions(writes);
   const dossier = useRef<HTMLDivElement>(null);
   const list = load.status === 'ready' ? load.data.list : [];
   // The read the player opened is kept for this tab with the shell's session state, so a way back to the page (Back, another view and
@@ -457,7 +669,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   // address. A read it names wins over a kept one, as a link must, and is looked up every render, so a first load that failed or came
   // back empty, then answered by Try again, still opens on it.
   const hydrated = useHydrated();
-  const [stored, setKept] = useChSessionState<string | null>('coachhelm.dive.insight', null);
+  const [stored, setKept] = useChSessionState<string | null>(coach ? `coachhelm.dive.insight.${coach.playerId}` : 'coachhelm.dive.insight', null);
   const kept = hydrated ? stored : null;
   const [byHand, setByHand] = useState(false);
   const [seenInitial, setSeenInitial] = useState(initialId);
@@ -492,15 +704,19 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
 
   if (load.status === 'off') {
     return (
-      <PlayerHelmFrame view="deep-dive" line={LINE} off>
-        <HelmOff reason={load.reason} />
+      <PlayerHelmFrame view="deep-dive" line={LINE} off voice={voice}>
+        <HelmOff reason={load.reason} voice={voice} />
       </PlayerHelmFrame>
     );
   }
   if (load.status === 'failed') {
     return (
-      <PlayerHelmFrame view="deep-dive" line={LINE}>
-        <RefreshNotice code="CH-13280" title="Your insights didn’t load" body="Nothing is lost. Your insights are still saved; try again in a moment." />
+      <PlayerHelmFrame view="deep-dive" line={LINE} voice={voice}>
+        {f ? (
+          <RefreshNotice code="CH-13280" title={`${f}’s insights didn’t load`} body="Nothing is lost. The insights are still saved; try again in a moment." />
+        ) : (
+          <RefreshNotice code="CH-13280" title="Your insights didn’t load" body="Nothing is lost. Your insights are still saved; try again in a moment." />
+        )}
       </PlayerHelmFrame>
     );
   }
@@ -508,18 +724,22 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
   if (list.length === 0) {
     const none = d.rounds === 0;
     return (
-      <PlayerHelmFrame view="deep-dive" line={LINE}>
+      <PlayerHelmFrame view="deep-dive" line={LINE} voice={voice}>
         {/* The whole view is empty: on the phone it is the page's empty state, centred on the parchment like the Board's first run
             (the Mobile clubhouse pass, 2026-10-08); desktop keeps the line on the Ledger. */}
         <EmptyState
           code={none ? 'CH-13380' : 'CH-13381'}
           size={phone ? 'page' : 'section'}
           icon={Compass}
-          title={none ? 'Your Deep dive starts with a round' : 'No insight to open yet'}
+          title={none ? (f ? `${f}’s Deep dive starts with a round` : 'Your Deep dive starts with a round') : 'No insight to open yet'}
           body={
-            none
-              ? 'CoachHelm reads your rounds for patterns worth your time, and each one lands here with its evidence. Post a round and the first reads follow.'
-              : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} you have posted` : ''}. It checks again as you post more.`
+            f
+              ? none
+                ? `CoachHelm reads ${f}’s rounds for patterns worth time, and each one lands here with its evidence. The first reads follow ${f}’s first round.`
+                : `CoachHelm writes an insight when a pattern in ${f}’s rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} ${f} has posted` : ''}. It checks again as ${f} posts more.`
+              : none
+                ? 'CoachHelm reads your rounds for patterns worth your time, and each one lands here with its evidence. Post a round and the first reads follow.'
+                : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} you have posted` : ''}. It checks again as you post more.`
           }
           action={
             startHref ? (
@@ -529,23 +749,21 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
             ) : undefined
           }
         />
+        {/* CH-13992: a read cleared at its last check stays listed in its area for two more, even when no open read is left. */}
+        {d.cleared && d.cleared.length > 0 && (
+          <nav className="ch-hd-rail" aria-label="Cleared reads" data-ch-code="CH-13890">
+            <Ledger list={[]} cleared={d.cleared} pickedId={null} onPick={() => {}} />
+          </nav>
+        )}
       </PlayerHelmFrame>
     );
   }
-
-  const needs = list.filter((i) => i.base.kind === 'finding');
-  const working = list.filter((i) => i.base.kind === 'strength');
-  const groups = (
-    <>
-      <Group id="ch-hd-needs" title="Needs work" note="Where CoachHelm sees the most to gain, in the order it ranks them." items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
-      <Group id="ch-hd-working" title="What’s working" note="What you do better than the comparison. Keep doing it." items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} />
-    </>
-  );
 
   return (
     <PlayerHelmFrame
       view="deep-dive"
       line={LINE}
+      voice={voice}
       covered={phone && !!open}
       after={
         phone ? (
@@ -555,7 +773,7 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
                 <PhoneBar back={{ label: 'Deep dive', onBack: () => choose(null) }} title={open.base.category} titleId="ch-hd-screen-t" />
                 <div className="ch-hd-scroll">
                   <SectionBoundary surface="coachhelm.deep-dive.read" label="This read" code="CH-13204">
-                    <Dossier i={open} d={d} />
+                    <Dossier i={open} d={d} voice={voice} fa={fa} />
                   </SectionBoundary>
                 </div>
               </PhoneScreen>
@@ -564,22 +782,22 @@ export function DeepDive({ load, initialId = null }: { load: ChViewLoad<ChDeepDi
         ) : undefined
       }
     >
-      <SectionBoundary surface="coachhelm.deep-dive" label="Your deep dive" code="CH-13204">
+      <SectionBoundary surface="coachhelm.deep-dive" label={w.label} code="CH-13204">
         {gone && (
           <p className="ch-hl-note" role="status" data-ch-code="CH-13910">
-            The read you had open is no longer on your Deep dive, so {phone ? 'none is open' : 'this is your first read'}.
+            {f ? `The read that was open is no longer on ${f}’s Deep dive, so ${phone ? 'none is open' : 'this is the first read'}.` : `The read you had open is no longer on your Deep dive, so ${phone ? 'none is open' : 'this is your first read'}.`}
           </p>
         )}
         {/* CH-13208: a read beside the insights failed (the Tour's values, the drills, which are Assigned, how current each is). */}
         {d.missing && <BoardPartial missing={d.missing} what="page" />}
-        <Hero d={d} />
+        <Hero d={d} voice={voice} />
         <div className="ch-hd">
-          <nav className="ch-hd-rail" aria-label="Your insights" data-ch-code="CH-13890">
-            {groups}
+          <nav className="ch-hd-rail" aria-label={w.list} data-ch-code="CH-13890">
+            <Ledger list={list} cleared={d.cleared} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} dismissed={coach ? fa.dismissed : undefined} />
           </nav>
           {!phone && shown && (
             <div className="ch-hd-main" ref={dossier}>
-              <Dossier key={shown.base.id} i={shown} d={d} />
+              <Dossier key={shown.base.id} i={shown} d={d} voice={voice} fa={fa} />
             </div>
           )}
         </div>

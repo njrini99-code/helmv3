@@ -7,7 +7,8 @@ Benchmarks are the Tour's only (Q-88): no row carries a D1 or college value.
 
 87 rows: 31 already shown, 37 added, 8 shown and widened, 9 not shown because (each with its reason) and 2 waiting on the
 shared Tour fix (Q-93: SG4 and PT12). Eight of the nine are figures production computes or fetches and never renders
-(SC21, DR12, DR13, AP16, SH11, SH12, PT18, SG5: nothing to match); the ninth is CoachHelm's (SC17, P013). The
+(SC21, DR12, DR13, AP16, SH11, SH12, PT18, SG5: nothing to match); the ninth is CoachHelm's (SC17, P013), which
+since spec D (2026-10-21) is shown as a count line per section and links to CoachHelm for the reads themselves. The
 round-scope picker (SC18) was the twelfth and is built: the shared round filter with its Holes control (phase 3 of
 this work; the owner's "make it 9 or 18" supersedes Q-94).
 
@@ -16,8 +17,11 @@ this work; the owner's "make it 9 or 18" supersedes Q-94).
 Production path key (all under `src/`):
 
 - `SS` = `components/golf/stats/spine-stage` (the drills, the bento, the spine)
-- `CALC` = `lib/utils/golf-stats-calculator-shots.ts` (`GolfStats`, the shot-level calculator)
-- `SD` = `app/golf/actions/stats-data.ts`, `LM` = `app/golf/actions/stats-leak-maps.ts`, `DB` = `app/golf/actions/stats-dashboard.ts`
+- `CALC` = `lib/utils/golf-stats-calculator-shots.ts` (`GolfStats`, the
+  shot-level calculator)
+- `SD` = `app/golf/actions/stats-data.ts`, `LM` =
+  `app/golf/actions/stats-leak-maps.ts`, `DB` =
+  `app/golf/actions/stats-dashboard.ts`
 - `LMB` = `lib/golf/leak-map-buckets.ts`
 
 Clubhouse location key (all under `src/clubhouse/screens/stats/`): **GD** = Game detail (`GameDetail.tsx`), its five
@@ -50,20 +54,28 @@ On the same rounds the figures are production's: the calculator (`calculateStats
 One filter for the whole page (and Team stats, which applies it to every player and the team's figures), kept in the
 address and stated under every figure ("Tournaments, Sep 1 to Sep 29 · 4 rounds, 18 holes only", or the lengths it reads):
 
-- **Order.** Type, course and time first, then "Exclude these", then the window's newest-ten cut. So "Last 10" with
-  Tournament chosen is the ten newest tournament rounds (per player on Team stats), and "vs. previous 10" is the ten
-  matching rounds before them. "Only these" is exactly the picked rounds among the matching ones, with no cut. A custom
-  date range replaces the window: every round in it counts, including rounds before this season (the read starts at
-  the range's start), while "Rounds this season", the season's bests and the pager's order stay the season's.
-- **Dimensions.** Round type (tournament, qualifying, practice; `golf_rounds.round_type` holds `tournament` 341,
-  `qualifier` 217, `practice` 136 of 694 countable rounds), **holes** (18 holes by default, 9 holes, or Both; 36 of the
-  694 rounds, 5%, across 21 players, are nine-hole rounds; see the next section), time, course (`course_name`, filled on
-  every round, matched by its exact name) and the picks. Left out, from the same read-only counts: **tees and rating**
-  (`tees_played` is free text that mixes tee colours with event names such as "Gate City Invite"; `tee_id` is filled on
-  37% and `course_rating` on 51%), **event** (no column; `qualifier_id` exists on qualifier rounds only) and
-  **home or away** (`golf_teams` has no home course or location).
-- **Who sees what.** A player's filter reads only their own rounds (Q-91: a teammate's round id in the address is not
-  loaded, so it cannot be picked); the address is parsed, every part checked, and round ids are matched against the
+- **Order.** Type, course and time first, then "Exclude these", then the
+  window's newest-ten cut. So "Last 10" with Tournament chosen is the ten newest
+  tournament rounds (per player on Team stats), and "vs. previous 10" is the ten
+  matching rounds before them. "Only these" is exactly the picked rounds among
+  the matching ones, with no cut. A custom date range replaces the window: every
+  round in it counts, including rounds before this season (the read starts at
+  the range's start), while "Rounds this season", the season's bests and the
+  pager's order stay the season's.
+- **Dimensions.** Round type (tournament, qualifying, practice;
+  `golf_rounds.round_type` holds `tournament` 341, `qualifier` 217, `practice`
+  136 of 694 countable rounds), **holes** (18 holes by default, 9 holes, or
+  Both; 36 of the 694 rounds, 5%, across 21 players, are nine-hole rounds; see
+  the next section), time, course (`course_name`, filled on every round, matched
+  by its exact name) and the picks. Left out, from the same read-only counts:
+  **tees and rating** (`tees_played` is free text that mixes tee colours with
+  event names such as "Gate City Invite"; `tee_id` is filled on 37% and
+  `course_rating` on 51%), **event** (no column; `qualifier_id` exists on
+  qualifier rounds only) and **home or away** (`golf_teams` has no home course
+  or location).
+- **Who sees what.** A player's filter reads only their own rounds (Q-91: a
+  teammate's round id in the address is not loaded, so it cannot be picked); the
+  address is parsed, every part checked, and round ids are matched against the
   rounds already read for that viewer before any figure is computed.
 
 ## Nine- and eighteen-hole rounds
@@ -118,11 +130,13 @@ untouched here). So:
   `src/lib/golf/putt-make.ts` is the one make-% definition (`distance_to_hole_before` clamped 0 to 120, made is
   `result === 'hole'` or `putt_made === true`, bands (lo, hi]). Until then Clubhouse's make rates can differ from
   production's by the putts those rules treat differently (PT7 to PT10, PT17, Team stats' putting rings).
-- **Bands graded against a wider Tour value.** The Tour publishes five make standards (3-5, 5-10, 10-15, 15-25, 25+). The nine
-  putting bands reuse them as production's own table does (15-20 and 20-25 ft against the 15-25 value; 25-30, 30-35 and 35+
-  against 25+; PT8). Without the putt read the curve has only the calculator's five bands, and its 15-20 ft point now carries
-  no Tour mark instead of being set against the 15-25 value. Whether the nine-band curve should drop its reused marks too is
-  the lead's call.
+- **Bands graded against a wider Tour value.** The Tour publishes five make
+  standards (3-5, 5-10, 10-15, 15-25, 25+). The nine putting bands reuse them in
+  the PT7 table as production's own does (15-20 and 20-25 ft against the 15-25
+  value; 25-30, 30-35 and 35+ against 25+). The PT8 chart draws the six bands
+  the Tour publishes, so no band reuses a value. Without the putt read the chart
+  has only the calculator's five bands, and its 15-20 ft point carries no Tour
+  mark instead of being set against the 15-25 value.
 - **Production's patterns read** (SC17) orders by `stroke_impact` with a limit of 10, which drops a player's biggest
   leaks; reported to the shared-fix work, not fixed here.
 
@@ -134,7 +148,7 @@ untouched here). So:
 | SC2 | Average to par | `SS/ScoringDrill.tsx:235-237`, `SS/StatsBento.tsx:368-403` · `CALC:2619` | **Added.** GD › Scoring › More detail › Scoring numbers | the window's rounds, per 18 holes |
 | SC3 | Best round (with course and date) | `SS/ScoringDrill.tsx:238-247` · `CALC:2614`, `SD:1763` | **Shown.** OV "Best round"; **added** RT › Personal bests (course, date) | window's rounds, one length at a time |
 | SC4 | Worst round | `SS/ScoringDrill.tsx:248-250` · `CALC:2615` | **Added.** GD › Scoring › More detail › Scoring numbers | window's rounds, each length's worst on its own |
-| SC5 | Score mix bar with counts and shares (eagle+, birdie, par, bogey, double+) | `SS/ScoringDrill.tsx:138-142,166-172,205-211` · `CALC:1987-1991` | **Shown** per round (GD › Scoring "What an average round looks like"); **added** the holes and shares ("46 of 180 holes") under it | every scored hole of the window's rounds |
+| SC5 | Score mix bar with counts and shares (eagle+, birdie, par, bogey, double+) | `SS/ScoringDrill.tsx:138-142,166-172,205-211` · `CALC:1987-1991` | **Shown** per round (GD › Scoring "What an average round looks like"); **added** the holes and shares ("46 of 180 holes") under it. Since 2026-10-20 the bar is `ScoreMixBar`, one bar centered on par over every scored hole (eagle or better, birdie, par, bogey, double or worse), with triple or worse counted on tap; it shows from 1 hole and is an early read under 30 | every scored hole of the window's rounds |
 | SC6 | Per-round rates (eagles, birdies, pars, bogeys, double+) and season totals | `SS/ScoringDrill.tsx:144-159,173,212-216,253-274` · `CALC:2620-2624` | **Shown** (the mix's per-round legend); the totals are **added** with SC5 | per round played |
 | SC7 | Par 3, 4 and 5 scoring against the Tour | `SS/StatsBento.tsx:225-234` · `CALC:2673-2686`; Tour `scoring_par_N` | **Shown.** GD › Scoring "Scoring by par" | holes of the window's rounds |
 | SC8 | Par 3, 4 and 5 outcome mix (birdie+, par, bogey, double+ as a share of that par's holes, with "+0.31 / hole · 312 holes") | `SS/ScoringDrill.tsx:92-96,131-133,276-301` · `CALC:1994-2004` | **Added.** GD › Scoring › More detail › Outcomes by par | holes of the window's rounds; a par with no holes says so |
@@ -146,7 +160,7 @@ untouched here). So:
 | SC14 | Last N days against the previous N (scoring average, GIR, fairways, putts) | `SS/RoundsDrill.tsx:118-157,240-268` · `SD:1741-1759,1800-1846` | **Added, on a different basis.** RT › This window against the one before: the latest 10 rounds against the 10 before them (Last 10 only; Season and Qualifiers have no previous window by design and say so). Production compares the last N days (the coach's setting, 30) with the N before, independent of any window. | 18-hole rounds; needs 3 in each |
 | SC15 | Last 10 rounds list (score, course, type chip, date, to par, link to the round) | `SS/RoundsDrill.tsx:270-306` | **Shown** (the whole window), with a round-type chip **added** in the course cell, and a "9 holes" chip on a nine-hole round | the window's rounds |
 | SC16 | Spine ledger (rounds, fairways, greens, putts a round with change arrows) | `SS/StatsSpineStage.tsx:604-615`, `SS/buildStatsViewModel.ts:149-168` | **Shown** as OV figure cards; the changes are SC14 | as SC14 |
-| SC17 | "What CoachHelm sees" strips on each area (up to two patterns, a sparkline, a delta) | `SS/CategoryInsightStrip.tsx:73-193` · `lib`/`insights.ts:2356` | **Not shown because** CoachHelm's patterns are insights, not stats, and live on CoachHelm (P013). Production's read also orders by `stroke_impact` descending with a limit of 10, which drops a player's biggest leaks (reported, not fixed here). | n/a |
+| SC17 | "What CoachHelm sees" strips on each area (up to two patterns, a sparkline, a delta) | `SS/CategoryInsightStrip.tsx:73-193` · `lib`/`insights.ts:2356` | **Shown as a count line** (spec D, 2026-10-21): each GD section with current reads says how many are costing strokes and how many are working ("CoachHelm sees 2 reads costing strokes on approach and 1 working. Deep dive →"), counted by `countReads` as the coach's Game profile line and the roster count them, and links to the Deep dive (on the read when the section has exactly one). The patterns, sparklines and deltas themselves stay on CoachHelm (P013): no title, no estimate, nothing recorded as shown. Production's read also orders by `stroke_impact` descending with a limit of 10, which drops a player's biggest leaks (reported, not fixed here). | the player's current visible reads: not out of date against the newest countable round, notes and pressure left out; course management counts under Scoring |
 | SC18 | Round-scope picker ("Choose rounds", qualifier presets) and its scoped report | `SS/StatsSpineStage.tsx:497-568,653-702,737-825` · `SD:2312-2374` | **Added** as the shared round filter on the player profile and on Team stats (desktop and phone): round type, time (the three windows and a custom date range), course, and Only these / Exclude these rounds, kept in the address. Production's preset "qualifier rounds" is the Qualifiers window or the Qualifying type; its scoped report is every figure on the page reading the filtered rounds | the filtered 18-hole rounds (see "The round filter" below) |
 | SC19 | "Stats cover your most recent 100 rounds" banner | `SS/StatsSpineStage.tsx:975-979` · `SD:1014-1018` | **Added** as a note under the Game detail tabs, when the window has more than 100 rounds | newest 100 |
 | SC20 | Cold start ("Log your first round", "More rounds needed") | `SS/StatsSpineStage.tsx:179-215,827-854` | **Shown** as CH-5301 (no shot rounds), CH-5305 (early read), CH-5308 (too few with shots) | n/a |
@@ -219,7 +233,7 @@ untouched here). So:
 | PT5 | 1-putts (a count in production) | `SS/PuttingDrill.tsx:382,419` · `CALC:2195` | **Shown** as "One-putt rate" (holes) | the window |
 | PT6 | Average leave after a putt (holed = 0) | `SS/PuttingDrill.tsx:383,420` · `CALC:2743` | **Added.** Putting numbers | every putt with a known result |
 | PT7 | Putting by distance: nine bands with make %, sample, share of first putts, average leave, strokes to hole out, proximity | `SS/PuttingDrill.tsx:248-264,505-556` · `CALC:2713-2812` | **Added.** GD › Putting › More detail › Putting by distance (nine bands: 0-3, 3-5, 5-10, 10-15, 15-20, 20-25, 25-30, 30-35, 35+ ft) | putts of the window's rounds |
-| PT8 | Make-rate curve over the nine bands (production's has no Tour line; its leak map has six bands with one) | `SS/PuttingDrill.tsx:604`, `FW/charts/MakeCurve`, `FW/charts/LeakMap` · `CALC:2713-2728`, `LMB:32-46` | **Shown and widened.** GD › Putting "Make rate by distance": nine bands with a dashed Tour line where a Tour value maps (3-5, 5-10, 10-15, 15-25 for 15-20 and 20-25, 25+ for the last three; none for 0-3 ft), each band with its putts, bands under 10 putts not graded | putts with a distance and a result |
+| PT8 | Make-rate chart by distance (production's has no Tour line; its leak map has six bands with one) | `SS/PuttingDrill.tsx:604`, `FW/charts/MakeCurve`, `FW/charts/LeakMap` · `CALC:2713-2728`, `LMB:32-46` | **Shown and changed (2026-10-20).** GD and OV › Putting "Make rate by distance" is `PuttBands`: six evenly spaced Tour bands (0-3, 3-5, 5-10, 10-15, 15-25, 25+ ft) cut from the nine, a dot per band with a 95% Wilson range, made of tried under each, and the Tour line where a Tour value maps (none for 0-3 ft). A band shows from 10 putts, is a hollow early read to 29 and a graded dot from 30; under 10 it says what it needs. The nine-band table (PT7) is unchanged | putts with a distance and a result |
 | PT9 | Make % by break and distance (matrix with n) | `SS/PuttingDrill.tsx:334-349,558-569` · `CALC:2881-2913` | **Added.** More detail › Make rate by break and distance | putts with a recorded break |
 | PT10 | Break overview (overall make % by break) | `SS/PuttingDrill.tsx:351-355,568` · `CALC:2907` | **Shown** (inside 10 ft); the overall rate per break is **added** beside it | as PT9 |
 | PT11 | "Work on next" (the weakest cell with 8 or more putts) | `SS/PuttingDrill.tsx:246,357-369,571-573` | **Added.** More detail › Practice target, with the same 8-putt floor and the same sentence when no cell has it | as PT9 |
@@ -240,5 +254,5 @@ untouched here). So:
 | SG3 | Verdict ("Gaining +0.42 a round. Leaking most in putting") and the bento's "Strongest, biggest leak" | `SS/buildStatsViewModel.ts:262-276`, `SS/StatsBento.tsx:253-284` | **Shown.** The strokes-gained note under the leg route | as SG1 |
 | SG4 | Spine priorities (top three weaknesses, "est." values) | `SS/buildStatsViewModel.ts:183-206` · `lib/golf/strokes-gained.ts:286-336` | **Waiting on the shared Tour fix (Q-93).** The ranking grades against `COLLEGE_BENCHMARKS` and the player's own mean, not the Tour (Q-88), and moves to the Tour in production's own code (a separate PR). Clubhouse shows it once that lands; until then the legs ranked by SG are the leak read | n/a |
 | SG5 | Team percentile or rank | `team_pct` computed, never rendered (`SS/StandingDrill.tsx:248`) | **Not shown because** production does not render it | n/a |
-| SG6 | Standing strips for the other metrics (scoring by par, big numbers, pressure gap, opening hole) | `SS/StandingDrill.tsx:145-267` · `STDG/metric-config.ts:33-103` | **Shown** as OV rows "Par 3, 4 and 5 scoring", "Big numbers", "Pressure gap" and "Opening hole" against the Tour (the pressure and opening rows with production's floors: 3 + 3 rounds and 5 rounds; 5 rounds) | the window's rounds |
+| SG6 | Standing strips for the other metrics (scoring by par, big numbers, pressure gap, opening hole) | `SS/StandingDrill.tsx:145-267` · `STDG/metric-config.ts:33-103` | **Partly shown** (corrected 2026-10-21, spec D: this row was stale). Par scoring and big numbers are drawn in GD Scoring (Scoring by par, Doubles or worse against the Tour). The pressure gap and the opening hole are computed by the loader (`data/stats-player.ts`, with production's floors: 3 + 3 rounds; 5 rounds) but no screen draws them; the pressure read is Standing's on CoachHelm (P013) | the window's rounds |
 | SG7 | Team marker on each strip | `SS/StandingDrill.tsx:93,248` · `lib/coachhelm/v3/standing/team-floor.ts:17-22` | **Coach only (Q-91) and where the window has the figure:** team value on scoring, fairways, GIR, putts, scrambling, sand saves, 3-putts, big numbers and penalty strokes (pooled from the window's round cache). **Not shown** on proximity bands, par scoring, putt bands, pressure and opening rows, because the round cache has no columns for them and production's team ticks there come from a nightly all-rounds cache that would not match the window beside it. | pooled 18-hole rounds of the active team in the window |

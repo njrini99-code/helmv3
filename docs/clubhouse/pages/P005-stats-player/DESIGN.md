@@ -201,17 +201,24 @@ Clubhouse shows it, or why it does not). The shape:
   read, rather than a date preset that counted a different set. The owner's "make it 9 or 18" (2026-09-30) replaces Q-90's
   and Q-94's 18-hole-only rule: nine-hole rounds count when chosen, per 18 holes (PARITY.md, "Nine- and eighteen-hole rounds": per-round figures per 18 holes, a nine-hole round counting as half, rates pooling the holes, floors in whole rounds), and the rule is said under each
   section. A window shows the newest 100 at most, and says so (CH-5319).
-- **Proximity against the Tour is the Tour's basis**: every approach, hit or missed, lay-ups left out, a range
-  needs 10 shots (production's `aggregateApproachBuckets`). The seven-band ladder counts hit greens only, which
-  is not that basis, so it carries no Tour tick and says "when the green is hit". This corrects the earlier
-  comparison, which set the green-hit finish against the Tour's every-approach average.
-- **The nine putting bands** are cut as the calculator cuts them, (3, 5] and so on, from the window's putts with
-  exact counts; the Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one,
-  and 0 to 3 feet has none. A band needs 10 putts to be graded.
-- **The standing table** (Overview) is the production standing board in the window: rows under Strokes gained,
-  Scoring, Driving, Approach, Short game, Putting, Course management and Pressure, each with the Tour's value
-  where `golf_pga_standards` has one, a coach's team figure where the window's round cache has the column, and a
-  player never sees a team figure (Q-91). A row under its floor says what it needs (CH-5318).
+- **Proximity against the Tour is the Tour's basis**: every approach, hit or
+  missed, lay-ups left out, a range needs 10 shots (production's
+  `aggregateApproachBuckets`). The seven-band ladder counts hit greens only,
+  which is not that basis, so it carries no Tour tick and says "when the green
+  is hit". This corrects the earlier comparison, which set the green-hit finish
+  against the Tour's every-approach average.
+- **The nine putting bands** are cut as the calculator cuts them, (3, 5] and so
+  on, from the window's putts with exact counts; the Tour publishes five
+  averages, so 15 to 25 feet share one and 25 feet and beyond share one, and 0
+  to 3 feet has none. The table lists all nine. The chart (`PuttBands`,
+  2026-10-20) merges them into the six Tour bands, shows a band from 10 putts,
+  draws 10 to 29 as a hollow early read and grades from 30.
+- **The standing table** (Overview) is the production standing board in the
+  window: rows under Strokes gained, Scoring, Driving, Approach, Short game,
+  Putting, Course management and Pressure, each with the Tour's value where
+  `golf_pga_standards` has one, a coach's team figure where the window's round
+  cache has the column, and a player never sees a team figure (Q-91). A row
+  under its floor says what it needs (CH-5318).
 - **The Rounds tab** gains the score of every round in the window on a line, the personal bests with their
   course and date, and this window against the one before it (the latest 10 against the 10 before, Last 10 only;
   production compares the last N days with the N before, independent of any window). Each round names its type.
@@ -309,6 +316,35 @@ selected in, the dimensions and what was left out with the counts.
   By round type shows a type with no rounds as empty, CH-5312): their own floors say so.
 - **Phone.** The approved phone board (D-22) has no filter; this is the owner's addition, built on the shared
   controls: the Filter button and chips sit under the window switch and the sheet is the standard bottom sheet.
+
+## CoachHelm count line on Game detail (2026-10-21, spec D build A)
+
+Design package: none (spec D, the Game Fingerprint bridge; decisions Q1 and Q2
+in the spec). Each Game detail section, coach and player alike, can carry one
+caption line inside `.ch-gm__id` directly under its Rule: "CoachHelm sees 2
+reads costing strokes on approach and 1 working. Deep dive →". The area
+phrases are in scoring, off the tee, on approach, around the green and on the
+greens; Scoring also counts course management, and pressure is Standing's and
+is drawn nowhere. The words are the same for both roles and never say you or
+your. A section with no current read draws nothing (never "0 reads"), and with
+CoachHelm off for either the coach or the player no line is drawn at all.
+
+- **Look:** `.ch-gm__reads`, the caption type in `--ch-text-secondary`; the
+  counts are `.ch-num` in the primary ink; "Deep dive →" is in the text-link
+  green (`--ch-green-700`). The sentence and the link are one link. No new
+  token, colour or motion. Contrast on the section card: ink-700 11.4 (dark
+  10.5), ink-900 16.8 (13.0), green-700 10.0 (8.3).
+- **Link:** the Deep dive (a coach's `coachhelm?view=deep-dive&player=<id>`, a
+  player's own `?view=deep-dive`), with `&insight=<id>` only when the section
+  has exactly one read (Q1).
+- **Failed:** one line under the section chips, `.ch-gx-rule`, CH-5215:
+  "CoachHelm’s reads didn’t load, so the sections don’t say how many there are.
+  Try again in a moment." No separate loading state: the counts arrive with the
+  page.
+- **Phone:** the line follows the Rule's short line in the section shown; the
+  link block is at least 44px tall and wraps to two caption lines.
+- **Not rebuilt (Q2):** the approach ladder; More detail already shows strokes
+  to hole out by distance and lie, and a second baseline could disagree.
 
 ## Explicit non-goals
 

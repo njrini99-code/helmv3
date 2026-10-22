@@ -39,7 +39,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useReducedMotionGuard } from '@/lib/coachhelm/v3/motion';
-import { ChevronLeft, Plane } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Plane } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -64,7 +64,9 @@ import {
   type ExpenseSummary as ExpenseSummaryType,
   type TravelBudget,
 } from '@/app/golf/actions/travel';
-import type { TravelItinerary } from './travel-helpers';
+import { type TravelItinerary, groupTrips } from './travel-helpers';
+import { FairwayNextTrip } from './FairwayNextTrip';
+import { FairwayTravelSeason } from './FairwayTravelSeason';
 import { FairwayTripCard } from './FairwayTripCard';
 import { FairwayTripDetail } from './FairwayTripDetail';
 import { FairwayItineraryModal, type ItineraryFormData } from './FairwayItineraryModal';
@@ -159,6 +161,20 @@ export function FairwayTravel({
     [itineraries, selectedId],
   );
 
+  // Redesign 2026-09-28 (docs/redesign/travel): trips are grouped with the
+  // same rules as the status pills, the next (or current) trip leads, and the
+  // desktop detail panel shows it by default instead of an empty
+  // "Select a trip" pane. `selected` stays the explicit choice (it drives the
+  // phone nav stack); `shown` is what the detail panel renders.
+  const groups = React.useMemo(() => groupTrips(itineraries, now), [itineraries, now]);
+  const nextTrip = groups.current[0] ?? groups.upcoming[0] ?? null;
+  const comingUp = React.useMemo(
+    () => [...groups.current, ...groups.upcoming].filter((t) => t.id !== nextTrip?.id),
+    [groups, nextTrip],
+  );
+  const shown = selected ?? nextTrip ?? groups.past[0] ?? null;
+  const [showPast, setShowPast] = React.useState(false);
+
   // ── Deep-link auto-select (Calendar→Travel cross-link, P440 symmetric fix)
   // FairwayEventDetailDrawer's "Linked travel itinerary" chip deep-links here
   // with `?trip=<id>` instead of just landing on the general hub. Selects the
@@ -194,13 +210,13 @@ export function FairwayTravel({
   const [exporting, setExporting] = React.useState(false);
 
   const loadExpenses = React.useCallback(async () => {
-    if (!selected) return;
+    if (!shown) return;
     setLoadingExpenses(true);
     try {
       const [expensesResult, summaryResult, budgetsResult] = await Promise.all([
-        getExpensesForItinerary(selected.id),
-        getExpenseSummary(selected.id),
-        getBudgetsForItinerary(selected.id),
+        getExpensesForItinerary(shown.id),
+        getExpenseSummary(shown.id),
+        getBudgetsForItinerary(shown.id),
       ]);
       if (expensesResult.success) setExpenses(expensesResult.data || []);
       if (summaryResult.success) setExpenseSummary(summaryResult.data || null);
@@ -210,18 +226,78 @@ export function FairwayTravel({
     } finally {
       setLoadingExpenses(false);
     }
-  }, [selected]);
+  }, [shown]);
+
+  // A different trip means different expenses: clear the previous trip's
+  // rows so the delete-confirm count and the tab never show another trip's data.
+  const shownId = shown?.id ?? null;
+  React.useEffect(() => {
+    setExpenses([]);
+    setExpenseSummary(null);
+    setBudgets([]);
+  }, [shownId]);
 
   React.useEffect(() => {
-    if (selected && activeTab === 'expenses') {
+    if (shown && activeTab === 'expenses') {
       loadExpenses();
     }
-  }, [selected, activeTab, loadExpenses]);
+  }, [shown, activeTab, loadExpenses]);
 
   /* ── selection ──────────────────────────────────────────────────────────── */
+  // `?trip=` mirrors the selection. Picking a trip PUSHES a history entry so
+  // the phone's back gesture (iOS edge swipe) returns to the list instead of
+  // leaving Travel; "All trips" pops it. `popstate` re-reads the URL.
+  const pushedRef = React.useRef(false);
+  const tripUrl = (id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set('trip', id);
+    else url.searchParams.delete('trip');
+    return url;
+  };
+  const syncTripParam = (id: string | null) => {
+    if (typeof window === 'undefined') return;
+    if (id) {
+      window.history.pushState(window.history.state, '', tripUrl(id));
+      pushedRef.current = true;
+    } else {
+      window.history.replaceState(window.history.state, '', tripUrl(null));
+      pushedRef.current = false;
+    }
+  };
+  React.useEffect(() => {
+    const onPop = () => {
+      const id = new URL(window.location.href).searchParams.get('trip');
+      pushedRef.current = false;
+      setSelectedId(id && itineraries.some((i) => i.id === id) ? id : null);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [itineraries]);
+
+  // Move focus to the opened trip's heading once it has rendered (screen
+  // readers and keyboard users land on what they opened, not on <body>).
+  const focusOnOpenRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!selectedId || !focusOnOpenRef.current) return;
+    focusOnOpenRef.current = false;
+    detailPanelRef.current?.querySelector<HTMLElement>('h2')?.focus({ preventScroll: true });
+  }, [selectedId]);
+
+  const backToList = () => {
+    if (pushedRef.current) {
+      window.history.back(); // popstate clears the selection
+    } else {
+      setSelectedId(null);
+      syncTripParam(null);
+    }
+    window.scrollTo({ top: 0 });
+  };
+
   const handleSelect = (itinerary: TravelItinerary) => {
     setSelectedId(itinerary.id);
     setActiveTab('details');
+    syncTripParam(itinerary.id);
+    focusOnOpenRef.current = true;
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       requestAnimationFrame(() => {
         detailPanelRef.current?.scrollIntoView({
@@ -290,7 +366,10 @@ export function FairwayTravel({
       const result = await deleteGolfTravelItinerary(id);
       if (result.success) {
         setItineraries((prev) => prev.filter((i) => i.id !== id));
-        if (selectedId === id) setSelectedId(null);
+        if (selectedId === id) {
+          setSelectedId(null);
+          syncTripParam(null);
+        }
         fairwayToast.success('Itinerary deleted.');
         router.refresh();
       } else {
@@ -308,16 +387,16 @@ export function FairwayTravel({
 
   /* ── expense actions (verbatim) ─────────────────────────────────────────── */
   const handleExportCSV = async () => {
-    if (!selected) return;
+    if (!shown) return;
     setExporting(true);
-    const result = await exportExpensesToCSV(selected.id);
+    const result = await exportExpensesToCSV(shown.id);
     if (result.success && result.csv) {
       const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
       const href = URL.createObjectURL(blob);
       try {
         const link = document.createElement('a');
         link.href = href;
-        link.download = `expenses_${selected.event_name.replace(/\s+/g, '_')}_${
+        link.download = `expenses_${shown.event_name.replace(/\s+/g, '_')}_${
           new Date().toISOString().split('T')[0]
         }.csv`;
         document.body.appendChild(link);
@@ -339,14 +418,10 @@ export function FairwayTravel({
   };
 
   /* ── masthead meta (honest counts; only > 0) ────────────────────────────── */
-  const upcomingCount = React.useMemo(() => {
-    if (!now) return 0;
-    return itineraries.filter((i) => {
-      const [y, m, d] = i.departure_date.split('-').map(Number);
-      return new Date(y!, (m! - 1), d!) > now;
-    }).length;
-  }, [itineraries, now]);
-  const pastCount = itineraries.length - upcomingCount;
+  // Same buckets as the pills: a trip counts as completed only once its
+  // status is Completed (in-transit / departed trips are still current).
+  const upcomingCount = groups.current.length + groups.upcoming.length;
+  const pastCount = groups.past.length;
 
   const meta =
     itineraries.length > 0 && now ? (
@@ -363,7 +438,9 @@ export function FairwayTravel({
     // a sibling child got silently split onto its own line by CSS anonymous
     // box rules at mobile widths, stacking the "+" above the label (founder
     // iPhone screenshot).
-    <Button variant="primary" leftIcon={<IconPlus size={16} />} onClick={openCreate}>
+    // Secondary once trips exist: the page's job is reading the next trip, not
+    // creating one (the empty state keeps a primary "Create first itinerary").
+    <Button variant={itineraries.length === 0 ? 'primary' : 'secondary'} leftIcon={<IconPlus size={16} />} onClick={openCreate}>
       Add itinerary
     </Button>
   ) : undefined;
@@ -371,14 +448,13 @@ export function FairwayTravel({
   return (
     <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-6 md:py-8 pb-24">
       <ViewHeader
-        eyebrow="Travel"
-        title="Trips on the calendar."
+        title="Travel"
         description={
           itineraries.length === 0
             ? isCoach
               ? 'Build itineraries for upcoming tournaments and team trips.'
               : 'Travel details will appear here as your coach posts them.'
-            : 'Schedule, lodging, gear, and expenses for every team trip.'
+            : undefined
         }
         meta={meta}
         primaryAction={createCta}
@@ -406,25 +482,105 @@ export function FairwayTravel({
           </Surface>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+        <>
+        {/* The season at a glance: every trip on a real date axis. */}
+        <div className={cn('mt-6', selected && 'hidden lg:block')}>
+          <FairwayTravelSeason
+            itineraries={itineraries}
+            now={now}
+            selectedId={shown?.id ?? null}
+            nextId={nextTrip?.id ?? null}
+            onSelect={handleSelect}
+          />
+        </div>
+        {/* Desktop: the boarding pass spans the page (phones get it at the top
+            of the list column instead). */}
+        {nextTrip ? (
+          <div className="mt-6 hidden lg:block">
+            <FairwayNextTrip itinerary={nextTrip} now={now} onOpen={() => handleSelect(nextTrip)} />
+          </div>
+        ) : null}
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
           {/* ── Itinerary list ─────────────────────────────────────────── */}
           {/* NAT-05: below lg this is a navigation stack, not a split view.
               The list is the root; picking a trip pushes its detail in the
               list's place, with a Back control. The "Select a trip" pane is a
               desktop-only affordance (it read as an empty screen on a phone). */}
-          <div className={cn('flex flex-col gap-3 lg:col-span-1', selected && 'hidden lg:flex')}>
-            <h3 className="px-1 font-fw-sans text-body-sm font-semibold text-text-primary">
-              Trips
-            </h3>
-            {itineraries.map((itinerary) => (
-              <FairwayTripCard
-                key={itinerary.id}
-                itinerary={itinerary}
-                selected={selectedId === itinerary.id}
-                now={now}
-                onSelect={() => handleSelect(itinerary)}
-              />
-            ))}
+          <div className={cn('flex flex-col gap-6 lg:col-span-1', selected && 'hidden lg:flex')}>
+            {/* Phone: the next trip is the answer, so it leads as a hero.
+                Desktop shows it in the detail panel instead. */}
+            {nextTrip ? (
+              <div className="lg:hidden">
+                <FairwayNextTrip itinerary={nextTrip} now={now} onOpen={() => handleSelect(nextTrip)} />
+              </div>
+            ) : null}
+
+            {nextTrip || comingUp.length > 0 ? (
+              <section aria-labelledby="coming-up-heading" className={cn('flex flex-col gap-2', comingUp.length === 0 && 'hidden lg:flex')}>
+                <h2 id="coming-up-heading" className="px-1 font-fw-sans text-caption font-medium text-text-tertiary">
+                  Coming up
+                </h2>
+                {nextTrip ? (
+                  <div className="hidden lg:block">
+                    <FairwayTripCard
+                      itinerary={nextTrip}
+                      selected={shown?.id === nextTrip.id}
+                      now={now}
+                      onSelect={() => handleSelect(nextTrip)}
+                    />
+                  </div>
+                ) : null}
+                {comingUp.map((itinerary) => (
+                  <FairwayTripCard
+                    key={itinerary.id}
+                    itinerary={itinerary}
+                    selected={shown?.id === itinerary.id}
+                    now={now}
+                    onSelect={() => handleSelect(itinerary)}
+                  />
+                ))}
+              </section>
+            ) : (
+              <p className="px-1 font-fw-sans text-body-sm text-text-secondary">
+                No trips coming up.{isCoach ? ' Add an itinerary when the next one is booked.' : ''}
+              </p>
+            )}
+
+            {groups.past.length > 0 ? (
+              <section aria-labelledby="past-trips-heading" className="flex flex-col gap-2">
+                <h2 id="past-trips-heading">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-expanded={showPast}
+                    aria-controls={showPast ? 'past-trips-list' : undefined}
+                    onClick={() => setShowPast((v) => !v)}
+                    rightIcon={
+                      <ChevronDown
+                        aria-hidden
+                        className={cn('h-4 w-4 transition-transform motion-reduce:transition-none', showPast && 'rotate-180')}
+                      />
+                    }
+                    className="-ml-2 text-text-tertiary"
+                  >
+                    Past trips <span className="ml-1 tabular-nums">({groups.past.length})</span>
+                  </Button>
+                </h2>
+                {showPast ? (
+                  <div id="past-trips-list" className="flex flex-col gap-2">
+                    {groups.past.map((itinerary) => (
+                      <FairwayTripCard
+                        key={itinerary.id}
+                        itinerary={itinerary}
+                        selected={shown?.id === itinerary.id}
+                        now={now}
+                        onSelect={() => handleSelect(itinerary)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
           </div>
 
           {/* ── Detail panel ───────────────────────────────────────────────
@@ -446,7 +602,10 @@ export function FairwayTravel({
               the whole time the list scrolls beside them. ─────────────────── */}
           <div
             ref={detailPanelRef}
-            className={cn('lg:col-span-2 lg:sticky lg:top-6 lg:self-start', !selected && 'hidden lg:block')}
+            className={cn(
+              'lg:col-span-2 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto',
+              !selected && 'hidden lg:block',
+            )}
           >
             {selected ? (
               <div className="mb-3 lg:hidden">
@@ -454,20 +613,21 @@ export function FairwayTravel({
                   variant="ghost"
                   size="sm"
                   leftIcon={<ChevronLeft size={16} aria-hidden />}
-                  onClick={() => setSelectedId(null)}
+                  onClick={backToList}
                 >
                   All trips
                 </Button>
               </div>
             ) : null}
-            {selected ? (
+            {shown ? (
               <FairwayTripDetail
-                itinerary={selected}
+                itinerary={shown}
+                now={now}
                 isCoach={isCoach}
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
-                onEdit={() => openEdit(selected)}
-                onDelete={() => handleDelete(selected.id)}
+                onEdit={() => openEdit(shown)}
+                onDelete={() => handleDelete(shown.id)}
                 expenses={expenses}
                 expenseSummary={expenseSummary}
                 budgets={budgets}
@@ -484,18 +644,10 @@ export function FairwayTravel({
                 onRefreshExpenses={loadExpenses}
                 onExportCSV={handleExportCSV}
               />
-            ) : (
-              <Surface elevation="border" padding="lg">
-                <EmptyState
-                  variant="subtle"
-                  icon={Plane}
-                  title="Select a trip"
-                  description="Choose a travel itinerary from the list to view its details and expenses."
-                />
-              </Surface>
-            )}
+            ) : null}
           </div>
         </div>
+        </>
       )}
 
       {/* ── Coach create / edit modal ──────────────────────────────────── */}
@@ -517,7 +669,7 @@ export function FairwayTravel({
 
       {/* ── Expense form — P317: Fairway-native form in the same ModalShell
           paradigm as the itinerary editor (writes preserved verbatim). ──── */}
-      {selected ? (
+      {shown ? (
         <FairwayExpenseForm
           isOpen={showExpenseForm}
           onClose={() => {
@@ -526,7 +678,7 @@ export function FairwayTravel({
           }}
           onSaved={loadExpenses}
           teamId={teamId}
-          itineraryId={selected.id}
+          itineraryId={shown.id}
           expense={editingExpense}
         />
       ) : null}

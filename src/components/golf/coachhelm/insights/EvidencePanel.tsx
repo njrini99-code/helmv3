@@ -34,6 +34,8 @@ import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config
 import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
 import { applyTourBasis } from '@/lib/coachhelm/v3/standing/tour-basis';
 import { DiagnosisPanel } from './DiagnosisPanel';
+import { causeStateOf } from '@/lib/coachhelm/reads/cause-state';
+import { teamPoolLine } from '@/lib/coachhelm/reads/team-pool-line';
 import { formatValue } from './format-value';
 
 /** A real, finite number. `typeof NaN === 'number'`, so the typeof check alone
@@ -430,6 +432,10 @@ export function EvidencePanel({
   const hasSample = isFiniteNumber(evidence.sample_n);
   const hasWindow = isFiniteNumber(evidence.window_days);
   const metricKey = typeof evidence.metric === 'string' ? evidence.metric : '';
+  // Slice 7a: the team pool line ("Team pool 72% (240 putts)"), present only on
+  // reads written with `coachhelm_team_pool_v1` on. It is the comparison the
+  // words use; the scale and the strokes stay on the Tour.
+  const teamLine = teamPoolLine(evidence);
 
   if (compact) {
     const scale = v3Standing ?? (hasYourValue && hasComparison ? <BenchmarkScale evidence={evidence} /> : null);
@@ -439,6 +445,12 @@ export function EvidencePanel({
     ].filter((part): part is string => part !== null);
 
     const facts: Array<{ key: string; node: ReactNode }> = [];
+    if (teamLine) {
+      facts.push({
+        key: 'team-pool',
+        node: <span data-testid="evidence-team-pool">{teamLine}</span>,
+      });
+    }
     if (sampleParts.length > 0) {
       facts.push({
         key: 'sample',
@@ -508,7 +520,13 @@ export function EvidencePanel({
       testId: 'evidence-row-your',
     });
   }
-  if (hasComparison) {
+  if (teamLine) {
+    rows.push({
+      label: 'Comparison',
+      value: <span data-testid="evidence-team-pool">{teamLine}</span>,
+      testId: 'evidence-row-comparison',
+    });
+  } else if (hasComparison) {
     rows.push({
       label: 'Comparison',
       value: (
@@ -585,6 +603,7 @@ export function EvidencePanel({
             diagnosis={evidence.diagnosis}
             confidence={evidence.confidence}
             strokesImpact={Math.abs(safeImpact)}
+            causeState={causeStateOf(evidence)}
           />
         </div>
       ) : null}

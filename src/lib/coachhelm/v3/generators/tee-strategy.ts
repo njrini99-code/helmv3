@@ -45,6 +45,7 @@
 import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadTeeShotsForStrategy, type TeeStrategyShot } from '@/lib/coachhelm/v3/engine/shot-source';
 import { isGeneratorEnabledForPlayer } from '@/lib/coachhelm/v3/foundation/generator-toggles';
 import { proportionDiffInterval, type Interval } from '@/lib/coachhelm/v3/stats/intervals';
@@ -199,6 +200,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
   // a prod insight-regeneration is run.
   readonly category: InsightCategory = 'tee';
   readonly minSampleN = MIN_DRIVER_ATTEMPTS;
+  /** Reads the last WINDOW_DAYS ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = WINDOW_DAYS;
   // Player-vs-self — driver-strategy quality has no PGA benchmark.
   protected override readonly requiresStanding = false;
   readonly metricId: MetricId = 'sg_ott';
@@ -234,6 +237,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
 
     return {
       sampleN: driver.attempts,
+      // Slice 0b: the rounds behind these tee shots stamp the window.
+      windowRoundIds: [...roundIds],
       last_round_date: lastRoundDate,
       playerValue: driver.fairwayPct * 100, // percent for display
       driver,
@@ -272,43 +277,54 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         ? laggyDiagnosticStrokesImpact(agg.fairwayGap, agg.driver.attempts, agg.roundsCovered)
         : 0;
 
-    let title: string;
-    let content: string;
-
-    if (agg.pattern === 'laggy') {
-      title = 'Driver may be costing you more than it gains';
-      content =
-        `Over the last ${agg.roundsCovered} rounds your driver finds the ` +
-        `fairway ${driverFw}% of the time (${agg.driver.attempts} attempts) ` +
-        `vs ${ndFw}% with your tee fairway clubs (${agg.nonDriver.attempts} ` +
-        `attempts), a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
-        `only ${distGap} yards${distanceNote}. On par-4/5 holes where driver isn't pinning ` +
-        `you to a much better approach distance, the layback is the higher-EV play.`;
-    } else if (agg.pattern === 'sharp') {
-      title = 'Driver is performing: keep it in play';
-      content =
-        `Across the last ${agg.roundsCovered} rounds your driver fairway% ` +
-        `(${driverFw}%) is within ${fwGapPp}pp of your other tee clubs ` +
-        `(${ndFw}%) while gaining ${distGap} yards on average${distanceNote}. This is the ` +
-        `right risk/reward signature. Default to driver on par-4/5 tees ` +
-        `unless trouble makes the layback obvious.`;
-    } else {
+    // The coach's copy says "non-driver tee shots" where the player's names
+    // clubs: reads speak of driver vs not-driver only.
+    const copy = inBothVoices((v) => {
+      if (agg.pattern === 'laggy') {
+        return {
+          title: v.pick('Driver may be costing you more than it gains', 'Driver may be costing more than it gains'),
+          content:
+            `Over the last ${agg.roundsCovered} rounds ${v.players} driver finds the ` +
+            `fairway ${driverFw}% of the time (${agg.driver.attempts} attempts) ` +
+            `vs ${ndFw}% ${v.pick('with your tee fairway clubs', 'with their non-driver tee shots')} (${agg.nonDriver.attempts} ` +
+            `attempts), a ${fwGapPp}pp accuracy gap. Average distance gain is ` +
+            `only ${distGap} yards${distanceNote}. On par-4/5 holes where driver isn't pinning ` +
+            `${v.them} to a much better approach distance, the layback is the higher-EV play.`,
+        };
+      }
+      if (agg.pattern === 'sharp') {
+        return {
+          title: 'Driver is performing: keep it in play',
+          content:
+            `Across the last ${agg.roundsCovered} rounds ${v.players} driver fairway% ` +
+            `(${driverFw}%) is within ${fwGapPp}pp of ${v.pick('your other tee clubs', 'their non-driver tee shots')} ` +
+            `(${ndFw}%) while gaining ${distGap} yards on average${distanceNote}. This is the ` +
+            `right risk/reward signature. ${v.pick('Default to driver', 'Have them default to driver')} on par-4/5 tees ` +
+            `unless trouble makes the layback obvious.`,
+        };
+      }
       // Inconclusive — neither pattern fires. We still emit a brief
       // "no clear bias" insight so the coach knows we've looked at it
       // and that no action is recommended right now.
-      title = 'Driver vs layback: no clear preference';
-      content =
-        `Across ${agg.roundsCovered} rounds your driver (${driverFw}% fw, ` +
-        `${agg.driver.attempts} attempts) and tee fairway clubs (${ndFw}% fw, ` +
-        `${agg.nonDriver.attempts} attempts) are tracking close enough that ` +
-        `neither the layback nor the driver-default insight crosses the ` +
-        `evidence threshold. Course-by-course strategy can still help; ` +
-        `the data doesn't show a universal preference yet.`;
-    }
+      return {
+        title: 'Driver vs layback: no clear preference',
+        content:
+          `Across ${agg.roundsCovered} rounds ${v.players} driver (${driverFw}% fw, ` +
+          `${agg.driver.attempts} attempts) and ${v.pick('tee fairway clubs', 'non-driver tee shots')} (${ndFw}% fw, ` +
+          `${agg.nonDriver.attempts} attempts) are tracking close enough that ` +
+          `neither the layback nor the driver-default insight crosses the ` +
+          `evidence threshold. Course-by-course strategy can still help; ` +
+          `the data doesn't show a universal preference yet.`,
+      };
+    });
 
     return {
-      title,
-      content: content + staleDataSuffix(agg.last_round_date),
+      title: copy.title,
+      coach: { title: copy.coach.title, content: copy.coach.content + staleDataSuffix(agg.last_round_date) },
+      // The verdict, not the two fairway rates, says whether this is a leak:
+      // "sharp" can sit a few points below the layback and still be a strength.
+      framing: agg.pattern === 'laggy' ? 'leak' : agg.pattern === 'sharp' ? 'strength' : 'neutral',
+      content: copy.content + staleDataSuffix(agg.last_round_date),
       // laggy is the only branch framed as costing strokes; sharp/inconclusive are strength/neutral.
       priority: agg.pattern === 'laggy' ? 'high' : 'low',
       signature: `tee_strategy:${agg.pattern}`,

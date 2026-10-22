@@ -16,7 +16,20 @@ function clientReturning(result: { data: unknown; error: unknown }): SupabaseCli
   } as unknown as SupabaseClient;
 }
 
+/** Attendance reads succeed; the golf_player_profiles call (rpc) answers with `profiles`. */
+function clientWithProfiles(profiles: { data: unknown; error: unknown }): SupabaseClient {
+  return {
+    from: () => ({ select: () => ({ eq: async () => ({ data: [{ player_id: 'p1', status: 'accepted', rsvp_at: null }], error: null }) }) }),
+    rpc: async () => profiles,
+  } as unknown as SupabaseClient;
+}
+
 describe('getEventRSVPStats', () => {
+  it('rejects when the attendee names fail to load, instead of listing everyone as Unknown', async () => {
+    const supabase = clientWithProfiles({ data: null, error: { message: 'statement timeout', code: '57014' } });
+    await expect(getEventRSVPStats('e1', supabase)).rejects.toThrow('statement timeout');
+  });
+
   it('rejects when the attendance read fails, instead of reporting nobody invited', async () => {
     const supabase = clientReturning({ data: null, error: { message: 'permission denied', code: '42501' } });
     await expect(getEventRSVPStats('e1', supabase)).rejects.toThrow('permission denied');

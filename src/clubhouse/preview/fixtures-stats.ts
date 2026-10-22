@@ -4,9 +4,12 @@
  * GolfStats object starts from the real calculator's empty result, so the
  * shape can't drift from production.
  */
+import { focusLoopOf, type ChFocusLoopRow, type ChFocusPost } from '../data/focus-loop-shape';
+import type { ChViewer as ChFocusViewer } from '../data/coachhelm-voice';
 import { calculateStatsFromShots, type GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
+import type { ChStatsReads } from '../data/stats-reads';
 import type { ChPlayerSeason } from '../data/season';
 import type { ChWindowSeason } from '../data/stats-weight';
 import { filterFor, type ChFilter, type ChFilterOptions, type ChPickRound, type ChRoundKind } from '../data/stats-filter';
@@ -66,22 +69,26 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
   })),
 ).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
 
+/** A grid row's leg samples for the ranked dot plot: `n` whole rounds with shots, each leg's own spread about 1.2 a round. */
+const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: Number((sd / Math.sqrt(n)).toFixed(2)) }));
+
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
   season: 'Fall 2026',
   window: 'last10',
+  last: 10,
   filter: filterFor('last10'),
   filterOptions: optionsFrom(TEAM_PICK_ROUNDS),
   activeCount: 7,
   roundCount: 64,
   roundsEffective: 64,
   figures: [
-    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, lowerIsBetter: false, context: 'vs previous 10', note: 'vs Tour · 58 rounds with shots', gauge: { kind: 'sg' } },
-    { key: 'score', series: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'par', toPar: 1.6 } },
-    { key: 'gir', series: [56, 57, 59, 60, 60, 62, 63], label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, lowerIsBetter: false, context: 'Tour averages 66%', gauge: { kind: 'rate', ref: 66 } },
-    { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'putts' } },
-    { key: 'scramble', series: [44, 46, 49, 50, 52, 54, 53], label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, lowerIsBetter: false, context: 'vs previous 10', gauge: { kind: 'rate' } },
-    { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
+    { key: 'sg', series: [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0], label: 'Team SG per round', value: -0.5, unit: '', digits: 1, signed: true, delta: 0.4, se: 0.7, lowerIsBetter: false, context: 'vs previous 10', note: 'vs Tour · 58 rounds with shots', gauge: { kind: 'sg' } },
+    { key: 'score', series: [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4], label: 'Scoring average', value: 73.6, unit: '', digits: 1, delta: -0.9, se: 0.76, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'par', toPar: 1.6 } },
+    { key: 'gir', series: [56, 57, 59, 60, 60, 62, 63], label: 'Greens in regulation', value: 61, unit: '%', digits: 0, delta: 3, se: 2.4, lowerIsBetter: false, context: 'Tour averages 66%', gauge: { kind: 'rate', ref: 66 } },
+    { key: 'putts', series: [31.2, 30.9, 30.8, 30.5, 30.4, 30.1, 30.4], label: 'Putts per round', value: 30.4, unit: '', digits: 1, delta: 0.3, se: 0.42, lowerIsBetter: true, context: 'vs previous 10', gauge: { kind: 'putts' } },
+    { key: 'scramble', series: [44, 46, 49, 50, 52, 54, 53], label: 'Scrambling', value: 52, unit: '%', digits: 0, delta: 4, se: 5.6, lowerIsBetter: false, context: 'vs previous 10', gauge: { kind: 'rate' } },
+    { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, se: 0.25, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
   ],
   weeks: WEEKS,
   days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: [74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4][i]! })),
@@ -94,13 +101,13 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     Putting: [0.1, 0.2, 0.1, 0.3, 0.2, 0.3, 0.3],
   },
   grid: [
-    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9 },
-    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6 },
-    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4 },
-    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8 },
-    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2 },
-    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6 },
-    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5 },
+    { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
+    { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },
+    { id: 'ava', name: 'Ava Lindqvist', rounds: 10, legs: [0.2, 0.3, 0.1, 0.3], total: 0.6, change: 0.2, avg: 72.4, spread: { sg: { n: 10, se: 0.6 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } } },
+    { id: 'eli', name: 'Eli Brandt', rounds: 10, legs: [0.0, -0.4, 0.0, 0.0], total: -0.5, change: -0.3, avg: 74.8, spread: { sg: { n: 6, se: 0.82 }, legs: rankLegs(6), score: { n: 10, se: 1.0 } } },
+    { id: 'priya', name: 'Priya Natarajan', rounds: 10, legs: [-0.6, -0.8, -0.2, -0.3], total: -1.2, change: 1.7, avg: 75.2, spread: { sg: { n: 10, se: 0.7 }, legs: rankLegs(10), score: { n: 10, se: 0.95 } } },
+    { id: 'jonah', name: 'Jonah Okafor', rounds: 10, legs: [0.3, -1.2, -0.1, 0.2], total: -0.9, change: -1.7, avg: 73.6, spread: { sg: { n: 10, se: 0.68 }, legs: rankLegs(10), score: { n: 10, se: 0.88 } } },
+    { id: 'luca', name: 'Luca Ferraro', rounds: 2, legs: [null, null, null, null], total: null, change: null, avg: 76.5, spread: { sg: { n: 2, se: 2.69 }, legs: rankLegs(2), score: { n: 2, se: 2.55 } } },
   ],
   legTotals: [0.4, -0.7, 0.1, -0.3],
   putting: {
@@ -122,7 +129,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { label: 'Most improved', playerId: 'priya', name: 'Priya Natarajan', value: '−4.0', meta: 'Scoring avg, first five rounds to latest five' },
   ],
   tour: 'pga',
-  sgChange: { delta: 0.4, context: 'vs previous 10' },
+  sgChange: { delta: 0.4, context: 'vs previous 10', se: 0.7 },
   sgRounds: 58,
   roundsError: false,
   cacheError: false,
@@ -399,6 +406,7 @@ const windowSeason = (s: ChPlayerSeason): ChWindowSeason => ({ ...s, effRounds: 
 export const PREVIEW_PLAYER: ChPlayerProfile = {
   viewer: 'coach',
   window: 'last10',
+  last: 10,
   filter: filterFor('last10'),
   filterOptions: optionsFrom(JONAH_PICK_ROUNDS),
   id: 'jonah',
@@ -413,7 +421,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
   win: windowSeason(season(JONAH_AVG, JONAH_SCORES.slice(-7), -0.9, 10, 'slipping')),
   teamAvg: 72.8,
   tour: 'pga',
-  sgChange: { delta: -1.3, context: 'vs previous 10' },
+  sgChange: { delta: -1.3, context: 'vs previous 10', se: 1.7 },
   puttBands: [
     { label: '0–3 ft', made: 57, attempts: 64, bench: null },
     { label: '3–5 ft', made: 24, attempts: 38, bench: 90.5 },
@@ -463,6 +471,8 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
       minPlays: 3,
     },
     holesError: false,
+    // Three of the twelve doubles or worse were triples or worse (the scoring mix says so on its double or worse).
+    triplePlus: 3,
     approach: [
       { label: '50-125 yd', value: 26, bench: 18, shots: 55, belowFloor: false, floor: 10, greenHitPct: 62 },
       { label: '125-175 yd', value: 40, bench: 30, shots: 72, belowFloor: false, floor: 10, greenHitPct: 41 },
@@ -603,7 +613,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     { id: 'f1', title: 'Approach 125–150 yds', baseline: 38, current: 35, target: 30, metric: 'approach_proximity', status: 'active' },
     { id: 'f2', title: 'Short putts', baseline: 55, current: 62, target: 75, metric: 'putts_made_3_5ft_pct', status: 'active' },
   ],
-  goals: [{ id: 'g1', title: 'Break 70 in competition', state: 'active', current: 72, target: 69, baseline: 74 }],
+  goals: [{ id: 'g1', title: 'Break 70 in competition', metric: null, state: 'active', current: 72, target: 69, baseline: 74 }],
   devError: false,
   nav: { index: 4, total: 7, prev: 'ava', next: 'eli' },
   roundsError: false,
@@ -658,7 +668,35 @@ export const PREVIEW_TEAM_NOMATCH: ChTeamStats = {
 /** Two rounds match: the early-read note, and the figures still draw. */
 export const PREVIEW_TEAM_EARLY_FILTER: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), courses: ['Oakmont CC'] }, roundCount: 2 };
 
+/**
+ * The leg grid as one real team reads it (Demo University Golf, Last 10; the values are the ones on the coach's Stats page): every
+ * leg is a clear gain or loss, the worst leg is deep, and the grid's scale (+2.0 to -4.9) is wider than the fixture team's, so the
+ * zero line, the bars and the median ticks are checked against numbers that fill the cells (`?state=demo`).
+ */
+const demoSpread = { sg: { n: 10, se: 0.9 }, legs: rankLegs(10), score: { n: 10, se: 0.9 } };
+export const PREVIEW_TEAM_DEMO: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  grid: [
+    { id: 'cole', name: 'Cole Bennett', rounds: 10, legs: [1.9, -1.6, -0.2, -4.9], total: -4.8, change: 4.4, avg: 73.1, spread: demoSpread, last: { score: 74, toPar: 2, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'jackson', name: 'Jackson Hale', rounds: 10, legs: [1.2, -1.9, 0.1, -4.9], total: -5.4, change: -7.8, avg: 74.2, spread: demoSpread, last: { score: 77, toPar: 5, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'dylan', name: 'Dylan Brooks', rounds: 10, legs: [1.5, -2.7, -0.7, -3.3], total: -5.2, change: 0.5, avg: 74.0, spread: demoSpread, last: { score: 75, toPar: 3, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'tyler', name: 'Tyler Hayes', rounds: 10, legs: [2.0, -3.1, 0.3, -2.5], total: -3.3, change: 0.3, avg: 74.7, spread: demoSpread, last: { score: 76, toPar: 4, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'marcus', name: 'Marcus Reed', rounds: 10, legs: [1.0, -3.4, -0.7, -3.3], total: -6.4, change: -1.0, avg: 75.9, spread: demoSpread, last: { score: 78, toPar: 6, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'evan', name: 'Evan Park', rounds: 10, legs: [-0.2, -4.4, -0.6, -1.9], total: -7.1, change: 3.8, avg: 76.3, spread: demoSpread, last: { score: 75, toPar: 3, label: 'Pebble Beach Golf Club · Oct 14' } },
+    { id: 'owen', name: 'Owen Cole', rounds: 10, legs: [-0.2, -4.5, 0.1, -2.1], total: -6.7, change: 0.9, avg: 76.0, spread: demoSpread, last: null },
+  ],
+};
+
 /** Both lengths: the per-18 note under the count line, and the team's rounds counted in whole rounds (a few are 9 holes). */
+/** The team on Last 20 (`?last=20`): the switch on Last 20, the Window figure and every "vs previous" caption saying 20. */
+export const PREVIEW_TEAM_LAST20: ChTeamStats = {
+  ...PREVIEW_TEAM_STATS,
+  last: 20,
+  filter: filterFor('last10', 20),
+  figures: PREVIEW_TEAM_STATS.figures.map((x) => (x.context === 'vs previous 10' ? { ...x, context: 'vs previous 20' } : x)),
+  sgChange: { ...PREVIEW_TEAM_STATS.sgChange, context: 'vs previous 20' },
+};
+
 export const PREVIEW_TEAM_NINES: ChTeamStats = { ...PREVIEW_TEAM_STATS, filter: { ...filterFor('last10'), holes: 'all' }, roundsEffective: 60.5 };
 
 /** Jonah's window with a 9-hole round in it (Both): its score drawn per 18 holes, the round row named, and the 9-hole best listed on its own. */
@@ -685,3 +723,84 @@ export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
   rounds: [],
   stats: null,
 };
+
+/**
+ * CoachHelm chs-11 (`coachhelm_verdicts_v1` on): the prescription and verdict loop on each focus area, built by the page's own
+ * shaping from synthetic prescription rows with supercharge 04 example 11's numbers: short putts still short of the horizon (22 of
+ * 40 in), 5–10 ft putts Worked (31 of 42 against 18 of 31), greens Did not move (24 of 40); the approach area has no criterion.
+ */
+const LOOP_AT = '2026-10-19T06:00:00Z';
+const loopVerdict = (word: 'worked' | 'did_not_move', made: number, n: number, lower: number, upper: number) => ({
+  word,
+  post: { value: made / n, made, n, window_start: '2026-09-01', window_end: '2026-10-17' },
+  lower_bound_90: lower,
+  upper_bound_90: upper,
+  bound_method: 'normal' as const,
+  expected_without_coaching: 0.635,
+  threshold: 0.7,
+  horizon: { attempts: 40 },
+  computed_at: LOOP_AT,
+});
+const LOOP_ROWS: Array<{ row: ChFocusLoopRow; post: ChFocusPost | null }> = [
+  {
+    row: { id: 'f2', title: 'Short putts', from_insight_id: null, target_metric: 'putts_made_3_5ft_pct', baseline_value: 0.55, baseline_n: 40, criterion: { direction: 'higher', threshold: 0.85, unit: 'pct' }, horizon: { attempts: 40 }, verdict: null, started_at: '2026-10-01' },
+    post: { made: 18, n: 22 },
+  },
+  {
+    row: { id: 'f3', title: '5–10 ft putts', from_insight_id: null, target_metric: 'putts_made_5_10ft_pct', baseline_value: 18 / 31, baseline_n: 31, criterion: { direction: 'higher', threshold: 0.7, unit: 'pct' }, horizon: { attempts: 40 }, verdict: loopVerdict('worked', 31, 42, 0.651, 0.82), started_at: '2026-09-01' },
+    post: null,
+  },
+  {
+    row: { id: 'f4', title: 'Greens in regulation', from_insight_id: null, target_metric: 'gir_pct', baseline_value: 0.58, baseline_n: 54, criterion: { direction: 'higher', threshold: 0.7, unit: 'pct' }, horizon: { attempts: 40 }, verdict: loopVerdict('did_not_move', 24, 40, 0.501, 0.699), started_at: '2026-09-01' },
+    post: null,
+  },
+];
+const withLoops = (viewer: ChFocusViewer): ChPlayerProfile['focusAreas'] => {
+  const loops = new Map(LOOP_ROWS.map(({ row, post }) => [row.id, focusLoopOf(row, post, viewer, '2026-10-21T12:00:00Z')]));
+  return [
+    ...PREVIEW_PLAYER.focusAreas,
+    { id: 'f3', title: '5–10 ft putts', baseline: 58, current: 74, target: 70, metric: 'putts_made_5_10ft_pct', status: 'active' },
+    { id: 'f4', title: 'Greens in regulation', baseline: 58, current: 60, target: 70, metric: 'gir_pct', status: 'active' },
+  ].map((f) => {
+    const loop = loops.get(f.id);
+    return loop ? { ...f, loop } : f;
+  });
+};
+export const PREVIEW_PLAYER_LOOPS: ChPlayerProfile = { ...PREVIEW_PLAYER, focusAreas: withLoops({ role: 'coach', first: PREVIEW_PLAYER.firstName }) };
+export const PREVIEW_PLAYER_LOOPS_SELF: ChPlayerProfile = { ...PREVIEW_PLAYER, viewer: 'player', nav: null, focusAreas: withLoops({ role: 'player' }) };
+
+/** The player's own page with two of CoachHelm's suggested goals waiting to be answered (Goals, par-19). */
+export const PREVIEW_PLAYER_SUGGESTED: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  viewer: 'player',
+  nav: null,
+  goalSuggestions: [
+    { id: 'gs1', metric: 'sg_putting', target: 0.3, days: 30 },
+    { id: 'gs2', metric: 'approach_proximity', target: 32, days: 60 },
+  ],
+};
+
+/**
+ * What CoachHelm sees per Game detail section (data/stats-reads.ts, spec D build A), for Jonah: two reads costing strokes on
+ * approach and one working, one costing off the tee (its link opens the Deep dive on it), one working on the greens, none in
+ * scoring or the short game. `PREVIEW_PLAYER_READS` is a coach's (the Deep dive of Jonah); `PREVIEW_SELF_READS` the player's own.
+ */
+const COACH_DIVE = '/golf/dashboard/coachhelm?view=deep-dive&player=jonah';
+const OWN_DIVE = '/golf/dashboard/coachhelm?view=deep-dive';
+export const PREVIEW_PLAYER_READS: ChStatsReads = {
+  status: 'ready',
+  byArea: {
+    approach: { costing: 2, working: 1, href: COACH_DIVE },
+    tee: { costing: 1, working: 0, href: `${COACH_DIVE}&insight=in-fw` },
+    putting: { costing: 0, working: 1, href: `${COACH_DIVE}&insight=in-inside3` },
+  },
+};
+export const PREVIEW_SELF_READS: ChStatsReads = {
+  status: 'ready',
+  byArea: {
+    approach: { costing: 2, working: 1, href: OWN_DIVE },
+    tee: { costing: 1, working: 0, href: `${OWN_DIVE}&insight=in-fw` },
+    putting: { costing: 0, working: 1, href: `${OWN_DIVE}&insight=in-inside3` },
+  },
+};
+export const PREVIEW_READS_FAILED: ChStatsReads = { status: 'failed' };

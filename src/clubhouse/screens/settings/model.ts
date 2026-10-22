@@ -87,7 +87,7 @@ export interface ChSettingsData {
   playerId: string | null;
   teamId: string | null;
   teamName: string | null;
-  profile: Section<{ firstName: string; lastName: string; fullName: string; avatarUrl: string | null }>;
+  profile: Section<ChProfileInput>;
   delivery: Section<ChDeliveryPrefs>;
   /** Players only: the CoachHelm updates matrix (golf_player_notification_state). */
   playerRouting: Section<{ prefs: PrefsByCategory; quiet: boolean }> | null;
@@ -272,7 +272,8 @@ export function orderToPriorities(order: PriorityKey[]): Record<PriorityKey, num
 // ── Writes: the live container and the preview each supply these ──
 
 export type ChResult<T = unknown> = { success?: boolean; ok?: boolean; data?: T; error?: string };
-export type ChProfileInput = { firstName: string; lastName: string; fullName: string; avatarUrl: string | null };
+/** `title` is the coach's golf_coaches.title ('' when unset, and always '' for a player, who has none). */
+export type ChProfileInput = { firstName: string; lastName: string; fullName: string; avatarUrl: string | null; title: string };
 
 // ── Coaching staff (Team, coach) ──
 
@@ -391,9 +392,25 @@ export interface ChSettingsWrites {
   staff: ChStaffWrites;
 }
 
+/**
+ * Push in the iOS app (docs/clubhouse/phone/push-opt-in.md): Apple's push, not web push, which the app's WebView lacks.
+ * `prompt` until iOS has asked; then `granted` or `denied`, which only the phone's Settings app changes.
+ */
+export interface ChNativePush {
+  status: 'checking' | 'prompt' | 'granted' | 'denied';
+  /** iOS's prompt is up. */
+  pending: boolean;
+  /** Shows iOS's prompt (only while `prompt`); the row follows the answer. */
+  turnOn: () => Promise<void>;
+  /** Opens GolfHelm's page in iOS Settings; absent where it can't (not the iOS app). */
+  openSettings?: () => void;
+}
+
 export interface ChDevice {
   /** Native app: shows the haptics switch. */
   native: boolean;
+  /** The app's own push (P008, blocker 12); absent on the web, where `push` is the browser's. */
+  nativePush?: ChNativePush;
   push: {
     status: 'checking' | 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed';
     pending: boolean;

@@ -9,6 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireWriteSuccess } from './write-integrity';
+import { profilesById, readGolfPlayerProfiles } from '@/lib/golf/player-profiles';
 
 // ============================================================================
 // TYPES
@@ -85,10 +86,7 @@ async function getEventRSVPSummary(
 ): Promise<RSVPSummary> {
   const { data: attendances, error } = await supabase
     .from('golf_event_attendance')
-    .select(`
-      *,
-      player:golf_players(id, first_name, last_name, avatar_url)
-    `)
+    .select('*')
     .eq('event_id', eventId);
 
   // A failed read is not an empty roster: it used to come back as zero invitees, so the event's People section said
@@ -97,7 +95,20 @@ async function getEventRSVPSummary(
     throw new Error(`Could not load the event's attendance: ${error.message}`);
   }
 
-  const attendanceRows = (attendances || []) as AttendanceWithPlayer[];
+  // Names and avatars through golf_player_profiles: a player may no longer
+  // read a teammate's golf_players row (security review S4). A failed read is
+  // an error, not a list of "Unknown" attendees: the profile embed used to be
+  // part of the checked attendance query above, so it failed the same way.
+  const rows = (attendances || []) as GolfEventAttendance[];
+  const profiles = await readGolfPlayerProfiles(supabase, { playerIds: rows.map((a) => a.player_id) });
+  if (profiles.error) {
+    throw new Error(`Could not load the event's attendees: ${profiles.error.message}`);
+  }
+  const profileById = profilesById(profiles.data ?? []);
+  const attendanceRows: AttendanceWithPlayer[] = rows.map((a) => {
+    const p = profileById.get(a.player_id);
+    return { ...a, player: p ? { id: p.id, first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url } : null } as AttendanceWithPlayer;
+  });
   const attendees = attendanceRows.map(attendance => {
     const firstName = attendance.player?.first_name ?? '';
     const lastName = attendance.player?.last_name ?? '';

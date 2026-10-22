@@ -38,7 +38,8 @@ the join requests and Needs a look above them, all from the server's first
 render (30101). On the phone it is the list screen. A ?player= link opens that
 profile on the phone only, and does nothing on desktop (30102). The bell's
 join-request notice (?tab=requests) opens the phone's requests sheet once when
-a request is waiting (desktop shows the card at the top already), and a
+a request is waiting; on desktop it takes focus to the requests card under the
+header (with none waiting nothing moves), and a
 ?invite=1 link (Home's first-run Invite players) opens the invite sheet once on
 desktop and the phone; each param is dropped, closing the sheet spends it, and
 only the coach's roster reads them (a player's roster and the no-team page
@@ -48,12 +49,34 @@ click on a player's face (cards) or name (list) goes to that player's profile
 rebuilt it opens the peek instead. The peek opens from a Needs a look chip. The
 phone is unchanged: a row pushes its own profile.
 
+Availability (2026-10-21, spec C) is whether a player can play: Available,
+Injured or Away (`golf_team_members.availability`, and when it changed). It is
+the word only: there is no note, because golf_team_members_select_v5 lets every
+teammate read every column of their team's rows, so `availability_note` is never
+read or written until a coach-only store exists (a held migration; see
+docs/clubhouse/held/data/roster-availability.md). It is display only, on the
+coach's roster: it never changes team access, which is the status (Active or
+Inactive, Mark inactive). The two never share a phrase, and the control's
+caption says so: "Shows on your roster only. It never changes their team access;
+Mark inactive does." The row menu (kebab, right-click and a face's menu, one
+list) offers the two states the player is not in after the links, then Mark
+inactive or active and Remove; no confirm. The list's line under the name, a
+face's note slot and the phone row read "Injured" in plain ink; the desktop
+panel and phone profile add the word to the identity line and an Availability
+section (Segmented) above the coach's note. The head counts "· 1 injured · 1
+away" among the active players. Needs a look leaves out a player who is out;
+rankings, the strip and the team average are unchanged. The export adds
+Availability after Status. Players see none of it in v1: their roster reads
+`player_id` only, since teammates may read every column of a team's rows.
+`?state=availability` in the preview shows Ava injured and Luca away.
+
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30101 | — | `ROSTER_READY` | Roster opens with the team line, the join requests, Needs a look and the active players as cards by scoring average, all from the server's first render; on the phone, the list screen with the same players as rows. |
 | 30102 | — | `DEEP_LINK_OPENS_PROFILE` | On the phone, a link with ?player=<golf_players.id> opens that player's profile once and the address is cleaned; an id that is not on this roster opens the list and nothing else. Desktop ignores ?player=. The bell's join-request link (?tab=requests) opens the phone's requests sheet once when a request is waiting, and ?invite=1 (Home's first-run Invite players) opens the invite sheet once on desktop and the phone; each param is dropped, closing the sheet spends it, and only the coach's roster reads them. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
+10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -65,6 +88,7 @@ Route skeleton (30201): the header, toolbar and six face cards in their final sl
 | --- | --- | --- | --- |
 | 30201 | CH-3401 | `ROSTER_IS_LOADING` | Roster is loading |
 | 30202 | CH-3404 | `A_STATUS_CHANGE_IS_IN_FLIGHT` | A status change is in flight |
+| 30203 | CH-3405 | `AN_AVAILABILITY_CHANGE_IS_IN_FLIGHT` | An availability change is in flight |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -102,18 +126,29 @@ First-run (30401), filtered (30402, 30403) and per-player (30405) are distinct, 
 
 Status: DEFINED
 
-One input has a limit: the coach's note (30501, 2,000 characters; the counter appears in the last 200 and typing stops at the limit). The search box takes any text. Nothing else is typed into a form: players join by code, and the server checks who may decide a request (30803). What players typed comes out safely: the export writes a name that could be read as a formula as text (30502).
+One input has a limit: the coach's note (30501, 2,000 characters; the counter
+appears in the last 200 and typing stops at the limit). There is no
+availability note (30503 is retired with CH-3102; `setPlayerAvailability`
+refuses a note). The search box takes any text. Nothing else is typed into a form:
+players join by code, and the server checks who may decide a request (30803).
+What players and coaches typed comes out safely: the export writes a name that
+could be read as a formula as text (30502).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30501 | CH-3101 | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | A coach's note is within 200 characters of its 2,000 limit |
-| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
+| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Every change has its own toast (30601 to 30607) naming what failed and what to do, and every read that fails to load has its own notice with Try again (30608 to 30610, 30614 to 30616). A crash stays in its section (30611 to 30613, SectionBoundary). Try again refreshes the whole page (31402). A refused change shows the server's own sentence when it is short and readable (30803).
+Every change has its own toast (30601 to 30607, 30619 and 30620) naming what
+failed and what to do, and every read that fails to load has its own notice with
+Try again (30608 to 30610, 30614 to 30616). A crash stays in its section (30611
+to 30613, SectionBoundary). Try again refreshes the whole page (31402). A
+refused change shows the server's own sentence when it is short and readable
+(30803).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -136,8 +171,13 @@ Every change has its own toast (30601 to 30607) naming what failed and what to d
 | 30617 | CH-3210 | `THE_PLAYERS_ROSTER_DOESNT_LOAD` | The player's roster doesn't load (a player's own team's members) |
 | 30618 | CH-3211 | `THE_PLAYERS_ROSTER_LIST_CRASHES` | The player's roster list crashes |
 | 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
+| 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
+| 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 
-From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202, 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207, 10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210, 10614 CH-1211.
+From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
+10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
+10609 CH-1208, 10610 CH-1002, 10611 CH-1003, 10612 CH-1209, 10613 CH-1210,
+10614 CH-1211.
 
 ## 07 — Network / offline
 
@@ -149,7 +189,8 @@ Roster's writes all go through useAction, so offline every one is refused before
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -166,7 +207,8 @@ The coach's roster is a coach's page. The page takes the Clubhouse branch for a 
 | 30805 | — | `PLAYER_ROSTER_READS_NO_COACH_DATA` | The player's loader reads the team's name and season and the active members' name, graduation year and handicap, scoped by the player's own team (RLS). It never reads the join code, the join requests, a coach's notes, a teammate's email, phone, rounds, scores, focus areas or goals, and it sends the browser nothing outside that projection. |
 | 30806 | — | `PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST` | With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -269,7 +311,11 @@ press on keys, sheets and pushes (D-64); there is no first-paint rise.
 | 31603 | CH-3603 | `SWITCHING_BETWEEN_TEAM_VIEW_AND_LIST_VIEW` | Switching between Team view and List view |
 | 31604 | CH-3604 | `PHONE_CHOOSING_AVG_SG_OR_NAME` | Phone: choosing Avg, SG or Name |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -284,7 +330,9 @@ Roster's own haptics (31701 to 31703) and the warning as Remove player is presse
 | 31703 | CH-3703 | `THE_CODE_OR_LINK_IS_COPIED` | The code or link is copied |
 | 31704 | — | `REMOVE_PLAYER_WARNS` | Pressing Remove player in the confirm fires the warning haptic (D-70), then the success pattern when the removal lands or the error pattern when it fails; Cancel is silent. |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -308,8 +356,14 @@ CH-1842, 11825 CH-1816.
 | 31806 | CH-3806 | `PHONE_A_PLAYER_ROW_IS_ONE_BUTTON` | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration |
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
+| 31809 | CH-3809 | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 

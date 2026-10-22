@@ -53,9 +53,35 @@ import {
   type LifecycleWriteDecision,
 } from './lifecycle-policy';
 import { getActiveGate, incrementGatedCount } from './gate-context';
+import { carryForwardStamp, evidenceRevisionKey as currentRevisionKey } from './revision-key';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { isLifecycleRetired } from '@/lib/coachhelm/v3/lifecycle/archive-rules';
+import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
+
+/**
+ * Thrown by `upsertInsight` when the ownership lookup (team membership or
+ * coach staff) ERRORS past its one retry. Writing anyway would key the row
+ * on a partial (signature, player_id, coach_id, team_id) tuple that the
+ * dedup lookup cannot match to the existing owned row, so every failed
+ * lookup minted a duplicate (2026-09-24 brownout: PGRST002 on the staff
+ * lookup wrote 19 coachless twins for one player in 50 s). Carries the
+ * PostgREST/Postgres `code` so `classifyThrown` reads it as transient.
+ *
+ * 2026-10-21: also thrown when the dedup lookup itself fails, or the
+ * ownership lookup throws instead of returning an error: any read that
+ * decides "is there already a row?" fails closed, and nothing is written.
+ */
+export class InsightOwnershipLookupError extends Error {
+  readonly code: string | undefined;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = 'InsightOwnershipLookupError';
+    this.code = code;
+  }
+}
 
 /**
  * Sentinel returned by `upsertInsight` when an active philosophy gate
@@ -246,8 +272,19 @@ export async function upsertInsight(
     .order('created_at', { ascending: false })
     .limit(1);
 
+  // A failed read is NOT "no existing row": falling through to insertNew
+  // would mint a second row for the same issue when the lookup missed. Fail
+  // closed: log, write nothing, and let the next analysis run write it.
   if (lookupError) {
-    throw new Error(`upsertInsight.lookup failed: ${lookupError.message}`);
+    await logServerError(
+      `upsertInsight: dedup lookup failed for signature=${input.signature}; not writing the insight: ${lookupError.message}`,
+      { action: 'coachhelm.upsert.dedupLookup', featureArea: 'coachhelm', extra: { code: lookupError.code ?? null } },
+      'warning',
+    );
+    throw new InsightOwnershipLookupError(
+      `upsertInsight.lookup failed: ${lookupError.message}`,
+      lookupError.code,
+    );
   }
 
   const existing = (existingRows?.[0] ?? null) as ExistingInsightRow | null;
@@ -267,6 +304,8 @@ async function updateExisting(
   teamId: string | null,
   attempt = 0,
 ): Promise<string> {
+  // Slice 0b: an unstamped write (failed round load) keeps the row's stamp.
+  evidence = carryForwardStamp(existing.evidence, evidence);
   const nowIso = new Date().toISOString();
   const existingValue = existing.evidence?.your_value ?? 0;
   const newValue = evidence.your_value;
@@ -305,9 +344,10 @@ async function updateExisting(
   const priorMaturationKeys: readonly string[] = Array.isArray(priorMetadata.maturation_keys)
     ? (priorMetadata.maturation_keys as unknown[]).filter((k): k is string => typeof k === 'string')
     : [];
-  const evidenceRevisionKey = `${evidence.sample_n}|${evidence.window_end}`;
+  // Slice 0b: newest round + window start when the flag is on (revision-key.ts).
+  const evidenceRevisionKey = currentRevisionKey(evidence);
 
-  const decision: LifecycleWriteDecision = resolveLifecycleOnWrite({
+  const policyDecision: LifecycleWriteDecision = resolveLifecycleOnWrite({
     existing: existing.lifecycle_state,
     confidence: evidence.confidence,
     movedThisWrite,
@@ -315,6 +355,18 @@ async function updateExisting(
     priorMaturationKeys,
     promotionEnabled,
   });
+  // CoachHelm Slice 3 (`coachhelm_recheck_v1`, off): a read the nightly
+  // lifecycle step retired as Cleared or Contradicted is NOT resurrected by a
+  // re-emit (its lifetime number can still look like a leak); only that step
+  // restores it, when the recheck holds again or the winning read goes away.
+  // The evidence still refreshes on the archived row. Flag off: unchanged.
+  const keepRetired =
+    policyDecision.transition === 'resurrected' &&
+    isLifecycleRetired(existing.lifecycle_state, priorMetadata) &&
+    isRecheckEnabled();
+  const decision: LifecycleWriteDecision = keepRetired
+    ? { next: 'archived', transition: 'none', becomesVisible: false }
+    : policyDecision;
 
   const mergedMetadata: JsonRecord = {
     ...priorMetadata,
@@ -685,6 +737,13 @@ const OWNED_TEAM_MEMBER_STATUSES = ['active', 'inactive'] as const;
  * staffed coach — better to land an orphaned row than throw, since refusing
  * to write loses the insight entirely rather than just its ownership.
  *
+ * 2026-09-25: a lookup that ERRORS (past its one retry) now throws
+ * `InsightOwnershipLookupError` instead of falling back to nulls. The
+ * fallback's premise ("refusing loses the insight") stopped holding once a
+ * thrown generator reports `status:'failed'` (P0-04): the write is picked up
+ * by the next analysis run, while the fallback wrote a permanent duplicate
+ * (see the class). Only the genuine no-team / no-staff case lands an orphan.
+ *
  * 2026-09-22 (orphan-insight investigation): both lookups here used to
  * destructure only `{ data }`, discarding `error` — so a real, retryable
  * Postgres/network failure on either query was silently indistinguishable
@@ -715,12 +774,19 @@ async function resolvePlayerOwnership(
     const coachId = await resolveTeamPrimaryCoachId(supabase, teamId);
     return { coachId, teamId };
   } catch (error) {
+    if (error instanceof InsightOwnershipLookupError) throw error;
+    // 2026-10-21: an unexpected throw (a rejected fetch, a client bug) is a
+    // failed read, not "no team". Falling back to nulls here wrote the same
+    // coachless twin the error path above refuses to write. Fail closed.
     await logServerError(
-      `resolvePlayerOwnership failed: ${describeError(error)}`,
-      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
+      `resolvePlayerOwnership threw; not writing the insight: ${describeError(error)}`,
+      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm', playerId },
       'warning'
     );
-    return { coachId: null, teamId: null };
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: ownership lookup threw for player=${playerId}: ${describeError(error)}`,
+      (error as { code?: string } | null)?.code,
+    );
   }
 }
 
@@ -743,11 +809,14 @@ async function resolveActiveTeamId(
       return resolveActiveTeamId(supabase, playerId, attempt + 1);
     }
     await logServerError(
-      `resolvePlayerOwnership: golf_team_members lookup failed for player=${playerId}, falling back to unowned: ${describeError(error)}`,
+      `resolvePlayerOwnership: golf_team_members lookup failed for player=${playerId}; not writing the insight: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm', playerId },
       'warning'
     );
-    return null;
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: team membership lookup failed for player=${playerId}: ${error.message}`,
+      (error as { code?: string }).code,
+    );
   }
 
   return membership?.team_id ?? null;
@@ -772,11 +841,14 @@ async function resolveTeamPrimaryCoachId(
       return resolveTeamPrimaryCoachId(supabase, teamId, attempt + 1);
     }
     await logServerError(
-      `resolvePlayerOwnership: golf_team_coach_staff lookup failed for team=${teamId}, falling back to unowned coach: ${describeError(error)}`,
+      `resolvePlayerOwnership: golf_team_coach_staff lookup failed for team=${teamId}; not writing the insight: ${describeError(error)}`,
       { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
       'warning'
     );
-    return null;
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: coach staff lookup failed for team=${teamId}: ${error.message}`,
+      (error as { code?: string }).code,
+    );
   }
 
   return staff?.coach_id ?? null;

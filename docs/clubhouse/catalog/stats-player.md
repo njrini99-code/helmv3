@@ -15,7 +15,7 @@ assistive-technology acceptance.
 Route `/golf/dashboard/stats?player=<id>` (coach) and `/golf/dashboard/stats` (player) · code
 `src/clubhouse/screens/stats/StatsPlayer.tsx`, `GameDetail.tsx`, loader `src/clubhouse/data/stats-player.ts` ·
 tests `src/clubhouse/__tests__/stats-player.test.tsx` · preview `/clubhouse-preview/player`
-(`?state=early|self|failed`).
+(`?state=early|self|failed|loops|loops-self`).
 
 Loading is the profile skeleton (CH-5403); the team page's is CH-4401. Each tab is its own component inside
 its own boundary, so a crash stays inside the tab.
@@ -29,6 +29,10 @@ its own boundary, so a crash stays inside the tab.
 | CH-5003 | A player's Accept of a proposed focus area fails | "Couldn’t accept Lag putting" + Retry; it stays waiting. Done: "Started · Lag putting" and the page reads again | `useAction('stats.acceptFocusArea')` in `ProposalAnswer` → `acceptFocusArea` | stats-player.test › CH-5003 |
 | CH-5004 | A player's Decline of a proposed focus area fails | "Couldn’t decline Lag putting" + Retry; it stays waiting. Done: "Declined · Lag putting" | `useAction('stats.declineFocusArea')` in `ProposalAnswer` → `declineFocusArea` | stats-player.test › CH-5004 |
 | CH-5005 | Sharing a personal-best card fails (the share sheet or the download is blocked) | "Couldn’t share the card" + "Try again, or save the image from the preview." Error haptic. Closing the share sheet is not a failure; a share closes the sheet with the success haptic | `BestCardShare` in `BestCard.tsx` | stats-bestcard.test › CH-5005 |
+| CH-5006 | Starting a goal fails (Set a goal) | Toast "Couldn’t start the goal" + the server's sentence when it is readable ("The target must be better than where the player is now, or the goal is met on day one."), else "What you entered is still here. Try again in a moment." + Retry; the sheet stays open with the stat, length and target. Done: "Goal started" ("Goal started. That is more than five active goals, so consider finishing one." past five), the sheet closes and the page reads again | `GoalSheet` (`useAction('stats.setGoal')`) → `createGoal` | stats-goals.test › CH-5006 |
+| CH-5007 | Accepting a suggested goal fails | "Couldn’t start Strokes gained: approach" + Retry; it stays suggested. Done: "Goal started · Strokes gained: approach" and the page reads again | `SuggestionRow` (`useAction('stats.acceptGoalSuggestion')`) → `acceptGoalSuggestion` | stats-goals.test › CH-5007 |
+| CH-5008 | Dismissing a suggested goal fails | "Couldn’t dismiss Greens in regulation" + Retry; it stays suggested. Done: "Suggestion dismissed" | `SuggestionRow` (`useAction('stats.dismissGoalSuggestion')`) → `dismissGoalSuggestion` | stats-goals.test › CH-5008 |
+| CH-5009 | A coach pauses, resumes or abandons a goal and it fails | "Couldn’t pause Putting" (resume, abandon) + "Nothing was changed. Try again in a moment." or the server's sentence + Retry. Done: "Paused · Putting", "Resumed · Putting", "Abandoned · Putting", and the page reads again | `GoalStatus` (`useAction('stats.pauseGoal' / 'stats.resumeGoal' / 'stats.abandonGoal')`) → `pauseGoal`, `resumeGoal`, `abandonGoal` | stats-goals.test › CH-5009 |
 
 ## 51xx Validation
 
@@ -36,6 +40,7 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5101 | A focus area with a name under three characters | "Give it a short name, at least three characters." under the field, which takes focus; a warning haptic; nothing is sent | `FocusAreaSheet` | stats-player.test › CH-5101 |
 | CH-5102 | The filter's date range starts after it ends, and Done is tapped | "The start date is after the end date. Swap them, or clear one." under the dates, which are marked invalid; the start date takes focus and a warning plays; nothing is requested and the sheet stays open | `FilterSheet` in `StatsFilter` (`aria-invalid`, `aria-describedby`) | stats-filter-ui.test › CH-5102 |
+| CH-5103 | Set a goal: the target is empty or not a number | Under the field, in the error ink: "Enter a target number to aim for."; nothing is sent and the field takes focus. The fill-in note comes back once it is a number | `GoalSheet` | stats-goals.test › CH-5103 |
 
 ## 52xx Didn't load
 
@@ -54,6 +59,8 @@ its own boundary, so a crash stays inside the tab.
 | CH-5211 | The putt read fails | Putting › Make rate by distance: "Putts past 20 feet didn’t load." + Try again; the curve stops at 20 feet, where the shot stats end | `loadPutts`; logged `clubhouse.stats.putts` | strokes-gained.test › CH-5211 |
 | CH-5212 | The spray read throws | Off the tee and Approach › Where shots finish: "Where shots finish didn’t load." + Try again. (Production's own action answers a failed read with an empty response, so that failure reads as CH-5315, not this) | `loadSpray`; logged `clubhouse.stats.spray` | stats-parity.test › CH-5212 |
 | CH-5213 | The round cache doesn't load | "Some round figures didn’t load." + Try again above the overview figures | `loadRoundCache`; logged `clubhouse.stats.roundCache` | stats-player.test › CH-5213 |
+| CH-5214 | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) | In the Goals section, above the goals: "Suggested goals didn’t load." + "Your goals are fine. Try again in a moment." + Try again. Not drawn as "no suggestions" | `GoalSuggestions` (`ChPlayerProfile.goalSuggestionsError`) | stats-goals.test › CH-5214 |
+| CH-5215 | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) | One line under the section chips: "CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment." No section draws a count line (never "0 reads"); the rest of Game detail stays | `GameDetail`, `loadStatsReads`; logged `clubhouse.coachhelm.visible` / `dismissed` / `newestRounds` / `gate`, or `clubhouse.stats.reads` | stats-player.test › CH-5215; game-detail-reads.test; stats-reads.test (data) |
 
 ## 53xx Empty
 
@@ -76,13 +83,14 @@ its own boundary, so a crash stays inside the tab.
 | CH-5315 | No tee shots or approaches with a finish are logged in the window | Where shots finish: "No tee shots with a finish are logged in this window." / "No approach shots with a finish are logged in this window." | `TeeMore`, `ApproachMore` | stats-parity.test › CH-5315 |
 | CH-5316 | Approach proximity against the Tour: a range under 10 shots, or no approaches with a finish distance | The range is left ungraded and named: "175+ yards: 7 shots, under 10"; with none: "No approach shots with a finish distance are logged in this window." | `GameDetail` | stats-parity.test › CH-5316 |
 | CH-5317 | A More detail panel with no data behind it (outcomes by par, hole-out, toughest holes, fairways by tee type, tee miss by club, strokes to hole out, misses by distance, sand saves, up and downs, up and down by miss direction, finish after the chip, putting by distance, break tables, practice target, the Tour table) | One plain line in the panel, in its own words ("No par 4 or par 5 tee shots are logged in this window."; "No distance and break has 8 putts yet, so there is no reliable practice target."); a figure with none is a dash | `GameMore` (`Empty`) | stats-parity.test › CH-5317 |
-| CH-5318 | A standing-table row is under its sample floor | Under the row's label, while it has no value: "Needs 10 approaches from the range.", "Needs 10 putts in the band.", "Needs 3 tournament or qualifier rounds and 3 practice rounds.", "Needs 5 rounds scored hole by hole." | `FieldTable` | stats-parity.test › CH-5318 |
+| CH-5318 | A standing-table row is under its sample floor | Under the row's label, while it has no value: "Needs 10 approaches from the range.", "Needs 10 putts in the band.", "Needs 3 tournament or qualifier rounds and 3 practice rounds.", "Needs 5 rounds scored hole by hole." | `OverviewZones` (`.ch-zfloor`; the standing table `FieldTable` it replaced was removed 2026-10-21) | stats-parity.test › CH-5318 |
 | CH-5319 | The window has more 18-hole rounds than the shot-level reads take (100) | Under the Game detail tabs: "This window has more rounds than the shot-level figures read, so they cover the newest 100." | `GameDetail` (`extra.truncated`) | stats-parity.test › CH-5319 |
 | CH-5320 | The round filter leaves none of this player's rounds | "No rounds match these filters." + "Try a wider time, fewer round types, or clear the filters to see every round again." + Clear filters, in place of the Overview, Game detail and Rounds content (on the phone, above Development). Development stays: focus areas and goals do not depend on rounds. No "early read" of nothing (CH-5305 and CH-5308 are not shown). The Filter button, the chips and the count line stay | `FilterEmpty` in `StatsPlayer`, `StatsPlayerPhone` | stats-filter-ui.test › CH-5320 |
 | CH-5321 | The sheet's round list (Only these, Exclude these) has nothing to offer | "No rounds to pick from." + "Nothing matches the round type, course and time above. Widen them, then pick." Or, when the range starts before the season, "Rounds before Aug 1 load once the range is applied. Apply it, then open Filter again to pick among them." | `FilterSheet` | stats-filter-ui.test › CH-5321 |
 | CH-5322 | The sheet's round list is cut at 200 rounds | "Showing the newest 200 of 250 rounds. Narrow the time or the course to reach the rest." under the list | `FilterSheet`, `PICK_LIST_MAX` | stats-filter-ui.test › CH-5322 |
 | CH-5323 | The filter lets 9-hole rounds in (Holes: 9 holes or Both) | A note under the count line: "Per-round figures are per 18 holes: a 9-hole round counts as half a round." The chip reads "9 holes" or "18 and 9 holes". Scoring, putts, birdies, strokes gained and the trend are per 18 holes (a 9-hole score is doubled, and the lines say so); the rates pool the holes; personal bests list 18-hole and 9-hole rounds apart; Game detail says how the rounds count. At the default of 18 holes it says nothing | `StatsFilter`, `GameDetail`, `RoundsExtra` (desktop and phone) | stats-filter-ui.test › CH-5323 |
 | CH-5324 | No round of the default length (18 holes), but this player has 9-hole rounds in this window | Above the figures: "Jonah has 9-hole rounds in this window, which the 18-hole view leaves out. Choose 9 holes or Both in Filter to see them." (a player sees "You have"). Not shown when a filter is on (that is CH-5320), when there are rounds to show, or when Both would show nothing in this window | `NineHint` (`StatsPlayer`, `StatsPlayerPhone`) | stats-filter-ui.test › CH-5324 |
+| CH-5325 | Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed) | Under the Target field: "No starting point yet. Set a target to aim for." or "Couldn’t look up your starting point. You can still set a target." The field is empty for the player to fill in | `GoalSheet` (`suggestGoalTarget`) | stats-goals.test › CH-5325 |
 
 ## 54xx Loading
 
@@ -92,6 +100,14 @@ its own boundary, so a crash stays inside the tab.
 | CH-5402 | Changing the window, the round filter or the player (pager) | The page dims and is marked busy until the new rounds land; the scroll position stays | `useTransition`, `.ch-st[aria-busy]` | stats-player.test › CH-5402 |
 | CH-5403 | A player's stats are loading: their own, or a coach's `?player=` | The profile's shape in place: hero with avatar, name and four figures, the tabs and the window switch, then a chart frame (the team page keeps CH-4401) | `StatsProfileSkeleton` via `StatsRouteSkeleton` in the route's loading.tsx (the shell's role and `?player=`) | stats-player.test › CH-5403 |
 | CH-5404 | A player's answer to a proposed focus area is being sent | The pressed button reads "Accepting…" or "Declining…" and both are disabled until it lands | `ProposalAnswer` | stats-player.test › CH-5404 |
+| CH-5405 | A goal is being started, a suggestion answered, or a goal changed | The pressed button reads "Starting…", "Dismissing…", "Pausing…", "Resuming…" or "Abandoning…" and its neighbours are disabled until it lands | `GoalSheet`, `SuggestionRow`, `GoalStatus` | stats-goals.test › CH-5405 |
+| CH-5406 | Set a goal: the starting point for the chosen stat is being looked up | Under the Target field: "Finding your starting point…"; the field's placeholder says the same. A new stat starts it again and clears a filled-in target | `GoalSheet` (`suggestGoalTarget`) | stats-goals.test › CH-5406 |
+
+## 55xx Confirm
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-5501 | A coach presses Abandon on a goal | "Abandon this goal?" + "Putting stops tracking progress and stays in the list marked Abandoned." + Keep it / Abandon goal ("Abandoning…"). Keep it changes nothing | `GoalStatus` (`Modal`) | stats-goals.test › CH-5501 |
 
 ## 56xx Motion
 
@@ -99,7 +115,7 @@ its own boundary, so a crash stays inside the tab.
 | --- | --- | --- | --- | --- |
 | CH-5601 | Changing tabs | The underline slides to the new tab (260ms) | `layoutId` on `.ch-tab-t__bar` | preview |
 | CH-5602 | Opening Add focus area | On desktop the sheet rises 6px and fades in from 98% (260ms); on the phone it rises from the bottom edge (260ms) and drags down to close (the shell's CH-1611). Instant with reduced motion or Animations off | `Modal` in `FocusAreaSheet` | preview |
-| CH-5604 | A new window's figures arrive | Each figure that changed crossfades to its new value with a 6px rise (base in, quick out) (the gauges move with the data). No count-up. Instant with reduced motion | `Swap inline` in `FigureCard` | preview |
+| CH-5604 | A new window's figures arrive | Each figure that changed crossfades to its new value with a 6px rise (base in, quick out) (the gauges move with the data). No count-up. Instant with reduced motion | Not drawn since `FigureCards` was removed (2026-10-21): the profile's figures change in place. Reserved | preview |
 | CH-5603 | The tab's panel swaps | The underline moves on the press and the panel renders just behind it (`useDeferredValue`); the new panel fades in with a 6px rise (base) while the old one fades out (quick), hidden from assistive tech. Instant with reduced motion; never on first paint | `Swap` (`ui/Swap.tsx`) | stats-player.test › CH-5201 51402 |
 
 ## 57xx Haptics

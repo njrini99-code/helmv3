@@ -27,6 +27,7 @@
  */
 
 import { staleDataSuffix } from '@/lib/coachhelm/v3/engine/window-honesty';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadLastRoundDate } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
 import { round } from '@/lib/golf/stat-formulas';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
@@ -134,6 +135,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
   readonly insightType = 'scrambling';
   readonly category: InsightCategory = 'short_game';
   readonly minSampleN = 5; // save opportunities — a sand-save % off 1-2 bunker holes is noise
+  /** Reads the last 90 days ending today (root-cause scope, flag-on only). */
+  protected override readonly rollingWindowDays = 90;
 
   // Descriptive card (audit row 28): it measures the player's own bunker
   // outcomes, so a missing scrambling_pct_sand standing row must not hide it.
@@ -196,6 +199,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       // n is the rate's own denominator (bunker holes), so the base-class
       // floor and the printed sample describe the same thing.
       sampleN: saves.n,
+      // Slice 0b: the rounds behind these bunker holes stamp the window.
+      windowRoundIds: [...new Set(shots.map((s) => s.round_id))],
       playerValue,
       lie: this.lie,
       attempts,
@@ -222,32 +227,6 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const anchor = cohortAnchor('scrambling_pct_sand', agg.cohort_gender) ?? 50;
     const anchorLabel = cohortAnchorLabel(agg.cohort_gender, 'sand save');
 
-    let title: string;
-    let driver: string;
-    if (agg.failure_mode === 'lag' && leaveDisp) {
-      // Headline-inversion: escape is fine, the leak is distance control + lag.
-      title = `Bunkers: it's the lag, not the escape (${saveDisp} up-and-down)`;
-      driver =
-        `You ESCAPE the bunker fine (${escapePct}% of your ${agg.attempts} sand shots reached ` +
-        `the green), but you finish ${leaveDisp} from the hole and then 2-putt ` +
-        `(${agg.two_putt_after_reach_n} of ${agg.reached_green_n} reached greens). The driver is ` +
-        `distance control OUT of the sand and the lag putt that follows, not your splash. ` +
-        `Drill: bunker shots to a 6-ft circle (carry-to-rollout control), then 10-20 ft lag putts.`;
-    } else if (agg.failure_mode === 'escape') {
-      title = `Bunkers: escape is the leak (${saveDisp} up-and-down)`;
-      driver =
-        `You're leaving balls in the bunker: only ${escapePct}% of your ${agg.attempts} sand shots ` +
-        `reached the green. Before distance control, fix the escape: open the face, ` +
-        `splash a full cushion of sand under the ball, and accelerate through. ` +
-        `Drill: dollar-bill splash drill until 9/10 escape the lip.`;
-    } else {
-      title = `Sand save rate: ${saveDisp}`;
-      driver =
-        `Across ${agg.rounds_played} rounds you got up-and-down ${saveDisp} of the time from sand ` +
-        `(${agg.attempts} attempts, ${escapePct}% reached the green). No single failure mode ` +
-        `dominates yet. Keep logging bunker shots to sharpen the read.`;
-    }
-
     // A 5-hole rate moves 20 points per hole; print its 95% range beside it.
     const ci = wilsonInterval(agg.saves_made, agg.save_n);
     const saveNoun = agg.save_source === 'hole_flag' ? 'bunker hole' : 'sand shot';
@@ -255,13 +234,43 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
       ? ` Sand saves: ${agg.saves_made} of ${agg.save_n} ${saveNoun}${agg.save_n === 1 ? '' : 's'} ` +
         `(95% range ${Math.round(ci.low)}-${Math.round(ci.high)}%).`
       : '';
-    const content =
-      `${driver}${rangeClause} ${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour sand-save average is ~${anchor}%.` +
-      staleDataSuffix(agg.last_round_date);
+
+    // One template, two voices (engine/coach-voice.ts): the player's copy and
+    // the coach's (evidence.coach_copy) state the same numbers.
+    const copy = inBothVoices((v) => {
+      let title: string;
+      let driver: string;
+      if (agg.failure_mode === 'lag' && leaveDisp) {
+        // Headline-inversion: escape is fine, the leak is distance control + lag.
+        title = `Bunkers: it's the lag, not the escape (${saveDisp} up-and-down)`;
+        driver =
+          `${v.pick('You ESCAPE', 'The player ESCAPES')} the bunker fine (${escapePct}% of ${v.your} ${agg.attempts} sand shots reached ` +
+          `the green), but ${v.pick('you finish', 'they finish')} ${leaveDisp} from the hole and then 2-putt ` +
+          `(${agg.two_putt_after_reach_n} of ${agg.reached_green_n} reached greens). The driver is ` +
+          `distance control OUT of the sand and the lag putt that follows, not ${v.your} splash. ` +
+          `${v.pick('Drill', 'Drill to assign')}: bunker shots to a 6-ft circle (carry-to-rollout control), then 10-20 ft lag putts.`;
+      } else if (agg.failure_mode === 'escape') {
+        title = `Bunkers: escape is the leak (${saveDisp} up-and-down)`;
+        driver =
+          `${v.pick("You're", 'The player is')} leaving balls in the bunker: only ${escapePct}% of ${v.your} ${agg.attempts} sand shots ` +
+          `reached the green. ${v.pick('Before distance control, fix the escape: open the face, ', 'Before distance control, fix the escape: have the player open the face, ')}` +
+          `splash a full cushion of sand under the ball, and accelerate through. ` +
+          `${v.pick('Drill', 'Drill to assign')}: dollar-bill splash drill until 9/10 escape the lip.`;
+      } else {
+        title = `Sand save rate: ${saveDisp}`;
+        driver =
+          `Across ${agg.rounds_played} rounds ${v.player} got up-and-down ${saveDisp} of the time from sand ` +
+          `(${agg.attempts} attempts, ${escapePct}% reached the green). No single failure mode ` +
+          `dominates yet. ${v.pick('Keep logging bunker shots to', 'More logged bunker shots will')} sharpen the read.`;
+      }
+      const content =
+        `${driver}${rangeClause} ${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour sand-save average is ~${anchor}%.` +
+        staleDataSuffix(agg.last_round_date);
+      return { title, content };
+    });
 
     return {
-      title,
-      content,
+      ...copy,
       // A clear escape/lag leak is actionable; mixed is descriptive. Phase A's
       // leveragePriorityFloor can still upgrade from the counterfactual.
       priority: agg.failure_mode === 'mixed' ? 'low' : 'medium',

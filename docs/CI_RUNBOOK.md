@@ -1,5 +1,28 @@
 # CI Runbook — Triaging Pending / Red PR Checks
 
+## 2026-10-21 — Quick tier on follow-up pushes, full suite at land
+
+Measured on 2026-10-21: CI jobs ran 1 to 7 minutes but waited 5 to 13 minutes
+for a runner, because ~20 jobs per push competed for the account's 20 slots
+(GitHub Pro, from later that day, raises the cap to 40).
+Runner-minutes per push are the lever, so a follow-up push (`synchronize`) now
+runs a quick tier:
+
+- `Unit tests`: shard 1 runs the related tests unsharded; shards 2-5 stop after
+  the scope step without installing.
+- `Next build` runs only if `build` paths changed, `Supabase lint + RLS tests`
+  only if `db` paths changed (`.github/path-filters.yml`).
+- `Clubhouse presentation quality` does not run on a follow-up push.
+- Static checks, TypeScript, Lint, World Model, Review Gate and CodeQL are
+  unchanged.
+
+The full suite still runs when a PR is opened, reopened or marked ready, on
+every `main` push, and on demand. `npm run pr:land` already refuses a head with
+no full five-shard run; it now starts that run itself
+(`gh workflow run ci.yml --ref <branch>`) and asks you to land again when it is
+green. A merge through the GitHub UI after only a quick run is not protected by
+that guard: land with `pr:land`.
+
 ## 2026-10-07 — Plan phase 5: what moved, and the rules that came with it
 
 - **Advisory browser jobs left `main`'s push path.** `Playwright PR smoke
@@ -314,6 +337,15 @@ fast-forwards the canonical checkout, and runs
 `node scripts/worktree-lifecycle.mjs --retire`. Refuses a non-`agent/*`
 branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 
+It also refuses unless one CI run of the head ran the whole unit suite: every
+`Unit tests (n)` job's `Unit tests (shard n/5)` step must have concluded
+`success` on all five shards. A follow-up push runs only the related tests (in a
+separate `Related unit tests` step of each shard) and skips the full-suite step,
+so the required contexts can be green without the suite having run (it let a
+broken test onto `main` on 2026-10-21). On a refusal, flip the PR to draft and
+back to ready to get a full run. A PR with no code-relevant change (the path
+gate skips the scope step) passes without one.
+
 | Check | Source | What it validates | Gate type |
 |---|---|---|---|
 | `CI aggregate` | `ci.yml` | aggregate: `Static checks` (schema invariants, feature knowledge, control plane, bridge env, Deno edge functions, business contracts, route hygiene, import cycles, generated artifacts — named steps of one job since 2026-09-02; DB-types drift moved to `types-regen.yml` 2026-09-23), `TypeScript` (tsgo on PRs, plus tsc on push to `main`) and `Lint` (ESLint + ratchets), parallel jobs since 2026-10-07 (one job from 2026-09-23 to then) — these three ALWAYS run — plus `Unit tests` ×5, `Next build`, and **`Supabase lint + RLS tests`**, which finish green with every step skipped (an in-job path gate since 2026-09-23; they SKIPPED as jobs before) when `detect-changes` (`.github/workflows/detect-changes.yml`, a shared `dorny/paths-filter` reusable workflow, 2026-09-06) finds no changed path under `src/**`, `supabase/**`, `e2e/**`, `package*.json`, `next.config.*`, `tsconfig*.json`, `vitest.config.ts`, `eslint.config.mjs`, `tailwind.config.*`, `postcss.config.*`, `middleware.ts`, `scripts/**/*.{ts,mjs}`, or `ci.yml`/`detect-changes.yml` themselves. Those three heavy jobs run in parallel with everything else, with no `needs:` (2026-09-23) (2026-09-22; the 2026-09-06 `needs: [typecheck, lint]` ordering added ~4 min per PR to save runner minutes that are free on a public repo). `main` branch protection no longer requires branches to be up to date (2026-09-22): each merge used to force every open PR to rerun CI, and a merge queue is unavailable on a user-owned repo; push-to-main CI still runs the full set. A docs-only or config-only PR outside that list finishes in minutes (detect + static + typecheck + lint + aggregate, no install-heavy build/test/Supabase job); a `push` to `main` always runs the full set. | **Hard gate** — uniquely named since 2026-08-19; a green `CI aggregate` now really is CI's |
@@ -328,6 +360,7 @@ branch unless `--any-branch` is passed; see `scripts/pr-land.mjs`.
 | `ci/circleci: android-compile` | CircleCI | Android `assembleDebug` (no signing), branch-gated: `main` / `release/*` / `android/*` / `capacitor/*` / `ci/android-*` | Advisory unless the PR touches Android |
 | `migration-lockdown / block-historical-edits` | `migration-lockdown.yml` | blocks edits to already-applied migrations | **Hard gate** — promoted to required 2026-09-05, applied and verified live 2026-09-06. Its changed-path check is its own `git diff` inside the job (2026-10-07); it read the shared `detect-changes.yml`'s `migrations` output from 2026-09-06 to then. |
 | `Capture + upload Sentry snapshots` | `nightly.yml` (`sentry-snapshot-capture` job) | visual diff of a curated screen set against Sentry Snapshots | Advisory — **folded in from the now-deleted `sentry-snapshots.yml` (2026-09-06)**; since 2026-10-07 lives in `nightly.yml` (nightly and `workflow_dispatch` only), plus an in-job `SENTRY_SNAPSHOTS_AUTH_TOKEN` check step (the old separate "Check Sentry snapshot prerequisites" job is now a step); `push` to `main` always runs to refresh the base build; consumes `next-build`'s uploaded `.next` artifact instead of running its own `npm run build` <!-- markdownlint-disable-line MD013 --> |
+| `Clubhouse write journeys and dark accessibility scan` | `clubhouse-journeys.yml` (`journeys` job) | Clubhouse write journeys (round setup to submit, Calendar publish and edit, Qualifiers squad confirmed, Team Hub post and acknowledgement, Settings names, Messages send and reply) in Chromium and WebKit against a Supabase stack on the runner (`playwright.clubhouse-journeys.config.ts`), then `scripts/clubhouse/a11y.mjs` with `CH_SCHEME=light,dark` on the same `next dev` | Advisory — added 2026-10-16; nightly at 09:47 UTC and `workflow_dispatch` only, never on a PR; no secrets; the scan step is `continue-on-error` until its dark run is clean (docs/clubhouse/ALL_PAGE_AUDIT.md) <!-- markdownlint-disable-line MD013 --> |
 | `check (advisory — routes + owner issues)` | `baseball-readiness-matrix.yml` | every route cited in the BaseballHelm readiness matrix resolves; every owner-issue link is open | Advisory, **not on `pull_request`** since 2026-09-06 (neither check depends on a PR's diff) — runs on `push` to `main` touching the matrix doc/scripts, plus a Wednesday 08:30 UTC `schedule` (`config/routines.yml`'s `baseball-readiness-matrix-weekly`) <!-- markdownlint-disable-line MD013 --> |
 | `Vercel` / `Vercel Preview Comments` | Vercel GitHub App | was posting a Vercel Toolbar comment-sync status as recently as PR #1835; absent from every PR audited from #1839 on | **No longer posts on PRs.** Git deploys are disconnected (`vercel.json`'s `deploymentEnabled: {"*": false}`, no branch auto-deploys, production is an on-demand CLI promote) — there is nothing left for the GitHub App to report against. Do not wait on this check; its absence is expected, not stuck. |
 

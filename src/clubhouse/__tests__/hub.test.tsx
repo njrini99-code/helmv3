@@ -39,7 +39,7 @@ const teamOf = vi.hoisted(() => ({ current: null as unknown }));
 vi.mock('../routes/team', () => ({ resolveClubhouseTeam: () => Promise.resolve(teamOf.current) }));
 
 import Loading from '@/app/golf/(dashboard)/dashboard/team-hub/loading';
-import { eventSpan, folders, formatters, loadTeamHub, replyIsClosed, type ChTeamHub } from '../data/hub';
+import { eventSpan, folders, formatters, loadTeamHub, replyIsClosed, weekOf, type ChTeamHub } from '../data/hub';
 import { ClubhouseHubRoute } from '../routes/hub';
 import { HubSkeleton } from '../screens/hub/HubSkeleton';
 import { parseHubTab, TeamHub, type ChHubTab } from '../screens/hub/TeamHub';
@@ -158,7 +158,7 @@ describe('Team Hub · player', () => {
     const user = userEvent.setup();
     const settle = new Map<string, (result: { success: boolean; error?: string }) => void>();
     const completeTask = vi.fn((id: string) => new Promise<{ success: boolean; error?: string }>((resolve) => settle.set(id, resolve)));
-    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask }));
+    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask }), 'tasks');
     const waiver = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
     await user.click(waiver());
     expect(waiver()).toBeDisabled();
@@ -177,7 +177,7 @@ describe('Team Hub · player', () => {
 
   it('CH-10410 a failed completion restores a loaded completed task that was already reopened this visit', async () => {
     const user = userEvent.setup();
-    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }));
+    const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }), 'tasks');
     const schedule = () => screen.getByRole('button', { name: /^Upload class schedule/ });
     await user.click(schedule());
     await waitFor(() => expect(schedule()).toHaveAttribute('aria-pressed', 'false'));
@@ -192,11 +192,13 @@ describe('Team Hub · player', () => {
     const user = userEvent.setup();
     let settle!: (result: { success: boolean; error?: string }) => void;
     const acknowledge = vi.fn(() => new Promise<{ success: boolean; error?: string }>((resolve) => { settle = resolve; }));
-    const data = { ...PREVIEW_HUB_PLAYER, announcements: { ...PREVIEW_HUB_PLAYER.announcements, rows: PREVIEW_HUB_PLAYER.announcements.rows.map((a, i) => ({ ...a, needAck: i < 2 })) } };
-    show(data, writes({ acknowledge }));
-    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    show(PREVIEW_HUB_PLAYER, writes({ acknowledge }));
+    // Home's post tile carries the Got it; the queue does not ask for the same post twice.
+    const post = screen.getByRole('region', { name: 'Latest post' });
+    expect(screen.getAllByRole('button', { name: 'Got it' })).toHaveLength(1);
+    await user.click(within(post).getByRole('button', { name: 'Got it' }));
     expect(code('CH-10409')!.textContent).toContain('Acknowledging Pairings and tee times for Thursday');
-    expect(screen.getByRole('heading', { level: 3, name: 'Pairings and tee times for Thursday' })).toBeTruthy();
+    expect(within(post).getByText('Pairings and tee times for Thursday')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
     expect(screen.queryByText('Acknowledged')).toBeNull();
     settle({ success: false, error: 'refused' });
@@ -206,7 +208,9 @@ describe('Team Hub · player', () => {
     await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(2));
     expect(code('CH-10409')).not.toBeNull();
     settle({ success: true });
-    await waitFor(() => expect(screen.getByRole('heading', { level: 3, name: 'Short-game block moves to Green 2' })).toBeTruthy());
+    // The post stays where it was, now acknowledged: nothing swaps in under the pointer.
+    await waitFor(() => expect(within(post).getByText('Acknowledged')).toBeTruthy());
+    expect(within(post).getByText('Pairings and tee times for Thursday')).toBeTruthy();
     expect(code('CH-10409')).toBeNull();
   });
 
@@ -215,13 +219,13 @@ describe('Team Hub · player', () => {
     let settle!: (result: { success: boolean }) => void;
     const completeTask = vi.fn(() => new Promise<{ success: boolean }>((resolve) => { settle = resolve; }));
     const w = show(PREVIEW_HUB_PLAYER, writes({ completeTask }));
-    const waiver = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
+    const waiver = () => screen.getByRole('button', { name: /^Post two practice rounds/ });
     await user.click(waiver());
     await tab('Announcements');
     await tab('Home');
     expect(waiver()).toBeDisabled();
     expect(waiver()).toHaveAttribute('aria-busy', 'true');
-    expect(code('CH-10410')).toHaveAttribute('aria-label', 'Saving Sign travel waiver');
+    expect(code('CH-10410')).toHaveAttribute('aria-label', 'Saving Post two practice rounds');
     await user.click(waiver());
     expect(completeTask).toHaveBeenCalledTimes(1);
     expect(w.uncompleteTask).not.toHaveBeenCalled();
@@ -317,20 +321,30 @@ describe('Team Hub · player', () => {
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
   });
 
-  it('100101 Home: RSVPs, the post waiting on them, the next trip, updates and tasks', () => {
+  it('100101 Home: the trip counting down, the queue of what is asked, the week, the latest post, Updates and files', () => {
     show(PREVIEW_HUB_PLAYER);
     expect(screen.getByRole('heading', { level: 1, name: 'Team Hub' })).toBeTruthy();
     // A player is never shown their own role (wave 7); the coach keeps "Coach view" (100101 below).
     expect(screen.queryByText('Player view')).toBeNull();
     expect(document.querySelector('.ch-hb-role')).toBeNull();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents']);
-    expect(screen.getByText('2 need a reply')).toBeTruthy();
-    expect(screen.getByRole('radio', { name: 'Going', checked: true })).toBeTruthy();
-    expect(screen.getByText('Needs your acknowledgement')).toBeTruthy();
-    expect(screen.getByRole('heading', { level: 3, name: 'Pairings and tee times for Thursday' })).toBeTruthy();
-    expect(screen.getByText('Traveling')).toBeTruthy();
-    expect(screen.getByRole('heading', { name: 'Your tasks' })).toBeTruthy();
-    expect(screen.getByText('2 open')).toBeTruthy();
+    // A tab that asks for something carries its figure (aria-hidden: the strip says it to a screen reader).
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
+    expect(screen.getByRole('tab', { name: 'Announcements' })).toBeTruthy();
+    const trip = screen.getByRole('region', { name: 'Next trip' });
+    expect(within(trip).getByText('20')).toBeTruthy();
+    expect(within(trip).getByText('days to go')).toBeTruthy();
+    expect(within(trip).getByText('You’re traveling')).toBeTruthy();
+    // Two replies and three open tasks; the post waiting on them is in its own tile.
+    const queue = screen.getByRole('region', { name: 'Your queue' });
+    expect(within(queue).getByText('5 to do')).toBeTruthy();
+    expect(within(queue).getByRole('radiogroup', { name: 'Your reply for Team dinner' })).toBeTruthy();
+    expect(within(queue).getByRole('button', { name: 'Show all 5' })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Latest post' })).getByRole('button', { name: 'Got it' })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'This week' })).getByText('Short-game block')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Updates' })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Files' })).getByText('Pairings and tee times')).toBeTruthy();
+    // RSVPs are no longer Home's centre: no RSVP section, no band.
+    expect(screen.queryByRole('heading', { name: 'Your RSVPs' })).toBeNull();
   });
 
   it('101301 a reply is optimistic and ticks; CH-10001 a refused reply puts it back', async () => {
@@ -355,7 +369,7 @@ describe('Team Hub · player', () => {
 
   it('101301 checking off a task is optimistic; CH-10003 a refusal unchecks it', async () => {
     const user = userEvent.setup();
-    show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }));
+    show(PREVIEW_HUB_PLAYER, writes({ completeTask: refuse() }), 'tasks');
     const box = screen.getByRole('button', { name: 'Sign travel waiver' });
     await user.click(box);
     await expectCode('CH-10003', /Couldn’t mark Sign travel waiver done/);
@@ -364,7 +378,7 @@ describe('Team Hub · player', () => {
 
   it('a tick on a done task opens it again (an accidental tick), with its own write; CH-10011 a refusal leaves it done', async () => {
     const user = userEvent.setup();
-    const w = show(PREVIEW_HUB_PLAYER, writes());
+    const w = show(PREVIEW_HUB_PLAYER, writes(), 'tasks');
     const box = () => screen.getByRole('button', { name: /^Sign travel waiver/ });
     await user.click(box());
     await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
@@ -373,7 +387,7 @@ describe('Team Hub · player', () => {
     expect(vi.mocked(w.uncompleteTask).mock.calls[0]![0]).toBe(vi.mocked(w.completeTask).mock.calls[0]![0]);
     await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('false'));
     cleanup();
-    const refused = show(PREVIEW_HUB_PLAYER, writes({ uncompleteTask: refuse() }));
+    const refused = show(PREVIEW_HUB_PLAYER, writes({ uncompleteTask: refuse() }), 'tasks');
     await user.click(box());
     await waitFor(() => expect(box().getAttribute('aria-pressed')).toBe('true'));
     await user.click(box());
@@ -423,15 +437,21 @@ describe('Team Hub · player', () => {
   it('CH-10306 CH-10301 a player with nothing yet', () => {
     show(PREVIEW_HUB_PLAYER_EMPTY);
     expect(code('CH-10306')!.textContent).toMatch(/No team updates yet/);
-    show({ ...PREVIEW_HUB_PLAYER, rsvps: { rows: [], error: false } });
-    expect(code('CH-10301')!.textContent).toMatch(/You’re all caught up/);
+    cleanup();
+    // A week with nothing on it says so in its tile.
+    show({ ...PREVIEW_HUB_PLAYER, week: PREVIEW_HUB_PLAYER_EMPTY.week });
+    expect(code('CH-10301')!.textContent).toMatch(/Nothing on the calendar this week/);
   });
 
   it('CH-10302 CH-10303 CH-10304 CH-10307 CH-10308 each empty tab says what fills it', async () => {
-    const d = { ...PREVIEW_HUB_PLAYER_EMPTY, rsvps: PREVIEW_HUB_PLAYER.rsvps };
+    // An event this week keeps Home from being the empty page, so each tile's own empty shows.
+    const d = { ...PREVIEW_HUB_PLAYER_EMPTY, week: PREVIEW_HUB_PLAYER.week };
     show(d);
     expect(code('CH-10302')).not.toBeNull();
-    expect(code('CH-10303')).not.toBeNull();
+    // Nothing asked of the player: the queue says so.
+    expect(code('CH-10303')!.textContent).toMatch(/Nothing is asked of you/);
+    await tab('Tasks');
+    expect(code('CH-10303')!.textContent).toMatch(/No tasks right now/);
     await tab('Announcements');
     expect(code('CH-10307')).not.toBeNull();
     await tab('Travel');
@@ -444,7 +464,7 @@ describe('Team Hub · player', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show({ ...PREVIEW_HUB_PLAYER, updates: { rows: null as never, error: false } });
     expect(code('CH-10205')).not.toBeNull();
-    expect(screen.getByRole('heading', { name: 'Your RSVPs' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.updates', severity: 'high' }));
     spy.mockRestore();
   });
@@ -476,15 +496,51 @@ describe('Team Hub · coach', () => {
     expect(screen.queryByText('B.pdf shared with the team')).toBeNull();
   });
 
-  it('100101 Home: replies as counts, read receipts, travelers; the Tasks tab', async () => {
+  it('100101 Home: the trip, the week with replies as counts, who owes what, the newest post’s receipts and the tasks', async () => {
+    const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
     expect(screen.getByText('Coach view')).toBeTruthy();
-    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements', 'Travel', 'Documents', 'Tasks']);
-    expect(screen.getByText('4 going · 1 maybe · 0 can’t · 1 no reply')).toBeTruthy();
-    expect(screen.getByText('5 of 6 acknowledged')).toBeTruthy();
+    expect(screen.getAllByRole('tab').map((t) => t.textContent)).toEqual(['Home', 'Announcements1', 'Travel', 'Documents', 'Tasks1']);
+    expect(within(screen.getByRole('region', { name: 'Next trip' })).getByText('5 players traveling')).toBeTruthy();
+    // The week opens on today; a day with an event that takes replies shows how many have.
+    const week = screen.getByRole('region', { name: 'This week' });
+    await user.click(within(week).getByRole('button', { name: 'Wed 15: 1 event' }));
+    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(within(week).getByText(/5 of 6 replied/)).toBeTruthy();
+    expect(within(week).getByText(/4 going · 1 maybe · 0 can’t · 1 no reply/)).toBeTruthy();
+    const post = screen.getByRole('region', { name: 'Latest post' });
+    expect(within(post).getByText('of 6 acknowledged')).toBeTruthy();
+    await user.click(within(post).getByRole('button', { name: 'Jonah Okafor' }));
+    expect(within(post).getByText('Jonah Okafor hasn’t acknowledged it yet.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
+    expect(within(screen.getByRole('region', { name: 'Tasks' })).getByLabelText('3 of 5 done')).toBeTruthy();
     await tab('Tasks');
-    expect(screen.getByLabelText('3 of 5 done')).toBeTruthy();
+    expect(screen.getAllByLabelText('3 of 5 done').length).toBeGreaterThan(0);
+  });
+
+  it('100101 Waiting on: whoever owes the most first, a heading sorts, a name opens what they owe', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH);
+    const owe = screen.getByRole('region', { name: 'Waiting on' });
+    expect(within(owe).getByText('6 of 6 owe something')).toBeTruthy();
+    const names = () => within(owe).getAllByRole('rowheader').map((r) => r.textContent);
+    expect(names()[0]).toBe('Jonah Okafor');
+    await user.click(within(owe).getByRole('button', { name: /^Rounds/ }));
+    expect(within(owe).getByRole('columnheader', { name: /Rounds/ }).getAttribute('aria-sort')).toBe('ascending');
+    expect(names()[0]).toBe('Jonah Okafor');
+    await user.click(within(owe).getByRole('button', { name: /^Rounds/ }));
+    expect(names()[0]).toBe('Sofia Alvarez');
+    await user.click(within(owe).getByRole('button', { name: 'Player' }));
+    expect(names()[0]).toBe('Ava Lindqvist');
+    const jonah = within(owe).getByRole('button', { name: 'Jonah Okafor' });
+    expect(jonah.getAttribute('aria-expanded')).toBe('false');
+    await user.click(jonah);
+    expect(jonah.getAttribute('aria-expanded')).toBe('true');
+    expect(within(owe).getByText('Recovery nine')).toBeTruthy();
+    expect(within(owe).getByText('Pairings and tee times for Thursday')).toBeTruthy();
+    expect(within(owe).getByText('34 rounds in 30 days · 5 of 6 played in the last 14')).toBeTruthy();
+    await user.click(within(owe).getByRole('button', { name: /Announcements/ }));
+    expect(screen.getByRole('tab', { name: 'Announcements' }).getAttribute('aria-selected')).toBe('true');
   });
 
   it('CH-10101 CH-10109 CH-10102 CH-10402 101201 posting: a headline, a message (the server requires one), an audience; the post keeps its text when it fails (CH-10005)', async () => {
@@ -579,6 +635,8 @@ describe('Team Hub · coach', () => {
     show({ ...PREVIEW_HUB_COACH, players: [], playersError: true, updates: { rows: [], error: true } });
     expect(code('CH-1209')!.textContent).toMatch(/Updates and the team list didn’t load/);
     expect(code('CH-10208')).toBeNull();
+    // Waiting on keeps its heading and says why it is empty, without a notice of its own.
+    expect(within(screen.getByRole('region', { name: 'Waiting on' })).getByText(/once the team list loads/)).toBeTruthy();
   });
 
   it('CH-10208 a player never gets the team-list notice, and a coach whose roster loaded does not either', () => {
@@ -913,7 +971,7 @@ describe('Team Hub · coach', () => {
 
   it('CH-10201 the coach’s failed reads', () => {
     show(PREVIEW_HUB_COACH_FAILED);
-    expect(code('CH-10201')!.textContent).toMatch(/This week’s replies didn’t load/);
+    expect(code('CH-10201')!.textContent).toMatch(/This week didn’t load/);
   });
 
   it('CH-10309 no team: coach and player each get their own words', async () => {
@@ -932,7 +990,7 @@ describe('Team Hub · coach', () => {
 
   it('100102 ?tab= opens a tab the role has, else Home', () => {
     expect(parseHubTab('tasks', 'coach')).toBe('tasks');
-    expect(parseHubTab('tasks', 'player')).toBe('home');
+    expect(parseHubTab('tasks', 'player')).toBe('tasks');
     expect(parseHubTab('nonsense', 'player')).toBe('home');
     expect(parseHubTab(undefined, 'coach')).toBe('home');
   });
@@ -1007,6 +1065,60 @@ describe('Team Hub · the loader', () => {
     expect(asked.tasks).toContainEqual(['order', ['due_date', { ascending: false, nullsFirst: true }]]);
     expect(asked.tripEvents).toContainEqual(['not', ['event_type', 'in', '(class,practice,meeting)']]);
     expect(data.tripEvents.total).toBe(0);
+  });
+
+  it('QA rows a team flagged is_test never reach a coach: the test post, task, trip and file are left out, the real ones stay, and the task count drops with them', async () => {
+    base();
+    const post = (id: string) => ({ id, title: id, body: 'x', created_by: null, published_at: '2026-10-14T17:00:00Z', created_at: '2026-10-14T17:00:00Z', urgency: null, requires_acknowledgement: false, acknowledged_count: 0, recipient_count: 0, total_recipients: 0, task_count: 0, completed_task_count: 0, document_count: 0 });
+    actions.coachAnns.mockResolvedValue({ success: true, data: [post('real-post'), post('qa-post')] });
+    const doc = (id: string) => ({ id, title: id, folder: null, file_type: 'pdf', file_url: `x/${id}.pdf`, file_size: 10, updated_at: '2026-10-10T12:00:00Z', created_at: null, is_public: true });
+    actions.docs.mockResolvedValue({ data: [doc('real-doc'), doc('qa-doc')], error: null });
+    const soon = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+    const trip = (id: string) => ({ id, event_name: id, destination: 'Wilmington', departure_date: soon, return_date: soon, transportation_type: 'bus', event_id: null });
+    const task = (id: string) => ({ id, title: id, description: null, due_date: '2026-10-20', category: null, status: 'pending' });
+    // The flag read is by id for this team: it answers with the test rows only, and the main reads answer with everything.
+    const flagged = (ids: string[], all: unknown[], count?: number) => (filters: Array<[string, unknown[]]>) =>
+      filters.some(([k, a]) => k === 'eq' && a[0] === 'is_test' && a[1] === true)
+        ? { data: ids.map((id) => ({ id, is_test: true })) }
+        : { data: all, ...(count != null ? { count } : {}) };
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: { data: [], count: 0 },
+      golf_event_attendance: { data: [] },
+      golf_task_assignments: { data: [] },
+      golf_announcements: flagged(['qa-post'], []),
+      golf_documents: flagged(['qa-doc'], []),
+      golf_travel_itineraries: flagged(['qa-trip'], [trip('real-trip'), trip('qa-trip')]),
+      golf_tasks: flagged(['qa-task'], [task('real-task'), task('qa-task')], 2),
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.announcements.rows.map((a) => a.id)).toEqual(['real-post']);
+    expect(data.documents.folders.flatMap((f) => f.files.map((d) => d.id))).toEqual(['real-doc']);
+    expect(data.trips.rows.map((t) => t.id)).toEqual(['real-trip']);
+    expect(data.tasks.rows.map((t) => t.id)).toEqual(['real-task']);
+    expect(data.tasks.total).toBe(1);
+  });
+
+  it('a failed test-row read hides nothing and is logged, and an answer that ignores the filter never hides a real row', async () => {
+    base();
+    actions.coachAnns.mockResolvedValue({ success: true, data: [] });
+    const task = (id: string) => ({ id, title: id, description: null, due_date: '2026-10-20', category: null, status: 'pending' });
+    tables.current = {
+      golf_teams: team,
+      golf_team_members: { data: [] },
+      golf_events: { data: [], count: 0 },
+      golf_event_attendance: { data: [] },
+      golf_task_assignments: { data: [] },
+      golf_announcements: { error: { message: 'down' } },
+      golf_documents: { data: [] },
+      golf_travel_itineraries: { data: [] },
+      // No is_test on the rows: the flag read sees the same rows as the main read, and none of them is flagged.
+      golf_tasks: { data: [task('t1'), task('t2')], count: 2 },
+    };
+    const data = await loadTeamHub({ role: 'coach', teamId: 't1', userId: 'u1', playerId: null });
+    expect(data.tasks.rows.map((t) => t.id).sort()).toEqual(['t1', 't2']);
+    expect(logServer).toHaveBeenCalledWith('hub', 'testRows:golf_announcements', expect.anything());
   });
 
   it('C-20 a capped task list says so', () => {
@@ -1240,6 +1352,7 @@ const scenarios: Scenario[] = [
     code: 'CH-10003',
     key: 'completeTask',
     data: PREVIEW_HUB_PLAYER,
+    tab: 'tasks',
     failed: /Couldn’t mark Sign travel waiver done/,
     done: 'Sign travel waiver done',
     drive: (user) => user.click(screen.getByRole('button', { name: 'Sign travel waiver' })),
@@ -1741,7 +1854,7 @@ describe('Team Hub · roles, states and layout', () => {
     expect(screen.queryByRole('radio', { name: 'Going' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
     await tab('Tasks');
-    expect(screen.getByLabelText('3 of 5 done')).toBeTruthy();
+    expect(screen.getAllByLabelText('3 of 5 done').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Sign travel waiver' })).toBeNull();
   });
 
@@ -1766,7 +1879,7 @@ describe('Team Hub · roles, states and layout', () => {
   it('101402 CH-10201 CH-10202 Try again on a failed read has the server read the page again', async () => {
     const user = userEvent.setup();
     // One section failed: its own notice carries Try again.
-    show({ ...PREVIEW_HUB_COACH, rsvps: { rows: [], error: true } });
+    show({ ...PREVIEW_HUB_COACH, week: { days: [], error: true } });
     expect(router.refresh).not.toHaveBeenCalled();
     expect(code('CH-1209')).toBeNull();
     await user.click(within(code('CH-10201') as HTMLElement).getByRole('button', { name: 'Try again' }));
@@ -1782,7 +1895,7 @@ describe('Team Hub · roles, states and layout', () => {
     const user = userEvent.setup();
     show(PREVIEW_HUB_COACH_FAILED);
     const page = code('CH-1209') as HTMLElement;
-    expect(page.textContent).toMatch(/This week’s replies, announcements, travel, updates, tasks, documents and the team list didn’t load/);
+    expect(page.textContent).toMatch(/This week, announcements, travel, updates, tasks, documents and the team list didn’t load/);
     expect(within(page).getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
     for (const c of ['CH-10201', 'CH-10202', 'CH-10206', 'CH-10207']) {
       expect(code(c)).not.toBeNull();
@@ -1946,13 +2059,19 @@ describe('Team Hub · phone', () => {
     expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
   });
 
-  it('101901 the coach’s reply line on a phone names only the counts there (the board’s "4 going · 1 no reply"); desktop spells out all four', () => {
+  it('101901 on a phone the widgets stack, and Waiting on is a list whose rows open', async () => {
+    const user = userEvent.setup();
     show(PREVIEW_HUB_COACH);
-    expect(screen.getByText('4 going · 1 maybe · 1 no reply')).toBeTruthy();
-    expect(screen.queryByText('4 going · 1 maybe · 0 can’t · 1 no reply')).toBeNull();
+    const owe = screen.getByRole('region', { name: 'Waiting on' });
+    expect(within(owe).queryByRole('table')).toBeNull();
+    const jonah = within(owe).getByRole('button', { name: /^Jonah Okafor/ });
+    expect(jonah.textContent).toMatch(/2 replies · 1 post · 3 tasks, 1 late/);
+    await user.click(jonah);
+    expect(within(owe).getByText('Recovery nine')).toBeTruthy();
     cleanup();
     show({ ...PREVIEW_HUB_COACH, rsvps: { ...PREVIEW_HUB_COACH.rsvps, rows: PREVIEW_HUB_COACH.rsvps.rows.map((r) => ({ ...r, counts: { going: 0, maybe: 0, no: 0, none: 0 } })) } });
-    expect(screen.getAllByText('No one invited yet').length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Wed 15: 1 event' }));
+    expect(screen.getAllByText('No one invited').length).toBeGreaterThan(0);
   });
 
   it('F-53 an event no one is invited to draws no empty reply bar', () => {
@@ -2089,9 +2208,8 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
 describe('Team Hub · Edit an announcement', () => {
   it('101501 an edit starts from the post, offers only headline, message and acknowledgement, and sends the post’s id, the new words and its urgency as posted; the card shows it at once', async () => {
     const user = userEvent.setup();
-    const w = show(PREVIEW_HUB_COACH);
-    // Home shows the latest post: the same menu, the same sheet.
-    expect(screen.getByText('5 of 6 acknowledged')).toBeTruthy();
+    const w = show(PREVIEW_HUB_COACH, writes(), 'ann');
+    expect(screen.getByRole('button', { name: '5 of 6 acknowledged' })).toBeTruthy();
     await openRowMenu(user, /More for Pairings and tee times for Thursday/, 'Edit announcement');
     const dialog = within(await screen.findByRole('dialog', { name: 'Edit announcement' }));
     const headline = () => dialog.getByRole('textbox', { name: 'Headline' }) as HTMLInputElement;
@@ -2592,6 +2710,19 @@ describe('Team Hub · the trip’s dates and the class lines (Q-84)', () => {
     expect(eventSpan({ start_time: '2026-11-03T23:00:00Z', end_time: '2026-11-04T06:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-04' });
     expect(eventSpan({ start_time: '2026-11-03T22:00:00Z' }, f)).toMatchObject({ from: '2026-11-03', to: '2026-11-03' });
     expect(eventSpan({ start_time: '2026-11-05T00:00:00+00:00', end_time: '2026-11-03T00:00:00+00:00', all_day: true }, f)).toMatchObject({ from: '2026-11-05', to: '2026-11-05' });
+  });
+
+  it('Home’s week puts an all-day event on the date it was stored for, west of UTC too, and a timed one on its local day', () => {
+    const f = formatters('America/Los_Angeles', new Date('2026-10-14T18:00:00Z'));
+    const week = weekOf('2026-10-14', f, [
+      { id: 'a', title: 'Fall break', start_time: '2026-10-16T00:00:00+00:00', all_day: true, location: null, event_type: 'other' },
+      // 8 PM Pacific on the 15th is 3 AM UTC on the 16th.
+      { id: 't', title: 'Team dinner', start_time: '2026-10-16T03:00:00Z', all_day: false, location: null, event_type: 'team' },
+    ], []);
+    const on = (date: string) => week.find((d) => d.date === date)!.events.map((e) => e.title);
+    expect(on('2026-10-15')).toEqual(['Team dinner']);
+    expect(on('2026-10-16')).toEqual(['Fall break']);
+    expect(week.find((d) => d.date === '2026-10-16')!.events[0]!.time).toBe('All day');
   });
 
   it('the loader sends each event with the days it runs', async () => {

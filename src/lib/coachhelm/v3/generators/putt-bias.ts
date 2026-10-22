@@ -44,6 +44,7 @@ import {
   type DistanceBand,
 } from '@/lib/coachhelm/v3/stats/proportion-test';
 import { rateGapStrokes } from '@/lib/coachhelm/v3/counterfactual/measured-impact';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** Window for the shot-level putt-break read (days), completed rounds only. */
 const WINDOW_DAYS = 90;
@@ -246,6 +247,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const roundIds = rounds.map((r) => r.id);
 
     interface PuttShotRow {
+      round_id: string;
       putt_break: string | null;
       putt_made: boolean | null;
       putt_slope: string | null;
@@ -258,7 +260,7 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     // page boundaries stable (LOAD-BEARING — do not swap for created_at desc).
     const { data: putts, error: pErr } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
       fromUntyped(supabase, 'golf_shots')
-        .select('putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
+        .select('round_id, putt_break, putt_made, putt_slope, distance_to_hole_before, distance_unit_before')
         .eq('shot_type', 'putting')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
@@ -267,12 +269,14 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     if (!putts) return null;
 
     const rows: PuttRow[] = [];
+    const usedRounds = new Set<string>();
     for (const p of putts) {
       if (p.putt_made === null || p.putt_made === undefined) continue;
       if (p.putt_break !== 'left_to_right' && p.putt_break !== 'right_to_left') continue;
       const raw = p.distance_to_hole_before;
       if (raw === null || raw === undefined) continue;
       const distFt = p.distance_unit_before === 'yards' ? raw * 3 : raw; // feet default
+      usedRounds.add(p.round_id);
       rows.push({
         putt_break: p.putt_break,
         putt_slope: p.putt_slope,
@@ -306,6 +310,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     // sampleN gates on ROUNDS so the base-class minSampleN(=5) still applies.
     const base: PuttBiasAggregate = {
       sampleN: roundIds.length,
+      // Slice 0b: the rounds whose break-tagged putts fed the test.
+      windowRoundIds: [...usedRounds],
       playerValue: cut ? cut.weak_pct : 0,
       rounds_played: roundIds.length,
       significant: cut !== null,
@@ -342,13 +348,17 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
       const rtl = agg.rtl_pct ?? null;
       const cells = agg.testable_cells ?? 0;
       const ratesKnown = ltr !== null && rtl !== null;
-      const pooled = ratesKnown
-        ? ` Over the ${cells} distance-and-slope group${cells === 1 ? '' : 's'} with enough putts to test, you made ` +
+      const pooled = (v: Voice) => ratesKnown
+        ? ` Over the ${cells} distance-and-slope group${cells === 1 ? '' : 's'} with enough putts to test, ${v.you} made ` +
           `${Math.round(ltr)}% of left-to-right breaks (n=${agg.ltr_n ?? 0}) and ${Math.round(rtl)}% of right-to-left (n=${agg.rtl_n ?? 0}).`
         : '';
       return {
-        title: 'Putting break check: no directional bias detected',
-        content: `Across your last ${agg.rounds_played} rounds, no break direction stands out once distance and slope are controlled for.${pooled} Keep working both ways on the practice green.`,
+        ...inBothVoices((v) => ({
+          title: 'Putting break check: no directional bias detected',
+          content: `Across ${v.players} last ${agg.rounds_played} rounds, no break direction stands out once distance and slope are controlled for.${pooled(v)} ${v.pick('Keep working', 'Have them keep working')} both ways on the practice green.`,
+        })),
+        // No bias is the verdict, whichever side's raw rate is lower.
+        framing: 'neutral',
         priority: 'low',
         signature: 'putt_bias:balanced',
         evidence: {
@@ -390,17 +400,20 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     const strongDisp = `${Math.round(agg.strong_pct)}%`;
     const gap = Math.round(agg.gap_pp);
     const slopeText = agg.slope ? `, ${agg.slope}` : '';
-    const action =
-      agg.weakest_direction === 'left'
-        ? `Start your read higher on the left edge and commit to playing more break. Your makes drop on left-to-right putts, the classic under-read.`
-        : `Start your read higher on the right edge and commit to playing more break. Your makes drop on right-to-left putts, the classic under-read.`;
-    const slopeAction = agg.slope
-      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so rehearse that exact look.`
+    const edge = agg.weakest_direction === 'left' ? 'left' : 'right';
+    const action = (v: Voice) =>
+      `${v.pick('Start your read', 'Have the player start their read')} higher on the ${edge} edge and commit to playing more break. ` +
+      `${v.Your} makes drop on ${breakLabel} putts, the classic under-read.`;
+    const slopeAction = (v: Voice) => agg.slope
+      ? ` It shows up most on ${agg.slope} ${agg.band} putts, so ${v.pick('rehearse', 'have them rehearse')} that exact look.`
       : '';
 
     return {
-      title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
-      content: `On ${agg.band}${slopeText} putts you're making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action}${slopeAction}`,
+      ...inBothVoices((v) => ({
+        title: `Putting break: under-reading ${breakLabel} (${agg.band})`,
+        content: `On ${agg.band}${slopeText} putts ${v.pick("you're", 'the player is')} making ${weakDisp} of ${breakLabel} breaks vs ${strongDisp} the other way, a ${gap}-point gap at matched distance (n=${agg.weak_n}/${agg.strong_n}). ${action(v)}${slopeAction(v)}`,
+      })),
+      framing: 'leak',
       priority: 'medium',
       signature: `putt_bias:${agg.weakest_direction}:${agg.band}`,
       evidence: {

@@ -29,6 +29,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -49,5 +50,28 @@ describe('chSignOut', () => {
     await done;
     expect(steps.order).toEqual(['session ended']);
     expect(replace).toHaveBeenCalledWith('/golf/login');
+  });
+});
+
+describe('chEndSession', () => {
+  it("drops the service worker's cached pages before the login page loads (a shared phone, offline)", async () => {
+    const deleted: string[] = [];
+    vi.stubGlobal('caches', {
+      keys: async () => ['golfhelm-v1-static', 'golfhelm-v1-dynamic', 'golfhelm-v1-api'],
+      delete: async (name: string) => {
+        deleted.push(name);
+        steps.order.push(`deleted ${name}`);
+        return true;
+      },
+    });
+    replace.mockImplementation(() => steps.order.push('login loaded'));
+    steps.teardownMs = 0;
+    const done = chSignOut();
+    await vi.advanceTimersByTimeAsync(10);
+    await done;
+    expect(deleted.sort()).toEqual(['golfhelm-v1-api', 'golfhelm-v1-dynamic']);
+    // Both deletes landed before the jump to login, which would cut them off.
+    expect(steps.order.at(-1)).toBe('login loaded');
+    expect(steps.order.filter((s) => s.startsWith('deleted'))).toHaveLength(2);
   });
 });

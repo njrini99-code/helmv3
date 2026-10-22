@@ -12,6 +12,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { withPlayerCoachHelmTeams } from '@/lib/coachhelm/canary';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 // W25 cutover: 6 v2 generator imports below are unused by the orchestrator
@@ -37,6 +38,7 @@ import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
 import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy';
+import { insightAngleGenerators } from '@/lib/coachhelm/v3/generators/insight-angles';
 
 // W28: composite-rule synthesis runs after Tier-1 generators finish so
 // rules can detect cross-insight patterns in this round's freshly-written
@@ -77,6 +79,8 @@ import type {
 } from './types';
 import { describeError, toDbErrorMetadata } from '@/lib/utils/describe-error';
 import { runTier1Generators } from './tier1-runner';
+import { isSupportPassEnabled, runSupportPass } from '@/lib/coachhelm/v3/support/run-pass';
+import { createRunInsightCollector } from '@/lib/coachhelm/v3/support/run-collector';
 
 interface RoundReviewShotRow {
   hole_number: number;
@@ -347,6 +351,15 @@ class CoachHelmIntelligence {
     playerId: string,
     options: AnalysisOptions = {}
   ): Promise<PlayerAnalysis | null> {
+    // HELM_COACHHELM_TEAMS canary: the generators, the support pass and every
+    // upsert run in the player's team scope (no read when the variable is unset).
+    return withPlayerCoachHelmTeams(playerId, createAdminClient, () => this.analyzePlayerInScope(playerId, options));
+  }
+
+  private async analyzePlayerInScope(
+    playerId: string,
+    options: AnalysisOptions
+  ): Promise<PlayerAnalysis | null> {
     await this.ensureCalibrationBootstrapped();
 
     const {
@@ -444,6 +457,10 @@ class CoachHelmIntelligence {
       // v3 — tee strategy (W43; gated by per-team toggle in
       // golf_team_coachhelm_settings.preferences.tee_strategy_enabled)
       { name: 'v3.teeStrategy',  fn: () => new TeeStrategyGenerator(playerId).run() },
+      // v3 — insight angles (CoachHelm Slice 5a, ported from PR #2073).
+      // Behind coachhelm_insight_angles_v1 (default OFF): with the flag off
+      // this spreads nothing and no angle generator runs.
+      ...insightAngleGenerators(playerId),
       // v2 (still deferred — worst-holes pattern rework planned post-launch)
       { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];
@@ -461,15 +478,22 @@ class CoachHelmIntelligence {
     // instead of all ~21 at once, each retried ONCE on a transient database
     // fault — see tier1-runner.ts. Same settled-array contract as the
     // Promise.allSettled it replaces.
+    // Slice 1 (flag coachhelm_support_v1, off): the support pass runs BH over
+    // exactly the rows this run's generators and composites upserted, so the
+    // run opens a collector that `upsertInsightV3` records each written id
+    // into. Flag off → no collector, nothing recorded, the calls run as before.
+    const supportEnabled = runInsightGenerators && isSupportPassEnabled();
+    const runCollector = supportEnabled ? createRunInsightCollector() : null;
     const runTier1 = () => runTier1Generators(tier1Generators);
+    const runTier1InRun = () => (runCollector ? runCollector.run(runTier1) : runTier1());
     let tier1Settled: PromiseSettledResult<unknown>[];
     let tier1GateMetrics: { gatedCount: number } | null = null;
     if (options.philosophyGate) {
-      const wrapped = await runWithGate(options.philosophyGate, runTier1);
+      const wrapped = await runWithGate(options.philosophyGate, runTier1InRun);
       tier1Settled = wrapped.result;
       tier1GateMetrics = wrapped.metrics;
     } else {
-      tier1Settled = await runTier1();
+      tier1Settled = await runTier1InRun();
     }
     const tier1Successes: string[] = [];
     const tier1Failures: Array<{ generator: string; reason: string }> = [];
@@ -543,7 +567,10 @@ class CoachHelmIntelligence {
     // insights from the rows the Tier-1 batch just wrote, and a read wrote none.
     const compositeSummary = !runInsightGenerators
       ? null
-      : await synthesizeForPlayer(playerId).catch((err) => {
+      : await (runCollector
+          ? runCollector.run(() => synthesizeForPlayer(playerId))
+          : synthesizeForPlayer(playerId)
+        ).catch((err) => {
           void logServerError(
             `composite synthesis failed for ${playerId}: ${describeError(err)}`,
             { action: 'analyzePlayer.composite', metadata: { dbError: toDbErrorMetadata(err) } },
@@ -551,6 +578,20 @@ class CoachHelmIntelligence {
           return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1, refusals: 0 };
         });
     void compositeSummary;
+
+    // Slice 1 (flag coachhelm_support_v1, off): support, BH across every
+    // candidate this run wrote, shrinkage and the claim ladder, merged into
+    // each row's evidence, plus one run-log row. Off → never entered, nothing
+    // read or written. Failure-isolated inside runSupportPass.
+    if (supportEnabled && runCollector) {
+      await runSupportPass({
+        playerId,
+        insightIds: runCollector.ids(),
+        gated: runCollector.gated().map((g) => ({ id: `gated:${g.signature}`, insight_type: g.insight_type, evidence: g.evidence })),
+        refused: runCollector.refused(),
+        trigger: options.runTrigger,
+      });
+    }
 
     // Extract features for the legacy pipeline
     const features = await extractAllFeatures(playerId);
@@ -1632,8 +1673,8 @@ class CoachHelmIntelligence {
       headline: `Round Approach Check: ${topBracket.label} produced the biggest misses`,
       body: `${topBracket.severeCount} of ${topBracket.sampleSize} missed approaches from ${topBracket.label} finished more than 25 yards away or in a penalty state in this round.`,
       callToAction: severePct >= 75
-        ? 'Check the club, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'
-        : 'Check whether those misses shared a club, lie, or target. Recommended: keep the target wider from this yardage window and aim to finish inside a playable leave.',
+        ? 'Check the shot type, lie, and target on those shots before reading a pattern into one round. Recommended: from this yardage, favor the safe side of the target until the miss is understood.'
+        : 'Check whether those misses shared a shot type, lie, or target. Recommended: keep the target wider from this yardage window and aim to finish inside a playable leave.',
       tone: severePct >= 75 ? 'urgent' : 'cautionary',
       confidence: Math.min(0.9, 0.55 + topBracket.sampleSize * 0.08),
       // severeRate × max(1, n/2): a ranking heuristic, not strokes.
@@ -1689,7 +1730,7 @@ class CoachHelmIntelligence {
       bestInsight = {
         headline: `Round Lie Check: rough from ${bracket.label} left longer next shots`,
         body: `From ${bracket.label}, fairway approaches finished ${Math.round(fairwayAvg)} yards away on average versus ${Math.round(roughAvg)} yards from rough in this round.`,
-        callToAction: 'Check whether the rough approaches shared a lie depth, club, or target before treating this as a lie effect. Recommended: when you miss the fairway into this yardage window, take the safer target and protect against the long leave.',
+        callToAction: 'Check whether the rough approaches shared a lie depth, shot type, or target before treating this as a lie effect. Recommended: when you miss the fairway into this yardage window, take the safer target and protect against the long leave.',
         tone: gap >= 12 ? 'urgent' : 'cautionary',
         confidence: Math.min(0.88, 0.55 + (fairwayShots.length + roughShots.length) * 0.05),
         // max(0.8, gap / 10): a ranking heuristic, not strokes.
@@ -2108,8 +2149,8 @@ class CoachHelmIntelligence {
     const implications: Record<string, string> = {
       one_way_right: 'Ball flight or swing path creates consistent right-side misses',
       one_way_left: 'Ball flight or swing path creates consistent left-side misses',
-      one_way_short: 'Club selection or swing commitment leads to distance shortfall',
-      one_way_long: 'Club selection or swing aggression leads to overshoot',
+      one_way_short: 'Playing for too little carry or swing commitment leads to distance shortfall',
+      one_way_long: 'Playing for too much carry or swing aggression leads to overshoot',
       scattered: 'Multiple factors are affecting shot consistency',
       tight: 'Shot dispersion is well controlled for this distance',
     };
@@ -2123,8 +2164,8 @@ class CoachHelmIntelligence {
     const conclusions: Record<string, string> = {
       one_way_right: 'A predictable miss pattern that can be used for course management',
       one_way_left: 'A predictable miss pattern that can be used for course management',
-      one_way_short: 'Distance control requires attention - consider club selection adjustment',
-      one_way_long: 'Distance control requires attention - consider club selection adjustment',
+      one_way_short: 'Distance control requires attention - consider adjusting the carry you play for',
+      one_way_long: 'Distance control requires attention - consider adjusting the carry you play for',
       scattered: 'Consistency work needed to tighten shot dispersion',
       tight: 'Distance is well controlled - maintain current approach',
     };

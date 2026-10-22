@@ -6,8 +6,6 @@
 
 A dependency graph over `memory/registry.yml`'s feature ownership, not a second copy of it. Every semantic edge below carries evidence — see `docs/generated/WORLD_MODEL.json` for the full attribution. Use `npm run knowledge:world-model -- --impact <file|feature>` for the blast-radius read model.
 
-**Node counts:** 31 features, 69 routes, 75 components, 27 apis, 106 actions, 121 services, 87 tests, 134 tables, 171 rpcs, 25 jobs, 17 invariants, 86 sentrySignals, 8 journeys.
-**Edges:** 1097 (merged; an edge with more than one evidence kind is a stronger claim).
 **Table attribution:** A feature’s `tables` list comes only from its own `db:` migration globs, scanned for a literal `CREATE TABLE`. A feature can be real owner of a table with no migration under its glob still containing that statement (e.g. the table was created by a migration matched by a DIFFERENT feature’s `db:` glob, or the CREATE TABLE was later superseded by an ALTER/rename this scanner does not follow) — `admin_incidents` is exactly this case: its current-state doc names `admin_events` and `admin_error_resolutions` as Core Data, but no migration under its own `db:` glob still contains their CREATE TABLE, so this model reports zero tables for it. Read an empty `tables` list as “no migration-glob evidence found,” never as “this feature owns no tables” — check the feature’s own doc for the real answer.
 
 ---
@@ -78,7 +76,7 @@ Admin SLO Center · active · criticality high · owner platform
 
 Auth Onboarding And Join · active · criticality high · owner platform
 
-- **Relations:** 1 doc/structurally-evidenced, 29 import-graph-only (weak)
+- **Relations:** 1 doc/structurally-evidenced, 30 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
 - **Test surfaces:** 3
@@ -100,7 +98,7 @@ Calendar And Events · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
 - **Tables:** `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`, `helm_debug`
-- **RPCs:** `golf_event_attendance_counts`
+- **RPCs:** none
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `academics_classes`, `calendar_events`
 
@@ -110,8 +108,8 @@ Clubhouse UI (flagged, off in production) · active · criticality medium · own
 
 - **Relations:** 0 doc/structurally-evidenced, 4 import-graph-only (weak)
 - **Tables:** none
-- **RPCs:** `golf_event_attendance_counts`
-- **Test surfaces:** 1
+- **RPCs:** `golf_coachhelm_shown_reads`
+- **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
 ### `coach_intelligence_triage`
@@ -129,7 +127,7 @@ Coach Intelligence Triage · active · criticality high · owner product
 CoachHelm AI · active · criticality high · owner product
 
 - **Relations:** 5 doc/structurally-evidenced, 12 import-graph-only (weak)
-- **Tables:** `golf_coachhelm_action_runs`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
+- **Tables:** `golf_coachhelm_action_runs`, `golf_coachhelm_corrections`, `golf_coachhelm_player_state`, `golf_coachhelm_run_log`, `golf_insight_action`, `golf_insight_exposure`, `golf_insight_outcome`
 - **RPCs:** `claim_round_recap_lock`, `prune_stale_player_standing`, `refresh_player_standing`, `refresh_player_stats_cache`, `release_round_recap_lock`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `coachhelm_ai_engine`, `coachhelm_analytics`, `insights_management`, `round_review_ai`
@@ -170,7 +168,7 @@ Golf Round Lifecycle · active · criticality high · owner product
 
 - **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
-- **RPCs:** `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
+- **RPCs:** `golf_event_attendance_counts`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
 - **Sentry/admin_events signals:** `course_library`, `round_tracking`
 
@@ -251,7 +249,7 @@ Recruiting HQ · active · criticality medium · owner product
 - **Relations:** 0 doc/structurally-evidenced, 3 import-graph-only (weak)
 - **Tables:** `golf_recruit_documents`
 - **RPCs:** none
-- **Test surfaces:** 4
+- **Test surfaces:** 5
 - **Sentry/admin_events signals:** `recruiting_prospect_tracking`
 
 ### `roster_team`
@@ -278,7 +276,7 @@ Settings And Preferences · active · criticality medium · owner product
 
 Shot Tracking · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 8 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** none
 - **Test surfaces:** 4
@@ -291,7 +289,7 @@ Stats And Analytics · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `baseball_legacy_backfill_manifest`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
 
 ### `team_access_control`
@@ -310,8 +308,8 @@ Team Communications · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 8 import-graph-only (weak)
 - **Tables:** `golf_message_mentions`, `golf_message_reactions`, `golf_message_responses`
-- **RPCs:** `mark_golf_messages_read`
-- **Test surfaces:** 15
+- **RPCs:** `get_player_hub_announcements`, `mark_golf_messages_read`
+- **Test surfaces:** 16
 - **Sentry/admin_events signals:** `announcements`, `messaging`, `notifications`
 
 ### `team_operations`
@@ -333,6 +331,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/admin-digest` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-calibration` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-insight-lifecycle` | vercel_cron | `coach_intelligence_triage` |
+| `vercel_cron:/api/cron/coachhelm-monday-brief` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-roster-sweep` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-safety-net` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-validation` | vercel_cron | `coach_intelligence_triage` |
@@ -400,6 +399,7 @@ Team Operations · active · criticality high · owner product
 | `auth_onboarding_join` | `golf_round_lifecycle` | import_graph (weak) |
 | `auth_onboarding_join` | `observability_sentry` | import_graph (weak) |
 | `auth_onboarding_join` | `roster_team` | import_graph (weak) |
+| `auth_onboarding_join` | `shot_tracking` | import_graph (weak) |
 | `auth_onboarding_join` | `team_communications` | import_graph (weak) |
 | `baseball_core` | `admin_platform` | import_graph (weak) |
 | `baseball_core` | `auth_onboarding_join` | import_graph (weak) |

@@ -1,17 +1,27 @@
 'use client';
 
 import { useMemo } from 'react';
+import { COACH_MONDAY_BRIEF_HREF } from '../data/coachhelm-monday-brief-shape';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import type { ChCoachHelmData } from '../data/coachhelm-shape';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
+import { CorrectionWritesProvider } from '../screens/coachhelm/Corrections';
 import type { ChCoachHelmWrites } from '../screens/coachhelm/writes';
+import { previewRecheckWrites } from './fixtures-coachhelm-recheck';
+import { previewCorrectionWrites } from './fixtures-coachhelm-engine';
+import { previewCoursePlanReads } from './fixtures-course-plan';
 
 const wait = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 400));
 
 /**
  * The coach's CoachHelm with fake writes for the dev preview. `?state=failwrites`
  * fails every write, `failundo` fails only Undo, `duplicate` answers that the
- * player already has an active focus on the metric. Nothing reaches the server.
+ * player already has an active focus on the metric. `courseplan`, `courseplannone` and
+ * `courseplanfailed` turn on the course plan (Slice 7c, coachhelm_course_plan_v1) with
+ * fixture reads (fixtures-course-plan.ts). `corrections-*` draw the correction chips with
+ * fake saves (fixtures-coachhelm-engine.ts). `recheck-running`, `recheck-done`, `recheck-quiet`,
+ * `recheck-ratelimited` and `recheck-failed` answer Re-check reads that way once it is tapped
+ * (fixtures-coachhelm-recheck.ts). Nothing reaches the server.
  */
 export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state?: string }) {
   const writes = useMemo<ChCoachHelmWrites>(() => {
@@ -23,5 +33,14 @@ export function PreviewCoachHelm({ data, state }: { data: ChCoachHelmData; state
       undo: () => wait(all || state === 'failundo' ? failed : { success: true }),
     };
   }, [state]);
-  return <CoachBoard data={data} writes={writes} />;
+  const plan = state?.startsWith('courseplan') ?? false;
+  const reads = useMemo(() => previewCoursePlanReads(state), [state]);
+  const corrections = useMemo(() => previewCorrectionWrites(state), [state]);
+  const recheck = useMemo(() => previewRecheckWrites(state), [state]);
+  // `brieflink`: the board with coachhelm_monday_brief_v1 on, so the Monday brief link is drawn.
+  return (
+    <CorrectionWritesProvider value={corrections}>
+      <CoachBoard data={plan ? { ...data, coursePlan: true } : data} writes={writes} coursePlanReads={reads} recheck={recheck} mondayBriefHref={state === 'brieflink' ? COACH_MONDAY_BRIEF_HREF : undefined} />
+    </CorrectionWritesProvider>
+  );
 }

@@ -1,22 +1,30 @@
 'use client';
 
 import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
+import { gameSectionFromHash } from './legs';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChSessionState } from '../../lib/session-state';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { holeCoverage } from '../../data/round-scope';
 import type { ChPuttBand, ChWindow } from '../../data/stats-common';
 import type { ChHoles } from '../../data/stats-filter';
+import type { ChReadArea } from '../../data/coachhelm-classify';
+import type { ChStatsReads } from '../../data/stats-reads';
 import type { ChProfileExtra } from '../../data/stats-player';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatPct, NO_DATA } from '../../lib/format';
-import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, MakeCurve, MakeRows, ParTiles, ScoreMix } from './charts';
+import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
+import { PuttBands } from './PuttBands';
+import type { PuttBandInput } from './putt-bands';
+import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
+import { readsLineParts, READS_FAILED } from './reads-line';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
@@ -32,6 +40,28 @@ const SECTIONS = [
   ['short', 'Short game'],
   ['putting', 'Putting'],
 ] as const;
+
+/**
+ * "CoachHelm sees…" under a section's rule (spec D build A): how many current reads in this area are costing strokes and how many
+ * are working, and the Deep dive, as one link. Nothing when the reads are off, failed (one line under the chips says so) or none.
+ */
+function ReadsLine({ reads, area }: { reads: ChStatsReads | undefined; area: ChReadArea }) {
+  const r = reads?.status === 'ready' ? reads.byArea[area] : undefined;
+  const parts = r ? readsLineParts(area, r) : null;
+  if (!r || !parts) return null;
+  return (
+    <p className="ch-gm__reads">
+      <Link href={r.href} className="ch-gm__reads-a">
+        <span>
+          {parts.map((part, i) => (typeof part === 'number' ? <span key={i} className="ch-num">{part}</span> : part))}{' '}
+          <span className="ch-gm__reads-go">
+            Deep dive <span aria-hidden="true">→</span>
+          </span>
+        </span>
+      </Link>
+    </p>
+  );
+}
 
 /** What a figure that has nothing behind it says in place of a bare dash (the phone's brief): the reason, in a few words. */
 const NONE_REASON: Record<string, string> = {
@@ -67,6 +97,7 @@ function Sec({
   figs,
   rule,
   how,
+  reads,
   more,
   children,
 }: {
@@ -82,6 +113,8 @@ function Sec({
   rule: string;
   /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
   how?: string;
+  /** "CoachHelm sees…" for this section, under its rule. */
+  reads?: ReactNode;
   /** The figures below the headline: a "More detail" disclosure. */
   more: ReactNode;
   children: ReactNode;
@@ -113,6 +146,7 @@ function Sec({
           })}
         </dl>
         <Rule how={how}>{rule}</Rule>
+        {reads}
       </div>
       <div className="ch-gm__vis">
         <div className="ch-gm__body">{children}</div>
@@ -140,6 +174,7 @@ export function GameDetail({
   basis,
   holes = '18',
   puttBands: shotBands = null,
+  reads,
   onRetry,
   phone = false,
 }: {
@@ -157,6 +192,8 @@ export function GameDetail({
   holes?: ChHoles;
   /** Make rate by distance from the window's putts in the six bands the Tour grades, for the lead sentence and the Tour table. */
   puttBands?: ChPuttBand[] | null;
+  /** What CoachHelm sees in each section (data/stats-reads.ts); absent or off draws nothing. */
+  reads?: ChStatsReads;
   onRetry?: () => void;
   phone?: boolean;
 }) {
@@ -186,6 +223,29 @@ export function GameDetail({
     els.forEach((e) => io.observe(e));
     return () => io.disconnect();
   }, [phone]);
+
+  // An address that ends `#gm-<section>` (the team grid's leg figures) names the phone's section: it is chosen, then scrolled
+  // to once it is in the page, since the phone draws only the chosen one. A new request each time, so the same hash twice scrolls twice.
+  const [asked, setAsked] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    if (!phone) return;
+    const read = () => {
+      const id = gameSectionFromHash(window.location.hash);
+      if (!id) return;
+      setChosen(id);
+      setAsked({ id });
+    };
+    read();
+    window.addEventListener('hashchange', read);
+    return () => window.removeEventListener('hashchange', read);
+  }, [phone, setChosen]);
+  useEffect(() => {
+    if (!phone || !asked || on !== asked.id) return;
+    const el = document.getElementById(`gm-${asked.id}`);
+    if (!el) return;
+    setAsked(null);
+    el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+  }, [phone, asked, on, reduced]);
 
   const jump = (id: string) => {
     if (phone && id === on) return;
@@ -251,22 +311,24 @@ export function GameDetail({
   const benchScrRough = bench.scrambling_pct_rough ?? null;
   const benchSand = bench.scrambling_pct_sand ?? null;
 
-  // Putting: the curve is the calculator's nine bands from the window's own putts (exact counts past 20 feet); without the putt read it stops at 20 feet.
-  const nine = x.puttBandsNine;
-  const curve = nine
-    ? nine.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : [
-        { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
-        { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
-        { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
-        { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
-        // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
-        { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
-      ];
+  // Putting: the make-rate chart reads the window's own putts in the six bands the Tour grades (0–3 to 25+ ft, exact made and
+  // tried); without the putt read it falls back to the calculator's own rates, which stop at 20 feet.
+  const cacheBands = [
+    { band: '0–3', value: s.puttMakePct0_3, bench: null, n: s.puttMakeCount0_3 },
+    { band: '3–5', value: s.puttMakePct3_5, bench: bench.putts_made_3_5ft_pct ?? null, n: s.puttMakeCount3_5 },
+    { band: '5–10', value: s.puttMakePct5_10, bench: bench.putts_made_5_10ft_pct ?? null, n: s.puttMakeCount5_10 },
+    { band: '10–15', value: s.puttMakePct10_15, bench: bench.putts_made_10_15ft_pct ?? null, n: s.puttMakeCount10_15 },
+    // No Tour mark: the Tour's standard is 15-25 feet, and this band is 15-20 (graded like with like only in the six Tour bands).
+    { band: '15–20', value: s.puttMakePct15_20, bench: null, n: s.puttMakeCount15_20 },
+  ];
+  // The calculator keeps a rate and a count, not the putts made: the band carries the rate as kept and says its count.
+  const curve: PuttBandInput[] = shotBands
+    ? shotBands.map((b) => ({ label: b.label, made: b.made, attempts: b.attempts, bench: b.bench }))
+    : cacheBands.map((b) => ({ label: `${b.band} ft`, made: null, rate: b.value, attempts: b.n, bench: b.bench }));
   // The lead names the band furthest under the Tour, from the six bands the Tour publishes (not the nine, which reuse a standard across bands).
   const leadBands = shotBands
     ? shotBands.map((b) => ({ band: b.label.replace(' ft', ''), value: b.attempts ? (b.made / b.attempts) * 100 : null, bench: b.bench, n: b.attempts }))
-    : curve;
+    : cacheBands;
   const worstPutt = leadBands
     .filter((b) => b.value != null && b.bench != null && b.n >= 10)
     .sort((a, b) => (a.value! - a.bench!) - (b.value! - b.bench!))[0];
@@ -291,8 +353,9 @@ export function GameDetail({
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
   const coverage = holeCoverage(holeCount, rounds);
   const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
-  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read.
-  const fewer = win === 'last10' && (basis ?? RULE_WINDOW[win]) === 'Last 10 rounds' && rounds < 10;
+  // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read (likewise Last 5 and Last 20).
+  const lastN = Number(/^Last (\d+) rounds$/.exec(basis ?? RULE_WINDOW[win])?.[1]);
+  const fewer = win === 'last10' && lastN > 0 && rounds < lastN;
   const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
   const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
   /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
@@ -310,6 +373,11 @@ export function GameDetail({
         ))}
         <span className="ch-gd__src">{sample} logged</span>
       </nav>
+      {reads?.status === 'failed' && (
+        <p className="ch-gx-rule" data-ch-code="CH-5215">
+          {READS_FAILED}
+        </p>
+      )}
       {x.truncated && (
         <p className="ch-gx-rule" data-ch-code="CH-5319">
           This window has more rounds than the shot-level figures read, so they cover the newest 100.
@@ -319,6 +387,7 @@ export function GameDetail({
       <Sec
         id="scoring"
         hide={!show('scoring')}
+        reads={<ReadsLine reads={reads} area="scoring" />}
         icon={Flag}
         title="Scoring"
         sub={`${s.roundsPlayed} rounds`}
@@ -347,8 +416,8 @@ export function GameDetail({
           </More>
         }
       >
-        <Panel title="What an average round looks like" wide {...noteOf('Holes per round by result, then the holes they add up to. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
-          <ScoreMix d={dist} totals={totals} />
+        <Panel title="What an average round looks like" wide {...noteOf('Every scored hole by result, under par to the left and over par to the right, with each result a round. Select one for the holes behind it. Doubles or worse are the quickest place to save strokes.', 'Doubles or worse are the quickest place to save strokes.')}>
+          <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
           <ParTiles rows={pars} />
@@ -358,6 +427,7 @@ export function GameDetail({
       <Sec
         id="tee"
         hide={!show('tee')}
+        reads={<ReadsLine reads={reads} area="tee" />}
         icon={MoveUpRight}
         title="Off the tee"
         sub={`${s.fairwayOpportunities} drives`}
@@ -404,6 +474,7 @@ export function GameDetail({
       <Sec
         id="approach"
         hide={!show('approach')}
+        reads={<ReadsLine reads={reads} area="approach" />}
         icon={Crosshair}
         title="Approach"
         sub={`${s.girOpportunities} approach shots`}
@@ -501,6 +572,7 @@ export function GameDetail({
       <Sec
         id="short"
         hide={!show('short')}
+        reads={<ReadsLine reads={reads} area="short" />}
         icon={FlagTriangleRight}
         title="Short game"
         sub={`${s.scrambleAttempts} chances`}
@@ -552,6 +624,7 @@ export function GameDetail({
       <Sec
         id="putting"
         hide={!show('putting')}
+        reads={<ReadsLine reads={reads} area="putting" />}
         icon={CircleDot}
         title="Putting"
         sub={`${s.totalPutts} putts`}
@@ -579,12 +652,12 @@ export function GameDetail({
           title="Make rate by distance"
           wide
           {...noteOf(
-            `${phone ? 'Bars are the make rate; the tick is the Tour. Amber is below it.' : 'Green line is the player, dashed champagne is the Tour.'} Each band needs 10 or more putts to grade.${nine ? ' Counts are putts logged with a distance. The Tour publishes five averages, so 15 to 25 feet share one and 25 feet and beyond share one.' : ''}`,
-            'Bars are the make rate; the tick is the Tour. Amber is below it.',
+            `Green dots are at or above the Tour, amber below it. A band shows from 10 putts and is graded against the Tour from 30.${shotBands ? ' Counts are putts logged with a distance. The Tour publishes five averages, one for each band past 3 feet.' : ''}`,
+            'Amber dots are below the Tour. A band grades from 30 putts.',
           )}
         >
           {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
-          {phone ? <MakeRows bands={curve} /> : <MakeCurve bands={curve} />}
+          <PuttBands bands={curve} compact={phone} />
         </Panel>
         <Panel title="How putts miss" wide>
           {/* Four zeros and "100% low side" claimed a pattern that was never logged (F-54). */}

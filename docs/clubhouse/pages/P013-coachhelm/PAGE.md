@@ -48,7 +48,10 @@ Route:              /golf/dashboard/coachhelm (coach and player);
                     Stats' Development, ?view=insights and no view draw the
                     board; ?view=ask is the coach's Ask (off when CoachHelm
                     is off); ?player=<id> opens a coach's board on that
-                    player (Roster's View insights)
+                    player (Roster's View insights);
+                    /golf/dashboard/whats-new is the coach's What's new, the
+                    team's CoachHelm activity of the past 7 days (CH-1323x,
+                    CH-1333x, CH-1343x)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm
@@ -80,7 +83,10 @@ Player: open another insight into the focus card, open Why we think this, try a
 failed proposals read again, and move between the Board, Game profile, Standing
 and Deep dive (their own data, read only) or on to Stats' Development. Coach:
 choose another player, Dismiss an insight and Undo it, open Roster, and open
-CoachHelm settings. Both: try a failed section again.
+CoachHelm settings; open one player's Deep dive, Standing and Game profile
+(`?view=…&player=`, spec A, 2026-10-21), the player's own views in the coach's
+words, with the board's Assign as focus, Dismiss and Undo under each read of
+the Deep dive and Message after them. Both: try a failed section again.
 
 ### Information hierarchy
 
@@ -88,14 +94,18 @@ CoachHelm settings. Both: try a failed section again.
    its reasoning. Coach: the program pulse, then the players most pressing first
    with the chosen player's focus beside them.
 2. Player: Also worth knowing (the other findings), then Working (the
-   strengths). Coach: the count of players with no insight yet.
+   strengths): at most three findings with the focus and one strength, then
+   how many more reads are in the Deep dive. Coach: the count of players with
+   no insight yet.
 3. The header: the role, "CoachHelm", and for a coach how many players have an
    open signal (the board draws one card per player, so it counts players, never
    the rows behind them).
 4. The player's views, each on a green card then white ones: the Game profile
    (the shape of their game, then each measure), Standing (where they stand
    against the Tour and the team, then each stat) and the Deep dive (the list of
-   reads, then one read in full with its evidence, trend and rounds).
+   reads, then one read in full with its evidence, trend and rounds). A coach
+   opens the same three for one player of their team, under that player's
+   header (the name, the class and the newest round).
 
 ### User should notice first
 
@@ -141,17 +151,23 @@ Status:           approved
 ### Enters from
 
 The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each
-role's four tabs, D-66).
+role's four tabs, D-66). A coach's view of one player: from the board's
+selected-player card ("All of Jonah’s reads"), the names under the list that
+have no insights yet, and Roster's View insights (the Deep dive).
 
 ### Exits to
 
-Roster, from Invite players (its invite sheet) and View roster (a coach), and CoachHelm settings, from
-Open CoachHelm settings (`/golf/dashboard/settings/coaching-intelligence`);
-Rounds, from Open Rounds or Start a round (a player). A control whose target is
-not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'
-Development tab, from the player's sub-navigation and from `?view=development`
-(where every stored dev-plan notification points); a round's review, from a
-round under a read in the Deep dive, once that screen is rebuilt.
+Roster, from Invite players (its invite sheet) and View roster (a coach), and
+CoachHelm settings, from Open CoachHelm settings
+(`/golf/dashboard/settings/coaching-intelligence`); Rounds, from Open Rounds or
+Start a round (a player). A control whose target is not rebuilt is not drawn
+(`rebuiltHref`), so no control leads nowhere. Stats' Development tab, from the
+player's sub-navigation and from `?view=development` (where every stored
+dev-plan notification points); a round's review, from a round under a read in
+the Deep dive, once that screen is rebuilt.
+From a coach's view of one player: back to the board open on that player,
+Messages with the player, the coach's round review, Stats' Development for the
+player and CoachHelm settings (when it is off for the player's team).
 
 ## Ownership
 

@@ -1,6 +1,7 @@
 # P014 — Recruiting: verification
 
 <!-- clubhouse:release-audit:start -->
+
 ## Current release evidence — 2026-10-06
 
 Recruiting list/detail, stage picker, forms and document upload.
@@ -58,7 +59,7 @@ Date:       2026-09-30
 | `src/clubhouse/__tests__/recruiting.test.tsx` (61 cases, each named by the codes it forces) | every catalog row of kinds 0 to 5 that is not marked preview | pass |
 | `src/clubhouse/__tests__/shell.test.tsx` (the Team list now reads Roster, Recruiting, Stats, Qualifiers) | 10802 | pass |
 | `src/clubhouse/__tests__/recruiting-upload.test.tsx` (31 cases: the limits and the migration's numbers, the transfer and its progress, the file drop, Storage's refusals, an Add that cannot repeat, the phone) | CH-14105 to CH-14110, CH-14404, CH-14407, CH-14703, CH-14915 to CH-14917 | pass |
-| `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9) | the server side of CH-14915 and CH-14916 | pass |
+| `src/test/golf/actions/recruit-document-upload.test.ts` (16) and `recruiting-create.test.ts` (9); since 2026-10-20 also `src/app/golf/actions/__tests__/recruiting-create-repeat.test.ts` (5) and `src/clubhouse/screens/recruiting/__tests__/add-request.test.ts` (6) | the server side of CH-14915 (a repeat with a corrected field reaches the stored row) and CH-14916 | pass |
 
 Both files together: 110 passed (2026-09-30). All of `src/clubhouse`: 30 files,
 1531 tests, exit 0.
@@ -246,6 +247,15 @@ before, after, baseline or evidence.
 | `P014__premium-audit__coach__390__case-151-chromium-normal__evidence__648b8d9.png` | evidence | 648b8d9 | premium-audit (coach), 390px, case-151-chromium-normal; /clubhouse-preview/recruiting; synthetic preview |
 | `P014__page__coach__1280x948__default__after__77e553a.png` | after | 77e553a | page (coach), 1280x948px, default |
 | `P014__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
+| `P014__upload-dialog__coach__390__film-file__before__22e5426.png` | before | 22e5426 | Upload sheet on a 64 MB .mov (WebKit, preview): Film offered and preselected |
+| `P014__documents__coach__390__detail__before__22e5426.png` | before | 22e5426 | Mason's detail on the phone: three documents, one a .mov tagged Film |
+| `P014__documents__coach__1440__drop-hint__before__22e5426.png` | before | 22e5426 | Desktop documents: drop hint "Film can be an MP4, MOV or M4V." |
+| `P014__documents__coach__390__no-documents__before__22e5426.png` | before | 22e5426 | Empty documents row: "Schedules, transcripts and film" |
+| `P014__upload-dialog__coach__390__film-file__after__477ccdf.png` | after | 477ccdf | Film off: the same .mov is refused before sending, CH-14106, body names no film |
+| `P014__upload-dialog__coach__390__document-file__after__477ccdf.png` | after | 477ccdf | Film off: a PDF's upload sheet offers Note, Schedule, Transcript, Other; no Film |
+| `P014__documents__coach__390__detail__after__477ccdf.png` | after | 477ccdf | Film off: the preview's sample film row is not shown (no video can be stored yet) |
+| `P014__documents__coach__1440__drop-hint__after__477ccdf.png` | after | 477ccdf | Film off: drop hint "Drop a file here to add it." |
+| `P014__documents__coach__390__no-documents__after__477ccdf.png` | after | 477ccdf | Film off: empty row "Schedules, transcripts and notes" |
 
 ## Historical verification gaps
 
@@ -300,10 +310,12 @@ before, after, baseline or evidence.
 
 - See DESIGN.md "Not on the boards" for the eight questions (film, item 6, is
   decided and built; it waits for the migration).
-- After a lost reply, editing a field and pressing Add again is a different Add
-  and adds a second prospect; a Retry and a
-  repeated Save with the same contents cannot. An upload the coach abandons
-  after the file landed leaves an object with no row.
+- Fixed 2026-10-20: after a lost reply, editing a field and pressing Add again
+  was a different Add and added a second prospect. The request id now follows
+  the prospect's name, not the whole form, and the server writes the corrected
+  field to the row the first attempt stored (CH-14915). Changing the name is
+  still another prospect. An upload the coach abandons after the file landed
+  leaves an object with no row.
 
 ## 2026-10-02 — Custom native overlay lifetime
 

@@ -41,11 +41,15 @@ describe('home logic', () => {
     expect(classYearLabel(2032, oct)).toBe('Class of 2032');
     expect(classYearLabel(null, oct)).toBeNull();
   });
-  it('reads form from the newer half against the older half', () => {
+  it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
-    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('improving');
-    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('slipping');
+    // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes.
+    expect(formStatus([78, 78, 77, 73, 72, 72])).toBe('improving');
+    expect(formStatus([72, 72, 72, 74, 76, 76, 77])).toBe('slipping');
     expect(formStatus([72, 72, 71, 72, 71, 71, 72])).toBe('steady');
+    // Down 2.3 a round was "improving" on the old half-stroke threshold; inside its standard error it is no clear change.
+    expect(formStatus([75, 75, 74, 73, 72, 72])).toBe('steady');
+    expect(formStatus([72, 72, 73, 74, 75, 74, 75])).toBe('steady');
   });
 });
 
@@ -65,7 +69,7 @@ describe('nav', () => {
     expect(activeNavItem('/golf/dashboard/roster/abc')?.id).toBe('roster');
     expect(isRebuilt('/golf/dashboard/')).toBe(true);
     expect(rebuiltHref('/golf/dashboard/stats?player=1')).toBe('/golf/dashboard/stats?player=1');
-    expect(rebuiltHref('/golf/dashboard/rounds')).toBeNull();
+    expect(rebuiltHref('/golf/dashboard/documents')).toBeNull();
     // Players have their own Home (PlayerHome) and share Stats; their Roster is the coach's, read-only (owner 2026-10-01).
     expect(isRebuilt('/golf/dashboard', 'player')).toBe(true);
     expect(isRebuilt('/golf/dashboard/roster', 'player')).toBe(true);
@@ -315,6 +319,18 @@ describe('home model', () => {
     expect(H.homeSubline([rows[3]!], { roundsError: false, nextCompetition: null })).toBeNull();
     const many = rows.map((r) => ({ ...r, status: 'slipping' as const }));
     expect(H.homeSubline(many, { roundsError: false, nextCompetition: null })).toBe('4 players need a look: Theo, Jonah, Eli and Priya.');
+  });
+  it('leaves an injured or away player out of the subline, flagged or on track (availability)', () => {
+    const rows: H.ChSublineRow[] = [
+      { name: 'Theo Marchetti', status: 'improving', quietDays: 2 },
+      { name: 'Jonah Okafor', status: 'slipping', quietDays: 3, availability: 'injured' },
+      { name: 'Eli Brandt', status: 'steady', quietDays: 9, availability: 'away' },
+    ];
+    expect(H.homeSubline(rows, { roundsError: false, nextCompetition: null })).toBe('The team is on track.');
+    // Only out players: nothing to say, rather than calling no one on track.
+    expect(H.homeSubline(rows.slice(1), { roundsError: false, nextCompetition: null })).toBeNull();
+    // Available is the same as absent.
+    expect(H.homeSubline([{ ...rows[2]!, availability: 'available' }], { roundsError: false, nextCompetition: null })).toBe('Eli hasn’t posted a round in 9 days.');
   });
 });
 

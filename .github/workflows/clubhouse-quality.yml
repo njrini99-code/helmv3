@@ -12,6 +12,7 @@ on:
       - 'src/app/clubhouse-preview/**'
       - 'e2e/clubhouse-quality.spec.ts'
       - 'e2e/clubhouse-playground.spec.ts'
+      - 'e2e/clubhouse-quality.setup.ts'
       - 'playwright.clubhouse.config.ts'
       - 'next.config.mjs'
       - 'src/lib/security/clubhouse-preview-headers.mjs'
@@ -60,7 +61,10 @@ jobs:
     # throughput): a draft cannot merge, so running a 35-minute browser suite on
     # each draft push only burns runner slots. Written so workflow_dispatch,
     # where there is no pull_request payload, still runs.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Not on a follow-up push (2026-10-21, runner slots): it runs when the PR
+    # is opened, reopened or marked ready, and on demand
+    # (`gh workflow run clubhouse-quality.yml --ref <branch>`).
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:

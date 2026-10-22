@@ -78,16 +78,21 @@ beforeEach(() => {
 });
 
 describe('Player roster · what the loader reads (30805)', () => {
-  const MEMBER_ROWS = [
-    // The database hands back whatever it is asked for; the extra fields prove nothing here depends on them.
-    { status: 'active', player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027, handicap: 1.2, handicap_index: -0.8, email: 'theo@school.edu', phone: '555-0100' } },
-    { status: 'active', player: { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist', graduation_year: 2028, handicap: 2.4, handicap_index: null, email: 'ava@school.edu' } },
-    { status: 'active', player: null },
+  // The roster read and the names are two reads: the active members' ids from golf_team_members, the display profiles of the
+  // team's roster (any status) from golf_player_profiles (security review S4: a player may not read a teammate's golf_players row).
+  const MEMBER_ROWS = [{ player_id: 'p1' }, { player_id: 'p2' }, { player_id: 'p-unseen' }];
+  const PROFILE_ROWS = [
+    // The function hands back whatever it is asked for; the extra fields prove nothing here depends on them.
+    { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027, handicap: 1.2, handicap_index: -0.8, email: 'theo@school.edu', phone: '555-0100' },
+    { id: 'p2', first_name: 'Ava', last_name: 'Lindqvist', graduation_year: 2028, handicap: 2.4, handicap_index: null, email: 'ava@school.edu' },
+    // On the roster but no longer active: never a teammate on this page.
+    { id: 'p-gone', first_name: 'Gone', last_name: 'Player', graduation_year: 2026, handicap: null, handicap_index: null },
   ];
 
   it('asks only for the team row, the team\'s active members and its coaches\' names and roles, with no join code, request, note or round', async () => {
     const asked: string[] = [];
     const filters: Record<string, Array<[string, unknown[]]>> = {};
+    const profileArgs: unknown[] = [];
     const answer = (table: string, data: unknown) => (f: Array<[string, unknown[]]>) => {
       asked.push(table);
       filters[table] = f;
@@ -96,6 +101,10 @@ describe('Player roster · what the loader reads (30805)', () => {
     tables.current = {
       golf_teams: answer('golf_teams', { name: 'Varsity', season: 'Fall 2026', join_code: 'JOINME', head_coach_notes: 'private' }),
       golf_team_members: answer('golf_team_members', MEMBER_ROWS),
+      'rpc:golf_player_profiles': (f) => {
+        profileArgs.push(...f.map(([, a]) => a[0]));
+        return { data: PROFILE_ROWS };
+      },
       golf_team_coach_staff: answer('golf_team_coach_staff', [
         { role: 'assistant', is_primary: false, coach: { id: 'c2', full_name: 'Dan Whitfield', title: 'Assistant coach', email: 'dan@school.edu' } },
         { role: 'head_coach', is_primary: true, coach: { id: 'c1', full_name: 'Maya Reyes', title: null } },
@@ -118,7 +127,11 @@ describe('Player roster · what the loader reads (30805)', () => {
     // The selects name the columns shown and no others: no email, phone, avatar, hometown, join code or notes.
     const selected = (t: string) => String(filters[t]!.find(([k]) => k === 'select')![1][0]);
     expect(selected('golf_teams')).toBe('name, season');
-    expect(selected('golf_team_members')).not.toMatch(/email|phone|avatar|hometown|join_code|notes|jersey/);
+    // Teammates may read every column of their team's rows (select_v5), so the player's roster never asks for
+    // availability or its coach-only note (P003 availability, v1: players do not see it).
+    expect(selected('golf_team_members')).toBe('player_id');
+    // Teammates' names come from the profile function for this team only, never from the table.
+    expect(profileArgs).toEqual([{ p_team_ids: ['t1'] }]);
     // Active members of this team only (a pending invite or a removed player is no teammate).
     expect(filters['golf_team_members']).toContainEqual(['eq', ['team_id', 't1']]);
     expect(filters['golf_team_members']).toContainEqual(['eq', ['status', 'active']]);
@@ -135,7 +148,7 @@ describe('Player roster · what the loader reads (30805)', () => {
   });
 
   it('CH-3808 a coaching staff read that fails leaves the Coaches group out, never "no coaches", and is logged; the players stand', async () => {
-    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, golf_team_coach_staff: { error: { message: 'boom' } } };
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, 'rpc:golf_player_profiles': { data: PROFILE_ROWS }, golf_team_coach_staff: { error: { message: 'boom' } } };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
     expect(data.coaches).toBeNull();
     expect(data.players).toHaveLength(2);
@@ -150,8 +163,16 @@ describe('Player roster · what the loader reads (30805)', () => {
     expect(logServer).toHaveBeenCalledWith('roster', 'playerMembers', expect.anything(), 'teams');
   });
 
+  it('a profiles read that fails is a failed roster, never an empty team, and is logged', async () => {
+    tables.current = { golf_teams: { data: { name: 'Varsity', season: null } }, golf_team_members: { data: MEMBER_ROWS }, 'rpc:golf_player_profiles': { error: { message: 'boom' } } };
+    const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
+    expect(data.playersError).toBe(true);
+    expect(data.players).toEqual([]);
+    expect(logServer).toHaveBeenCalledWith('roster', 'playerMembers', expect.anything(), 'teams');
+  });
+
   it('a team row that does not load leaves the name as "Your team", and the list stands', async () => {
-    tables.current = { golf_teams: { error: { message: 'boom' } }, golf_team_members: { data: MEMBER_ROWS } };
+    tables.current = { golf_teams: { error: { message: 'boom' } }, golf_team_members: { data: MEMBER_ROWS }, 'rpc:golf_player_profiles': { data: PROFILE_ROWS } };
     const data = await loadPlayerRoster({ teamId: 't1', playerId: 'p1' });
     expect(data.teamError).toBe(true);
     expect(data.teamName).toBe('Your team');

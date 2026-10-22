@@ -314,7 +314,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/roster.ts': 'ALL',
-      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'updatePlayerStatus'],
+      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'updatePlayerStatus', 'setPlayerAvailability'],
       'src/app/golf/actions/calendar-events.ts': ['getPendingInvitations'],
     },
     primaryTable: 'golf_team_members',
@@ -660,6 +660,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
         'getPlayerPatterns',
         'recordInteraction',
       ],
+      'src/app/golf/actions/coachhelm-corrections.ts': 'ALL',
       'src/app/golf/actions/insights-coachhelm.ts': [
         'getCoachHelmStatus',
         'triggerPlayerInsightsAfterRound',

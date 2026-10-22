@@ -54,10 +54,11 @@ counts half (production averages per round of either length).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
+| 40101 | — | `TEAM_STATS_READY` | Team stats opens for a coach on the last 10 rounds per player: the header (team, active players), five figure cards, the strokes gained trend, the ranked dot plot of who gains and loses, the four leg cards with the player grid, team putting and season bests, all in the server's first render; on the phone, the phone view with the same data. |
 | 40102 | — | `WINDOW_FROM_THE_ADDRESS` | ?window=season or ?window=qualifiers opens that window and anything else opens Last 10; changing the switch writes the window back to /golf/dashboard/stats (Last 10 is the bare address) without moving the scroll. |
 
-From the shell (P001): 10101 CH-1904, 10102 SHELL_READY, 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
+From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
+10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
 
 ## 02 — Initial loading / skeleton
 
@@ -167,7 +168,8 @@ The offline banner (10701) and Try again while offline (10704) are the shell's.
 | 40702 | CH-4902 | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | A window or filter change takes longer than 5 seconds |
 | 40703 | CH-4903 | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
 
-From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903, 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
+From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
+10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
 
 ## 08 — Permission / authorization
 
@@ -180,7 +182,8 @@ Team stats is a coach's page (40801). On /golf/dashboard/stats a player is never
 | 40801 | — | `COACH_ONLY_TEAM_STATS` | Team stats is a coach's page: a player on /golf/dashboard/stats gets their own profile and no team figure is read for them, and the old address /golf/dashboard/stats/team is a coach's route in the Clubhouse frame (the Fairway page sends a player back to /stats). |
 | 40802 | — | `TEAM_IS_THE_COACHS_OWN` | The team is always the one resolveClubhouseTeam gives the signed-in coach, never one named in the address: the loader reads that team's row, its active roster (golf_team_members by team_id, status active) and only those players' rounds; a coach with no team gets the no-team state and nothing is read. |
 
-From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV, 10803 TEAM_SWITCH_IS_A_HEAD_COACHS.
+From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
+10803 TEAM_SWITCH_IS_A_HEAD_COACHS, 10804 CH-1911.
 
 ## 09 — Success
 
@@ -246,7 +249,11 @@ keys, sheets and pushes (11601 to 11613, D-64); there is no first-paint rise.
 | 41603 | CH-4603 | `CHANGING_THE_TRENDS_MEASURE` | Changing the trend's measure |
 | 41604 | CH-4604 | `A_NEW_WINDOWS_FIGURES_ARRIVE` | A new window's figures arrive |
 
-From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603, 11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608, 11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613, 11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618, 11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
+From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
+11604 CH-1604, 11605 CH-1605, 11606 CH-1606, 11607 CH-1607, 11608 CH-1608,
+11609 CH-1609, 11610 CH-1610, 11611 CH-1611, 11612 CH-1612, 11613 CH-1613,
+11614 CH-1614, 11615 CH-1615, 11616 CH-1616, 11617 CH-1617, 11618 CH-1618,
+11619 CH-1619, 11620 CH-1620, 11621 CH-1621, 11622 CH-1622.
 
 ## 17 — Haptic
 
@@ -261,7 +268,9 @@ Team stats' own haptics (41701 to 41703) on the v2 grammar (D-70): a selection t
 | 41703 | CH-4703 | `SORTING_THE_PHONES_PLAYERS_BY_AVG_OR` | Sorting the phone's players by Avg or SG, or picking a strokes gained leg (a row of the leg list: Off the tee, Approach, Around green, Putting or Team total) |
 | 41704 | CH-4704 | `CHOOSING_A_ROUND_TYPE_A_LENGTH_A` | Choosing a round type, a length (18 holes, 9 holes, Both), a course or a round in the filter sheet, choosing a window or a pick mode there, or removing a chip / Clear |
 
-From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703, 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708, 11709 CH-1709.
+From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
+11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
+11709 CH-1709.
 
 ## 18 — Accessibility
 
@@ -284,7 +293,12 @@ CH-1842, 11825 CH-1816.
 | 41805 | CH-4805 | `THE_PHONES_SCORING_LINE_IS_AN_IMAGE` | The phone's scoring line is an image with a written reading ("Team scoring average by round day, from 74.8 to 73.4. Down 1.4 strokes…"); a finger on it reads a round day (pointer only, the reading carries it for assistive technology); each player row is one link read as name, rounds, average and strokes gained ("Early read" under three rounds) |
 | 41806 | CH-4806 | `THE_ROUND_FILTER_THE_FILTER_BUTTON_SAYS` | The round filter: the Filter button says it opens a dialog and how many filters are on; each chip is a button named "Remove filter: Tournament"; Clear is "Clear filters"; the count line is a polite status region; the sheet is a labelled dialog whose groups (Round type, Holes, Time, Course, Pick rounds) are labelled, round type, holes and pick mode are toggle buttons (`aria-pressed`), courses and rounds are checkboxes in labelled lists, and the dates are labelled inputs whose error is their description |
 
-From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803, 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822, 11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841, 11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
+From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
+11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,
+11809 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813,
+11814 CH-1814, 11815 CH-1815, 11816 CH-1820, 11817 CH-1821, 11818 CH-1822,
+11819 CH-1830, 11820 CH-1831, 11821 CH-1832, 11822 CH-1840, 11823 CH-1841,
+11824 CH-1842, 11825 CH-1816, 11826 CH-1817.
 
 ## 19 — Responsive layout
 
@@ -302,11 +316,16 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The window switch is a radio group that moves and chooses with the arrow keys, the leg cards and the trend's player list are buttons, and a grid row is a link that marks its player on the trend when it takes focus (42001). Export and Try again are buttons, in reading order. The shell's edge swipe and browser back are 12001.
+The window switch is a radio group that moves and chooses with the arrow keys,
+the leg cards and the trend's player list are buttons, the ranked dot plot is
+one focusable group (the arrow keys, Home and End read a player, Enter opens the
+pinned one, Esc lets go), and a grid row is a link that marks its player on the
+trend when it takes focus (42001). Export and Try again are buttons, in reading
+order. The shell's edge swipe and browser back are 12001.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 42001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, a leg card takes Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
+| 42001 | — | `KEYBOARD_PATH` | The window switch moves and chooses with the arrow keys, a leg card takes Enter, the ranked dot plot reads a player with the arrow keys and opens them with Enter, and a grid row is a link that marks its player on the trend when it takes focus. |
 
 From the shell (P001): 12001 CH-1906, 12002 CH-1907, 12003 CH-1908.
 

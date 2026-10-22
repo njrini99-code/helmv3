@@ -1,26 +1,246 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Team Hub Home is widgets
+
+Team Hub's Home is a twelve-column bento of tiles (`screens/hub/widgets.tsx`,
+`.ch-hw*` in `styles/hub.css`). `ReplyChoices`, `Acknowledgement`,
+`repliesLine` and a new `useTaskSave` are exported from `screens/hub/parts.tsx`
+so a tile acts as the tabs do; `Rsvps`, `HubBand` and `homeBand` are removed.
+
+## 2026-10-21 — A coach's Team Hub item has a badge
+
+`CH_NAV_COACH`'s Team Hub item is `badge: 'hub'`, and `badgeCount` adds the
+shell's `overdueTasks` (a coach's overdue tasks with open work, read once by
+`loadClubhouseShell`) to the polled counts, which are zero for a coach.
+
+## 2026-10-21 — Stronger rule token; players get a Tasks tab in Team Hub
+
+`--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both
+high-contrast sets) is a hairline at 1.8:1 against the workspace, for lines
+that divide a page's sections where the plain rule (1.2:1) lets the page read
+flat. It is decorative, not a 3:1 boundary. Team Hub uses it first (P010).
+`HUB_TABS.player` now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks`
+opens for a player.
+
+## 2026-10-21 — Brand decision recorded; preview player page frame
+
+White cards and Instrument Sans stay (owner decision); STATUS item 7 and
+`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
+`/clubhouse-preview/player?state=self` with the player, not the coach shell.
+
+## 2026-10-21 — Phone Roster and Team stats figures render directly
+
+Owner rule: no digit rolling. The phone Roster row figure and the Team stats
+strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
+gone from both screens.
+
+## 2026-10-21 — Lint bans reading the event inside a state updater
+
+`no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /
+`e.currentTarget` read inside a `set*(...)` updater. The updater runs later
+and can see a box React has already reset, which lost the Settings name on
+WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
+trips, Qualifiers, the component playground). A test pins the ban
+(`no-lazy-event-read.test.ts`).
+
+## 2026-10-21 — The player peek opens CoachHelm
+
+The player peek (CH-1832, `ui/PlayerPeek.tsx`) adds a fourth action,
+CoachHelm, opening the player's deep dive
+(`/golf/dashboard/coachhelm?view=deep-dive&player=`, `coachHelmPlayerHref`);
+it is not drawn while CoachHelm isn't rebuilt for coaches. Every page that
+wraps a name in `PlayerPeek` gets it (Coach Home spec B §3).
+
+## 2026-10-21 — Goals styles
+
+`styles/goals.css` holds the Set a goal sheet's form, the suggested-goals rail
+and a goal's state line and coach controls (P005). It is imported by the
+components that use it, not by `stats.css`.
+
+## 2026-10-21 — A fitted hover card is never wider than its cell
+
+`PeekTarget` with `within` (the team stats grid's player cell) opened no narrower
+than 288px, so in a cell under 288px (the grid allows 200px) the card spilled over
+the next column and covered the figures it was fitted to protect. It is now the
+cell's width up to 328px (`hoverCardWidth` in `ui/Peek.tsx`), its keys wrap in a
+narrow cell and its text wraps (`styles/ui.css`, `.ch-hovercard--fit`).
+
+## 2026-10-21 — Component catalog stops recording CSS line numbers
+
+```text
+Design package: none
+PR/commit:      claude/catalog-no-line
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `component-catalog.json` tokens no longer carry `line`. Any stylesheet edit
+  shifted every later token's line, so each Clubhouse PR that landed made the
+  committed catalog stale on every other open PR. Nothing read the field.
+
+## 2026-10-21 — Name the rollback deployment (doc-45)
+
+```text
+Design package: none
+PR/commit:      claude/clubhouse-rollback-named
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+### Changed
+
+- `STATUS.md` names today's production deployment and its promote-back
+  target, and says to re-read both on the day of turn-on.
+
+## 2026-10-21 — One hydration guard for text boxes
+
+`useHydrationGuard` (`lib/use-hydration-guard.ts`) makes a box read-only until
+React has hydrated it, so text typed into server HTML is not reset. Settings
+`Field` and `FieldRow` use it, and now so do the reset and gate boxes (P015).
+The sign-in email and password do not: page-load autofill skips a read-only box.
+
+## 2026-10-21 — Settings boxes wait for hydration (WebKit journeys)
+
+Text typed into a Settings box before React hydrated it was wiped when the
+controlled value was applied, so a name typed straight after load was lost
+(the nightly WebKit journey). Settings `Field` and `FieldRow` are read-only
+until hydrated, and look normal meanwhile (`styles/controls.css`,
+`data-ch-hydrating`). `useHydrated` moved to `lib/use-hydrated.ts`.
+
+## 2026-10-21 — Teammates read through the profile function (S4)
+
+No visible change. From the 2026-10-16 security review. A player could read a
+teammate's whole `golf_players` row (email, phone, gpa, school, hometown,
+state). The qualifier leaders, the qualifier form, the player roster and the
+messages now read teammates' names through `readGolfPlayerProfiles`
+(`src/lib/golf/player-profiles.ts`, the `golf_player_profiles` function):
+display columns only. Until the function is applied the read falls back to the
+table, so nothing changes on screen; the policy change that closes the hole
+stays held (`supabase/migrations/HELD.md`).
+
+## 2026-10-21 — Sign-out drops the offline copies (security review S2)
+
+No visible change. From the 2026-10-16 security review. The service worker kept
+every signed-in API response and golf dashboard page, keyed by address alone,
+and nothing cleared them at sign-out: offline, the next person on a shared phone
+could be shown the last person's roster and notes. `chEndSession`
+(`lib/sign-out.ts`) now deletes the worker's page and API caches with the
+session (`src/lib/offline/private-caches.ts`, also called by every Fairway
+sign-out and the idle timeout), and the worker no longer caches API responses at
+all (`public/sw.js`). A player's own unsynced rounds on the device are kept, as
+before.
+
+## 2026-10-20 — Stats visuals: ties by the head of the run
+
+- `lib/stats-signal.ts` `rankWithTies`: a tie run now holds only the players
+  within one standard error of its first player, not of the neighbor before
+  them. Chaining neighbors let a smooth spread join everyone into T1. First
+  used by the team ranked dot plot (P004).
+
+## 2026-10-20 — Stats visuals: a hole floor and an eagle fill token
+
+- `lib/stats-signal.ts`: a `holes` floor (shows from 1, early read under 30)
+  and `earlyTag(n, unit)` for a unit other than rounds ("Early read · 24
+  holes"). First used by the scoring mix (P005).
+- `styles/tokens.css`: `--ch-score-eagle-fill` in the light and dark blocks,
+  the deeper red of eagle or better as a fill.
+
+## 2026-10-20 — No serif face is loaded
+
+`lib/fonts.ts` still declared Instrument Serif (normal and italic), so every
+Clubhouse page preloaded two serif files that nothing drew: titles moved to the
+sans on 2026-10-07 and `--ch-font-serif` resolves to it (`tokens.css`), and no
+selector names `--ch-font-instrument-serif` (premium pass audit P011 D14). The
+face and its variable are gone; Instrument Sans, JetBrains Mono and Norican
+stay. Nothing on screen changes. The original change (draft PR #2207) counted
+four WebKit font preloads before and two after on the player home preview; that
+was before Norican joined, and the count was not re-taken in this replay.
+
+## 2026-10-20 — Server errors carry ui=clubhouse too
+
+No visible change. Release review blocker 5: only the browser tagged a
+Clubhouse session `ui=clubhouse`, so a canary's server errors could not be told
+from Fairway's. When `isClubhouseFor` decides Clubhouse for a request
+(`gate.ts`), it now sets the same tag, name and value, on Sentry's isolation
+scope, which the server forks per request; a Sentry failure never changes the
+decision (`__tests__/gate-sentry-tag.test.ts`). The saved search, the alert
+steps and the baseline are in STATUS.md "Monitoring".
+
+## 2026-10-20 — Stats visuals: area scrubbing in the pin hook
+
+- `lib/use-chart-pin.ts`: `useChartPin(count, axis, inset)` returns `area`, the
+  pointer handlers for a chart drawn as one surface: a mouse reads the nearest
+  column, a finger scrubs after about 8 px of mostly sideways travel
+  (`touch-action: pan-y` keeps a vertical swipe scrolling, and a cancel clears),
+  the end of a drag keeps the last column pinned, a tap or click toggles the
+  nearest. First used by the trend of rounds (P005).
+
+## 2026-10-20 — Honest deltas (stats visuals 2)
+
+- `lib/stats-signal.ts`: `meanSe`, `changeSe` and `halvesChange`, the
+  standard error of a window and of a change, beside `deltaTone` and
+  `deltaWords`. `data/stats-weight.ts` gains `windowChangeSe` (per-18 values,
+  a nine-hole round as half) and `data/round-scope.ts` `recordedPutts`.
+- `ui/FormLine.tsx`: green or amber only past one standard error of the
+  halves' change, neutral otherwise; its comment now says lower scores sit
+  higher. Roster (P003) and the home leaderboard use it, so their form lines
+  turn neutral where the change is inside its error.
+- `data/season.ts` `formStatus`: Improving or Slipping only past one standard
+  error, Steady otherwise. It drives the roster's and leaderboard's form word.
+- `lib/sg.ts` `sgTint`: `color-mix` of `--ch-chart-gain` and
+  `--ch-chart-loss` in place of literal rgb values, so the tint follows dark
+  mode.
+- `styles/stats.css`: neutral fills for the gauge and the Overview tracks,
+  the phone "No clear change" line and the Overview change line's colours.
+
+## 2026-10-20 — Stats visuals: the signal and pin helpers
+
+- `lib/stats-signal.ts` and `lib/use-chart-pin.ts` (shared, no page owns them):
+  sample floors per stat, standard errors from the player's own or the pooled
+  spread, the tone of a change (color only past one standard error), Wilson
+  intervals, a trailing mean and ties in a ranking; and the one hover,
+  tap-to-pin and arrow-key behavior the stats charts share. First used by
+  strokes gained by leg (P005); the later stats pieces build on them. Decisions
+  are in the project's stats-visuals files.
+- `styles/stats.css`: `.ch-sv-*` (readout line, whisker, hollow early mark,
+  "needs" text), stats-owned.
+
 ## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
 
-- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
-  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
-  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
-  by a shell test.
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's
+  footer: after Publish, the "Published" toast covered the Edit event dialog's
+  Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they
+  already did on the phone (ui.css), pinned by a shell test.
 
 ## 2026-10-19 — Date fields drop this year's year
 
-- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
-  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
-  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
-  client, so no time zone is guessed).
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit),
+  and keeps the year for any other year. Two half-width fields on the phone
+  (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The
+  value, the month grid's day names and typing are unchanged; the server render
+  keeps the year (the year is read on the client, so no time zone is guessed).
 
 ## 2026-10-19 — The iPad tier of the shell
 
-`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is
+208px (was 240px) and the page gutter 28px (was 40px), and the next-event card
+in the sidebar narrows with it. An iPad portrait with the sidebar open went from
+a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and
+everything from 1181px up are unchanged. Page-level tablet fixes are in each
+page's own changelog. Lane W4c.
 
 ## 2026-10-19 — Hero tone titles follow the iPhone's text size
 
-`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px)
+are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane
+W4b.
 
 ## 2026-10-19 — Complete and elevate: shared pieces
 

@@ -637,6 +637,43 @@ $$;
 
 ALTER FUNCTION "public"."calculate_round_strokes_gained"("p_round_id" "uuid") OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT (SELECT auth.uid()) IS NOT NULL
+     AND NOT EXISTS (
+           SELECT 1 FROM public.golf_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id <> (SELECT auth.uid())
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.baseball_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id <> (SELECT auth.uid())
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.helm_lifting_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id <> (SELECT auth.uid())
+         )
+     AND (
+           EXISTS (
+             SELECT 1 FROM public.golf_coaches me
+             WHERE me.organization_id = p_org_id AND me.user_id = (SELECT auth.uid())
+           )
+        OR EXISTS (
+             SELECT 1 FROM public.organizations o
+             WHERE o.id = p_org_id
+               AND o.created_by = (SELECT auth.uid())
+               AND o.created_at > now() - interval '5 minutes'
+               AND NOT EXISTS (SELECT 1 FROM public.baseball_coaches c WHERE c.organization_id = p_org_id)
+               AND NOT EXISTS (SELECT 1 FROM public.helm_lifting_coaches c WHERE c.organization_id = p_org_id)
+           )
+         );
+$$;
+
+ALTER FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."can_delete_organization"("p_org_id" "uuid") IS 'organizations_delete_own_coach (S1, 2026-10-16): the caller is the organization''s only coach (golf, baseball or Lift Lab), or created it in the last 5 minutes and nobody coaches it (onboarding rollback). Definer, so it sees every coach row, not just the ones the caller may read.';
+
 CREATE OR REPLACE FUNCTION "public"."can_insert_baseball_team_member"("p_team_id" "uuid", "p_status" "public"."team_member_status") RETURNS boolean
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -885,6 +922,35 @@ CREATE OR REPLACE FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_u
 $$;
 
 ALTER FUNCTION "public"."coach_id_for_team"("p_team_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT (SELECT auth.uid()) IS NOT NULL
+     AND EXISTS (
+           SELECT 1 FROM public.organizations o
+           WHERE o.id = p_org_id
+             AND o.created_by = (SELECT auth.uid())
+             AND o.created_at > now() - interval '5 minutes'
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.golf_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id IS DISTINCT FROM (SELECT auth.uid())
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.baseball_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id IS DISTINCT FROM (SELECT auth.uid())
+         )
+     AND NOT EXISTS (
+           SELECT 1 FROM public.helm_lifting_coaches c
+           WHERE c.organization_id = p_org_id AND c.user_id IS DISTINCT FROM (SELECT auth.uid())
+         );
+$$;
+
+ALTER FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."coach_organization_is_claimable"("p_org_id" "uuid") IS 'True when the caller may attach their own coach row to the organization from the client: the caller created it in the last 5 minutes and no golf, baseball or Lift Lab coach but the caller belongs to it (golf onboarding). Definer, because the caller cannot see other programs'' coach rows. Used by guard_coach_organization_id (S1, 2026-10-16).';
 
 CREATE OR REPLACE FUNCTION "public"."current_coach_id"() RETURNS "uuid"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
@@ -5152,6 +5218,74 @@ ALTER FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uu
 COMMENT ON FUNCTION "public"."golf_user_on_conversation_team"("p_conversation_id" "uuid", "p_user_id" "uuid") IS 'Is the NAMED user (p_user_id, not the caller) an active player or a coach on the team that owns this conversation? SECURITY DEFINER so the participant INSERT policy can ask about a user whose roster rows the caller may not be able to read. Reads only; grants no access.';
 
 
+CREATE OR REPLACE FUNCTION "public"."guard_baseball_team_organization_id"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF current_user IN ('authenticated', 'anon')
+     AND NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN
+    RAISE EXCEPTION 'A team cannot be moved to another program'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."guard_baseball_team_organization_id"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."guard_baseball_team_organization_id"() IS 'S1 (2026-10-16): a baseball team cannot be moved to another organization from the client.';
+
+CREATE OR REPLACE FUNCTION "public"."guard_coach_organization_id"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.organization_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'UPDATE' AND NEW.organization_id IS NOT DISTINCT FROM OLD.organization_id THEN
+    RETURN NEW;
+  END IF;
+  IF public.coach_organization_is_claimable(NEW.organization_id) THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'A coach joins an existing program by invitation'
+    USING ERRCODE = '42501';
+END;
+$$;
+
+ALTER FUNCTION "public"."guard_coach_organization_id"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."guard_coach_organization_id"() IS 'S1 (2026-10-16): a direct client write may set a coach''s organization_id only to null, leave it unchanged, or point it at a program the caller is creating now (coach_organization_is_claimable). Invoker rights, so current_user is the function owner inside SECURITY DEFINER functions and server code with the service role is not checked.';
+
+CREATE OR REPLACE FUNCTION "public"."guard_lifting_coach_self_update"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.organization_id IS DISTINCT FROM OLD.organization_id THEN
+    RAISE EXCEPTION 'A Lift Lab coach joins an organization by invitation'
+      USING ERRCODE = '42501';
+  END IF;
+  IF NEW.status = 'active' AND OLD.status IS DISTINCT FROM 'active' THEN
+    RAISE EXCEPTION 'Only the program can reactivate a coach'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."guard_lifting_coach_self_update"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."guard_lifting_coach_self_update"() IS 'S1 (2026-10-16): from the client a Lift Lab coach cannot move their row to another organization or set it back to active; invite acceptance (definer) and server code are not checked.';
+
 CREATE OR REPLACE FUNCTION "public"."guard_users_role_self_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -6301,6 +6435,37 @@ CREATE OR REPLACE FUNCTION "public"."helm_lifting_can_edit_org"("p_org" "uuid") 
 $$;
 
 ALTER FUNCTION "public"."helm_lifting_can_edit_org"("p_org" "uuid") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  SELECT public.helm_lifting_can_edit_org(p_org)
+      OR EXISTS (
+           SELECT 1
+           FROM public.baseball_coaches bc
+           JOIN public.baseball_team_coach_staff s ON s.coach_id = bc.id
+           JOIN public.baseball_teams t ON t.id = s.team_id
+           WHERE bc.user_id = (SELECT auth.uid())
+             AND bc.organization_id = p_org
+             AND t.organization_id = p_org
+             AND (s.is_primary IS TRUE OR s.is_head_coach IS TRUE)
+         )
+      OR EXISTS (
+           SELECT 1
+           FROM public.golf_coaches gc
+           JOIN public.golf_team_coach_staff s ON s.coach_id = gc.id
+           JOIN public.golf_teams t ON t.id = s.team_id
+           WHERE gc.user_id = (SELECT auth.uid())
+             AND gc.organization_id = p_org
+             AND t.organization_id = p_org
+             AND s.is_primary IS TRUE
+         );
+$$;
+
+ALTER FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."helm_lifting_can_invite_coach"("p_org" "uuid") IS 'Who may create or edit a Lift Lab coach invite for an organization (hlci_insert, hlci_update; S1, 2026-10-16): a Lift Lab editor of it, a primary or head coach on one of its baseball teams, or the primary coach on one of its golf teams. Mirrors verifyHeadCoachForOrg in src/app/lifting/actions/invites.ts.';
 
 CREATE OR REPLACE FUNCTION "public"."helm_lifting_can_view_org"("p_org" "uuid", "p_sport" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -9689,6 +9854,30 @@ $$;
 ALTER FUNCTION "public"."shares_my_golf_organization"("p_org_id" "uuid") OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."shares_my_golf_organization"("p_org_id" "uuid") IS 'True when the caller belongs to the given organization, as a coach or as a player on one of its teams. Mirrors shares_my_baseball_organization. Used by golf_coaches RLS (#1258).';
+
+CREATE OR REPLACE FUNCTION "public"."stamp_organization_creator"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+  IF current_user NOT IN ('authenticated', 'anon') THEN
+    RETURN NEW;
+  END IF;
+  IF TG_OP = 'INSERT' THEN
+    NEW.created_by := (SELECT auth.uid());
+    NEW.created_at := now();
+  ELSE
+    NEW.id := OLD.id;
+    NEW.created_by := OLD.created_by;
+    NEW.created_at := OLD.created_at;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION "public"."stamp_organization_creator"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."stamp_organization_creator"() IS 'S1 (2026-10-16): a client insert records its creator and the real time; a client update cannot change id, created_by or created_at, which coach_organization_is_claimable and can_delete_organization trust. Server code and definer functions are not checked.';
 
 CREATE OR REPLACE FUNCTION "public"."stop_sequences_on_reply"() RETURNS "trigger"
     LANGUAGE "plpgsql"

@@ -70,6 +70,7 @@ import type {
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
 import { twoProportionZTest } from '@/lib/coachhelm/v3/stats/proportion-test';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /** Window for the shot-level putt-slope read (days), completed rounds only. */
 const WINDOW_DAYS = 90;
@@ -249,6 +250,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const roundIds = rounds.map((r) => r.id);
 
     interface PuttShotRow {
+      round_id: string;
       putt_slope: string | null;
       putt_made: boolean | null;
       distance_to_hole_before: number | null;
@@ -261,7 +263,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     // not swap for created_at desc).
     const { data: putts, error: pErr } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
       fromUntyped(supabase, 'golf_shots')
-        .select('putt_slope, putt_made, distance_to_hole_before, distance_unit_before')
+        .select('round_id, putt_slope, putt_made, distance_to_hole_before, distance_unit_before')
         .eq('shot_type', 'putting')
         .in('round_id', roundIds)
         .order('id', { ascending: true })
@@ -270,6 +272,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     if (!putts) return null;
 
     const rows: PuttSlopeRow[] = [];
+    const usedRounds = new Set<string>();
     for (const p of putts) {
       if (p.putt_made === null || p.putt_made === undefined) continue;
       if (p.putt_slope !== 'downhill' && p.putt_slope !== 'level') continue;
@@ -278,6 +281,7 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
       // distance_unit_before is the correct unit column for putts ('feet' for
       // putts, 'yards' otherwise) — distance_unit is legacy and always 'yards'.
       const distFt = p.distance_unit_before === 'yards' ? raw * 3 : raw;
+      usedRounds.add(p.round_id);
       rows.push({ putt_slope: p.putt_slope, dist_ft: distFt, made: p.putt_made === true });
     }
 
@@ -305,6 +309,8 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     // sampleN gates on ROUNDS so the base-class minSampleN(=5) still applies.
     const base: PuttSlopeBiasAggregate = {
       sampleN: roundIds.length,
+      // Slice 0b: the rounds whose slope-tagged putts fed the test.
+      windowRoundIds: [...usedRounds],
       playerValue: cut.downhill_pct,
       rounds_played: roundIds.length,
       band: cut.band,
@@ -323,8 +329,10 @@ export class PuttSlopeBiasGenerator extends BaseGenerator<PuttSlopeBiasAggregate
     const gap = Math.round(agg.gap_pp);
 
     return {
-      title: `Downhill putts from ${agg.band}: a real penalty`,
-      content: `From ${agg.band}, you're making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap. Short putts carry the highest leverage per attempt in your bag (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. Rehearse a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      ...inBothVoices((v) => ({
+        title: `Downhill putts from ${agg.band}: a real penalty`,
+        content: `From ${agg.band}, ${v.pick("you're", 'the player is')} making ${downhillDisp} of downhill putts vs ${levelDisp} of level putts at the same distance, a ${gap}-point gap. Short putts carry the highest leverage per attempt in ${v.pick('your bag', 'their game')} (a miss costs a full stroke), so this gap is worth closing. It's consistent with a pace-control pattern rather than a green-reading one: the gap shows up inside 6 ft and not beyond it, where line matters more than speed. ${v.pick('Rehearse', 'Have the player rehearse')} a downhill-only ladder drill: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.`,
+      })),
       priority: 'medium',
       signature: `putt_slope_bias:${agg.band}`,
       evidence: {

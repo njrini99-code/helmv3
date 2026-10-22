@@ -108,32 +108,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      # PATH GATE for the World Model check only (plan 5.6). Everything else in
-      # this job runs on every PR, on purpose (see the comment above the job).
-      # The aggregate treats a SKIPPED step as a failure, so the check itself
-      # never gets an `if:`: it runs and exits 0 early. These two ids are
-      # excluded from the aggregate (IGNORE_STEPS below).
-      - name: Filter changed paths (knowledge)
-        id: filter_knowledge
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
-        with:
-          filters: .github/path-filters.yml
-
-      - name: Knowledge paths changed? (fail closed)
-        id: knowledge_gate
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          FILTER_OUTCOME: ${{ steps.filter_knowledge.outcome }}
-          FILTER_KNOWLEDGE: ${{ steps.filter_knowledge.outputs.knowledge }}
-        run: |
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_KNOWLEDGE" = "false" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          fi
-
       # supabase/functions/ is EXCLUDED from tsconfig.json, so `npm run typecheck`
       # has never covered these three Deno edge functions. They are deployed code
       # that sends push notifications and email; until 2026-08-19 nothing checked
@@ -310,30 +284,6 @@ jobs:
         continue-on-error: true
         run: npm run clubhouse:check
 
-      # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
-      # 2026-09-02 alongside the generator itself. Without this step the
-      # committed artifact could go stale on the very next registry.yml edit
-      # and nothing would notice: `.claude/rules/quality-gates.md`'s own rule
-      # is "a script in package.json with no workflow step is not a gate,"
-      # and `npm run knowledge:world-model:check` sat exactly there until
-      # this step was added in the same change that introduced it.
-      #
-      # 2026-10-07: only when memory/**, docs/** or scripts/knowledge/** changed
-      # (`knowledge` in .github/path-filters.yml); every push to main still runs
-      # it. The step exits 0 early instead of carrying an `if:` because the
-      # aggregate counts a skipped step as a failure.
-      - name: World Model graph is current
-        id: world_model
-        continue-on-error: true
-        env:
-          KNOWLEDGE_CHANGED: ${{ steps.knowledge_gate.outputs.run }}
-        run: |
-          if [ "$KNOWLEDGE_CHANGED" != "true" ]; then
-            echo "::notice::No memory/**, docs/** or scripts/knowledge/** change; World Model check not needed (it runs on every push to main)."
-            exit 0
-          fi
-          node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run knowledge:world-model:check
-
       # The other direction from registry glob coverage in knowledge:check:
       # that check fails when a registry entry points at a path that no
       # longer exists, this one fails when a tracked file under a directory
@@ -444,13 +394,14 @@ jobs:
       # `npm run typecheck` started failing on a file nobody had touched. A
       # type gate must not mutate the tree it is checking.
       #
-      # It also passes --minimum-dependency-age=120 (minutes). Deno's default
-      # 24h supply-chain age policy failed this job on 2026-08-21 when rollup
-      # published 4.62.5 upstream — a red CI day for a docs-only merge, with no
-      # code change on our side. 2h keeps the protection against
-      # just-published/compromised versions without a day-long outage every
-      # time a floating transitive dep ships a release. Owner decision
-      # 2026-08-21.
+      # It resolves from the committed supabase/functions/deno.lock with
+      # --frozen (#2278), so a transitive dependency that publishes upstream
+      # cannot change what this job checks. The check no longer passes
+      # --minimum-dependency-age=120: the 2026-08-21 rollup 4.62.5 outage that
+      # flag papered over cannot recur when nothing resolves at CI time (the
+      # relock script still uses it). When a function's imports change,
+      # regenerate the lock with `npm run typecheck:functions:relock` and
+      # commit it.
       - name: Edge functions (Deno)
         id: edge_functions
         continue-on-error: true
@@ -540,8 +491,72 @@ jobs:
           STEP_OUTCOMES: ${{ toJSON(steps) }}
           WORKFLOW_FILE: .github/workflows/ci.yml
           JOB_ID: static-checks
-          IGNORE_STEPS: filter_knowledge,knowledge_gate
         run: node scripts/github/step-summary.mjs
+
+  # World Model graph (docs/generated/WORLD_MODEL.{json,md}) — added
+  # 2026-09-02 alongside the generator itself, as a step of `static-checks`.
+  # Without a gate the committed artifact could go stale on the very next
+  # registry.yml edit and nothing would notice: `.claude/rules/quality-gates.md`'s
+  # own rule is "a script in package.json with no workflow step is not a gate."
+  #
+  # 2026-10-21: its own job. The check takes 110-342 s and sat in the middle of
+  # Static checks (4.3-8.9 min, the slowest of the non-build jobs on a PR that
+  # touches docs), so it set the pace once the build got faster. It runs beside
+  # the others now. Only when memory/**, docs/** or scripts/knowledge/** changed
+  # (`knowledge` in .github/path-filters.yml); every push to main still runs it.
+  # Not gated in the aggregate by `if:`: a skipped job there reads as a failure,
+  # so the job always runs and its steps exit early.
+  world-model:
+    name: World Model
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read  # dorny/paths-filter lists the PR's files via the API
+    env:
+      # Read by scripts/github/pr-drift-gate.mjs: on a pull_request, a failing
+      # drift check is re-run on the base (main) and the PR head to tell
+      # "introduced by this PR" from "inherited from main". Empty elsewhere.
+      PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Full history: the drift gate and the knowledge checks read git.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Filter changed paths (knowledge)
+        id: filter_knowledge
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: .github/path-filters.yml
+
+      - name: Knowledge paths changed? (fail closed)
+        id: knowledge_gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          FILTER_OUTCOME: ${{ steps.filter_knowledge.outcome }}
+          FILTER_KNOWLEDGE: ${{ steps.filter_knowledge.outputs.knowledge }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_KNOWLEDGE" = "false" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No memory/**, docs/** or scripts/knowledge/** change; World Model check not needed (it runs on every push to main)."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node and install dependencies
+        if: steps.knowledge_gate.outputs.run == 'true'
+        uses: ./.github/actions/setup-node-npm
+
+      - name: World Model graph is current
+        if: steps.knowledge_gate.outputs.run == 'true'
+        run: node scripts/github/pr-drift-gate.mjs --allow-merge-skew -- npm run knowledge:world-model:check
 
   # TypeScript and Lint are two PARALLEL jobs again (2026-10-07, plan 5.6).
   # They were folded into one on 2026-09-23 to save a runner slot and an
@@ -664,6 +679,20 @@ jobs:
         continue-on-error: true
         run: npm run lint:duplicate-exports
 
+      # Escape-hatch counts that may only go down (plan phase 7b): `fromUntyped`
+      # imports and explicit `any`, and test files under src/test/** (new tests
+      # go in __tests__/ next to the code). Both read the working tree; no ESLint
+      # run, so they cost seconds.
+      - name: Type escape hatches (ratchet)
+        id: ratchet_any
+        continue-on-error: true
+        run: npm run lint:any-ratchet
+
+      - name: Test location (ratchet)
+        id: ratchet_test_location
+        continue-on-error: true
+        run: npm run lint:test-location
+
       # scripts/ is covered by the shared scan and the ratchet above. This is
       # the rest of what `npm run lint` covers locally (plan 4.10).
       - name: ESLint (e2e, hooks, edge functions)
@@ -695,15 +724,38 @@ jobs:
     # are. Three shards cut wall clock from ~15.5 min to ~6, but by 2026-09-23
     # a shard took ~9 min median and the unit job paced 66% of runs; five
     # shards (~5.5 min each) put it back under `Next build`.
+    #
+    # 2026-10-21 (owner: CI must take 10 minutes max on the free runner pool,
+    # 20 concurrent jobs shared by every open PR): a FOLLOW-UP push to a PR
+    # (`synchronize`) runs one job with only the tests related to the diff
+    # (`vitest --changed`, import-graph based). Everything else keeps the five
+    # shards: the run when a PR is opened or marked ready, a reopen, a manual
+    # dispatch, and every push to main (so main always gets the full suite).
+    # The related tests are sharded too (`--changed ... --shard=N/5`): a diff
+    # to a widely imported file pulls in most of the suite, and one job for all
+    # of it ran 16-21 minutes (2026-10-21: 06:33, 07:05 and 08:10Z runs, the
+    # last behind a 21 minute queue). Sharded, the worst case is a full run and
+    # a small diff leaves every shard a few seconds of tests. If the diff touches
+    # the runner, the dependency set or this workflow (see "Decide test scope"),
+    # every shard runs its slice of the whole suite.
+    #
+    # The two test steps keep different names on purpose: scripts/pr-land.mjs
+    # lands only on a run where every `Unit tests (shard N/5)` step succeeded,
+    # so a related-tests-only run must never satisfy it.
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5]
+    env:
+      VITEST_MAX_WORKERS: '4'  # 4-vCPU hosted runner; vitest.config.ts defaults to 3 for shared machines
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
+          # On pull_request this is the merge ref: HEAD^1 is the base tip, so
+          # HEAD^1..HEAD is exactly the PR's own diff (no merged-in main files).
+          fetch-depth: 2
 
       # PATH GATE, IN-JOB (2026-09-23): this job decides for itself whether
       # the PR touched anything in `code` (.github/path-filters.yml, the same
@@ -734,13 +786,45 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Decide test scope. full = this shard runs its slice of the whole suite.
+      # scoped = a follow-up push: this shard runs its slice of the tests
+      # related to the diff. A follow-up push whose diff touches the test
+      # runner, the dependency set or this workflow can alter any test, so it
+      # runs full.
+      - name: Decide test scope
+        id: scope
+        if: steps.gate.outputs.run == 'true'
+        env:
+          SCOPED: ${{ github.event_name == 'pull_request' && github.event.action == 'synchronize' }}
+        run: |
+          set -eu
+          mode=full
+          if [ "$SCOPED" = "true" ]; then
+            RISKY=$(git diff --name-only HEAD^1 HEAD | grep -E '^(package\.json|package-lock\.json|vitest\.|tsconfig|scripts/serialize\.mjs|\.github/workflows/ci\.yml)' || true)
+            if [ -n "$RISKY" ]; then
+              echo "::notice::runner/dependency/workflow files changed, running the full suite: $RISKY"
+            else
+              mode=scoped
+            fi
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node and install dependencies
         if: steps.gate.outputs.run == 'true'
         uses: ./.github/actions/setup-node-npm
 
       - name: Unit tests (shard ${{ matrix.shard }}/5)
-        if: steps.gate.outputs.run == 'true'
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'full'
         run: npm run test:run -- --shard=${{ matrix.shard }}/5
+
+      # Follow-up push: only the tests related to this PR's diff, in this
+      # shard's slice. Not evidence that the suite passes (the full run on
+      # ready and on main is), hence the different step name.
+      - name: Related unit tests (shard ${{ matrix.shard }}/5, follow-up push)
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped'
+        run: |
+          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
+          npm run test:run -- --changed HEAD^1 --shard=${{ matrix.shard }}/5 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -749,13 +833,14 @@ jobs:
       # coach-onboarding-staff-row and player-access-action-gate — the auth and
       # access-control tests — running at all.
       - name: Integration tests
-        if: steps.gate.outputs.run == 'true' && (matrix.shard == 1)
+        if: steps.gate.outputs.run == 'true' && matrix.shard == 1
         run: npm run test:integration
 
   next-build:
     name: Next build
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts builds the head.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -800,10 +885,13 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         uses: ./.github/actions/setup-node-npm
 
-      # `next build --webpack` keeps its incremental compilation cache in
-      # .next/cache. RESTORE on every run (lockfile-exact prefix first, then
-      # any); SAVE only on push to main, and only when today's key for this
-      # lockfile does not exist yet.
+      # `npm run build` (`next build --turbopack`) keeps its incremental
+      # compilation cache in .next/cache/turbopack (Next 16.3 turns the build
+      # filesystem cache on by default). The key prefix is `next-build-turbopack-`
+      # so a run never restores an old webpack entry it cannot use, and the two
+      # caches do not compete for the 10 GB repository cache. RESTORE on every
+      # run (lockfile-exact prefix first, then any); SAVE only on push to main,
+      # and only when today's key for this lockfile does not exist yet.
       #
       # 2026-09-23: the key was `...-<sha>`, so EVERY merge to main saved a
       # fresh multi-hundred-MB entry into a 10 GB repository cache that sat
@@ -811,7 +899,7 @@ jobs:
       # were routinely the ones PRs were about to restore, and 27% of builds
       # ran over 7 min cold. Keyed by UTC day + lockfile, main writes at most
       # one entry a day (plus one per lockfile change); a day-old cache is
-      # still warm for webpack.
+      # still warm.
       - name: Next cache key
         if: steps.gate.outputs.run == 'true'
         id: nextkey
@@ -847,28 +935,64 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
+          key: next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
           restore-keys: |
-            next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
-            next-build-${{ runner.os }}-
+            next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            next-build-turbopack-${{ runner.os }}-
+
+      # 2026-10-21 (owner-approved): about one Next build in three died with
+      # "The runner has received a shutdown signal" during Next's in-process
+      # "Running TypeScript" step, right after "Compiled successfully". That is
+      # the hosted runner running out of memory, not a code failure: main's own
+      # builds pass while large PRs get killed. 10 GiB of swap gives the TypeScript
+      # step headroom, and the sampler below prints memory and swap use every
+      # 15s so the next death shows how close the build came. Swap is best
+      # effort: if the runner will not give it, the build still runs as before.
+      - name: Add swap
+        if: steps.gate.outputs.run == 'true'
+        continue-on-error: true
+        run: |
+          nproc
+          free -m
+          sudo fallocate -l 10G /mnt/helm-swap
+          sudo chmod 600 /mnt/helm-swap
+          sudo mkswap /mnt/helm-swap
+          sudo swapon /mnt/helm-swap
+          free -m
 
       - name: Build
         if: steps.gate.outputs.run == 'true'
-        run: npm run build
+        env:
+          # The 8 GB workflow-level cap ran out of heap on a 16 GB runner (PR #2246, #2239).
+          NODE_OPTIONS: --max-old-space-size=12288
+        run: |
+          (while true; do sleep 15; free -m | awk -v t="$(date -u +%T)" '/^Mem:/{m=$3" used, "$7" avail"} /^Swap:/{print "mem " t ": " m ", swap " $3 " used"}'; done) &
+          sampler=$!
+          rc=0
+          npm run build || rc=$?
+          kill "$sampler" 2>/dev/null || true
+          exit "$rc"
+
+      # One line of evidence for the cache entry's size (Turbopack vs the old
+      # webpack entry), so a cache that outgrows its keep is visible in the log.
+      - name: Next cache size
+        if: always() && steps.gate.outputs.run == 'true'
+        continue-on-error: true
+        run: du -sh .next/cache/* 2>/dev/null || true
 
       - name: Save Next build cache (push to main, once a day per lockfile)
         if: steps.gate.outputs.run == 'true' && (github.event_name == 'push' && steps.nextcache.outputs.cache-hit != 'true')
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: .next/cache
-          key: next-build-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
+          key: next-build-turbopack-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ steps.nextkey.outputs.day }}
 
       # Only a push to main uploads it (2026-10-07): the one consumer left is a
       # manual playwright.yml dispatch against a main commit, which falls back
       # to building when there is no artifact. The two jobs that used to read
       # it on every run moved to nightly.yml with their own build, so PRs no
       # longer pay for an upload nobody downloads. `.next/cache` is excluded
-      # (the webpack cache above). `include-hidden-files` and
+      # (the build cache above). `include-hidden-files` and
       # `if-no-files-found` are BOTH load-bearing: `.next` is dot-prefixed and
       # upload-artifact skips hidden paths by default, which once uploaded
       # nothing and still succeeded.
@@ -887,7 +1011,8 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts runs it.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the ghcr.io login step below get the authenticated
@@ -1121,6 +1246,7 @@ jobs:
     needs:
       - detect-changes
       - static-checks
+      - world-model
       - typecheck
       - lint
       - unit-tests
@@ -1150,6 +1276,9 @@ jobs:
       - name: Fail if any required CI check failed
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
+          NEXT_BUILD_RESULT: ${{ needs.next-build.result }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+          ACTION: ${{ github.event.action }}
           CODE: ${{ needs.detect-changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1164,7 +1293,13 @@ jobs:
           fi
           incomplete=false
           if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
-          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          skips=$(jq '[.[] | select(. == "skipped")] | length' <<< "$RESULTS")
+          # Quick tier: a follow-up push skips Next build and Supabase on purpose.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            [ "$NEXT_BUILD_RESULT" = "skipped" ] && skips=$((skips - 1))
+            [ "$SUPABASE_RESULT" = "skipped" ] && skips=$((skips - 1))
+          fi
+          if [ "$CODE" = "true" ] && [ "$skips" -gt 0 ]; then incomplete=true; fi
           if [ "$incomplete" = "false" ]; then
             echo "CI hard gates clean."; exit 0
           fi

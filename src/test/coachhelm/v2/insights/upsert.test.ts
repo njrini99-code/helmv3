@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // The real logServerError touches Sentry + an admin Supabase client; every
 // test here already exercised CAS-miss/lost-race paths that call it without
@@ -9,6 +9,20 @@ vi.mock('@/lib/server-error-logger', () => ({
   logServerError: vi.fn(async () => undefined),
   logServerEvent: vi.fn(async () => undefined),
 }));
+
+// Slice 0b: only `coachhelm_reads_v1_copy` is steered here; every other flag
+// keeps its registry value.
+const readsFlag = vi.hoisted(() => ({ on: false }));
+vi.mock('@/lib/flags/is-enabled', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/flags/is-enabled')>();
+  return {
+    ...actual,
+    isFlagEnabled: (key: string, ...rest: unknown[]) =>
+      key === 'coachhelm_reads_v1_copy'
+        ? readsFlag.on
+        : (actual.isFlagEnabled as (k: string, ...r: unknown[]) => boolean)(key, ...rest),
+  };
+});
 
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
@@ -54,6 +68,21 @@ function createFakeSupabase(opts: {
   let updateCallIndex = 0;
 
   const fromFn = vi.fn((table: string) => {
+    // Ownership lookups (resolvePlayerOwnership): "no team", so the row lands
+    // with coach_id/team_id null. Not recorded in `calls`. Before 2026-10-21
+    // these tables were not faked and the thrown lookup fell back to nulls;
+    // that fallback now fails closed, so the fake answers them.
+    if (table === 'golf_team_members' || table === 'golf_team_coach_staff') {
+      const ownership = {
+        select: () => ownership,
+        eq: () => ownership,
+        in: () => ownership,
+        order: () => ownership,
+        limit: () => ownership,
+        maybeSingle: async () => ({ data: null, error: null }),
+      };
+      return ownership;
+    }
     const state: {
       op?: OpKind;
       payload?: unknown;
@@ -489,6 +518,51 @@ describe('upsertInsight', () => {
     // Unchanged — the key was already present.
     expect(metadata.maturation_keys).toEqual(['47|2026-04-21']);
     expect(payload.lifecycle_state).toBeUndefined();
+  });
+
+  describe('Slice 0b revision key and stamp carry-over', () => {
+    afterEach(() => {
+      readsFlag.on = false;
+    });
+
+    it('flag on: persists the r:<newest round>|<window start> key into maturation_keys', async () => {
+      readsFlag.on = true;
+      const existing = {
+        id: 'existing-r1',
+        evidence: baseEvidence({ your_value: 0.38 }),
+        metadata: { maturation_keys: ['47|2026-04-21'] },
+        lifecycle_state: 'detected' as const,
+      };
+      const { client, calls } = createFakeSupabase({ selectResult: { data: [existing], error: null } });
+      await upsertInsight(
+        client,
+        baseInput({
+          evidence: baseEvidence({
+            your_value: 0.55, sample_n: 48, window_start: '2026-02-01', newest_round_id: 'round-9',
+          }),
+        }),
+      );
+      const payload = calls.find((c) => c.op === 'update')!.payload as Record<string, unknown>;
+      const metadata = payload.metadata as Record<string, unknown>;
+      expect(metadata.maturation_keys).toEqual(['47|2026-04-21', 'r:round-9|2026-02-01']);
+    });
+
+    it('an unstamped write keeps the previous row’s stamp (a failed round load never unstamps)', async () => {
+      const existing = {
+        id: 'existing-r2',
+        evidence: baseEvidence({
+          your_value: 0.38, newest_round_id: 'round-9', scanned_through_round_id: 'round-10', rounds_n: 7, sample_unit: 'putts',
+        }),
+        metadata: {},
+        lifecycle_state: 'detected' as const,
+      };
+      const { client, calls } = createFakeSupabase({ selectResult: { data: [existing], error: null } });
+      await upsertInsight(client, baseInput({ evidence: baseEvidence({ your_value: 0.39 }) }));
+      const payload = calls.find((c) => c.op === 'update')!.payload as { evidence: InsightEvidence };
+      expect(payload.evidence).toMatchObject({
+        newest_round_id: 'round-9', scanned_through_round_id: 'round-10', rounds_n: 7, sample_unit: 'putts',
+      });
+    });
   });
 
   // 2026-09-22: optimistic compare-and-set so a concurrent coach action
