@@ -6,6 +6,7 @@
 Design package: none (follow-up to the nightly WebKit finding)
 PR/commit:      see git log (claude/clubhouse-eager-event-read)
 Contract IDs:   none
+
 ## 2026-10-21 — Team Hub's counts shared with Coach Home
 
 ```text

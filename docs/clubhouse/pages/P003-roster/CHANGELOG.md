@@ -19,6 +19,7 @@ minus and a dash for no data. Rows still slide to their new places on a chosen
 sort. The text-first swap (`useArrivalPainted`, `.ch-rsm-flowtext`) and
 `figureParts` went with Number Flow. Replays 1bff7a784 and c2710104e onto
 main.
+
 ## 2026-10-21 — Availability is the word only: the note is pulled
 
 ```text
@@ -1002,6 +1003,7 @@ widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
 every Clubhouse page. Layout and content are unchanged.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 RosterPeek uses zero-duration transitions when motion is disabled.

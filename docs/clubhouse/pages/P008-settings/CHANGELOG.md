@@ -16,6 +16,7 @@ change handler and hand it to the draft setter. Before, the read sat inside
 the state updater and could see the box after React had reset it, so a name
 typed around hydration was lost. ESLint now bans the pattern in
 `src/clubhouse`.
+
 ## 2026-10-21 — A coach's title in Account › Profile
 
 ```text
@@ -771,6 +772,7 @@ without compressing the actions. Dirty/busy guards and preference behavior are
 preserved. See [popup evidence](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Desktop and phone sections enter immediately without an outgoing wait,

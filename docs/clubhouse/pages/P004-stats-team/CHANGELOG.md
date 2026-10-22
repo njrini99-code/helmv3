@@ -16,6 +16,7 @@ The phone's strokes gained figure under the legs and each player's SG were
 Number Flow numerals. They are now plain tabular text written at once
 (`formatSigned`, a true minus), and the hidden copy beside the rolling one is
 gone. Replays 1bff7a784 and c2710104e onto main.
+
 ## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
 
 ```text
@@ -1009,6 +1010,7 @@ In-page jumps on the phone player stats view ease through the shared smooth
 scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 The shared segmented indicator uses zero-duration motion when disabled.

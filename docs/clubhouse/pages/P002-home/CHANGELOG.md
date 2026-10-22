@@ -981,6 +981,7 @@ Before/after normal-content captures are in page VERIFY logs. Physical-device
 and owner visual acceptance remain open in [POPUP_AUDIT](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 LatestRound passes the reduced preference through chSwap, eliminating the
