@@ -353,7 +353,7 @@ function contextLabelFromKey(key: string): string {
     drive: 'drives',
     long_approach: 'long approaches',
     approach: 'approaches',
-    wedge_approach: 'wedge approaches',
+    wedge_approach: 'short approaches',
     greenside: 'greenside shots',
     putting: 'putts',
     penalty: 'penalty recoveries',
