@@ -57,12 +57,16 @@ stop that.
 
 ## Trains (2026-10-21)
 
+<!-- markdownlint-disable MD013 -->
+
 | Train | PR | Area | Carries |
 | --- | --- | --- | --- |
 | 1 | #2310 | CoachHelm engine | #2283, #2288, #2306, #2292, #2300 |
 | 2 | #2312 | CoachHelm board UI | #2303, #2305, #2297, #2290, #2298 (#2294 already merged); stacked on train 1 |
 | 3 | not opened yet (another agent is opening it) | Clubhouse parity & pages | #2295, #2307, #2293, #2287 |
 | 4 | not opened yet (another agent is opening it) | Clubhouse fixes | #2279, #2282, #2284 |
+
+<!-- markdownlint-enable MD013 -->
 
 Held out: #2299 (coach Brief, par-05) needs a rebase on `main` after trains
 1 and 2 land, and fresh Bridge IDs and CH codes (reserved below). Parked
@@ -75,6 +79,8 @@ and #2313 (the same for v2 copy).
 
 Cells in "What" are short; the audit and the PR hold the detail. #2295 closes
 its rows together and does not map them one to one.
+
+<!-- markdownlint-disable MD013 -->
 
 | Row | What | Area | Status | PR | Claimed by |
 | --- | --- | --- | --- | --- | --- |
@@ -139,12 +145,16 @@ its rows together and does not map them one to one.
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | in progress | #2284 (train 4) | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | in progress | #2284 (train 4) | claude/clubhouse-audit-polish |
 
-#2282 also cites a "pr-05", which is not one of the audit's prefixes. It is
-left out until someone confirms what it is.
+<!-- markdownlint-enable MD013 -->
+
+PR #2282 also cites a "pr-05", which is not one of the audit's prefixes. It
+is left out until someone confirms what it is.
 
 ## Open PRs with no audit row
 
 They are listed so nobody starts the same work again.
+
+<!-- markdownlint-disable MD013 -->
 
 | PR | What | Area | Train |
 | --- | --- | --- | --- |
@@ -157,6 +167,8 @@ They are listed so nobody starts the same work again.
 | #2313 | v2 CoachHelm copy names no clubs | CoachHelm engine | none |
 | #2285 | Announcement acknowledgements: coach read scoped to the team | Clubhouse fixes | parked (held migrations) |
 | #2217 | iOS app: the edge swipe drags only the pushed screen | Clubhouse fixes | parked |
+
+<!-- markdownlint-enable MD013 -->
 
 ## Reserving Bridge IDs and CH codes
 
@@ -182,6 +194,8 @@ above 59, except CH-9999 on P009.
 So each area owns the same two-digit window for Bridge items, in every
 category of every page, and for CH suffixes, in every kind of every page:
 
+<!-- markdownlint-disable MD013 -->
+
 | Area | Bridge items | CH suffixes | P013 instead |
 | --- | --- | --- | --- |
 | CoachHelm board UI | 60-69 | 60-69 | kinds 0-8: 33-42; kind 9: CH-13913 to CH-13919 |
@@ -189,6 +203,8 @@ category of every page, and for CH suffixes, in every kind of every page:
 | Clubhouse parity & pages | 80-89 | 80-89 | kinds 0-8: 91-99; kind 9: CH-13954 to CH-13959 |
 | Clubhouse fixes | 90-99 | 90-99 (P009 kind 9: 90-98) | kinds 0-8: 85-89; kind 9: CH-13925 to CH-13929 |
 | docs | none | none | none |
+
+<!-- markdownlint-enable MD013 -->
 
 P015 (sign-in) kind 9 already uses suffixes 60-62 and 70-72; take the next
 free code in your window there. **P013 kind 9 is nearly full**: after the
