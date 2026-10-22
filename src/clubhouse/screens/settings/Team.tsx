@@ -81,8 +81,8 @@ function TeamCard({ team, writes }: { team: ChTeamInfo; writes: ChSettingsWrites
       save={{ dirty: f.dirty, pending: save.pending, invalid, savedAt: f.savedAt, onReset: f.reset, onSave: () => void save.run(f.draft) }}
     >
       <div className="ch-set-grid">
-        <Field id="set-team-name" label="Team name" error={errorAt('set-team-name')} value={f.draft.name} onChange={(e) => f.setDraft((d) => ({ ...d, name: e.target.value }))} />
-        <Field id="set-team-season" label="Season" placeholder="2026–27" value={f.draft.season} onChange={(e) => f.setDraft((d) => ({ ...d, season: e.target.value }))} />
+        <Field id="set-team-name" label="Team name" error={errorAt('set-team-name')} value={f.draft.name} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, name: value })); }} />
+        <Field id="set-team-season" label="Season" placeholder="2026–27" value={f.draft.season} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, season: value })); }} />
       </div>
       {org && (
         <>

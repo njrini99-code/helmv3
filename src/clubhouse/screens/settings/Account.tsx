@@ -88,11 +88,11 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
       </div>
       <div className="ch-set-grid">
         {coach ? (
-          <Field id="set-fullname" label="Full name" span={2} autoComplete="name" value={f.draft.fullName} onChange={(e) => f.setDraft((d) => ({ ...d, fullName: e.target.value }))} />
+          <Field id="set-fullname" label="Full name" span={2} autoComplete="name" value={f.draft.fullName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, fullName: value })); }} />
         ) : (
           <>
-            <Field id="set-first" label="First name" autoComplete="given-name" value={f.draft.firstName} onChange={(e) => f.setDraft((d) => ({ ...d, firstName: e.target.value }))} />
-            <Field id="set-last" label="Last name" autoComplete="family-name" value={f.draft.lastName} onChange={(e) => f.setDraft((d) => ({ ...d, lastName: e.target.value }))} />
+            <Field id="set-first" label="First name" autoComplete="given-name" value={f.draft.firstName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, firstName: value })); }} />
+            <Field id="set-last" label="Last name" autoComplete="family-name" value={f.draft.lastName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, lastName: value })); }} />
           </>
         )}
       </div>
