@@ -1234,13 +1234,45 @@
     "category": 1,
     "item": 3,
     "name": "LINKS_OPEN_WHAT_THEY_NAME",
-    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
+    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's \"Waiting on you\" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts",
+    "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts; src/clubhouse/screens/home/CoachQueue.tsx#queueParts; src/clubhouse/screens/home/TeamLegs.tsx#legPlayerHref; src/clubhouse/screens/home/Week.tsx#nextReplies; src/clubhouse/ui/PlayerPeek.tsx#coachHelmPlayerHref",
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
       "src/clubhouse/__tests__/player-home.test.tsx",
-      "src/clubhouse/__tests__/wiring-p002-home.test.tsx"
+      "src/clubhouse/__tests__/wiring-p002-home.test.tsx",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+    ]
+  },
+  {
+    "id": 20104,
+    "page": "P002",
+    "category": 1,
+    "item": 4,
+    "name": "COACH_QUEUE_COUNTS_AS_ITS_SCREEN",
+    "meaning": "Coach Home's \"Waiting on you\" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count \"no reply\" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home-queue.ts#loadCoachQueue; src/clubhouse/data/hub.ts#rsvpQueue, overdueTaskCount, unackedPostCount; src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue, queueParts",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/home-data-completeness.test.ts",
+      "src/clubhouse/__tests__/home-consumer-truthfulness.test.tsx",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+    ]
+  },
+  {
+    "id": 20105,
+    "page": "P002",
+    "category": 1,
+    "item": 5,
+    "name": "TEAM_PARTS_ON_THE_FORMS_LAST_10",
+    "meaning": "Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home.ts#teamLegs, legPeople, teamWindows; src/clubhouse/data/leg-rows.ts#legRows; src/clubhouse/data/stats-team.ts#teamGrid; src/clubhouse/screens/home/TeamLegs.tsx#TeamLegs, TeamLegsPhone",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/home-data-completeness.test.ts",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
     ]
   },
   {
@@ -1951,7 +1983,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
+    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
     "status": "implemented",
     "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
     "tests": [
@@ -2183,7 +2215,7 @@
     "category": 5,
     "item": 2,
     "name": "EXPORT_CELLS_ARE_TEXT",
-    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers.",
+    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column.",
     "status": "implemented",
     "where": "src/clubhouse/screens/roster/Roster.tsx#exportCsv, asText",
     "tests": [
@@ -2195,7 +2227,7 @@
     "page": "P003",
     "category": 5,
     "item": 3,
-    "name": "RETIRED_2026_10_21_NEVER_SHIPPED_THE_2",
+    "name": "AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS",
     "chCode": "CH-3102",
     "meaning": "Retired 2026-10-21, never shipped: the availability note’s counter",
     "status": "deprecated",
@@ -2426,7 +2458,7 @@
     "page": "P003",
     "category": 6,
     "item": 21,
-    "name": "RETIRED_2026_10_21_NEVER_SHIPPED_THE",
+    "name": "THE_AVAILABILITY_NOTE_DOESNT_SAVE",
     "chCode": "CH-3010",
     "meaning": "Retired 2026-10-21, never shipped: the availability note",
     "status": "deprecated",
@@ -14502,10 +14534,11 @@
     "category": 1,
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
-    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
+    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive with no ?player= is their own board; with ?player=<golf_players.id> it is the coach's view of that player (spec A, 2026-10-21, which supersedes Q-76's \"a coach's equivalents are not asked for\"), read only once the id is checked against the coach's team (130807). A player's ?player= means nothing: their views read the session's id.",
     "status": "implemented",
-    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
     "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
       "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
@@ -16115,6 +16148,20 @@
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130807,
+    "page": "P013",
+    "category": 8,
+    "item": 7,
+    "name": "A_COACH_READS_ONE_PLAYER_ONLY_THROUGH_THE_SCOPE",
+    "meaning": "A coach's view of one player (?view=deep-dive|standing|profile&player=) reads nothing about the player until loadCoachPlayerScope has found the id an active member of the team the shell resolved (golf_team_members, team_id, player_id and status active, through the session's client): an id that is not a uuid is answered with no query, and any id not on this team, on another team the coach staffs, or no longer active is the one \"That player isn't on your team\" page (CH-13311), so the page never says whether a player exists. The three loaders take only the branded scope that check makes, never an id (a raw id does not compile), because Standing's standing map and the goals read through the service client. A read the check needs that fails is CH-13209, never CH-13311. The Deep dive reads the coach feed (getInsightsForCoach with player_id), never the player's, and every row of anyone else's is dropped.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-player.ts#loadCoachPlayerScope; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
+      "src/clubhouse/data/__tests__/coachhelm-player.test.ts"
     ]
   },
   {
