@@ -277,6 +277,16 @@ alongside (not duplicated here).
   `pg:<code>`, and uncoded transport failures group by kind. A deliberate
   fingerprint is never overridden. Measured 2026-09-23: 35 of the top 100
   unresolved issues were these auto-captures.
+- **A gateway HTML error page groups on its HTTP status.** When Cloudflare
+  answers for Supabase with an HTML page (502, 522, 504), the integration
+  throws the whole document as the message, with no code. Each page carries
+  its own Ray ID, timestamp and client IP, so default grouping made one issue
+  per event (2026-10-22 15:29-15:33Z: one 502 became JAVASCRIPT-NEXTJS-1D6,
+  -1D7 and -1D8, all titled "Error: <!DOCTYPE html>"). `gatewayErrorPage`
+  keeps the page's `<title>`, tags `http_status`, fingerprints
+  `['supabase-gateway', 'http:<status>']`, and replaces the message with
+  `Supabase gateway error page: <title>` so the page body (including the
+  client IP) is not stored.
 
 ## Rollback
 
