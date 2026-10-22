@@ -382,6 +382,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/ROUNDS_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/foundation-v2/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-player-course-plan.md` | current | - | - | - | 1 |
 | `docs/clubhouse/templates/HELD_DATA_PLAN.md` | current | - | - | - | - |
 | `docs/clubhouse/templates/HELD_FEATURE_PLAN.md` | current | - | - | - | - |
 | `docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md` | current | yes | - | - | 4 |
@@ -879,6 +880,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-10-22-coachhelm-data-prompts.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |

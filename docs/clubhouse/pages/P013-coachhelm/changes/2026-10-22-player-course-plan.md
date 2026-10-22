@@ -1,3 +1,5 @@
+# P013 — CoachHelm: change log entry
+
 ## 2026-10-22 — Player: their own Course plan (flag off)
 
 ```text
