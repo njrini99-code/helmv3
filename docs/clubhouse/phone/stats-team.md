@@ -58,5 +58,5 @@ The failed reads are the desktop's (CH-4201, CH-4202, CH-4203). No rounds in the
 A selection tick on a window, sort or leg change (CH-4701, CH-4703); a leg
 picked while the sort is Avg moves it to SG with no second tick. The leg wash
 slides on the base ease-out; the figures change at once (no digits roll, owner
-rule). Reduced motion and Animations off move the wash at once. Rows press with the shared press. Reduced
-motion turns the press off.
+rule). Reduced motion and Animations off move the wash at once. Rows press
+with the shared press. Reduced motion turns the press off.
