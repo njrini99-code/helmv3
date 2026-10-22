@@ -1,5 +1,21 @@
 # P003 — Roster: changelog
 
+## 2026-10-22 — The availability word is parsed in one place
+
+```text
+Design package: none (coach dashboard parity)
+PR/commit:      claude/coach-parity-availability
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same read, same values)
+Held items:     none
+```
+
+### Changed
+
+- `ChAvailability` and its parsing moved to `data/availability.ts` so Home and
+  Calendar read the same word the roster does; the roster behaves as before.
+
 ## 2026-10-21 — CoachHelm block and strokes by leg (spec D build B)
 
 ```text

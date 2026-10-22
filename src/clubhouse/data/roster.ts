@@ -6,6 +6,7 @@ import { chLogServer } from '../lib/track-server';
 import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
 import { countReads, type ChReadCount } from './coachhelm-classify';
 import { relativeAgo } from '../screens/roster/format';
+import { parseAvailability, type ChAvailability } from './availability';
 import {
   classYearLabel,
   displayHandicap,
@@ -58,7 +59,7 @@ export interface ChRosterPlayer {
   availabilityUpdated: string | null;
 }
 
-export type ChAvailability = 'available' | 'injured' | 'away';
+export type { ChAvailability };
 
 export interface ChJoinRequest {
   id: string;
@@ -189,8 +190,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
-    // The column is CHECKed to these three; anything else reads as available rather than inventing a state.
-    const availability: ChAvailability = m.availability === 'injured' || m.availability === 'away' ? m.availability : 'available';
+    const availability: ChAvailability = parseAvailability(m.availability);
     return {
       id: p.id,
       name: fullName(p),

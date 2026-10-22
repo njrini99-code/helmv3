@@ -1656,6 +1656,20 @@ describe('Calendar · the loader', () => {
     expect(asked.golf_event_attendance![0]!.some(([m]) => m === 'in')).toBe(false);
   });
 
+  it('the coach’s people carry availability, a player’s never do (it is the coach’s to see, v1)', async () => {
+    const withAvail = [
+      { availability: 'injured', ...rosterRow('p1', 'Ana', 'Ruiz') },
+      { availability: 'bogus', ...rosterRow('p2', 'Ben', 'Cole') },
+      { availability: 'away', ...rosterRow('p3', 'Cy', 'Diaz') },
+    ];
+    serve({ ...healthy(), golf_team_members: { data: withAvail } });
+    const coach = await load();
+    expect(Object.fromEntries(coach.people.map((p) => [p.id, p.availability]))).toEqual({ p1: 'injured', p2: 'available', p3: 'away' });
+    serve({ ...healthy(), golf_team_members: { data: withAvail } });
+    const player = await load({ role: 'player', viewerPlayerId: 'p2', coachId: null });
+    for (const p of player.people) expect(p).not.toHaveProperty('availability');
+  });
+
   it('62301 a read that fails is logged under calendar and named on the page, never thrown; a write that fails is reported under calendar with its action, after a breadcrumb', async () => {
     const boom = { error: { message: 'boom' } };
     serve({ ...healthy(), golf_team_settings: boom, golf_teams: boom, golf_team_members: boom, golf_events: boom, golf_player_classes: boom, golf_coach_blocked_time: boom });
