@@ -13772,6 +13772,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/insights/__tests__/upsert-fail-closed.test.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/analysis-outcome"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/insights/standing-injection.ts",
           "anchor": "src/lib/coachhelm/v3/standing/loader"
         },
@@ -14283,6 +14288,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/course-plan/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/engine-owner.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",
