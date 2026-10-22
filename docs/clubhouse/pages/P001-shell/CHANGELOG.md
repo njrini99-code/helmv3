@@ -74,8 +74,8 @@ PR/commit:      claude/clubhouse-edge-swipe
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     Swift not compiled or Simulator-checked yet; needs an App Store
-                build to reach phones
+Held items:     Swift compiles (Simulator SDK, unsigned) but the gesture is not
+                device-checked yet; needs an App Store build to reach phones
 ```
 
 ### Changed
@@ -109,7 +109,9 @@ Held items:     Swift not compiled or Simulator-checked yet; needs an App Store
   resync, no bridge, the chevron check) and `phone-shell-gestures.test.tsx`
   (true on mount and false on unmount, a covered screen hands over, a Cancel and
   no bridge post nothing). No visible change on the web, so no screenshots. The
-  Swift was not compiled here (no Mac).
+  Swift compiles (`xcodebuild` for the iOS Simulator SDK, Xcode 27.1, unsigned,
+  exit 0) and the built app opens the production sign-in page in the Simulator;
+  the gesture itself is not checked on a device yet.
 
 ## 2026-10-19 — The phone shell feels native: edge swipe back, pushes that keep the dock, no late bars, idle prefetch
 

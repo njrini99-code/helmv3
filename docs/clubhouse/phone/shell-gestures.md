@@ -128,8 +128,8 @@ a production build.
 
 ## Open
 
-- Native: compile and check the `webSwipe` contract in the Simulator and on an
-  iPhone (section 1), then ship it in an App Store build.
+- Native: the Swift compiles (2026-10-21, Simulator SDK). Check the `webSwipe` contract on an iPhone or in the Simulator
+  against a Clubhouse build (section 1), then ship it in an App Store build.
 - `shell/TopBar.tsx` and `shell/nav.ts`: a root-action stand-in for section roots (section 3), and `ChPhonePushedTop.action`
   to replace the title match in `standInAction`.
 - Physical iPhone check: the swipe against Safari's own, haptics, VoiceOver after a swipe pop.
