@@ -1,5 +1,23 @@
 # P005 — Stats (player): verification
 
+## 2026-10-21 — Game detail CoachHelm count line (spec D build A)
+
+The per-section "CoachHelm sees…" line, its CH-5215 failure line, and the coach
+and player reads behind it. `game-detail-reads.test` (7),
+`data/__tests__/stats-reads.test` (9), `data/__tests__/coachhelm-classify.test`
+(3, the count agrees with the Game profile line), `stats-player.test` › CH-5215.
+Vitest, `npm run test:file -- src/clubhouse`: 275 files, 5112 tests pass, 1
+skipped (exit 0). `npm run typecheck:fast` exit 0; ESLint on the changed files
+exit 0; `npm run clubhouse:check`, `npm run docs:check`, `npm run
+markdown:ratchet` and `git diff --check` exit 0. Not run: `npm run build`, `npm
+run test:rls` (no migration or policy), a live read against production.
+
+Chromium (headless, dev server, placeholder Supabase env) on
+`/clubhouse-preview/player`: Game detail at 1280 (coach reads, the player's own
+reads, the failed line) and at 390 (Approach chosen). Shots are outside the
+repo, in the coach-parity shots-bridges folder. Not checked: WebKit, dark mode,
+a real coach session.
+
 ## 2026-10-19 — Scorecard pass (lane L6a)
 
 Rounds table, putting rings, collapsed More detail, compact empty states, one number voice, the scoring form scrub, print.

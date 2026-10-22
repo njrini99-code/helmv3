@@ -14,7 +14,7 @@
  *   1b. Refuses unless one CI run of that head ran the whole unit suite: every
  *      "Unit tests (n)" job's "Unit tests (shard n/5)" step concluded success
  *      on all five shards (see evaluateUnitShards). A follow-up push runs only
- *      the related tests on shard 1 and skips shards 2-5, so the required
+ *      the related tests (a separate step in each shard), so the required
  *      contexts can be green without the suite having run.
  *   2. Refuses a PR whose branch is not `agent/*`, unless --any-branch is
  *      passed — this tool is for the agent-worktree workflow, not for
@@ -118,8 +118,8 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
 }
 
 /**
- * Why the required contexts are not enough. On a follow-up push (`synchronize`) CI runs only the tests related to the diff, on shard 1,
- * and shards 2-5 skip their test step, yet their jobs finish green and so do "CI aggregate" and the rest. Landing on that evidence merged
+ * Why the required contexts are not enough. On a follow-up push (`synchronize`) CI runs only the tests related to the diff, in a
+ * separate step of each shard, and the full-suite step is skipped, yet the jobs finish green and so do "CI aggregate" and the rest. Landing on that evidence merged
  * a change that broke a test no shard ran (#2269, main's Unit tests shard 5, 2026-10-21). So the guard reads the steps, not the jobs.
  */
 export const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
@@ -141,7 +141,7 @@ export function unitShardVerdict(job, shard, total = UNIT_SHARDS.length) {
   if (steps.find((s) => s.name === SCOPE_STEP)?.conclusion === 'skipped') return { ok: true, why: 'no code-relevant change' };
   if (!step) return { ok: false, why: `job ${job.conclusion ?? job.status ?? 'unfinished'}, no "Unit tests (shard ${shard}/${total})" step` };
   const c = step.conclusion ?? 'not finished';
-  return { ok: false, why: c === 'skipped' ? 'skipped (a follow-up push runs only the related tests, on shard 1)' : `step ${c}` };
+  return { ok: false, why: c === 'skipped' ? 'skipped (a follow-up push runs only the related tests)' : `step ${c}` };
 }
 
 /**
@@ -466,10 +466,14 @@ async function main(argv) {
     ? checkUnitShards({ repo, sha: pr.headRefOid, run: (a) => exec('gh', a, { cwd: canonicalRoot }) })
     : { ok: false, runId: null, problems: ['could not resolve the repository or the head commit'] };
   if (!shards.ok) {
+    // Follow-up pushes run the quick tier (ci.yml), so the full suite runs once, here, on the head about to merge.
+    const dispatched = exec('gh', ['workflow', 'run', 'ci.yml', '--ref', String(pr.headRefName)], { cwd: canonicalRoot });
     process.stderr.write(
       `pr-land: PR #${args.prNumber} is green on its required contexts, but the whole unit suite has not run on ${String(pr.headRefOid ?? '').slice(0, 9)}:\n` +
         shards.problems.map((p) => `  ${p}\n`).join('') +
-        'A follow-up push runs only the tests related to its diff. Flip the PR to draft and back to ready to get a full run, then land it again.\n',
+        (dispatched.ok
+          ? `Started the full CI run on ${pr.headRefName} (gh workflow run ci.yml). Land it again when that run is green.\n`
+          : `Could not start the full CI run (${String(dispatched.stderr ?? '').trim()}). Run \`gh workflow run ci.yml --ref ${pr.headRefName}\`, then land it again.\n`),
     );
     return 1;
   }

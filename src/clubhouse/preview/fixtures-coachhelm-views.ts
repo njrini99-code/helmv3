@@ -24,7 +24,7 @@ export const VIEWS_NOW = new Date('2026-10-01T15:00:00Z');
 
 // ── Game profile ───────────────────────────────────────────────────────────
 
-const FULL_VECTOR: GenomeVector = {
+export const FULL_VECTOR: GenomeVector = {
   miss_side_bias: { value: -0.42, confidence: 0.85, label: 'Left bias' },
   pressure_delta: { value: 0.82, confidence: 0.5, label: 'Tightens up' },
   // Labels are the live dimensions' own (scrambling-rate.ts: Reliable from 27.6%, Wizard from 40.6%).
@@ -36,7 +36,7 @@ const FULL_VECTOR: GenomeVector = {
   driver_usage: { value: 0.62, confidence: 0.95, label: 'Mixed' },
 };
 
-const genome = (vector: GenomeVector, rounds = 14): LoadedGenome => ({ player_id: 'pl-jonah', vector, computed_at: '2026-09-30T02:30:00Z', rounds_basis: rounds });
+export const genome = (vector: GenomeVector, rounds = 14): LoadedGenome => ({ player_id: 'pl-jonah', vector, computed_at: '2026-09-30T02:30:00Z', rounds_basis: rounds });
 const PARTIAL_VECTOR: GenomeVector = {
   ...FULL_VECTOR,
   pressure_delta: { value: null, confidence: null },
@@ -100,7 +100,7 @@ export const STANDING_ROWS: PlayerStanding[] = [
   standingRow('opening_hole_delta', 0.3, 0, null),
 ];
 
-const BASELINE: ChStandBaselineRead = { status: 'ok', roundsPlayed: 14, scoringAverage: 77.2 };
+export const BASELINE: ChStandBaselineRead = { status: 'ok', roundsPlayed: 14, scoringAverage: 77.2 };
 
 export const PREVIEW_STANDING: ChStanding = toChStanding(STANDING_ROWS, BASELINE);
 /** Three rounds in: every comparison draws, no projection does, and the page says it is an early read. */
@@ -254,9 +254,9 @@ export const DIVE_THEMES: AssembledThemes = {
   ],
 };
 
-const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.';
+export const DRILL = 'Rehearse a downhill-only ladder: start 2 ft below the hole and add a foot at a time, focused on dying the ball into the front of the cup rather than a firm strike.';
 const diveSay = (t: string) => speak(t, { role: 'player' });
-const diveBase = (raw: EvidenceInsight, drillText: string | null = null) => toChInsight(raw, { drillText, tour: PREVIEW_TOUR, viewer: { role: 'player' } });
+export const diveBase = (raw: EvidenceInsight, drillText: string | null = null) => toChInsight(raw, { drillText, tour: PREVIEW_TOUR, viewer: { role: 'player' } });
 export type Inputs = Pick<ChDiveInputs, 'rounds' | 'focusAreas' | 'goals' | 'themes'>;
 export const FULL_INPUTS: Inputs = { rounds: new Map(DIVE_ROUND_ROWS.map((r) => [r.id, r])), focusAreas: DIVE_FOCUS, goals: DIVE_GOALS, themes: DIVE_THEMES };
 export const BARE_INPUTS: Inputs = { rounds: FULL_INPUTS.rounds, focusAreas: [], goals: [], themes: null };

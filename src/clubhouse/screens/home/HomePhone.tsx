@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, BarChart3, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -12,7 +12,7 @@ import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
-import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
+import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { withPointSpan } from '../../ui/point-span';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -26,6 +26,8 @@ import { usePhoneHero } from '../../shell/phone-chrome';
 import { TYPE_LABEL } from '../calendar/model';
 import { TYPE_ICON } from '../calendar/views';
 import { coachFailedParts } from './model';
+import { CoachQueue } from './CoachQueue';
+import { TeamLegsPhone } from './TeamLegs';
 import { roundHref } from './player-links';
 import { leaderPeek } from './Leaderboard';
 import { MineBadge } from './CoachAsks';
@@ -69,6 +71,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             {data.subline}
           </p>
         )}
+        <CoachQueue queue={data.queue} covered={covered} phone />
         <PageRefreshNotice parts={failed} />
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
@@ -96,6 +99,12 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
             <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
           </FailedSec>
         ) : null}
+
+        {phone.form && data.legs && (
+          <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+            <TeamLegsPhone legs={data.legs} covered={covered} />
+          </SectionBoundary>
+        )}
 
         {!data.week.error && !nothingAhead && (
           <SectionBoundary surface="home.week" label="This week" code="CH-2205">
@@ -511,6 +520,8 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
   const message = round ? rebuiltHref(`/golf/dashboard/messages?player=${round.playerId}`) : null;
   const recap = round ? roundHref(round.id, 'coach') : null;
   const stats = round ? rebuiltHref(`/golf/dashboard/stats?player=${round.playerId}`) : null;
+  // The player peek's CoachHelm action, after Player stats (spec B §3).
+  const helm = round ? coachHelmPlayerHref(round.playerId) : null;
   return (
     <Modal
       open={!!round}
@@ -518,7 +529,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
       title={round?.playerName ?? ''}
       description={round?.meta}
       footer={
-        (message || recap || stats) && (
+        (message || recap || stats || helm) && (
           <>
             {message && (
               <Button leftIcon={MessageSquare} href={message}>
@@ -536,6 +547,11 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
                   Player stats
                 </Button>
               )
+            )}
+            {helm && (
+              <Button leftIcon={BrainCircuit} href={helm}>
+                CoachHelm
+              </Button>
             )}
           </>
         )

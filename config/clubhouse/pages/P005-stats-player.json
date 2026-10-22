@@ -44,7 +44,8 @@
     "route": "src/clubhouse/routes/stats.tsx",
     "styles": "src/clubhouse/styles/stats.css",
     "tests": [
-      "src/clubhouse/__tests__/stats-player.test.tsx"
+      "src/clubhouse/__tests__/stats-player.test.tsx",
+      "src/clubhouse/__tests__/stats-goals.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/stats-player.md",
@@ -177,6 +178,64 @@
       },
       "tests": [
         "src/clubhouse/__tests__/stats-player.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P005-SET-GOAL",
+      "label": "Set a goal (player)",
+      "component": "src/clubhouse/screens/stats/GoalSheet.tsx#GoalSheet",
+      "handler": "submit (useAction stats.setGoal)",
+      "service": "src/app/golf/actions/v3/goals.ts#createGoal",
+      "data": [
+        "golf_goals"
+      ],
+      "bridge": {
+        "validation": 50503,
+        "failure": 50620,
+        "loading": 50204,
+        "pending": 50203,
+        "empty": 50423
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-goals.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P005-ANSWER-GOAL-SUGGESTION",
+      "label": "Accept or dismiss a suggested goal (player)",
+      "component": "src/clubhouse/screens/stats/Goals.tsx#SuggestionRow",
+      "handler": "accept.run / dismiss.run",
+      "service": "src/app/golf/actions/v3/goals.ts#acceptGoalSuggestion",
+      "data": [
+        "golf_goal_suggestions",
+        "golf_goals"
+      ],
+      "bridge": {
+        "failure": 50621,
+        "failureDismiss": 50622,
+        "loadFailed": 50624,
+        "pending": 50203
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-goals.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P005-CHANGE-GOAL",
+      "label": "Pause, resume or abandon a goal (coach)",
+      "component": "src/clubhouse/screens/stats/Goals.tsx#GoalStatus",
+      "handler": "pause.run / resume.run / abandon.run",
+      "service": "src/app/golf/actions/v3/goals.ts#pauseGoal",
+      "data": [
+        "golf_goals"
+      ],
+      "bridge": {
+        "failure": 50623,
+        "confirm": 51101,
+        "pending": 50203
+      },
+      "tests": [
+        "src/clubhouse/__tests__/stats-goals.test.tsx"
       ]
     }
   ],

@@ -328,8 +328,8 @@ async function emitComparison(
 
   const title =
     mode === 'layback'
-      ? 'Layback club is finding more fairways than your driver'
-      : 'Driver is your most accurate tee club';
+      ? 'Layback tee shots are finding more fairways than your driver'
+      : 'Driver is your most accurate tee shot';
 
   const content =
     mode === 'layback'
@@ -343,7 +343,7 @@ async function emitComparison(
       : (`Over the last ${WINDOW_DAYS} days you hit ${Math.round(
           driver.fwPct * 100,
         )}% of fairways on ${driver.attempts} driver attempts, within ` +
-        `${Math.abs(Math.round(fwGap * 100))} points of your non-driver clubs ` +
+        `${Math.abs(Math.round(fwGap * 100))} points of your non-driver tee shots ` +
         `(${Math.round(nonDriver.fwPct * 100)}% on ${nonDriver.attempts} tees) ` +
         `while averaging ${Math.round(distGap)} more yards. Keep the driver in ` +
         `hand: you don't give up accuracy for the distance you gain.`);

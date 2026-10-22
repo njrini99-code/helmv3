@@ -57,7 +57,8 @@
       "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
       "src/clubhouse/__tests__/round-entry-continue.test.tsx",
       "src/clubhouse/__tests__/round-entry-routes.test.tsx",
-      "src/lib/golf/__tests__/shot-entry-rules.test.ts"
+      "src/lib/golf/__tests__/shot-entry-rules.test.ts",
+      "src/clubhouse/__tests__/team-rounds-shape.test.ts"
     ]
   },
   "catalog": "docs/clubhouse/catalog/rounds.md",
@@ -247,6 +248,25 @@
         "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
         "src/clubhouse/__tests__/round-entry-continue.test.tsx",
         "src/clubhouse/__tests__/round-entry-routes.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P011-COACH-NOTE",
+      "label": "Leave or edit the coach's note on a round (coach)",
+      "component": "src/clubhouse/screens/rounds/CoachNote.tsx#CoachNote",
+      "handler": "save.run (useAction rounds.review.coachNote)",
+      "service": "src/app/golf/actions/round-coach-note.ts#saveRoundCoachNote",
+      "data": [
+        "golf_round_reviews (coach_notes)",
+        "golf_rounds"
+      ],
+      "bridge": {
+        "failure": 110640,
+        "loadFailed": 110644
+      },
+      "tests": [
+        "src/clubhouse/__tests__/rounds-coach-note.test.tsx",
+        "src/app/golf/actions/__tests__/round-coach-note.test.ts"
       ]
     }
   ],

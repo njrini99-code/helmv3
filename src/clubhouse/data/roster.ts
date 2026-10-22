@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
+import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
+import { countReads, type ChReadCount } from './coachhelm-classify';
+import { relativeAgo } from '../screens/roster/format';
 import {
   classYearLabel,
   displayHandicap,
@@ -35,6 +38,8 @@ export interface ChRosterPlayer {
   rounds: number;
   avg: number | null;
   sgPerRound: number | null;
+  /** Strokes gained per round by leg over the same rounds as `sgPerRound` (summarizePlayer); null for a leg with too few rounds. */
+  sgLegs: { tee: number | null; approach: number | null; around: number | null; putting: number | null };
   trend: number[];
   form: ChForm;
   recent: Array<{ id: string; course: string; date: string; score: number; toPar: number | null }>;
@@ -42,7 +47,18 @@ export interface ChRosterPlayer {
   goals: number | null;
   coachNote: string | null;
   attention: { tone: 'warning' | 'positive'; text: string } | null;
+  /**
+   * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
+   * access, which is `status` (Mark inactive). Inactive players can carry it too. The word only: there is no note,
+   * because teammates can read every column of their team's rows (golf_team_members_select_v5), so availability_note
+   * is never selected until a coach-only store exists (docs/clubhouse/held/data/roster-availability.md).
+   */
+  availability: ChAvailability;
+  /** When availability last changed (ISO), for "Updated 3 days ago". */
+  availabilityUpdated: string | null;
 }
+
+export type ChAvailability = 'available' | 'injured' | 'away';
 
 export interface ChJoinRequest {
   id: string;
@@ -70,7 +86,15 @@ export interface ChRoster {
   statsError: boolean;
   requests: ChJoinRequest[];
   requestsError: boolean;
+  /**
+   * What CoachHelm reads in each player's rounds (spec D build B): the current reads costing strokes and working, counted by
+   * `countReads` as the Board and the coach's Game profile count them. `off`: CoachHelm is off for this coach (the block is not
+   * drawn). `failed`: the gate or a read did not load (dashes, CH-3212). A player with no current read is absent from `byPlayer`.
+   */
+  helm: ChRosterHelm;
 }
+
+export type ChRosterHelm = { status: 'on'; byPlayer: Record<string, ChReadCount> } | { status: 'off' } | { status: 'failed' };
 
 const QUIET_DAYS = 9;
 
@@ -78,24 +102,20 @@ function daysBetween(a: Date, b: Date) {
   return Math.floor((a.getTime() - b.getTime()) / 86_400_000);
 }
 
-function relativeAgo(iso: string, now: Date): string {
-  const d = daysBetween(now, new Date(iso));
-  if (d <= 0) return 'today';
-  if (d === 1) return 'yesterday';
-  return `${d} days ago`;
-}
-
 /**
  * "Needs a look": deterministic, from data the coach can verify.
  *   quiet     - an active player with no round in 9+ days while the team is posting
  *   slipping  - scoring up by 1.5 or more, newer half of form against older half
  *   hot       - the last four rounds all under their season average
+ * A player who is injured or away is not asked about: the coach already knows why (their availability says so).
  */
 export function attentionFor(
   s: ReturnType<typeof summarizePlayer>,
   now: Date,
   teamPosting: boolean,
+  availability: ChAvailability = 'available',
 ): ChRosterPlayer['attention'] {
+  if (availability !== 'available') return null;
   if (teamPosting && s.lastRoundDate) {
     const days = daysBetween(now, new Date(`${s.lastRoundDate.slice(0, 10)}T12:00:00Z`));
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
@@ -118,7 +138,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
-      .select('status, jersey_number, joined_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
+      .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
       .eq('team_id', input.teamId)
       .in('status', ['active', 'inactive']),
     getTeamJoinRequests().catch((e: unknown) => ({ success: false as const, error: e instanceof Error ? e.message : String(e), data: undefined })),
@@ -139,12 +159,20 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     handicap: number | null;
     handicap_index: number | null;
   };
-  const members = ((membersRes.data ?? []) as Array<{ status: string | null; jersey_number: string | number | null; joined_at: string | null; player: P | null }>)
+  type M = {
+    status: string | null;
+    jersey_number: string | number | null;
+    joined_at: string | null;
+    availability: string | null;
+    availability_updated_at: string | null;
+    player: P | null;
+  };
+  const members = ((membersRes.data ?? []) as M[])
     .filter((m): m is typeof m & { player: P } => m.player !== null);
   const ids = members.map((m) => m.player.id);
 
-  // Rounds, focus areas, goals and this coach's notes, in parallel.
-  const [season, focus, goals, notes] = await Promise.all([
+  // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
+  const [season, focus, goals, notes, helm] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
@@ -152,6 +180,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     ),
     countBy('golf_goals', ids, (chunk) => supabase.from('golf_goals').select('player_id').in('player_id', chunk).eq('state', 'active')),
     loadNotes(supabase, input.coachId, ids),
+    loadHelm(supabase, input, ids),
   ]);
   const byPlayer = groupByPlayer(season.rounds);
   const teamPosting = season.rounds.some((r) => daysBetween(now, new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)) < QUIET_DAYS);
@@ -160,6 +189,8 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
+    // The column is CHECKed to these three; anything else reads as available rather than inventing a state.
+    const availability: ChAvailability = m.availability === 'injured' || m.availability === 'away' ? m.availability : 'available';
     return {
       id: p.id,
       name: fullName(p),
@@ -177,6 +208,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       rounds: s.rounds,
       avg: s.avg,
       sgPerRound: s.sgPerRound,
+      sgLegs: s.sgLegs,
       trend: s.trend,
       form: s.status,
       recent: s.recent.slice(0, 3).map((r) => ({
@@ -189,7 +221,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability) : null,
+      availability,
+      availabilityUpdated: m.availability_updated_at,
     };
   });
 
@@ -221,7 +255,42 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     statsError: season.error,
     requests,
     requestsError: !requestsRes.success,
+    helm,
   };
+}
+
+/**
+ * CoachHelm's counts for the roster: the coach's gate, then one visible-rows read for every member (the Board's own read, which
+ * records nothing as shown), the team's Tour and each player's newest round, counted per player by `countReads`. The ids are this
+ * coach's own team membership rows, read through the session's client (RLS as for the Board). Never throws.
+ */
+async function loadHelm(supabase: Supabase, input: { teamId: string; coachId: string }, ids: string[]): Promise<ChRosterHelm> {
+  try {
+    const gate = await loadCoachHelmGate(input.coachId);
+    if (gate.status === 'failed') return { status: 'failed' };
+    if (gate.status === 'off') return { status: 'off' };
+    if (ids.length === 0) return { status: 'on', byPlayer: {} };
+    const [visible, tour] = await Promise.all([loadVisible(supabase, ids), coachTour(supabase, input.teamId)]);
+    // A missing Tour reads cohort comparisons as findings, so the counts would be wrong: fail rather than count (as the Board does).
+    if (visible.error || tour.error) return { status: 'failed' };
+    const members = new Set(ids);
+    const rows = visible.rows.filter((r) => members.has(r.player_id));
+    const newest = await newestRounds(supabase, ids, earliestStaleFloor(rows));
+    if (newest.error) return { status: 'failed' };
+    const byPlayer: Record<string, ChReadCount> = {};
+    for (const id of ids) {
+      const count = countReads(
+        rows.filter((r) => r.player_id === id),
+        tour.baseline,
+        newest.days.get(id) ?? null,
+      );
+      if (count.costing + count.working > 0) byPlayer[id] = count;
+    }
+    return { status: 'on', byPlayer };
+  } catch (err) {
+    chLogServer('roster', 'coachhelm', err, 'coachhelm');
+    return { status: 'failed' };
+  }
 }
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;

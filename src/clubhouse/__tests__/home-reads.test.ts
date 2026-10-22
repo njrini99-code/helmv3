@@ -56,12 +56,16 @@ afterEach(() => {
 });
 
 describe('Home reads: how deep', () => {
-  it('coach: the timezone, roster, team chat and events go together; the rounds follow the roster and the replies run beside them; only the newest rounds’ cards wait for the rounds (three round trips, not five)', async () => {
+  it('coach: the timezone, roster, team, team chat, events and what’s waiting (join requests, this week’s replies, tasks) go together; the rounds, the Tour’s marks and the replies follow; only the newest rounds’ cards and the four parts’ cache wait for the rounds (three round trips, not five)', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = base();
     const { result, waves: depth } = await waves.run(loadCoachHome({ teamId: 't1', coachName: 'Dana Whitfield' }));
-    expect(depth).toEqual([['golf_conversations', 'golf_events', 'golf_team_members', 'golf_team_settings'], ['golf_event_attendance', 'golf_rounds'], ['golf_holes']]);
+    expect(depth).toEqual([
+      ['golf_conversations', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
+      ['golf_event_attendance', 'golf_event_attendance', 'golf_pga_standards', 'golf_rounds'],
+      ['golf_holes', 'golf_round_stats_cache'],
+    ]);
     expect(result.greeting).toMatch(/Dana\.$/);
     expect(result.week.agenda.length).toBe(1);
     expect(result.leaderboard.rows).toHaveLength(2);
@@ -72,7 +76,10 @@ describe('Home reads: how deep', () => {
     tables.gate = waves.gate;
     tables.current = { ...base(), golf_team_members: { data: [] } };
     const { result, waves: depth } = await waves.run(loadCoachHome({ teamId: 't1', coachName: 'Dana' }));
-    expect(depth).toEqual([['golf_conversations', 'golf_events', 'golf_team_members', 'golf_team_settings'], ['golf_event_attendance']]);
+    expect(depth).toEqual([
+      ['golf_conversations', 'golf_events', 'golf_events', 'golf_tasks', 'golf_team_join_requests', 'golf_team_members', 'golf_team_settings', 'golf_teams'],
+      ['golf_event_attendance', 'golf_event_attendance', 'golf_pga_standards'],
+    ]);
     expect(result.leaderboard.rosterSize).toBe(0);
     expect(result.latestRounds.rounds).toEqual([]);
   });

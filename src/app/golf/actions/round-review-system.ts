@@ -979,6 +979,22 @@ async function computeAndStoreRoundReview(
     }
     const reviewId: string = upserted.id;
 
+    // A coach's note on a round with no review left a placeholder (`patterns_detected.status = 'pending'`, written by
+    // saveRoundCoachNote). This review is the content it was waiting for, so the placeholder is cleared and the row reads
+    // as a draft; left as `pending` it would drop out of the coach's review queue while generateRoundReview kept treating
+    // it as still to generate. A row in any other state is untouched.
+    const { error: settleError } = await supabase
+      .from('golf_round_reviews')
+      .update({ patterns_detected: { status: 'draft' } })
+      .eq('id', reviewId)
+      .eq('patterns_detected->>status', 'pending');
+    if (settleError) {
+      await logServerError(
+        `[RoundReview] generateAndStoreRoundReview: clearing the pending placeholder failed: ${describeError(settleError)}`,
+        { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+      );
+    }
+
     // Audit row 53: tell the player a NEW review is ready, but only when
     // someone else (their coach) generated it; a player who just opened the
     // review page is already looking at it. Never throws.

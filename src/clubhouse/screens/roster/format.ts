@@ -1,5 +1,5 @@
-import type { ChRoster, ChRosterPlayer } from '../../data/roster';
-import { MINUS, NO_DATA } from '../../lib/format';
+import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
+import { formatSigned, MINUS, NO_DATA } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 
 /** Handicap index: a plus handicap (better than scratch) is written +0.8. */
@@ -23,6 +23,27 @@ export function rosterFailedParts(data: Pick<ChRoster, 'playersError' | 'request
   return parts;
 }
 
+/** "today", "yesterday", "3 days ago": a join request's age, and when a player's availability last changed. */
+export function relativeAgo(iso: string, now: Date): string {
+  const d = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  return `${d} days ago`;
+}
+
+/** Availability in a word. Never the status's words: Active and Inactive are team access, these are whether they can play. */
+export const AVAILABILITY_WORD: Record<ChAvailability, string> = {
+  available: 'Available',
+  injured: 'Injured',
+  away: 'Away',
+};
+
+/** "Injured" or "Away", or null for an available player: the word that stands for them on the roster (P003, availability). */
+export function availabilityLine(p: Pick<ChRosterPlayer, 'availability'>): string | null {
+  const a = p.availability ?? 'available';
+  return a === 'available' ? null : AVAILABILITY_WORD[a];
+}
+
 const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
   improving: 'Improving',
   steady: 'Steady',
@@ -31,12 +52,14 @@ const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
 };
 
 /**
- * The note under a player's name: their "needs a look" reason when there is
- * one (amber for a warning, green for a good run), otherwise their form in a
- * word. It is left out when season stats didn't load, so a missing read never
- * looks like "no rounds".
+ * The note under a player's name: their availability word when they are injured or away ("Injured", plain ink: no
+ * colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
+ * otherwise their form in a word. The form is left out when season stats didn't load, so a missing read never looks
+ * like "no rounds".
  */
 export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: 'warning' | 'positive' | null } | null {
+  const away = availabilityLine(p);
+  if (away) return { text: away, tone: null };
   if (p.attention) return { text: p.attention.text, tone: p.attention.tone };
   if (statsError) return null;
   if (p.form !== 'early') return { text: FORM_WORD[p.form], tone: null };
@@ -85,4 +108,30 @@ export function rosterPeek(p: ChRosterPlayer): ChPlayerPeek {
 /** The team inside a sentence: its name, or "your team" when the team row didn't load and the name is the fallback. */
 export function teamInSentence(data: Pick<ChRoster, 'teamName' | 'teamError'>): string {
   return data.teamError ? 'your team' : data.teamName;
+}
+
+/** A leg of strokes gained as the roster's CoachHelm caption names it. */
+export const LEG_WORD: Record<keyof ChRosterPlayer['sgLegs'], string> = {
+  tee: 'off the tee',
+  approach: 'on approach',
+  around: 'around the green',
+  putting: 'putting',
+};
+
+/**
+ * The roster's strokes-by-leg caption (spec D build B), in parts so the figure can take its tone: the leg that loses the most
+ * ("Loses most putting, −1.1 a round"), or, with none losing, the leg that gains the most ("Gains in every leg; most on approach,
+ * +0.4", or "Gains most on approach, +0.4" when a leg has too few rounds to say "every"). Null with no strokes gained for the season
+ * or no leg read. Rule-based on the season's own figures; nothing is estimated.
+ */
+export function legsCaption(p: Pick<ChRosterPlayer, 'sgPerRound' | 'sgLegs'>): { lead: string; figure: string; tail: string; tone: 'gain' | 'loss' } | null {
+  if (p.sgPerRound == null) return null;
+  const legs = (Object.entries(p.sgLegs) as Array<[keyof ChRosterPlayer['sgLegs'], number | null]>).filter((e): e is [keyof ChRosterPlayer['sgLegs'], number] => e[1] != null);
+  if (legs.length === 0) return null;
+  const worst = legs.reduce((a, b) => (b[1] < a[1] ? b : a));
+  // A leg that rounds to 0.0 neither loses nor gains in what is drawn.
+  if (Number(worst[1].toFixed(1)) < 0) return { lead: `Loses most ${LEG_WORD[worst[0]]}, `, figure: formatSigned(worst[1]), tail: ' a round', tone: 'loss' };
+  const best = legs.reduce((a, b) => (b[1] > a[1] ? b : a));
+  const every = legs.length === Object.keys(p.sgLegs).length;
+  return { lead: every ? `Gains in every leg; most ${LEG_WORD[best[0]]}, ` : `Gains most ${LEG_WORD[best[0]]}, `, figure: formatSigned(best[1]), tail: '', tone: 'gain' };
 }

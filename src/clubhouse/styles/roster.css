@@ -472,6 +472,15 @@
   margin-top: 4px;
   font: 500 12px/1.3 var(--ch-font-sans);
 }
+/* Injured or away (P003, availability): plain ink, one line, the whole of it in the title. No colour of its own: red is
+   under par, amber a slide, green a gain (D-42); the word carries the meaning (CH-3809). */
+.ch-rs-face__note.is-availability {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ch-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 
 /* List */
 .ch-rs-list {
@@ -545,6 +554,9 @@
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.ch-rs-who__avail {
+  color: var(--ch-text-secondary);
 }
 .ch-rs-row.is-off .ch-rs-who b,
 .ch-rs-row.is-off .ch-rs-num {
@@ -773,8 +785,65 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
+/* The Development counts open the player's Development tab (spec D build B): the same line, as a quiet link. */
+a.ch-rs-peek__dev {
+  align-self: flex-start;
+  border-radius: var(--ch-radius-sm);
+  text-decoration: none;
+}
+@media (hover: hover) {
+  a.ch-rs-peek__dev:hover > span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+a.ch-rs-peek__dev:focus-visible,
+.ch-rs-peek__go:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+/* CoachHelm in the panel: View insights in the text-link green after the counts. */
+.ch-rs-peek__go {
+  margin-left: auto;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ch-green-700);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-rs-peek__go:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+/* Strokes gained by leg under the figures, and the CoachHelm counts' "Didn't load". The figure takes the gain or loss ink. */
+.ch-rs-peek__legs,
+.ch-rs-peek__cap {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-rs-peek__legs {
+  margin-top: -8px;
+}
+.ch-rs-peek__legs .is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-rs-peek__legs .is-loss {
+  color: var(--ch-chart-loss);
+}
 .ch-rs-peek__memo {
   background: var(--ch-ivory-50);
+}
+/* Availability (desktop panel and phone profile): the choice, a note when injured or away, and what it does not do. */
+.ch-rs-avail__seg {
+  display: flex;
+}
+.ch-rs-avail__cap {
+  margin: 0;
+  font: var(--ch-type-caption);
+  color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__foot {
   display: flex;
@@ -1205,6 +1274,17 @@
   }
   .ch-rsm-panel__link:active {
     background: var(--ch-ledger-row-press);
+  }
+  /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
+  .ch-rsm-helm .ch-rs-peek__dev {
+    padding-top: 12px;
+  }
+  .ch-rsm-helm .ch-rs-peek__cap {
+    padding-top: 4px;
+  }
+  /* Close under the figures it reads, not a profile part of its own (the profile's parts are 30px apart). */
+  .ch-rsm-figs + .ch-rs-peek__legs {
+    margin-top: -20px;
   }
   .ch-rsm-trend {
     padding: 14px 0 0;
@@ -2283,6 +2363,82 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     page-break-inside: avoid;
     border-bottom: 0.5pt solid silver;
     background: none;
+  }
+
+  /* The desk view printed from a desktop (P003, print): a letter sheet is under the phone breakpoint, where the desktop
+     page waits hidden for the phone view, so it is shown here. The table fits the sheet without the actions column or
+     avatars, the head rule is ink, "GolfHelm" joins the head as on the phone, and a face never splits across pages. */
+  .ch-rs:not([aria-busy='true']) {
+    visibility: visible;
+  }
+  .ch-rs {
+    gap: 10pt;
+    max-width: none;
+    padding: 0;
+  }
+  .ch-rs .ch-rs-head {
+    margin: 0;
+    padding-bottom: 8pt;
+    border-bottom: 1.5pt solid black;
+    break-after: avoid;
+  }
+  .ch-rs .ch-rs-head h1 {
+    font-size: 24pt;
+  }
+  .ch-rs .ch-rs-head::after {
+    content: 'GolfHelm';
+    font: 700 14pt/1.15 var(--ch-font-sans);
+    color: black;
+  }
+  .ch-rs .ch-rs-body,
+  .ch-rs .ch-rs-body.has-peek {
+    display: block;
+    margin-top: 0;
+  }
+  .ch-rs .ch-rs-list,
+  .ch-rs[data-canopy] .ch-rs-list {
+    overflow: visible;
+    margin-inline: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .ch-rs .ch-rs-row,
+  .ch-rs[data-canopy] .ch-rs-body.has-peek .ch-rs-row {
+    grid-template-columns: minmax(0, 1fr) 52pt 84pt 30pt 30pt 36pt 32pt;
+    min-width: 0;
+    gap: 8pt;
+    padding: 5pt 0;
+    border-radius: 0;
+  }
+  .ch-rs .ch-rs-row > :last-child,
+  .ch-rs .ch-rs-row .ch-avatar {
+    display: none;
+  }
+  .ch-rs .ch-rs-row--head {
+    border-bottom: 1pt solid black;
+    color: black;
+    break-after: avoid;
+  }
+  .ch-rs .ch-rs-who__m {
+    white-space: normal;
+  }
+  .ch-rs .ch-rs-faces {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8pt;
+    margin-top: 0;
+  }
+  .ch-rs .ch-rs-face {
+    display: flex !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    border: 0.5pt solid silver;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
   }
 }
 

@@ -40,12 +40,15 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3006 | Copying the team code or invite link fails | "Couldn’t copy the team code" + "Select it and copy it by hand." Done: "Team code copied" | `useCopyText` (Invite sheet, phone requests sheet) | roster.test › CH-3006 |
 | CH-3007 | Approve all (phone requests sheet, D-55) leaves some requests unapproved | "Couldn’t approve Owen Park and Sam Reyes" + "1 of 3 added to Varsity. Those requests may have been withdrawn. Try again, or refresh to see the latest." Those requests stay listed, and Retry re-tries only them. Done: "3 players added to Varsity" | `useJoinRequests` → `useAction('roster.approveAll')`, one request at a time | roster.test › CH-3007 |
 | CH-3008 | Changing a player's status (Active or Inactive) fails | "Couldn’t mark Theo Marchetti inactive" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry; the confirm stays open and the row keeps its status. Done: "Theo Marchetti marked inactive" (or "marked active"), and the player moves to that filter. Offline, nothing is sent (CH-1903). `updatePlayerStatus` resolves the coach's active team with the same resolver and cookie as the roster route | `useAction('roster.changeStatus')` → `updatePlayerStatus` | roster.test › CH-3008 |
+| CH-3009 | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) | "Couldn’t mark Jonah Okafor injured" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry. The word shows at once and goes back on failure; Retry applies it again and finishes the job. Done: "Jonah Okafor marked injured" (success haptic), with no action on the toast. No confirm: availability is display only and never changes team access (Mark inactive does). Offline, nothing is sent (CH-1903) | `useAction('roster.setAvailability')` → `setPlayerAvailability`, optimistic | roster.test › CH-3009 |
+| CH-3010 | Retired 2026-10-21, never shipped: the availability note | There is no note. golf_team_members_select_v5 lets every teammate read every column of their team’s rows, so `availability_note` stays unused until a coach-only store exists (a held migration, docs/clubhouse/held/data/roster-availability.md). The number stays unused | — | retired |
 
 ## 31xx Validation
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
 | CH-3101 | A coach's note is within 200 characters of its 2,000 limit | "150 characters left" under the field, then "That’s the limit: 2,000 characters." Typing stops at the limit | `CoachNote`, `maxLength` | roster.test › CH-3101 |
+| CH-3102 | Retired 2026-10-21, never shipped: the availability note’s counter | No note, so no counter (CH-3010) | — | retired |
 
 ## 32xx Didn't load
 
@@ -62,6 +65,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3209 | This coach's notes don't load | The note field is read-only with "Your notes didn’t load, so this one can’t be edited right now. Refresh the page to try again." A blank field can never save over a real note | `CoachNote locked`; logged `clubhouse.roster.coachNotes` | roster.test › CH-3209 |
 | CH-3210 | The player's roster doesn't load (a player's own team's members) | "The roster didn’t load." + "Your team is safe. Try again; the error has been reported." Try again. Never "No one on the roster" | `TeamRoster`, `TeamRosterPhone`; logged `clubhouse.roster.playerMembers` | roster-player.test › CH-3210 |
 | CH-3211 | The player's roster list crashes | "The roster couldn’t be shown." … The header, search and sort stay | `SectionBoundary roster.team` | roster-player.test › CH-3211 |
+| CH-3212 | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) | The panel's CoachHelm block (and the phone profile's CoachHelm panel) reads "— costing strokes · — working" + "Didn’t load. Refresh to try again.", never 0 or "No reads yet"; View insights stays | `RosterPeek` `HelmBlock`, `HelmPanel`; logged `clubhouse.coachhelm.gate` / `visible` / `newestRounds`, or `clubhouse.roster.coachhelm` | roster.test › CH-3212; roster-peek-reads.test |
 
 ## 33xx Empty
 
@@ -85,6 +89,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3402 | A remove is in flight | The button reads "Removing…" and can't be pressed again | `Modal` footer | roster.test › CH-3402 |
 | CH-3403 | Approve all is in flight (phone join requests sheet, D-55) | The footer reads "Approving…" and can't be pressed again; each Approve and Decline waits too | `RequestsSheet` footer | roster.test › CH-3403 |
 | CH-3404 | A status change is in flight | The confirm button reads "Saving…" and can't be pressed again; Cancel waits and the dialog can't be dismissed | `StatusConfirm` footer | roster.test › CH-3404 |
+| CH-3405 | An availability change is in flight | The row or panel already shows the new word; the Availability control is `aria-busy` and refuses a second change until the first lands | `AvailabilityPanel` (`useAction` in-flight gate, shared with the row menu) | roster.test › CH-3405 |
 
 ## 35xx Confirm
 
@@ -122,3 +127,4 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3806 | Phone: a player row is one button that reads name, class, note, average and handicap; the form spark is decoration | `RosterPhoneRow` `aria-label`, spark `aria-hidden` | roster.test › CH-3806 |
 | CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |
 | CH-3808 | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record | `TeamRoster`, `TeamRosterPhone`; `loadPlayerRoster` (`golf_team_coach_staff` with `golf_coaches(full_name, title)`) | roster-player.test › CH-3808 |
+| CH-3809 | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active | `RowMeta`, `faceLabel`, `RosterPhoneRow`, `AvailabilityPanel` | roster.test › CH-3809 |
