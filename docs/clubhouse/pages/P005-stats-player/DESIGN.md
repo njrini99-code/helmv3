@@ -337,7 +337,7 @@ CoachHelm off for either the coach or the player no line is drawn at all.
 - **Link:** the Deep dive (a coach's `coachhelm?view=deep-dive&player=<id>`, a
   player's own `?view=deep-dive`), with `&insight=<id>` only when the section
   has exactly one read (Q1).
-- **Failed:** one line under the section chips, `.ch-gx-rule`, CH-5214:
+- **Failed:** one line under the section chips, `.ch-gx-rule`, CH-5215:
   "CoachHelm’s reads didn’t load, so the sections don’t say how many there are.
   Try again in a moment." No separate loading state: the counts arrive with the
   page.

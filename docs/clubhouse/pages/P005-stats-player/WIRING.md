@@ -182,7 +182,7 @@ Answer:   { status: 'ready', byArea } (only sections with a read; each with
           costing, working and the Deep dive href, `&insight=<id>` when the
           section has exactly one read) | { status: 'off' } |
           { status: 'failed' } (a failed gate, visible, dismissal or
-          newest-rounds read; CH-5214)
+          newest-rounds read; CH-5215)
 Screen:   GameDetail `reads` -> ReadsLine under each section's Rule; the failed
           line under .ch-gd__nav
 ```

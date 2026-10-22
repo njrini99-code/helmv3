@@ -34,7 +34,7 @@ Held items:     none
 ```text
 Design package: coach-parity/spec-A-coach-player-pages.md (decided)
 PR/commit:      see git log (parity/player-pages)
-Contract IDs:   CH-13209, CH-13311, CH-13313 (130638, 130430, 130431);
+Contract IDs:   CH-13209, CH-13311, CH-13313 (130641, 130433, 130434);
                 130807 (new); 130104 (amended)
 Actions:        ACT-P013-ASSIGN-FOCUS, ACT-P013-DISMISS-INSIGHT and
                 ACT-P013-UNDO-DISMISS, now also on a coach's Deep dive

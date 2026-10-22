@@ -2,10 +2,10 @@
 
 ## 2026-10-21 — Game detail CoachHelm count line (spec D build A)
 
-The per-section "CoachHelm sees…" line, its CH-5214 failure line, and the coach
+The per-section "CoachHelm sees…" line, its CH-5215 failure line, and the coach
 and player reads behind it. `game-detail-reads.test` (7),
 `data/__tests__/stats-reads.test` (9), `data/__tests__/coachhelm-classify.test`
-(3, the count agrees with the Game profile line), `stats-player.test` › CH-5214.
+(3, the count agrees with the Game profile line), `stats-player.test` › CH-5215.
 Vitest, `npm run test:file -- src/clubhouse`: 275 files, 5112 tests pass, 1
 skipped (exit 0). `npm run typecheck:fast` exit 0; ESLint on the changed files
 exit 0; `npm run clubhouse:check`, `npm run docs:check`, `npm run
