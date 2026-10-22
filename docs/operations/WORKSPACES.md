@@ -81,6 +81,12 @@ The lifecycle classifier owns cleanup decisions, including dirty work,
 upstream evidence, PR state, and `parkPolicy`. Follow `AGENTS.md` for standing
 cleanup authorization. Do not delete unrelated work to make a count green.
 
+A checkout with no `.helm/workspace.json` (made by the Desktop app, by hand, or
+before the marker existed) is kept, with one exception: when its branch's PR has
+merged and the checkout's tip is that merged head, or every change is proven in
+main, it parks like a released one. An explicit `KEEP`, an unreadable marker,
+and an unmarked checkout on an open, closed or missing PR are still kept.
+
 `repo:doctor` reports old merged checkouts, branch counts, and default
 workspace counts as cleanup warnings. An explicit workspace cap remains
 enforced. Nested locations and missing markers have separate diagnostics;
