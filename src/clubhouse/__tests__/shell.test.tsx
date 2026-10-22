@@ -506,7 +506,7 @@ describe('Shell · sidebar data', () => {
     // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team, and the team's own name heads that group.
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
-      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Qualifiers', 'Recruiting']],
+      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Rounds', 'Qualifiers', 'Recruiting']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
@@ -831,7 +831,7 @@ describe('Shell · phone chrome', () => {
     const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const labels = () => [...code('CH-1808')!.querySelectorAll('.ch-strip__label')].map((el) => el.textContent);
     // D-66 (v2 GH.tabs) first: coach Home, CoachHelm, Calendar, Stats; then the sidebar's order.
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Rounds', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
     unmount();
     // Player: Home, CoachHelm, Rounds, Team Hub first.
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role

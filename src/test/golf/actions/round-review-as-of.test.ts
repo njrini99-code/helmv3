@@ -103,6 +103,7 @@ function makeSupabase(store: Record<string, Row[]>) {
       order: () => node,
       limit: (n: number) => { rows = rows.slice(0, n); return node; },
       upsert: (_payload: unknown) => { mode = 'upsert'; return node; },
+      update: (_payload: unknown) => node,
       single: async () => {
         if (mode === 'upsert') return { data: { id: 'review-generated' }, error: null };
         return rows.length > 0 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } };

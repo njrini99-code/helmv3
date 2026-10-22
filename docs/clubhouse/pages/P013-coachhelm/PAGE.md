@@ -48,7 +48,10 @@ Route:              /golf/dashboard/coachhelm (coach and player);
                     Stats' Development, ?view=insights and no view draw the
                     board; ?view=ask is the coach's Ask (off when CoachHelm
                     is off); ?player=<id> opens a coach's board on that
-                    player (Roster's View insights)
+                    player (Roster's View insights);
+                    /golf/dashboard/whats-new is the coach's What's new, the
+                    team's CoachHelm activity of the past 7 days (CH-1323x,
+                    CH-1333x, CH-1343x)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm

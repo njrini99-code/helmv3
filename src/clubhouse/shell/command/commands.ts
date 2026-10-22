@@ -1,4 +1,4 @@
-import { BarChart3, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Trophy, type LucideIcon } from 'lucide-react';
+import { BarChart3, Flag, GraduationCap, Megaphone, MessageSquarePlus, CalendarPlus, Sparkles, Trophy, type LucideIcon } from 'lucide-react';
 import { activeNavItem, CH_SETTINGS_ITEM, navFor, rebuiltHref, type ChNavItem, type ChRole } from '../nav';
 import { letterFor } from './shortcuts';
 
@@ -61,6 +61,7 @@ const ACTIONS: readonly ActionSpec[] = [
   { id: 'new-message', label: 'New message', icon: MessageSquarePlus, roles: ['coach', 'player'], href: MESSAGES, where: 'Messages', keywords: ['write', 'chat', 'send', 'dm'] },
   { id: 'post-announcement', label: 'Post announcement', icon: Megaphone, roles: ['coach'], href: '/golf/dashboard/team-hub?tab=ann', where: 'Team hub', keywords: ['announce', 'tell', 'team', 'new announcement'] },
   { id: 'new-qualifier', label: 'New qualifier', icon: Trophy, roles: ['coach'], href: '/golf/dashboard/qualifiers/new', where: 'Qualifiers', keywords: ['qualifying', 'tournament', 'create'] },
+  { id: 'whats-new', label: 'What’s new', icon: Sparkles, roles: ['coach'], href: '/golf/dashboard/whats-new', where: 'CoachHelm', keywords: ['activity', 'updates', 'insights', 'patterns', 'focus areas', 'week', 'recent'] },
   { id: 'add-class', label: 'Add class', icon: GraduationCap, roles: ['player'], href: '/golf/dashboard/classes', where: 'Classes', keywords: ['course', 'schedule', 'timetable', 'school'] },
 ];
 

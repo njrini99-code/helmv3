@@ -34,6 +34,7 @@ import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { devProgress, devTitle, goalLine } from './dev-format';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -485,6 +486,12 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
       <h3 className="ch-spm-sub">
         Goals <span className="ch-num">{data.goals.length} this season</span>
       </h3>
+      {!coach && (
+        <>
+          <GoalSetButton />
+          <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />
+        </>
+      )}
       {data.goals.length === 0 ? (
         <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
       ) : (
@@ -493,11 +500,9 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
             const done = g.state === 'achieved' || g.state === 'completed';
             return (
               <li key={g.id} className={done ? 'is-done' : undefined}>
-                <b>
-                  <span className="ch-sr-only">{done ? 'Achieved: ' : 'In progress: '}</span>
-                  {devTitle(g.title)}
-                </b>
+                <b>{devTitle(g.title)}</b>
                 <span className="ch-num">{goalLine(g)}</span>
+                <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
               </li>
             );
           })}

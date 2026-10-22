@@ -21,12 +21,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getGolfSessionProfile: vi.fn(),
   getWhatsNewForCoach: vi.fn(),
+  isClubhouseFor: vi.fn(async (_role: string) => false),
   redirect: vi.fn((path: string) => {
     throw new Error(`REDIRECT:${path}`);
   }),
 }));
 
 vi.mock('next/navigation', () => ({ redirect: mocks.redirect }));
+
+vi.mock('@/clubhouse/gate', () => ({ isClubhouseFor: mocks.isClubhouseFor }));
+function ClubhouseWhatsNewRouteStub() {
+  return null;
+}
+vi.mock('@/clubhouse/routes/whats-new', () => ({ ClubhouseWhatsNewRoute: ClubhouseWhatsNewRouteStub }));
 
 vi.mock('@/lib/auth/session', () => ({
   getGolfSessionProfile: mocks.getGolfSessionProfile,
@@ -126,5 +133,16 @@ describe('WhatsNewPage — #201 player-facing crash / lost redirect message', ()
     expect(mocks.redirect).not.toHaveBeenCalled();
     expect(mocks.getWhatsNewForCoach).toHaveBeenCalledTimes(1);
     expect(innermost(element).type).toBe(FairwayWhatsNewStub);
+  });
+
+  it('renders the Clubhouse What’s new for a coach with Clubhouse on, without reading the Fairway feed', async () => {
+    mocks.getGolfSessionProfile.mockResolvedValue({ userId: 'coach-1', role: 'coach', coach: { id: 'coach-1' }, player: null });
+    mocks.isClubhouseFor.mockResolvedValueOnce(true);
+
+    const element = (await WhatsNewPage()) as ReactElement;
+
+    expect(mocks.isClubhouseFor).toHaveBeenCalledWith('coach');
+    expect(element.type).toBe(ClubhouseWhatsNewRouteStub);
+    expect(mocks.getWhatsNewForCoach).not.toHaveBeenCalled();
   });
 });

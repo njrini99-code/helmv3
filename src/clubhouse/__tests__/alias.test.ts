@@ -84,7 +84,7 @@ describe('owner 2026-10-01: the remaining not-rebuilt addresses open the nearest
     await expect(CompareLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/stats/team');
   });
 
-  it('/team opens Settings (Team for a coach, Golf for a player); courses and What’s new open Home; a player’s chat opens CoachHelm', async () => {
+  it('/team opens Settings (Team for a coach, Golf for a player); courses opens Home, and a player’s What’s new opens Home; a player’s chat opens CoachHelm', async () => {
     const { default: TeamLayout } = await import('@/app/golf/(dashboard)/dashboard/team/layout');
     await expect(TeamLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/settings?section=team');
     const { default: CoursesLayout } = await import('@/app/golf/(dashboard)/dashboard/courses/layout');
@@ -93,6 +93,11 @@ describe('owner 2026-10-01: the remaining not-rebuilt addresses open the nearest
     await expect(TeamLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/settings?section=golf');
     const { default: WhatsNewLayout } = await import('@/app/golf/(dashboard)/dashboard/whats-new/layout');
     await expect(WhatsNewLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard');
+    // The coach's What's new is rebuilt (routes/whats-new.tsx): its layout lets them through.
+    session = { coach: {} };
+    redirect.mockClear();
+    await WhatsNewLayout({ children: null });
+    expect(redirect).not.toHaveBeenCalled();
     const { default: ChatLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/chat/layout');
     await expect(ChatLayout({ children: null })).rejects.toThrow('REDIRECT /golf/dashboard/coachhelm');
   });
