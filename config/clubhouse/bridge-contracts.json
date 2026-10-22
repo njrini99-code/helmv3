@@ -2476,6 +2476,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30623,
+    "page": "P003",
+    "category": 6,
+    "item": 23,
+    "name": "THE_COACH_ONLY_REASON_FOR_AN_INJURED",
+    "chCode": "CH-3011",
+    "meaning": "The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,

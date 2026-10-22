@@ -190,7 +190,7 @@ is a second thing to keep true.
 **Roster And Team** · active · criticality high · owner product
 
 - **Behaviour:** `memory/features/roster-team.md`
-- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 13 more in the registry
+- **Code:** `src/app/golf/(dashboard)/dashboard/roster/**`, `src/app/golf/(dashboard)/dashboard/team/**`, `src/components/golf/roster/**`, `src/components/fairway/pages/dashboard/FairwayCoachDashboard.tsx`, `src/app/api/golf/players/**`, `src/components/fairway/pages/roster/**` … and 14 more in the registry
 - **Telemetry:** `roster_management` (golfhelm, med), `team_info` (golfhelm, low)
 - **Incidents:** none recorded
 - **Repair units:** none in the queue

@@ -22740,6 +22740,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/team-switcher.ts",
           "anchor": "src/lib/supabase/server"
         },

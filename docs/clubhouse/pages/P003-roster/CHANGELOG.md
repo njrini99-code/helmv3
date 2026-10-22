@@ -1,5 +1,31 @@
 # P003 — Roster: changelog
 
+## 2026-10-22 — A coach-only Why for an injured or away player (held migration)
+
+```text
+Design package: none (coach dashboard parity)
+PR/commit:      claude/coach-parity-availability-note
+Contract IDs:   CH-3011 (30623) new
+Actions:        setPlayerAvailabilityCoachNote (new server action)
+Data impact:    reads and writes golf_player_availability_coach_notes, which does not exist until the held migration
+                20261022090000 is applied; until then nothing is drawn or written
+Held items:     supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql (HELD.md; plan HD-roster-availability-note)
+```
+
+### Added
+
+- Under the Availability control, an injured or away player has a Why field (280 characters, saved on
+  leaving the field, "Only coaches on this team see this"). It lives in its own table whose policies admit
+  only a coach of the team, because teammates can read every column of `golf_team_members`.
+- `loadRoster` reads the notes beside its other reads and reports `availabilityCoachNotes`. A missing
+  table (`42P01` / `PGRST205`) reads as false without logging; any other failure is logged and also
+  hides the field, so a blank field never saves over a note that could not be read.
+
+### Not changed
+
+- `setPlayerAvailability` still refuses a note, `availability_note` is still never selected, and players
+  still do not see availability. Marking a player available leaves the saved note in place.
+
 ## 2026-10-22 — The availability word is parsed in one place
 
 ```text

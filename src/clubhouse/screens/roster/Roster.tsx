@@ -292,9 +292,15 @@ export function Roster({ data }: { data: ChRoster }) {
     (p, to) => availabilityCopy(p.name, to),
   );
   const runAvailability = setAvailability.run;
+  // The coach-only reason is offered only when its table answered (data.availabilityCoachNotes); a saved note is the note the list holds.
+  const reasonSaved = useCallback(
+    (id: string, note: string | null) => setPlayers((ps) => ps.map((x) => (x.id === id ? { ...x, availabilityCoachNote: note } : x))),
+    [],
+  );
+  const notesOn = !!data.availabilityCoachNotes;
   const availability: AvailabilityControl = useMemo(
-    () => ({ set: (p, to) => void runAvailability(p, to), pending: setAvailability.pending }),
-    [runAvailability, setAvailability.pending],
+    () => ({ set: (p, to) => void runAvailability(p, to), pending: setAvailability.pending, note: notesOn ? { onSaved: reasonSaved } : undefined }),
+    [runAvailability, setAvailability.pending, notesOn, reasonSaved],
   );
 
   const exportCsv = () => {

@@ -6,7 +6,8 @@ import { chLogServer } from '../lib/track-server';
 import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
 import { countReads, type ChReadCount } from './coachhelm-classify';
 import { relativeAgo } from '../screens/roster/format';
-import { parseAvailability, type ChAvailability } from './availability';
+import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import {
   classYearLabel,
   displayHandicap,
@@ -50,13 +51,15 @@ export interface ChRosterPlayer {
   attention: { tone: 'warning' | 'positive'; text: string } | null;
   /**
    * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
-   * access, which is `status` (Mark inactive). Inactive players can carry it too. The word only: there is no note,
-   * because teammates can read every column of their team's rows (golf_team_members_select_v5), so availability_note
-   * is never selected until a coach-only store exists (docs/clubhouse/held/data/roster-availability.md).
+   * access, which is `status` (Mark inactive). Inactive players can carry it too. The word comes from the team row; the
+   * reason is `availabilityCoachNote`, from a coach-only table, because teammates can read every column of their team's
+   * rows (golf_team_members_select_v5), so availability_note is never selected (docs/clubhouse/held/data/roster-availability.md).
    */
   availability: ChAvailability;
   /** When availability last changed (ISO), for "Updated 3 days ago". */
   availabilityUpdated: string | null;
+  /** The coach-only reason (at most 280 characters). Null when none, or when the notes table is not there yet. */
+  availabilityCoachNote?: string | null;
 }
 
 export type { ChAvailability };
@@ -84,6 +87,12 @@ export interface ChRoster {
   playersError: boolean;
   /** This coach's notes didn't load: note fields are locked so a blank field can't overwrite one. */
   notesError: boolean;
+  /**
+   * The coach-only availability notes can be read and written (golf_player_availability_coach_notes exists and answered).
+   * False until its held migration is applied, or when the read failed: the note field is then not drawn, so a blank field
+   * can never overwrite a note that could not be read. Absent reads as false.
+   */
+  availabilityCoachNotes?: boolean;
   statsError: boolean;
   requests: ChJoinRequest[];
   requestsError: boolean;
@@ -173,7 +182,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   const ids = members.map((m) => m.player.id);
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
-  const [season, focus, goals, notes, helm] = await Promise.all([
+  const [season, focus, goals, notes, helm, availNotes] = await Promise.all([
     ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
@@ -182,6 +191,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     countBy('golf_goals', ids, (chunk) => supabase.from('golf_goals').select('player_id').in('player_id', chunk).eq('state', 'active')),
     loadNotes(supabase, input.coachId, ids),
     loadHelm(supabase, input, ids),
+    loadAvailabilityNotes(supabase, input.teamId),
   ]);
   const byPlayer = groupByPlayer(season.rounds);
   const teamPosting = season.rounds.some((r) => daysBetween(now, new Date(`${r.round_date.slice(0, 10)}T12:00:00Z`)) < QUIET_DAYS);
@@ -224,6 +234,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability) : null,
       availability,
       availabilityUpdated: m.availability_updated_at,
+      availabilityCoachNote: availNotes.notes.get(p.id) ?? null,
     };
   });
 
@@ -252,6 +263,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     players,
     playersError: !!membersRes.error,
     notesError: notes.error,
+    availabilityCoachNotes: availNotes.ready,
     statsError: season.error,
     requests,
     requestsError: !requestsRes.success,
@@ -310,6 +322,22 @@ async function countBy(
     for (const row of data ?? []) counts.set(row.player_id, (counts.get(row.player_id) ?? 0) + 1);
   }
   return { counts, error: false };
+}
+
+/**
+ * The coach-only reasons beside Injured or Away. The table comes with a held migration, so "not there" is the expected answer
+ * until it is applied: `ready` is false, nothing is logged, and the note field is not drawn. Any other failure is logged and
+ * also leaves the field off.
+ */
+async function loadAvailabilityNotes(supabase: Supabase, teamId: string): Promise<{ notes: Map<string, string>; ready: boolean }> {
+  const out = new Map<string, string>();
+  const { data, error } = await fromUntyped(supabase, 'golf_player_availability_coach_notes').select('player_id, note').eq('team_id', teamId);
+  if (error) {
+    if (!NOTE_TABLE_MISSING_CODES.has(String(error.code))) chLogServer('roster', 'availabilityCoachNotes', error);
+    return { notes: out, ready: false };
+  }
+  for (const r of (data ?? []) as Array<{ player_id: string; note: string | null }>) if (r.note) out.set(r.player_id, r.note);
+  return { notes: out, ready: true };
 }
 
 async function loadNotes(supabase: Supabase, coachId: string, ids: string[]): Promise<{ notes: Map<string, string>; error: boolean }> {

@@ -2465,3 +2465,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     }
   }
 }
+
+/* The coach-only reason under the availability control: a little air, the same field as the Coach's note. */
+.ch-rs-avail__note {
+  margin-top: 10px;
+}

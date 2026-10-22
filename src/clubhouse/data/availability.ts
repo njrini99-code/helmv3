@@ -13,3 +13,9 @@ export function parseAvailability(value: string | null | undefined): ChAvailabil
 export function isOut(value: ChAvailability | null | undefined): boolean {
   return value === 'injured' || value === 'away';
 }
+
+/** The coach-only note's length, as the table's check allows it (golf_player_availability_coach_notes). */
+export const AVAILABILITY_NOTE_MAX = 280;
+
+/** PostgREST / Postgres codes for "that table is not there": the held migration has not been applied yet. */
+export const NOTE_TABLE_MISSING_CODES: ReadonlySet<string> = new Set(['42P01', 'PGRST205']);

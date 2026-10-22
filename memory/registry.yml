@@ -1303,6 +1303,8 @@ features:
         # glob (Phase 5 registry glob lint).
         - supabase/migrations/*program_onboarding*.sql
         - supabase/migrations/*organizations*.sql
+        # Roster availability: the coach-only reason (held, 2026-10-22).
+        - supabase/migrations/*availability_coach_notes*.sql
       tests:
         - src/app/golf/actions/__tests__/dashboard-data.test.ts
     integrations:
