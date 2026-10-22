@@ -867,3 +867,31 @@ describe('a back nine started from a saved course (startWithPreloadedConfigs)', 
     expect(contribution.holes.map((h) => h.holeNumber)).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18]);
   });
 });
+
+describe('a server-rejected start names what rejected it', () => {
+  // Bridge rel:5a4785bd / rel:e4d14b1c / 9a6618a3: every server_rejected report carried only the generic
+  // "Failed to save round" text, so triage could not tell a 55000 guard from an RLS denial or an exception, nor join
+  // the client report to the server row that logged the real cause. savePartialRound now returns the Postgres code
+  // and its flight-recorder trace id beside the unchanged message; the report must carry both.
+  it('reports the server code and trace id with the generic message', async () => {
+    mocks.savePartialRound.mockResolvedValueOnce({
+      success: false,
+      error: 'Failed to save round. Please try again.',
+      failure: { code: '55000', traceId: 'trace-abc' },
+    });
+    const hook = render();
+    let result: Awaited<ReturnType<typeof hook.result.current.start>> | undefined;
+    await act(async () => {
+      result = await hook.result.current.start(form());
+    });
+
+    expect(result).toMatchObject({ ok: false, reason: 'server_rejected' });
+    const report = mocks.logError.mock.calls.find(([err]) => String((err as Error).message) === 'Round start failed: server_rejected');
+    expect(report?.[1]).toMatchObject({
+      reason: 'server_rejected',
+      serverError: 'Failed to save round. Please try again.',
+      serverErrorCode: '55000',
+      serverTraceId: 'trace-abc',
+    });
+  });
+});

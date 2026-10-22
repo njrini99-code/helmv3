@@ -1528,7 +1528,12 @@ export function useNewRoundSession({ playerId, ports, routes, logSource }: NewRo
         // B6: this call always sends `holes: []` (a fresh round), so
         // `conflict`/`round_missing`/`hole_invalid` cannot occur here — but
         // `busy`/`retry` can, and both are bare signal keys, not sentences.
-        reportStartFailure('server_rejected', { serverError: result.error });
+        // `failure` names what rejected the start (Postgres code, and the trace id the server's own log row carries),
+        // so this report joins the server row with the cause instead of only the generic message.
+        reportStartFailure('server_rejected', {
+          serverError: result.error,
+          ...('failure' in result ? { serverErrorCode: result.failure.code, serverTraceId: result.failure.traceId } : {}),
+        });
         const message = describeRoundWriteFailure(result.error);
         setError(message);
         return { ok: false, reason: 'server_rejected', error: message };
