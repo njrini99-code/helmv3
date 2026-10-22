@@ -8,6 +8,14 @@ PR/commit:      see git log (claude/coachhelm-board-decision)
 Contract IDs:   CH-13942, CH-13943 (new)
 Actions:        none changed
 Data impact:    none (reads only the ladder the support pass stores)
+## 2026-10-21 — One count of what CoachHelm sees (spec D)
+
+```text
+Design package: none (spec D, Game Fingerprint and roster detail bridges)
+PR/commit:      parity/bridges (not pushed)
+Contract IDs:   none
+Actions:        none
+Data impact:    none (the same reads)
 Held items:     none
 ```
 
@@ -94,6 +102,22 @@ Held items:     20261020121000_golf_coachhelm_corrections.sql
 
 - `screens/coachhelm/__tests__/corrections.test.tsx`.
 - Phone screenshots (390 × 844), light and dark, of the preview states.
+- No visible change on CoachHelm. The coach's Game profile line ("what
+  CoachHelm sees") now counts with `countReads` (data/coachhelm-classify.ts),
+  the function Stats' Game detail line (P005) and the roster's CoachHelm
+  block (P003) use, so the three never disagree. Those two are new ways into
+  the Deep dive (DESIGN.md, a coach's views of one player).
+
+### Why
+
+- Spec D: the counts were computed in one place only (readSeen); the bridges
+  needed the same rule.
+
+### Verification
+
+- `coachhelm-classify.test.ts` (countReads equals the Game profile line on one
+  fixture); `coachhelm-player.test.ts` stays green.
+
 ## 2026-10-21 — Coach: a player's Deep dive, Standing and Game profile
 
 ```text

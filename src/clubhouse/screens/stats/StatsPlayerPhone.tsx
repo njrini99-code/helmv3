@@ -4,6 +4,7 @@ import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
+import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, hasRange, isFiltered, per18, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -52,6 +53,7 @@ const ROUNDS_SHOWN = 5;
 export function StatsPlayerPhone({
   data,
   initialTab,
+  reads,
   playerHref,
   messageHref,
   windowShown,
@@ -63,6 +65,8 @@ export function StatsPlayerPhone({
 }: {
   data: ChPlayerProfile;
   initialTab?: string;
+  /** What CoachHelm sees per Game detail section; the line follows the shown section's rule. */
+  reads?: ChStatsReads;
   /** This page's own address (player and window), for Share. */
   playerHref: string;
   messageHref: string | null;
@@ -210,7 +214,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={onRetry} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState

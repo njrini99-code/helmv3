@@ -6,6 +6,7 @@ import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, typ
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
+import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -61,8 +62,11 @@ export function formNote(first: string, scores: number[]): string {
   return `${first} is holding steady across these rounds.`;
 }
 
-/** `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. */
-export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
+/**
+ * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
+ * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
+ */
+export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChStatsReads }) {
   const router = useRouter();
   const toast = useToast();
   const delayedToast = useDelayedToast();
@@ -199,6 +203,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           <StatsPlayerPhone
             data={data}
             initialTab={initialTab}
+            reads={reads}
             playerHref={href(data.id, data.filter)}
             messageHref={messageHref}
             windowShown={rangeOf(loading ?? data.filter)}
@@ -356,7 +361,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />

@@ -317,6 +317,35 @@ selected in, the dimensions and what was left out with the counts.
 - **Phone.** The approved phone board (D-22) has no filter; this is the owner's addition, built on the shared
   controls: the Filter button and chips sit under the window switch and the sheet is the standard bottom sheet.
 
+## CoachHelm count line on Game detail (2026-10-21, spec D build A)
+
+Design package: none (spec D, the Game Fingerprint bridge; decisions Q1 and Q2
+in the spec). Each Game detail section, coach and player alike, can carry one
+caption line inside `.ch-gm__id` directly under its Rule: "CoachHelm sees 2
+reads costing strokes on approach and 1 working. Deep dive →". The area
+phrases are in scoring, off the tee, on approach, around the green and on the
+greens; Scoring also counts course management, and pressure is Standing's and
+is drawn nowhere. The words are the same for both roles and never say you or
+your. A section with no current read draws nothing (never "0 reads"), and with
+CoachHelm off for either the coach or the player no line is drawn at all.
+
+- **Look:** `.ch-gm__reads`, the caption type in `--ch-text-secondary`; the
+  counts are `.ch-num` in the primary ink; "Deep dive →" is in the text-link
+  green (`--ch-green-700`). The sentence and the link are one link. No new
+  token, colour or motion. Contrast on the section card: ink-700 11.4 (dark
+  10.5), ink-900 16.8 (13.0), green-700 10.0 (8.3).
+- **Link:** the Deep dive (a coach's `coachhelm?view=deep-dive&player=<id>`, a
+  player's own `?view=deep-dive`), with `&insight=<id>` only when the section
+  has exactly one read (Q1).
+- **Failed:** one line under the section chips, `.ch-gx-rule`, CH-5214:
+  "CoachHelm’s reads didn’t load, so the sections don’t say how many there are.
+  Try again in a moment." No separate loading state: the counts arrive with the
+  page.
+- **Phone:** the line follows the Rule's short line in the section shown; the
+  link block is at least 44px tall and wraps to two caption lines.
+- **Not rebuilt (Q2):** the approach ladder; More detail already shows strokes
+  to hole out by distance and lie, and a second baseline could disagree.
+
 ## Explicit non-goals
 
 The prediction card, "vs tour" figures, Tour marks with no source, a Season best

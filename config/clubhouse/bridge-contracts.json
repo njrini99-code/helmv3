@@ -2465,6 +2465,17 @@
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
+    "id": 30622,
+    "page": "P003",
+    "category": 6,
+    "item": 22,
+    "name": "COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER",
+    "chCode": "CH-3212",
+    "meaning": "CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
     "id": 30701,
     "page": "P003",
     "category": 7,
@@ -2548,7 +2559,7 @@
     "category": 8,
     "item": 6,
     "name": "PLAYER_ON_A_ROSTER_ADDRESS_GOES_TO_THE_LIST",
-    "meaning": "With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to that player's Stats.",
+    "meaning": "With Clubhouse on, a player who opens /roster/[id] (an old link) goes to the roster, since a teammate has no page; a coach goes to the roster with ?player= set to them, which on the phone opens that player's profile (30102; desktop ignores ?player= and shows the list).",
     "status": "implemented",
     "where": "src/app/golf/(dashboard)/dashboard/roster/[id]/layout.tsx#RosterPlayerLayout",
     "tests": [
@@ -4234,6 +4245,17 @@
     "name": "SHARING_A_PERSONAL_BEST_CARD_FAILS",
     "chCode": "CH-5005",
     "meaning": "Sharing a personal-best card fails (the share sheet or the download is blocked)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50620,
+    "page": "P005",
+    "category": 6,
+    "item": 20,
+    "name": "COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL",
+    "chCode": "CH-5214",
+    "meaning": "CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },

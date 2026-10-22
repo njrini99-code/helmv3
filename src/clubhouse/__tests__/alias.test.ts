@@ -75,9 +75,9 @@ describe('30806 an old /roster/[id] link', () => {
 describe('owner 2026-10-01: the remaining not-rebuilt addresses open the nearest Clubhouse screen', () => {
   const PID = '0b6c1d2e-3f40-4a51-8b62-7c83d94e0f15';
 
-  it("a player's page, game, print and genome open their Stats profile; compare opens Team stats", async () => {
+  it("a player's page, game, print and genome open their Stats profile (the player pages on Game detail); compare opens Team stats", async () => {
     const { default: PlayerPagesLayout } = await import('@/app/golf/(dashboard)/dashboard/players/[playerId]/layout');
-    await expect(PlayerPagesLayout({ children: null, params: Promise.resolve({ playerId: PID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
+    await expect(PlayerPagesLayout({ children: null, params: Promise.resolve({ playerId: PID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}&tab=game`);
     const { default: GenomeLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/[playerId]/layout');
     await expect(GenomeLayout({ children: null, params: Promise.resolve({ playerId: PID }) })).rejects.toThrow(`REDIRECT /golf/dashboard/stats?player=${PID}`);
     const { default: CompareLayout } = await import('@/app/golf/(dashboard)/dashboard/coachhelm/genome/compare/layout');

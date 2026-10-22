@@ -7,6 +7,7 @@
 import { calculateStatsFromShots, type GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChTeamStats } from '../data/stats-team';
 import type { ChPlayerProfile } from '../data/stats-player';
+import type { ChStatsReads } from '../data/stats-reads';
 import type { ChPlayerSeason } from '../data/season';
 import type { ChWindowSeason } from '../data/stats-weight';
 import { filterFor, type ChFilter, type ChFilterOptions, type ChPickRound, type ChRoundKind } from '../data/stats-filter';
@@ -720,3 +721,28 @@ export const PREVIEW_PLAYER_NOMATCH: ChPlayerProfile = {
   rounds: [],
   stats: null,
 };
+
+/**
+ * What CoachHelm sees per Game detail section (data/stats-reads.ts, spec D build A), for Jonah: two reads costing strokes on
+ * approach and one working, one costing off the tee (its link opens the Deep dive on it), one working on the greens, none in
+ * scoring or the short game. `PREVIEW_PLAYER_READS` is a coach's (the Deep dive of Jonah); `PREVIEW_SELF_READS` the player's own.
+ */
+const COACH_DIVE = '/golf/dashboard/coachhelm?view=deep-dive&player=jonah';
+const OWN_DIVE = '/golf/dashboard/coachhelm?view=deep-dive';
+export const PREVIEW_PLAYER_READS: ChStatsReads = {
+  status: 'ready',
+  byArea: {
+    approach: { costing: 2, working: 1, href: COACH_DIVE },
+    tee: { costing: 1, working: 0, href: `${COACH_DIVE}&insight=in-fw` },
+    putting: { costing: 0, working: 1, href: `${COACH_DIVE}&insight=in-inside3` },
+  },
+};
+export const PREVIEW_SELF_READS: ChStatsReads = {
+  status: 'ready',
+  byArea: {
+    approach: { costing: 2, working: 1, href: OWN_DIVE },
+    tee: { costing: 1, working: 0, href: `${OWN_DIVE}&insight=in-fw` },
+    putting: { costing: 0, working: 1, href: `${OWN_DIVE}&insight=in-inside3` },
+  },
+};
+export const PREVIEW_READS_FAILED: ChStatsReads = { status: 'failed' };
