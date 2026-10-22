@@ -313,12 +313,12 @@ describe('the action row on a coach’s Deep dive', () => {
 });
 
 describe('every link in and out carries the player', () => {
-  it('the board’s card: "All of Jonah’s reads" opens his Deep dive; a name with no insights opens their Standing', async () => {
+  it('the board’s card: "All of Jonah’s reads" opens his Deep dive; a By player row with no read yet opens their Standing', async () => {
     const u = user();
     render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} />));
     await u.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
     expect(screen.getByRole('link', { name: /All of Jonah’s reads/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive&player=pl-jonah');
-    expect(screen.getByRole('link', { name: 'Sam Whitfield' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=standing&player=pl-sam');
+    expect(screen.getByRole('link', { name: /Sam Whitfield/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=standing&player=pl-sam');
   });
 
   it('the header links back to the board open on the player; the strip moves between his three views', async () => {
