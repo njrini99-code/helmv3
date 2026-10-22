@@ -21,6 +21,7 @@ Held items:     none
 The trip boxes read the typed value in the change handler before the draft
 setter, not inside the state updater. ESLint now bans the pattern in
 `src/clubhouse`.
+
 ### Changed (data/hub.ts, no behaviour change)
 
 - The reply counts and the task status rule are pure helpers (`rsvpCounts`,
