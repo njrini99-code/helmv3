@@ -6,6 +6,12 @@
 Design package: none (review fix, PR #2281)
 PR/commit:      claude/project-thread-d87uyy
 Contract IDs:   none
+## 2026-10-21 — Team stats phone figures render directly (shared stylesheet)
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   none changed
 Actions:        none
 Data impact:    none
 Held items:     none
@@ -19,6 +25,8 @@ Held items:     none
   (Scoring by default), so the scroll found nothing and gave up. Game detail reads
   the hash itself on the phone, and follows it if it changes while the page is open.
   A hash that names no section changes nothing. Desktop is unchanged.
+The shared stats stylesheet lost one rule that styled the rolling figure inside
+the Team stats strokes gained line. The player Stats page is unchanged.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 

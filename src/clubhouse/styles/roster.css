@@ -1064,18 +1064,6 @@
     text-align: right;
     white-space: nowrap;
   }
-  /* The figure as text for the page's first frame (RosterPhone's RollFigure), laid out as Number Flow lays out the same
-     figure (its host's line height, kerning and mask padding), so nothing moves when Number Flow takes its place
-     (WebKit: the two captures match to the pixel, 2026-10-16). */
-  .ch-rsm-row__v b .ch-rsm-flowtext {
-    display: inline-block;
-    padding: calc(round(nearest, calc(0.25em / 2), 1px) * 2) 0;
-    font: inherit;
-    font-kerning: none;
-    line-height: 1;
-    color: inherit;
-    white-space: nowrap;
-  }
   /* Sorted by SG, the row leads with strokes gained a round (P1-3): gains green, losses amber (D-42). */
   .ch-rsm-row__v b.is-gain {
     color: var(--ch-chart-gain);

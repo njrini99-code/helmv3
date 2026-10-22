@@ -32,6 +32,11 @@ and can see a box React has already reset, which lost the Settings name on
 WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
 trips, Qualifiers, the component playground). A test pins the ban
 (`no-lazy-event-read.test.ts`).
+## 2026-10-21 — Phone Roster and Team stats figures render directly
+
+Owner rule: no digit rolling. The phone Roster row figure and the Team stats
+strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
+gone from both screens.
 
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 

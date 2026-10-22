@@ -47,6 +47,22 @@ Held items:     none
   - Team stats already printed (the audit row missed `@media print` at the foot
     of stats.css); the leg grid's 760px minimum cut Total and Trend off the
     sheet, so it now narrows on paper. The new key prints; the cell links do not.
+## 2026-10-21 — Phone Team stats figures no longer roll
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   CH-4703
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+Owner rule, already applied on Qualifiers: no count-up and no digits rolling.
+The phone's strokes gained figure under the legs and each player's SG were
+Number Flow numerals. They are now plain tabular text written at once
+(`formatSigned`, a true minus), and the hidden copy beside the rolling one is
+gone. Replays 1bff7a784 and c2710104e onto main.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 

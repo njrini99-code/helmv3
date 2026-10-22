@@ -4519,12 +4519,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
   }
-  /* The rolling figure inside the strokes gained line takes its line's type and colour. */
-  .ch-stm.is-team .ch-stm-row__v span span {
-    font: inherit;
-    color: inherit;
-  }
-
   /* Putting by distance: a bar per band in the group, the Tour's make rate as a mark. */
   .ch-stm.is-team .ch-stm-putt {
     gap: 0;
