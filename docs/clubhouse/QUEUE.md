@@ -82,7 +82,7 @@ its rows together and does not map them one to one.
 | par-02 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
 | par-03 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
 | par-04 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
-| par-05 | Coach Brief: the team view behind `/intelligence` (`?view=brief`), behind `coachhelm_monday_brief_v1` | Clubhouse parity & pages | in progress, held out of trains | #2299 (rebase on main, fresh IDs and codes reserved below) | claude/coachhelm-coach-brief |
+| par-05 | Coach Brief: the team view behind `/intelligence` (`?view=brief`), behind `coachhelm_monday_brief_v1` | Clubhouse parity & pages | in progress | #2299 (held out of trains: rebase on main, fresh IDs and codes reserved below) | claude/coachhelm-coach-brief |
 | par-08 | As par-01 | Clubhouse parity & pages | in progress | #2295 (train 3) | claude/project-thread-icincd |
 | par-09 | Game Fingerprint: CoachHelm count lines under each Game detail section | Clubhouse parity & pages | in progress | #2307 (train 3, stacked on #2295) | claude/coach-parity-bridges |
 | par-10 | Team rounds: a coach's Rounds is a Clubhouse screen, not a redirect to Team stats | Clubhouse parity & pages | in progress | #2293 (train 3) | claude/project-thread-eitv8h |
@@ -174,9 +174,10 @@ On `main` (2026-10-21) the highest Bridge ID per page is 12401 (P001), 22401
 (P002), 32401 (P003), 42401 (P004), 52401 (P005), 62401 (P006), 72401
 (P007), 82401 (P008), 92401 (P009), 102401 (P010), 112402 (P011), 122401
 (P012), 132301 (P013), 142001 (P014) and 152301 (P015). The highest CH code
-is CH-15972. With every open branch counted (trains 1 to 4 and #2299), no
-page uses a Bridge item above 56, and no page outside P013 and P015 uses a
-CH suffix above 59 (P009 has CH-9999).
+is CH-15972. Counting `main`, the tombstones and every `origin/claude/*` and
+`origin/agent/*` branch pushed since 2026-10-14 (46 refs), no page uses a
+Bridge item above 56, and no page outside P013 and P015 uses a CH suffix
+above 59, except CH-9999 on P009.
 
 So each area owns the same two-digit window for Bridge items, in every
 category of every page, and for CH suffixes, in every kind of every page:
