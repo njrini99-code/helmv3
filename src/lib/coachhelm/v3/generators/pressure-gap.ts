@@ -13,7 +13,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
 import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { loadCompletedHoles, classifyHole } from '@/lib/coachhelm/v3/engine/hole-diagnosis';
@@ -117,7 +116,7 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     const supabase = createAdminClient();
     // Pull last 90 days of completed rounds for this player; bucket in TS.
     const since = new Date(Date.now() - 90 * 86400_000).toISOString().slice(0, 10);
-    const { data, error } = await fromUntyped(supabase, 'golf_rounds')
+    const { data, error } = await supabase.from('golf_rounds')
       .select('id, round_type, score_to_par, round_date, holes_played, total_score, front_nine, back_nine, total_putts, team_id')
       .eq('player_id', this.playerId)
       .eq('is_test', false)

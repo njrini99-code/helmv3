@@ -26,7 +26,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fromUntyped } from '@/lib/supabase/untyped';
 
 import { isMetricId, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { CohortGender } from '@/lib/coachhelm/v3/counterfactual/cohort-baselines';
@@ -86,7 +85,7 @@ const SELECT_FIELDS =
  */
 export async function loadStandardsForTour(tour: TourKey): Promise<Map<MetricId, PgaStandard>> {
   const supabase = createAdminClient();
-  const { data, error } = await fromUntyped(supabase, 'golf_pga_standards')
+  const { data, error } = await supabase.from('golf_pga_standards')
     .select(SELECT_FIELDS)
     .eq('tour', tour)
     .order('season', { ascending: false }) as {
