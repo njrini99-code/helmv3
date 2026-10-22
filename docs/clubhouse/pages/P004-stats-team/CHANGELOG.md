@@ -16,6 +16,7 @@ The shared stats files (`StatsPlayer.tsx`, `StatsPlayerPhone.tsx`,
 with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
 and verdict. The team page is unchanged. See the P005 entry of the same
 date.
+
 ## 2026-10-21 — Goals on the player's Development tab (see P005)
 
 ```text
@@ -996,6 +997,7 @@ In-page jumps on the phone player stats view ease through the shared smooth
 scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 The shared segmented indicator uses zero-duration motion when disabled.

@@ -23,6 +23,7 @@ regression line, in the viewer's voice. Got worse reaches the player a day
 after the coach. An area with no prescription, a database without the
 columns and the flag off draw the focus area exactly as before. Preview:
 `/clubhouse-preview/player?state=loops|loops-self`.
+
 ## 2026-10-21 — Goals: set one, answer a suggestion, and a coach's pause and abandon
 
 ```text
@@ -1115,6 +1116,7 @@ selection/persistence contracts remain unchanged.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 StatsPlayer and the shared segmented indicator use zero-duration motion
