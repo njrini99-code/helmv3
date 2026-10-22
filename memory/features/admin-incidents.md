@@ -206,6 +206,15 @@ always derived at read time.
   incident reappear — the correct failure direction for a feature whose job is
   hiding things. `reopened_count` survives a re-resolve, so "fixed three times
   already" cannot be laundered.
+- **A regression the classifier already calls routine signal is expected
+  recurrence too (2026-10-21).** `deriveLifecycle` rule 1 also returns
+  `'expected-recurrence'` when `!actionable` and `klass` is `telemetry`,
+  `empty_state` or `integrity_ok` (`EXPECTED_RECURRENCE_CLASSES` in
+  `src/lib/admin/incidents/lifecycle.ts`), whatever the analysis says. Those
+  rows fire by design, so a stale FIX HERE analysis must not paint them
+  REGRESSED: three `pattern-miner-starvation:*` info rows did exactly that on
+  2026-10-21. `integration` (provider faults) and `access` stay out on
+  purpose; a returning provider outage is real news.
 - **A regression whose analysis already says NOT A DEFECT is expected
   recurrence, not a regression.** `deriveLifecycle` rule 1
   (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===

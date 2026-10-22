@@ -163,6 +163,14 @@ function verdict(
  * signal this system produces, and it must never be shadowed by a stale
  * `resolution` row nobody has retracted yet.
  */
+/** Classifier verdicts that fire by design, so a recurrence after a close
+ *  reads as expected noise (rule 1), never as REGRESSED. */
+const EXPECTED_RECURRENCE_CLASSES: ReadonlySet<IncidentClass> = new Set<IncidentClass>([
+  'telemetry',
+  'empty_state',
+  'integrity_ok',
+]);
+
 export function deriveLifecycle(input: LifecycleInput): LifecycleVerdict {
   const { analysis, repair, deployProof, resolution, now } = input;
 
@@ -174,18 +182,31 @@ export function deriveLifecycle(input: LifecycleInput): LifecycleVerdict {
   //    yet still says whatever it said last, which is exactly the point:
   //    it already explained why this fires, so firing again is not new
   //    information.
+  //    The same holds when the CLASSIFIER already calls the row routine
+  //    signal (telemetry, empty state, a passing integrity check): those
+  //    fire by design, so a recurrence after a close is not a regression
+  //    either, whatever a stale analysis says. Measured 2026-10-21: three
+  //    pattern-miner-starvation:* info rows showed REGRESSED (danger) on the
+  //    board because their 10-05 analysis still read FIX HERE.
+  //    Provider faults ('integration') and access denials stay out of this
+  //    rule on purpose: a provider outage that returns is real news.
   if (input.regressed) {
-    if (analysis?.category === 'not-a-defect') {
+    const classifierExpected = !input.actionable && EXPECTED_RECURRENCE_CLASSES.has(input.klass);
+    if (analysis?.category === 'not-a-defect' || classifierExpected) {
       const because: LifecycleReasonLine[] = [
         resolution
           ? met(`Resolved ${since(resolution.resolvedAt, now)} ago (${resolution.resolvedBy}).`)
           : met('A prior human resolution exists for this fault.'),
-        met(`Analysis (${since(analysis.generatedAt, now)} ago) already found this is NOT A DEFECT.`),
+        analysis?.category === 'not-a-defect'
+          ? met(`Analysis (${since(analysis.generatedAt, now)} ago) already found this is NOT A DEFECT.`)
+          : met(`Classified as ${INCIDENT_CLASS_LABEL[input.klass]}, which fires by design.`),
         pending(`Observed again ${since(input.lastSeen, now)} ago — expected noise, not a regression.`),
       ];
       return verdict(
         'expected-recurrence',
-        `Recurred ${since(input.lastSeen, now)} ago — analysis already found this is not a defect.`,
+        analysis?.category === 'not-a-defect'
+          ? `Recurred ${since(input.lastSeen, now)} ago — analysis already found this is not a defect.`
+          : `Recurred ${since(input.lastSeen, now)} ago — ${INCIDENT_CLASS_LABEL[input.klass]}, expected to recur.`,
         because,
       );
     }
