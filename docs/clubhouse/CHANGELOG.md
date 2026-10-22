@@ -1,5 +1,14 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Lint bans reading the event inside a state updater
+
+`no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /
+`e.currentTarget` read inside a `set*(...)` updater. The updater runs later
+and can see a box React has already reset, which lost the Settings name on
+WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
+trips, Qualifiers, the component playground). A test pins the ban
+(`no-lazy-event-read.test.ts`).
+
 ## 2026-10-21 — The player peek opens CoachHelm
 
 The player peek (CH-1832, `ui/PlayerPeek.tsx`) adds a fourth action,

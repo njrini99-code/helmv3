@@ -1,5 +1,12 @@
 # P010 — Team Hub: changelog
 
+## 2026-10-21 — Text boxes read the event before the state updater
+
+```text
+Design package: none (follow-up to the nightly WebKit finding)
+PR/commit:      see git log (claude/clubhouse-eager-event-read)
+Contract IDs:   none
+
 ## 2026-10-21 — Team Hub's counts shared with Coach Home
 
 ```text
@@ -10,6 +17,10 @@ Actions:        none
 Data impact:    none
 Held items:     none
 ```
+
+The trip boxes read the typed value in the change handler before the draft
+setter, not inside the state updater. ESLint now bans the pattern in
+`src/clubhouse`.
 
 ### Changed (data/hub.ts, no behaviour change)
 
