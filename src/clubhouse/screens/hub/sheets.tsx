@@ -503,7 +503,7 @@ export function TripSheet({
   const [savedId, setSavedId] = useState<string | null>(null);
   // The same, read by the action: a toast's Retry runs the action as it was first made, so state would still say none.
   const savedRef = useRef<string | null>(null);
-  const set = (k: keyof ChTripInput) => (e: { target: { value: string } }) => setV((cur) => ({ ...cur, [k]: e.target.value }));
+  const set = (k: keyof ChTripInput) => (e: { target: { value: string } }) => { const value = e.target.value; setV((cur) => ({ ...cur, [k]: value })); };
   const event = events.rows.find((e) => e.id === v.eventId) ?? null;
   // The travelers' classes are asked for where the coach chooses them, and again on the last step, where the dates typed in
   // Logistics are known. Only a trip for an event has travelers to ask about.

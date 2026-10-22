@@ -60,6 +60,7 @@ its own boundary, so a crash stays inside the tab.
 | CH-5212 | The spray read throws | Off the tee and Approach › Where shots finish: "Where shots finish didn’t load." + Try again. (Production's own action answers a failed read with an empty response, so that failure reads as CH-5315, not this) | `loadSpray`; logged `clubhouse.stats.spray` | stats-parity.test › CH-5212 |
 | CH-5213 | The round cache doesn't load | "Some round figures didn’t load." + Try again above the overview figures | `loadRoundCache`; logged `clubhouse.stats.roundCache` | stats-player.test › CH-5213 |
 | CH-5214 | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) | In the Goals section, above the goals: "Suggested goals didn’t load." + "Your goals are fine. Try again in a moment." + Try again. Not drawn as "no suggestions" | `GoalSuggestions` (`ChPlayerProfile.goalSuggestionsError`) | stats-goals.test › CH-5214 |
+| CH-5215 | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) | One line under the section chips: "CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment." No section draws a count line (never "0 reads"); the rest of Game detail stays | `GameDetail`, `loadStatsReads`; logged `clubhouse.coachhelm.visible` / `dismissed` / `newestRounds` / `gate`, or `clubhouse.stats.reads` | stats-player.test › CH-5215; game-detail-reads.test; stats-reads.test (data) |
 
 ## 53xx Empty
 
