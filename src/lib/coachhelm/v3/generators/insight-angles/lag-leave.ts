@@ -47,6 +47,7 @@ import {
   type SplitHalfInput,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 import {
   LAG_FROM_FT,
   LAG_INSIDE_FT,
@@ -311,11 +312,13 @@ export function composeLagLeave(agg: LagLeaveAggregate): ComposedContent & { cat
   };
   return {
     category: 'putting',
-    title: `Lag putts from ${LAG_FROM_FT}+ ft are leaving long second putts`,
-    content:
-      `${r.lag.inside} of your ${r.lag.n} first putts from ${LAG_FROM_FT}+ ft finished inside ${LAG_INSIDE_FT} ft (${r.lag.pct}%); your teammates' pooled lag putts did ${team.pct}%. ` +
-      `As a rough estimate (it assumes a closer leave converts the way ${r.conversion.basis === 'own' ? 'yours do' : "the team's do"}), that is about ${strokes.toFixed(1)} strokes a round in extra 3-putts.` +
-      (r.leave_missing ? ` ${r.leave_missing} lag putts with no recorded second-putt distance are left out.` : ''),
+    ...inBothVoices((v) => ({
+      title: `Lag putts from ${LAG_FROM_FT}+ ft are leaving long second putts`,
+      content:
+        `${r.lag.inside} of ${v.players} ${r.lag.n} first putts from ${LAG_FROM_FT}+ ft finished inside ${LAG_INSIDE_FT} ft (${r.lag.pct}%); ${v.your} teammates' pooled lag putts did ${team.pct}%. ` +
+        `As a rough estimate (it assumes a closer leave converts the way ${r.conversion.basis === 'own' ? v.pick('yours do', 'theirs do') : "the team's do"}), that is about ${strokes.toFixed(1)} strokes a round in extra 3-putts.` +
+        (r.leave_missing ? ` ${r.leave_missing} lag putts with no recorded second-putt distance are left out.` : ''),
+    })),
     priority: strokes >= 0.5 ? 'medium' : 'low',
     signature: 'lag_leave:30ft',
     evidence,

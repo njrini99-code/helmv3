@@ -1,5 +1,55 @@
 # P001 — Shell: changelog
 
+## 2026-10-21 — A coach's Team Hub item carries a badge
+
+```text
+Design package: none (owner request via the Team Hub redesign, audit par-24)
+PR/commit:      draft PR from claude/project-thread-ya6ije (frozen: no merge)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only: one head count on golf_tasks with an inner embed
+Held items:     none
+```
+
+The coach's Team Hub nav item is `badge: 'hub'`. `loadClubhouseShell` reads
+`overdueTasks` for a coach, in the same parallel round as the shell's other
+reads (it waits only for the small team-zone read), and `badgeCount` shows it.
+It is not polled, so it is as fresh as the last load or refresh; a failed read
+hides the badge and is logged.
+
+## 2026-10-21 — A coach's What's new in the palette
+
+```text
+Design package: none (P013's What's new)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`shell/nav.ts`: `/golf/dashboard/whats-new` is a rebuilt coach route and moves
+from the alias list to the "rebuilt for one role, moved for the other" one (a
+player's address still opens Home). `command/commands.ts`: the coach's palette
+offers "What’s new" (under CoachHelm), as the old page was reached from the
+palette. Logged on P013.
+
+## 2026-10-21 — A coach's Rounds in the sidebar
+
+```text
+Design package: none (P011's Team rounds)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+`shell/nav.ts`: the coach's nav has Rounds (Team section, after Stats, shortcut
+G then O as the player's), and `/golf/dashboard/rounds` is a rebuilt coach route
+instead of an alias to Team stats. The coach's Round review still goes back to
+Stats unless it was opened from Team rounds. Logged on P011.
+
 ## 2026-10-21 — The shell marks `.ch-root` hydrated for the a11y scan
 
 ```text
@@ -29,39 +79,55 @@ Held items:     the native flag window.__helmNativeSwipe (Swift): until it lands
 
 ### Changed
 
-- Edge swipe back on a pushed phone screen. A finger that starts within the left 20px follows the screen (the page beneath, or
-  the screen beneath a second push, draws back with it by the pop's own parallax). Letting go past 35% of the width, or flicked
-  right, pops it: the screen's own Back runs and the screen leaves on the smooth spring from where it was let go, at the finger's
-  speed; sooner, and it springs back. A first travel that is vertical stays the page's scroll. The selection haptic ticks as the
-  mark is crossed. With reduced motion nothing follows the finger and a commit pops at once. It does not run beside the native
-  swipe (in the app only when the shell says its own is off), with a sheet or dialog open, on a round-tracking route, or for a
-  screen whose only Back is a form's Cancel.
-- A push is not immersive unless it says so (`PhoneScreen immersive`, implied by `keyboardAware`): the Resume round accessory
-  stays up over a profile or details screen, which stops above it, as iOS keeps its tab bar for such a push (NATIVE_FEEL P2-3).
-  Composers and the round itself still hide the dock (`shell/Dock.tsx` reads `dockKept`, and never shows an empty dock).
-- The shell's stand-in for a pushed page's bar now draws the page's always-present action in its place (Share on a coach's Player
-  stats, the Qualifier actions key for a coach), so the page's own bar replaces it without anything appearing late.
-- The first visit to Roster, Messages, Team Hub, Qualifiers, Recruiting, Settings (every section the role can reach) shows the
-  page, not a skeleton: after the tabs, when idle, the other sections are fetched whole two at a time with a 1.5 second rest,
-  under the same Data Saver and offline guards, and not again inside two minutes after a refresh.
+- Edge swipe back on a pushed phone screen. A finger that starts within the left
+  20px follows the screen (the page beneath, or the screen beneath a second
+  push, draws back with it by the pop's own parallax). Letting go past 35% of
+  the width, or flicked right, pops it: the screen's own Back runs and the
+  screen leaves on the smooth spring from where it was let go, at the finger's
+  speed; sooner, and it springs back. A first travel that is vertical stays the
+  page's scroll. The selection haptic ticks as the mark is crossed. With reduced
+  motion nothing follows the finger and a commit pops at once. It does not run
+  beside the native swipe (in the app only when the shell says its own is off),
+  with a sheet or dialog open, on a round-tracking route, or for a screen whose
+  only Back is a form's Cancel.
+- A push is not immersive unless it says so (`PhoneScreen immersive`, implied by
+  `keyboardAware`): the Resume round accessory stays up over a profile or
+  details screen, which stops above it, as iOS keeps its tab bar for such a push
+  (NATIVE_FEEL P2-3). Composers and the round itself still hide the dock
+  (`shell/Dock.tsx` reads `dockKept`, and never shows an empty dock).
+- The shell's stand-in for a pushed page's bar now draws the page's
+  always-present action in its place (Share on a coach's Player stats, the
+  Qualifier actions key for a coach), so the page's own bar replaces it without
+  anything appearing late.
+- The first visit to Roster, Messages, Team Hub, Qualifiers, Recruiting,
+  Settings (every section the role can reach) shows the page, not a skeleton:
+  after the tabs, when idle, the other sections are fetched whole two at a time
+  with a 1.5 second rest, under the same Data Saver and offline guards, and not
+  again inside two minutes after a refresh.
 
 ### Why
 
-- A drag that tracks the finger is what an iPhone user expects of Back; a screen that jumps, a bar whose key arrives late and a
-  skeleton on first visit are the three places the shell still read as a web page.
+- A drag that tracks the finger is what an iPhone user expects of Back; a screen
+  that jumps, a bar whose key arrives late and a skeleton on first visit are the
+  three places the shell still read as a web page.
 
 ### Verification
 
-- Unit tests: `shell/__tests__/edge-swipe.test.tsx` (the state machine: zone, slop, vertical wins, thresholds, flick, the
-  capability check, tracking routes, overlays, the screen's Back), `phone-shell-gestures.test.tsx` (the swipe bound to a screen,
-  the dock kept or hidden per screen, the stand-in action), `phone-prefetch-sweep.test.tsx` and `use-prefetch-tabs.test.tsx`
-  (ordering, the two-at-a-time cap, guards, the two-minute rest).
-- Captured headless WebKit 390x844, light and dark, scripted touch events: mid-drag, past the mark, spring back, commit with the
-  page returning in step (per-frame positions in VERIFY), a thread under its details (no frame moves the screen beneath backward);
-  the stand-in bar against the page's own; the dock over a profile with a round in progress (the accessory stays, the screen stops
-  above it, the page's thumb controls step aside). Not verified: a
-  physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a swipe pop), the iOS app (the native flag does not
-  exist yet), the idle prefetch in a production build.
+- Unit tests: `shell/__tests__/edge-swipe.test.tsx` (the state machine: zone,
+  slop, vertical wins, thresholds, flick, the capability check, tracking routes,
+  overlays, the screen's Back), `phone-shell-gestures.test.tsx` (the swipe bound
+  to a screen, the dock kept or hidden per screen, the stand-in action),
+  `phone-prefetch-sweep.test.tsx` and `use-prefetch-tabs.test.tsx` (ordering,
+  the two-at-a-time cap, guards, the two-minute rest).
+- Captured headless WebKit 390x844, light and dark, scripted touch events:
+  mid-drag, past the mark, spring back, commit with the page returning in step
+  (per-frame positions in VERIFY), a thread under its details (no frame moves
+  the screen beneath backward); the stand-in bar against the page's own; the
+  dock over a profile with a round in progress (the accessory stays, the screen
+  stops above it, the page's thumb controls step aside). Not verified: a
+  physical iPhone (Safari's own swipe against ours, haptics, VoiceOver after a
+  swipe pop), the iOS app (the native flag does not exist yet), the idle
+  prefetch in a production build.
 
 ## 2026-10-19 — Desktop command layer: palette, shortcuts, tooltips
 
@@ -76,30 +142,42 @@ Held items:     none
 
 ### Changed
 
-- Command palette on Cmd K (Ctrl K elsewhere), desktop only, in the shared Modal over cmdk. With nothing typed it shows Recent (the
-  last five sections visited this tab, not the one you are in) and Go to (every section the role's sidebar has, each with its G
-  shortcut). Typing searches Go to, People (a coach's players, from the roster the coach has already opened this session) and
-  Actions (New round, New event, New message, Post announcement, New qualifier, Add class, each only for the role that can do it;
-  every one just routes to the screen that does it). No matches says so and offers the nearest section.
-- Shortcuts: G then H, A, C, M, T, R, S, Q, E, O, L or a comma goes to a section (one second between the keys), `/` focuses the
-  page's search field, `?` opens a grouped shortcuts sheet. None fire while typing or inside a dialog or menu. N on Home and Cmd or
-  Ctrl backslash for the sidebar are unchanged and listed in the sheet. While G waits for its letter, a small plate lists the
-  letters and where they go.
-- Tooltips: every icon-only button (IconButton, the sheet and toast close keys, the sidebar fold toggle with its key) shows its name
-  and shortcut after the pointer rests for half a second, at once when moving along neighbours, and on keyboard focus. Never on
-  touch. Escape dismisses it. The browser's native `title` on IconButton is gone, so there is one tip, not two.
-- `ui/ContextMenu.tsx`: a right-click (and Shift F10 or the Menu key) menu on the shared Menu surface and rows. Shift, a text field
-  and a phone keep the browser's own menu.
+- Command palette on Cmd K (Ctrl K elsewhere), desktop only, in the shared Modal
+  over cmdk. With nothing typed it shows Recent (the last five sections visited
+  this tab, not the one you are in) and Go to (every section the role's sidebar
+  has, each with its G shortcut). Typing searches Go to, People (a coach's
+  players, from the roster the coach has already opened this session) and
+  Actions (New round, New event, New message, Post announcement, New qualifier,
+  Add class, each only for the role that can do it; every one just routes to the
+  screen that does it). No matches says so and offers the nearest section.
+- Shortcuts: G then H, A, C, M, T, R, S, Q, E, O, L or a comma goes to a section
+  (one second between the keys), `/` focuses the page's search field, `?` opens
+  a grouped shortcuts sheet. None fire while typing or inside a dialog or menu.
+  N on Home and Cmd or Ctrl backslash for the sidebar are unchanged and listed
+  in the sheet. While G waits for its letter, a small plate lists the letters
+  and where they go.
+- Tooltips: every icon-only button (IconButton, the sheet and toast close keys,
+  the sidebar fold toggle with its key) shows its name and shortcut after the
+  pointer rests for half a second, at once when moving along neighbours, and on
+  keyboard focus. Never on touch. Escape dismisses it. The browser's native
+  `title` on IconButton is gone, so there is one tip, not two.
+- `ui/ContextMenu.tsx`: a right-click (and Shift F10 or the Menu key) menu on
+  the shared Menu surface and rows. Shift, a text field and a phone keep the
+  browser's own menu.
 
 ### Why
 
-- A desktop tool for a coach who works from the keyboard: jump anywhere in two keys, and every icon button says what it is.
+- A desktop tool for a coach who works from the keyboard: jump anywhere in two
+  keys, and every icon button says what it is.
 
 ### Verification
 
-- Unit tests: `shell/command/__tests__` (key sequencing and its one-second window, suppression in fields and dialogs, the letter map
-  per role, what the palette lists per role, recent destinations, tooltip timing, the layer end to end), `ui/__tests__`.
-- Captured headless WebKit 1280x900, light and dark: palette empty and with a search, no results, shortcuts sheet, rail tooltip.
+- Unit tests: `shell/command/__tests__` (key sequencing and its one-second
+  window, suppression in fields and dialogs, the letter map per role, what the
+  palette lists per role, recent destinations, tooltip timing, the layer end to
+  end), `ui/__tests__`.
+- Captured headless WebKit 1280x900, light and dark: palette empty and with a
+  search, no results, shortcuts sheet, rail tooltip.
 
 ## 2026-10-18 — Wave 8: push bar presses and the dark hero edge
 

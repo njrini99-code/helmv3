@@ -370,6 +370,9 @@
      heading on the canvas, not a card. Engraved gilt-brown rules, forest ink for headings, the head's eyebrow brown. */
   --ch-ledger-rule: rgb(110 98 62 / 0.16);
   --ch-ledger-rule-soft: rgb(110 98 62 / 0.09);
+  /* The rule under a section heading and between a page's strongest entries (Team Hub redesign, 2026-10-21): 1.8:1 on the workspace against
+     the plain rule's 1.2:1, so sections separate by value as well as by line. Structure, never text. */
+  --ch-ledger-rule-strong: rgb(110 98 62 / 0.42);
   --ch-ledger-ink: rgb(18 59 41 / 0.9);
   /* 5:1 or better on the canvas, the page and cards (was #7a6b3f, 4.25:1 on the page). */
   --ch-ledger-eyebrow: #6e6038;
@@ -693,6 +696,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-elevation-on-frame-hover: 0 0 0 1px rgb(201 173 116 / 0.55), 0 2px 6px rgb(0 0 0 / 0.55);
   --ch-ledger-rule: rgb(205 187 142 / 0.15);
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
+  --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
   --ch-ledger-ink: rgb(226 238 229 / 0.94);
   --ch-ledger-eyebrow: #bba878;
   --ch-ledger-row-hover: rgb(205 187 142 / 0.06);
@@ -921,6 +925,7 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-border-strong: rgb(28 25 18 / 0.55);
     --ch-ledger-rule: rgb(28 25 18 / 0.3);
     --ch-ledger-rule-soft: rgb(28 25 18 / 0.2);
+    --ch-ledger-rule-strong: rgb(28 25 18 / 0.55);
     --ch-ledger-rule-double: 3px double rgb(28 25 18 / 0.4);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);
@@ -937,6 +942,7 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-border-strong: rgb(237 231 216 / 0.58);
     --ch-ledger-rule: rgb(237 231 216 / 0.32);
     --ch-ledger-rule-soft: rgb(237 231 216 / 0.22);
+    --ch-ledger-rule-strong: rgb(237 231 216 / 0.58);
     --ch-ledger-rule-double: 3px double rgb(237 231 216 / 0.42);
     --ch-ledger-eyebrow: var(--ch-text-secondary);
     --ch-text-tertiary: var(--ch-ink-600);

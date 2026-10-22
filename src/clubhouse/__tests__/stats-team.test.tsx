@@ -629,26 +629,22 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-stm-hero__c b')?.textContent).toBe('−0.9');
   });
 
-  it('the strokes gained figures are text until a hand or focus is on the leg rows, then Number Flow, with the same text', () => {
+  it('the strokes gained figures are plain text with a true minus, before and after a leg is picked', () => {
     wrap(stats());
-    // Number Flow is a <span> in tests (src/test/setup.tsx); the text form has no element inside its aria-hidden span.
-    const sgfig = () => document.querySelector('.ch-stm-sgfig b [aria-hidden="true"]')!;
-    const rowFlows = () => document.querySelectorAll('.ch-stm-row__v [aria-hidden="true"] > span').length;
+    const sgfig = () => document.querySelector('.ch-stm-sgfig b')!;
+    expect(sgfig().textContent).toBe('−0.5');
     expect(sgfig().childElementCount).toBe(0);
-    expect(sgfig().textContent).toBe('−0.5');
-    expect(rowFlows()).toBe(0);
     fireEvent.pointerDown(within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Approach/ }));
-    expect(sgfig().childElementCount).toBe(1);
     expect(sgfig().textContent).toBe('−0.5');
-    expect(rowFlows()).toBeGreaterThan(0);
-    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−0.5');
+    expect(sgfig().childElementCount).toBe(0);
+    expect(document.querySelector('.ch-stm-row__v [aria-hidden="true"]')).toBeNull();
   });
 
   it('CH-4703 a strokes gained leg row picks the leg: one selection tick, the team figure reads it, and the players rank by it', async () => {
     const user = userEvent.setup();
     wrap(stats());
     const legs = within(document.getElementById('ch-stm-legs')!.closest('section')!);
-    const figure = () => document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent;
+    const figure = () => document.querySelector('.ch-stm-sgfig b')!.textContent;
     const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
     // The team total by default: the window's own mean.
     expect(figure()).toBe('−0.5');
@@ -663,7 +659,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.getByRole('radio', { name: 'SG, strokes gained' }).getAttribute('aria-checked')).toBe('true');
     expect(names()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Eli Brandt', 'Priya Natarajan', 'Jonah Okafor', 'Luca Ferraro']);
     expect(document.getElementById('ch-stm-players')!.parentElement!.textContent).toContain('by Approach SG');
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+0.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v > span')!.textContent).toBe('+0.7 SG');
     expect(screen.getByRole('link', { name: /Luca Ferraro/ }).textContent).toMatch(/Early read/);
     // The chosen leg again is silent; the tabs point at no panel that isn't there.
     await user.click(legs.getByRole('tab', { name: /^Approach/ }));
@@ -672,12 +668,12 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // Back on Avg, the list orders by scoring average and each row shows its total.
     await user.click(screen.getByRole('radio', { name: 'Avg, scoring average' }));
     expect(names().slice(0, 3)).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist']);
-    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v .ch-sr-only')!.textContent).toBe('+1.7 SG');
+    expect(screen.getByRole('link', { name: /Theo Marchetti/ }).querySelector('.ch-stm-row__v > span')!.textContent).toBe('+1.7 SG');
   });
 
   it('the team total leg is the window’s mean, never the legs added up', () => {
     wrap(stats({ team: { ...PREVIEW_TEAM_STATS.team, sgMean: -1.4 } }));
-    expect(document.querySelector('.ch-stm-sgfig b .ch-sr-only')!.textContent).toBe('−1.4');
+    expect(document.querySelector('.ch-stm-sgfig b')!.textContent).toBe('−1.4');
     const total = within(document.getElementById('ch-stm-legs')!.closest('section')!).getByRole('tab', { name: /^Team total/ });
     expect(total.querySelector('b')!.textContent).toBe('−1.4');
   });

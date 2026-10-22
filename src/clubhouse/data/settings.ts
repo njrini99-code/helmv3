@@ -46,7 +46,7 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
     supabase.auth.getUser(),
     getNotificationPreferences().catch((e: unknown) => ({ data: null, error: String(e) })),
     role === 'coach'
-      ? supabase.from('golf_coaches').select('full_name, avatar_url').eq('id', coachId!).maybeSingle()
+      ? supabase.from('golf_coaches').select('full_name, avatar_url, title').eq('id', coachId!).maybeSingle()
       : supabase
           .from('golf_players')
           .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
@@ -67,6 +67,8 @@ export async function loadSettings(session: GolfSessionProfile, teamId: string |
           lastName: str(p.last_name),
           fullName: role === 'coach' ? str(p.full_name) : [p.first_name, p.last_name].filter(Boolean).join(' '),
           avatarUrl: (p.avatar_url as string | null) ?? null,
+          // A coach's title ("Assistant coach"), shown with their name in Messages, announcements and Team; '' for players.
+          title: role === 'coach' ? str(p.title) : '',
         });
 
   const base: ChSettingsData = {

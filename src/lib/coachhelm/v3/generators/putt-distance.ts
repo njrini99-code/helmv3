@@ -27,6 +27,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -243,43 +244,44 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     // 95% interval on the band rate (audit row 24): an 8-12 putt band moves
     // 8-12 points on a single putt, so the number never ships bare.
     const makeCi = wilsonInterval(Math.round((agg.playerValue / 100) * agg.attempts), agg.attempts);
-    const base =
-      `Across your last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
-      `you're making ${valueDisp} of putts from ${label}${gate.disclosure}${gate.report ? rateIntervalText(makeCi) : ''} ` +
+    const base = (v: Voice) =>
+      `Across ${v.players} last ${agg.rounds_played} rounds${agg.spanDays && agg.spanDays > 0 ? ` (${agg.spanDays} days)` : ''} ` +
+      `${v.youre} making ${valueDisp} of putts from ${label}${gate.disclosure}${gate.report ? rateIntervalText(makeCi) : ''} ` +
       `(${agg.cohort_gender === 'womens' ? 'LPGA' : 'PGA'} Tour ~${pgaValue.toFixed(0)}%).`;
 
-    let verdict: string;
+    let verdict: (v: Voice) => string;
     let composedPriority: InsightPriority;
     if (gapPp <= 0) {
-      verdict = ` You're at or above the Tour rate here, a strength, leave it alone.`;
+      verdict = (v) => ` ${v.Youre} at or above the Tour rate here, a strength, leave it alone.`;
       composedPriority = 'low';
     } else if (bandClass === 'makeable') {
       // Makeable distance below Tour = the highest-leverage, fastest-to-fix leak.
-      const lead = gapPp >= MAKEABLE_BIG_GAP_PP
-        ? `This is your highest-leverage putting band:`
+      const lead = (v: Voice) => gapPp >= MAKEABLE_BIG_GAP_PP
+        ? `This is ${v.your} highest-leverage putting band:`
         : `Worth tightening:`;
-      verdict =
-        ` ${lead} ${label} is makeable distance and you're ${Math.round(gapPp)} points below Tour. ` +
+      verdict = (v) =>
+        ` ${lead(v)} ${label} is makeable distance and ${v.youre} ${Math.round(gapPp)} points below Tour. ` +
         `The fix is a gate drill (two tees a ball-width apart) plus a daily short-putt ladder: ` +
         `pure-strike reps, not green-reading.`;
       composedPriority = gapPp >= MAKEABLE_BIG_GAP_PP ? 'medium' : 'low';
     } else {
       // Lag band: a low make% here is speed + how far the approach/chip left you,
       // not stroke mechanics (matches the shot-drivers lag attribution).
-      verdict =
-        ` From ${label} make% is mostly lag: the driver is speed control and how far your ` +
-        `approach/chip leaves you, not your stroke. Work distance-control lags to a 3-ft ` +
-        `circle and tighter approach proximity. Don't drill the stroke.`;
+      verdict = (v) =>
+        ` From ${label} make% is mostly lag: the driver is speed control and how far ${v.your} ` +
+        `approach/chip leaves ${v.them}, not ${v.your} stroke. ${v.pick('Work', 'Have them work')} distance-control lags to a 3-ft ` +
+        `circle and tighter approach proximity. ${v.pick("Don't drill the stroke.", "Don't have them drill the stroke.")}`;
       composedPriority = 'low';
     }
 
-    const title = `${label} putting: ${valueDisp}`;
     // NUM-12: always date the window, since this text is frozen at generation.
-    const content = base + verdict + dataThroughSuffix(agg.last_round_date);
+    const copy = inBothVoices((v) => ({
+      title: `${label} putting: ${valueDisp}`,
+      content: base(v) + verdict(v) + dataThroughSuffix(agg.last_round_date),
+    }));
 
     return {
-      title,
-      content,
+      ...copy,
       // Composed from the band's anchor-relative gap; Phase A's
       // leveragePriorityFloor can still upgrade from the counterfactual leverage.
       priority: composedPriority,

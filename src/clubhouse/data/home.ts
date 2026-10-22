@@ -3,22 +3,29 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
-import { eventDaySpan, getValidTimezone } from '@/lib/calendar/timezone';
-import { getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
-import { getGreeting, timeOfDayForHour } from '@/lib/utils/time-of-day';
+import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
-import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChForm, type ChRound } from './season';
-import { hasHoleScores, recordedPutts } from './round-scope';
-import { previousInFilter, roundsInFilter, seasonOnly } from './stats-common';
+import { homeClock, ymd } from './home-clock';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, summarizePlayer, type ChForm, type ChRound } from './season';
+import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
+import { legRows } from './leg-rows';
+import { loadCoachQueue, type ChCoachQueue } from './home-queue';
+import { teamRankRows, type TeamRankMetric, type TeamRankRow } from '../screens/stats/team-rank';
+import type { ChSgTour } from '../lib/sg';
+import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
+import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
-import { weightedMean, windowChangeSe } from './stats-weight';
+import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
+import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
 
 export { classYearLabel, formStatus } from './season';
+export { homeClock } from './home-clock';
+export type { ChCoachQueue } from './home-queue';
 
 /**
  * Coach Home (Clubhouse). One server read, final data on first paint.
@@ -90,6 +97,8 @@ export interface ChLeaderRow {
   status: ChForm;
   /** Days since the player's last countable round of any length, in the team's timezone. */
   quietDays: number | null;
+  /** Injured or away (display only). An out player is not flagged for a quiet stretch. Absent reads as available. */
+  availability?: ChAvailability;
 }
 
 /** One team event as the phone Home draws it (Up next and Today). */
@@ -133,6 +142,8 @@ export interface ChHomeEvent {
   mine?: 'going' | 'needed' | null;
   /** Overlaps another of today's timed events. */
   conflict: boolean;
+  /** Coach only: the event asks for replies and the server would still take one (not started, not past its deadline). */
+  replyOpen?: boolean;
 }
 
 /**
@@ -155,6 +166,51 @@ export interface ChTeamForm {
   gir: { pct: number | null; delta: number | null; se?: number | null };
   /** Per 18 holes, over the rounds with putts recorded (`recordedPutts`: a round written 0 putts has none), as Stats counts them. */
   putts: { avg: number | null; delta: number | null; se?: number | null };
+}
+
+/** One of the four parts in "The team's game" (Coach Home, under the team's form; spec B §1). */
+export type ChTeamLegKey = 'tee' | 'approach' | 'around' | 'putting';
+
+/** Who gains or loses most in a part: the players sharing that place (ties), first named first, and the first's figure. */
+export interface ChLegPeople {
+  /** golf_players ids, from the roster's rows only. */
+  ids: string[];
+  /** "Theo M." */
+  names: string[];
+  /** Strokes gained per round of the first named. */
+  value: number;
+}
+
+export interface ChTeamLeg {
+  key: ChTeamLegKey;
+  /** Team Stats' leg name, verbatim (`LEGS`). */
+  label: ChLeg;
+  /** The part's plain stat over the same rounds: Fairways, Greens, Up and down (a rate) or Putts (per round), with the Tour's mark. */
+  stat: { label: 'Fairways' | 'Greens' | 'Up and down' | 'Putts'; value: number | null; unit: '%' | ''; digits: number; tour: number | null };
+  /** The team's strokes gained per round in the part over its hole-by-hole rounds; null under MIN_SG_ROUNDS. */
+  sg: number | null;
+  /** Against each player's previous ten (the same players, Q-112); null with no earlier ten to compare. */
+  delta: number | null;
+  /** The change's standard error: green or amber only when it clears it. */
+  se: number | null;
+  gains: ChLegPeople | null;
+  /** Null with one ranked player, or when everyone ranked shares one place. */
+  loses: ChLegPeople | null;
+}
+
+/**
+ * The team's four parts, on the form's own Last 10 basis. `holeRounds`: how many of those rounds have their holes scored
+ * (none: CH-2314). `ranked`: some player is ranked in some part (none: CH-2315). `cacheError`: up-and-down didn't load
+ * (CH-2218). `tourError`: the Tour's marks didn't load (CH-2219); an unknown tour (the team's row didn't load) has no
+ * marks and no notice.
+ */
+export interface ChTeamLegs {
+  rows: ChTeamLeg[];
+  holeRounds: number;
+  ranked: boolean;
+  tour: ChSgTour;
+  cacheError: boolean;
+  tourError: boolean;
 }
 
 /** The team's zone and its date when the page was read. */
@@ -190,17 +246,16 @@ export interface ChCoachHome {
     /** The first competition later this week, for the week strip's note. */
     weekNote: { weekday: string; title: string } | null;
   };
+  /** The team's four parts under the form (desktop and phone); null when the rounds didn't load or there are none. Optional for fixtures. */
+  legs?: ChTeamLegs | null;
+  /** What is waiting on the coach (desktop and phone, first run too); each part null when it didn't load. Optional for fixtures. */
+  queue?: ChCoachQueue;
 }
 
 const COMPETITION_TYPES = new Set(['tournament', 'qualifier']);
 
 function log(read: string, error: unknown) {
   chLogServer('home', read, error);
-}
-
-/** YYYY-MM-DD for an instant in a timezone. */
-function ymd(d: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
 }
 
 function addDays(date: string, n: number): string {
@@ -236,7 +291,7 @@ export function wideEventWindow(now: Date): { from: string; to: string } {
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export async function loadCoachHome(input: { teamId: string; coachName: string }): Promise<ChCoachHome> {
+export async function loadCoachHome(input: { teamId: string; coachName: string; /** For Team Hub's announcements read (the queue); it reads the session itself. */ userId?: string }): Promise<ChCoachHome> {
   const supabase = await createClient();
   const now = new Date();
 
@@ -247,7 +302,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
   const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
-    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
+    supabase.from('golf_team_members').select('availability, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
   );
   const rosterOf = (res: Awaited<typeof rosterRead>) =>
     ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
@@ -275,13 +330,45 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       return p ? nameOf(p) : 'Former player';
     }),
   );
-  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest] = await Promise.all([clockRead, rosterRead, chatRead, weekRead, roundsRead, latestRead]);
+  // The four parts: the team's tour (its gender, as Player Home reads it) and the Tour's marks; the up-and-down figures of
+  // the form's own Last 10 rounds with their holes.
+  const teamRead = Promise.resolve(supabase.from('golf_teams').select('gender').eq('id', input.teamId).maybeSingle());
+  const benchRead = teamRead.then((team) => (team.error || !team.data ? null : readTourBenchmarks(supabase, tourForGender(team.data.gender), 'home')));
+  const cacheRead = roundsRead.then((res) => {
+    const ids = res.error ? [] : holeRounds(teamWindows(res.rounds.filter(isFull18)).last).map((r) => r.id);
+    return ids.length ? loadRoundCache(supabase, ids, 'home') : { byRound: new Map<string, ChRoundCache>(), error: false };
+  });
+  // What is waiting on the coach: its own reads, each part on its own.
+  const queueRead = loadCoachQueue(supabase, {
+    teamId: input.teamId,
+    userId: input.userId ?? '',
+    now,
+    tz: clockRead.then((c) => c.tz),
+    names: rosterRead.then((res) => (res.error ? null : new Map(rosterOf(res).map((p) => [p.id, nameOf(p)])))),
+  });
+  const [{ greeting, todayLabel, tz, day }, rosterRes, chatRes, wk, seasonRead, latest, teamRes, bench, cache, queue] = await Promise.all([
+    clockRead,
+    rosterRead,
+    chatRead,
+    weekRead,
+    roundsRead,
+    latestRead,
+    teamRead,
+    benchRead,
+    cacheRead,
+    queueRead,
+  ]);
+  if (teamRes.error) log('team', teamRes.error);
   // CH-2208: without the team chat, Message team opens Messages instead.
   if (chatRes.error) log('team chat', chatRes.error);
 
   // ── Roster ──
   if (rosterRes.error) log('roster', rosterRes.error);
   const roster = rosterOf(rosterRes);
+  const availabilityById = new Map<string, ChAvailability>();
+  for (const m of (rosterRes.data ?? []) as unknown as Array<{ availability: string | null; player: RosterPlayer | null }>) {
+    if (m.player) availabilityById.set(m.player.id, parseAvailability(m.availability));
+  }
   const { today, weekStart, weekEnd } = wk;
 
   // ── Season rounds ──
@@ -314,6 +401,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
       sgPerRound: season.sgPerRound,
       status: season.status,
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
+      availability: availabilityById.get(p.id) ?? 'available',
     });
   }
   // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.
@@ -322,6 +410,8 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
 
   // ── Phone: the team's form ──
   const form = roundsError ? null : teamForm(full, rounds.filter((r) => r.round_date.slice(0, 10) >= weekStart && r.round_date.slice(0, 10) <= weekEnd).length);
+  // ── The team's four parts, on the form's rounds ──
+  const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
     greeting: `${greeting}, ${firstName}.`,
@@ -333,32 +423,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string }
     latestRounds: { rounds: latestRounds, error: roundsError, holesError },
     leaderboard: { rows, scorecards: seasonFull.length, rosterSize: roster.length, error: roundsError },
     phone: { next: wk.next, today: wk.todayEvents, form, weekNote: wk.weekNote },
+    legs,
+    queue,
   };
-}
-
-/**
- * The team's timezone (CH-2210: Eastern, the product default, when it doesn't
- * load or isn't a real zone), the time-of-day greeting in it, today's long
- * date, and today's date (YYYY-MM-DD) in it.
- */
-export async function homeClock(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  teamId: string,
-  now: Date,
-): Promise<{ tz: string; greeting: string; todayLabel: string; day: string }> {
-  const { data: settings, error: settingsError } = await supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle();
-  if (settingsError) log('timezone', settingsError);
-  // A stored value that isn't a real IANA zone would throw in every Intl call below; read it as missing instead.
-  const tz = getValidTimezone(settings?.timezone);
-  if (settings?.timezone && tz !== settings.timezone) log('timezone', new Error(`"${settings.timezone}" is not a timezone`));
-  let greeting = 'Welcome back';
-  try {
-    greeting = getGreeting(timeOfDayForHour(getCurrentDecimalHourInTz(tz)));
-  } catch {
-    /* unknown zone: the time-neutral phrase is never wrong */
-  }
-  const todayLabel = new Intl.DateTimeFormat('en-GB', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long' }).format(now);
-  return { tz, greeting, todayLabel, day: ymd(now, tz) };
 }
 
 /**
@@ -675,6 +742,8 @@ export async function loadHomeWeek(
       awaiting: asks && ids ? (unanswered.get(e.id) ?? []).flatMap((id) => (names.has(id) ? [{ id, name: names.get(id)! }] : [])) : null,
       inviteeIds: ids,
       invitedCount,
+      // The coach's: whether the event still takes a reply (the server's rule), for the desktop Next row's Nudge.
+      ...(input.viewer !== 'player' ? { replyOpen: asks && !replyClosedAt(e, now.getTime()) } : {}),
       ...(playerId ? { mine: mineOf(e) } : {}),
       conflict: runsOn(e, today) && overlaps(e),
     };
@@ -697,19 +766,14 @@ export async function loadHomeWeek(
 const HOME_TYPES = new Set(['practice', 'qualifier', 'tournament', 'meeting', 'travel', 'other']);
 
 /**
- * The team's form on the Stats page's own basis, so Home and Stats (Last 10, Team) read the same: each
- * player's newest ten 18-hole rounds (in any season, Q-122), pooled, against each player's ten before them
- * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring is a per-round mean over every
- * round, a total-only one included; putts are a per-round mean and greens pool the holes (never a mean of percentages),
- * both over the rounds with their holes (Q-123). The line is the team's average on each of its last ten round days
- * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
- * rounds says so. Exported for the tests.
+ * The windows the team's form and its four parts read (Stats' Last 10, Team): each player's newest ten 18-hole rounds
+ * (`last`), each player's ten before them (`prev`), and, for a change (Q-112: the same players), the newest ten of the
+ * players who also have a previous ten (`lastPaired`).
  */
-export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
+export function teamWindows(full: ChRound[]): { last: ChRound[]; prev: ChRound[]; lastPaired: ChRound[] } {
   const f = filterFor('last10');
   const last: ChRound[] = [];
   const prev: ChRound[] = [];
-  // Q-112: a change compares the same players: the newest ten of those who also have a previous ten, against that ten.
   const lastPaired: ChRound[] = [];
   for (const list of groupByPlayer(full).values()) {
     const cur = roundsInFilter(list, f);
@@ -720,6 +784,20 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
       lastPaired.push(...cur);
     }
   }
+  return { last, prev, lastPaired };
+}
+
+/**
+ * The team's form on the Stats page's own basis, so Home and Stats (Last 10, Team) read the same: each
+ * player's newest ten 18-hole rounds (in any season, Q-122), pooled, against each player's ten before them
+ * (`roundsInFilter` / `previousInFilter`, as `loadTeamStats` reads them). Scoring is a per-round mean over every
+ * round, a total-only one included; putts are a per-round mean and greens pool the holes (never a mean of percentages),
+ * both over the rounds with their holes (Q-123). The line is the team's average on each of its last ten round days
+ * (as Stats' scoring trend draws it), oldest to newest: one point a day, not one a round. `basis` says how many rounds and which dates the figures rest on, so a strip built on three August
+ * rounds says so. Exported for the tests.
+ */
+export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | null {
+  const { last, prev, lastPaired } = teamWindows(full);
   if (!last.length) return null;
   // Greens and putts are hole-level: a round posted as a total only has none (Q-123), whatever its row holds.
   const hasGir = (r: ChRound) => hasHoleScores(r) && r.total_gir != null && !!r.total_gir_possible;
@@ -761,4 +839,77 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
     putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null, se: comparable ? windowChangeSe(lastPaired, prev, puttsOf, null) : null },
   };
+}
+
+const LEG_KEYS: readonly ChTeamLegKey[] = ['tee', 'approach', 'around', 'putting'];
+/** Each part's plain stat: Player Home's leg (legRows) and its Tour metric. */
+const LEG_STATS: Record<ChTeamLegKey, { leg: 'tee' | 'approach' | 'short' | 'putting'; label: ChTeamLeg['stat']['label'] }> = {
+  tee: { leg: 'tee', label: 'Fairways' },
+  approach: { leg: 'approach', label: 'Greens' },
+  around: { leg: 'short', label: 'Up and down' },
+  putting: { leg: 'putting', label: 'Putts' },
+};
+
+/**
+ * Who gains and who loses most in a part, from Team Stats' ranking (`teamRankRows` over `teamGrid`, the same players and
+ * rules as its ranked plot): the first ranked place gains most, the last ranked place loses most. Players sharing a place
+ * (a tie, "T2") are named together. One ranked player, or everyone ranked in one place, loses nothing.
+ */
+export function legPeople(rows: TeamRankRow[]): { gains: ChLegPeople | null; loses: ChLegPeople | null } {
+  const ranked = rows.filter((r): r is TeamRankRow & { rank: number; value: number } => r.rank != null && r.value != null);
+  const head = ranked[0];
+  if (!head) return { gains: null, loses: null };
+  const at = (rank: number) => ranked.filter((r) => r.rank === rank);
+  const people = (list: typeof ranked): ChLegPeople => ({ ids: list.map((r) => r.id), names: list.map((r) => r.short), value: list[0]!.value });
+  const tail = ranked[ranked.length - 1]!;
+  return { gains: people(at(head.rank)), loses: ranked.length < 2 || tail.rank === head.rank ? null : people(at(tail.rank).reverse()) };
+}
+
+/**
+ * The team's four parts (spec B §1), on the form's own Last 10 rounds (`teamWindows`), hole-level throughout (Q-123):
+ * strokes gained per round in each part (MIN_SG_ROUNDS whole rounds with it, else null), its change against each
+ * player's previous ten (the same players, Q-112, with the standard error Team Stats uses for strokes gained), the
+ * part's plain stat pooled over the same rounds with the Tour's mark (Player Home's legRows), and who gains and loses
+ * most (Team Stats' ranking). `players` is the active roster: no one else's round reaches the grid. Null with no round.
+ * Exported for the tests.
+ */
+export function teamLegs(input: {
+  full: ChRound[];
+  players: Array<{ id: string; first_name: string | null; last_name: string | null }>;
+  cache: { byRound: Map<string, ChRoundCache>; error: boolean };
+  /** Null when the tour is unknown (no marks, no notice). */
+  bench: { bench: Map<string, number>; error: boolean } | null;
+  tour: ChSgTour;
+}): ChTeamLegs | null {
+  const roster = new Set(input.players.map((p) => p.id));
+  const full = input.full.filter((r) => roster.has(r.player_id));
+  const { last, prev, lastPaired } = teamWindows(full);
+  if (!last.length) return null;
+  const holeLast = holeRounds(last);
+  const holePrev = holeRounds(prev);
+  const holePaired = holeRounds(lastPaired);
+  const grid = teamGrid(input.players, full, filterFor('last10'));
+  const marks = input.bench && !input.bench.error ? input.bench.bench : null;
+  const stats = legRows(holeLast, input.cache.byRound, marks, { tee: null, approach: null, around: null, putting: null });
+  let ranked = false;
+  const rows = LEG_KEYS.map((key, i): ChTeamLeg => {
+    const pick = (r: ChRound) => sgLegs(r)[i] ?? null;
+    const sg = effectiveCount(holeLast, pick) >= MIN_SG_ROUNDS ? weightedMean(holeLast, pick) : null;
+    const prevSg = effectiveCount(holePrev, pick) >= MIN_SG_ROUNDS ? weightedMean(holePrev, pick) : null;
+    const pairedSg = weightedMean(holePaired, pick);
+    const delta = sg != null && prevSg != null && pairedSg != null ? pairedSg - prevSg : null;
+    const stat = stats.find((l) => l.key === LEG_STATS[key].leg)!;
+    const who = legPeople(teamRankRows(grid, key as TeamRankMetric));
+    if (who.gains) ranked = true;
+    return {
+      key,
+      label: LEGS[i]!,
+      stat: { label: LEG_STATS[key].label, value: stat.value, unit: stat.unit, digits: stat.digits, tour: marks ? stat.bench : null },
+      sg,
+      delta,
+      se: delta != null ? windowChangeSe(holePaired, holePrev, pick, 'sg') : null,
+      ...who,
+    };
+  });
+  return { rows, holeRounds: holeLast.length, ranked, tour: input.tour, cacheError: input.cache.error, tourError: !!input.bench?.error };
 }

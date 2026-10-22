@@ -21,6 +21,7 @@
 
 import { MIN_SAMPLE_N } from '@/lib/coachhelm/v2/insights/upsert';
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
+import { inBothVoices } from '@/lib/coachhelm/v3/engine/coach-voice';
 
 /**
  * This rule reports its distinct-round count AS `evidence.sample_n`, so its
@@ -91,13 +92,15 @@ const rule: CompositeRule = {
     const openingAvg = Number(match.signals.opening_avg ?? 0);
     const restAvg = Number(match.signals.rest_avg ?? 0);
     return {
-      title: 'Slow start: holes 1-3 are leaking strokes',
-      content:
-        `Across your last ${rounds} rounds, holes 1-3 average ${openingAvg.toFixed(2)} ` +
-        `to par while holes 4-18 average ${restAvg.toFixed(2)}, ` +
-        `that's +${delta.toFixed(2)} strokes/hole on the opening stretch. ` +
-        `Slow starts are usually warmup, not technique. Add 5 more putts and ` +
-        `3 wedge shots to your range routine and arrive 20 minutes earlier.`,
+      ...inBothVoices((v) => ({
+        title: 'Slow start: holes 1-3 are leaking strokes',
+        content:
+          `Across ${v.players} last ${rounds} rounds, holes 1-3 average ${openingAvg.toFixed(2)} ` +
+          `to par while holes 4-18 average ${restAvg.toFixed(2)}, ` +
+          `that's +${delta.toFixed(2)} strokes/hole on the opening stretch. ` +
+          `Slow starts are usually warmup, not technique. ${v.pick('Add', 'Have them add')} 5 more putts and ` +
+          `3 ${v.pick('wedge shots', 'short pitch shots')} to ${v.your} range routine and arrive 20 minutes earlier.`,
+      })),
       signature: 'front_9_starter',
       evidence: {
         metric: 'opening_hole_delta',

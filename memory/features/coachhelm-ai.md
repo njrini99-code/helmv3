@@ -80,7 +80,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2` (the Slice 8b
   shot-entry prompts, `src/lib/golf/data-prompts/flag.ts`),
   `coachhelm_corrections_v1`,
-  `coachhelm_recheck_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
+  `coachhelm_recheck_v1`, `coachhelm_stale_refresh_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
   `coachhelm_verdicts_v1`, `coachhelm_root_cause_diagnosis` and
   `coachhelm_insight_angles_v1` are read through `isCoachHelmFlagEnabled`. Unset, empty or `*`: the global flag
   decides, exactly as before, and no team is read. To run a wave on one team,
@@ -152,6 +152,30 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   entry side: `memory/features/shot-tracking.md`.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
+- Every read that decides "is there already a row?" fails closed
+  (2026-10-21): a dedup lookup error, or an ownership lookup that throws
+  instead of returning an error, is logged and thrown as a retryable
+  `InsightOwnershipLookupError`; nothing is written and the next run writes
+  it. Only a genuine no-team or no-staff answer lands an orphan.
+- Idle-player stale refresh (`v3/engine/stale-refresh.ts`, behind
+  `coachhelm_stale_refresh_v1`, OFF): the nightly roster sweep also re-runs
+  an analyzed player whose newest analysis (newest visible-read refresh
+  stamp or `post_round_v2` engine run) is 14+ days old, who has an open read
+  and a completed round in the engine's 90-day window: at most 6 a night,
+  after the freshness picks and under the same time budget, logged with
+  `logServerEvent` (`cron.coachhelm.rosterSweep.staleRefresh`). A lookup
+  error means no stale refresh that night. A player the engine would park
+  for its owner (no coach, CoachHelm off for the coach or team) is skipped
+  with the engine's own check (`src/lib/coachhelm/engine-owner.ts`) and
+  never takes a slot; those checks stop once the cron's time budget is
+  spent or after 24 a night, keeping the picks found so far. The night's
+  window is a write-free rotation: the stale players ordered oldest first,
+  starting at offset (day index x 6) mod n and wrapping, so each gets a turn
+  within ceil(n / 6) nights. A pick whose run writes nothing stays stale
+  but cannot hold a slot every night; a productive run re-anchors the
+  player and drops them out. The sweep writes no marker row (a row in
+  `golf_insight_generation_log` would count as a failed run in
+  `get_admin_coachhelm_rollup`).
 - Team pool benchmark (supercharge Slice 7a, 2026-10-20), behind
   `coachhelm_team_pool_v1` (OFF; off reads nothing and writes nothing new):
   - Putt make by band, approach green-hit by band, sand save, par 3/4/5
@@ -171,6 +195,32 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     shrinks toward it (`prior_source: 'team_pool'`); without the line it is
     exactly Slice 1b (leave-one-out team mean). An angle's own composed
     `comparison` is kept; the team line is only appended.
+
+- Coach Monday brief (task chs-28, 2026-10-21), behind
+  `coachhelm_monday_brief_v1` (production OFF, preview on):
+  - `v3/monday-brief/brief.ts` (pure): per team, at most 5 items: the team
+    pattern's first row (Slice 7b, only with `coachhelm_team_pattern_v1`
+    on), then one read per player at Likely or above, most strokes first
+    (`strokes_shrunk`, else the raw estimate); rows print raw strokes. Never
+    strengths, Watching, Working hypothesis, reads 2+ countable rounds
+    behind their `metadata.last_refreshed_at` (S3), Cleared, the retired side
+    of a Contradicted pair, Under review, or a read the pattern row already
+    covers. Fail closed: a read missing ladder, `support.direction`, an
+    estimated strokes value, a title, a refresh day or a roster name is left
+    out. Counts line for the 7 days before the brief: new (Likely+ findings
+    created), cleared (recheck cleared), contradicted (pairs once), out of
+    date (Likely+ findings 1+ rounds behind).
+  - `v3/monday-brief/loader.ts` reads roster, visible reads and countable
+    rounds; any failed read answers null (never a partial brief).
+  - Clubhouse view `?view=monday-brief` (coach only; the route checks the
+    flag) and a "Monday brief" button on the coach board.
+  - Delivery: `/api/cron/coachhelm-monday-brief`, vercel.json `0 5 * * 1`
+    (Mondays 05:00 UTC). Flag off: returns before any read. On: emails the
+    primary coach of each in-season team a non-empty brief through
+    `v3/foundation/email.sendEmail` (so `HELM_CUSTOMER_EMAIL_ENABLED` must be
+    on too), only when `golf_coach_philosophy.email_digest_enabled` is
+    explicitly true (opt-in; a missing row sends nothing). Idempotency key
+    `coachhelm-monday-brief:<coach>:<team>:<ISO week>`.
 
 - Team pattern and same-day field (supercharge Slice 7b, 2026-10-21),
   behind `coachhelm_team_pattern_v1` (OFF; off reads nothing new):
@@ -473,8 +523,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   family x rung, `shown` (distinct reads, rung of the newest exposure's
   `rank_factors.ladder`, else `unrated`), `held` / `cleared` /
   `contradicted` (newest recheck outcome; Slice 3 supplies them),
-  `not_this`, and `confirm` (Good read, added by Slice 6b). No surface
-  renders the chips yet.
+  `not_this`, and `confirm` (Good read, added by Slice 6b).
+  The chips (2026-10-21, same flag): the Clubhouse coach card draws all five
+  under "Why do you think so?" (`screens/coachhelm/Corrections.tsx`); the
+  player's Board and Deep dive draw Not this and Good read on their own
+  reads. `data/coachhelm-corrections.ts` reads the viewer's own last answer
+  per read (`selectOwnCorrections`); flag off it reads nothing, and a missing
+  table draws no chips. Optimistic with rollback; no Undo (append-only), so
+  Change records a new answer. Show later holds the read back for
+  `SNOOZE_CHECKPOINTS` (2) rounds posted after the answer, counted on load.
 - Track record (Slice 6b, 2026-10-21, flag `coachhelm_track_record_v1`,
   off; 02 §9, 03 §7.3). Clubhouse coach view
   `/golf/dashboard/coachhelm?view=track-record`, linked from the coach
@@ -506,6 +563,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   <!-- schema-drift-absent: golf_coachhelm_corrections -->
   (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
   (PR #2203). After the regen, drop this comment.)
+- **Coach voice (2026-10-21).** Every v3 generator and composite rule writes
+  `evidence.coach_copy`: the same read in the third person ("the player",
+  then "they"), the same numbers, the coach's action, no club words. One
+  template per read renders both voices (`v3/engine/coach-voice.ts`
+  `inBothVoices`); the player's `title`/`content` are unchanged. The base and
+  the composite runner store the copy only when `coachCopyIssues` passes,
+  else log it and store none. Rule-based, no LLM, no flag or migration; rows
+  get it on their next re-analyze. Contract:
+  `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
 ## UI Contract
 
@@ -733,8 +799,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `detail.driver_area`). Without the player's SG scale
   (`sg_scale_for_player` error, logged) the SG-based angles say nothing.
   The cause stays `inferred_hypothesis`, and counted shot sequences go to
-  `detail.sequence` until the Slice 2 root-cause ladder can read them. No
-  `coach_copy` is written (player voice only) until Slice 2 lands. Turning
+  `detail.sequence` until the Slice 2 root-cause ladder can read them.
+  `coach_copy` is written like every v3 read (coach voice, below). Turning
   the flag off stops new rows but does not sweep rows written while it was
   on; the flag's `cleanup_plan` lists the signature prefixes to archive.
   Tests: `insight-angles/__tests__/` (`contract.ts` asserts the family

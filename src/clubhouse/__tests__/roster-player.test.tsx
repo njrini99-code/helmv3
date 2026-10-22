@@ -127,6 +127,8 @@ describe('Player roster · what the loader reads (30805)', () => {
     // The selects name the columns shown and no others: no email, phone, avatar, hometown, join code or notes.
     const selected = (t: string) => String(filters[t]!.find(([k]) => k === 'select')![1][0]);
     expect(selected('golf_teams')).toBe('name, season');
+    // Teammates may read every column of their team's rows (select_v5), so the player's roster never asks for
+    // availability or its coach-only note (P003 availability, v1: players do not see it).
     expect(selected('golf_team_members')).toBe('player_id');
     // Teammates' names come from the profile function for this team only, never from the table.
     expect(profileArgs).toEqual([{ p_team_ids: ['t1'] }]);

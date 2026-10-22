@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase/server', () => ({
     from: (table: string) => {
       const res = { data: null, error: null, count: null, ...supabaseTables.current[table] };
       const chain: Record<string, unknown> = {};
-      for (const k of ['select', 'eq', 'neq', 'gte', 'is', 'order', 'limit', 'in']) chain[k] = () => chain;
+      for (const k of ['select', 'eq', 'neq', 'gte', 'is', 'lt', 'or', 'order', 'limit', 'in']) chain[k] = () => chain;
       chain.maybeSingle = () => Promise.resolve(res);
       chain.then = (ok: (v: unknown) => unknown, bad?: (e: unknown) => unknown) => Promise.resolve(res).then(ok, bad);
       return chain;
@@ -47,7 +47,7 @@ import { CH_SLOW_SAVE_AFTER, useAction } from '../lib/use-action';
 import { loadClubhouseShell, type ChShellData } from '../data/shell';
 import { ClubhouseFrame } from '../shell/ClubhouseFrame';
 import { badgeCount, Sidebar } from '../shell/Sidebar';
-import { CH_NAV_PLAYER, phoneFullScreen, phonePushedTop } from '../shell/nav';
+import { CH_NAV_COACH, CH_NAV_PLAYER, phoneFullScreen, phonePushedTop } from '../shell/nav';
 import { PhoneNav } from './phone-nav-harness';
 import { TopBar } from '../shell/TopBar';
 import { ClubhouseMarker } from '../shell/context';
@@ -441,6 +441,23 @@ describe('Shell · sidebar data', () => {
     expect(document.querySelector('.ch-next')).toBeNull();
   });
 
+  it("a coach's Team Hub badge counts overdue tasks that still have open work; a failed read hides it and is logged; a player's shell never reads it", async () => {
+    supabaseTables.current = { golf_events: { data: null }, golf_team_join_requests: { count: 0 }, golf_tasks: { count: 3 } };
+    expect((await loadClubhouseShell('t1', null, 'c1')).overdueTasks).toBe(3);
+    expect((await loadClubhouseShell('t1', 'p1', null)).overdueTasks).toBeUndefined();
+    const hub = CH_NAV_COACH.find((i) => i.id === 'hub')!;
+    const shell = await loadClubhouseShell('t1', null, 'c1');
+    wrap(<Sidebar userData={coach} shell={shell} pathname="/golf/dashboard" />);
+    expect(screen.getByRole('link', { name: /Team Hub/ }).querySelector('.ch-navitem__count')!.textContent).toMatch(/^3/);
+    expect(badgeCount(hub, { messages: 0, announcements: 0, tasks: 0, travel: 0 }, { ...shell, overdueTasks: 0 })).toBeNull();
+    logServer.mockClear();
+    supabaseTables.current = { golf_events: { data: null }, golf_team_join_requests: { count: 0 }, golf_tasks: { error: { message: 'boom' } } };
+    const failed = await loadClubhouseShell('t1', null, 'c1');
+    expect(failed.overdueTasks).toBeNull();
+    expect(logServer).toHaveBeenCalledWith('shell', 'overdueTasks', expect.anything(), 'tasks');
+    expect(badgeCount(hub, { messages: 0, announcements: 0, tasks: 0, travel: 0 }, failed)).toBeNull();
+  });
+
   it('CH-1208 join requests do not load: the Roster badge hides instead of saying zero', async () => {
     supabaseTables.current = { golf_events: { data: null }, golf_team_join_requests: { error: { message: 'boom' } } };
     const shell = await loadClubhouseShell('t1');
@@ -506,7 +523,7 @@ describe('Shell · sidebar data', () => {
     // Owner, 2026-10-16: Team Hub and Qualifiers sit under Team, and the team's own name heads that group.
     expect(read()).toEqual([
       ['', ['Home', 'CoachHelm', 'Calendar', 'Messages']],
-      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Qualifiers', 'Recruiting']],
+      ['Varsity', ['Team Hub', 'Roster', 'Stats', 'Rounds', 'Qualifiers', 'Recruiting']],
     ]);
     unmount();
     const player = { role: 'player', name: 'Theo Marchetti', teamName: 'Varsity' } as unknown as GolfUserData;
@@ -831,7 +848,7 @@ describe('Shell · phone chrome', () => {
     const { unmount } = wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="coach" />);
     const labels = () => [...code('CH-1808')!.querySelectorAll('.ch-strip__label')].map((el) => el.textContent);
     // D-66 (v2 GH.tabs) first: coach Home, CoachHelm, Calendar, Stats; then the sidebar's order.
-    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
+    expect(labels()).toEqual(['Home', 'CoachHelm', 'Calendar', 'Stats', 'Messages', 'Team Hub', 'Roster', 'Rounds', 'Qualifiers', 'Recruiting', 'Settings', 'Account']);
     unmount();
     // Player: Home, CoachHelm, Rounds, Team Hub first.
     // eslint-disable-next-line jsx-a11y/aria-role -- role is a component prop, not an ARIA role

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
+import { BarChart3, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatFixed, formatToPar, NO_DATA } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
@@ -10,8 +10,8 @@ import { PeekTarget, type PeekAction } from './Peek';
 
 /**
  * The player peek (P003-C1, owner 2026-10-08): wherever a coach sees a player's name, a hold (phone) or a rest of the
- * pointer (desktop) shows who they are and how they are playing, with Message (prefilled, never sent), View stats and
- * Plan 1:1. Pages map what they already loaded into `ChPlayerPeek`; the peek reads nothing of its own.
+ * pointer (desktop) shows who they are and how they are playing, with Message (prefilled, never sent), View stats,
+ * Plan 1:1 and CoachHelm (the player's deep dive). Pages map what they already loaded into `ChPlayerPeek`; the peek reads nothing of its own.
  */
 export interface ChPlayerPeek {
   id: string;
@@ -27,6 +27,11 @@ export interface ChPlayerPeek {
   reason?: string | null;
 }
 
+/** The player's CoachHelm deep dive (the coach's player page); null while CoachHelm isn't rebuilt for coaches. */
+export function coachHelmPlayerHref(playerId: string): string | null {
+  return rebuiltHref(`/golf/dashboard/coachhelm?view=deep-dive&player=${encodeURIComponent(playerId)}`, 'coach');
+}
+
 /** Message opens Messages with the player as the recipient (the coach writes and sends); the others open the page. */
 export function playerPeekActions(p: Pick<ChPlayerPeek, 'id'>): PeekAction[] {
   const id = encodeURIComponent(p.id);
@@ -34,13 +39,14 @@ export function playerPeekActions(p: Pick<ChPlayerPeek, 'id'>): PeekAction[] {
     { label: 'Message', icon: MessageSquare, href: rebuiltHref(`/golf/dashboard/messages?player=${id}`) },
     { label: 'View stats', icon: BarChart3, href: rebuiltHref(`/golf/dashboard/stats?player=${id}`) },
     { label: 'Plan 1:1', icon: CalendarPlus, href: rebuiltHref(`/golf/dashboard/calendar?new=1&with=${id}`) },
+    { label: 'CoachHelm', icon: BrainCircuit, href: coachHelmPlayerHref(p.id) },
   ];
 }
 
 /** Wraps a player's name (a link or a row) so it peeks. The child keeps its own tap. */
-export function PlayerPeek({ player, children }: { player: ChPlayerPeek; children: ReactNode }) {
+export function PlayerPeek({ player, within, children }: { player: ChPlayerPeek; within?: string; children: ReactNode }) {
   return (
-    <PeekTarget label={player.name} card={() => <PlayerPeekCard p={player} />} actions={playerPeekActions(player)}>
+    <PeekTarget label={player.name} card={() => <PlayerPeekCard p={player} />} actions={playerPeekActions(player)} within={within}>
       {children}
     </PeekTarget>
   );

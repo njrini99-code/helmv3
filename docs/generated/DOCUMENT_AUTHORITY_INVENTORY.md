@@ -269,6 +269,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-rls-template.md` | current | yes | - | yes | - |
 | `docs/v3-testing-standards.md` | current | - | - | - | - |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | - |
+| `memory/brand/clubhouse-ui.md` | current | - | - | yes | - |
 | `memory/brand/logos.md` | current | - | - | - | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | - |
@@ -753,7 +754,9 @@ them would bury everything above.
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROJECT_INSTRUCTIONS.md` | current | - | - | - | - |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
+| `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/STATUS.md` | current | - | - | yes | - |

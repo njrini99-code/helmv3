@@ -32,6 +32,28 @@ SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
 - Use the repo-local CLI (`./node_modules/.bin/vercel`); a bare `vercel` may not
   be on `PATH`.
 - Deploy from `main`'s tip when you can, so what is live is what is merged.
+- Worktrees from `scripts/new-worktree.sh` hold symlinks to the canonical
+  checkout's env and tool files (`scripts/lib/shared-workspace-runtime.mjs`:
+  `.env*`, `.codex/config.toml` and similar local files). Vercel
+  rejects absolute symlinks at extraction (seen 2026-10-21: ".codex/config.toml
+  is not a valid symlink"). Deploy from the canonical checkout, or from a
+  symlink-free export. The export has no `.git` and no `node_modules`, so
+  capture the SHA, scope and CLI path from the checkout first, then run the
+  deploy from the export:
+
+  ```bash
+  SHA=$(git rev-parse HEAD); SCOPE=$(node -p 'require("./.vercel/project.json").orgId')
+  VERCEL="$PWD/node_modules/.bin/vercel"   # or the canonical checkout's copy
+  DIR=$(mktemp -d); git archive HEAD | tar -x -C "$DIR"
+  mkdir -p "$DIR/.vercel" && cp .vercel/project.json "$DIR/.vercel/project.json"
+  (cd "$DIR" && "$VERCEL" deploy --prod --yes --archive=tgz --scope "$SCOPE" \
+    --build-env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA" --env "NEXT_PUBLIC_SENTRY_RELEASE=$SHA")
+  ```
+
+  `.vercel/project.json` is a real file with the same project id. That route
+  built a Turbopack preview of main cleanly. The `.codex/config.toml` entries
+  in `.vercelignore` are the attempted root-cause fix and are unproven until a
+  worktree deploy succeeds; keep this workaround until then.
 - `.vercelignore` replaces Vercel's default ignore list: every secret-bearing
   ignored path must be listed (checked by `npm run check:vercelignore`).
 

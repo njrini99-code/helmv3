@@ -6,7 +6,8 @@ vi.mock('../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTagSession: vi.fn() }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 
-import { DayCard, dayPhase, directionsHref, LaterToday, nudgeDraft, sinceChips, SinceYouLooked } from '../screens/home/DayCard';
+import { DayCard, dayPhase, directionsHref, LaterToday, sinceChips, SinceYouLooked } from '../screens/home/DayCard';
+import { nudgeDraft } from '../screens/home/nudge-draft';
 import { takePrefill } from '../screens/messages/prefill';
 import { PREVIEW_HOME, PREVIEW_HOME_NOW } from '../preview/fixtures';
 

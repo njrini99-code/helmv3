@@ -88,11 +88,24 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
       </div>
       <div className="ch-set-grid">
         {coach ? (
-          <Field id="set-fullname" label="Full name" span={2} autoComplete="name" value={f.draft.fullName} onChange={(e) => f.setDraft((d) => ({ ...d, fullName: e.target.value }))} />
+          <>
+            <Field id="set-fullname" label="Full name" autoComplete="name" value={f.draft.fullName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, fullName: value })); }} />
+            {/* golf_coaches.title: read with the name in Messages, Hub announcements and Team › Coaching staff (P008). */}
+            <Field
+              id="set-title"
+              label="Title"
+              placeholder="Assistant coach"
+              maxLength={100}
+              autoComplete="organization-title"
+              help="With your name in Messages, on announcements and in Team settings."
+              value={f.draft.title}
+              onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, title: value })); }}
+            />
+          </>
         ) : (
           <>
-            <Field id="set-first" label="First name" autoComplete="given-name" value={f.draft.firstName} onChange={(e) => f.setDraft((d) => ({ ...d, firstName: e.target.value }))} />
-            <Field id="set-last" label="Last name" autoComplete="family-name" value={f.draft.lastName} onChange={(e) => f.setDraft((d) => ({ ...d, lastName: e.target.value }))} />
+            <Field id="set-first" label="First name" autoComplete="given-name" value={f.draft.firstName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, firstName: value })); }} />
+            <Field id="set-last" label="Last name" autoComplete="family-name" value={f.draft.lastName} onChange={(e) => { const value = e.target.value; f.setDraft((d) => ({ ...d, lastName: value })); }} />
           </>
         )}
       </div>

@@ -87,7 +87,7 @@ export interface ChSettingsData {
   playerId: string | null;
   teamId: string | null;
   teamName: string | null;
-  profile: Section<{ firstName: string; lastName: string; fullName: string; avatarUrl: string | null }>;
+  profile: Section<ChProfileInput>;
   delivery: Section<ChDeliveryPrefs>;
   /** Players only: the CoachHelm updates matrix (golf_player_notification_state). */
   playerRouting: Section<{ prefs: PrefsByCategory; quiet: boolean }> | null;
@@ -272,7 +272,8 @@ export function orderToPriorities(order: PriorityKey[]): Record<PriorityKey, num
 // ── Writes: the live container and the preview each supply these ──
 
 export type ChResult<T = unknown> = { success?: boolean; ok?: boolean; data?: T; error?: string };
-export type ChProfileInput = { firstName: string; lastName: string; fullName: string; avatarUrl: string | null };
+/** `title` is the coach's golf_coaches.title ('' when unset, and always '' for a player, who has none). */
+export type ChProfileInput = { firstName: string; lastName: string; fullName: string; avatarUrl: string | null; title: string };
 
 // ── Coaching staff (Team, coach) ──
 

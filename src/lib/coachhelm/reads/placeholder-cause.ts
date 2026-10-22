@@ -12,3 +12,11 @@ const PLACEHOLDER_CAUSE =
 export function isPlaceholderCause(text: string | null | undefined): boolean {
   return typeof text === 'string' && PLACEHOLDER_CAUSE.test(text.trim());
 }
+
+/** The placeholder anywhere in a longer text: its own two sentences, with the metric label that opens them. */
+const PLACEHOLDER_IN_TEXT = new RegExp(`[^.!?]*${PLACEHOLDER_CAUSE.source.replace(/\$$/, '')}`, 'gi');
+
+/** The text without the placeholder cause, so a card that prints the rest of a row's prose never prints it either. */
+export function withoutPlaceholderCause(text: string | null | undefined): string {
+  return (text ?? '').replace(PLACEHOLDER_IN_TEXT, '').replace(/\s+/g, ' ').trim();
+}

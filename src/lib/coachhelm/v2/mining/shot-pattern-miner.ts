@@ -4,7 +4,7 @@
  * Analyzes shot-level data to discover patterns including:
  * - Miss direction tendencies by distance range
  * - Dispersion patterns (tight, scattered, one-way)
- * - Club/lie specific patterns
+ * - Lie specific patterns
  * - Distance control analysis
  *
  * Example insight: "From 140-160 yards, you miss long_right 67% of the time"
@@ -47,9 +47,20 @@ export function deterministicShotPatternId(playerId: string, signature: string):
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
+/**
+ * Band labels renamed for display after ids were already minted from the old
+ * text. Their signatures keep the old label so existing golf_patterns_v2 rows
+ * keep upserting in place instead of gaining a duplicate.
+ * `Wedge (0-50)` became `Inside 50 (0-50)` (2026-10-21: CoachHelm names no clubs).
+ */
+const SIGNATURE_LABEL_ALIASES: Readonly<Record<string, string>> = {
+  'Inside 50 (0-50)': 'Wedge (0-50)',
+};
+
 /** Stable signature for a shot pattern: the situation that defines it. */
 export function shotPatternSignature(distanceLabel: string, lie: string): string {
-  return `shot_dispersion::${distanceLabel}::${lie}`;
+  const signatureLabel = SIGNATURE_LABEL_ALIASES[distanceLabel] ?? distanceLabel;
+  return `shot_dispersion::${signatureLabel}::${lie}`;
 }
 
 /**
@@ -148,7 +159,7 @@ export function distanceControlScore(input: DistanceControlInput): number {
 
 /** Standard distance ranges for analysis */
 const DISTANCE_RANGES: DistanceRange[] = [
-  { min: 0, max: 50, label: 'Wedge (0-50)' },
+  { min: 0, max: 50, label: 'Inside 50 (0-50)' },
   { min: 50, max: 100, label: 'Short (50-100)' },
   { min: 100, max: 130, label: 'Mid-Short (100-130)' },
   { min: 130, max: 160, label: 'Mid (130-160)' },
@@ -660,11 +671,11 @@ export class ShotPatternMiner {
         break;
       case 'one_way_short':
         recommendation =
-          'You tend to leave shots short. Consider taking one more club or committing to a fuller swing.';
+          'You tend to leave shots short. Consider playing for more carry or committing to a fuller swing.';
         break;
       case 'one_way_long':
         recommendation =
-          'You tend to fly shots long. Consider taking one less club or playing for more spin.';
+          'You tend to fly shots long. Consider playing for less carry or for more spin.';
         break;
       case 'scattered':
         recommendation =

@@ -219,13 +219,15 @@ export async function runFocusAreaVerdicts(supabase: Client, now: Date = new Dat
   return summary;
 }
 
-interface RoundRow {
+/** A completed, non-test round with a score (the rounds a verdict counts). */
+export interface RoundRow {
   id: string;
   player_id: string;
   round_date: string;
 }
 
-async function loadRounds(supabase: Client, playerIds: string[], sinceDate: string): Promise<RoundRow[] | null> {
+/** Also the Clubhouse focus-area loop's live count before the horizon (`clubhouse/data/focus-loop.ts`). */
+export async function loadRounds(supabase: Client, playerIds: string[], sinceDate: string): Promise<RoundRow[] | null> {
   const out: RoundRow[] = [];
   for (const batch of chunkIds(playerIds)) {
     const { data, error } = await fetchAllRowsResult<RoundRow>((from, to) =>
@@ -250,7 +252,7 @@ async function loadRounds(supabase: Client, playerIds: string[], sinceDate: stri
   return out;
 }
 
-async function loadPutts(supabase: Client, roundIds: string[]): Promise<PuttShotRow[] | null> {
+export async function loadPutts(supabase: Client, roundIds: string[]): Promise<PuttShotRow[] | null> {
   const out: PuttShotRow[] = [];
   for (const batch of chunkIds(roundIds)) {
     const { data, error } = await fetchAllRowsResult<PuttShotRow>((from, to) =>
@@ -272,7 +274,7 @@ async function loadPutts(supabase: Client, roundIds: string[]): Promise<PuttShot
   return out;
 }
 
-async function loadCache(supabase: Client, roundIds: string[], columns: RoundCacheCountColumn[]): Promise<RoundCacheRow[] | null> {
+export async function loadCache(supabase: Client, roundIds: string[], columns: RoundCacheCountColumn[]): Promise<RoundCacheRow[] | null> {
   const out: RoundCacheRow[] = [];
   for (const batch of chunkIds(roundIds)) {
     const { data, error } = await fetchAllRowsResult<RoundCacheRow>((from, to) =>

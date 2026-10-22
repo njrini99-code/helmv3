@@ -1,13 +1,11 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Roster phone sort (CH-3701) on TanStack Table's sorting model, and the trailing figure as a rolling numeral (Number
- * Flow). The numeral is mocked here so its props can be read: what it is given, whether it animates, and that a sort
- * change rolls the same numeral instead of mounting a new one. Its spoken value is the real number-flow formatter's.
+ * Roster phone sort (CH-3701) on TanStack Table's sorting model, and the trailing figure as plain tabular text: a chosen
+ * sort or a refresh puts the new figure in at once, with no digits rolling (owner rule, as on Qualifiers).
  */
 
 const hapticSpy = vi.hoisted(() => vi.fn());
@@ -31,31 +29,10 @@ const arrival = vi.hoisted(() => ({ painted: true }));
 vi.mock('../lib/use-painted', async (orig) => ({ ...(await orig<typeof import('../lib/use-painted')>()), useArrivalPainted: () => arrival.painted }));
 vi.mock('../lib/reduced-motion', () => ({ useChReducedMotion: () => motion.reduced }));
 
-type FlowProps = { value: number; prefix?: string; animated?: boolean; format?: Intl.NumberFormatOptions; transformTiming?: { duration: number } };
-const flow = vi.hoisted(() => ({ mounts: 0 }));
-vi.mock('@number-flow/react', () => {
-  function MockFlow({ value, prefix = '', animated, format, transformTiming }: FlowProps) {
-    useEffect(() => {
-      flow.mounts += 1;
-    }, []);
-    // The real element names itself (role img) with its prefix and the Intl formatting of `value` with `format`, the
-    // string number-flow calls valueAsString.
-    const spoken = prefix + new Intl.NumberFormat(undefined, format).format(value);
-    return (
-      <span data-flow="" role="img" aria-label={spoken} data-animated={String(animated)} data-prefix={prefix} data-value={value} data-ms={transformTiming?.duration}>
-        {spoken}
-      </span>
-    );
-  }
-  return { default: MockFlow };
-});
-
 import type { ChRoster, ChRosterPlayer } from '../data/roster';
 import { formatFixed, formatSigned, MINUS } from '../lib/format';
-import { CH_DUR } from '../lib/motion';
 import { PREVIEW_ROSTER } from '../preview/fixtures-roster';
 import { Roster } from '../screens/roster/Roster';
-import { figureParts } from '../screens/roster/format';
 import { useRosterSort, type PhoneSort } from '../screens/roster/sort';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
@@ -95,7 +72,6 @@ const PLAYERS: ChRosterPlayer[] = [
 beforeEach(() => {
   hapticSpy.mockClear();
   motion.reduced = false;
-  flow.mounts = 0;
   localStorage.clear();
 });
 
@@ -117,21 +93,7 @@ describe('Roster phone sort on TanStack (CH-3701)', () => {
   });
 });
 
-describe('the trailing figure (CH-3806)', () => {
-  it('splits a figure so the sign is a true minus or a plus, a rounded zero is unsigned 0.0, and no data does not roll', () => {
-    expect(figureParts(-0.9, { signed: true })).toEqual({ text: `${MINUS}0.9`, prefix: MINUS, size: 0.9 });
-    expect(figureParts(1.8, { signed: true })).toEqual({ text: '+1.8', prefix: '+', size: 1.8 });
-    expect(figureParts(-0.04, { signed: true })).toEqual({ text: '0.0', prefix: '', size: 0 });
-    expect(figureParts(0.04, { signed: true })!.text).toBe('0.0');
-    expect(figureParts(72.4)).toEqual({ text: '72.4', prefix: '', size: 72.4 });
-    expect(figureParts(null)).toBeNull();
-    for (const v of [-2.35, -0.05, 0, 0.05, 3.96]) expect(figureParts(v, { signed: true })!.text).toBe(formatSigned(v));
-    for (const v of [70.94, 76.25]) expect(figureParts(v)!.text).toBe(formatFixed(v));
-    expect(figureParts(-1.4, { signed: true })!.text).not.toContain('-');
-  });
-});
-
-describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each figure in place', () => {
+describe('CH-3604 Roster phone: a sort change reorders the rows and the figures take the new value at once', () => {
   const realMatchMedia = window.matchMedia;
   beforeEach(() => {
     window.matchMedia = ((q: string) => ({
@@ -170,42 +132,19 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each f
   const rows = () => within(screen.getByRole('list', { name: 'Active players' })).getAllByRole('button');
   const row = (name: string) => rows().find((b) => b.getAttribute('aria-label')!.startsWith(name))!;
   const figure = (name: string) => row(name).querySelector('.ch-rsm-row__v b') as HTMLElement;
-  const flowOf = (name: string) => figure(name).querySelector('[data-flow]') as HTMLElement | null;
-
-  it('draws its figures as text until a hand or focus is on the sort, then as Number Flow, with the same text', () => {
+  it('draws its figures as plain text, never as Number Flow', () => {
     phone({ ...PREVIEW_ROSTER });
-    expect(flowOf('Jonah Okafor')).toBeNull();
-    expect(figure('Jonah Okafor').querySelector('.ch-rsm-flowtext')!.textContent).toBe('74.1');
-    expect(flow.mounts).toBe(0);
+    expect(figure('Jonah Okafor').textContent).toBe('74.1');
+    expect(figure('Jonah Okafor').querySelector('[data-flow], [role="img"]')).toBeNull();
     fireEvent.pointerDown(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
-    expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
+    expect(figure('Jonah Okafor').querySelector('[data-flow], [role="img"]')).toBeNull();
   });
 
-  it('focus on the sort, from the keyboard, also mounts the numerals before a sort is chosen', () => {
-    phone({ ...PREVIEW_ROSTER });
-    expect(flowOf('Jonah Okafor')).toBeNull();
-    act(() => screen.getByRole('radio', { name: 'Avg, scoring average' }).focus());
-    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
-  });
-
-  it('rolls the same numeral from the average to strokes gained and back, with a true minus, no count-up, one tick', async () => {
+  it('a chosen sort puts the new figure in at once, with a true minus and one tick, and reorders the rows', async () => {
     const user = userEvent.setup();
     phone({ ...PREVIEW_ROSTER });
-    // A hand on the sort mounts the numerals before the click (pointerdown comes first).
-    fireEvent.pointerDown(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    const mountsAtFirstPaint = flow.mounts;
-    // The numeral is drawn at its value and does not animate, so nothing counts up.
-    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
-    expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
-    expect(Number(flowOf('Jonah Okafor')!.dataset.ms)).toBe(CH_DUR.base * 1000);
-
-    const before = flowOf('Jonah Okafor');
     await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
     expect(hapticSpy.mock.calls.filter(([k]) => k === 'select')).toHaveLength(1);
-    // A chosen sort rolls the figures.
-    expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('true');
-    // The rows reorder by strokes gained.
     expect(rows().map((b) => b.getAttribute('aria-label')!.split(',')[0])).toEqual([
       'Theo Marchetti',
       'Sofia Alvarez',
@@ -215,62 +154,33 @@ describe('CH-3604 Roster phone: a sort change reorders the rows and rolls each f
       'Priya Natarajan',
       'Luca Ferraro',
     ]);
-    // The numeral stayed and took the new figure: a roll, not a swap.
-    expect(flowOf('Jonah Okafor')).toBe(before);
-    expect(flow.mounts).toBe(mountsAtFirstPaint);
-    const jonah = flowOf('Jonah Okafor')!;
-    expect(jonah.dataset.prefix).toBe(MINUS);
-    expect(jonah.dataset.value).toBe('0.9');
-    // Spoken as written: "−0.9", the same figure the row's name reads.
-    expect(jonah.getAttribute('aria-label')).toBe(`${MINUS}0.9`);
-    expect(jonah.getAttribute('aria-label')).toBe(formatSigned(-0.9));
+    // Written as formatSigned writes it: "−0.9", the same figure the row's name reads.
+    expect(figure('Jonah Okafor').textContent).toBe(`${MINUS}0.9`);
+    expect(figure('Jonah Okafor').textContent).toBe(formatSigned(-0.9));
     expect(row('Jonah Okafor').getAttribute('aria-label')).toContain(`strokes gained ${MINUS}0.9 a round`);
     expect(figure('Jonah Okafor').className).toContain('is-loss');
-    expect(flowOf('Theo Marchetti')!.getAttribute('aria-label')).toBe('+1.8');
+    expect(figure('Theo Marchetti').textContent).toBe('+1.8');
     expect(figure('Theo Marchetti').className).toContain('is-gain');
-    // No strokes gained is a dash, which does not roll.
-    expect(flowOf('Luca Ferraro')).toBeNull();
+    // No strokes gained is a dash.
     expect(figure('Luca Ferraro').textContent).toBe('—');
     expect(row('Luca Ferraro').getAttribute('aria-label')).toContain('no strokes gained yet');
 
     await user.click(screen.getByRole('radio', { name: 'Name' }));
-    expect(flowOf('Jonah Okafor')).toBe(before);
-    expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe('74.1');
+    expect(figure('Jonah Okafor').textContent).toBe(formatFixed(74.1));
     expect(rows()[0]!.getAttribute('aria-label')).toMatch(/^Sofia Alvarez/);
   });
 
-  it('only a chosen sort rolls: once its roll is over, a refresh that changes a figure takes it at once, rows in place', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    try {
-      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-      const view = phone({ ...PREVIEW_ROSTER });
-      await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-      expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('true');
-      await act(async () => {
-        vi.advanceTimersByTime(CH_DUR.base * 1000 + 100);
-      });
-      expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
-      const order = rows().map((b) => b.getAttribute('aria-label')!.split(',')[0]);
-
-      // A refresh: Jonah's strokes gained moves from −0.9 to −0.7, which keeps his place.
-      const refreshed = { ...PREVIEW_ROSTER, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? { ...p, sgPerRound: -0.7 } : p)) };
-      view.rerender(tree(refreshed));
-      expect(flowOf('Jonah Okafor')!.getAttribute('aria-label')).toBe(`${MINUS}0.7`);
-      expect(flowOf('Jonah Okafor')!.dataset.animated).toBe('false');
-      expect(rows().map((b) => b.getAttribute('aria-label')!.split(',')[0])).toEqual(order);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('with reduced motion or Animations off the figures change at once', async () => {
-    motion.reduced = true;
+  it('a refresh that changes a figure takes it at once, rows in place', async () => {
     const user = userEvent.setup();
-    phone({ ...PREVIEW_ROSTER });
-    expect(flowOf('Theo Marchetti')).toBeNull();
+    const view = phone({ ...PREVIEW_ROSTER });
     await user.click(screen.getByRole('radio', { name: 'SG, strokes gained' }));
-    expect(flowOf('Theo Marchetti')!.dataset.animated).toBe('false');
-    expect(flowOf('Theo Marchetti')!.getAttribute('aria-label')).toBe('+1.8');
+    const order = rows().map((b) => b.getAttribute('aria-label')!.split(',')[0]);
+
+    // A refresh: Jonah's strokes gained moves from −0.9 to −0.7, which keeps his place.
+    const refreshed = { ...PREVIEW_ROSTER, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? { ...p, sgPerRound: -0.7 } : p)) };
+    view.rerender(tree(refreshed));
+    expect(figure('Jonah Okafor').textContent).toBe(`${MINUS}0.7`);
+    expect(rows().map((b) => b.getAttribute('aria-label')!.split(',')[0])).toEqual(order);
   });
 
   it('without season stats the list is by name and the averages are dashes', () => {
