@@ -48,6 +48,14 @@ describe('collapseHtmlErrorPages', () => {
     expect(collapseHtmlErrorPages(value)).toEqual(value);
   });
 
+  it('keeps a __proto__ key as data, never as the copy prototype', () => {
+    const input = JSON.parse('{"__proto__": {"polluted": true}, "ok": 1}') as Record<string, unknown>;
+    const out = collapseHtmlErrorPages(input);
+    expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
+    expect((out as { polluted?: unknown }).polluted).toBeUndefined();
+    expect(Object.getOwnPropertyDescriptor(out, '__proto__')?.value).toEqual({ polluted: true });
+  });
+
   it('keeps non-string values and does not mutate its input', () => {
     const input = { n: 3, ok: true, nil: null, nested: { page: cloudflarePage('r', '203.0.113.7') } };
     const snapshot = JSON.parse(JSON.stringify(input));

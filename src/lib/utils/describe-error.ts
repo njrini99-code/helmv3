@@ -125,9 +125,11 @@ export function collapseHtmlErrorPages<T>(value: T, depth = 0): T {
   }
   if (depth >= MAX_HTML_COLLAPSE_DEPTH || value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map((item) => collapseHtmlErrorPages(item, depth + 1)) as T;
-  const out: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value)) out[key] = collapseHtmlErrorPages(item, depth + 1);
-  return out as T;
+  // fromEntries defines own properties, so a `__proto__` key (JSON.parse makes it an own key) stays data and never
+  // becomes the copy's prototype.
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, collapseHtmlErrorPages(item, depth + 1)]),
+  ) as T;
 }
 
 /**
