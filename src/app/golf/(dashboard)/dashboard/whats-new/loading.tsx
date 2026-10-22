@@ -1,5 +1,9 @@
+'use client';
+
 import { Surface, Skeleton } from '@/components/fairway';
 import { fairwayScope } from '@/lib/redesign/flag';
+import { useInClubhouse } from '@/clubhouse/shell/context';
+import { WhatsNewSkeleton } from '@/clubhouse/screens/whats-new/WhatsNewSkeleton';
 
 /**
  * Route-level loading skeleton for the coach What's New feed.
@@ -9,7 +13,7 @@ import { fairwayScope } from '@/lib/redesign/flag';
  * Surface(elevation="border") day-groups divided by border-subtle — so the
  * skeleton→content handoff is a quiet fade, not a chrome swap.
  */
-export default function Loading() {
+function FairwayWhatsNewLoading() {
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <div
@@ -59,4 +63,9 @@ export default function Loading() {
       </div>
     </div>
   );
+}
+
+// Clubhouse What's new (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell. A client component because the shell's flag is read from context.
+export default function Loading() {
+  return useInClubhouse() ? <WhatsNewSkeleton /> : <FairwayWhatsNewLoading />;
 }

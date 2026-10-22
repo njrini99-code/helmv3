@@ -612,7 +612,7 @@ export const PREVIEW_PLAYER: ChPlayerProfile = {
     { id: 'f1', title: 'Approach 125–150 yds', baseline: 38, current: 35, target: 30, metric: 'approach_proximity', status: 'active' },
     { id: 'f2', title: 'Short putts', baseline: 55, current: 62, target: 75, metric: 'putts_made_3_5ft_pct', status: 'active' },
   ],
-  goals: [{ id: 'g1', title: 'Break 70 in competition', state: 'active', current: 72, target: 69, baseline: 74 }],
+  goals: [{ id: 'g1', title: 'Break 70 in competition', metric: null, state: 'active', current: 72, target: 69, baseline: 74 }],
   devError: false,
   nav: { index: 4, total: 7, prev: 'ava', next: 'eli' },
   roundsError: false,
@@ -767,3 +767,14 @@ const withLoops = (viewer: ChFocusViewer): ChPlayerProfile['focusAreas'] => {
 };
 export const PREVIEW_PLAYER_LOOPS: ChPlayerProfile = { ...PREVIEW_PLAYER, focusAreas: withLoops({ role: 'coach', first: PREVIEW_PLAYER.firstName }) };
 export const PREVIEW_PLAYER_LOOPS_SELF: ChPlayerProfile = { ...PREVIEW_PLAYER, viewer: 'player', nav: null, focusAreas: withLoops({ role: 'player' }) };
+
+/** The player's own page with two of CoachHelm's suggested goals waiting to be answered (Goals, par-19). */
+export const PREVIEW_PLAYER_SUGGESTED: ChPlayerProfile = {
+  ...PREVIEW_PLAYER,
+  viewer: 'player',
+  nav: null,
+  goalSuggestions: [
+    { id: 'gs1', metric: 'sg_putting', target: 0.3, days: 30 },
+    { id: 'gs2', metric: 'approach_proximity', target: 32, days: 60 },
+  ],
+};

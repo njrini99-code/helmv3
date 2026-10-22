@@ -16,6 +16,19 @@ The shared stats files (`StatsPlayer.tsx`, `StatsPlayerPhone.tsx`,
 with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
 and verdict. The team page is unchanged. See the P005 entry of the same
 date.
+## 2026-10-21 — Goals on the player's Development tab (see P005)
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none (P005's)
+Actions:        none (P005's)
+Data impact:    none
+Held items:     none
+```
+
+`screens/stats/` gained `GoalSheet`, `Goals` and `goal-words`, used by the
+player profile only. Nothing on Team stats changed. Logged on P005.
 
 ## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
 
@@ -288,15 +301,23 @@ Held items:     none
 
 ### Changed
 
-- Tablet tier (821 to 1180px, `stats.css` end block): on a canvas under 721px the five-figure tape takes two rows (three, then two) instead of five 110px cards whose figures overlapped their changes. Under 861px the leaderboard's leg grid drops its 760px minimum width and narrows the leg columns, so it no longer scrolls sideways on an 834px portrait or a 1024px Pro.
+- Tablet tier (821 to 1180px, `stats.css` end block): on a canvas under 721px
+  the five-figure tape takes two rows (three, then two) instead of five 110px
+  cards whose figures overlapped their changes. Under 861px the leaderboard's
+  leg grid drops its 760px minimum width and narrows the leg columns, so it no
+  longer scrolls sideways on an 834px portrait or a 1024px Pro.
 
 ### Why
 
-- An iPad portrait with the sidebar open leaves a 618px canvas; the page was tuned from about 860px up. 1181px and wider is unchanged.
+- An iPad portrait with the sidebar open leaves a 618px canvas; the page was
+  tuned from about 860px up. 1181px and wider is unchanged.
 
 ### Verification
 
-- WebKit, touch, 834x1194 / 1024x768 open and folded; the leaderboard's scrollWidth equals its clientWidth at both; the rules sit in a `screen and (821px to 1180px)` media query, so 1181px and wider and print do not match them.
+- WebKit, touch, 834x1194 / 1024x768 open and folded; the leaderboard's
+  scrollWidth equals its clientWidth at both; the rules sit in a `screen and
+  (821px to 1180px)` media query, so 1181px and wider and print do not match
+  them.
 
 ## 2026-10-19 — Stats you can read like a scorecard (L6a)
 
@@ -311,12 +332,20 @@ Held items:     none
 
 ### Changed (2026-10-19, L6a)
 
-- Putting rings: upright labels with the make rate right-aligned, and leaders that no longer cross or run through a label.
+- Putting rings: upright labels with the make rate right-aligned, and leaders
+  that no longer cross or run through a label.
 - The Par swatch in the scoring key has a hairline ring.
-- The Scrambling dial has a reference tick like Greens' dial. The Tour has no overall scrambling figure, so the tick is the previous window's rate, the same one the change under it is measured against.
-- A tape figure with no data (an em dash) drops its unit, its "vs previous 10" caption and its coverage note.
-- The strokes-gained trend's axis ticks use the shared signed formatter (a true minus, an explicit plus, a plain 0).
-- Print: Team stats prints as plain pages: controls gone, a head line with GolfHelm, the team and season and the day, white and light even from dark mode, each section whole on its sheet, rules and fills in ink, and the desktop view kept at paper width.
+- The Scrambling dial has a reference tick like Greens' dial. The Tour has no
+  overall scrambling figure, so the tick is the previous window's rate, the same
+  one the change under it is measured against.
+- A tape figure with no data (an em dash) drops its unit, its "vs previous 10"
+  caption and its coverage note.
+- The strokes-gained trend's axis ticks use the shared signed formatter (a true
+  minus, an explicit plus, a plain 0).
+- Print: Team stats prints as plain pages: controls gone, a head line with
+  GolfHelm, the team and season and the day, white and light even from dark
+  mode, each section whole on its sheet, rules and fills in ink, and the desktop
+  view kept at paper width.
 
 ## 2026-10-18 — Pickers and controls: filter date range
 
@@ -331,7 +360,16 @@ Held items:     none
 
 ### Changed (2026-10-18, L2 pickers and controls)
 
-- The browser's own date and time inputs are gone. The filter's From and To (each with Clear; To opens on From) shows the value as the app writes it ("Thu 15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter hour (times): a popover under the field on desktop, a bottom sheet on the phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow", "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't read what was typed. Today carries a dot, the chosen day is the segmented control's lit chip, days outside the range are off, and arrows, PageUp and PageDown, Home and End and Enter work in the grid. The saved value is the same `yyyy-mm-dd` / `HH:mm` string as before.
+- The browser's own date and time inputs are gone. The filter's From and To
+  (each with Clear; To opens on From) shows the value as the app writes it ("Thu
+  15 Oct 2026", "3:30 PM") and opens a month (dates) or a list by the quarter
+  hour (times): a popover under the field on desktop, a bottom sheet on the
+  phone. On desktop the field stays typable ("10/15", "oct 15", "tomorrow",
+  "fri"; "3p", "1530") and says "Try 10/15, oct 15 or tomorrow." when it can't
+  read what was typed. Today carries a dot, the chosen day is the segmented
+  control's lit chip, days outside the range are off, and arrows, PageUp and
+  PageDown, Home and End and Enter work in the grid. The saved value is the same
+  `yyyy-mm-dd` / `HH:mm` string as before.
 
 ## 2026-10-18 — Wave 10: the first run's next step
 

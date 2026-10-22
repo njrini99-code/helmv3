@@ -61,6 +61,7 @@ function base(over: import('./supabase-fake').ChFakeTables = {}): import('./supa
     golf_holes: { data: [] },
     golf_player_focus_areas: { data: [] },
     golf_goals: { data: [] },
+    golf_goal_suggestions: { data: [] },
     ...over,
   };
 }
@@ -91,7 +92,7 @@ describe('Stats player reads: how deep', () => {
     expect(depth).toEqual([
       // golf_team_coach_staff: the personal-best card's attesting coach (P005-C2), beside the rest (its golf_coaches read
       // follows only when the team has staff, which this fixture doesn't).
-      ['auth:verifyAccess', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_teams'],
+      ['auth:verifyAccess', 'golf_goal_suggestions', 'golf_goals', 'golf_player_focus_areas', 'golf_players', 'golf_rounds', 'golf_team_coach_staff', 'golf_team_members', 'golf_teams'],
       ['action:getDetailedStats', 'action:getSprayChartData', 'golf_holes', 'golf_pga_standards', 'golf_round_stats_cache', 'golf_shots', 'golf_shots'],
     ]);
     expect(result!.rounds.length).toBeGreaterThan(0);

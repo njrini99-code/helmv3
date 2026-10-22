@@ -111,15 +111,15 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P002 | 3 | 1 | 1 | 13 |  | 18 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 60 |
 | P003 | 2 | 2 | 3 | 9 | 2 | 19 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 8 | 1 | 1 | 1 |  | 1 | 1 |  | 75 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
-| P005 | 4 | 2 | 2 | 22 | 2 | 19 | 3 | 6 | 1 |  |  | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 87 |
+| P005 | 4 | 4 | 2 | 23 | 3 | 24 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 97 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 37 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 6 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 101 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 2 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 135 |
 | P009 | 7 | 7 | 4 | 13 | 14 | 34 | 6 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 136 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
-| P011 | 16 | 12 |  | 17 | 11 | 39 | 19 | 5 | 2 |  | 22 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 187 |
+| P011 | 16 | 14 |  | 23 | 11 | 44 | 19 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 201 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 12 |  | 29 | 1 | 37 | 53 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 188 |
+| P013 | 7 | 14 |  | 32 | 1 | 40 | 53 | 6 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 196 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -459,6 +459,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50104 |  | 01 Default / core UI | `MESSAGE_OPENS_THE_PLAYERS_THREAD` | implemented | A coach's Message on a profile (the desktop button, the phone header icon) opens Messages on the direct thread with that player (?player=<golf_players.id>); a player's own profile has no Message. |
 | 50201 | CH-5403 | 02 Initial loading / skeleton | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | implemented | A player's stats are loading: their own, or a coach's `?player=` |
 | 50202 | CH-5404 | 02 Initial loading / skeleton | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | implemented | A player's answer to a proposed focus area is being sent |
+| 50203 | CH-5405 | 02 Initial loading / skeleton | `A_GOAL_IS_BEING_STARTED_A_SUGGESTION` | implemented | A goal is being started, a suggestion answered, or a goal changed |
+| 50204 | CH-5406 | 02 Initial loading / skeleton | `SET_A_GOAL_THE_STARTING_POINT_FOR` | implemented | Set a goal: the starting point for the chosen stat is being looked up |
 | 50301 | CH-5401 | 03 Background loading / refresh | `A_FOCUS_AREA_IS_BEING_PROPOSED` | implemented | A focus area is being proposed |
 | 50302 | CH-5402 | 03 Background loading / refresh | `CHANGING_THE_WINDOW_OR_THE_PLAYER` | implemented | Changing the window, the round filter or the player (pager) |
 | 50401 | CH-5301 | 04 Empty | `NO_ROUNDS_WITH_SHOTS_IN_THE_WINDOW` | implemented | No rounds with shots in the window |
@@ -483,8 +485,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50420 | CH-5322 | 04 Empty | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | implemented | The sheet's round list is cut at 200 rounds |
 | 50421 | CH-5323 | 04 Empty | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | implemented | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
 | 50422 | CH-5324 | 04 Empty | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | implemented | No round of the default length (18 holes), but this player has 9-hole rounds in this window |
+| 50423 | CH-5325 | 04 Empty | `SET_A_GOAL_NO_STARTING_POINT_TO` | implemented | Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed) |
 | 50501 | CH-5101 | 05 Validation | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | implemented | A focus area with a name under three characters |
 | 50502 | CH-5102 | 05 Validation | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | implemented | The filter's date range starts after it ends, and Done is tapped |
+| 50503 | CH-5103 | 05 Validation | `SET_A_GOAL_THE_TARGET_IS_EMPTY` | implemented | Set a goal: the target is empty or not a number |
 | 50601 | CH-5001 | 06 Server / system error | `PROPOSING_A_FOCUS_AREA_FAILS` | implemented | Proposing a focus area fails |
 | 50602 | CH-5201 | 06 Server / system error | `ROUNDS_DONT_LOAD` | implemented | Rounds don't load |
 | 50603 | CH-5202 | 06 Server / system error | `SHOT_LEVEL_DETAIL_DOESNT_LOAD` | implemented | Shot-level detail doesn't load |
@@ -504,6 +508,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50617 | CH-5212 | 06 Server / system error | `THE_SPRAY_READ_THROWS` | implemented | The spray read throws |
 | 50618 | CH-5213 | 06 Server / system error | `THE_ROUND_CACHE_DOESNT_LOAD` | implemented | The round cache doesn't load |
 | 50619 | CH-5005 | 06 Server / system error | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | implemented | Sharing a personal-best card fails (the share sheet or the download is blocked) |
+| 50620 | CH-5006 | 06 Server / system error | `STARTING_A_GOAL_FAILS` | implemented | Starting a goal fails (Set a goal) |
+| 50621 | CH-5007 | 06 Server / system error | `ACCEPTING_A_SUGGESTED_GOAL_FAILS` | implemented | Accepting a suggested goal fails |
+| 50622 | CH-5008 | 06 Server / system error | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | implemented | Dismissing a suggested goal fails |
+| 50623 | CH-5009 | 06 Server / system error | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | implemented | A coach pauses, resumes or abandons a goal and it fails |
+| 50624 | CH-5214 | 06 Server / system error | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | implemented | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
 | 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 50703 | CH-5903 | 07 Network / offline | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | implemented | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
@@ -514,6 +523,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50805 |  | 08 Permission / authorization | `SERVER_REFUSAL_IS_NOT_ZEROS` | implemented | Shot-level detail is read through getDetailedStats for the profile's own player id, which answers empty to a caller who is neither the player nor their coach; empty detail for a window that has rounds shows as Shot-level detail didn't load, never as zeros. |
 | 50806 |  | 08 Permission / authorization | `ONLY_A_COACH_PROPOSES_FOCUS_AREAS` | implemented | The Add focus area buttons and sheet exist only for a coach viewing a profile (the route hands a coach id only to a coach); a player's profile never offers them. |
 | 50901 |  | 09 Success | `FOCUS_AREA_PROPOSED` | implemented | A proposal that lands sends a focus area for this player from this coach with status proposed, names itself in a toast (Focus area proposed to the player; it starts when they accept) with the success haptic, closes the sheet and empties its fields. |
+| 51101 | CH-5501 | 11 Destructive | `A_COACH_PRESSES_ABANDON_ON_A_GOAL` | implemented | A coach presses Abandon on a goal |
 | 51201 |  | 12 State preservation | `FOCUS_TEXT_KEPT_ON_FAILURE` | implemented | A focus area that fails to save keeps the sheet open with the area and the text the coach typed, and the toast says so. |
 | 51202 |  | 12 State preservation | `TAB_KEPT_ACROSS_WINDOWS_AND_PLAYERS` | implemented | The chosen tab stays when the window changes or the coach pages to another player. |
 | 51401 |  | 14 Retry / recovery | `TRY_AGAIN_REFRESHES_THE_PAGE` | implemented | Try again on a failed-read notice (rounds, shot detail, development items) asks the server for the whole page again (router.refresh), so every read is retried, not one tab's. |
@@ -1158,6 +1168,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110210 | CH-11409 | 02 Initial loading / skeleton | `READING_THE_DEVICE_FOR_SAVED_ROUNDS` | implemented | Reading the device for saved rounds |
 | 110211 | CH-11410 | 02 Initial loading / skeleton | `THE_ROUNDS_LIBRARY_IS_REFRESHING_WITH_THE` | implemented | The Rounds library is refreshing (a Try again is running) with the page on screen |
 | 110212 | CH-11411 | 02 Initial loading / skeleton | `A_ROUND_TYPE_CHANGE_IS_IN_FLIGHT` | implemented | A round-type change is in flight |
+| 110213 | CH-11412 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE` | implemented | Team rounds is refreshing (a Try again is running) with the page on screen |
+| 110214 | CH-11413 | 02 Initial loading / skeleton | `TEAM_ROUNDS_IS_LOADING` | implemented | Team rounds is loading |
 | 110401 | CH-11301 | 04 Empty | `NO_ROUND_POSTED_AND_NONE_IN_PROGRESS` | implemented | No round posted and none in progress |
 | 110402 | CH-11302 | 04 Empty | `ROUNDS_POSTED_BUT_NO_COUNTABLE_18_HOLE` | implemented | Rounds posted, but no countable 18-hole round since August 1 |
 | 110403 | CH-11303 | 04 Empty | `A_COURSE_SEARCH_MATCHES_NOTHING` | implemented | A course search matches nothing |
@@ -1175,6 +1187,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110415 | CH-11314 | 04 Empty | `NOTHING_ON_THIS_DEVICE_TO_RECOVER` | implemented | Nothing on this device to recover |
 | 110416 | CH-11315 | 04 Empty | `COMPLETED_ROUNDS_WITH_NO_SCORE_AT_ALL` | implemented | Completed rounds with no score at all (no total and no nines) |
 | 110417 | CH-11316 | 04 Empty | `CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN` | implemented | Change round type: there is no qualifier to choose |
+| 110418 | CH-11317 | 04 Empty | `TEAM_ROUNDS_NO_PLAYERS_ON_THE_TEAM` | implemented | Team rounds: no players on the team yet |
+| 110419 | CH-11318 | 04 Empty | `TEAM_ROUNDS_A_COACH_WITH_NO_TEAM` | implemented | Team rounds: a coach with no team |
+| 110420 | CH-11319 | 04 Empty | `TEAM_ROUNDS_THE_SEASON_FIGURES` | implemented | Team rounds: the season figures |
+| 110421 | CH-11320 | 04 Empty | `TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE` | implemented | Team rounds: no round posted by anyone |
+| 110422 | CH-11321 | 04 Empty | `TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER` | implemented | Team rounds: the search or player filter matches nothing |
+| 110423 | CH-11322 | 04 Empty | `TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE` | implemented | Team rounds: completed rounds with no score at all |
 | 110501 | CH-11101 | 05 Validation | `NEXT_SHOT_CANT_BE_RECORDED_YET` | implemented | Next shot can't be recorded yet |
 | 110502 | CH-11102 | 05 Validation | `A_SHOT_IS_POSSIBLE_BUT_UNUSUAL` | implemented | A shot is possible but unusual (a 420-yard drive onto the green; a shot that ends farther away) |
 | 110503 | CH-11103 | 05 Validation | `A_SHOT_THAT_CANT_HAPPEN` | implemented | A shot that can't happen (a 540-yard drive onto the green) |
@@ -1225,6 +1243,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 110637 | CH-11213 | 06 Server / system error | `A_REFRESH_OF_THE_ROUNDS_LIBRARY_FAILS` | implemented | A refresh of the Rounds library fails while the page already shows rounds (Try again, or any server render of the page, whose read of the posted rounds or of the round in progress failed) |
 | 110638 | CH-11020 | 06 Server / system error | `CHANGING_A_LIVE_ROUNDS_TYPE_FAILS` | implemented | Changing a round's type fails (Continue round, or a submitted round's review, CH-11522) |
 | 110639 | CH-11218 | 06 Server / system error | `CHANGE_ROUND_TYPE_THE_PLAYERS_QUALIFIER_ENTRIES` | implemented | Change round type: the player's qualifier entries (or the slots their rounds hold, or, for a coach on a review, the team's qualifiers) didn't load |
+| 110640 | CH-11023 | 06 Server / system error | `SAVING_THE_COACHS_NOTE_ON_A_ROUND` | implemented | Saving the coach's note on a round fails (the review's Coach note card) |
+| 110641 | CH-11219 | 06 Server / system error | `A_REFRESH_OF_TEAM_ROUNDS_FAILS_WHILE` | implemented | A refresh of Team rounds fails while the page already shows rounds |
+| 110642 | CH-11220 | 06 Server / system error | `TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD` | implemented | Team rounds: the roster doesn't load |
+| 110643 | CH-11221 | 06 Server / system error | `TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD` | implemented | Team rounds: the posted rounds don't load |
+| 110644 | CH-11222 | 06 Server / system error | `A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED` | implemented | A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed) |
 | 110701 | CH-11901 | 07 Network / offline | `THE_ROUND_SAVES_IN_THE_BACKGROUND` | implemented | The round saves in the background |
 | 110702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Discard (the library) and Start (setup) go through useAction: while the browser is offline nothing is sent, the error haptic fires and the shell's toast names what did not happen, with Retry (10703). On the shot screen, Try again on a hole that did not save, while offline, gives the warning haptic and sends nothing (the card already says "Reconnect, then try again."). Round entry's Start and Save for later are forced offline in round-entry-wiring.test (CH-1903: nothing is sent, and a browser that says offline but reaches the server goes ahead); the library's Discard, setup's Start and the hole's Try again are driven offline (the browser's own flag) in rounds-contracts.test.tsx. Exit's Discard is forced offline in round-entry-wiring.test (nothing is sent and a hole that exists only on the device keeps its device copy). A discard whose request never lands keeps the device copy and the queued entry (rounds.test for the library's write, use-new-round-session.preservation.test for the engine's). The shell's tests cover useAction's refusal. |
 | 110703 | CH-11902 | 07 Network / offline | `THE_ROUND_CHANGED_ON_ANOTHER_DEVICE_AND` | implemented | The round changed on another device and this one stopped saving |
@@ -1273,6 +1296,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 111120 | CH-11520 | 11 Destructive | `DISCARD_ON_A_SAVED_ROUND` | implemented | Discard on a saved round (Recover) |
 | 111121 | CH-11521 | 11 Destructive | `CHANGE_ROUND_TYPE` | implemented | Change round type (Continue round: the Exit sheet's "Change round type" row, "Practice now. Changes what it counts toward."; a submitted round: its review's Change round type, CH-11522) |
 | 111122 | CH-11522 | 11 Destructive | `CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS` | implemented | Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`) |
+| 111123 | CH-11523 | 11 Destructive | `THE_COACH_NOTE_CARD_ON_A_ROUNDS` | implemented | The Coach note card on a round's review |
 | 111201 |  | 12 State preservation | `SETUP_KEPT_WHEN_START_FAILS` | implemented | A Start that fails leaves the setup as it was: the course and tees, the type, the date, the holes as edited and the qualifier all stay, and Start can be pressed again or retried from the toast (CH-11007); nothing is cleared until the round opens. Tested in rounds-contracts.test.tsx: after a failed Start the course and tees, the nine, the date, the edited holes and a qualifier all stay, and pressing Start again or Retry sends the same setup. use-new-round-session.preservation.test makes the engine's create throw and checks nothing is adopted and the next start goes ahead with the same payload. |
 | 111202 |  | 12 State preservation | `SHOTS_STAY_WHEN_A_HOLE_DOESNT_SAVE` | implemented | When a holed-out hole does not save, the shot review stays with every shot listed and Try again (CH-11003); the round does not move on until the save lands, and the card says the shots are kept on this device (the engine's own copy). Tested in rounds-contracts.test.tsx: after a failed save every shot is still listed, the card says they are kept on this device, the round stays on the hole, and Try again sends the same hole. use-new-round-session.preservation.test drops the connection on the hole's checkpoint and checks the device copy holds the hole's score and shots, that Try again sends that hole, and that the copy is cleared only once the save lands. |
 | 111301 |  | 13 Optimistic UI | `DISCARD_WAITS_FOR_THE_SERVER` | implemented | Nothing on the library is optimistic: Discard keeps the card until the server has deleted the round, and the card leaves only on success, from the question or from Retry. The device's emergency copy is cleared only when the delete worked. |
@@ -1427,6 +1451,8 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130210 | CH-13470 | 02 Initial loading / skeleton | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | implemented | Standing: the standing is on its way |
 | 130211 | CH-13480 | 02 Initial loading / skeleton | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | implemented | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
+| 130213 | CH-13430 | 02 Initial loading / skeleton | `WHATS_NEW_IS_ON_ITS_WAY` | implemented | What’s new is on its way |
+| 130214 | CH-13431 | 02 Initial loading / skeleton | `WHATS_NEW_READS_AGAIN` | implemented | What’s new reads again (Try again, or the page refreshes) |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1456,6 +1482,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130427 | CH-13382 | 04 Empty | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | implemented | Deep dive: a read names no rounds, or none of them can be listed |
 | 130428 | CH-13383 | 04 Empty | `DEEP_DIVE_A_READ_HAS_NO_TREND` | implemented | Deep dive: a read has no trend |
 | 130429 | CH-13384 | 04 Empty | `DEEP_DIVE_A_READ_IS_NOT_PART` | implemented | Deep dive: a read is not part of a plan |
+| 130430 | CH-13330 | 04 Empty | `WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN` | implemented | What’s new: nothing in the past seven days |
+| 130431 | CH-13331 | 04 Empty | `WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING` | implemented | What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week |
+| 130432 | CH-13332 | 04 Empty | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | implemented | What’s new: a category came back at its row ceiling (200) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1494,6 +1523,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | deprecated | Ask: a read the pulse is made from failed |
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | implemented | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
+| 130638 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
+| 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
+| 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |

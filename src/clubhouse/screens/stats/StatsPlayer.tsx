@@ -38,6 +38,7 @@ import { RoundsExtra } from './RoundsExtra';
 import type { ChFocusLoop } from '../../data/focus-loop-shape';
 import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
@@ -587,10 +588,12 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                 <span>
                   <b>this season</b>
                 </span>
+                {!coach && <GoalSetButton />}
               </div>
             </>
           }
         >
+          {!coach && <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />}
           {data.goals.length === 0 ? (
             <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
           ) : (
@@ -606,9 +609,9 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                     baseline={g.baseline}
                     current={g.current}
                     target={g.target}
-                    metric={devMetric(g.title)}
+                    metric={devMetric(g.title, g.metric)}
                     done={done}
-                    extra={<span className="ch-sr-only">{done ? 'Achieved' : 'In progress'}</span>}
+                    extra={<GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />}
                   />
                 );
               })}

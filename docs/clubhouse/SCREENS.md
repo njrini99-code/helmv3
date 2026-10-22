@@ -26,57 +26,113 @@ Mobile designs are tracked per screen in `PROGRESS.md` (the `phone-spec` and
 
 ## Coaches
 
-- [x] **Home** `/` — Morning view of the program: the week ahead, who needs attention, the leaderboard, latest rounds
-- [x] **Roster** `/roster` — The team: player cards and list, join requests, invites, coach notes
+- [x] **Home** `/` — Morning view of the program: the week ahead, who needs
+  attention, the leaderboard, latest rounds
+- [x] **Roster** `/roster` — The team: player cards and list, join requests,
+  invites, coach notes
 - [ ] **Roster detail** `/roster/[id]` — One player's roster record
-- [x] **Team stats** `/stats` — Team figures, strokes gained by leg per player, trends, putting, season bests, export (also the player drill-down, `?player=`)
-- [x] **Team stats, old link** `/stats/team` — The old nav's Team stats address; opens the rebuilt Team stats in place (players are sent to their own stats)
-- [x] **Calendar** `/calendar` — Practices, qualifiers, tournaments, travel and meetings; week, month and agenda; attendance, overlaps, files
-- [x] **Messages** `/messages` — Direct and group chat with players and coaches, plus team announcements
-- [x] **Settings** `/settings` — Account, notifications, team and invite code, CoachHelm settings, preferences
-- [x] **Settings: notifications** `/settings/notifications` — Old deep link; opens the Notifications section
-- [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
-- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
-- [ ] **Announcements** `/announcements` — Team news with read acknowledgements (Clubhouse has them inside Messages)
-- [x] **CoachHelm** `/coachhelm` — The program pulse, each player's top signal, and Assign as focus or Dismiss (`CoachHelm`, 2026-09-30; spec `phone/coachhelm.md`; the coach's Brief below is a different screen)
-- [ ] **CoachHelm Brief** `/intelligence` — AI coaching brief: signals, patterns, predictions and focus areas across the team
-- [ ] **Ask CoachHelm** `/coachhelm/chat` — Chat with the AI about the program, grounded in rounds and schedule
-- [ ] **Genome compare** `/coachhelm/genome/compare` — Two players' skill profiles side by side, biggest differences ranked
-- [ ] **Game Fingerprint** `/players/[id]/game` — One player's deep dive: where strokes are lost and gained (printable at `/game/print`)
-- [ ] **Genome** `/players/[id]/genome` — One player's skill profile against a baseline, with a one-line verdict
+- [x] **Team stats** `/stats` — Team figures, strokes gained by leg per player,
+  trends, putting, season bests, export (also the player drill-down, `?player=`)
+- [x] **Team stats, old link** `/stats/team` — The old nav's Team stats address;
+  opens the rebuilt Team stats in place (players are sent to their own stats)
+- [x] **Calendar** `/calendar` — Practices, qualifiers, tournaments, travel and
+  meetings; week, month and agenda; attendance, overlaps, files
+- [x] **Messages** `/messages` — Direct and group chat with players and coaches,
+  plus team announcements
+- [x] **Settings** `/settings` — Account, notifications, team and invite code,
+  CoachHelm settings, preferences
+- [x] **Settings: notifications** `/settings/notifications` — Old deep link;
+  opens the Notifications section
+- [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link;
+  opens the CoachHelm section
+- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks
+  with completion, shared documents, this week's RSVPs (`TeamHub` coach view,
+  2026-09-30; the Fairway page is player-only)
+- [ ] **Announcements** `/announcements` — Team news with read acknowledgements
+  (Clubhouse has them inside Messages)
+- [x] **CoachHelm** `/coachhelm` — The program pulse, each player's top signal,
+  and Assign as focus or Dismiss (`CoachHelm`, 2026-09-30; spec
+  `phone/coachhelm.md`; the coach's Brief below is a different screen)
+- [ ] **CoachHelm Brief** `/intelligence` — AI coaching brief: signals,
+  patterns, predictions and focus areas across the team
+- [ ] **Ask CoachHelm** `/coachhelm/chat` — Chat with the AI about the program,
+  grounded in rounds and schedule
+- [ ] **Genome compare** `/coachhelm/genome/compare` — Two players' skill
+  profiles side by side, biggest differences ranked
+- [ ] **Game Fingerprint** `/players/[id]/game` — One player's deep dive: where
+  strokes are lost and gained (printable at `/game/print`)
+- [ ] **Genome** `/players/[id]/genome` — One player's skill profile against a
+  baseline, with a one-line verdict
 - [x] **Recruiting HQ** `/recruiting` — Prospects from watchlist to commitment
-- [x] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide lineups (with `/new`, `/[id]`, `/[id]/edit`, `/[id]/selection`)
-- [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked from Calendar events
+- [x] **Qualifiers** `/qualifiers` — Set up and run team qualifiers that decide
+  lineups (with `/new`, `/[id]`, `/[id]/edit`, `/[id]/selection`)
+- [ ] **Travel** `/travel` — Tournament trips: itineraries and logistics, linked
+  from Calendar events
 - [ ] **Tasks** `/tasks` — Assign tasks to players and track completion live
-- [ ] **Documents** `/documents` — Team files and resources (Calendar can already attach them)
-- [ ] **Rounds** `/rounds` — Every team round: scores and per-round stats (with `/rounds/[id]`)
-- [ ] **Round review** `/rounds/[id]/review` — AI analysis of one round: grade, scoring mix, 18-hole filmstrip
+- [ ] **Documents** `/documents` — Team files and resources (Calendar can
+  already attach them)
+- [x] **Rounds** `/rounds` — Every team round: scores and per-round stats, by
+  month or by player (`TeamRounds`; opens `/rounds/[id]`, whose review has the
+  coach's note)
+- [ ] **Round review** `/rounds/[id]/review` — AI analysis of one round: grade,
+  scoring mix, 18-hole filmstrip
 - [ ] **Courses** `/courses` — Course library: courses, tee sets, home courses
 - [ ] **Team info** `/team` — Team details, settings and roster information
-- [ ] **What's New** `/whats-new` — The team's activity over the past 7 days (search palette only)
+- [x] **What's New** `/whats-new` — The team's activity over the past 7 days
+  (search palette only)
 
 ## Players
 
-- [x] **My stats** `/stats` — Their scoring, rounds, game detail, development and focus areas
-- [x] **Calendar** `/calendar` — Team schedule with RSVPs; teammates' classes stay private
-- [x] **Messages** `/messages` — Chat with coaches and teammates; announcements with acknowledge and tasks
-- [x] **Settings** `/settings` — Account, notifications, preferences, joining a team
-- [x] **Settings: notifications** `/settings/notifications` — Old deep link; opens the Notifications section
-- [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link; opens the CoachHelm section
-- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks with completion, shared documents, this week's RSVPs (`TeamHub` coach view, 2026-09-30; the Fairway page is player-only)
-- [x] **Home** `/` — Their day: next event with a countdown, the latest round, scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
-- [x] **CoachHelm** `/coachhelm` — Their AI coach: one thing to work on this week, then the other things worth knowing and what is working (`CoachHelm`, 2026-09-30; spec `phone/coachhelm.md`; the Game profile, Standing and Deep dive are views of the same address, `?view=profile|standing|deep-dive`, built 2026-10-01; Development is Stats' Development tab)
-- [x] **My rounds** `/rounds` — Their round history and each round's detail (with `/rounds/[id]`)
-- [x] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring during a round (with `/rounds/continue/[id]`, over the round engine, 2026-09-30; a submit that could not reach the server lands on Round recovery below; spec `design/handoff/Player - Rounds.html`, phone `phone/rounds.md`)
-- [x] **Round recovery** `/rounds/recover` — The rounds this device holds that the server may not: restore, sync again or discard (`RoundRecover`, swap audit F-02; Fairway's recovery ported, no board; phone `phone/rounds.md`)
-- [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they played
-- [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec `phone/team-hub.md`)
-- [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and where they stand
-- [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only: standings with their row marked, and the squad once confirmed (with `/[id]`)
-- [x] **Roster** `/roster` — Their teammates, read-only: the coach's cards, list and phone rows with name, class and handicap, nothing to open (`TeamRoster`, 2026-10-01; no scores, notes, requests or actions, so a card is not a control)
+- [x] **My stats** `/stats` — Their scoring, rounds, game detail, development
+  and focus areas
+- [x] **Calendar** `/calendar` — Team schedule with RSVPs; teammates' classes
+  stay private
+- [x] **Messages** `/messages` — Chat with coaches and teammates; announcements
+  with acknowledge and tasks
+- [x] **Settings** `/settings` — Account, notifications, preferences, joining a
+  team
+- [x] **Settings: notifications** `/settings/notifications` — Old deep link;
+  opens the Notifications section
+- [x] **Settings: CoachHelm** `/settings/coaching-intelligence` — Old deep link;
+  opens the CoachHelm section
+- [x] **Team Hub** `/team-hub` — Posts with read receipts, trip planning, tasks
+  with completion, shared documents, this week's RSVPs (`TeamHub` coach view,
+  2026-09-30; the Fairway page is player-only)
+- [x] **Home** `/` — Their day: next event with a countdown, the latest round,
+  scoring and the parts of the game (`PlayerHome`, 2026-09-30; spec
+  `design/handoff/Player - Home.html`, phone `phone/home-player.md`)
+- [x] **CoachHelm** `/coachhelm` — Their AI coach: one thing to work on this
+  week, then the other things worth knowing and what is working (`CoachHelm`,
+  2026-09-30; spec `phone/coachhelm.md`; the Game profile, Standing and Deep
+  dive are views of the same address, `?view=profile|standing|deep-dive`, built
+  2026-10-01; Development is Stats' Development tab)
+- [x] **My rounds** `/rounds` — Their round history and each round's detail
+  (with `/rounds/[id]`)
+- [x] **Round entry** `/rounds/new` — Hole-by-hole or shot-by-shot scoring
+  during a round (with `/rounds/continue/[id]`, over the round engine,
+  2026-09-30; a submit that could not reach the server lands on Round recovery
+  below; spec `design/handoff/Player - Rounds.html`, phone `phone/rounds.md`)
+- [x] **Round recovery** `/rounds/recover` — The rounds this device holds that
+  the server may not: restore, sync again or discard (`RoundRecover`, swap audit
+  F-02; Fairway's recovery ported, no board; phone `phone/rounds.md`)
+- [ ] **Round review** `/rounds/[id]/review` — AI analysis of a round they
+  played
+- [x] **Team Hub** `/team-hub` — Their team at a glance: RSVPs, announcements to
+  acknowledge, trips, tasks, documents (`TeamHub`, 2026-09-30; spec
+  `phone/team-hub.md`)
+- [x] **My Qualifiers** `/my-qualifiers` — The qualifiers they're entered in and
+  where they stand
+- [x] **Qualifiers** `/qualifiers` — Their team's qualifiers, read-only:
+  standings with their row marked, and the squad once confirmed (with `/[id]`)
+- [x] **Roster** `/roster` — Their teammates, read-only: the coach's cards, list
+  and phone rows with name, class and handicap, nothing to open (`TeamRoster`,
+  2026-10-01; no scores, notes, requests or actions, so a card is not a control)
 - [ ] **Team info** `/team` — Team details
-- [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse has them inside Messages)
-- [x] **Classes** `/classes` — Their class schedule by term, synced to the calendar so coaches see when they're busy (`Classes`, 2026-09-30; spec `phone/classes.md`, boards `Player - Classes.html` and its Mobile board)
+- [ ] **Announcements** `/announcements` — Team news from the coaches (Clubhouse
+  has them inside Messages)
+- [x] **Classes** `/classes` — Their class schedule by term, synced to the
+  calendar so coaches see when they're busy (`Classes`, 2026-09-30; spec
+  `phone/classes.md`, boards `Player - Classes.html` and its Mobile board)
 - [ ] **Courses** `/courses` — Course library and tee sets
 
 ## Front door (signed out)
@@ -91,8 +147,8 @@ not list them).
 - **Sign in** `/golf/login` and **Welcome** `/golf/welcome`
 - **Sign up** `/golf/signup` and **Player sign-up** `/golf/player`
 - **Reset password** `/golf/reset-password` (phone `phone/reset-password.md`)
-- **New coach** `/golf/coach` (phone `phone/coach-onboarding.md`) and
-  **Waiting for approval** `/golf/coach/pending` (phone `phone/coach-pending.md`)
+- **New coach** `/golf/coach` (phone `phone/coach-onboarding.md`) and **Waiting
+  for approval** `/golf/coach/pending` (phone `phone/coach-pending.md`)
 - **Demo** `/golf/demo` (phone `phone/demo-entry.md`)
 - **Join a team** `/golf/join` and `/golf/join/[code]` (phone
   `phone/join-team.md`)
