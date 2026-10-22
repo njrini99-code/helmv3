@@ -274,6 +274,9 @@ load, with Try again (CH-11208 to CH-11210).
 | 110717 | CH-11922 | `SAVE_IMAGE_DOWNLOADED_THE_PICTURE` | Save image downloaded the picture |
 | 110718 | CH-11923 | `SHARING_THE_CARD_FAILS` | Sharing the card fails (not closing the share sheet, not a refused share) |
 | 110719 | CH-11924 | `THE_REVIEW_IS_OPENED_STRAIGHT_FROM_POST` | The review is opened straight from Post round (`?just=submitted`) |
+| 110760 | CH-11960 | `COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST` | CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag |
+| 110761 | CH-11961 | `THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED` | The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered |
+| 110762 | CH-11962 | `THE_COURSE_NUDGE_THE_ROUND_HAS_NO` | The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand) |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -529,6 +532,7 @@ it (CH-11707); success and error come from the shell for every write. Tap in
 | 111708 | CH-11708 | `THE_SECOND_TAP_OF_A_DISCARD_IN` | The second tap of a discard in round entry: the saved shots, the round already in progress, or the closed-qualifier round |
 | 111709 | CH-11709 | `A_FAILURE_APPEARS_IN_ROUND_ENTRY_AN` | A failure appears in round entry: an inline line, a toast or a banner (CH-11008 to CH-11013, CH-11902) |
 | 111710 | CH-11710 | `TAP_IN_IS_TAPPED` | Tap in is tapped (CH-11913) |
+| 111760 | CH-11760 | `A_CHIP_IN_A_DATA_PROMPT_IS` | A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,

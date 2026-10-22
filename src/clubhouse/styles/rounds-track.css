@@ -962,6 +962,29 @@ button.ch-rt-strip__h {
 .ch-rt-note--flat {
   margin: 12px 18px 0;
 }
+/* CH-11960 to CH-11962: CoachHelm's one-tap data prompts, first in the entry card. A question with Skip on its right (a
+   44px target held inside the header's line), the chips, and one quiet line under them; never the card's primary. */
+.ch-rt-ask .ch-rt-sec__h > .ch-btn {
+  min-height: 44px;
+  margin: -10px -8px -10px 0;
+}
+.ch-rt-ask__s {
+  margin: 10px 0 0;
+  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-rt-ask__go {
+  min-height: 44px;
+}
+/* In the Round complete sheet: a quiet inset under the card, not a section of the entry. */
+.ch-rt-sec.ch-rt-ask--sheet {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-bg-subtle);
+}
 /* "Saving hole N" holds its place from the tap (so the list under it never shifts) but shows only once the wait passes one base beat (260ms): a
    hole that saves at once never flashes a status the player has no time to read (perf, 2026-10-01). */
 @keyframes ch-rt-saving-in {

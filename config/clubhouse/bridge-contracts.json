@@ -12700,6 +12700,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110760,
+    "page": "P011",
+    "category": 7,
+    "item": 60,
+    "name": "COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST",
+    "chCode": "CH-11960",
+    "meaning": "CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110761,
+    "page": "P011",
+    "category": 7,
+    "item": 61,
+    "name": "THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED",
+    "chCode": "CH-11961",
+    "meaning": "The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110762,
+    "page": "P011",
+    "category": 7,
+    "item": 62,
+    "name": "THE_COURSE_NUDGE_THE_ROUND_HAS_NO",
+    "chCode": "CH-11962",
+    "meaning": "The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -13347,6 +13380,17 @@
     "chCode": "CH-11710",
     "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111760,
+    "page": "P011",
+    "category": 17,
+    "item": 60,
+    "name": "A_CHIP_IN_A_DATA_PROMPT_IS",
+    "chCode": "CH-11760",
+    "meaning": "A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -15169,6 +15213,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130460,
+    "page": "P013",
+    "category": 4,
+    "item": 60,
+    "name": "PLAYER_NO_COURSE_HAS_THREE_OF_THEIR",
+    "chCode": "CH-13333",
+    "meaning": "Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130501,
     "page": "P013",
     "category": 5,
@@ -15662,6 +15717,17 @@
     "name": "RECHECK_FAILS",
     "chCode": "CH-13006",
     "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130660,
+    "page": "P013",
+    "category": 6,
+    "item": 60,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD",
+    "chCode": "CH-13233",
+    "meaning": "Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16284,6 +16350,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130763,
+    "page": "P013",
+    "category": 7,
+    "item": 63,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY",
+    "chCode": "CH-13916",
+    "meaning": "Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130764,
+    "page": "P013",
+    "category": 7,
+    "item": 64,
+    "name": "PLAYER_THE_PLAN_FOR_THE_COURSE_THEY",
+    "chCode": "CH-13917",
+    "meaning": "Player: the plan for the course they picked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130780,
     "page": "P013",
     "category": 7,
@@ -16752,6 +16840,17 @@
     "chCode": "CH-13705",
     "meaning": "Re-check tapped",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131760,
+    "page": "P013",
+    "category": 17,
+    "item": 60,
+    "name": "PLAYER_A_COURSE_IS_PICKED_IN_THEIR",
+    "chCode": "CH-13733",
+    "meaning": "Player: a course is picked in their Course plan (chs-21)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
