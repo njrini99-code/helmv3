@@ -70,7 +70,7 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
   if (round.status === 'in_progress') return { kind: 'inProgress' };
 
   const row = round as ChReviewRoundRow;
-  const [holesRes, shotsRes, teeRes, playerRes, teamRes, typeOptions] = await Promise.all([
+  const [holesRes, shotsRes, teeRes, playerRes, teamRes, typeOptions, noteRes] = await Promise.all([
     supabase.from('golf_holes').select('hole_number, par, yardage, score, putts, fairway_hit, gir, penalty_strokes').eq('round_id', roundId).order('hole_number', { ascending: true }),
     fetchAllRowsResult<ChShotRow>(
       (from, to) => supabase.from('golf_shots').select(SHOT_COLUMNS).eq('round_id', roundId).order('hole_number', { ascending: true }).order('shot_number', { ascending: true }).range(from, to),
@@ -82,12 +82,15 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     viewer.teamId ? supabase.from('golf_teams').select('gender').eq('id', viewer.teamId).maybeSingle() : Promise.resolve({ data: null, error: null }),
     // The Fairway round page's qualifier reads for its type editor; logs and degrades on its own (never throws).
     readRoundTypeOptions(supabase, { playerId: round.player_id, roundId, roundTeamId: row.team_id ?? null, coach: viewer.role === 'coach' }),
+    // The coach's note lives on the round's CoachHelm review row (one per round); a round with no review row has no note.
+    supabase.from('golf_round_reviews').select('coach_notes').eq('round_id', roundId).maybeSingle(),
   ]);
   if (holesRes.error) log('holes', holesRes.error);
   if (shotsRes.error) log('shots', shotsRes.error);
   if (teeRes.error) log('tee', teeRes.error);
   if (playerRes.error) log('player', playerRes.error);
   if (teamRes.error) log('team', teamRes.error);
+  if (noteRes.error) log('coach-note', noteRes.error);
 
   const holes = holesRes.error ? [] : toHoles((holesRes.data ?? []) as ChHoleRow[], shotsRes.error ? [] : (shotsRes.data ?? []));
   const review = toReview(row, {
@@ -104,6 +107,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     teeError: !!teeRes.error,
     playerError: !!playerRes.error || (viewer.role === 'coach' && !playerRes.data),
     tourError: !!teamRes.error,
+    coachNote: noteRes.error ? null : (noteRes.data?.coach_notes ?? null),
+    coachNoteError: !!noteRes.error,
   });
   // CoachHelm chs-30: the player's 30-second debrief (flag `coachhelm_reads_v1_copy`; off, nothing is read and the review is as before).
   const debrief = await loadRoundDebrief(supabase, review, viewer);

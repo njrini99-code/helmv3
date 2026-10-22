@@ -177,3 +177,11 @@ export const PREVIEW_REVIEW_DEBRIEF: ChRoundReview = {
 /** The debrief with no earlier rounds, no open read and no next step: the round's counted facts alone. */
 export const PREVIEW_REVIEW_DEBRIEF_THIN: ChRoundReview = { ...PREVIEW_REVIEW, debrief: buildDebrief(PREVIEW_REVIEW, { history: [], read: null, next: null }) };
 export { HOLES as PREVIEW_REVIEW_HOLES, SHOTS as PREVIEW_REVIEW_SHOTS, FINLEY as PREVIEW_FINLEY, PATTERN as PREVIEW_FINLEY_PATTERN };
+
+const COACH_NOTE = 'Good patience on the back nine. The tee shot on 14 is the one to fix before Thursday: pick a target and commit to the club before you take the stance.';
+/** A coach opens a round that has no note yet (the coach is offered Add a note), and one that has a note. */
+export const PREVIEW_REVIEW_COACH_NOTED = review({ playerName: 'Jonah Okafor', coachNote: COACH_NOTE });
+/** The player reads the note their coach left; a player with no note sees nothing (PREVIEW_REVIEW). */
+export const PREVIEW_REVIEW_PLAYER_NOTED = review({ coachNote: COACH_NOTE });
+/** The note's read failed. */
+export const PREVIEW_REVIEW_NOTE_FAILED = review({ coachNoteError: true });

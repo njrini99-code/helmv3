@@ -17,6 +17,20 @@ with `coachhelm_verdicts_v1` on, a focus area draws its target, progress
 and verdict. The team page is unchanged. See the P005 entry of the same
 date.
 
+## 2026-10-21 — Goals on the player's Development tab (see P005)
+
+```text
+Design package: none
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   none (P005's)
+Actions:        none (P005's)
+Data impact:    none
+Held items:     none
+```
+
+`screens/stats/` gained `GoalSheet`, `Goals` and `goal-words`, used by the
+player profile only. Nothing on Team stats changed. Logged on P005.
+
 ## 2026-10-21 — Leg grid bars, hover card kept off the figures, Last round fixed
 
 ```text
@@ -984,6 +998,7 @@ In-page jumps on the phone player stats view ease through the shared smooth
 scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 The shared segmented indicator uses zero-duration motion when disabled.

@@ -24,6 +24,47 @@ after the coach. An area with no prescription, a database without the
 columns and the flag off draw the focus area exactly as before. Preview:
 `/clubhouse-preview/player?state=loops|loops-self`.
 
+## 2026-10-21 — Goals: set one, answer a suggestion, and a coach's pause and abandon
+
+```text
+Design package: none (the Development tab's own Ledger rows and the Add a focus area sheet)
+PR/commit:      claude/project-thread-eitv8h
+Contract IDs:   CH-5006 to CH-5009, CH-5103, CH-5214, CH-5325, CH-5405, CH-5406, CH-5501
+Actions:        ACT-P005-SET-GOAL, ACT-P005-ANSWER-GOAL-SUGGESTION, ACT-P005-CHANGE-GOAL
+Data impact:    writes golf_goals (createGoal) and golf_goal_suggestions (accept, dismiss), reads pending suggestions; no migration
+Held items:     none
+```
+
+### Added
+
+- A player's Development tab has a Set a goal button (`GoalSheet`): a stat that
+  can be measured round by round, how long (1 week to 90 days), a target filled
+  in from where they are now (halfway to the college average, or to the Tour
+  once past it; `suggestGoalTarget`), and whether to share it with the coach.
+  The server measures the starting point itself (`createGoal`), and refuses a
+  target that is not better than it. A target is required: a goal with none has
+  nothing to track.
+- Above the goals, the goals CoachHelm suggests, each with Accept and Dismiss
+  (`GoalSuggestions`, up to three, pending and not expired). Nothing is drawn
+  when there are none, and a failed read says so (CH-5214).
+- Under each goal, its state when it is not simply in progress (Paused,
+  Abandoned, Not reached, Partly reached, Waiting for a first round), and for
+  the coach Pause, Resume and Abandon, which asks first (`GoalStatus`). The
+  player has no controls, as on the Fairway goal card.
+
+### Fixed
+
+- A goal reads by its own metric. The profile loader now selects
+  `golf_goals.metric_id` and carries it on each goal (`metric`), and the
+  Development card and phone row format with it (`devMetric`, `goalLine`), so a
+  goal titled "Greens in regulation, 30-day goal" shows 62% and not 62. Goals
+  titled "Goal — <metric_id>" still resolve from the title when the column is
+  not a known metric. No migration.
+
+Not done here: a coach assigning a goal to a player (no Fairway screen does it
+either; `createGoal` and `createTeamGoal` support it). The Goals empty-state
+copy is draft PR #2281's.
+
 ## 2026-10-21 — Leg links open the right Game detail section on the phone
 
 ```text
@@ -1076,6 +1117,7 @@ selection/persistence contracts remain unchanged.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 StatsPlayer and the shared segmented indicator use zero-duration motion

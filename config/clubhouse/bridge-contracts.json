@@ -3588,6 +3588,28 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50203,
+    "page": "P005",
+    "category": 2,
+    "item": 3,
+    "name": "A_GOAL_IS_BEING_STARTED_A_SUGGESTION",
+    "chCode": "CH-5405",
+    "meaning": "A goal is being started, a suggestion answered, or a goal changed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50204,
+    "page": "P005",
+    "category": 2,
+    "item": 4,
+    "name": "SET_A_GOAL_THE_STARTING_POINT_FOR",
+    "chCode": "CH-5406",
+    "meaning": "Set a goal: the starting point for the chosen stat is being looked up",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50301,
     "page": "P005",
     "category": 3,
@@ -3852,6 +3874,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50423,
+    "page": "P005",
+    "category": 4,
+    "item": 23,
+    "name": "SET_A_GOAL_NO_STARTING_POINT_TO",
+    "chCode": "CH-5325",
+    "meaning": "Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50501,
     "page": "P005",
     "category": 5,
@@ -3870,6 +3903,17 @@
     "name": "THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT",
     "chCode": "CH-5102",
     "meaning": "The filter's date range starts after it ends, and Done is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50503,
+    "page": "P005",
+    "category": 5,
+    "item": 3,
+    "name": "SET_A_GOAL_THE_TARGET_IS_EMPTY",
+    "chCode": "CH-5103",
+    "meaning": "Set a goal: the target is empty or not a number",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -4085,6 +4129,61 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50620,
+    "page": "P005",
+    "category": 6,
+    "item": 20,
+    "name": "STARTING_A_GOAL_FAILS",
+    "chCode": "CH-5006",
+    "meaning": "Starting a goal fails (Set a goal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50621,
+    "page": "P005",
+    "category": 6,
+    "item": 21,
+    "name": "ACCEPTING_A_SUGGESTED_GOAL_FAILS",
+    "chCode": "CH-5007",
+    "meaning": "Accepting a suggested goal fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50622,
+    "page": "P005",
+    "category": 6,
+    "item": 22,
+    "name": "DISMISSING_A_SUGGESTED_GOAL_FAILS",
+    "chCode": "CH-5008",
+    "meaning": "Dismissing a suggested goal fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50623,
+    "page": "P005",
+    "category": 6,
+    "item": 23,
+    "name": "A_COACH_PAUSES_RESUMES_OR_ABANDONS_A",
+    "chCode": "CH-5009",
+    "meaning": "A coach pauses, resumes or abandons a goal and it fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50624,
+    "page": "P005",
+    "category": 6,
+    "item": 24,
+    "name": "THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD",
+    "chCode": "CH-5214",
+    "meaning": "The player's suggested goals don't load (the read of `golf_goal_suggestions` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50701,
     "page": "P005",
     "category": 7,
@@ -4203,6 +4302,17 @@
     "tests": [
       "src/clubhouse/__tests__/stats-player.test.tsx"
     ]
+  },
+  {
+    "id": 51101,
+    "page": "P005",
+    "category": 11,
+    "item": 1,
+    "name": "A_COACH_PRESSES_ABANDON_ON_A_GOAL",
+    "chCode": "CH-5501",
+    "meaning": "A coach presses Abandon on a goal",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
     "id": 51201,
@@ -11301,6 +11411,28 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110213,
+    "page": "P011",
+    "category": 2,
+    "item": 13,
+    "name": "TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE",
+    "chCode": "CH-11412",
+    "meaning": "Team rounds is refreshing (a Try again is running) with the page on screen",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110214,
+    "page": "P011",
+    "category": 2,
+    "item": 14,
+    "name": "TEAM_ROUNDS_IS_LOADING",
+    "chCode": "CH-11413",
+    "meaning": "Team rounds is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -11486,6 +11618,72 @@
     "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
     "chCode": "CH-11316",
     "meaning": "Change round type: there is no qualifier to choose",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110418,
+    "page": "P011",
+    "category": 4,
+    "item": 18,
+    "name": "TEAM_ROUNDS_NO_PLAYERS_ON_THE_TEAM",
+    "chCode": "CH-11317",
+    "meaning": "Team rounds: no players on the team yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110419,
+    "page": "P011",
+    "category": 4,
+    "item": 19,
+    "name": "TEAM_ROUNDS_A_COACH_WITH_NO_TEAM",
+    "chCode": "CH-11318",
+    "meaning": "Team rounds: a coach with no team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110420,
+    "page": "P011",
+    "category": 4,
+    "item": 20,
+    "name": "TEAM_ROUNDS_THE_SEASON_FIGURES",
+    "chCode": "CH-11319",
+    "meaning": "Team rounds: the season figures",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110421,
+    "page": "P011",
+    "category": 4,
+    "item": 21,
+    "name": "TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE",
+    "chCode": "CH-11320",
+    "meaning": "Team rounds: no round posted by anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110422,
+    "page": "P011",
+    "category": 4,
+    "item": 22,
+    "name": "TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER",
+    "chCode": "CH-11321",
+    "meaning": "Team rounds: the search or player filter matches nothing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110423,
+    "page": "P011",
+    "category": 4,
+    "item": 23,
+    "name": "TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE",
+    "chCode": "CH-11322",
+    "meaning": "Team rounds: completed rounds with no score at all",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12045,6 +12243,61 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110640,
+    "page": "P011",
+    "category": 6,
+    "item": 40,
+    "name": "SAVING_THE_COACHS_NOTE_ON_A_ROUND",
+    "chCode": "CH-11023",
+    "meaning": "Saving the coach's note on a round fails (the review's Coach note card)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110641,
+    "page": "P011",
+    "category": 6,
+    "item": 41,
+    "name": "A_REFRESH_OF_TEAM_ROUNDS_FAILS_WHILE",
+    "chCode": "CH-11219",
+    "meaning": "A refresh of Team rounds fails while the page already shows rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110642,
+    "page": "P011",
+    "category": 6,
+    "item": 42,
+    "name": "TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-11220",
+    "meaning": "Team rounds: the roster doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110643,
+    "page": "P011",
+    "category": 6,
+    "item": 43,
+    "name": "TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD",
+    "chCode": "CH-11221",
+    "meaning": "Team rounds: the posted rounds don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110644,
+    "page": "P011",
+    "category": 6,
+    "item": 44,
+    "name": "A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED",
+    "chCode": "CH-11222",
+    "meaning": "A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -12590,6 +12843,17 @@
     "name": "CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS",
     "chCode": "CH-11522",
     "meaning": "Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111123,
+    "page": "P011",
+    "category": 11,
+    "item": 23,
+    "name": "THE_COACH_NOTE_CARD_ON_A_ROUNDS",
+    "chCode": "CH-11523",
+    "meaning": "The Coach note card on a round's review",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -14300,6 +14564,28 @@
     "page": "P013",
     "category": 2,
     "item": 13,
+    "name": "WHATS_NEW_IS_ON_ITS_WAY",
+    "chCode": "CH-13430",
+    "meaning": "What’s new is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130214,
+    "page": "P013",
+    "category": 2,
+    "item": 14,
+    "name": "WHATS_NEW_READS_AGAIN",
+    "chCode": "CH-13431",
+    "meaning": "What’s new reads again (Try again, or the page refreshes)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130215,
+    "page": "P013",
+    "category": 2,
+    "item": 15,
     "name": "RECHECK_RUNNING",
     "chCode": "CH-13406",
     "meaning": "Re-check running",
@@ -14632,6 +14918,39 @@
     "page": "P013",
     "category": 4,
     "item": 30,
+    "name": "WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN",
+    "chCode": "CH-13330",
+    "meaning": "What’s new: nothing in the past seven days",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130431,
+    "page": "P013",
+    "category": 4,
+    "item": 31,
+    "name": "WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING",
+    "chCode": "CH-13331",
+    "meaning": "What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130432,
+    "page": "P013",
+    "category": 4,
+    "item": 32,
+    "name": "WHATS_NEW_A_CATEGORY_CAME_BACK_AT",
+    "chCode": "CH-13332",
+    "meaning": "What’s new: a category came back at its row ceiling (200)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130433,
+    "page": "P013",
+    "category": 4,
+    "item": 33,
     "name": "STANDING_A_PART_OF_THE_ROUND_ON",
     "chCode": "CH-13374",
     "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
@@ -15063,9 +15382,9 @@
     "page": "P013",
     "category": 6,
     "item": 38,
-    "name": "RECHECK_FAILS",
-    "chCode": "CH-13006",
-    "meaning": "Re-check fails or is offline",
+    "name": "WHATS_NEW_A_REFRESH_FAILS_AFTER_THE",
+    "chCode": "CH-13230",
+    "meaning": "What’s new: a refresh fails after the week loaded",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15074,9 +15393,9 @@
     "page": "P013",
     "category": 6,
     "item": 39,
-    "name": "RECHECK_RATE_LIMITED",
-    "chCode": "CH-13007",
-    "meaning": "Re-check rate-limited",
+    "name": "WHATS_NEW_THE_FEED_DOESNT_LOAD",
+    "chCode": "CH-13231",
+    "meaning": "What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15085,6 +15404,39 @@
     "page": "P013",
     "category": 6,
     "item": 40,
+    "name": "WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING",
+    "chCode": "CH-13232",
+    "meaning": "What’s new: the feed crashes while drawing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130641,
+    "page": "P013",
+    "category": 6,
+    "item": 41,
+    "name": "RECHECK_FAILS",
+    "chCode": "CH-13006",
+    "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130642,
+    "page": "P013",
+    "category": 6,
+    "item": 42,
+    "name": "RECHECK_RATE_LIMITED",
+    "chCode": "CH-13007",
+    "meaning": "Re-check rate-limited",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130643,
+    "page": "P013",
+    "category": 6,
+    "item": 43,
     "name": "STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES",
     "chCode": "CH-13273",
     "meaning": "Standing: the open reads behind Where strokes go don't load",
