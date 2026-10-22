@@ -279,7 +279,7 @@ async function tourBaselineOf(supabase: Supabase, team: { gender: string | null 
 }
 
 /** The coach's team's Tour. A failed team read is logged, claims no benchmark and says so (`error`). */
-async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
+export async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
   const res = await supabase.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
   if (res.error) {
     log('team', res.error);
@@ -623,8 +623,10 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
   // A player all of whose reads were held back is listed as such, not as a player with no read yet.
   const allHeld = new Set(heldBack.filter((p) => !p.card).map((p) => p.id));
-  const withoutNames = roster.filter((p) => !heads.get(p.id)?.[0] && !allHeld.has(p.id) && p.name !== NO_NAME).map((p) => p.name);
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length - allHeld.size, withoutNames, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}), ...(notEnough ? { notEnough } : {}) };
+  const without = roster.filter((p) => !heads.get(p.id)?.[0] && !allHeld.has(p.id) && p.name !== NO_NAME);
+  const withoutNames = without.map((p) => p.name);
+  const withoutIds = without.map((p) => p.id);
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length - allHeld.size, withoutNames, withoutIds, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}), ...(notEnough ? { notEnough } : {}) };
 }
 
 /**

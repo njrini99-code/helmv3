@@ -1,5 +1,14 @@
 # P004 — Stats (team): changelog
 
+## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
+
+```text
+Design package: none (coach dashboard parity, spec B)
+PR/commit:      claude/project-thread-icincd
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same rounds, same cuts; the grid is built by `teamGrid`)
+
 ## 2026-10-21 — Goals on the player's Development tab (see P005)
 
 ```text
@@ -27,6 +36,10 @@ Held items:     none
 ```
 
 ### Changed
+
+- The player by leg grid moved out of `loadTeamStats` into an exported
+  `teamGrid`, and `sgLegs` is exported, so coach Home reads the same four legs
+  the Stats page does. Output is unchanged; the Stats tests pin it.
 
 - Each leg cell draws a bar from a strong zero line to the player's value on the
   grid's one scale (loss left in amber, gain right in green), with a 2px tick at

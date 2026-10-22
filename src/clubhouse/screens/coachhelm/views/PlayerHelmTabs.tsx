@@ -3,7 +3,7 @@
 import { ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
+import { COACH_PLAYER_VIEWS, PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_HELM_TAB_LABEL, type PlayerHelmView } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { rebuiltHref } from '../../../shell/nav';
@@ -25,12 +25,16 @@ const VIEWS: readonly PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-
  *
  * It is controlled: `active` is the view the tap has chosen (at once, not when the server answers) and `onGo` changes view. The
  * page that draws it owns that state (`useViewSwitch`), because it is the page that dims and is marked busy while the next view loads.
+ *
+ * `coach`: a coach's views of one player (spec A): Deep dive, Standing and Game profile, in that order. The Board is not one of them
+ * (the way back is the header's link and the phone's Back), and Development is the player's own link, so it is not drawn.
  */
-export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void }) {
+export function PlayerHelmTabs({ active, onGo, coach = false }: { active: PlayerHelmView; onGo: (view: PlayerHelmView) => void; coach?: boolean }) {
   const phone = useChPhone();
   const row = useRef<HTMLDivElement>(null);
   const rowEdges = useHScroll<HTMLDivElement>(row);
-  const development = rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
+  const development = coach ? null : rebuiltHref(PLAYER_HELM_DEVELOPMENT_HREF, 'player');
+  const views = coach ? COACH_PLAYER_VIEWS : VIEWS;
 
   // The chip row is wider than the screen: start with the current chip in view, without moving the page.
   useEffect(() => {
@@ -43,7 +47,7 @@ export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo:
     return (
       <div className="ch-hv-tabs is-phone" data-ch-code="CH-13930">
         <div ref={rowEdges} className="ch-hscroll ch-hv-chips" role="group" aria-label="CoachHelm view">
-          {VIEWS.map((v) => (
+          {views.map((v) => (
             <button
               key={v}
               type="button"
@@ -70,7 +74,7 @@ export function PlayerHelmTabs({ active, onGo }: { active: PlayerHelmView; onGo:
   }
   return (
     <div className="ch-hv-tabs" data-ch-code="CH-13930">
-      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={VIEWS.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={onGo} />
+      <Segmented<PlayerHelmView> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: PLAYER_HELM_TAB_LABEL[v] }))} onChange={onGo} />
       {development && (
         <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development

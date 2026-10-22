@@ -103,10 +103,17 @@ export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; 
  * notice, so the sentence never names a part with no gap under it. The phone draws team scoring where the desktop
  * draws the leaderboard.
  */
-export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone'>, phone: boolean): string[] {
+export function coachFailedParts(data: Pick<ChCoachHome, 'week' | 'latestRounds' | 'leaderboard' | 'phone' | 'legs' | 'queue'>, phone: boolean): string[] {
   const parts: string[] = [];
+  const q = data.queue;
+  // "Waiting on you" (CH-2220): a part of it that didn't load is never counted as 0.
+  if (q && (q.joinRequests == null || q.replies == null || q.overdueTasks == null || q.unackedPosts == null)) parts.push('what’s waiting on you');
   if (data.week.error) parts.push('this week’s schedule');
   if (phone && data.latestRounds.error && !data.phone.form) parts.push('team scoring');
+  // The team's four parts are drawn under the form: their notices (CH-2218, CH-2219) only where they are.
+  const legs = data.phone.form ? data.legs : null;
+  if (legs?.cacheError) parts.push('up-and-down figures');
+  if (legs?.tourError) parts.push('Tour marks');
   if (data.latestRounds.error) parts.push('recent rounds');
   if (!phone && data.leaderboard.error) parts.push('the leaderboard');
   return parts;

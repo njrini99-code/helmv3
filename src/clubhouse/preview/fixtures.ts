@@ -4,7 +4,7 @@
  * returns 404 in production. Never imported by app routes.
  */
 import type { GolfUserData } from '@/contexts/golf-user-context';
-import type { ChCoachHome, ChHoleScore } from '../data/home';
+import type { ChCoachHome, ChCoachQueue, ChHoleScore, ChTeamLegs } from '../data/home';
 import type { ChShellData } from '../data/shell';
 import { homeSubline } from '../screens/home/model';
 
@@ -54,6 +54,33 @@ const LEADERS: ChCoachHome['leaderboard']['rows'] = [
   { playerId: 'eli', name: 'Eli Brandt', classYear: 'Junior', rounds: 8, avg: 74.8, toPar: 2.8, trend: [74, 75, 74, 75, 75, 74, 75], sgPerRound: -0.4, status: 'steady', quietDays: 9 },
   { playerId: 'priya', name: 'Priya Natarajan', classYear: 'Freshman', rounds: 2, avg: 75.2, toPar: 3.2, trend: [76, 75], sgPerRound: null, status: 'early', quietDays: 4 },
 ];
+
+const NEXT_INVITEES = ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan'];
+
+/** What is waiting on the coach (spec B §2): a join request, three replies across two events, two overdue tasks, one post. */
+export const PREVIEW_QUEUE: ChCoachQueue = {
+  joinRequests: 1,
+  replies: { missing: 3, events: [{ id: 'a1', date: '2026-10-14', missing: 1 }, { id: 'a5', date: '2026-10-16', missing: 2 }] },
+  overdueTasks: 2,
+  unackedPosts: 1,
+};
+
+const who = (ids: string[], names: string[], value: number) => ({ ids, names, value });
+
+/** The team's four parts (spec B §1) on the form's thirty rounds: the greens and putts are the form's own. */
+export const PREVIEW_LEGS: ChTeamLegs = {
+  holeRounds: 30,
+  ranked: true,
+  tour: 'pga',
+  cacheError: false,
+  tourError: false,
+  rows: [
+    { key: 'tee', label: 'Off the tee', stat: { label: 'Fairways', value: 61, unit: '%', digits: 0, tour: 66 }, sg: 0.4, delta: 0.5, se: 0.3, gains: who(['theo'], ['Theo M.'], 1.1), loses: who(['eli'], ['Eli B.'], -0.8) },
+    { key: 'approach', label: 'Approach', stat: { label: 'Greens', value: 61, unit: '%', digits: 0, tour: 67 }, sg: -0.9, delta: -0.1, se: 0.4, gains: who(['sofia'], ['Sofia A.'], 0.3), loses: who(['jonah'], ['Jonah O.'], -1.6) },
+    { key: 'around', label: 'Around green', stat: { label: 'Up and down', value: 52, unit: '%', digits: 0, tour: 59 }, sg: -0.2, delta: -0.6, se: 0.3, gains: who(['ava', 'sofia'], ['Ava L.', 'Sofia A.'], 0.5), loses: who(['jonah'], ['Jonah O.'], -1.0) },
+    { key: 'putting', label: 'Putting', stat: { label: 'Putts', value: 30.4, unit: '', digits: 1, tour: 29.0 }, sg: -0.5, delta: 0.1, se: 0.4, gains: who(['theo'], ['Theo M.'], 0.6), loses: who(['eli', 'jonah', 'ava'], ['Eli B.', 'Jonah O.', 'Ava L.'], -1.2) },
+  ],
+};
 
 export const PREVIEW_HOME: ChCoachHome = {
   greeting: 'Good morning, Maya.',
@@ -116,11 +143,12 @@ export const PREVIEW_HOME: ChCoachHome = {
       startLabel: '3:30 PM',
       rangeLabel: '3:30 – 5:00 PM',
       location: 'Practice green',
-      invitees: ['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan'],
+      invitees: NEXT_INVITEES,
       going: 5,
       awaiting: [{ id: 'eli', name: 'Eli Brandt' }],
       inviteeIds: ['theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'],
       conflict: false,
+      replyOpen: true,
     },
     today: [
       ['a1', 'Short-game block', 'practice', '19:30', '21:00', 'Practice green', '3:30 PM', '3:30 – 5:00 PM', false],
@@ -141,6 +169,8 @@ export const PREVIEW_HOME: ChCoachHome = {
       invitees: null,
       going: null,
       conflict: conflict as boolean,
+      // The Next row (Short-game block) asks for replies and Eli hasn't given one: the desktop agenda's reply line and Nudge.
+      ...(id === 'a1' ? { invitees: NEXT_INVITEES, going: 5, awaiting: [{ id: 'eli', name: 'Eli Brandt' }], inviteeIds: ['theo', 'sofia', 'ava', 'jonah', 'eli', 'priya'], replyOpen: true } : {}),
     })),
     form: {
       avg: 73.4,
@@ -154,6 +184,8 @@ export const PREVIEW_HOME: ChCoachHome = {
     },
     weekNote: { weekday: 'Friday', title: 'Qualifier · Pinehurst No. 2' },
   },
+  legs: PREVIEW_LEGS,
+  queue: PREVIEW_QUEUE,
 };
 
 /** The preview's frozen clock: Wednesday 14 October, 2:40 PM Eastern, as the phone boards draw it. */
@@ -172,6 +204,9 @@ export const PREVIEW_HOME_FAILED: ChCoachHome = {
 export const PREVIEW_HOME_EMPTY: ChCoachHome = {
   ...PREVIEW_HOME,
   subline: null,
+  // A new team: the first players asking to join are what waits (the row shows on the first run too).
+  queue: { joinRequests: 2, replies: { missing: 0, events: [] }, overdueTasks: 0, unackedPosts: 0 },
+  legs: null,
   week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   latestRounds: { rounds: [], error: false, holesError: false },
   leaderboard: { rows: [], scorecards: 0, rosterSize: 0, error: false },
@@ -199,4 +234,28 @@ export const PREVIEW_HOME_NO_EVENTS: ChCoachHome = {
   ...PREVIEW_HOME,
   week: { ...PREVIEW_HOME.week, agenda: [], days: PREVIEW_HOME.week.days.map((d) => ({ ...d, eventCount: 0, hasCompetition: false })) },
   phone: { ...PREVIEW_HOME.phone, next: null, today: [], weekNote: null },
+};
+
+/** The four parts with up-and-down missing (CH-2218): its "—" and one notice, strokes gained intact. */
+export const PREVIEW_HOME_LEGS_CACHE_FAILED: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: { ...PREVIEW_LEGS, cacheError: true, rows: PREVIEW_LEGS.rows.map((r) => (r.key === 'around' ? { ...r, stat: { ...r.stat, value: null } } : r)) },
+};
+
+/** The Tour's marks missing (CH-2219): each stat without its mark, and one notice. */
+export const PREVIEW_HOME_LEGS_TOUR_FAILED: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: { ...PREVIEW_LEGS, tourError: true, rows: PREVIEW_LEGS.rows.map((r) => ({ ...r, stat: { ...r.stat, tour: null } })) },
+};
+
+/** A part of "Waiting on you" didn't load (CH-2220): the rest still counts, and the row says some didn't load. */
+export const PREVIEW_HOME_QUEUE_FAILED: ChCoachHome = { ...PREVIEW_HOME, queue: { ...PREVIEW_QUEUE, unackedPosts: null } };
+
+/** No round in the last ten with hole scores (CH-2314). */
+export const PREVIEW_HOME_LEGS_NO_HOLES: ChCoachHome = { ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, holeRounds: 0 } };
+
+/** Rounds with holes but nobody with enough of them to rank (CH-2315). */
+export const PREVIEW_HOME_LEGS_UNRANKED: ChCoachHome = {
+  ...PREVIEW_HOME,
+  legs: { ...PREVIEW_LEGS, ranked: false, rows: PREVIEW_LEGS.rows.map((r) => ({ ...r, sg: null, delta: null, se: null, gains: null, loses: null })) },
 };

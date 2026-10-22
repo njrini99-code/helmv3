@@ -12,6 +12,53 @@ Actions:        none (read only)
 Data impact:    none written; reads the Deep dive's own feed of the player's
                 reads (no exposure recorded) beside the standing
 
+## 2026-10-21 — Coach: a player's Deep dive, Standing and Game profile
+
+```text
+Design package: coach-parity/spec-A-coach-player-pages.md (decided)
+PR/commit:      see git log (parity/player-pages)
+Contract IDs:   CH-13209, CH-13311, CH-13313 (130638, 130430, 130431);
+                130807 (new); 130104 (amended)
+Actions:        ACT-P013-ASSIGN-FOCUS, ACT-P013-DISMISS-INSIGHT and
+                ACT-P013-UNDO-DISMISS, now also on a coach's Deep dive
+Data impact:    none written; reads only what the board and the player's
+                views already read, for a player the scope check found on the
+                coach's team
+Held items:     none
+```
+
+### Added
+
+- `?view=deep-dive|standing|profile&player=<id>` for a coach: the player's
+  three views in the coach's words, landing on the Deep dive. The header is
+  the player's (the name, the class and the newest round, "CoachHelm" as the
+  way back to the board open on the player), the strip is Deep dive ·
+  Standing · Game profile, the breadcrumb CoachHelm › name, and the phone's
+  Back goes to the board open on the player.
+- `data/coachhelm-player.ts`: `loadCoachPlayerScope` checks the id against
+  the coach's own team before anything is read and makes a branded scope;
+  the three loaders take only that scope. The Deep dive reads the coach feed
+  (`getInsightsForCoach` with `player_id`), never the player's.
+- The Deep dive's action row under each read: the board's Assign as focus,
+  Dismiss and Undo (`FocusActions` in `parts.tsx`, now shared with the
+  board), then "Message Jonah". Standing's "Open the read" on a stat with an
+  open read; the Game profile's "CoachHelm sees N reads costing strokes".
+- Entry points: "All of Jonah’s reads" on the board's card, the names in
+  "… have no insights yet." (Standing), Roster's View insights (the Deep
+  dive, was the board).
+- States: CH-13311 (not on your team, one page for every id), CH-13209 (the
+  check did not load), CH-13313 (CoachHelm off for the player's team); the
+  three skeletons take the header's shape.
+- Preview: `/clubhouse-preview/coachhelm-coach-player`.
+
+### Changed
+
+- The player's views and their shapers take a `voice`; the player's copy is
+  unchanged. CoachBoard's action row moved into `parts.tsx` with no change to
+  what it draws.
+- DESIGN.md's non-goal "a coach's version of the Game profile, Standing or
+  Deep dive" is superseded.
+
 ## 2026-10-21 — Coach: What's new
 
 ```text
@@ -774,6 +821,9 @@ Held items:     none
 - CoachHelm turned off for a player, or off for everyone for a coach, is the
   restricted state: a lock and who can change it, with no action that would
   fail. A coach's own switch-off keeps Open CoachHelm settings.
+- First-run boards, Game profile and Standing draw rows under the sentence;
+  the coach's board draws portrait rows.
+
 - First-run boards, Game profile and Standing draw rows under the sentence; the
   coach's board draws portrait rows.
 - Deep dive's three "nothing here" cards (no trend, no rounds listed, no plan)
@@ -781,6 +831,12 @@ Held items:     none
 - The player's phone eyebrow (`.ch-hl-role`) no longer carries 0.14em tracking.
 
 ### Why
+
+- Every empty page was one template: a green tile, a headline, a sentence and
+  a button in blank space. The waiting form draws the shape of what will fill
+  the space (rules, rings, a baseline; no bars, no fake text) under one
+  sentence that names what fills it and who does it, and a filter that hides
+  everything is told apart from a first run, a lock and a failed read.
 
 - Every empty page was one template: a green tile, a headline, a sentence and a
   button in blank space. The waiting form draws the shape of what will fill the
@@ -793,6 +849,10 @@ Held items:     none
 - `states.test.tsx` (the waiting form, its four kinds, the danger tone
   unchanged) and this page's tests; captured at 390 and 1280, light and dark,
   before and after, on `/clubhouse-preview/coachhelm?state=empty` and
+  `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the
+  restricted state) was captured after only, phone, light. The Deep dive
+  empties have unit tests but no capture.
+
   `coachhelm-player?state=empty`. `coachhelm-player?state=off` (the restricted
   state) was captured after only, phone, light. The Deep dive empties have unit
   tests but no capture.

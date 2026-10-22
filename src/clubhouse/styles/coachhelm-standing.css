@@ -255,6 +255,33 @@
   color: var(--ch-chart-loss-on-tint);
 }
 
+/* A coach's way from a stat to the open read on it (spec A): a quiet text link under the row, or under the stat in Most to gain. */
+.ch-hs-read {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.ch-hs-open {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 4px;
+  font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-green-700);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hs-open:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-hs-open:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+
 /* Route skeleton: the page's own shape and height */
 .ch-hs-sk__hero {
   display: grid;
