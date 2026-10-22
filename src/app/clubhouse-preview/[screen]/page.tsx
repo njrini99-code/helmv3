@@ -11,6 +11,7 @@ import { PreviewTracking } from '@/clubhouse/preview/PreviewTracking';
 import { PreviewSetup } from '@/clubhouse/preview/PreviewSetup';
 import { RoundReview } from '@/clubhouse/screens/rounds/RoundReview';
 import { RoundReviewSkeleton, RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
+import { previewViewer } from '@/clubhouse/preview/viewer';
 import { PREVIEW_REVIEW, PREVIEW_REVIEW_COACH, PREVIEW_REVIEW_COACH_NOTED, PREVIEW_REVIEW_NOTE_FAILED, PREVIEW_REVIEW_PLAYER_NOTED, PREVIEW_REVIEW_HOLE_BY_HOLE, PREVIEW_REVIEW_NO_HOLES, PREVIEW_REVIEW_NO_SG, PREVIEW_REVIEW_NO_SHOTS, PREVIEW_REVIEW_TOTAL_ONLY, PREVIEW_REVIEW_DEBRIEF, PREVIEW_REVIEW_DEBRIEF_THIN } from '@/clubhouse/preview/fixtures-round-review';
 import { PREVIEW_ROUNDS, PREVIEW_ROUNDS_EMPTY, PREVIEW_ROUNDS_FAILED, PREVIEW_ROUNDS_IDLE, PREVIEW_ROUNDS_MANY, PREVIEW_ROUNDS_NO_SEASON, PREVIEW_ROUNDS_UNFINISHED_FAILED } from '@/clubhouse/preview/fixtures-rounds';
 import '@/clubhouse/styles/rounds.css';
@@ -582,7 +583,8 @@ export default async function ClubhousePreview({
   };
   const entry = screens[screen];
   if (!entry) notFound();
-  const viewer = screen === 'home-player' || screen === 'hub-player' || screen === 'roster-player' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : screen === 'rounds' || screen === 'classes' || screen === 'track' || screen === 'setup' || (screen === 'round' && !state?.startsWith('coach')) || screen === 'calendar-player' || screen === 'messages-player' || screen === 'qualifiers-player' || screen === 'qualifier-player' || screen === 'my-qualifiers' || (screen === 'settings' && (state === 'player' || state === 'noteam')) ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
+  const who = previewViewer(screen, state);
+  const viewer = who === 'theo' ? { ...PREVIEW_PLAYER_USER, name: 'Theo Marchetti' } : who === 'jonah' ? { ...PREVIEW_PLAYER_USER, name: 'Jonah Okafor' } : PREVIEW_COACH;
   const user = teams === '2' && viewer.role === 'coach' ? { ...viewer, coachTeams: [{ id: 'preview-team', name: 'Varsity', gender: 'mens' }, { id: 'preview-team-w', name: 'Varsity Women', gender: 'womens' }], canSwitchTeams: true } : viewer;
 
   return (
