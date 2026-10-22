@@ -104,6 +104,16 @@ describe('GET /api/cron/coachhelm-monday-brief', () => {
     expect(send.mock.calls[0]![0]).toMatchObject({ to: 'coach@example.test', subject: 'Varsity · Monday brief', idempotencyKey: expect.stringMatching(/^coachhelm-monday-brief:c1:t1:\d{4}-\d{2}-\d{2}$/) });
   });
 
+  it('flag on: a suppressed send is skipped; a provider rejection counts as an error', async () => {
+    flag.mockReturnValue(true);
+    admin.mockReturnValue(client(teamRows(true)) as never);
+    load.mockResolvedValue(brief(2));
+    send.mockResolvedValueOnce({ delivered: false, error: 'kill switch', suppressed: true });
+    expect(await (await GET(req())).json()).toMatchObject({ skipped_not_sent: 1, errors: 0, sent: 0 });
+    send.mockResolvedValueOnce({ delivered: false, error: 'Resend is down' });
+    expect(await (await GET(req())).json()).toMatchObject({ skipped_not_sent: 0, errors: 1, sent: 0 });
+  });
+
   it('rejects a call without the cron secret', async () => {
     flag.mockReturnValue(true);
     const res = await GET(new Request('http://x/api/cron/coachhelm-monday-brief') as unknown as import('next/server').NextRequest);

@@ -151,8 +151,9 @@ async function handle(): Promise<NextResponse> {
         idempotencyKey: `${JOB}:${staff.coach_id}:${team.id}:${week}`,
       });
       if (result.delivered) summary.sent += 1;
-      // Not delivered: the kill switch, a missing key or an idempotent replay; none is a failure of this run.
-      else summary.skipped_not_sent += 1;
+      // The kill switch, a missing key or an idempotent replay is not a failure of this run; a provider rejection or outage is.
+      else if (result.suppressed) summary.skipped_not_sent += 1;
+      else throw new Error(`send: ${result.error ?? 'not delivered'}`);
     } catch (err) {
       summary.errors += 1;
       await logServerError(`coachhelm-monday-brief failure ${team.id}: ${describeError(err)}`, { action: 'cron.coachhelm-monday-brief', source: 'cron' });
