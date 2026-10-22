@@ -18,6 +18,7 @@ import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
+import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
@@ -96,6 +97,8 @@ export interface ChLeaderRow {
   status: ChForm;
   /** Days since the player's last countable round of any length, in the team's timezone. */
   quietDays: number | null;
+  /** Injured or away (display only). An out player is not flagged for a quiet stretch. Absent reads as available. */
+  availability?: ChAvailability;
 }
 
 /** One team event as the phone Home draws it (Up next and Today). */
@@ -299,7 +302,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
-    supabase.from('golf_team_members').select('player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
+    supabase.from('golf_team_members').select('availability, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
   );
   const rosterOf = (res: Awaited<typeof rosterRead>) =>
     ((res.data ?? []) as Array<{ player: RosterPlayer | null }>).map((m) => m.player).filter((p): p is RosterPlayer => p !== null);
@@ -362,6 +365,10 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   // ── Roster ──
   if (rosterRes.error) log('roster', rosterRes.error);
   const roster = rosterOf(rosterRes);
+  const availabilityById = new Map<string, ChAvailability>();
+  for (const m of (rosterRes.data ?? []) as unknown as Array<{ availability: string | null; player: RosterPlayer | null }>) {
+    if (m.player) availabilityById.set(m.player.id, parseAvailability(m.availability));
+  }
   const { today, weekStart, weekEnd } = wk;
 
   // ── Season rounds ──
@@ -394,6 +401,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
       sgPerRound: season.sgPerRound,
       status: season.status,
       quietDays: lastPlayed.has(p.id) ? Math.max(0, daysBetween(lastPlayed.get(p.id)!, today)) : null,
+      availability: availabilityById.get(p.id) ?? 'available',
     });
   }
   // C-24(d): an early read (fewer than three 18-hole rounds) never outranks a player with a sample; ties go to more rounds, then the name.

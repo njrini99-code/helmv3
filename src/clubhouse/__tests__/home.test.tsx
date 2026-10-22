@@ -314,6 +314,16 @@ describe('Home · empty', () => {
     expect(code('CH-2306')!.getAttribute('title')).toMatch(/after three rounds/);
   });
 
+  it('a player who is injured or away reads as that word, not as a quiet stretch (availability, P002)', () => {
+    const rows = PREVIEW_HOME.leaderboard.rows.map((r) => (r.playerId === 'eli' ? { ...r, availability: 'away' as const } : r));
+    wrap(<Leaderboard data={{ ...PREVIEW_HOME.leaderboard, rows }} />);
+    const table = within(screen.getByRole('table', { name: 'Leaderboard' }));
+    const eli = table.getAllByRole('row').find((r) => r.textContent?.includes('Eli Brandt'))!;
+    expect(eli.textContent).toContain('Away');
+    expect(eli.textContent).not.toContain('No rounds');
+    expect(eli.querySelector('.ch-h-lb__status')!.className).toContain('is-out');
+  });
+
   it('CH-2307 a coach with no team', () => {
     wrap(<CoachHomeNoTeam />);
     expect(code('CH-2307')!.textContent).toMatch(/You aren’t on a team yet/);

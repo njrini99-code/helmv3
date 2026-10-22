@@ -1,5 +1,11 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Brand decision recorded; preview player page frame
+
+White cards and Instrument Sans stay (owner decision); STATUS item 7 and
+`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
+`/clubhouse-preview/player?state=self` with the player, not the coach shell.
+
 ## 2026-10-21 — Lint bans reading the event inside a state updater
 
 `no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /

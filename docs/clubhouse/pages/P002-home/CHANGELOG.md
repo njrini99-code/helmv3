@@ -1,5 +1,26 @@
 # P002 — Home: changelog
 
+## 2026-10-22 — Home leaves out a player who is injured or away
+
+```text
+Design package: none (coach dashboard parity, availability on Home and Calendar)
+PR/commit:      claude/coach-parity-availability
+Contract IDs:   none
+Actions:        none
+Data impact:    reads golf_team_members.availability beside the roster the page already reads; no migration
+Held items:     none
+```
+
+### Changed
+
+- The leaderboard row of an injured or away player reads "Injured" or "Away" in
+  plain ink instead of "No rounds N days", and the player peek stops saying
+  "No round in N days". The greeting subline skips them in both halves (needs a
+  look, on track), the same rule as the roster's Needs a look. A player marked
+  available, or with no value, reads as before.
+- `loadCoachHome` selects `availability` with the roster it already reads (no
+  extra read); an unknown value reads as available.
+
 ## 2026-10-21 — Coach Home parity: the team's game, Waiting on you, CoachHelm, Nudge
 
 ```text

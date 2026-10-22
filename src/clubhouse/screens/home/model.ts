@@ -1,6 +1,7 @@
 import type { ChCoachHome } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
+import { isOut, type ChAvailability } from '../../data/availability';
 
 /**
  * Coach Home's derived copy, kept pure so it can be tested without a
@@ -57,6 +58,8 @@ export interface ChSublineRow {
   name: string;
   status: ChForm;
   quietDays: number | null;
+  /** Injured or away: left out of "needs a look" and "on track" alike (the coach already knows). Absent reads as available. */
+  availability?: ChAvailability;
 }
 
 function reason(r: ChSublineRow): string {
@@ -76,8 +79,10 @@ function list(parts: string[]): string {
  * in QUIET_DAYS), then the week's next competition, then the rest. Early-read
  * players are never counted as on track. Null when the rounds read failed.
  */
-export function homeSubline(rows: ChSublineRow[], opts: { roundsError: boolean; nextCompetition: { title: string; when: string } | null }): string | null {
+export function homeSubline(allRows: ChSublineRow[], opts: { roundsError: boolean; nextCompetition: { title: string; when: string } | null }): string | null {
   if (opts.roundsError) return null;
+  // A player who is out is neither flagged for a quiet stretch nor counted on track (same rule as the roster's Needs a look).
+  const rows = allRows.filter((r) => !isOut(r.availability));
   const flagged = rows.filter((r) => r.status === 'slipping' || (r.quietDays != null && r.quietDays >= QUIET_DAYS));
   const onTrack = rows.filter((r) => !flagged.includes(r) && r.status !== 'early');
   const early = rows.filter((r) => !flagged.includes(r) && r.status === 'early');

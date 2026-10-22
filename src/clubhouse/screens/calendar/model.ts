@@ -1,4 +1,5 @@
 import { sunTimes, type LatLng } from '../../lib/sun';
+import type { ChAvailability } from '../../data/availability';
 
 /**
  * Calendar view model. The loader resolves every time into the team's
@@ -14,6 +15,8 @@ export interface ChCalPerson {
   id: string;
   name: string;
   year: string | null;
+  /** Injured or away, for the coach's lists only (the loader leaves it off for a player). Display only; replies still count. */
+  availability?: ChAvailability;
 }
 
 export interface ChCalEvent {
