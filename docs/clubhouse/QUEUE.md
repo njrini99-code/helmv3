@@ -148,6 +148,8 @@ its rows together and does not map them one to one.
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
+| new-02 | Roster test CH-3009 flakes on `main` (came in with #2295): find and fix the root cause, no retry or skip | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-03 | The `presentation` CI check times out starting its web server (3 min): diagnose with measured numbers, fix | Clubhouse fixes | in progress | | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
