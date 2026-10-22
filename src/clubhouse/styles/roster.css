@@ -989,6 +989,10 @@ a.ch-rs-peek__dev:focus-visible,
   font: var(--ch-type-body);
   cursor: text;
 }
+.ch-root .ch-rs-em__in:focus-visible {
+  /* The box's focus-within ring is the focus mark (the page's ring would box the input inside the field). */
+  outline: none;
+}
 .ch-rs-em__in::placeholder {
   color: var(--ch-ink-500);
 }
