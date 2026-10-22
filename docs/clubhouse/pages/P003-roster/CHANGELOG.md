@@ -26,6 +26,26 @@ Held items:     supabase/migrations/20261022090000_golf_player_availability_coac
 - `setPlayerAvailability` still refuses a note, `availability_note` is still never selected, and players
   still do not see availability. Marking a player available leaves the saved note in place.
 
+## 2026-10-21 — Phone Roster figures no longer roll
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   CH-3604
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+Owner rule, already applied on Qualifiers: numbers render directly, with no
+count-up and no digits rolling. Each phone row's trailing figure (the scoring
+average, or strokes gained a round under SG) was a Number Flow numeral. It is
+now plain tabular text that takes a chosen sort's figure at once, with a true
+minus and a dash for no data. Rows still slide to their new places on a chosen
+sort. The text-first swap (`useArrivalPainted`, `.ch-rsm-flowtext`) and
+`figureParts` went with Number Flow. Replays 1bff7a784 and c2710104e onto
+main.
+
 ## 2026-10-22 — The availability word is parsed in one place
 
 ```text

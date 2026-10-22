@@ -1,7 +1,9 @@
 'use client';
 
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import { ladderHeadlineFor, type ChLadderRow } from '../../../data/coachhelm-ladder-shape';
 import type { ChStandRow, ChStanding, ChStandSense } from '../../../data/coachhelm-standing-shape';
 import { diveReadHref, helmViewHref, PLAYER_HELM_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
@@ -139,27 +141,24 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
 
 function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
-  const readHref = readHrefFor(s, voice);
   const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const { tour, team } = s.counts;
-  const top = s.gaps[0];
+  const top = s.ladder.top;
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
   return (
-    // On the team board's green (owner, 2026-10-16: "same with standing"): the headline and what is most to gain.
-    <section className={'ch-hs-hero ch-scoreboard' + (s.gaps.length > 0 ? '' : ' is-solo')} aria-labelledby="ch-hs-hero-t">
+    // On the team board's green (owner, 2026-10-16: "same with standing"): one sentence, then the ladder under it.
+    <section className="ch-hs-hero ch-scoreboard is-solo" aria-labelledby="ch-hs-hero-t">
       <div className="ch-hs-hero__main">
         <div className="ch-hs-hero__k">
           <span>{w.where}</span>
           {/* No-break spaces keep a date whole ("Sep 30") and a dot off the start of a line. */}
           {meta.length > 0 && <span className="ch-num">{meta.join('\u00a0· ')}</span>}
         </div>
-        {/* A headline, so no closing full stop (states audit, 2026-10-08). It leads with the most to gain; the counts say one
-            denominator, the Tour's, under it (P013 D4). */}
+        {/* A headline, so no closing full stop (states audit, 2026-10-08). It names the part of the round that loses the most,
+            once; its number is on the ladder (design call: the hero, Most to gain and the rows drew the same gap three times). */}
         <h2 id="ch-hs-hero-t">
           {top ? (
-            <>
-              {top.label} is worth about <span className="ch-hs-count ch-num">{top.strokes} strokes</span> a round
-            </>
+            ladderHeadlineFor(top, voice.role === 'coach' ? voice.first : null).replace('the Tour', tourName)
           ) : tour.of > 0 ? (
             <>
               Ahead of {tourName} on <Count ahead={tour.ahead} of={tour.of} /> stats
@@ -177,25 +176,85 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
           Every stat, strokes gained included, is against {tourName}.
         </p>
       </div>
-      {s.gaps.length > 0 && (
-        <aside className="ch-hs-gaps" aria-labelledby="ch-hs-gaps-t">
-          <h3 id="ch-hs-gaps-t">Most to gain</h3>
-          <ol>
-            {s.gaps.map((g) => (
-              <li key={g.id}>
-                <span>
-                  {g.label}
-                  <OpenRead href={readHref(g.id)} />
-                </span>
-                <span className="ch-hs-gaps__v">
-                  <b className="ch-num">{g.strokes}</b>
-                  <em>strokes a round</em>
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p>Strokes a round each would take off {w.average} if it matched the Tour. They overlap, so they do not add up.</p>
-        </aside>
+    </section>
+  );
+}
+
+/** One part of the round: its strokes against the Tour on a thin bar, and "Because" opening the reads behind it in place. */
+function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; open: boolean; onToggle: () => void; readsFailed: boolean; voice: ChViewVoice }) {
+  const id = `ch-hs-ld-${r.id}`;
+  const canOpen = !readsFailed && r.causes.length > 0;
+  return (
+    <li className={'ch-hs-ld__r' + (r.sense ? ' is-' + r.sense : ' is-none')}>
+      <div className="ch-hs-ld__h">
+        <h3>{r.label}</h3>
+        <span className="ch-hs-ld__v ch-num">{r.strokes ?? '—'}</span>
+      </div>
+      {r.strokes != null ? (
+        <div className="ch-hs-ld__bar" aria-hidden="true">
+          <i style={{ width: `${r.pct}%` }} />
+        </div>
+      ) : (
+        <p className="ch-hs-ld__miss" data-ch-code="CH-13374">
+          {r.missing}
+        </p>
+      )}
+      {canOpen ? (
+        <>
+          <button type="button" className="ch-hs-ld__why" aria-expanded={open} aria-controls={`${id}-b`} onClick={onToggle}>
+            <span>Because</span>
+            <span className="ch-hs-ld__n ch-num">
+              {r.causes.length} {r.causes.length === 1 ? 'open read' : 'open reads'}
+            </span>
+            <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
+          </button>
+          {/* Opens in place on height and opacity (base, --ch-ease; review 7.6); closed, it is out of the reading order. */}
+          <div id={`${id}-b`} className="ch-hs-ld__b" data-open={open ? 'true' : 'false'} aria-hidden={open ? undefined : true} inert={!open}>
+            <ul>
+              {r.causes.map((c) => (
+                <li key={c.id}>
+                  <a href={diveReadHref(c.id, voice)}>{c.title}</a>
+                  {c.line && <p>{c.line}</p>}
+                  {c.firmness && <em>{c.firmness}</em>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      ) : (
+        // A part with no figure already says why in words; "No open read" is said only beside a figure.
+        !readsFailed && r.strokes != null && <p className="ch-hs-ld__none">No open read here.</p>
+      )}
+    </li>
+  );
+}
+
+/**
+ * Where strokes go (design call, Standing; review 7.4): four flush rows, Off the tee, Approach, Around the green and Putting, each
+ * the strokes a round it gains or loses against the Tour, with a true minus, a thin bar (losses amber, gains green) and "Because"
+ * opening the open reads behind it. One row opens at a time. It replaces "Most to gain".
+ */
+function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
+  return (
+    // Drawn as a group of the page (its head over the rule, flush rows), so it reads as the first section, not another card.
+    <section className="ch-hs-g ch-hs-ld" aria-labelledby="ch-hs-ld-t">
+      <div className="ch-hs-g__h">
+        <div className="ch-hs-g__t">
+          <h2 id="ch-hs-ld-t">Where strokes go</h2>
+        </div>
+        <p>Strokes a round against {tourName}, from {voice.role === 'coach' ? `${voice.first}’s` : 'your'} strokes gained.</p>
+      </div>
+      <ol className="ch-hs-rows">
+        {s.ladder.rows.map((r) => (
+          <LadderRow key={r.id} r={r} open={open === r.id} readsFailed={s.ladder.readsFailed} voice={voice} onToggle={() => setOpen((v) => (v === r.id ? null : r.id))} />
+        ))}
+      </ol>
+      {s.ladder.readsFailed && (
+        <p className="ch-hs-ld__fail" data-ch-code="CH-13273">
+          The reads behind these didn’t load, so nothing opens under them. The strokes are not affected. Try again in a moment.
+        </p>
       )}
     </section>
   );
@@ -287,6 +346,7 @@ export function Standing({ load, voice = PLAYER_VOICE }: { load: ChViewLoad<ChSt
             </p>
           )}
           <Hero s={s} voice={voice} />
+          <Ladder s={s} voice={voice} />
           {s.groups.map((g) => (
             <section key={g.id} className="ch-hs-g" aria-labelledby={`ch-hs-g-${g.id}`}>
               <div className="ch-hs-g__h">

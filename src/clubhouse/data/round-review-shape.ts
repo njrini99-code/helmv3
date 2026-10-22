@@ -1,5 +1,6 @@
 import { withCanonicalRoundTotal } from '@/lib/golf/round-total';
 import type { ChSgTour } from '../lib/sg';
+import type { ChDebrief } from './round-debrief-shape';
 import type { EditableRoundType } from '@/lib/golf/round-type-options';
 import type { ChRoundTypeCurrent, ChRoundTypeOptions, ChRoundTypeViewer } from '../screens/rounds/entry/round-type';
 import { roundType, teeColorFor, teeLabel, type ChRoundType, type ChTeeColor } from './rounds-shape';
@@ -111,6 +112,11 @@ export interface ChRoundReview {
   playerError?: boolean;
   /** The team's read failed: which Tour the strokes gained is measured against is unknown, and the card says so (no team at all is not this). */
   tourError?: boolean;
+  /**
+   * CoachHelm's 30-second debrief on the player's own round (chs-30, `round-debrief-shape.ts`): set only with
+   * `coachhelm_reads_v1_copy` on and something to say. Absent, the review draws its recap block as before.
+   */
+  debrief?: ChDebrief | null;
 }
 
 /**

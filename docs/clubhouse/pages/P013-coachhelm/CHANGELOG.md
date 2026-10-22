@@ -1,5 +1,129 @@
 # P013 — CoachHelm: changelog
 
+## 2026-10-22 — Coach Standing: the ladder's reads are the player's, read as the coach
+
+```text
+Design package: clubhouse-coachhelm-design-call.md (Standing)
+PR/commit:      see git log (claude/coach-ladder-feed)
+Contract IDs:   none new
+Actions:        none (read only)
+Data impact:    none written; on a coach's Standing of one player the
+                ladder's "Because" reads now come from the coach feed for
+                that player (not the player's own feed), worded for the
+                coach, and each opens that read in the coach's Deep dive of
+                the player
+```
+
+Before: a coach's Standing drew the ladder's reads from the player's own
+feed and linked them to the player's own Deep dive. After: the coach feed,
+the coach's words, and the coach's Deep dive.
+
+## 2026-10-21 — Standing: Where strokes go replaces Most to gain
+
+```text
+Design package: clubhouse-coachhelm-design-call.md (Standing); review
+                2026-10-19 section 7.4
+PR/commit:      see git log (claude/coachhelm-strokes-ladder)
+Contract IDs:   CH-13273, CH-13374 (new); CH-13271, CH-13371, CH-13470,
+                CH-13880 reworded
+Actions:        none (read only)
+Data impact:    none written; reads the Deep dive's own feed of the player's
+                reads (no exposure recorded) beside the standing
+
+## 2026-10-21 — Deep dive: one read ledger, cleared reads kept, where it happened
+
+```text
+Design package: design call (clubhouse-coachhelm-design-call.md: Player Deep
+                dive, States, Ranking and limits, D6)
+PR/commit:      see git log (claude/coachhelm-deepdive-ledger)
+Contract IDs:   CH-13996 (new); CH-13890, CH-13992, CH-13282, CH-13480
+                (changed)
+Actions:        none (read only)
+Data impact:    none written; the rounds the example holes are on are read in
+                the same golf_rounds read as the rounds behind the reads
+Held items:     none
+```
+
+### Changed
+
+- The summary is one sentence ("CoachHelm has 5 reads on your game, 2 of
+  them in your plan."); the Needs work, What's working and In your plan
+  tiles are gone. With plans that did not load the plan clause is left out.
+- Needs work and What's working are replaced by one flush read ledger
+  grouped by area (Off the tee, Approach, Around the green, Putting, Course
+  and scoring). Each row has its stance word and its firmness word: the claim
+  ladder's word for a coach with the support pass on, else the confidence
+  word (the player's feed drops the ladder, so a player sees Solid, Early or
+  Thin read). An out-of-date read keeps its row with the firmness word greyed.
+- A read the recheck cleared stays in its area as a line ("Cleared Oct 12",
+  the read, the recheck's numbers) instead of a Cleared section beside the
+  list; the newest three show, then "N more cleared" shows the rest.
+
+### Added
+
+- "Where it happened" in the read (CH-13996): up to five example holes, each
+  with its round's day and course, the hole and the counted path in shot-type
+  words, read only from a stored counted sequence (`evidence.cause` in the
+  counted state, a shot-sequence basis, or an insight angle's sequence that
+  meets the Observed floors). Without one the section is not drawn.
+- Preview: `?view=deep-dive&state=cleared`, `state=manycleared` and
+  `state=holes&insight=in-pen`.
+
+### Why
+
+- Design call, Player Deep dive: three count tiles before the claim, and a
+  rail of groups as a panel, do with more containers what one ledger does;
+  a cleared read must not disappear without trace (D6); example holes are
+  the evidence list for a counted path.
+
+## 2026-10-21 — Coach can re-check the team's reads
+
+```text
+Design package: round 3B brief (coordinator, under the owner's delegation)
+PR/commit:      see git log (claude/coachhelm-recheck-team)
+Contract IDs:   CH-13006, CH-13007, CH-13406, CH-13705, CH-13944,
+                CH-13945 (new)
+Actions:        ACT-P013-RECHECK-READS (new)
+Data impact:    none new (the existing refreshTeamAnalysisAsCoach writes)
+Held items:     none
+```
+
+### Changed
+
+- The coach Board has one quiet secondary action under it, "Re-check
+  reads", that re-runs CoachHelm for every active player on the team: the
+  action Fairway's Triage desk "Scan team" calls, which Clubhouse coaches
+  could not reach (CH-13944). No team or player id is sent.
+- Running: "Re-checking 5 players…" (CH-13406). Done: "Re-checked 5
+  players · 3 new reads", then the board reads its data again (CH-13945).
+  Rate-limited: the action's own words (CH-13007). Failed or offline: one
+  line, the board as it was (CH-13006). Outcome haptics only (CH-13705).
+- Not drawn with CoachHelm off or no players; players never see it.
+  Preview: `?state=recheck-running`, `recheck-done`, `recheck-quiet`,
+  `recheck-ratelimited`, `recheck-failed` (tap the button).
+
+## 2026-10-21 — Coach voice from the stored coach copy (chs-40)
+
+```text
+Design package: design call, "Coach voice vs player voice" (D1)
+PR/commit:      see git log (claude/coachhelm-coach-voice)
+Contract IDs:   none (CH-13940 and the card's title and claim, reworded)
+Actions:        none changed
+Data impact:    none (reads evidence.coach_copy, which the rows store)
+Held items:     none
+```
+
+### Changed
+
+- A coach's card title and claim come from the engine's stored coach copy
+  (`evidence.coach_copy`) when the row carries it, named for the player;
+  without it they are the row's own text through the `speak` regex, as
+  before. The Not enough yet line's titles follow the same rule.
+- Numbers are identical in both voices: a coach copy part whose numbers
+  differ from the player's text is not used.
+- The focus area a coach assigns is still saved in the player's own words.
+  Player surfaces are unchanged. Preview: `?state=coachcopy`.
+
 ## 2026-10-21 — Coach: the Monday brief (flag off)
 
 ```text
@@ -10,6 +134,7 @@ Contract IDs:   CH-13932 to CH-13939
 Actions:        Open (a link to the player on the board); none written
 Data impact:    none written; reads the visible v3 reads, the roster's
                 countable rounds and the Slice 7b team pattern
+Held items:     none
 
 ## 2026-10-21 — One count of what CoachHelm sees (spec D)
 

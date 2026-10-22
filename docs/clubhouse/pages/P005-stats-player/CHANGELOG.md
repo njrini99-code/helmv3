@@ -1,5 +1,19 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — Team stats phone figures render directly (shared stylesheet)
+
+```text
+Design package: none (owner rule: no digit rolling)
+PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
+Contract IDs:   none changed
+Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+The shared stats stylesheet lost one rule that styled the rolling figure inside
+the Team stats strokes gained line. The player Stats page is unchanged.
+
 ## 2026-10-21 — CoachHelm verdict loop on the focus areas (chs-11)
 
 ```text
@@ -78,12 +92,13 @@ Held items:     none
 
 ### Fixed
 
-- On the phone, `?tab=game#gm-approach` (and `#gm-short`, `#gm-putting`, `#gm-tee`,
-  `#gm-scoring`) from the team grid's leg figures now opens that section of Game
-  detail and scrolls to it. The phone draws only the section chosen in the chips
-  (Scoring by default), so the scroll found nothing and gave up. Game detail reads
-  the hash itself on the phone, and follows it if it changes while the page is open.
-  A hash that names no section changes nothing. Desktop is unchanged.
+- On the phone, `?tab=game#gm-approach` (and `#gm-short`, `#gm-putting`,
+  `#gm-tee`, `#gm-scoring`) from the team grid's leg figures now opens that
+  section of Game detail and scrolls to it. The phone draws only the section
+  chosen in the chips (Scoring by default), so the scroll found nothing and gave
+  up. Game detail reads the hash itself on the phone, and follows it if it
+  changes while the page is open. A hash that names no section changes nothing.
+  Desktop is unchanged.
 
 ## 2026-10-21 — CoachHelm count line on Game detail (spec D build A)
 

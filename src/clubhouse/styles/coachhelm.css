@@ -384,6 +384,34 @@
   color: var(--ch-text-tertiary);
 }
 
+/* CH-13944: Re-check reads, a quiet secondary action under the board, with its outcome as one line beside it (wraps under on
+   the phone). The line rises in (base); still with reduced motion or Animations off. */
+.ch-hl-rck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.ch-hl-rck__s {
+  flex: 1 1 260px;
+  margin: 0;
+  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-hl-rck__s:not(:empty) {
+  animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
+}
+.ch-hl-rck__s [data-ch-code='CH-13406'] {
+  font-weight: 600;
+  color: var(--ch-text-secondary);
+}
+.ch-hl-rck__s.is-failed {
+  color: var(--ch-text-secondary);
+}
+[data-ui='clubhouse'][data-motion='off'] .ch-hl-rck__s {
+  animation: none;
+}
+
 /* By player: a player with no read yet is a quiet row, not a button. */
 .ch-hl-pl.is-none {
   cursor: default;

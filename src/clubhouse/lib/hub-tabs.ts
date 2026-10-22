@@ -12,6 +12,7 @@ export const HUB_TABS: Record<ChTeamHub['role'], ReadonlyArray<readonly [ChHubTa
     ['ann', 'Announcements'],
     ['travel', 'Travel'],
     ['docs', 'Documents'],
+    ['tasks', 'Tasks'],
   ],
   coach: [
     ['home', 'Home'],

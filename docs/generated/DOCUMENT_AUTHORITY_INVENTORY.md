@@ -754,7 +754,9 @@ them would bury everything above.
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROJECT_INSTRUCTIONS.md` | current | - | - | - | - |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
+| `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/STATUS.md` | current | - | - | yes | - |

@@ -7,6 +7,7 @@ import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config'
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { fmtShortDate } from '@/components/golf/coachhelm/home/buildPlayerHubViewModel';
 import { formatSigned, NO_DATA } from '../lib/format';
+import { LADDER_METRICS, toChLadder, type ChLadder, type ChLadderReads } from './coachhelm-ladder-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
@@ -74,12 +75,6 @@ export interface ChStandGroup {
   rows: ChStandRow[];
 }
 
-export interface ChStandGap {
-  id: string;
-  label: string;
-  strokes: string;
-}
-
 export interface ChStanding {
   /** `empty`: no standing row yet. `early`: rows, but fewer rounds than a projection needs. `ready`: the rest. */
   state: 'empty' | 'early' | 'ready';
@@ -100,8 +95,11 @@ export interface ChStanding {
   cohortFailed?: true;
   groups: ChStandGroup[];
   counts: { measures: number; tour: { of: number; ahead: number }; team: { of: number; ahead: number } };
-  /** The three biggest projections, most strokes first. They overlap (one weak skill shows in several rows), so they are never added. */
-  gaps: ChStandGap[];
+  /**
+   * Where strokes go (design call, Standing): the four parts of the round against the Tour, with the open reads behind each. It
+   * replaced "Most to gain" (the three biggest projections), which drew the same top gap the hero and the rows already drew.
+   */
+  ladder: ChLadder;
   /**
    * A coach's page only (spec A): the open read on each metric that has one (`evidence.metric` = the row's metric), by metric id, so
    * a row and a "Most to gain" item can open it in the Deep dive. Absent on the player's own page and when that read failed.
@@ -288,10 +286,12 @@ function toRow(s: PlayerStanding, id: MetricId, baseline: number | null, attempt
 
 /**
  * The standing rows and the scoring-average read as the screen draws them. `rows`: `loadPlayerStandingMap`'s values (any order);
- * a metric the registry does not know has no row here. `baseline`: the stats-cache read, whose failure is its own state. `viewer`:
- * whose page it is (the player's own by default); a coach's names the team average without "your" and the rank by the player.
+ * a metric the registry does not know has no row here. `baseline`: the stats-cache read, whose failure is its own state.
+ * `reads`: the player's open reads for the ladder's "Because" (`coachhelm-ladder-shape.ts`); null draws the ladder without them.
+ * `viewer`: whose page it is (the player's own by default); a coach's names the team average without "your" and the rank by the
+ * player.
  */
-export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandBaselineRead, viewer: ChViewer = { role: 'player' }): ChStanding {
+export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandBaselineRead, reads: ChLadderReads | null = null, viewer: ChViewer = { role: 'player' }): ChStanding {
   const roundsPlayed = baseline.status === 'ok' ? baseline.roundsPlayed : null;
   const average = baseline.status === 'ok' && roundsPlayed != null && roundsPlayed >= MIN_PROJECTION_ROUNDS ? baseline.scoringAverage : null;
   const byId = new Map(rows.map((r) => [r.metric_id as string, r]));
@@ -301,16 +301,18 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
     const s = byId.get(id);
     if (s && Number.isFinite(s.player_value)) drawn.push({ id, row: toRow(s, id, average, attempts[id] ?? null, sgBehindTour(byId.get(parentSgMetric(id) ?? '')), viewer) });
   }
+  // The four parts of the round are Where strokes go's; drawn again in the Strokes gained group they would repeat its numbers
+  // (design call: no number twice on one screen). Strokes gained: total stays there, and a group left empty is not drawn. They
+  // still count among the comparisons the hero states, since the ladder draws them.
+  const grouped = drawn.filter((d) => !LADDER_METRICS.has(d.id));
   const described = (g: (typeof GROUPS)[number]) => (viewer.role === 'coach' ? { ...g, description: COACH_DESCRIPTION[g.id] ?? g.description } : g);
-  const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...described(g), rows: drawn.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
+  const groups: ChStandGroup[] = GROUPS.map((g) => ({ ...described(g), rows: grouped.filter((d) => groupOf(d.id) === g.id).map((d) => d.row) })).filter((g) => g.rows.length > 0);
   const all = drawn.map((d) => d.row);
   const newest = rows.map((r) => r.computed_at).filter((d): d is string => typeof d === 'string').sort().pop() ?? null;
-  // Strokes gained: total is the sum of the rows, not a part of the game to work on, so it never leads what is most to gain.
-  const gaps = all
-    .filter((r): r is ChStandRow & { projection: ChStandProjection } => r.projection != null && r.id !== 'sg_total')
-    .sort((a, b) => Number(b.projection.strokes) - Number(a.projection.strokes))
-    .slice(0, 3)
-    .map((r) => ({ id: r.id, label: r.label, strokes: r.projection.strokes }));
+  const ladder = toChLadder(
+    rows.filter((r) => Number.isFinite(r.player_value)),
+    reads,
+  );
   const withTour = all.filter((r) => r.vsTour);
   const withTeam = all.filter((r) => r.vsTeam);
   return {
@@ -327,6 +329,6 @@ export function toChStanding(rows: readonly PlayerStanding[], baseline: ChStandB
       tour: { of: withTour.length, ahead: withTour.filter((r) => r.vsTour?.sense === 'ahead').length },
       team: { of: withTeam.length, ahead: withTeam.filter((r) => r.vsTeam?.sense === 'ahead').length },
     },
-    gaps,
+    ladder,
   };
 }

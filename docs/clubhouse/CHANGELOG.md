@@ -1,10 +1,38 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Team Hub Home is widgets
+
+Team Hub's Home is a twelve-column bento of tiles (`screens/hub/widgets.tsx`,
+`.ch-hw*` in `styles/hub.css`). `ReplyChoices`, `Acknowledgement`,
+`repliesLine` and a new `useTaskSave` are exported from `screens/hub/parts.tsx`
+so a tile acts as the tabs do; `Rsvps`, `HubBand` and `homeBand` are removed.
+
+## 2026-10-21 — A coach's Team Hub item has a badge
+
+`CH_NAV_COACH`'s Team Hub item is `badge: 'hub'`, and `badgeCount` adds the
+shell's `overdueTasks` (a coach's overdue tasks with open work, read once by
+`loadClubhouseShell`) to the polled counts, which are zero for a coach.
+
+## 2026-10-21 — Stronger rule token; players get a Tasks tab in Team Hub
+
+`--ch-ledger-rule-strong` (`styles/tokens.css`, light, night and both
+high-contrast sets) is a hairline at 1.8:1 against the workspace, for lines
+that divide a page's sections where the plain rule (1.2:1) lets the page read
+flat. It is decorative, not a 3:1 boundary. Team Hub uses it first (P010).
+`HUB_TABS.player` now includes Tasks (`lib/hub-tabs.ts`), so `?tab=tasks`
+opens for a player.
+
 ## 2026-10-21 — Brand decision recorded; preview player page frame
 
 White cards and Instrument Sans stay (owner decision); STATUS item 7 and
 `memory/brand/clubhouse-ui.md` say so. The dev preview now frames
 `/clubhouse-preview/player?state=self` with the player, not the coach shell.
+
+## 2026-10-21 — Phone Roster and Team stats figures render directly
+
+Owner rule: no digit rolling. The phone Roster row figure and the Team stats
+strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
+gone from both screens.
 
 ## 2026-10-21 — Lint bans reading the event inside a state updater
 

@@ -642,8 +642,11 @@ flags:
       round in the window (or a moved window), not a changed sample count;
       empty window dates are filled from the rounds read; and the nightly
       roster sweep re-analyzes players whose newest countable round is newer
-      than their newest read (deterministic generators only, no LLM). Off
-      until the owner reviews the shorter feeds and the Watching counts.
+      than their newest read (deterministic generators only, no LLM). Round
+      review: a player's own round shows the 30-second debrief (one number
+      that moved, the top open read, the round's counted facts, one next
+      step) where the recap stood. Off until the owner reviews the shorter
+      feeds and the Watching counts.
     type: release
     status: active
     created_at: "2026-10-20"

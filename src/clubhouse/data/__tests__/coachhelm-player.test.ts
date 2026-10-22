@@ -172,11 +172,16 @@ describe('the three loaders read only the scope’s player', () => {
       // The player's visible reads: an open finding on penalties, a strength on putting, and a row of someone else's on big numbers.
       golf_coach_insights: { data: [penalties(PID), slope(PID), bigNumber(OTHER, 'in-other')] },
     };
+    delivery.coach.mockResolvedValue([penalties(PID), slope(PID)]);
     const out = await loadCoachPlayerStanding({ scope });
     expect(standingRead.load).toHaveBeenCalledWith(PID);
+    // The ladder's open reads come from the coach feed for this player, never the player's own feed.
+    expect(delivery.coach).toHaveBeenCalledWith(COACH, { player_id: PID, limit: PLAYER_FEED_LIMIT, includeMore: true });
+    expect(delivery.player).not.toHaveBeenCalled();
     if (out.status !== 'ready') throw new Error(out.status);
     const ids = out.data.groups.flatMap((g) => g.rows.map((r) => r.id));
-    expect(ids).toHaveLength(14);
+    // The four parts of the round draw on Where strokes go, not in the groups (#2290); the other ten rows are the groups'.
+    expect([...ids, ...out.data.ladder.rows.map((r) => r.id)]).toHaveLength(14);
     expect(ids).not.toContain('big_number_rate');
     expect(out.data.reads).toMatchObject({ penalty_rate_per_round: 'in-pen' });
     expect(Object.values(out.data.reads ?? {})).not.toContain('in-other');

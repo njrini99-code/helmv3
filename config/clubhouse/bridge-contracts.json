@@ -10226,11 +10226,12 @@
     "category": 1,
     "item": 1,
     "name": "HUB_READY",
-    "meaning": "Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement.",
+    "meaning": "Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents and Tasks, for a coach and a player; Announcements and Tasks carry a small count when a post waits to be acknowledged or a task is late). Under the title one line says what the team is waiting on (a coach: players, replies due, posts awaiting acknowledgement, days to the next trip, open tasks; a player: replies due, posts to acknowledge, days to their trip, open tasks), each figure opening the tab it counts; a figure that is zero, or whose read failed, is left out. Home is a set of widgets (twelve columns on desktop, one in rank order on a phone): the next trip as the one dark tile (days to go, the plan as a rail, who is traveling, a pager to the next trip, Edit trip for a coach; with no trip ahead, the week's next event); this week as seven days to step through, the chosen day's events with replies as a count for a coach and the reply choices for a player, and what follows later this week; for a coach, Waiting on (each player's replies owed, posts not acknowledged, open tasks with late ones in amber and rounds in 30 days, sortable, a name opening the items), the latest post with its acknowledged count and a disc for each player not yet acknowledged, and the tasks' done, left and overdue with the three soonest; for a player, their queue (replies, posts and tasks answered in place, an answered row staying put), the latest post with Got it, and the newest files. Updates sits on both. A coach also gets New announcement.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/team-hub/page.tsx",
     "tests": [
-      "src/clubhouse/__tests__/hub.test.tsx"
+      "src/clubhouse/__tests__/hub.test.tsx",
+      "src/clubhouse/screens/hub/__tests__/hub-redesign.test.tsx"
     ]
   },
   {
@@ -10239,11 +10240,12 @@
     "category": 1,
     "item": 2,
     "name": "TAB_LINK_OPENS_A_TAB",
-    "meaning": "?tab=home|ann|travel|docs|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home.",
+    "meaning": "?tab=home|ann|travel|docs|tasks opens that tab; a value that is not a tab opens Home. A player's Tasks tab lists their own tasks; the coach's Tasks tab also opens with a board of the team's done, left and overdue.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/TeamHub.tsx#parseHubTab; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute",
     "tests": [
-      "src/clubhouse/__tests__/hub.test.tsx"
+      "src/clubhouse/__tests__/hub.test.tsx",
+      "src/clubhouse/screens/hub/__tests__/hub-redesign.test.tsx"
     ]
   },
   {
@@ -10377,7 +10379,7 @@
     "item": 1,
     "name": "NO_EVENTS_NEED_A_REPLY",
     "chCode": "CH-10301",
-    "meaning": "No events need a reply",
+    "meaning": "No events this week",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },
@@ -14769,6 +14771,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130215,
+    "page": "P013",
+    "category": 2,
+    "item": 15,
+    "name": "RECHECK_RUNNING",
+    "chCode": "CH-13406",
+    "meaning": "Re-check running",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -15141,6 +15154,17 @@
     "name": "COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE",
     "chCode": "CH-13313",
     "meaning": "Coach player page, CoachHelm off for the player: it is off for that player's team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130435,
+    "page": "P013",
+    "category": 4,
+    "item": 35,
+    "name": "STANDING_A_PART_OF_THE_ROUND_ON",
+    "chCode": "CH-13374",
+    "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15605,6 +15629,39 @@
     "name": "COACH_PLAYER_PAGE_DID_NOT_LOAD_ON",
     "chCode": "CH-13209",
     "meaning": "Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130642,
+    "page": "P013",
+    "category": 6,
+    "item": 42,
+    "name": "RECHECK_RATE_LIMITED",
+    "chCode": "CH-13007",
+    "meaning": "Re-check rate-limited",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130643,
+    "page": "P013",
+    "category": 6,
+    "item": 43,
+    "name": "STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES",
+    "chCode": "CH-13273",
+    "meaning": "Standing: the open reads behind Where strokes go don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130644,
+    "page": "P013",
+    "category": 6,
+    "item": 44,
+    "name": "RECHECK_FAILS",
+    "chCode": "CH-13006",
+    "meaning": "Re-check fails or is offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16194,6 +16251,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130754,
+    "page": "P013",
+    "category": 7,
+    "item": 54,
+    "name": "RECHECK_READS",
+    "chCode": "CH-13944",
+    "meaning": "Re-check reads (coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130755,
+    "page": "P013",
+    "category": 7,
+    "item": 55,
+    "name": "RECHECK_LANDS",
+    "chCode": "CH-13945",
+    "meaning": "Re-check lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130756,
+    "page": "P013",
+    "category": 7,
+    "item": 56,
+    "name": "DEEP_DIVE_WHERE_IT_HAPPENED",
+    "chCode": "CH-13996",
+    "meaning": "Deep dive: where it happened (chs-38)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -16540,6 +16630,17 @@
     "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
     "chCode": "CH-13780",
     "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131708,
+    "page": "P013",
+    "category": 17,
+    "item": 8,
+    "name": "RECHECK_TAPPED",
+    "chCode": "CH-13705",
+    "meaning": "Re-check tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

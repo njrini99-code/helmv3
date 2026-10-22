@@ -122,6 +122,27 @@
       ]
     },
     {
+      "id": "ACT-P013-RECHECK-READS",
+      "label": "Re-check the team's reads (coach)",
+      "component": "src/clubhouse/screens/coachhelm/Recheck.tsx#RecheckReads",
+      "handler": "run",
+      "service": "src/app/golf/actions/insights-coachhelm.ts#refreshTeamAnalysisAsCoach",
+      "data": [
+        "golf_coach_insights",
+        "golf_team_members"
+      ],
+      "bridge": {
+        "loading": 130213,
+        "success": 130747,
+        "failure": 130638,
+        "rateLimited": 130639,
+        "haptic": 131708
+      },
+      "tests": [
+        "src/clubhouse/__tests__/coachhelm-recheck.test.tsx"
+      ]
+    },
+    {
       "id": "ACT-P013-TRY-AGAIN",
       "label": "Try a failed read again",
       "component": "src/clubhouse/ui/Notices.tsx#InlineNotice",

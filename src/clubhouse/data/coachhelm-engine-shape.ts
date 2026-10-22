@@ -519,6 +519,8 @@ export interface ChLifecycleShaped<T> {
   byId: Map<string, ChEngineLifecycle>;
   /** The Cleared lines, in the list's order (04 example 5): shown until the step archives them. */
   cleared: string[];
+  /** The same Cleared lines with the read each is about, for a surface that files them by area (the Deep dive's ledger). */
+  clearedReads: Array<{ read: T; line: string }>;
 }
 
 /**
@@ -534,7 +536,7 @@ export function shapeReadsLifecycle<
     evidence: unknown;
   },
 >(ranked: readonly T[], on: boolean, viewer: ChViewer | undefined, nowIso: string): ChLifecycleShaped<T> {
-  if (!on) return { kept: [...ranked], byId: new Map(), cleared: [] };
+  if (!on) return { kept: [...ranked], byId: new Map(), cleared: [], clearedReads: [] };
   const voice = viewer?.role === 'coach' ? 'coach' : 'player';
   const reads: Array<ShapeableRead & { src: T }> = ranked.map((r) => ({
     id: r.id,
@@ -562,7 +564,7 @@ export function shapeReadsLifecycle<
   }
   // A Cleared read is out of the list, but a surface that draws it anyway (the coach's one card a player) says Cleared.
   for (const c of shaped.cleared) byId.set(c.read.id, { word: 'Cleared', line: c.line, pair: null });
-  return { kept, byId, cleared: shaped.cleared.map((c) => c.line) };
+  return { kept, byId, cleared: shaped.cleared.map((c) => c.line), clearedReads: shaped.cleared.map((c) => ({ read: c.read.src, line: c.line })) };
 }
 
 /** True when nothing is set: the card draws exactly what it drew before. */

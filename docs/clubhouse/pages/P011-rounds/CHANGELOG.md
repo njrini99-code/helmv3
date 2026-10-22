@@ -1,5 +1,30 @@
 # P011 — Rounds: changelog
 
+## 2026-10-21 — CoachHelm 30-second debrief on the round review (chs-30)
+
+```text
+Design package: none (supercharge 04 example 9 and layout 3)
+PR/commit:      claude/coachhelm-round-debrief
+Contract IDs:   none
+Actions:        none
+Data impact:    read-only (golf_rounds, golf_coach_insights,
+                golf_insight_drill_attachments, golf_player_focus_areas),
+                only with coachhelm_reads_v1_copy on
+Held items:     none
+```
+
+With `coachhelm_reads_v1_copy` on, a player's own round review shows a
+Round debrief where the CoachHelm recap stood (zone 6, "In words"): the
+one number that moved against their own average (putts, score to par,
+fairways or greens, at least one spread of their last 20 rounds away),
+their top open read with what this round did to it (par 3, 4 and 5
+scoring, penalty strokes, doubles or worse), the round's counted facts in
+one line, and one next step (the read's drill, else their focus area),
+then Why? to the read on their Deep dive. A line with no data is left
+out; with nothing to say, or the flag off, or a coach looking, the recap
+is drawn as before. No recap is asked for while the debrief stands in its
+place. Preview: `/clubhouse-preview/round?state=debrief|debrief-thin`.
+
 ## 2026-10-21 — TeamRounds.tsx: no blank line at the end of the file
 
 - Whitespace only, from the merge train; no behavior change.
