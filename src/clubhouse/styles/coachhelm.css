@@ -1921,3 +1921,21 @@ html:not([data-fw-theme='dark']) .ch-hl {
     min-height: 44px;
   }
 }
+
+/* "{names} have no insights yet." (CH-13310): each name is the way to that player's Standing (spec A). */
+.ch-hl-note__a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ch-border-strong);
+  text-underline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hl-note__a:hover {
+    color: var(--ch-text-primary);
+  }
+}
+.ch-hl-note__a:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}

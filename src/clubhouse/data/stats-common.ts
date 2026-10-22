@@ -215,17 +215,22 @@ export type ChTour = 'pga' | 'lpga';
  * men's values, and a metric the tour has no value for has no benchmark (Q-88: never D1, always Tour).
  */
 export async function loadTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<Map<string, number>> {
-  const out = new Map<string, number>();
+  return (await readTourBenchmarks(supabase, tour, surface)).bench;
+}
+
+/** `loadTourBenchmarks` with its failure told apart from a tour with no rows: `error` when the read failed (logged). */
+export async function readTourBenchmarks(supabase: Supabase, tour: ChTour, surface: string): Promise<{ bench: Map<string, number>; error: boolean }> {
+  const bench = new Map<string, number>();
   const { data, error } = await supabase.from('golf_pga_standards').select('metric_id, pga_tour_value').eq('tour', tour);
   if (error) {
     chLogServer(surface, 'tourBenchmarks', error);
-    return out;
+    return { bench, error: true };
   }
   for (const r of data ?? []) {
     const v = r.pga_tour_value == null ? null : Number(r.pga_tour_value);
-    if (v != null && Number.isFinite(v)) out.set(r.metric_id, v);
+    if (v != null && Number.isFinite(v)) bench.set(r.metric_id, v);
   }
-  return out;
+  return { bench, error: false };
 }
 
 export function tourForGender(gender: string | null | undefined): ChTour {

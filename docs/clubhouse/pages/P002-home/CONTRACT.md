@@ -30,7 +30,10 @@ Rows without a code are behaviours with no single element, recorded in
 namespace 1) apply here too and are named where they carry a category.
 `clubhouse:check` holds this file to the registry.
 
-Home is two pages under one address, `/golf/dashboard`: Coach Home and Player Home. Where a contract belongs to one of them the note says which. Home only reads: it has no saves, no toasts and no forms, which is why eight of the 25 categories are N/A.
+Home is two pages under one address, `/golf/dashboard`: Coach Home and Player
+Home. Where a contract belongs to one of them the note says which. Home only
+reads: it has no saves, no toasts and no forms, which is why eight of the 25
+categories are N/A.
 
 Safari review, 2026-10-01: the player's countdown applies to timed events only.
 All-day events show their date and All day without treating midnight as a tee
@@ -64,7 +67,9 @@ Home.
 | --- | --- | --- | --- |
 | 20101 | — | `COACH_HOME_READY` | Coach Home opens with the date, the greeting and the brief, Message team and New event, the week beside the latest round in one sheet, and the season leaderboard, all read on the server for the first paint; a team with nothing yet gets the first-run page (CH-2308), and on a phone the same data is drawn as the phone Home (21901). |
 | 20102 | — | `PLAYER_HOME_READY` | Player Home opens with the date and the greeting (no brief line: owner, 2026-10-06), Message coach, the week beside Up next and Your latest round in one sheet, then Scoring and the four parts of the game, all read on the server for the first paint; a new player gets the first-run page (CH-2312), and on a phone the same data is drawn as the phone Home (21901). |
-| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
+| 20103 | — | `LINKS_OPEN_WHAT_THEY_NAME` | Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's "Waiting on you" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn. |
+| 20104 | — | `COACH_QUEUE_COUNTS_AS_ITS_SCREEN` | Coach Home's "Waiting on you" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count "no reply" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220). |
+| 20105 | — | `TEAM_PARTS_ON_THE_FORMS_LAST_10` | Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures. |
 
 From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 10103 TEAM_SWITCH_READS_EVERY_SCREEN_AGAIN.
@@ -73,7 +78,14 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-One route skeleton (20201), `HomeSkeleton`, for both roles. On a desktop width it is Coach Home's shape (the header, two panes and five leaderboard rows) for both roles: Player Home's own desktop skeleton is not built (open gap, VERIFY.md). On a phone it is the phone Home's shape in the reader's role (since 2026-10-08, `SkeletonPhoneHero` reads the shell's role): the coach's brief lines above Up next, or the player's two keys under it. Nothing on either Home loads by itself after first paint, so there is no skeleton per section. v2 timing (nothing for 150ms, then a fade) is the shell's 11609.
+One route skeleton (20201), `HomeSkeleton`, for both roles. On a desktop width
+it is Coach Home's shape (the header, two panes and five leaderboard rows) for
+both roles: Player Home's own desktop skeleton is not built (open gap,
+VERIFY.md). On a phone it is the phone Home's shape in the reader's role (since
+2026-10-08, `SkeletonPhoneHero` reads the shell's role): the coach's brief lines
+above Up next, or the player's two keys under it. Nothing on either Home loads
+by itself after first paint, so there is no skeleton per section. v2 timing
+(nothing for 150ms, then a fade) is the shell's 11609.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -83,7 +95,21 @@ One route skeleton (20201), `HomeSkeleton`, for both roles. On a desktop width i
 
 Status: DEFINED
 
-Home does not poll, has no realtime and no pull to refresh: the page is `force-dynamic`, so a new visit reads afresh (going back or forward may show Next's client cache; not tested). What moves on its own is the clock (20301): the phone's Up next line (In 50 min, Happening now) is recomputed every minute, and the player's countdown every second, from the device's clock. The phone's Today marks (Now, past, and for a player Next) follow the same clock; the player's are tested (`player-home-phone.test`), the coach's are read from the code. The desktop agenda's Next badge is set on the server when the page loads and does not move. "Today", "Tomorrow" and the weekday compare the event's team-local date with the team-local date now, both on the team's clock (`whenLabel`). A page left open past midnight in the team's timezone reads itself again (`router.refresh`) when the team-local date turns: at the team's next midnight, and when the page comes back into view (visibilitychange, focus, pageshow), at most three times for one new day if the server still answers with the old one (`useHomeDayRollover`, home-day-rollover.test).
+Home does not poll, has no realtime and no pull to refresh: the page is
+`force-dynamic`, so a new visit reads afresh (going back or forward may show
+Next's client cache; not tested). What moves on its own is the clock (20301):
+the phone's Up next line (In 50 min, Happening now) is recomputed every minute,
+and the player's countdown every second, from the device's clock. The phone's
+Today marks (Now, past, and for a player Next) follow the same clock; the
+player's are tested (`player-home-phone.test`), the coach's are read from the
+code. The desktop agenda's Next badge is set on the server when the page loads
+and does not move. "Today", "Tomorrow" and the weekday compare the event's
+team-local date with the team-local date now, both on the team's clock
+(`whenLabel`). A page left open past midnight in the team's timezone reads
+itself again (`router.refresh`) when the team-local date turns: at the team's
+next midnight, and when the page comes back into view (visibilitychange, focus,
+pageshow), at most three times for one new day if the server still answers with
+the old one (`useHomeDayRollover`, home-day-rollover.test).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -93,7 +119,19 @@ Home does not poll, has no realtime and no pull to refresh: the page is `force-d
 
 Status: DEFINED
 
-First-run states and section empties. Home has no filter or search, so there is no filtered empty. A failed read is never drawn as empty: it is a notice with Try again (category 06), and the first-run page is refused while any section failed. Both roles: nothing on the calendar today (20401), no rounds this season (20402), and the newest round posted as a total (20403). Coach Home: no players (20404), players but no 18-hole rounds (20405), a player with fewer than three rounds reads Early read (20406), nothing ahead on the phone, with quick adds (20409), a coach with no team (20407) and a team with nothing yet (20408). Player Home: nothing ahead in the player's wording, with no quick adds (20409), fewer than two rounds for the Scoring line (20410), nothing to break down (20411), a new player (20412) and a player on no team (20413). The no-team and first-run states are the v2 page empty state (D-71). Which viewer meets which is the route's decision (20802).
+First-run states and section empties. Home has no filter or search, so there is
+no filtered empty. A failed read is never drawn as empty: it is a notice with
+Try again (category 06), and the first-run page is refused while any section
+failed. Both roles: nothing on the calendar today (20401), no rounds this season
+(20402), and the newest round posted as a total (20403). Coach Home: no players
+(20404), players but no 18-hole rounds (20405), a player with fewer than three
+rounds reads Early read (20406), nothing ahead on the phone, with quick adds
+(20409), a coach with no team (20407) and a team with nothing yet (20408).
+Player Home: nothing ahead in the player's wording, with no quick adds (20409),
+fewer than two rounds for the Scoring line (20410), nothing to break down
+(20411), a new player (20412) and a player on no team (20413). The no-team and
+first-run states are the v2 page empty state (D-71). Which viewer meets which is
+the route's decision (20802).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -110,18 +148,40 @@ First-run states and section empties. Home has no filter or search, so there is 
 | 20411 | CH-2311 | `NO_FAIRWAYS_GREENS_SCRAMBLING_OR_PUTTS_LOGGED` | No fairways, greens, scrambling or putts logged (player Home) |
 | 20412 | CH-2312 | `A_NEW_PLAYER_NO_ROUNDS_NOTHING_ON` | A new player: no rounds, every read answered (v2 first-run, D-71) |
 | 20413 | CH-2313 | `A_PLAYER_ON_NO_ACTIVE_TEAM` | A player on no active team |
+| 20414 | CH-2314 | `NO_ROUND_IN_THE_TEAMS_LAST_10` | No round in the team's last 10 has hole scores (coach Home, the team's four parts) |
+| 20415 | CH-2315 | `ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER` | Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts) |
 
 ## 05 — Validation
 
 Status: N/A — Home takes no input: it has no form, field or free text.
 
-Its controls are links, the latest-round pager, the Scoring window (a choice of three) and the N shortcut, none of which can be invalid.
+Its controls are links, the latest-round pager, the Scoring window (a choice of
+three) and the N shortcut, none of which can be invalid.
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Home only reads, so it has no error toasts. Every section that fails to load shows its own notice with Try again and never an empty state (20601 to 20604 for the week, the rounds, the hole-by-hole scores and the leaderboard; 20611 for the phone's team form; 20615 and 20616 for the player's rounds and scrambling). A crash stays in its section (SectionBoundary): 20605 to 20607 on the desktop, 20612 to 20614 on the phone, 20617 for the player's scoring and parts of the game. Three reads change a link or a line instead of showing a notice: the team chat (20608, Message team opens Messages), the event replies (20609, an agenda row drops who is invited and the "going" count, never "0 players") and the timezone (20610, Eastern). A stored timezone that is not a real zone is read the same way (20618), where before it failed the whole page. The route's own errors are the shell's (10603 to 10607); a player's membership read that fails is one of them (20802). A figure with no source is left out rather than invented: a part of the game without a D1 benchmark draws no D1 mark, and a team without a known coach opens Messages plain (20805).
+Home only reads, so it has no error toasts. Every section that fails to load
+shows its own notice with Try again and never an empty state (20601 to 20604 for
+the week, the rounds, the hole-by-hole scores and the leaderboard; 20611 for the
+phone's team form; 20615 and 20616 for the player's rounds and scrambling). A
+crash stays in its section (SectionBoundary): 20605 to 20607 on the desktop,
+20612 to 20614 on the phone, 20617 for the player's scoring and parts of the
+game, 20622 for the coach's four parts (desktop and phone). The coach's four
+parts say what did not load above them and keep the rest: the up-and-down
+figures (20619; strokes gained stays) and the Tour's marks (20620; each stat
+stands without its mark). A part of "Waiting on you" that fails is left out,
+never counted as 0, and the row says some items didn't load (20621). Three reads
+change a link or a line instead of showing a notice: the team chat (20608,
+Message team opens Messages), the event replies (20609, an agenda row drops who
+is invited and the "going" count, never "0 players") and the timezone (20610,
+Eastern). A stored timezone that is not a real zone is read the same way
+(20618), where before it failed the whole page. The route's own errors are the
+shell's (10603 to 10607); a player's membership read that fails is one of them
+(20802). A figure with no source is left out rather than invented: a part of the
+game without a D1 benchmark draws no D1 mark, and a team without a known coach
+opens Messages plain (20805).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -143,12 +203,20 @@ Home only reads, so it has no error toasts. Every section that fails to load sho
 | 20616 | CH-2216 | `SCRAMBLING_AND_THREE_PUTTS_DONT_LOAD` | Scrambling and three-putts don't load (player Home) |
 | 20617 | CH-2217 | `THE_PLAYERS_SCORING_OR_PARTS_OF_THE` | The player's scoring or parts of the game crash while drawing |
 | 20618 | — | `UNKNOWN_TIMEZONE_READS_AS_EASTERN` | A stored team timezone that is not a real zone reads like a missing one: the date, greeting and week are read in Eastern time, the bad value is logged as clubhouse.home.timezone, and Home still opens instead of failing the page. |
+| 20619 | CH-2218 | `UP_AND_DOWN_FIGURES_DONT_LOAD` | Up-and-down figures don't load (coach Home, the team's four parts) |
+| 20620 | CH-2219 | `THE_TOURS_MARKS_DONT_LOAD` | The Tour's marks don't load (coach Home, the team's four parts) |
+| 20621 | CH-2220 | `A_PART_OF_WAITING_ON_YOU_DOESNT` | A part of "Waiting on you" doesn't load (join requests, replies, tasks or posts) |
+| 20622 | CH-2221 | `THE_TEAMS_FOUR_PARTS_CRASH_WHILE_DRAWING` | The team's four parts crash while drawing (coach Home, desktop and phone) |
 
 ## 07 — Network / offline
 
 Status: DEFINED
 
-Home has no saves, so a slow save (10702) and a save refused offline (10703) never fire here. What applies is the shell's: the offline banner (10701), and Try again on a notice while offline, which says so and asks nothing (10704; proved on Home's own notices by the 21402 test). Following a link while offline is the browser's, not tested here.
+Home has no saves, so a slow save (10702) and a save refused offline (10703)
+never fire here. What applies is the shell's: the offline banner (10701), and
+Try again on a notice while offline, which says so and asks nothing (10704;
+proved on Home's own notices by the 21402 test). Following a link while offline
+is the browser's, not tested here.
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -157,17 +225,62 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-Which Home a viewer gets (20801). `/golf/dashboard` is one address for both roles. A signed-in coach with `golf_clubhouse_ui` on gets Coach Home, a signed-in player with it on gets Player Home, and with the flag off each gets the existing GolfHelm dashboard (the shell's gate, 10801; the per-role navigation is 10802). A session holding both a coach and a player profile is treated as a coach: the coach branch runs first, so that session never reaches Player Home, even with the coach flag off. No session is sent to sign in, and a session with neither profile to sign up.
+Which Home a viewer gets (20801). `/golf/dashboard` is one address for both
+roles. A signed-in coach with `golf_clubhouse_ui` on gets Coach Home, a
+signed-in player with it on gets Player Home, and with the flag off each gets
+the existing GolfHelm dashboard (the shell's gate, 10801; the per-role
+navigation is 10802). A session holding both a coach and a player profile is
+treated as a coach: the coach branch runs first, so that session never reaches
+Player Home, even with the coach flag off. No session is sent to sign in, and a
+session with neither profile to sign up.
 
-Which team (20802). Neither Home takes a team from the address. The coach's team is the active team the request resolves (`resolveCoachActiveTeamIdForRequest`; by that module's own comment the active-team cookie is validated against the coach's staff rows, else their staffed team, else the organisation's; read, not tested). The player's is their own active membership (`getActivePlayerTeamMembership`). Both loaders read through the signed-in user's own client (`createClient` from `@/lib/supabase/server`), never the service role, so row level security is the second gate; what those policies return was read from the code and not checked against the database. Home calls no server action, so nothing on it can write.
+Which team (20802). Neither Home takes a team from the address. The coach's team
+is the active team the request resolves (`resolveCoachActiveTeamIdForRequest`;
+by that module's own comment the active-team cookie is validated against the
+coach's staff rows, else their staffed team, else the organisation's; read, not
+tested). The player's is their own active membership
+(`getActivePlayerTeamMembership`). Both loaders read through the signed-in
+user's own client (`createClient` from `@/lib/supabase/server`), never the
+service role, so row level security is the second gate; what those policies
+return was read from the code and not checked against the database. Home calls
+no server action, so nothing on it can write.
 
-No team. A coach with no organisation or no active team gets "You aren't on a team yet" (20407), and a player with no active membership gets the same title with their own advice (20413); in both, nothing is read (20802). A player whose membership read fails does not get that page: the read throws to the route error view with its Try again (20802; the shell's 10603 to 10607), so an outage is never told to a player as "you have no team". A failed coach team resolution was not tested.
+No team. A coach with no organisation or no active team gets "You aren't on a
+team yet" (20407), and a player with no active membership gets the same title
+with their own advice (20413); in both, nothing is read (20802). A player whose
+membership read fails does not get that page: the read throws to the route error
+view with its Try again (20802; the shell's 10603 to 10607), so an outage is
+never told to a player as "you have no team". A failed coach team resolution was
+not tested.
 
-What a player sees of others. Player Home reads the player's own rounds only (20803): rounds filtered to their player id, their own player row and the D1 benchmarks. It reads no roster, no teammate's rounds and no leaderboard, and the strokes gained and the parts of the game are set against D1, never against teammates. The team's week comes through the loader Coach Home uses, but a player's copy is given no names (20804): an agenda row reads at most a count ("Green 2 · 2 players", "First tee 8:42 · 1 of 2 going"), and no teammate's name or id is in what the page receives. Whether the policies on `golf_event_attendance` would hand a player the other players' replies was not checked; the screen never has a name to draw.
+What a player sees of others. Player Home reads the player's own rounds only
+(20803): rounds filtered to their player id, their own player row and the D1
+benchmarks. It reads no roster, no teammate's rounds and no leaderboard, and the
+strokes gained and the parts of the game are set against D1, never against
+teammates. The team's week comes through the loader Coach Home uses, but a
+player's copy is given no names (20804): an agenda row reads at most a count
+("Green 2 · 2 players", "First tee 8:42 · 1 of 2 going"), and no teammate's name
+or id is in what the page receives. Whether the policies on
+`golf_event_attendance` would hand a player the other players' replies was not
+checked; the screen never has a name to draw.
 
-Controls (20806). Each role's Home draws its own role's controls only. A player has no Message team, New event or N shortcut, no Plan, Add event or quick event types, no leaderboard and no link to another player's stats or thread; a coach has no Message coach, Start a round or countdown. Start a round and Add classes are not drawn for a player until round entry and Classes are rebuilt (Q-69), so a control never leads to a screen the player's Clubhouse does not have.
+Controls (20806). Each role's Home draws its own role's controls only. A player
+has no Message team, New event or N shortcut, no Plan, Add event or quick event
+types, no leaderboard and no link to another player's stats or thread; a coach
+has no Message coach, Start a round or countdown. Start a round and Add classes
+are not drawn for a player until round entry and Classes are rebuilt (Q-69), so
+a control never leads to a screen the player's Clubhouse does not have.
 
-Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the coach who created the team (`golf_teams.created_by` is a `golf_coaches.id`, not a user id, which the first version got wrong), else a coach of the organisation who has an account (the query sets no order, so which one is not fixed), else Messages plain. Messages then opens the thread only for someone in the team directory, which is the program's coaches and the team's players: anyone else gets "Couldn't open that conversation" (CH-7001, 70801, that page's contract). Home and the directory read the organisation's coaches from the same table with the same limit of 50, so the coach Home names is in the directory unless a program has more than 50 coaches; that edge was not tested end to end.
+Message coach (20805). It opens Messages on `?user=<the coach's user id>`: the
+coach who created the team (`golf_teams.created_by` is a `golf_coaches.id`, not
+a user id, which the first version got wrong), else a coach of the organisation
+who has an account (the query sets no order, so which one is not fixed), else
+Messages plain. Messages then opens the thread only for someone in the team
+directory, which is the program's coaches and the team's players: anyone else
+gets "Couldn't open that conversation" (CH-7001, 70801, that page's contract).
+Home and the directory read the organisation's coaches from the same table with
+the same limit of 50, so the coach Home names is in the directory unless a
+program has more than 50 coaches; that edge was not tested end to end.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -183,15 +296,19 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 ## 09 — Success
 
-Status: N/A — Home makes no change, so nothing lands: there is no success toast and no success haptic.
+Status: N/A — Home makes no change, so nothing lands: there is no success toast
 
-The shell's 10901 (a change made through `useAction`) is never triggered from Home.
+and no success haptic.
+
+The shell's 10901 (a change made through `useAction`) is never triggered from
+Home.
 
 ## 10 — Warning
 
 Status: N/A — Home makes no change that could land in part.
 
-A section that loads in part is a failed read, told in category 06 (for example 20616, scrambling missing above the four parts of the game).
+A section that loads in part is a failed read, told in category 06 (for example
+20616, scrambling missing above the four parts of the game).
 
 ## 11 — Destructive
 
@@ -201,17 +318,27 @@ Status: N/A — nothing on Home deletes, removes or discards anything.
 
 Status: N/A — Home holds nothing the person typed.
 
-The latest round's pager position and the Scoring window are view choices, kept in the page's memory only: they are not stored, and they start again on each visit.
+The latest round's pager position and the Scoring window are view choices, kept
+in the page's memory only: they are not stored, and they start again on each
+visit.
 
 ## 13 — Optimistic UI
 
-Status: N/A — Home makes no change, so nothing is shown before the server confirms it.
+Status: N/A — Home makes no change, so nothing is shown before the server
+
+confirms it.
 
 ## 14 — Retry / recovery
 
 Status: DEFINED
 
-Try again on a section that did not load asks the server for the whole page again (`router.refresh`), not one section (21402). While the page re-renders the notice reads Trying again and the button steps aside (21401, CH-2402; seen only in the preview). Offline, Try again says so and asks nothing (10704, proved on Home's notices). A section that crashed only draws itself again (SectionBoundary) and does not ask the server (21402). A page that crashes shows the route error view with its own Try again (11401).
+Try again on a section that did not load asks the server for the whole page
+again (`router.refresh`), not one section (21402). While the page re-renders the
+notice reads Trying again and the button steps aside (21401, CH-2402; seen only
+in the preview). Offline, Try again says so and asks nothing (10704, proved on
+Home's notices). A section that crashed only draws itself again
+(SectionBoundary) and does not ask the server (21402). A page that crashes shows
+the route error view with its own Try again (11401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -224,7 +351,10 @@ From the shell (P001): 11401 ROUTE_TRY_AGAIN, 11402 TOAST_RETRY.
 
 Status: N/A — Home has no cache, polling or realtime to keep in step.
 
-The page is `force-dynamic` and a new visit reads afresh (going back or forward may show Next's client cache; not tested); Try again (21402) reads it again, and the device clock keeps its own times moving (20301). A page left open past the team's midnight reads itself again when the date turns (20301).
+The page is `force-dynamic` and a new visit reads afresh (going back or forward
+may show Next's client cache; not tested); Try again (21402) reads it again, and
+the device clock keeps its own times moving (20301). A page left open past the
+team's midnight reads itself again when the date turns (20301).
 
 ## 16 — Micro animation
 
@@ -253,7 +383,14 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-Home's catalogued haptics: a selection tick when paging the latest round (21701) and the light tap for New event, by button or by N (21702). The rest of Home's taps (21703): a selection tick for opening a round's card, choosing a quick event type and choosing the Scoring window; the light tap for Add event and, on the phone, Message coach; nothing for Message team or the other links (only primary buttons tap). Home makes no change, so none of its own controls fires success or error; the one warning is the shell's, when Try again is pressed offline (10704). The shell's grammar is 11701 to 11706.
+Home's catalogued haptics: a selection tick when paging the latest round (21701)
+and the light tap for New event, by button or by N (21702). The rest of Home's
+taps (21703): a selection tick for opening a round's card, choosing a quick
+event type and choosing the Scoring window; the light tap for Add event and, on
+the phone, Message coach; nothing for Message team or the other links (only
+primary buttons tap). Home makes no change, so none of its own controls fires
+success or error; the one warning is the shell's, when Try again is pressed
+offline (10704). The shell's grammar is 11701 to 11706.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -269,7 +406,17 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-Home's own (21801 to 21806): N opens a new event but never while typing or in a dialog, each day of the week is read as words, the leaderboard and both nines are tables, the round pager announces its position, the phone's scorecard scrolls as a named, focusable region, and axe finds nothing in any preview state at 1280 and 390 (`clubhouse:a11y`, not run for this pass). The player's countdown is a timer named "Starts in 1 day, 18 hours and 2 minutes" whose digits are hidden from a screen reader, so it is heard once and not every second (21807). Known, not changed: a leaderboard row is a link with the role row, so the table reads correctly (21803), which hides that it is a link from a screen reader; not tried with one. The shell's skip link, landmarks and dialog behaviour are 11801 to 11811.
+Home's own (21801 to 21806): N opens a new event but never while typing or in a
+dialog, each day of the week is read as words, the leaderboard and both nines
+are tables, the round pager announces its position, the phone's scorecard
+scrolls as a named, focusable region, and axe finds nothing in any preview state
+at 1280 and 390 (`clubhouse:a11y`, not run for this pass). The player's
+countdown is a timer named "Starts in 1 day, 18 hours and 2 minutes" whose
+digits are hidden from a screen reader, so it is heard once and not every second
+(21807). Known, not changed: a leaderboard row is a link with the role row, so
+the table reads correctly (21803), which hides that it is a link from a screen
+reader; not tried with one. The shell's skip link, landmarks and dialog
+behaviour are 11801 to 11811.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -298,7 +445,13 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below both roles get the phone Home (21901, `useChPhone`); wider canvases get the desktop Home. The phone is its own screen from the owner's v2 boards (`docs/clubhouse/phone/home.md` for the coach, `home-player.md` for the player), never the desktop shrunk. The server renders the desktop markup and `home.css` hides it at 820px and below until hydration swaps the phone Home in (read from the code, not measured). On a narrow desktop canvas (a container under 860px) the two panes stack. The shell's phone chrome is 11901.
+At 820px and below both roles get the phone Home (21901, `useChPhone`); wider
+canvases get the desktop Home. The phone is its own screen from the owner's v2
+boards (`docs/clubhouse/phone/home.md` for the coach, `home-player.md` for the
+player), never the desktop shrunk. The server renders the desktop markup and
+`home.css` hides it at 820px and below until hydration swaps the phone Home in
+(read from the code, not measured). On a narrow desktop canvas (a container
+under 860px) the two panes stack. The shell's phone chrome is 11901.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -310,13 +463,28 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-N opens a new event from anywhere on Coach Home's desktop page, but never while typing, inside a dialog or with a modifier (21801, CH-2801). Player Home, the phone and the first-run page have no shortcut (20806). Everything else is a link or a button reached by Tab; the phone's scorecard is a focusable region so the arrow keys scroll it (21806).
+N opens a new event from anywhere on Coach Home's desktop page, but never while
+typing, inside a dialog or with a modifier (21801, CH-2801). Player Home, the
+phone and the first-run page have no shortcut (20806). Everything else is a link
+or a button reached by Tab; the phone's scorecard is a focusable region so the
+arrow keys scroll it (21806).
 
 ## 21 — Performance
 
 Status: DEFINED
 
-Each Home is read on the server in one request before its first paint, and no Home component fetches (read from the code: there is no client fetch under `screens/home`). Coach Home reads the team's timezone, then the roster, the team chat and the week (events, then their replies) together, then the season's rounds, then the hole-by-hole cards. Player Home reads the timezone, then the week, the player's rounds, their player row and their team together, then the holes, the round cache, the D1 benchmarks and the coach together. A failed read is logged and flagged on its own section and never throws (22101, proved for both loaders). Layout shift, LCP and first-load JS were not measured (the shell's web vitals are 12101).
+Each Home is read on the server in one request before its first paint, and no
+Home component fetches (read from the code: there is no client fetch under
+`screens/home`). Coach Home reads the team's timezone, the roster, the team (its
+tour), the team chat, the week and what is waiting on the coach (join requests,
+this week's events that take replies, tasks) together; then the season's rounds,
+the Tour's marks and the replies; then the hole-by-hole cards and the four
+parts' round cache (three round trips, `home-reads.test.ts`). Player Home reads
+the timezone, then the week, the player's rounds, their player row and their
+team together, then the holes, the round cache, the D1 benchmarks and the coach
+together. A failed read is logged and flagged on its own section and never
+throws (22101, proved for both loaders). Layout shift, LCP and first-load JS
+were not measured (the shell's web vitals are 12101).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -328,7 +496,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). Home adds no events of its own.
+The shell records rage, dead and slow clicks for every page (12201 to 12203).
+Home adds no events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -336,17 +505,30 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-A section that crashes is reported through `chReport` with surface `home.<section>` (week, latestRound, leaderboard, upNext, today, form, game) at high severity; a failed server read is logged through `chLogServer('home', <read>)` (reads: timezone, team chat, roster, events, attendance, rounds, holes, roundCache, tourBenchmarks, player, team, coaches); and the N shortcut, opening Up next on the phone and opening a round on the phone leave `chTrail` breadcrumbs (22301). Not instrumented: the pagers, the Scoring window, and Up next in the player's desktop week.
+A section that crashes is reported through `chReport` with surface
+`home.<section>` (week, latestRound, leaderboard, upNext, today, form, game,
+legs) at high severity; a failed server read is logged through
+`chLogServer('home', <read>)` (reads: timezone, team chat, roster, events,
+attendance, rounds, holes, roundCache, tourBenchmarks, player, team, coaches,
+and the coach's queue parts `queue joinRequests`, `queue replies`, `queue
+tasks`, `queue posts`); and the N shortcut, opening Up next on the phone and
+opening a round on the phone leave `chTrail` breadcrumbs (22301). Not
+instrumented: the pagers, the Scoring window, and Up next in the player's
+desktop week.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
-| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
+| 22301 | — | `FAILURES_REPORTED` | A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round). |
 
 ## 24 — CI / automated test
 
 Status: DEFINED
 
-`src/clubhouse/__tests__/home.test.tsx` and `player-home.test.tsx` name every catalog code of kinds 0 to 5 that is not marked preview, and each hand contract above (22401). The route is tested in `home.test.tsx` against the real dashboard page, with only the session, the flag and the request-scoped team resolvers faked.
+`src/clubhouse/__tests__/home.test.tsx` and `player-home.test.tsx` name every
+catalog code of kinds 0 to 5 that is not marked preview, and each hand contract
+above (22401). The route is tested in `home.test.tsx` against the real dashboard
+page, with only the session, the flag and the request-scoped team resolvers
+faked.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -354,4 +536,7 @@ Status: DEFINED
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (open New event, message the coach, page the latest round) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (open New event, message the coach, page
+the latest round) are defined when the Bridge is.

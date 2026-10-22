@@ -1,5 +1,41 @@
 # P008 — Settings: changelog
 
+## 2026-10-21 — A coach's title in Account › Profile
+
+```text
+Design package: spec C (coach parity, section B)
+PR/commit:      see git log (parity/roster-settings)
+Contract IDs:   none new; CH-8001 text (name, a coach's title, or photo)
+Actions:        none (saveProfile stays a client write under RLS)
+Data impact:    reads and writes golf_coaches.title (own row,
+                golf_coaches_update_own); no migration
+Held items:     none
+```
+
+### Changed
+
+- Desktop: a coach's Profile card pairs Full name with Title (placeholder
+  "Assistant coach", 100 characters, `autoComplete="organization-title"`,
+  help "With your name in Messages, on announcements and in Team settings.").
+- Phone: the Profile sheet has a Title row under Full name, coaches only.
+- `loadSettings` reads `full_name, avatar_url, title`; `ChProfileInput` gains
+  `title` ('' for players); `saveProfile` writes `title: trimmed || null` for a
+  coach. Players have no title and their write never names it.
+- No "Coaching profile" section: bio and phone have no reader, and a phone
+  would be readable by players in the same organization.
+
+### Why
+
+- The title is read with the coach's name in Messages, Hub announcements and
+  Team › Coaching staff, but could only be set at onboarding.
+
+### Verification
+
+- `settings.test.tsx` (desktop Title, save payload, none for a player; phone
+  sheet Title and save, none for a player), `settings-server.test.tsx` (the
+  coach select pinned, the write trimmed and blank as null).
+- Screenshots: see VERIFY.md Screenshots (1280 card, 390 sheet).
+
 ## 2026-10-21 — Settings boxes use the shared hydration guard
 
 ```text
@@ -719,6 +755,7 @@ without compressing the actions. Dirty/busy guards and preference behavior are
 preserved. See [popup evidence](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Desktop and phone sections enter immediately without an outgoing wait,

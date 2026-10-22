@@ -68,6 +68,34 @@ export function SkeletonDeskHead() {
           </div>
         </section>
       )}
+      {/* The team's four parts at the stage's foot (TeamLegs): its heading, then the column row and four rows. */}
+      {!player && (
+        <section className="ch-h-legs" aria-hidden="true">
+          <div className="ch-h-sec">
+            <div>
+              <Line height={24}>
+                <Skeleton width={150} height={21} />
+              </Line>
+              <Line height={20}>
+                <Skeleton width={420} height={13} />
+              </Line>
+            </div>
+            <Skeleton width={104} height={30} radius={10} />
+          </div>
+          <div className="ch-h-legs__skel">
+            {[0, 1, 2, 3, 4].map((k) => (
+              <div key={k} className="ch-h-legs__skrow">
+                <Skeleton width={k ? 90 : 40} height={13} />
+                <Skeleton width={k ? 170 : 60} height={13} />
+                <Skeleton width={k ? 40 : 50} height={13} />
+                <Skeleton width={k ? 180 : 90} height={13} />
+                <Skeleton width={k ? 110 : 80} height={13} />
+                <Skeleton width={k ? 110 : 80} height={13} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }

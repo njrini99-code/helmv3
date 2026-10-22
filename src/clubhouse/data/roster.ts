@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
+import { relativeAgo } from '../screens/roster/format';
 import {
   classYearLabel,
   displayHandicap,
@@ -42,7 +43,18 @@ export interface ChRosterPlayer {
   goals: number | null;
   coachNote: string | null;
   attention: { tone: 'warning' | 'positive'; text: string } | null;
+  /**
+   * Can they play right now (golf_team_members.availability). Display only, on the coach's roster: it never changes team
+   * access, which is `status` (Mark inactive). Inactive players can carry it too. The word only: there is no note,
+   * because teammates can read every column of their team's rows (golf_team_members_select_v5), so availability_note
+   * is never selected until a coach-only store exists (docs/clubhouse/held/data/roster-availability.md).
+   */
+  availability: ChAvailability;
+  /** When availability last changed (ISO), for "Updated 3 days ago". */
+  availabilityUpdated: string | null;
 }
+
+export type ChAvailability = 'available' | 'injured' | 'away';
 
 export interface ChJoinRequest {
   id: string;
@@ -78,24 +90,20 @@ function daysBetween(a: Date, b: Date) {
   return Math.floor((a.getTime() - b.getTime()) / 86_400_000);
 }
 
-function relativeAgo(iso: string, now: Date): string {
-  const d = daysBetween(now, new Date(iso));
-  if (d <= 0) return 'today';
-  if (d === 1) return 'yesterday';
-  return `${d} days ago`;
-}
-
 /**
  * "Needs a look": deterministic, from data the coach can verify.
  *   quiet     - an active player with no round in 9+ days while the team is posting
  *   slipping  - scoring up by 1.5 or more, newer half of form against older half
  *   hot       - the last four rounds all under their season average
+ * A player who is injured or away is not asked about: the coach already knows why (their availability says so).
  */
 export function attentionFor(
   s: ReturnType<typeof summarizePlayer>,
   now: Date,
   teamPosting: boolean,
+  availability: ChAvailability = 'available',
 ): ChRosterPlayer['attention'] {
+  if (availability !== 'available') return null;
   if (teamPosting && s.lastRoundDate) {
     const days = daysBetween(now, new Date(`${s.lastRoundDate.slice(0, 10)}T12:00:00Z`));
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
@@ -118,7 +126,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
-      .select('status, jersey_number, joined_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
+      .select('status, jersey_number, joined_at, availability, availability_updated_at, player:golf_players(id, first_name, last_name, graduation_year, hometown, state, high_school_name, handicap, handicap_index)')
       .eq('team_id', input.teamId)
       .in('status', ['active', 'inactive']),
     getTeamJoinRequests().catch((e: unknown) => ({ success: false as const, error: e instanceof Error ? e.message : String(e), data: undefined })),
@@ -139,7 +147,15 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     handicap: number | null;
     handicap_index: number | null;
   };
-  const members = ((membersRes.data ?? []) as Array<{ status: string | null; jersey_number: string | number | null; joined_at: string | null; player: P | null }>)
+  type M = {
+    status: string | null;
+    jersey_number: string | number | null;
+    joined_at: string | null;
+    availability: string | null;
+    availability_updated_at: string | null;
+    player: P | null;
+  };
+  const members = ((membersRes.data ?? []) as M[])
     .filter((m): m is typeof m & { player: P } => m.player !== null);
   const ids = members.map((m) => m.player.id);
 
@@ -160,6 +176,8 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     const p = m.player;
     const s = summarizePlayer(byPlayer.get(p.id) ?? []);
     const status = m.status === 'inactive' ? 'inactive' : 'active';
+    // The column is CHECKed to these three; anything else reads as available rather than inventing a state.
+    const availability: ChAvailability = m.availability === 'injured' || m.availability === 'away' ? m.availability : 'available';
     return {
       id: p.id,
       name: fullName(p),
@@ -189,7 +207,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       focusAreas: focus.error ? null : (focus.counts.get(p.id) ?? 0),
       goals: goals.error ? null : (goals.counts.get(p.id) ?? 0),
       coachNote: notes.notes.get(p.id) ?? null,
-      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting) : null,
+      attention: status === 'active' && !season.error ? attentionFor(s, now, teamPosting, availability) : null,
+      availability,
+      availabilityUpdated: m.availability_updated_at,
     };
   });
 

@@ -36,19 +36,6 @@ knowledge:
   - 'scripts/knowledge/**'
   - '.github/workflows/ci.yml'
   - '.github/path-filters.yml'
-# Quick tier (ci.yml, 2026-10-21): on a follow-up push, Next build runs only
-# when `build` changed and Supabase lint + RLS only when `db` changed.
-build:
-  - 'package.json'
-  - 'package-lock.json'
-  - 'next.config.*'
-  - 'tsconfig*.json'
-  - 'postcss.config.*'
-  - 'tailwind.config.*'
-  - '.github/workflows/ci.yml'
-db:
-  - 'supabase/**'
-  - '.github/workflows/ci.yml'
 python:
   - '**/*.py'
   - 'requirements*.txt'

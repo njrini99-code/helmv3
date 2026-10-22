@@ -83,6 +83,18 @@ export const LADDER_HEADLINE: Record<ChLadderAreaId, string> = {
   putting: 'Your putting costs you the most strokes against the Tour',
 };
 
+/** The same headline on a coach's page about one player (spec A): the player by first name, never "you". */
+export function ladderHeadlineFor(area: ChLadderAreaId, first: string | null): string {
+  if (!first) return LADDER_HEADLINE[area];
+  const whose = `${first}’s`;
+  return {
+    tee: `${whose} tee shots cost the most strokes against the Tour`,
+    approach: `${whose} approach shots cost the most strokes against the Tour`,
+    short_game: `${whose} shots around the green cost the most strokes against the Tour`,
+    putting: `${whose} putting costs the most strokes against the Tour`,
+  }[area];
+}
+
 /** The area a read's category files under; null for one that is not a part of the round. */
 export function areaOf(category: InsightCategory | string | null | undefined): ChLadderAreaId | null {
   switch (category) {

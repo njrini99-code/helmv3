@@ -1,14 +1,14 @@
 'use client';
 
+import Link from 'next/link';
 import { Suspense, use, useId, useState } from 'react';
-import { Archive, Check, ChevronDown, ChevronUp, Flag, UserPlus, Users } from 'lucide-react';
-import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
+import { ArrowRight, ChevronDown, ChevronUp, UserPlus, Users } from 'lucide-react';
 import type { ChNotEnough } from '../../data/coachhelm-firm';
-import { firstName, playersLine, pulseGapsLabel, type ChBoardMissing, type ChCoachHelmData, type ChCoachPlayer, type ChHelmAssigned, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
+import { firstName, playersLine, pulseGapsLabel, type ChCoachHelmData, type ChCoachPlayer, type ChPulse, type ChPulseResult } from '../../data/coachhelm-shape';
+import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { haptic } from '../../lib/haptics';
 import { useRefresh } from '../../lib/use-refresh';
 import { useChSessionState } from '../../lib/session-state';
-import { normalise, useAction } from '../../lib/use-action';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
@@ -19,9 +19,8 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Section } from '../../ui/Section';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { EmptyState, Skeleton } from '../../ui/States';
-import { useToast } from '../../ui/Toast';
 import { COACHHELM_HREF, CoachHelmTabs, type CoachHelmView } from './chat/SubTabs';
-import { BoardPartial, FocusCard, Head } from './parts';
+import { BoardPartial, FocusActions, FocusCard, Head, useFocusActions } from './parts';
 import { TeamPatterns } from './TeamPatterns';
 import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
@@ -73,7 +72,6 @@ export function CoachBoard({
   recheck?: ChRecheckWrites;
 }) {
   const phone = useChPhone();
-  const toast = useToast();
   const players = data.players.list;
   // Roster's View insights opens on its player (`?player=`, which is only ever read: nothing here writes the address); a player with no
   // insight on the board opens the most pressing one. What the coach picks is kept for this tab with the shell's session state, so a way
@@ -93,75 +91,11 @@ export function CoachBoard({
   }
   const named = byHand ? undefined : players.find((p) => p.id === initialPlayer);
   const picked = named ? { id: named.id, name: named.name } : kept;
-  // Who a write is in flight for (set inside the action, so a toast's Retry sets it too): only that player's card says "Assigning",
-  // "Dismissing" or "Undoing". The controls of every card wait meanwhile, because the one write in flight is the hook's.
-  const [acting, setActing] = useState<{ playerId: string; kind: 'assign' | 'dismiss' | 'undo' } | null>(null);
-  // What this visit changed, over what the page loaded: an insight assigned (by its id) or dismissed.
-  const [assigned, setAssigned] = useState<Record<string, ChHelmAssigned>>({});
-  const [dismissed, setDismissed] = useState<Record<string, true>>({});
   // A switch to Ask moves the strip at once and dims the board (aria-busy) until Ask is ready.
   const sw = useViewSwitch<CoachHelmView>('board', (v) => COACHHELM_HREF[v], Object.keys(COACHHELM_HREF) as CoachHelmView[]);
-
-  // The follow-ups (marking assigned, hiding a dismissed card, restoring it) live inside the action, so a toast's Retry completes them too.
-  // CH-13702: Assign is a primary Button, so its tap is the light press; the write's success and error haptics come from useAction.
-  const assign = useAction(
-    'coachhelm.assign',
-    async (p: ChCoachPlayer) => {
-      const t = p.top;
-      setActing({ playerId: p.id, kind: 'assign' });
-      try {
-        // The focus area is the player's to read: it is saved with the insight's own wording, not the board's rewrite of it for the coach.
-        const res = await writes.assign({ playerId: p.id, insightId: t.id, title: t.assignAs.title, description: t.assignAs.description, areaType: t.areaType, targetMetric: t.metric, currentValue: t.current });
-        if (normalise(res).success) {
-          setAssigned((m) => ({ ...m, [t.id]: 'proposed' }));
-          return res;
-        }
-        // The player already has an active focus on this metric: that is the outcome the coach wanted, not a failure.
-        if (res.error === ACTIVE_FOCUS_DUPLICATE_ERROR) {
-          setAssigned((m) => ({ ...m, [t.id]: 'active' }));
-          toast({ title: `${firstName(p.name)} already has a focus on this` });
-          return { success: true };
-        }
-        return res;
-      } finally {
-        setActing(null);
-      }
-    },
-    (p: ChCoachPlayer) => ({ done: '', failed: `Couldn’t assign the focus to ${firstName(p.name)}`, hint: 'Nothing was saved. Try again.', code: 'CH-13001' }),
-  );
-  const dismiss = useAction(
-    'coachhelm.dismiss',
-    async (p: ChCoachPlayer) => {
-      setActing({ playerId: p.id, kind: 'dismiss' });
-      try {
-        const res = await writes.dismiss(p.top.id);
-        if (normalise(res).success) setDismissed((d) => ({ ...d, [p.top.id]: true }));
-        return res;
-      } finally {
-        setActing(null);
-      }
-    },
-    { done: '', failed: 'Couldn’t dismiss the insight', hint: 'It’s still on the board. Try again.', code: 'CH-13002' },
-  );
-  const undo = useAction(
-    'coachhelm.undo',
-    async (p: ChCoachPlayer) => {
-      setActing({ playerId: p.id, kind: 'undo' });
-      try {
-        const res = await writes.undo(p.top.id, p.top.lifecycle);
-        if (normalise(res).success)
-          setDismissed((d) => {
-            const { [p.top.id]: _gone, ...rest } = d;
-            return rest;
-          });
-        return res;
-      } finally {
-        setActing(null);
-      }
-    },
-    { done: '', failed: 'Couldn’t undo the dismissal', hint: 'It’s still dismissed. Try again.', code: 'CH-13003' },
-  );
-  const busy = assign.pending || dismiss.pending || undo.pending;
+  // Assign as focus, Dismiss and Undo, and what this visit changed: the same wiring as a coach's Deep dive of one player (parts.tsx).
+  const fa = useFocusActions(writes);
+  const dismissed = fa.dismissed;
 
   // A player's open signals: their count, less the top insight when it was dismissed here, and only when that top insight was one of them.
   const open = players.map((p) => Math.max(0, p.count - (dismissed[p.top.id] && countsAsSignal(p) ? 1 : 0)));
@@ -170,17 +104,9 @@ export function CoachBoard({
   const cur = players.find((p) => p.id === picked?.id) ?? players[0] ?? null;
   // The player the coach had open is no longer on the board (a refresh took their signal away): the card is another player's, and says so.
   const gone = picked && cur && picked.id !== cur.id ? picked : null;
-  // What is in flight is for this player's card only: another player's card shows its own button as it is, waiting.
-  const here = (kind: 'assign' | 'dismiss' | 'undo') => acting?.kind === kind && acting.playerId === cur?.id;
   // Assigned: from this visit, or a focus area the page found already made from the insight.
-  const mine = cur ? (assigned[cur.top.id] ?? cur.top.assigned) : null;
-  // A card that states no finding is not assigned or dismissed, and a read older than the newest round is not assigned (it is still dismissed if the coach wants it gone).
-  const note = cur?.top.kind === 'note';
-  const stale = !!cur?.top.stale;
-  // A read beside the cards that failed (CH-13207): whether this card was already assigned, was declined, or is still current is not
-  // known, so Assign (and Propose again) are not offered. Dismiss does not depend on any of them and stays.
-  const statusUnknown = !mine && !!(data.missing?.assigned || data.missing?.declined || data.missing?.newest);
-  const noReads = noReadRows(data.withoutSignals, data.withoutNames);
+  const mine = cur ? (fa.assigned[cur.top.id] ?? cur.top.assigned) : null;
+  const noReads = noReadRows(data.withoutSignals, data.withoutNames, data.withoutIds);
   // CH-13943: a player every one of whose reads is Not enough yet has no card; they are a By player row that says so.
   const heldOnly = data.notEnough?.players.filter((p) => !p.card) ?? [];
   const rosterHref = coachBoardLinks.roster();
@@ -279,7 +205,15 @@ export function CoachBoard({
                   <div key={r.key} className="ch-hl-pl is-none" data-ch-code="CH-13310">
                     {r.name ? <Avatar name={r.name} size={phone ? 28 : 34} /> : <span className="ch-hl-pl__more ch-num" aria-hidden="true">+{r.more}</span>}
                     <span>
-                      <b>{r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`}</b>
+                      <b>
+                        {r.name && r.id ? (
+                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)} onClick={() => haptic('select')}>
+                            {r.name}
+                          </Link>
+                        ) : (
+                          (r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`)
+                        )}
+                      </b>
                       <em>No reads yet</em>
                     </span>
                   </div>
@@ -303,74 +237,20 @@ export function CoachBoard({
                     {firstName(gone.name)} is no longer on the board, so this is {firstName(cur.name)}’s card.
                   </p>
                 )}
-                {dismissed[cur.top.id] ? (
-                  <div className="ch-hl-dis" role="status" data-ch-code="CH-13901">
-                    <Icon icon={Archive} size={16} />
-                    <span>
-                      <b>Insight dismissed.</b> It no longer shows on your board or on {firstName(cur.name)}’s. Undo brings it back.
-                    </span>
-                    <Button size="sm" variant="ghost" busy={here('undo')} disabled={busy && !here('undo')} onClick={() => void undo.run(cur)}>
-                      {here('undo') ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
+                {!dismissed[cur.top.id] && <FocusCard key={cur.top.id} ins={cur.top} who={firstName(cur.name)} assigned={mine} />}
+                <FocusActions
+                  fa={fa}
+                  target={{ playerId: cur.id, first: firstName(cur.name), ins: cur.top }}
+                  missing={data.missing}
+                  where="board"
+                  extra={
+                    // Spec A: every read on this player, with its evidence, in the coach's Deep dive of them.
+                    <Button variant="ghost" rightIcon={ArrowRight} href={coachPlayerHref('deep-dive', cur.id)} feel="select">
+                      All of {firstName(cur.name)}’s reads
                     </Button>
-                  </div>
-                ) : (
-                  <>
-                    <FocusCard key={cur.top.id} ins={cur.top} who={firstName(cur.name)} assigned={mine} />
-                    {note ? (
-                      // CH-13904: nothing to assign or dismiss on a card that states no finding.
-                      <div className="ch-hl-cact">
-                        <p className="ch-hl-cact__m" data-ch-code="CH-13904">
-                          This card states no finding, so there is nothing to assign.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="ch-hl-cact">
-                        {/* A strength is assignable too, as a keep-doing focus (the board draws it on Theo’s card). */}
-                        {mine ? (
-                          <span className="ch-hl-done" role="status" data-ch-code="CH-13601">
-                            <Icon icon={Check} size={15} />
-                            Assigned as {firstName(cur.name)}’s focus
-                          </span>
-                        ) : statusUnknown ? (
-                          <RefreshNotice
-                            code="CH-13207"
-                            title="Assign as focus isn’t offered right now"
-                            body={`${focusStatusSaid(data.missing, firstName(cur.name))} Dismiss still works. Try again in a moment.`}
-                          />
-                        ) : stale ? null : (
-                          <Button variant="primary" leftIcon={Flag} busy={here('assign')} disabled={busy && !here('assign')} onClick={() => void assign.run(cur)}>
-                            {here('assign') ? <span data-ch-code="CH-13403">Assigning…</span> : cur.top.declined ? 'Propose again' : 'Assign as focus'}
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          leftIcon={Archive}
-                          busy={here('dismiss')}
-                          disabled={busy && !here('dismiss')}
-                          onClick={() => {
-                            // CH-13703: the warning comes before the write, as before any destructive tap (D-70).
-                            haptic('warning');
-                            void dismiss.run(cur);
-                          }}
-                        >
-                          {here('dismiss') ? <span data-ch-code="CH-13403">Dismissing…</span> : 'Dismiss'}
-                        </Button>
-                        {mine === 'proposed' && <p className="ch-hl-cact__m">{firstName(cur.name)} sees it as a proposal and accepts it to start.</p>}
-                        {!mine && !stale && !statusUnknown && cur.top.declined && (
-                          <p className="ch-hl-cact__m" data-ch-code="CH-13907">
-                            {firstName(cur.name)} declined this as a focus. Propose again sends it back as a new proposal.
-                          </p>
-                        )}
-                        {!mine && stale && (
-                          <p className="ch-hl-cact__m" data-ch-code="CH-13906">
-                            This read is older than {firstName(cur.name)}’s newest round, so it can’t be assigned as a focus yet.
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <ClearedLines lines={cur.cleared} />
-                  </>
-                )}
+                  }
+                />
+                {!dismissed[cur.top.id] && <ClearedLines lines={cur.cleared} />}
               </SectionBoundary>
               {/* Slice 7c: the course plan, on request, behind coachhelm_course_plan_v1 (off); the loader sets coursePlan only when it is on. */}
               {data.coursePlan && (
@@ -559,21 +439,15 @@ function SinceSkeleton() {
   );
 }
 
-/** Roster players with no read yet, as By player rows: each named one, then the unnamed as one "N more players" row. */
-function noReadRows(count: number, names: readonly string[] = []): Array<{ key: string; name: string | null; more: number }> {
+/** Roster players with no read yet, as By player rows (each named one links to that player's Standing, spec A): each named one, then the unnamed as one "N more players" row. */
+function noReadRows(count: number, names: readonly string[] = [], ids?: readonly string[]): Array<{ key: string; name: string | null; id: string | null; more: number }> {
   if (count <= 0) return [];
   const shown = names.slice(0, count);
   const more = count - shown.length;
-  return [...shown.map((name, i) => ({ key: `n${i}:${name}`, name, more: 0 })), ...(more > 0 ? [{ key: 'more', name: null, more }] : [])];
+  // The ids come beside the names, in the same order; without them (or out of step) a name is text, not a link.
+  const linked = !!ids && ids.length === names.length;
+  return [...shown.map((name, i) => ({ key: `n${i}:${name}`, name, id: linked ? ids![i]! : null, more: 0 })), ...(more > 0 ? [{ key: 'more', name: null, id: null, more }] : [])];
 }
 
 /** The top card is a signal the count includes: a finding whose read is current. */
 const countsAsSignal = (p: ChCoachPlayer) => p.top.kind === 'finding' && !p.top.stale;
-
-/** What could not be checked about this card, in the coach's words. */
-function focusStatusSaid(missing: ChBoardMissing | undefined, who: string): string {
-  const said: string[] = [];
-  if (missing?.assigned || missing?.declined) said.push(`Whether ${who} already has a focus from this read, or declined one, couldn’t be checked.`);
-  if (missing?.newest) said.push('Whether this read is still current couldn’t be checked.');
-  return said.join(' ');
-}

@@ -202,7 +202,7 @@ export default async function GolfDashboardPage({
         // Clubhouse Home: its own loader and screen, no Fairway payload.
         if (clubhouse) {
             if (!teamId) return <CoachHomeNoTeam />;
-            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach' });
+            const home = await loadCoachHome({ teamId, coachName: coach.full_name || 'Coach', userId });
             return <CoachHome data={home} />;
         }
 

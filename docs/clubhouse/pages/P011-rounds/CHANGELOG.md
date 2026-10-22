@@ -24,6 +24,9 @@ then Why? to the read on their Deep dive. A line with no data is left
 out; with nothing to say, or the flag off, or a coach looking, the recap
 is drawn as before. No recap is asked for while the debrief stands in its
 place. Preview: `/clubhouse-preview/round?state=debrief|debrief-thin`.
+## 2026-10-21 — TeamRounds.tsx: no blank line at the end of the file
+
+- Whitespace only, from the merge train; no behavior change.
 
 ## 2026-10-21 — Team rounds for coaches, and the coach's note on a round
 

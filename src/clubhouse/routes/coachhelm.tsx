@@ -8,6 +8,7 @@ import { isTrackRecordEnabled } from '@/lib/coachhelm/v3/track-record/flag';
 import { isMondayBriefEnabled } from '@/lib/coachhelm/v3/monday-brief/flag';
 import { emptyCoachHelm, loadCoachCoachHelm, loadCoachHelmGate, loadPlayerCoachHelm, loadPlayerHelmGate } from '../data/coachhelm';
 import { loadAskCoachHelm } from '../data/coachhelm-chat';
+import { loadCoachPlayerDeepDive, loadCoachPlayerProfile, loadCoachPlayerScope, loadCoachPlayerStanding, type ChCoachPlayerScope } from '../data/coachhelm-player';
 import { loadPlayerDeepDive } from '../data/coachhelm-dive';
 import { loadPlayerProfile } from '../data/coachhelm-profile';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
@@ -15,12 +16,13 @@ import { loadCoachTrackRecord } from '../data/coachhelm-track-record';
 import { loadCoachMondayBrief } from '../data/coachhelm-monday-brief';
 import { COACH_MONDAY_BRIEF_HREF } from '../data/coachhelm-monday-brief-shape';
 import { COACH_TRACK_RECORD_HREF } from '../data/coachhelm-track-record-shape';
-import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type PlayerHelmView } from '../data/coachhelm-views-shape';
+import { PLAYER_HELM_DEVELOPMENT_HREF, playerHelmDrill, type ChViewLoad, type ChViewVoice, type CoachPlayerView as CoachPlayerViewName, type PlayerHelmView } from '../data/coachhelm-views-shape';
 import { Ask } from '../screens/coachhelm/chat/Ask';
 import { AskSkeleton } from '../screens/coachhelm/chat/AskSkeleton';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
+import { CoachPlayerFailed, CoachPlayerNotOnTeam } from '../screens/coachhelm/views/CoachPlayerStates';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
 import { Profile } from '../screens/coachhelm/views/Profile';
 import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
@@ -92,6 +94,51 @@ async function PlayerHelmView({ playerId, drill, insight }: { playerId: string; 
 }
 
 /**
+ * A coach's Game profile, Standing or Deep dive of one player (`?view=…&player=<golf_players.id>`, spec A). The address's id is only
+ * input: `loadCoachPlayerScope` checks it against this coach's own team (the one the shell resolved) before anything about the player
+ * is read, and the three loaders take the scope it makes, never the id. An id that is not on this team, or is not an id, is one
+ * "isn't on your team" page (CH-13311), whatever it names; a check that did not load is the page's own "didn't load" (CH-13209),
+ * never that page. CoachHelm off for the coach is the board's own page (CH-13305); off for the player's team is the view's own off
+ * page, said by name (CH-13313). Once the player is known the view's read runs in a boundary of its own whose skeleton says whose page
+ * it is; it stays in one place and is not keyed by view, so a switch between the three keeps the view on screen as the outer one does.
+ */
+async function CoachPlayerPage({ coachId, teamId, playerId, drill, insight }: { coachId: string; teamId: string; playerId: string; drill: CoachPlayerViewName; insight?: string }) {
+  const checked = await loadCoachPlayerScope({ coachId, teamId, playerId });
+  if (checked.status === 'not-member') return <CoachPlayerNotOnTeam />;
+  if (checked.status === 'failed') return <CoachPlayerFailed />;
+  if (checked.status === 'coach-off') return <CoachBoard data={emptyCoachHelm(checked.off)} />;
+  const head = checked.status === 'ok' ? checked.scope.head : checked.head;
+  const voice: ChViewVoice = { role: 'coach', ...head };
+  if (checked.status === 'player-off') {
+    const off = { status: 'off', reason: checked.reason } as const;
+    if (drill === 'profile') return <Profile load={off} voice={voice} />;
+    if (drill === 'standing') return <Standing load={off} voice={voice} />;
+    return <DeepDive load={off} voice={voice} initialId={null} />;
+  }
+  const { scope } = checked;
+  return (
+    <Suspense fallback={coachPlayerSkeleton(drill, head.first)}>
+      <CoachPlayerRead scope={scope} drill={drill} voice={voice} insight={insight} />
+    </Suspense>
+  );
+}
+
+/** The view's own read, for a scope the page has checked. `?insight=` means something only on the Deep dive, and an id not on it is ignored there. */
+async function CoachPlayerRead({ scope, drill, voice, insight }: { scope: ChCoachPlayerScope; drill: CoachPlayerViewName; voice: ChViewVoice; insight?: string }) {
+  if (drill === 'profile') return <Profile load={await loadCoachPlayerProfile({ scope })} voice={voice} />;
+  if (drill === 'standing') return <Standing load={await loadCoachPlayerStanding({ scope })} voice={voice} />;
+  return <DeepDive load={await loadCoachPlayerDeepDive({ scope })} voice={voice} initialId={insight ?? null} />;
+}
+
+/** A coach's view skeleton, with the player's header; `first` once the page knows who the player is. */
+function coachPlayerSkeleton(view: CoachPlayerViewName, first: string | null, chained = false): ReactNode {
+  const coach = { first };
+  if (view === 'profile') return <ProfileSkeleton chained={chained} coach={coach} />;
+  if (view === 'standing') return <StandingSkeleton chained={chained} coach={coach} />;
+  return <DiveSkeleton chained={chained} coach={coach} />;
+}
+
+/**
  * The skeleton of the view an address names (each in its final shape and height, so nothing jumps when the read lands). It is
  * `chained`: it follows the route's `loading.tsx` skeleton in the same place, so it does not fade in over it a second time.
  */
@@ -102,7 +149,11 @@ function viewSkeleton(view: PlayerHelmView): ReactNode {
   return <CoachHelmSkeleton view="player" chained />;
 }
 
-/** `?player=<golf_players.id>` opens a coach's board on that player (Roster's View insights); an id not on the board is ignored. `?view=ask` (with `?c=`) is the coach's Ask sub-tab. */
+/**
+ * `?player=<golf_players.id>` opens a coach's board on that player; an id not on the board is ignored. `?view=deep-dive|standing|profile`
+ * with `?player=` is a coach's view of that player (spec A; Roster's View insights lands on the Deep dive), and the player's own view
+ * for a player, whose `?player=` means nothing. `?view=ask` (with `?c=`) is the coach's Ask sub-tab.
+ */
 export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { view?: string; player?: string; c?: string; insight?: string } = {}) {
   if (view === 'development') redirect(PLAYER_HELM_DEVELOPMENT_HREF);
   const session = await getGolfSessionProfile();
@@ -130,6 +181,15 @@ export async function ClubhouseCoachHelmRoute({ view, player, c, insight }: { vi
       return (
         <Suspense fallback={<CoachHelmSkeleton view="coach" chained />}>
           <CoachTrackRecordView coachId={team.coachId} teamId={team.teamId} />
+        </Suspense>
+      );
+    }
+    // A coach's view of one player: the address names the player, and the page checks it against this team before any read.
+    const coachDrill = playerHelmDrill(view);
+    if (coachDrill && typeof player === 'string') {
+      return (
+        <Suspense fallback={coachPlayerSkeleton(coachDrill, null, true)}>
+          <CoachPlayerPage coachId={team.coachId} teamId={team.teamId} playerId={player} drill={coachDrill} insight={coachDrill === 'deep-dive' && typeof insight === 'string' ? insight : undefined} />
         </Suspense>
       );
     }

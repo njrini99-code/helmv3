@@ -211,8 +211,7 @@ export function detectCompoundingPatterns(
         if (triggerShot) {
           const triggerDesc =
             `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
-            `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
-            (triggerShot.club ? ` (${triggerShot.club})` : '');
+            `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y`;
 
           patterns.push({
             startHole: triggerShot.holeNumber,
@@ -234,8 +233,7 @@ export function detectCompoundingPatterns(
     if (triggerShot) {
       const triggerDesc =
         `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
-        `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
-        (triggerShot.club ? ` (${triggerShot.club})` : '');
+        `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y`;
 
       patterns.push({
         startHole: triggerShot.holeNumber,

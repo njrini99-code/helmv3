@@ -4071,3 +4071,299 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     background: radial-gradient(120% 140% at 90% -30%, rgb(255 255 255 / 0.1), transparent 55%), var(--ch-green-fill-700);
   }
 }
+
+/* Coach parity (spec B, 2026-10-21): "Waiting on you", the team's four parts and the Next row's replies. Text on the
+   canvas, hairlines and the well the player's "From your coach" row uses; no cards, no bars, nothing moves. */
+
+/* Waiting on you (CoachQueue.tsx): one row of separately linked parts in the soft well, under the head on desktop. */
+.ch-h-queue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 2px;
+  min-height: 44px;
+  margin-top: 20px;
+  padding: 6px 14px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-well-soft-bg);
+  box-shadow: var(--ch-well-soft-shadow);
+}
+.ch-h-queue__k {
+  flex: none;
+  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-h-queue__v {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  min-width: 0;
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-h-queue__a,
+.ch-hm-queue__a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ch-green-600);
+  font-weight: 500;
+  text-decoration: none;
+}
+.ch-h-queue__a {
+  min-height: 32px;
+}
+@media (hover: hover) {
+  .ch-h-queue__a:hover,
+  .ch-hm-queue__a:hover,
+  .ch-h-legs__who:hover,
+  .ch-hm-legs__a:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+.ch-h-queue__fail,
+.ch-hm-queue__fail {
+  color: var(--ch-text-tertiary);
+}
+.ch-h-main--desk > .ch-h-queue + .ch-h-form {
+  margin-top: 20px;
+}
+.ch-h-main--desk > .ch-h-queue + .ch-h-sheet {
+  margin-top: 28px;
+}
+.ch-h-main--first > .ch-h-queue {
+  margin-bottom: 4px;
+}
+
+/* The team's game (TeamLegs.tsx): a ruled ledger under the scoring stage, on the stage's own Last 10 rounds. */
+.ch-h-legs {
+  margin-top: 24px;
+}
+.ch-h-legs > .ch-h-sec,
+.ch-h-main--desk[data-canopy] .ch-h-legs > .ch-h-sec {
+  margin-top: 0;
+}
+.ch-h-legs > .ch-notice {
+  margin-top: 12px;
+}
+.ch-h-legs__scroll {
+  overflow-x: auto;
+}
+.ch-h-legs__t {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+/* 120 / 210 / 80 / 230 / 160 / 160 of the 960px content column. */
+.ch-h-legs__c1 { width: 12.5%; }
+.ch-h-legs__c2 { width: 21.875%; }
+.ch-h-legs__c3 { width: 8.333%; }
+.ch-h-legs__c4 { width: 23.958%; }
+.ch-h-legs__c5 { width: 16.667%; }
+.ch-h-legs__c6 { width: 16.667%; }
+.ch-h-legs__t th,
+.ch-h-legs__t td {
+  padding: 12px 12px 12px 0;
+  text-align: left;
+  vertical-align: baseline;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ch-h-legs__t .r {
+  padding-right: 24px;
+  text-align: right;
+}
+.ch-h-legs__t thead th {
+  padding-top: 10px;
+  padding-bottom: 8px;
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-h-legs__t tbody tr {
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+}
+.ch-h-legs__t tbody th {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-h-legs__t td {
+  font: 400 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-h-legs__t td.ch-h-legs__sg {
+  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+}
+.ch-h-legs .is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-h-legs .is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-h-legs__t td.ch-h-legs__sg.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-h-legs__t td.ch-h-legs__sg.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-h-legs__who {
+  color: var(--ch-green-600);
+  font-weight: 500;
+  text-decoration: none;
+}
+.ch-h-legs__note {
+  margin-top: 10px;
+  font: var(--ch-type-body-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-h-legs > .ch-empty {
+  margin-top: 8px;
+}
+/* The four parts in waiting (SkeletonDeskHead): the column row and four rows, at the loaded rows' height. */
+.ch-h-legs__skel {
+  display: grid;
+}
+.ch-h-legs__skrow {
+  display: grid;
+  grid-template-columns: 12.5% 21.875% 8.333% 23.958% 16.667% 16.667%;
+  align-items: center;
+  height: 41px;
+}
+.ch-h-legs__skrow:first-child {
+  height: 33px;
+}
+.ch-h-legs__skrow + .ch-h-legs__skrow {
+  box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
+}
+
+/* The Next row's replies (Week.tsx, spec B §4): a second line and one ghost Nudge under the Next badge. */
+.ch-h-agenda__row.has-replies .ch-h-agenda__txt {
+  grid-row: span 2;
+}
+.ch-h-agenda__rsvp {
+  margin-top: 2px;
+  font: var(--ch-type-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-tertiary);
+}
+.ch-h-agenda__row.is-next .ch-h-agenda__rsvp {
+  color: var(--ch-green-700);
+}
+.ch-h-agenda__row.has-replies > .ch-badge {
+  justify-self: end;
+}
+.ch-h-agenda__nudge {
+  grid-column: 3;
+  justify-self: end;
+}
+
+/* Phone: "Waiting on you" in the hero under the brief, each part a 44px target; the four parts after Team scoring. */
+@media (max-width: 820px) {
+  /* One flowing line: the key, then the parts, wrapping as text; each link's 44px target comes from its padding. */
+  .ch-hm-queue {
+    display: block;
+    margin: 0 0 18px;
+    padding: 2px 12px;
+    border-radius: var(--ch-radius-md);
+    background: var(--ch-well-soft-bg);
+    box-shadow: var(--ch-well-soft-shadow);
+    font: 400 calc(13 * var(--ch-type-k))/20px var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm-queue__k {
+    margin-right: 8px;
+    font-weight: 600;
+    color: var(--ch-text-primary);
+  }
+  .ch-hm-queue__v {
+    display: inline;
+  }
+  .ch-hm-queue__sep {
+    margin: 0 6px;
+  }
+  .ch-hm-queue__a {
+    display: inline-block;
+    padding: 12px 0;
+  }
+  .ch-hm-queue__fail {
+    display: inline-block;
+    padding: 12px 0;
+  }
+  .ch-hm-hero > .ch-hm-queue + .ch-notice {
+    margin-top: 14px;
+  }
+  .ch-hm-legs__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .ch-hm-legs__r {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'label sg' 'stat chg' 'who who';
+    column-gap: 12px;
+    row-gap: 2px;
+    padding: 12px 0 0;
+  }
+  .ch-hm-legs__r + .ch-hm-legs__r {
+    border-top: 1px solid var(--ch-ledger-rule-soft);
+  }
+  .ch-hm-legs__l {
+    grid-area: label;
+    font: 500 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    color: var(--ch-text-primary);
+  }
+  .ch-hm-legs__sg {
+    grid-area: sg;
+    justify-self: end;
+    font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-primary);
+  }
+  .ch-hm-legs__s {
+    grid-area: stat;
+    min-width: 0;
+    font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm-legs__c {
+    grid-area: chg;
+    justify-self: end;
+    align-self: baseline;
+    font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+    font-style: normal;
+    text-align: right;
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm-legs__who {
+    grid-area: who;
+    font: 400 calc(13 * var(--ch-type-k))/20px var(--ch-font-sans);
+    color: var(--ch-text-tertiary);
+  }
+  .ch-hm-legs__a {
+    display: inline-block;
+    padding: 12px 0;
+    color: var(--ch-green-600);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  /* A row without names still closes on the rows' rhythm. */
+  .ch-hm-legs__r:not(:has(.ch-hm-legs__who)) {
+    padding-bottom: 12px;
+  }
+  .ch-hm-legs__note {
+    margin-top: 4px;
+    font: var(--ch-type-body-s);
+    color: var(--ch-text-tertiary);
+  }
+}
