@@ -1819,6 +1819,21 @@ html:has([data-ui='clubhouse'])::view-transition-old(ch-strip) {
 html[data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
   animation-delay: var(--ch-dur-vt-hold);
 }
+/* A section switch (the tab bar, a sidebar item; lib/nav-motion.ts sets data-ch-tab; motion pass 2026-10-22, mot-03)
+   swaps at once, as a tab bar and a sidebar do on iOS and macOS: the new page is there in the first frame and the old
+   one is gone. The fade-through's dip, the old page out before the new one in, read as a blank beat on every section
+   change. Onto a route skeleton the old page still stays up through the hold and the skeleton's own delay, then goes in
+   one step as the skeleton fades in; a page that arrives sooner takes the hold off, and the old page goes with it. */
+html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+  animation: none;
+}
+html[data-ch-tab]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  display: none;
+}
+html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+  display: block;
+  animation: calc(var(--ch-dur-vt-hold) + var(--ch-dur-vt-out)) step-end both ch-vt-out;
+}
 /* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
    (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
    a parallax share, and Back plays it in reverse with the leaving page on top. Transform only. Phone only: desktop
@@ -3760,6 +3775,14 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-sidebar {
     overflow-x: hidden;
     transition: width var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  }
+  /* While the fold moves (lib/rail-fold.ts sets data-ch-rail-moving; motion pass 2026-10-22, mot-01), the brand panel
+     drops its frost: a blur under a box that changes size is redrawn on every frame of the spring. Over the sidebar's
+     clear field, a smooth gradient, the panel reads nearly the same without it, and the frost is back as it settles.
+     The page's own size readers wait the fold out in the same way (afterRailMove). */
+  .ch-app[data-ch-rail-moving] .ch-brand {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   /* The circle on the seam, level with the brand panel's centre. */

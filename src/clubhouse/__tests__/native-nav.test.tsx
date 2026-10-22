@@ -52,6 +52,37 @@ describe('which way a phone navigation moves', () => {
   });
 });
 
+describe('a section switch swaps at once (motion pass 2026-10-22, mot-03)', () => {
+  const shell = css('shell.css');
+
+  function tap(container: string, href: string) {
+    document.body.innerHTML = `<div data-ui="clubhouse"><nav class="${container}"><a href="${href}">Go</a></nav></div>`;
+    const a = document.querySelector('a')!;
+    a.addEventListener('click', (e) => e.preventDefault());
+    a.click();
+  }
+
+  afterEach(() => {
+    document.documentElement.removeAttribute('data-ch-tab');
+    document.body.innerHTML = '';
+  });
+
+  it('a tab bar or sidebar item marks the switch; any other link does not', () => {
+    tap('ch-strip', '/golf/dashboard/calendar');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    tap('ch-nav', '/golf/dashboard/stats');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(true);
+    tap('ch-page-links', '/golf/dashboard/roster');
+    expect(document.documentElement.hasAttribute('data-ch-tab')).toBe(false);
+  });
+
+  it('drops the fade-through: the new page at once, the old one gone or held whole until the skeleton is due', () => {
+    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-new\(ch-page\) \{\s*animation: none;/);
+    expect(shell).toMatch(/html\[data-ch-tab\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: none;/);
+    expect(shell).toMatch(/html\[data-ch-tab\]\[data-ch-vt-hold\]:has\(\[data-ui='clubhouse'\]\)::view-transition-old\(ch-page\) \{\s*display: block;\s*animation: calc\(var\(--ch-dur-vt-hold\) \+ var\(--ch-dur-vt-out\)\) step-end both ch-vt-out;/);
+  });
+});
+
 describe('the push and the pop', () => {
   const shell = css('shell.css');
   const tokens = css('tokens.css');

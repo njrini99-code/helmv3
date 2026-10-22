@@ -1320,15 +1320,16 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   background: linear-gradient(180deg, #f4eedd 0%, #e6dfcd 70%, #d8d1bf 100%);
 }
 
-/* Every window on the desktop is one material (owner, 2026-10-16: "more premium and add same blur"), the one the
-   course picker was researched to: the page behind dimmed with a light blur, no tint; the panel a solid surface
-   with one hairline edge, one soft shadow and 20px corners (the Claude and ChatGPT dialogs: solid, a 1px edge, one
-   shadow, 16-20px); a 20px title; the footer on the panel's own surface over a hairline, not a tinted bar. */
+/* Every window on the desktop is one material (owner, 2026-10-16), the one the course picker was researched to: the
+   page behind dimmed, no tint; the panel a solid surface with one hairline edge, one soft shadow and 20px corners (the
+   Claude and ChatGPT dialogs: solid, a 1px edge, one shadow, 16-20px); a 20px title; the footer on the panel's own
+   surface over a hairline, not a tinted bar. The dim is a solid wash, as a macOS sheet's is, and no blur (motion pass
+   2026-10-22, mot-02): the backdrop fades in over --ch-dur-base, and a blur under a fading layer re-blurs the whole page
+   on every frame of the open and the close, the stutter the phone lost on 2026-10-12. A shade deeper than the blur's
+   tint, so the panel still lifts off the page. */
 @media (min-width: 821px) {
   .ch-modal::backdrop {
-    background: rgb(12 12 10 / 0.38);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
+    background: rgb(12 12 10 / 0.42);
   }
   .ch-modal__panel {
     border-radius: 20px;
