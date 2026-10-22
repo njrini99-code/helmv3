@@ -41,6 +41,7 @@ setting, light or dark: the dark theme ("Clubhouse at night", owner
 | Haptics, one grammar (select, press, commit, success, warning, error), honouring the user's setting | `src/clubhouse/lib/haptics.ts` | done |
 | Safe areas: top bar, tab bar and toasts pad by `env(safe-area-inset-*)` | `src/clubhouse/styles/shell.css`, `ui.css` | done |
 | Swipe-back guard: no edge swipe while a sheet or dialog is open | `NativeSwipeBackBridge` in `ClubhouseShell`; an overlay is `<dialog open>`, or `role="dialog"` with `data-state="open"` | done |
+| Edge swipe back on a pushed screen: the in-page gesture, not WKWebView's whole-app snapshot | `claimWebSwipe` in `shell/edge-swipe.ts` posts `{ webSwipe }` to `helmNav` while a `PhoneScreen` with a chevron Back is up; the shell turns its own swipe off and sets `window.__helmNativeSwipe` ([phone/shell-gestures.md](phone/shell-gestures.md), section 1). Old builds ignore it and keep their own swipe | web done; native in `GolfBridgeViewController.swift`, needs a Simulator check and an App Store build |
 | Sign-out stops this phone getting the old account's pushes | `teardownDeviceTokenOnSignOut()` first in `writes.signOut` | done |
 | Push permission prompt (soft ask before the iOS dialog) | Fairway's version can't be reused; needs a Clubhouse sheet | waits for the foundation design |
 | Pull to refresh (every phone page, at its top; the app only, Safari keeps its own) | `PullToRefresh` in the shell: `router.refresh()`, the medium haptic at the trigger (owner-approved 2026-10-08, CH-1909) | done |
