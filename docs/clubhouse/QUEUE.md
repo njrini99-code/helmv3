@@ -109,7 +109,7 @@ its rows together and does not map them one to one.
 | par-11 | Coach note on a round review | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
 | par-12 | Team-grid leg figure opens that player's Game detail section | Clubhouse parity & pages | done | #2281 | |
 | par-13 | As chs-15 (Track record view) | CoachHelm board UI | done | #2253 | |
-| par-14 | As chs-21 (course plan) | CoachHelm board UI | open | #2252 (coach half) | |
+| par-14 | As chs-21 (course plan) | CoachHelm board UI | in progress | #2252 (coach half), #2333 | claude/coachhelm-round-prompts |
 | par-15 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-16 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-17 | Coach's player Stats hero has a CoachHelm button | Clubhouse parity & pages | done | #2281 | |
@@ -147,9 +147,9 @@ its rows together and does not map them one to one.
 | chs-18 | Slice 7a: team pool benchmark words (flag `coachhelm_team_pool_v1`). The audit found the coach Board card does not draw the team line; not rechecked | CoachHelm engine | done | #2238 | |
 | chs-19 | Slice 7b: Team pattern rows on the coach Board (flag `coachhelm_team_pattern_v1`) | CoachHelm board UI | done | #2251 | |
 | chs-20 | Same-day field context on bad-day-floor and pressure reads | CoachHelm engine | done | #2251 | |
-| chs-21 | Slice 7c: Course plan from a player's own history on a course. The coach has it (flag `coachhelm_course_plan_v1`); the player copy the design wrote is not drawn | CoachHelm board UI | open | #2252 (coach half) | |
-| chs-22 | Slice 8a: one-tap putt miss prompt after a missed putt. Fairway round entry only (flag `coachhelm_data_gap_prompt_v1`); Clubhouse round entry has none. Left alone by #2293 | CoachHelm board UI | open | | |
-| chs-23 | Slice 8b: course-picker nudge and recovery-lie tap (flag `coachhelm_data_prompts_v2`). Fairway round entry only; the `lie_after_recovery` column is applied | CoachHelm board UI | open | | |
+| chs-21 | Slice 7c: Course plan from a player's own history on a course. The coach has it (flag `coachhelm_course_plan_v1`); #2333 draws the player copy on the player Board | CoachHelm board UI | in progress | #2252 (coach half), #2333 | claude/coachhelm-round-prompts (CH-13916, CH-13917, CH-13233, CH-13333) |
+| chs-22 | Slice 8a: one-tap putt miss prompt after a missed putt. Fairway round entry only (flag `coachhelm_data_gap_prompt_v1`); Clubhouse round entry has none. Left alone by #2293 | CoachHelm board UI | in progress | #2333 | claude/coachhelm-round-prompts (CH-11960, Bridge 110760) |
+| chs-23 | Slice 8b: course-picker nudge and recovery-lie tap (flag `coachhelm_data_prompts_v2`). Fairway round entry only until #2333; the `lie_after_recovery` column is applied | CoachHelm board UI | in progress | #2333 | claude/coachhelm-round-prompts (CH-11961, CH-11962, Bridge 110761, 110762) |
 | chs-24 | Optional club chip on approaches: not built on purpose, CoachHelm names no clubs | CoachHelm engine | closed | | |
 | chs-25 | Level anchors (hs and div) and a GolfHelm-wide benchmark pool: owner decision Q-88, Tour and teammates only | CoachHelm engine | closed | | |
 | chs-26 | One-team canary for the v3 flags (env `HELM_COACHHELM_TEAMS`) | CoachHelm engine | done | #2258 | |
@@ -219,7 +219,7 @@ its rows together and does not map them one to one.
 | doc-27 | Delete conversation (a per-person hide) | Clubhouse parity & pages | done | #2185, #2228 | |
 | doc-28 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-29 | Qualifier privacy: the coach's reasoning is coach-only and the reason is written separately | Clubhouse parity & pages | done | #2209 | |
-| doc-30 | Owner decision 1 (10-21): Messages files and qualifier squad-size and entrant edits ship with the Clubhouse flag, no switch of their own, once Production rollout confirms the migrations behind them are applied | Production rollout | held | | |
+| doc-30 | Owner decision 1 (10-21): Messages files and qualifier squad-size and entrant edits ship with the Clubhouse flag, with no switch of their own. The migrations behind them are applied (`20260929200000` on 2026-10-21, `20261001130000` on 2026-10-03), so nothing is left to build | Owner | closed | | |
 | doc-31 | Q-120: server-side version check on round submit. The app-side check is live; held migration `20261001000000` | Production rollout | held | #2189 (app side) | |
 | doc-32 | Attendance privacy: players read only their own RSVP rows, counts come from a definer function. Held migration `20261017102000`; apply after a deploy that carries `attendance-counts.ts` | Production rollout | held | #2201 (app side) | |
 | doc-33 | Security S4 step 2: a player can no longer read a teammate's full player row. Held migration `20261017005000`: apply only after a deploy with #2269 and #2276 | Production rollout | held | #2269, #2276 (app side) | |
@@ -280,17 +280,23 @@ its rows together and does not map them one to one.
 
 <!-- markdownlint-enable MD013 -->
 
-Counts on 2026-10-22: 129 done, 26 held, 19 closed, 4 open, 2 in progress
-(chs-37 and chs-39, both in #2328). The four open rows are all that is left
-to claim: chs-22 and chs-23 (the data-gap prompts exist only on Fairway round
-entry and their flags are off) and chs-21 with its twin par-14 (the course
-plan has no player copy). The held rows wait on the owner (the iPhone pass and
-App Store build in doc-37, which also gates doc-38 to doc-41 reaching users;
-device checks and reviews in doc-03, doc-08, doc-35, doc-36, doc-44 and
-doc-49; the reset-email template in doc-55; the canary and deploy in doc-46,
-doc-47 and pr-02), on held migrations that Production rollout applies (doc-30
-to doc-34, chs-62, pr-09, pr-10), or on a stated trigger because they were
-deferred on purpose (doc-07, doc-09, doc-58 to doc-60, chs-59, chs-60).
+Counts on 2026-10-22: 129 done, 25 held, 20 closed, 6 in progress, none
+open. Four of the six in-progress rows are one draft, #2333 (chs-21, chs-22,
+chs-23, par-14); chs-37 and chs-39 are #2328. The held rows wait on the owner
+(the iPhone pass and App Store build in doc-37, which also gates doc-38 to
+doc-41 reaching users; device checks and reviews in doc-03, doc-08, doc-35,
+doc-36 and doc-49; the reset-email template in doc-55; the canary and deploy
+in doc-46, doc-47 and pr-02), on held migrations that Production rollout
+applies (doc-31 to doc-34, chs-62, pr-09, pr-10), or on a stated trigger
+because they were deferred on purpose (doc-07, doc-09, doc-58 to doc-60,
+chs-59, chs-60).
+
+Held rows that need no migration, flag or deploy, only an owner nod or a
+tool: doc-07 (a time-format choice), doc-60 (invite by email, needs a server
+action), chs-59 and chs-60 (two stats charts, deferred on purpose), doc-36
+(`clubhouse:perf` needs a production build, which is a local `npm run build`,
+not a deploy) and doc-44 (the Sentry alert can now be created with the Sentry
+tools). Moving any of them to open is the owner's call.
 
 The audit listed chs-41 twice: the dropped PR #2073 root map, and the
 idle-player stale refresh that the CoachHelm thread found later. The second
@@ -330,8 +336,8 @@ maps each decision, layout and slice to those rows. Every v3 flag named is
 | Slice 4 | Closed loop: a verdict on every prescription | chs-10, chs-11 | done |
 | Slice 5 | Counted families and insight angles | chs-16, chs-17 | done |
 | Slice 6 | Learning from corrections, Track record | chs-13, chs-14, chs-15 | done |
-| Slice 7 | Team pool, team pattern, course plan, canary | chs-18, chs-19, chs-20, chs-21, chs-26 | done except chs-21 (open: player copy) |
-| Slice 8 | New data: one-tap prompts, club chip, course nudge, recovery lie | chs-22, chs-23, chs-24 | chs-22 and chs-23 open (Fairway round entry only); chs-24 closed (no clubs) |
+| Slice 7 | Team pool, team pattern, course plan, canary | chs-18, chs-19, chs-20, chs-21, chs-26 | done except chs-21 (player copy in progress in #2333) |
+| Slice 8 | New data: one-tap prompts, club chip, course nudge, recovery lie | chs-22, chs-23, chs-24 | chs-22 and chs-23 in progress in #2333 (they were Fairway round entry only); chs-24 closed (no clubs) |
 | Level anchors | A GolfHelm-wide benchmark pool | chs-25 | closed (owner decision Q-88) |
 
 <!-- markdownlint-enable MD013 -->
@@ -356,7 +362,11 @@ the queue above.
 | #2319 | Coach-only availability note for the roster (held migration `20261022090000`) | Clubhouse parity & pages | landed |
 | #2320 | Coach Standing: the ladder's reads come from the coach feed | CoachHelm board UI | landed |
 | #2328 | Game profile folds into Standing; Ask answers link a player's reads | CoachHelm board UI | open (chs-37, chs-39) |
-| #2327 | Regenerate `database.ts` from the production schema (bot) | docs | open |
+| #2333 | CoachHelm data prompts in round entry, player Course plan | CoachHelm board UI | open draft (chs-21, chs-22, chs-23, par-14) |
+| #2332 | Roster CH-3009 flake, presentation server-start timeout, edge-swipe timer | Clubhouse fixes | open draft (its own rows new-02 to new-04) |
+| #2329 | `HELD.md` marks `20261022090000` applied; regenerated database types | docs | landed |
+| #2331 | Regenerate `database.ts` for `golf_import_player_classes`; incident close-out | docs | open |
+| #2327 | Regenerate `database.ts` from the production schema (bot; #2331 supersedes it) | docs | open |
 
 <!-- markdownlint-enable MD013 -->
 
@@ -401,17 +411,18 @@ free code in your window there. **P013 kind 9 is nearly full.** On `main`
 on 2026-10-22, 69 of its 99 codes are defined in `catalog/coachhelm.md`, so
 30 are free: 22 inside the area windows above (board UI 7, engine 4, parity
 6, fixes 5) and 8 outside them (CH-13973 to CH-13979 and CH-13994). The
-open PR #2328 takes CH-13913 to CH-13915, which leaves 27 free and 19 in
-the windows. The 2026-10-21 count listed only CH-13978, CH-13979 and
-CH-13994 as free outside the windows; CH-13973 to CH-13977 are used nowhere
-on `main` now, but ask the owner before taking them. When an area runs out,
-ask the owner before using another kind with a
+open PR #2328 takes CH-13913 to CH-13915 and the open draft #2333 takes
+CH-13916 and CH-13917, which leaves 25 free and 17 in the windows (board UI
+2, engine 4, parity 6, fixes 5). The 2026-10-21 count listed only CH-13978,
+CH-13979 and CH-13994 as free outside the windows; CH-13973 to CH-13977 are
+used nowhere on `main` now, but ask the owner before taking them. When an area
+runs out, ask the owner before using another kind with a
 `config/clubhouse/category-map.json` override.
 
 **#2299 (par-05) landed** with CH-13983 to CH-13989 and CH-13997 to
 CH-13999, Bridge IDs 130780 to 130789 (P013, category 07, parity window).
-The open PR #2328 takes Bridge IDs 130760 to 130762, inside the board UI
-window.
+The open PR #2328 takes Bridge IDs 130760 to 130762 and the open draft
+PR #2333 takes 130763 and 130764, both inside the board UI window.
 
 How to use a reservation:
 
