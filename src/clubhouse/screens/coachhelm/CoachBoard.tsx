@@ -26,7 +26,8 @@ import { ClearedLines } from './EngineState';
 import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { CoursePlan } from './CoursePlan';
-import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, type ChCoachHelmWrites, type ChCoursePlanReads } from './writes';
+import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
+import { RecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
@@ -51,6 +52,7 @@ export const coachBoardLinks = {
 /**
  * `trackRecordHref`: the Track record's address, handed over only with `coachhelm_track_record_v1` on (the route checks it); without it no link is drawn.
  * `mondayBriefHref`: the Monday brief's, likewise with `coachhelm_monday_brief_v1` on.
+ * `recheck`: Re-check reads (CH-13944), the team re-run; preview and tests pass their own.
  */
 export function CoachBoard({
   data,
@@ -59,6 +61,7 @@ export function CoachBoard({
   initialPlayer,
   trackRecordHref,
   mondayBriefHref,
+  recheck = LIVE_RECHECK_WRITES,
 }: {
   data: ChCoachHelmData;
   writes?: ChCoachHelmWrites;
@@ -66,6 +69,7 @@ export function CoachBoard({
   initialPlayer?: string;
   trackRecordHref?: string;
   mondayBriefHref?: string;
+  recheck?: ChRecheckWrites;
 }) {
   const phone = useChPhone();
   const players = data.players.list;
@@ -304,6 +308,8 @@ export function CoachBoard({
           </Button>
         </p>
       )}
+      {/* CH-13944: the team re-run, a quiet secondary action under the board. Not with CoachHelm off or with no players to read. */}
+      {!data.off && (data.roster.error || data.roster.count > 0) && <RecheckReads players={data.roster.error ? null : data.roster.count} writes={recheck} />}
       {trackRecordHref && !data.off && (
         <p className="ch-htr-link" data-ch-code="CH-13969">
           <Button variant="secondary" href={trackRecordHref}>

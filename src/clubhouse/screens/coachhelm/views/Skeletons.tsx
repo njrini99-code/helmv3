@@ -166,16 +166,20 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 }
 
 /** Standing: the green card with what is most to gain, then the groups of stats (CH-13470). */
+/** The loaded hero card's height on a 390 phone, measured in Chromium (the ladder took "Most to gain" off it). */
+const HERO_PHONE_390 = 256.3;
+
 export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   if (phone) {
-    // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups. The
-    // card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
+    // The phone: where you stand's feature card (the headline and the note), then Where strokes go's four rows, then the
+    // groups. The card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
     return (
       <Chrome label={labelFor('standing', coach)} code="CH-13470" chained={chained} coach={coach}>
         <div className="ch-hs-sk__hero">
-          <Skeleton width="100%" height={511} radius={14} shape="solid" />
+          <Skeleton width="100%" height={HERO_PHONE_390} radius={14} shape="solid" />
         </div>
+        <StandingGroupSkeleton rows={4} />
         <StandingGroupSkeleton rows={3} />
         <StandingGroupSkeleton rows={2} />
       </Chrome>
@@ -190,8 +194,8 @@ export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?
           <Skeleton width="60%" height={32} radius={8} />
           <Skeleton width="78%" height={13} />
         </div>
-        <Skeleton width="100%" height={200} radius={16} />
       </div>
+      <StandingGroupSkeleton rows={4} />
       <StandingGroupSkeleton rows={5} />
       <StandingGroupSkeleton rows={4} />
       <StandingGroupSkeleton rows={4} />
@@ -199,26 +203,17 @@ export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?
   );
 }
 
-/** Deep dive: the green summary, the list of reads and, on desktop, the read beside it (CH-13480). */
+/** Deep dive: the one-sentence summary, the read ledger and, on desktop, the read beside it (CH-13480). */
 export function DiveSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   return (
     <Chrome label={labelFor('deep dive', coach)} code="CH-13480" chained={chained} brief={3} coach={coach}>
-      {phone ? (
-        // The phone: what CoachHelm has found's feature card, with its figure line.
-        <div className="ch-hd-sk__hero">
-          <Skeleton width="100%" height={196} radius={14} shape="solid" />
+      {/* What CoachHelm has found: one sentence (chs-35). */}
+      <div className="ch-hd-sk__hero">
+        <div className="ch-hd-sk__col">
+          <Skeleton width={phone ? '88%' : '52%'} height={phone ? 22 : 26} radius={8} />
         </div>
-      ) : (
-        <div className="ch-hd-sk__hero">
-          <div className="ch-hd-sk__col">
-            <Skeleton width={150} height={11} />
-            <Skeleton width="70%" height={32} radius={8} />
-            <Skeleton width="86%" height={13} />
-          </div>
-          <Skeleton width="100%" height={72} radius={14} />
-        </div>
-      )}
+      </div>
       <div className="ch-hd">
         <div className="ch-hd-rail">
           {[4, 2].map((rows, g) => (

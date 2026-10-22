@@ -4,6 +4,7 @@ import type { InsightEvidence, InsightMovement, InsightUnit } from '@/lib/coachh
 import { isPlaceholderCause } from '@/lib/coachhelm/reads/placeholder-cause';
 import { isNotTracedCause } from '@/lib/coachhelm/reads/cause-state';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { formatSigned, formatToPar } from '../lib/format';
@@ -101,6 +102,62 @@ export interface ChDiveTheme {
   trend: { word: 'Improving' | 'Slipping' | 'Steady'; tone: ChDiveTone; text: string } | null;
 }
 
+/**
+ * The five areas the ledger groups reads by (design call §4 "Taxonomy"), in the order a hole is played. Every generator category
+ * has a home: pressure, course management, scoring and anything new are Course and scoring.
+ */
+export type ChDiveArea = 'tee' | 'approach' | 'around' | 'putting' | 'scoring';
+export const DIVE_AREAS: ReadonlyArray<{ id: ChDiveArea; label: string }> = [
+  { id: 'tee', label: 'Off the tee' },
+  { id: 'approach', label: 'Approach' },
+  { id: 'around', label: 'Around the green' },
+  { id: 'putting', label: 'Putting' },
+  { id: 'scoring', label: 'Course and scoring' },
+];
+const AREA_OF: Record<string, ChDiveArea> = { tee: 'tee', approach: 'approach', short_game: 'around', putting: 'putting' };
+/** The ledger area a generator category files under. */
+export const areaOf = (category: string | null | undefined): ChDiveArea => AREA_OF[category ?? ''] ?? 'scoring';
+
+/** The most cleared reads the ledger shows before it says "N more cleared" (design call §4 "Ranking and limits"). */
+export const DIVE_CLEARED_SHOWN = 3;
+
+/**
+ * A read the recheck found cleared, kept in its area as one line (D6): "Cleared Oct 12", what it was about, and the recheck's own
+ * numbers. It has no dossier: it left the open list.
+ */
+export interface ChDiveCleared {
+  id: string;
+  area: ChDiveArea;
+  /** "4–6 ft putts": the read's own metric label, else its title. */
+  title: string;
+  /** "Cleared Oct 12", or "Cleared" when the recheck stored no date. */
+  word: string;
+  /** The rest of the recheck's line in the viewer's voice ("22 of your last 29 (76%). That one's fixed. …"). */
+  line: string;
+  /** When the recheck ran (ISO), for picking the newest to show; null when unknown. */
+  at: string | null;
+}
+
+/** One hole a counted path was recorded on (chs-38): the round's day and course, the hole, and the path in shot-type words. */
+export interface ChDiveHole {
+  key: string;
+  /** "Sep 28". */
+  date: string;
+  course: string | null;
+  hole: number;
+  /** "approach missed → chip to 3–6 ft → 1 putt": the counted path, as the engine stored it. */
+  what: string;
+  /** The round's review, while that screen is rebuilt for a player. */
+  href: string | null;
+}
+
+/** Where it happened: the example holes a counted sequence stored, only the ones whose round this player still has. */
+export interface ChDiveWhere {
+  /** "5 of 7 penalties": how often the path was counted, when the sequence says. */
+  counted: string | null;
+  holes: ChDiveHole[];
+}
+
 export interface ChDeepInsight {
   /** The Board's own card: title, lede, why, evidence (gauge or bars, sample, window, read, as-of), the week's drill and the stance. */
   base: ChInsight;
@@ -128,6 +185,15 @@ export interface ChDeepInsight {
   plan: ChDivePlan;
   /** The read in four lines, What, Why, Next and When, from the fields above and the Board's card (`coachhelm-read-shape.ts`). */
   read: ChRead;
+  /** The ledger area it is listed under. */
+  area: ChDiveArea;
+  /**
+   * How firm the read is, as one word on its ledger row: the claim ladder's word when the support pass is on and the viewer may
+   * see it (a coach; the player feed drops the ladder), else the confidence word (Solid, Early or Thin read). Null when neither.
+   */
+  firmness: string | null;
+  /** The example holes behind a counted path (chs-38); null when the stored evidence carries none, and then nothing is drawn. */
+  where: ChDiveWhere | null;
 }
 
 export interface ChDeepDive {
@@ -145,8 +211,8 @@ export interface ChDeepDive {
   counts: { insights: number; needs: number; working: number; inPlan: number };
   /** What the reads were drawn without because a read beside them failed (the Tour's values, the drills, which are Assigned, which are out of date). */
   missing?: ChBoardMissing;
-  /** Reads the recheck found cleared, one line each (04 example 5; `coachhelm_recheck_v1`). Absent with the flag off or none. */
-  cleared?: string[];
+  /** Reads the recheck found cleared, each kept in its area (04 example 5, D6; `coachhelm_recheck_v1`). Absent with the flag off or none. */
+  cleared?: ChDiveCleared[];
 }
 
 /** What the loader reads for the parts beside the insights. */
@@ -342,6 +408,108 @@ function spanOf(ev: InsightEvidence): string | null {
   return a && b ? `${a} to ${b}` : null;
 }
 
+const rec = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null);
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
+/** A counted sequence as stored, from whichever field carries it. */
+interface StoredSequence {
+  what: string;
+  occurrences: number | null;
+  of: number | null;
+  population: string | null;
+  refs: Array<{ round_id: string; hole_number: number }>;
+}
+
+function holeRefs(v: unknown): StoredSequence['refs'] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map(rec)
+    .filter((r): r is Record<string, unknown> => !!r && !!str(r.round_id) && num(r.hole_number) != null && (r.hole_number as number) > 0)
+    .map((r) => ({ round_id: str(r.round_id)!, hole_number: r.hole_number as number }))
+    .slice(0, 5);
+}
+
+/**
+ * The counted sequence a read's evidence stores with its example holes, or null. Only a COUNTED path is read, never a guess:
+ *   1. `evidence.cause` (root-cause pass) in the `observed_sequence` state, its `path` and `example_holes`. A cause in any other
+ *      state means the why is not counted, and no example holes are drawn even if another field carries some.
+ *   2. Else `evidence.diagnosis.basis.sequence` on a `shot_sequence` basis (its `pattern` and `examples`).
+ *   3. Else `evidence.detail.sequence` from the insight angles (Slice 5b, #2248), only when it says it meets the Observed floors.
+ */
+function storedSequence(ev: unknown): StoredSequence | null {
+  const e = rec(ev);
+  if (!e) return null;
+  const cause = rec(e.cause);
+  if (cause) {
+    if (cause.state !== 'observed_sequence') return null;
+    const path = Array.isArray(cause.path) ? cause.path.map(str).filter((x): x is string => !!x) : [];
+    if (path.length === 0) return null;
+    return { what: path.join(' → '), occurrences: num(cause.occurrences), of: num(cause.denominator), population: str(cause.population), refs: holeRefs(cause.example_holes) };
+  }
+  const basis = rec(rec(e.diagnosis)?.basis);
+  const fromBasis = basis?.kind === 'shot_sequence' ? rec(basis.sequence) : null;
+  const angle = rec(rec(e.detail)?.sequence);
+  const seq = fromBasis ?? (angle?.meets_observed_floors === true ? angle : null);
+  const what = str(seq?.pattern);
+  if (!seq || !what) return null;
+  return { what, occurrences: num(seq.occurrences), of: num(seq.of), population: str(seq.population), refs: holeRefs(seq.examples) };
+}
+
+/** The rounds a read's example holes are on, for the loader to read beside the source rounds. */
+export function exampleRoundIds(ev: unknown): string[] {
+  return [...new Set(storedSequence(ev)?.refs.map((r) => r.round_id) ?? [])];
+}
+
+/** Where it happened, from the stored sequence and the rounds read for it: a hole whose round this player no longer has is left out. */
+export function whereFor(ev: unknown, byId: ReadonlyMap<string, DiveRoundRow>, voice: ChViewer['role'] = 'player'): ChDiveWhere | null {
+  const seq = storedSequence(ev);
+  if (!seq) return null;
+  const holes = seq.refs.flatMap((ref): ChDiveHole[] => {
+    const r = byId.get(ref.round_id);
+    if (!r) return [];
+    return [
+      {
+        key: `${ref.round_id}:${ref.hole_number}`,
+        date: fmtShortDate(r.round_date) ?? r.round_date.slice(0, 10),
+        course: r.course_name?.trim() || null,
+        hole: ref.hole_number,
+        what: seq.what,
+        href: rebuiltHref(`/golf/dashboard/rounds/${r.id}`, 'player'),
+      },
+    ];
+  });
+  if (holes.length === 0) return null;
+  const counted =
+    seq.occurrences != null && seq.of != null && seq.of > 0 ? `${seq.occurrences} of ${voice === 'player' ? 'your ' : ''}${seq.of}${seq.population ? ` ${seq.population}` : ''}` : null;
+  return { counted, holes };
+}
+
+/** How firm a read is, in one word (see `ChDeepInsight.firmness`). */
+export function firmnessOf(base: Pick<ChInsight, 'engine' | 'evidence'>): string | null {
+  return base.engine?.support?.word ?? base.evidence.read?.word ?? null;
+}
+
+/**
+ * A cleared read as its ledger line. `line` is the recheck's own sentence (`lifecycle/delivery-shape.ts clearedLine`), which opens
+ * with "<label> · Cleared — " (a coach's carries the date too); the row says the label and "Cleared <date>" in their own places, so
+ * only the rest is kept. A line in any other form is kept whole.
+ */
+export function toDiveCleared(raw: Pick<EvidenceInsight, 'id' | 'title' | 'category' | 'evidence'>, line: string): ChDiveCleared {
+  const e = rec(raw.evidence);
+  const title = str(e?.metric_label) ?? str(raw.title) ?? 'This read';
+  const at = str(rec(e?.recheck)?.computed_at);
+  const when = shortDate(at);
+  const head = line.match(/^.*? · Cleared(?: [A-Z][a-z]{2} \d{1,2})? — /);
+  return { id: raw.id, area: areaOf(raw.category), title, word: when ? `Cleared ${when}` : 'Cleared', line: head ? line.slice(head[0].length) : line, at };
+}
+
+/** The cleared reads the ledger shows at first: the newest few (`DIVE_CLEARED_SHOWN`), by id. */
+export function clearedShown(cleared: readonly ChDiveCleared[], all: boolean): Set<string> {
+  if (all) return new Set(cleared.map((c) => c.id));
+  const newest = [...cleared].sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''));
+  return new Set(newest.slice(0, DIVE_CLEARED_SHOWN).map((c) => c.id));
+}
+
 /**
  * One insight in full. `base`: the Board's own mapping of `raw` (`toChInsight`), so the card, its numbers and its words are the Board's;
  * `inputs`: the rounds, focus areas, goals and category reads the loader read beside it. `say` and `role` are the one viewer `base`
@@ -370,6 +538,9 @@ export function toChDeepInsight(
     rounds,
     plan: planFor(raw, inputs.focusAreas, inputs.goals, role === 'coach' ? say : undefined),
     read: toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say),
+    area: areaOf(raw.category),
+    firmness: firmnessOf(base),
+    where: whereFor(ev, inputs.rounds, role),
   };
 }
 

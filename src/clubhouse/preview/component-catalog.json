@@ -1453,6 +1453,26 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/Recheck.tsx",
+      "group": "screens",
+      "exports": [
+        "RecheckReads"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/TeamPatterns.tsx",
       "group": "screens",
       "exports": [
@@ -1732,16 +1752,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
-        "src/clubhouse/styles/coachhelm-profile.css",
-        "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1830,7 +1847,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
@@ -1877,7 +1893,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2078,7 +2093,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2180,7 +2194,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2908,7 +2921,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -2965,7 +2977,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
@@ -8365,6 +8376,8 @@
       "file": "src/clubhouse/styles/coachhelm-dive.css",
       "classes": [
         "ch-hd",
+        "ch-hd-cl",
+        "ch-hd-cl__b",
         "ch-hd-dos",
         "ch-hd-dos__h",
         "ch-hd-dx",
@@ -8377,20 +8390,17 @@
         "ch-hd-grp",
         "ch-hd-grp__h",
         "ch-hd-hero",
-        "ch-hd-hero__f",
-        "ch-hd-hero__k",
-        "ch-hd-hero__main",
-        "ch-hd-hero__n",
-        "ch-hd-hero__sub",
         "ch-hd-it",
         "ch-hd-it__b",
         "ch-hd-it__d",
+        "ch-hd-it__f",
         "ch-hd-it__v",
         "ch-hd-main",
         "ch-hd-meas",
         "ch-hd-meas__s",
         "ch-hd-meas__v",
         "ch-hd-meas__w",
+        "ch-hd-more",
         "ch-hd-msg",
         "ch-hd-plan",
         "ch-hd-plan__b",
@@ -8424,6 +8434,10 @@
         "ch-hd-tr",
         "ch-hd-tr__k",
         "ch-hd-tr__t",
+        "ch-hd-where",
+        "ch-hd-where__b",
+        "ch-hd-where__d",
+        "ch-hd-where__i",
         "ch-hd-why",
         "ch-hl",
         "ch-hl-ev",
@@ -8432,7 +8446,6 @@
         "ch-hl-lede",
         "ch-hl-stale",
         "ch-hv-sk-head",
-        "ch-scoreboard",
         "ch-skel"
       ],
       "tokens": [
@@ -8654,12 +8667,20 @@
         "ch-hs-g",
         "ch-hs-g__h",
         "ch-hs-g__t",
-        "ch-hs-gaps",
-        "ch-hs-gaps__v",
         "ch-hs-hero",
         "ch-hs-hero__k",
         "ch-hs-hero__main",
         "ch-hs-hero__sub",
+        "ch-hs-ld__b",
+        "ch-hs-ld__bar",
+        "ch-hs-ld__fail",
+        "ch-hs-ld__h",
+        "ch-hs-ld__miss",
+        "ch-hs-ld__n",
+        "ch-hs-ld__none",
+        "ch-hs-ld__r",
+        "ch-hs-ld__v",
+        "ch-hs-ld__why",
         "ch-hs-note",
         "ch-hs-open",
         "ch-hs-pct",
@@ -8714,6 +8735,21 @@
           "name": "--ch-hs-ink",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hs-r.is-behind"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-ink-500)",
+          "scope": ".ch-hs-ld__r"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-chart-loss)",
+          "scope": ".ch-hs-ld__r.is-loss"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-green-fill-600)",
+          "scope": ".ch-hs-ld__r.is-gain"
         },
         {
           "name": "--ch-hs-tone",
@@ -8950,6 +8986,8 @@
         "ch-hl-prop__a",
         "ch-hl-prop__r",
         "ch-hl-prop__t",
+        "ch-hl-rck",
+        "ch-hl-rck__s",
         "ch-hl-role",
         "ch-hl-row",
         "ch-hl-row__b",
@@ -11886,6 +11924,8 @@
         "ch-rv-cn__form",
         "ch-rv-cn__none",
         "ch-rv-cols",
+        "ch-rv-debrief__l",
+        "ch-rv-debrief__why",
         "ch-rv-dist",
         "ch-rv-dist__r",
         "ch-rv-dist__t",

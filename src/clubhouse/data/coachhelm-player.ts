@@ -7,7 +7,7 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
 import { countReads, isOpenFinding, kindOf } from './coachhelm-classify';
 import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
-import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive } from './coachhelm-dive-shape';
+import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import { toChInsight } from './coachhelm-map';
@@ -265,7 +265,7 @@ export async function loadCoachPlayerDeepDive(input: { scope: ChCoachPlayerScope
         themesFailed: themes === null,
         counts: diveCounts(list),
         ...(missing ? { missing } : {}),
-        ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}),
+        ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}),
       },
     };
   } catch (err) {

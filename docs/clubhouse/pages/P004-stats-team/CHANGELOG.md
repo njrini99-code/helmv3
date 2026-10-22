@@ -107,7 +107,8 @@ Held items:     none
     goals yet"). Setting goals is still Fairway-only.
   - Team stats already printed (the audit row missed `@media print` at the foot
     of stats.css); the leg grid's 760px minimum cut Total and Trend off the
-    sheet, so it now narrows on paper. The new key prints; the cell links do not.
+    sheet, so it now narrows on paper. The new key prints; the cell links do
+    not.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 

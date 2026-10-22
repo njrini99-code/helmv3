@@ -9,7 +9,7 @@ import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, countCountableRounds, drillTextByInsight, earliestStaleFloor, handled, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { kindOf } from './coachhelm-classify';
 import { boardMissing } from './coachhelm-shape';
-import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
+import { diveCounts, exampleRoundIds, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive, type DiveFocusRow, type DiveRoundRow } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
@@ -152,7 +152,8 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
         drawn.map((i) => i.id),
       ),
       newestRounds(supabase, [playerId], earliestStaleFloor(drawn)),
-      readRounds(supabase, playerId, drawn.flatMap((i) => roundIdsToRead(i.evidence))),
+      // The rounds the reads name, and the rounds their example holes are on (chs-38), in one read.
+      readRounds(supabase, playerId, drawn.flatMap((i) => [...roundIdsToRead(i.evidence), ...exampleRoundIds(i.evidence)])),
       plansRead,
       themesRead,
       readFocusVerdicts(
@@ -182,7 +183,7 @@ export async function loadPlayerDeepDive(input: { playerId: string }): Promise<C
     return done(
       {
         status: 'ready',
-        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) },
+        data: { list, tour: tourName, rounds: null, themes: themesByCategory(themes), roundsFailed: rounds === null, plansFailed: plans === null, themesFailed: themes === null, counts: diveCounts(list), ...(missing ? { missing } : {}), ...(shaped.clearedReads.length > 0 ? { cleared: shaped.clearedReads.map((c) => toDiveCleared(c.read, c.line)) } : {}) },
       },
       list.map((i) => i.base.id),
     );

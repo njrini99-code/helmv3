@@ -119,7 +119,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 14 |  | 23 | 11 | 44 | 19 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 10 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 201 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
-| P013 | 7 | 14 |  | 34 | 1 | 41 | 53 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 7 | 18 | 1 |  | 1 |  | 1 |  |  | 200 |
+| P013 | 7 | 15 |  | 35 | 1 | 44 | 56 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 8 | 18 | 1 |  | 1 |  | 1 |  |  | 209 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
 
@@ -1468,6 +1468,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130212 | CH-13405 | 02 Initial loading / skeleton | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | implemented | Coach: the board is drawn and the program pulse is still on its way |
 | 130213 | CH-13430 | 02 Initial loading / skeleton | `WHATS_NEW_IS_ON_ITS_WAY` | implemented | What’s new is on its way |
 | 130214 | CH-13431 | 02 Initial loading / skeleton | `WHATS_NEW_READS_AGAIN` | implemented | What’s new reads again (Try again, or the page refreshes) |
+| 130215 | CH-13406 | 02 Initial loading / skeleton | `RECHECK_RUNNING` | implemented | Re-check running |
 | 130401 | CH-13301 | 04 Empty | `PLAYER_NO_ROUND_POSTED_YET` | implemented | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | 04 Empty | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | implemented | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | 04 Empty | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | implemented | Player: every insight is a strength |
@@ -1502,6 +1503,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130432 | CH-13332 | 04 Empty | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | implemented | What’s new: a category came back at its row ceiling (200) |
 | 130433 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
+| 130435 | CH-13374 | 04 Empty | `STANDING_A_PART_OF_THE_ROUND_ON` | implemented | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1544,6 +1546,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
 | 130641 | CH-13209 | 06 Server / system error | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | implemented | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
+| 130642 | CH-13007 | 06 Server / system error | `RECHECK_RATE_LIMITED` | implemented | Re-check rate-limited |
+| 130643 | CH-13273 | 06 Server / system error | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | implemented | Standing: the open reads behind Where strokes go don't load |
+| 130644 | CH-13006 | 06 Server / system error | `RECHECK_FAILS` | implemented | Re-check fails or is offline |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
@@ -1597,6 +1602,9 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130751 | CH-13933 | 07 Network / offline | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | implemented | Monday brief: a player read at Likely or above |
 | 130752 | CH-13934 | 07 Network / offline | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | implemented | Monday brief: the team pattern row |
 | 130753 | CH-13935 | 07 Network / offline | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | implemented | Monday brief: nothing to raise this week |
+| 130754 | CH-13944 | 07 Network / offline | `RECHECK_READS` | implemented | Re-check reads (coach) |
+| 130755 | CH-13945 | 07 Network / offline | `RECHECK_LANDS` | implemented | Re-check lands |
+| 130756 | CH-13996 | 07 Network / offline | `DEEP_DIVE_WHERE_IT_HAPPENED` | implemented | Deep dive: where it happened (chs-38) |
 | 130801 |  | 08 Permission / authorization | `CONTROLS_FOLLOW_THE_ROLE` | implemented | The coach's controls (Assign as focus, Dismiss, Undo) exist only on the coach's board. The player's board has no write of any kind and is never drawn Assign, Dismiss, Undo or Share, and neither board has a Share button: no action sits behind it. |
 | 130802 |  | 08 Permission / authorization | `A_COACH_READS_ONLY_THE_TEAMS_ACTIVE_PLAYERS` | implemented | A coach's board reads only the active members of the team the shell resolved (golf_team_members, team_id and status active), whichever other teams the coach staffs; only those ids reach the visible-insights read, the top-insight read (one per player) and the focus-area read. A coach session with no resolved team, or one that is not a coach team, gets the no-team page (CH-13308) and no player is read. The program pulse is the coach's own (getCoachProgramPulse, which resolves its team through the coach chat context), not a read of this page's team id. |
 | 130803 |  | 08 Permission / authorization | `A_PLAYER_READS_ONLY_THEIR_OWN_INSIGHTS` | implemented | A player's board is built from the session's own player id and nothing else: the gate, the feed (up to 30), the dismissal read and the rounds count are that player's, with or without a team, and no team read or teammate's insight reaches it. |
@@ -1626,6 +1634,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 131705 | CH-13721 | 17 Haptic | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | implemented | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | 17 Haptic | `ASK_A_FOLLOW_UP_IS_TAPPED` | implemented | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | 17 Haptic | `DEEP_DIVE_A_READ_IN_THE_LIST` | implemented | Deep dive: a read in the list, or a round or a plan under it, is tapped |
+| 131708 | CH-13705 | 17 Haptic | `RECHECK_TAPPED` | implemented | Re-check tapped |
 | 131801 | CH-13801 | 18 Accessibility | `A_SCREEN_READER_MOVES_THROUGH_THE_PAGE` | implemented | A screen reader moves through the page |
 | 131802 | CH-13802 | 18 Accessibility | `A_GAUGE` | reserved | A gauge |
 | 131803 | CH-13803 | 18 Accessibility | `AN_INSIGHT_OR_PLAYER_ROW` | implemented | An insight or player row |

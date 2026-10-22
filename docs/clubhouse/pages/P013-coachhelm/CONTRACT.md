@@ -103,6 +103,7 @@ own after the server render, so there are no section skeletons.
 | 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
 | 130213 | CH-13430 | `WHATS_NEW_IS_ON_ITS_WAY` | What’s new is on its way |
 | 130214 | CH-13431 | `WHATS_NEW_READS_AGAIN` | What’s new reads again (Try again, or the page refreshes) |
+| 130215 | CH-13406 | `RECHECK_RUNNING` | Re-check running |
 
 ## 03 — Background loading / refresh
 
@@ -164,6 +165,7 @@ filter, so it has no filtered empty state.
 | 130432 | CH-13332 | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | What’s new: a category came back at its row ceiling (200) |
 | 130433 | CH-13311 | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | Coach player page, CoachHelm off for the player: it is off for that player's team |
+| 130435 | CH-13374 | `STANDING_A_PART_OF_THE_ROUND_ON` | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
 
 ## 05 — Validation
 
@@ -232,6 +234,9 @@ the whole change again, follow-ups included (131401).
 | 130639 | CH-13231 | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | What’s new: the feed crashes while drawing |
 | 130641 | CH-13209 | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
+| 130642 | CH-13007 | `RECHECK_RATE_LIMITED` | Re-check rate-limited |
+| 130643 | CH-13273 | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | Standing: the open reads behind Where strokes go don't load |
+| 130644 | CH-13006 | `RECHECK_FAILS` | Re-check fails or is offline |
 
 ## 07 — Network / offline
 
@@ -299,6 +304,9 @@ its own.
 | 130751 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
 | 130752 | CH-13934 | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | Monday brief: the team pattern row |
 | 130753 | CH-13935 | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | Monday brief: nothing to raise this week |
+| 130754 | CH-13944 | `RECHECK_READS` | Re-check reads (coach) |
+| 130755 | CH-13945 | `RECHECK_LANDS` | Re-check lands |
+| 130756 | CH-13996 | `DEEP_DIVE_WHERE_IT_HAPPENED` | Deep dive: where it happened (chs-38) |
 
 ## 08 — Permission / authorization
 
@@ -457,6 +465,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight
 | 131705 | CH-13721 | `ASK_AN_OPENER_PILL_OR_SHORTCUT_CARD` | Ask: An opener pill or shortcut card is tapped |
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
+| 131708 | CH-13705 | `RECHECK_TAPPED` | Re-check tapped |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,

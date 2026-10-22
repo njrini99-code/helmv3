@@ -4,7 +4,7 @@ import { AnimatePresence } from 'motion/react';
 import { ChevronRight, Compass, Flag, MessageSquare, Plus, Target } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
-import type { ChDeepDive, ChDeepInsight, ChDiveRound, ChDiveTheme, ChDiveTone } from '../../../data/coachhelm-dive-shape';
+import { clearedShown, DIVE_AREAS, type ChDeepDive, type ChDeepInsight, type ChDiveCleared, type ChDiveRound, type ChDiveTheme, type ChDiveTone, type ChDiveWhere } from '../../../data/coachhelm-dive-shape';
 import { meaningfulReason, readLines, writeUpFor } from '../../../data/coachhelm-read-shape';
 import { PLAYER_HELM_DEVELOPMENT_HREF, PLAYER_VOICE, type ChViewLoad, type ChViewVoice } from '../../../data/coachhelm-views-shape';
 import { haptic } from '../../../lib/haptics';
@@ -26,7 +26,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
-import { ClearedLines, EngineState, WhyAudit } from '../EngineState';
+import { EngineState, WhyAudit } from '../EngineState';
 import { CorrectionChips, ReadLater } from '../Corrections';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
@@ -278,6 +278,46 @@ function Why({ i }: { i: ChDeepInsight }) {
 }
 
 /**
+ * Where it happened (chs-38): up to five holes the counted path was recorded on, each with its round's day and course, the hole and
+ * the path in shot-type words. Drawn only when the read's evidence stores a counted sequence with example holes this player still
+ * has; otherwise the section is left out, never an empty state.
+ */
+function Where({ id, where }: { id: string; where: ChDiveWhere | null }) {
+  if (!where || where.holes.length === 0) return null;
+  return (
+    <Section id={`${id}-where`} title="Where it happened" aside={where.counted ?? undefined} code="CH-13996">
+      <ol className="ch-hd-where">
+        {where.holes.map((h) => {
+          const body = (
+            <>
+              <span className="ch-hd-where__d ch-num">{h.date}</span>
+              <span className="ch-hd-where__b">
+                <b>
+                  {h.course ?? 'Round'} <span className="ch-num">· hole {h.hole}</span>
+                </b>
+                <span>{h.what}</span>
+              </span>
+            </>
+          );
+          return (
+            <li key={h.key}>
+              {h.href ? (
+                <Link className="ch-hd-where__i is-link" href={h.href} onClick={() => haptic('select')} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
+                  {body}
+                  <Icon icon={ChevronRight} size={15} />
+                </Link>
+              ) : (
+                <div className="ch-hd-where__i">{body}</div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </Section>
+  );
+}
+
+/**
  * The read in four lines (P013, the Read): What (the number, its sample, the comparison by name, strokes a round only when the
  * row estimates them, the confidence word), Why (the cause with its basis and counts, or not traced yet), Next (the drill or the
  * row's own action, never the generator's placeholder) and When (the newest round in it, and Out of date when a newer one is not).
@@ -483,13 +523,17 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
       <Trend i={i} theme={d.themes[i.cat]} themesFailed={d.themesFailed} covered={covered} voice={voice} />
       <Rounds i={i} failed={d.roundsFailed} covered={covered} voice={voice} />
       <Why i={i} />
+      <Where id={b.id} where={i.where} />
 
       <Plan i={i} failed={d.plansFailed} covered={covered} voice={voice} />
     </article>
   );
 }
 
-/** A read in the list: its category and stance, its title and its number, in the stance's colour. Picking one is a selection haptic (CH-13780). */
+/**
+ * A read on the ledger: its stance dot, its title, its stance and firmness words, and its number. Picking one is a selection haptic
+ * (CH-13780). An out-of-date read keeps its row, its firmness word greyed (design call, States).
+ */
 function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: boolean; onPick: () => void; dismissed?: boolean }) {
   return (
     <li>
@@ -504,11 +548,11 @@ function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: bool
       >
         <span className="ch-hd-it__d" aria-hidden="true" />
         <span className="ch-hd-it__b">
-          <em>
-            {i.base.category}
-            <span> · {dismissed ? 'Dismissed' : i.stance.word}</span>
-          </em>
           <b>{i.base.title}</b>
+          <em>
+            <span>{dismissed ? 'Dismissed' : i.stance.word}</span>
+            {i.firmness && <span className="ch-hd-it__f"> · {i.firmness}</span>}
+          </em>
         </span>
         <span className="ch-hd-it__v ch-num">
           {i.base.value}
@@ -525,55 +569,76 @@ function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: bool
   );
 }
 
-function Group({ id, title, note, items, pickedId, onPick, dismissed }: { id: string; title: string; note: string; items: ChDeepInsight[]; pickedId: string | null; onPick: (id: string) => void; dismissed?: Readonly<Record<string, true>> }) {
-  if (items.length === 0) return null;
+/** A cleared read, kept in its area as one line (D6): "Cleared Oct 12", what it was about, and the recheck's numbers. */
+function ClearedRow({ c }: { c: ChDiveCleared }) {
   return (
-    <section className="ch-hd-grp" aria-labelledby={id}>
-      <div className="ch-hd-grp__h">
-        <h3 id={id}>{title}</h3>
-        <span className="ch-num">{items.length}</span>
-      </div>
-      <p>{note}</p>
-      <ul>
-        {items.map((i) => (
-          <Item key={i.base.id} i={i} on={i.base.id === pickedId} onPick={() => onPick(i.base.id)} dismissed={!!dismissed?.[i.base.id]} />
-        ))}
-      </ul>
-    </section>
+    <li className="ch-hd-cl">
+      <span className="ch-hd-it__d" aria-hidden="true" />
+      <span className="ch-hd-cl__b">
+        <b>{c.title}</b>
+        <em>{c.word}</em>
+        {c.line && <span className="ch-num">{c.line}</span>}
+      </span>
+    </li>
   );
 }
 
-function Hero({ d, voice = PLAYER_VOICE }: { d: ChDeepDive; voice?: ChViewVoice }) {
-  const { insights, needs, working, inPlan } = d.counts;
-  const f = voice.role === 'coach' ? voice.first : null;
+/**
+ * The read ledger (chs-35; design call "Player Deep dive"): one flush list grouped by area, in the order a hole is played, each read
+ * in the page's own order within its area. Cleared reads stay in their area; the newest three are shown, then "N more cleared".
+ */
+function Ledger({ list, cleared = [], pickedId, onPick, dismissed }: { list: readonly ChDeepInsight[]; cleared?: readonly ChDiveCleared[]; pickedId: string | null; onPick: (id: string) => void; dismissed?: Readonly<Record<string, true>> }) {
+  const [all, setAll] = useState(false);
+  const shown = clearedShown(cleared, all);
+  const more = cleared.length - shown.size;
+  const areas = DIVE_AREAS.map((a) => ({ ...a, reads: list.filter((i) => i.area === a.id), done: cleared.filter((c) => c.area === a.id && shown.has(c.id)) })).filter((a) => a.reads.length > 0 || a.done.length > 0);
   return (
-    <section className="ch-hd-hero ch-scoreboard" aria-labelledby="ch-hd-hero-t">
-      <div className="ch-hd-hero__main">
-        <span className="ch-hd-hero__k">What CoachHelm has found</span>
-        <h2 id="ch-hd-hero-t">
-          CoachHelm has <span className="ch-hd-hero__n ch-num">{insights}</span> {insights === 1 ? 'read' : 'reads'} on {f ? `${f}’s` : 'your'} game.
-        </h2>
-        {f ? (
-          <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds behind it, how it has moved and whether it is already a focus. Assign from here: it reaches {f} as a proposal to accept.</p>
-        ) : (
-          <p className="ch-hd-hero__sub">Open one to see what was measured, the rounds it was made from, how it has moved and where it goes in your plan. In your plan counts reads from both lists, so it overlaps them. A read from before your newest round says so.</p>
-        )}
-      </div>
-      <dl className="ch-hd-hero__f">
-        <div className="is-needs">
-          <dt>Needs work</dt>
-          <dd className="ch-num">{needs}</dd>
-        </div>
-        <div className="is-working">
-          <dt>What’s working</dt>
-          <dd className="ch-num">{working}</dd>
-        </div>
-        <div className="is-plan">
-          <dt>{wordsFor(voice).inPlan}</dt>
-          {/* Plans that did not load are not "none": a dash, never a zero. */}
-          <dd className="ch-num">{d.plansFailed ? '—' : inPlan}</dd>
-        </div>
-      </dl>
+    <>
+      {areas.map((a) => (
+        <section key={a.id} className="ch-hd-grp" aria-labelledby={`ch-hd-area-${a.id}`}>
+          <div className="ch-hd-grp__h">
+            <h3 id={`ch-hd-area-${a.id}`}>{a.label}</h3>
+            {a.reads.length > 0 && <span className="ch-num">{a.reads.length}</span>}
+          </div>
+          <ul>
+            {a.reads.map((i) => (
+              <Item key={i.base.id} i={i} on={i.base.id === pickedId} onPick={() => onPick(i.base.id)} dismissed={!!dismissed?.[i.base.id]} />
+            ))}
+            {a.done.map((c) => (
+              <ClearedRow key={c.id} c={c} />
+            ))}
+          </ul>
+        </section>
+      ))}
+      {more > 0 && (
+        <button type="button" className="ch-hd-more" onClick={() => setAll(true)} data-ch-code="CH-13992">
+          <span className="ch-num">{more}</span> more cleared
+        </button>
+      )}
+    </>
+  );
+}
+
+/**
+ * "CoachHelm has 5 reads on your game, 2 of them in your plan." One sentence; plans that did not load leave the plan clause out, never a
+ * zero. `first`: a coach's page about one player (spec A) names the player ("on Jonah's game", "in Jonah's plan").
+ */
+export function heroLine(d: Pick<ChDeepDive, 'counts' | 'plansFailed'>, first: string | null = null): string {
+  const { insights, inPlan } = d.counts;
+  const whose = first ? `${first}’s` : 'your';
+  const head = `CoachHelm has ${insights} ${insights === 1 ? 'read' : 'reads'} on ${whose} game`;
+  if (d.plansFailed || inPlan === 0) return `${head}.`;
+  if (insights === 1) return `${head}, and it is in ${whose} plan.`;
+  return `${head}, ${inPlan === insights ? 'all' : inPlan} of them in ${whose} plan.`;
+}
+
+function Hero({ d, voice = PLAYER_VOICE }: { d: ChDeepDive; voice?: ChViewVoice }) {
+  const first = voice.role === 'coach' ? voice.first : null;
+  return (
+    <section className="ch-hd-hero" aria-labelledby="ch-hd-hero-t">
+      <h2 id="ch-hd-hero-t" className="ch-num">
+        {heroLine(d, first)}
+      </h2>
     </section>
   );
 }
@@ -684,20 +749,15 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
             ) : undefined
           }
         />
-        {/* CH-13992: a read cleared at its last check stays listed for two more, even when no open read is left beside it. */}
-        <ClearedLines lines={d.cleared} />
+        {/* CH-13992: a read cleared at its last check stays listed in its area for two more, even when no open read is left. */}
+        {d.cleared && d.cleared.length > 0 && (
+          <nav className="ch-hd-rail" aria-label="Cleared reads" data-ch-code="CH-13890">
+            <Ledger list={[]} cleared={d.cleared} pickedId={null} onPick={() => {}} />
+          </nav>
+        )}
       </PlayerHelmFrame>
     );
   }
-
-  const needs = list.filter((i) => i.base.kind === 'finding');
-  const working = list.filter((i) => i.base.kind === 'strength');
-  const groups = (
-    <>
-      <Group id="ch-hd-needs" title="Needs work" note={f ? `Where CoachHelm sees the most to gain for ${f}, in the order it ranks them.` : 'Where CoachHelm sees the most to gain, in the order it ranks them.'} items={needs} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} dismissed={coach ? fa.dismissed : undefined} />
-      <Group id="ch-hd-working" title="What’s working" note={f ? `What ${f} does better than the comparison. Worth saying so.` : 'What you do better than the comparison. Keep doing it.'} items={working} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} dismissed={coach ? fa.dismissed : undefined} />
-    </>
-  );
 
   return (
     <PlayerHelmFrame
@@ -733,8 +793,7 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
         <Hero d={d} voice={voice} />
         <div className="ch-hd">
           <nav className="ch-hd-rail" aria-label={w.list} data-ch-code="CH-13890">
-            {groups}
-            <ClearedLines lines={d.cleared} />
+            <Ledger list={list} cleared={d.cleared} pickedId={phone ? null : shown?.base.id ?? null} onPick={pick} dismissed={coach ? fa.dismissed : undefined} />
           </nav>
           {!phone && shown && (
             <div className="ch-hd-main" ref={dossier}>

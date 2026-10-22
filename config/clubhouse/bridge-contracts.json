@@ -14758,6 +14758,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130215,
+    "page": "P013",
+    "category": 2,
+    "item": 15,
+    "name": "RECHECK_RUNNING",
+    "chCode": "CH-13406",
+    "meaning": "Re-check running",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -15130,6 +15141,17 @@
     "name": "COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE",
     "chCode": "CH-13313",
     "meaning": "Coach player page, CoachHelm off for the player: it is off for that player's team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130435,
+    "page": "P013",
+    "category": 4,
+    "item": 35,
+    "name": "STANDING_A_PART_OF_THE_ROUND_ON",
+    "chCode": "CH-13374",
+    "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15594,6 +15616,39 @@
     "name": "COACH_PLAYER_PAGE_DID_NOT_LOAD_ON",
     "chCode": "CH-13209",
     "meaning": "Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130642,
+    "page": "P013",
+    "category": 6,
+    "item": 42,
+    "name": "RECHECK_RATE_LIMITED",
+    "chCode": "CH-13007",
+    "meaning": "Re-check rate-limited",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130643,
+    "page": "P013",
+    "category": 6,
+    "item": 43,
+    "name": "STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES",
+    "chCode": "CH-13273",
+    "meaning": "Standing: the open reads behind Where strokes go don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130644,
+    "page": "P013",
+    "category": 6,
+    "item": 44,
+    "name": "RECHECK_FAILS",
+    "chCode": "CH-13006",
+    "meaning": "Re-check fails or is offline",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16183,6 +16238,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130754,
+    "page": "P013",
+    "category": 7,
+    "item": 54,
+    "name": "RECHECK_READS",
+    "chCode": "CH-13944",
+    "meaning": "Re-check reads (coach)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130755,
+    "page": "P013",
+    "category": 7,
+    "item": 55,
+    "name": "RECHECK_LANDS",
+    "chCode": "CH-13945",
+    "meaning": "Re-check lands",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130756,
+    "page": "P013",
+    "category": 7,
+    "item": 56,
+    "name": "DEEP_DIVE_WHERE_IT_HAPPENED",
+    "chCode": "CH-13996",
+    "meaning": "Deep dive: where it happened (chs-38)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -16529,6 +16617,17 @@
     "name": "DEEP_DIVE_A_READ_IN_THE_LIST",
     "chCode": "CH-13780",
     "meaning": "Deep dive: a read in the list, or a round or a plan under it, is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 131708,
+    "page": "P013",
+    "category": 17,
+    "item": 8,
+    "name": "RECHECK_TAPPED",
+    "chCode": "CH-13705",
+    "meaning": "Re-check tapped",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
