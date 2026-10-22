@@ -125,6 +125,7 @@ export function evaluateRequiredChecks(rollup, requiredContexts) {
 export const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
 export const UNIT_SHARDS = [1, 2, 3, 4, 5];
 const SCOPE_STEP = 'Decide test scope';
+export const QUICK_TIER_STEP = 'Quick tier (follow-up push)';
 
 /**
  * One shard's verdict from its job. `job` is the Actions API job (`{ steps: [{ name, conclusion }] }`), or undefined when the run has no
@@ -156,11 +157,17 @@ export function evaluateUnitShards(runs, shards = UNIT_SHARDS) {
   let best = null;
   for (const run of runs) {
     const verdicts = shards.map((n) => ({ n, ...unitShardVerdict((run.jobs ?? []).find((j) => j.name === `Unit tests (${n})`), n, shards.length) }));
+    // A job that took the quick tier (ci.yml) skipped its real work, so the run is not a full run whatever the shards did.
+    for (const j of run.jobs ?? []) {
+      if ((j.steps ?? []).some((s) => s.name === QUICK_TIER_STEP && s.conclusion === 'success')) {
+        verdicts.push({ n: j.name, ok: false, why: `${j.name} took the quick tier (follow-up push)` });
+      }
+    }
     const passing = verdicts.filter((v) => v.ok).length;
-    if (passing === shards.length) return { ok: true, runId: run.id, problems: [] };
+    if (passing === verdicts.length) return { ok: true, runId: run.id, problems: [] };
     if (!best || passing > best.passing || (passing === best.passing && run.id > best.run.id)) best = { run, passing, verdicts };
   }
-  return { ok: false, runId: best.run.id, problems: best.verdicts.filter((v) => !v.ok).map((v) => `shard ${v.n}/${shards.length}: ${v.why}`) };
+  return { ok: false, runId: best.run.id, problems: best.verdicts.filter((v) => !v.ok).map((v) => (typeof v.n === 'number' ? `shard ${v.n}/${shards.length}: ${v.why}` : v.why)) };
 }
 
 /**
@@ -466,10 +473,14 @@ async function main(argv) {
     ? checkUnitShards({ repo, sha: pr.headRefOid, run: (a) => exec('gh', a, { cwd: canonicalRoot }) })
     : { ok: false, runId: null, problems: ['could not resolve the repository or the head commit'] };
   if (!shards.ok) {
+    // Follow-up pushes run the quick tier (ci.yml), so the full suite runs once, here, on the head about to merge.
+    const dispatched = exec('gh', ['workflow', 'run', 'ci.yml', '--ref', String(pr.headRefName)], { cwd: canonicalRoot });
     process.stderr.write(
       `pr-land: PR #${args.prNumber} is green on its required contexts, but the whole unit suite has not run on ${String(pr.headRefOid ?? '').slice(0, 9)}:\n` +
         shards.problems.map((p) => `  ${p}\n`).join('') +
-        'A follow-up push runs only the tests related to its diff. Flip the PR to draft and back to ready to get a full run, then land it again.\n',
+        (dispatched.ok
+          ? `Started the full CI run on ${pr.headRefName} (gh workflow run ci.yml). Land it again when that run is green.\n`
+          : `Could not start the full CI run (${String(dispatched.stderr ?? '').trim()}). Run \`gh workflow run ci.yml --ref ${pr.headRefName}\`, then land it again.\n`),
     );
     return 1;
   }
