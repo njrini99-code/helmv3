@@ -181,7 +181,7 @@ function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice 
 }
 
 /** One part of the round: its strokes against the Tour on a thin bar, and "Because" opening the reads behind it in place. */
-function LadderRow({ r, open, onToggle, readsFailed }: { r: ChLadderRow; open: boolean; onToggle: () => void; readsFailed: boolean }) {
+function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; open: boolean; onToggle: () => void; readsFailed: boolean; voice: ChViewVoice }) {
   const id = `ch-hs-ld-${r.id}`;
   const canOpen = !readsFailed && r.causes.length > 0;
   return (
@@ -213,7 +213,7 @@ function LadderRow({ r, open, onToggle, readsFailed }: { r: ChLadderRow; open: b
             <ul>
               {r.causes.map((c) => (
                 <li key={c.id}>
-                  <a href={c.href}>{c.title}</a>
+                  <a href={diveReadHref(c.id, voice)}>{c.title}</a>
                   {c.line && <p>{c.line}</p>}
                   {c.firmness && <em>{c.firmness}</em>}
                 </li>
@@ -248,7 +248,7 @@ function Ladder({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoic
       </div>
       <ol className="ch-hs-rows">
         {s.ladder.rows.map((r) => (
-          <LadderRow key={r.id} r={r} open={open === r.id} readsFailed={s.ladder.readsFailed} onToggle={() => setOpen((v) => (v === r.id ? null : r.id))} />
+          <LadderRow key={r.id} r={r} open={open === r.id} readsFailed={s.ladder.readsFailed} voice={voice} onToggle={() => setOpen((v) => (v === r.id ? null : r.id))} />
         ))}
       </ol>
       {s.ladder.readsFailed && (

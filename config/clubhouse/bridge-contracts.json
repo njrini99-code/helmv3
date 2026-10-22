@@ -10215,11 +10215,12 @@
     "category": 1,
     "item": 1,
     "name": "HUB_READY",
-    "meaning": "Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents, and Tasks for a coach). A player's Home shows their RSVPs, the post waiting on them, the next trip, Updates and their tasks; a coach's shows this week's replies as counts, the newest post with its read receipts, the next trip and Updates, and a coach also gets New announcement.",
+    "meaning": "Team Hub opens on Home for a coach and for a player in the same frame: the role pill, the title, the team and season, and the tabs (Home, Announcements, Travel, Documents and Tasks, for a coach and a player; Announcements and Tasks carry a small count when a post waits to be acknowledged or a task is late). Under the title one line says what the team is waiting on (a coach: players, replies due, posts awaiting acknowledgement, days to the next trip, open tasks; a player: replies due, posts to acknowledge, days to their trip, open tasks), each figure opening the tab it counts; a figure that is zero, or whose read failed, is left out. Home is a set of widgets (twelve columns on desktop, one in rank order on a phone): the next trip as the one dark tile (days to go, the plan as a rail, who is traveling, a pager to the next trip, Edit trip for a coach; with no trip ahead, the week's next event); this week as seven days to step through, the chosen day's events with replies as a count for a coach and the reply choices for a player, and what follows later this week; for a coach, Waiting on (each player's replies owed, posts not acknowledged, open tasks with late ones in amber and rounds in 30 days, sortable, a name opening the items), the latest post with its acknowledged count and a disc for each player not yet acknowledged, and the tasks' done, left and overdue with the three soonest; for a player, their queue (replies, posts and tasks answered in place, an answered row staying put), the latest post with Got it, and the newest files. Updates sits on both. A coach also gets New announcement.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/TeamHub.tsx#TeamHub; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute; src/app/golf/(dashboard)/dashboard/team-hub/page.tsx",
     "tests": [
-      "src/clubhouse/__tests__/hub.test.tsx"
+      "src/clubhouse/__tests__/hub.test.tsx",
+      "src/clubhouse/screens/hub/__tests__/hub-redesign.test.tsx"
     ]
   },
   {
@@ -10228,11 +10229,12 @@
     "category": 1,
     "item": 2,
     "name": "TAB_LINK_OPENS_A_TAB",
-    "meaning": "?tab=home|ann|travel|docs|tasks opens that tab; a tab the role does not have (tasks, for a player) or a value that is not a tab opens Home.",
+    "meaning": "?tab=home|ann|travel|docs|tasks opens that tab; a value that is not a tab opens Home. A player's Tasks tab lists their own tasks; the coach's Tasks tab also opens with a board of the team's done, left and overdue.",
     "status": "implemented",
     "where": "src/clubhouse/screens/hub/TeamHub.tsx#parseHubTab; src/clubhouse/routes/hub.tsx#ClubhouseHubRoute",
     "tests": [
-      "src/clubhouse/__tests__/hub.test.tsx"
+      "src/clubhouse/__tests__/hub.test.tsx",
+      "src/clubhouse/screens/hub/__tests__/hub-redesign.test.tsx"
     ]
   },
   {
@@ -10366,7 +10368,7 @@
     "item": 1,
     "name": "NO_EVENTS_NEED_A_REPLY",
     "chCode": "CH-10301",
-    "meaning": "No events need a reply",
+    "meaning": "No events this week",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/hub.md"
   },

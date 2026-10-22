@@ -177,7 +177,7 @@ async function openReads(supabase: Supabase, scope: ChCoachPlayerScope): Promise
 export async function loadCoachPlayerStanding(input: { scope: ChCoachPlayerScope }): Promise<ChViewLoad<ChStanding>> {
   const { scope } = input;
   const supabase = await createClient();
-  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope) }), openReads(supabase, scope)]);
+  const [standing, reads] = await Promise.all([loadPlayerStanding({ playerId: scope.playerId, viewer: coachViewer(scope), feed: () => getInsightsForCoach(scope.coachId, { player_id: scope.playerId, limit: PLAYER_FEED_LIMIT, includeMore: true }) }), openReads(supabase, scope)]);
   if (standing.status !== 'ready') return standing;
   return { status: 'ready', data: { ...standing.data, ...(reads ? { reads } : {}) } };
 }

@@ -48,6 +48,23 @@ Held items:     none
 
 - `coachhelm-coach-brief.test.tsx`, `alias.test.ts` (CH-13998) and the
   board link test in `coachhelm.test.tsx`.
+## 2026-10-22 — Coach Standing: the ladder's reads are the player's, read as the coach
+
+```text
+Design package: clubhouse-coachhelm-design-call.md (Standing)
+PR/commit:      see git log (claude/coach-ladder-feed)
+Contract IDs:   none new
+Actions:        none (read only)
+Data impact:    none written; on a coach's Standing of one player the
+                ladder's "Because" reads now come from the coach feed for
+                that player (not the player's own feed), worded for the
+                coach, and each opens that read in the coach's Deep dive of
+                the player
+```
+
+Before: a coach's Standing drew the ladder's reads from the player's own
+feed and linked them to the player's own Deep dive. After: the coach feed,
+the coach's words, and the coach's Deep dive.
 
 ## 2026-10-21 — Standing: Where strokes go replaces Most to gain
 
