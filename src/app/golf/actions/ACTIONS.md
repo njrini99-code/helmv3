@@ -36,6 +36,7 @@ that effect.
 
 - `course-library.ts`: listCourses, listCoursesStrict, getRecentlyPlayedCourses, getCourseTeeCounts, getCourseTeeCountsStrict, getCourseDetail, getCourseTeeHoles, getTeeWithHoles, getTeeRoundDefaults, getCourseEditHistory, getTeamSavedCourses, getTeamSavedCoursesStrict, createCourse, updateCourse, softDeleteCourse, restoreCourse, setCourseImageUrl, removeCourseImage, createTee, contributeCourseFromRound, updateTee, softDeleteTee, restoreTee, saveTeamCourse, unsaveTeamCourse, setTeamCourseDefaultTee, setTeamCoursePinned
 - `golf-action-shared.ts`: resolveCourseId, getCoachTeamId, getPlayerTeamId, createSafeFlightRecorder
+- `round-coach-note.ts`: saveRoundCoachNote (a coach's note on a round, keyed by the round; Clubhouse round review)
 - `round-drafts.ts`: saveRoundDraft, loadRoundDraft, clearRoundDraft, checkRoundStaleness
 - `round-partial.ts`: savePartialRound, deleteInProgressRound
 - `round-recap.ts`: generateRoundRecap

@@ -48,7 +48,10 @@ Route:              /golf/dashboard/coachhelm (coach and player);
                     Stats' Development, ?view=insights and no view draw the
                     board; ?view=ask is the coach's Ask (off when CoachHelm
                     is off); ?player=<id> opens a coach's board on that
-                    player (Roster's View insights)
+                    player (Roster's View insights);
+                    /golf/dashboard/whats-new is the coach's What's new, the
+                    team's CoachHelm activity of the past 7 days (CH-1323x,
+                    CH-1333x, CH-1343x)
 Bridge Namespace:   13 (Bridge IDs 13ccii, D-68; catalog codes CH-13xxx)
 Roles:              coach, player
 Implementation Root: src/clubhouse/screens/coachhelm
@@ -156,15 +159,15 @@ have no insights yet, and Roster's View insights (the Deep dive).
 
 Roster, from Invite players (its invite sheet) and View roster (a coach), and
 CoachHelm settings, from Open CoachHelm settings
-(`/golf/dashboard/settings/coaching-intelligence`);
-Rounds, from Open Rounds or Start a round (a player). A control whose target is
-not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'
-Development tab, from the player's sub-navigation and from `?view=development`
-(where every stored dev-plan notification points); a round's review, from a
-round under a read in the Deep dive, once that screen is rebuilt. From a
-coach's view of one player: back to the board open on that player, Messages
-with the player, the coach's round review, Stats' Development for the player
-and CoachHelm settings (when it is off for the player's team).
+(`/golf/dashboard/settings/coaching-intelligence`); Rounds, from Open Rounds or
+Start a round (a player). A control whose target is not rebuilt is not drawn
+(`rebuiltHref`), so no control leads nowhere. Stats' Development tab, from the
+player's sub-navigation and from `?view=development` (where every stored
+dev-plan notification points); a round's review, from a round under a read in
+the Deep dive, once that screen is rebuilt.
+From a coach's view of one player: back to the board open on that player,
+Messages with the player, the coach's round review, Stats' Development for the
+player and CoachHelm settings (when it is off for the player's team).
 
 ## Ownership
 

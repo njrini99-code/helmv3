@@ -1,5 +1,27 @@
 # CI Runbook — Triaging Pending / Red PR Checks
 
+## 2026-10-21 — Quick tier on follow-up pushes, full suite at land
+
+Measured on 2026-10-21: CI jobs ran 1 to 7 minutes but waited 5 to 13 minutes
+for a runner, because ~20 jobs per push compete for the account's 20 slots.
+Runner-minutes per push are the lever, so a follow-up push (`synchronize`) now
+runs a quick tier:
+
+- `Unit tests`: shard 1 runs the related tests unsharded; shards 2-5 stop after
+  the scope step without installing.
+- `Next build` runs only if `build` paths changed, `Supabase lint + RLS tests`
+  only if `db` paths changed (`.github/path-filters.yml`).
+- `Clubhouse presentation quality` does not run on a follow-up push.
+- Static checks, TypeScript, Lint, World Model, Review Gate and CodeQL are
+  unchanged.
+
+The full suite still runs when a PR is opened, reopened or marked ready, on
+every `main` push, and on demand. `npm run pr:land` already refuses a head with
+no full five-shard run; it now starts that run itself
+(`gh workflow run ci.yml --ref <branch>`) and asks you to land again when it is
+green. A merge through the GitHub UI after only a quick run is not protected by
+that guard: land with `pr:land`.
+
 ## 2026-10-07 — Plan phase 5: what moved, and the rules that came with it
 
 - **Advisory browser jobs left `main`'s push path.** `Playwright PR smoke

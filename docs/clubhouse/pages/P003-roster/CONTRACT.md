@@ -137,7 +137,7 @@ could be read as a formula as text (30502).
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30501 | CH-3101 | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | A coach's note is within 200 characters of its 2,000 limit |
-| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
+| 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. |
 
 ## 06 — Server / system error
 

@@ -124,12 +124,13 @@ describe('the letter map', () => {
       expect(letterFor('player', id)).toBe(letter);
     }
     expect(letterFor('player', 'rounds')).toBe('o');
+    expect(letterFor('coach', 'rounds')).toBe('o');
     expect(letterFor('player', 'classes')).toBe('l');
   });
 
   it('reaches a section only the role has', () => {
     expect(itemForLetter('player', 'o')?.id).toBe('rounds');
-    expect(itemForLetter('coach', 'o')).toBeUndefined();
+    expect(itemForLetter('coach', 'o')?.id).toBe('rounds');
     expect(itemForLetter('coach', 'l')).toBeUndefined();
     expect(itemForLetter('coach', 'R')?.id).toBe('roster');
   });
