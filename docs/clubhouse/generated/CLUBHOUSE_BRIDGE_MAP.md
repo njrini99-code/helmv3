@@ -522,12 +522,12 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 50617 | CH-5212 | 06 Server / system error | `THE_SPRAY_READ_THROWS` | implemented | The spray read throws |
 | 50618 | CH-5213 | 06 Server / system error | `THE_ROUND_CACHE_DOESNT_LOAD` | implemented | The round cache doesn't load |
 | 50619 | CH-5005 | 06 Server / system error | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | implemented | Sharing a personal-best card fails (the share sheet or the download is blocked) |
-| 50620 | CH-5214 | 06 Server / system error | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | implemented | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
+| 50620 | CH-5006 | 06 Server / system error | `STARTING_A_GOAL_FAILS` | implemented | Starting a goal fails (Set a goal) |
 | 50621 | CH-5007 | 06 Server / system error | `ACCEPTING_A_SUGGESTED_GOAL_FAILS` | implemented | Accepting a suggested goal fails |
 | 50622 | CH-5008 | 06 Server / system error | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | implemented | Dismissing a suggested goal fails |
 | 50623 | CH-5009 | 06 Server / system error | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | implemented | A coach pauses, resumes or abandons a goal and it fails |
-| 50624 | CH-5215 | 06 Server / system error | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | implemented | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
-| 50625 | CH-5006 | 06 Server / system error | `STARTING_A_GOAL_FAILS` | implemented | Starting a goal fails (Set a goal) |
+| 50624 | CH-5214 | 06 Server / system error | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | implemented | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
+| 50625 | CH-5215 | 06 Server / system error | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | implemented | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
 | 50701 | CH-5901 | 07 Network / offline | `CHANGING_THE_WINDOW_WHILE_OFFLINE` | implemented | Changing the window (the switch, on desktop or the phone) or the round filter while offline |
 | 50702 | CH-5902 | 07 Network / offline | `A_WINDOW_CHANGE_TAKES_LONGER_THAN_5` | implemented | A window or filter change takes longer than 5 seconds |
 | 50703 | CH-5903 | 07 Network / offline | `A_WINDOW_OR_FILTER_CHANGE_IS_IN` | implemented | A window or filter change is in flight (after a beat of 150 ms; one that lands at once never shows it) |
@@ -1497,11 +1497,11 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130427 | CH-13382 | 04 Empty | `DEEP_DIVE_A_READ_NAMES_NO_ROUNDS` | implemented | Deep dive: a read names no rounds, or none of them can be listed |
 | 130428 | CH-13383 | 04 Empty | `DEEP_DIVE_A_READ_HAS_NO_TREND` | implemented | Deep dive: a read has no trend |
 | 130429 | CH-13384 | 04 Empty | `DEEP_DIVE_A_READ_IS_NOT_PART` | implemented | Deep dive: a read is not part of a plan |
-| 130430 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
-| 130431 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
+| 130430 | CH-13330 | 04 Empty | `WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN` | implemented | What’s new: nothing in the past seven days |
+| 130431 | CH-13331 | 04 Empty | `WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING` | implemented | What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week |
 | 130432 | CH-13332 | 04 Empty | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | implemented | What’s new: a category came back at its row ceiling (200) |
-| 130433 | CH-13330 | 04 Empty | `WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN` | implemented | What’s new: nothing in the past seven days |
-| 130434 | CH-13331 | 04 Empty | `WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING` | implemented | What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week |
+| 130433 | CH-13311 | 04 Empty | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | implemented | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
+| 130434 | CH-13313 | 04 Empty | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | implemented | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130501 | CH-13120 | 05 Validation | `ASK_SEND_WHILE_AN_ACTION_CARD_WAITS` | implemented | Ask: Send while an action card waits for Confirm or Cancel |
 | 130601 | CH-13001 | 06 Server / system error | `ASSIGN_AS_FOCUS_FAILS` | implemented | Assign as focus fails |
 | 130602 | CH-13002 | 06 Server / system error | `DISMISS_FAILS` | implemented | Dismiss fails |
@@ -1540,10 +1540,10 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 130635 | CH-13226 | 06 Server / system error | `ASK_A_READ_THE_PULSE_IS_MADE` | deprecated | Ask: a read the pulse is made from failed |
 | 130636 | CH-13272 | 06 Server / system error | `STANDING_THE_COHORT_LOOKUP_FAILED` | implemented | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | 06 Server / system error | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | implemented | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
-| 130638 | CH-13209 | 06 Server / system error | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | implemented | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
+| 130638 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
 | 130639 | CH-13231 | 06 Server / system error | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | implemented | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | 06 Server / system error | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | implemented | What’s new: the feed crashes while drawing |
-| 130641 | CH-13230 | 06 Server / system error | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | implemented | What’s new: a refresh fails after the week loaded |
+| 130641 | CH-13209 | 06 Server / system error | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | implemented | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
 | 130701 | CH-13901 | 07 Network / offline | `AN_INSIGHT_IS_DISMISSED` | implemented | An insight is dismissed |
 | 130702 |  | 07 Network / offline | `WRITES_REFUSE_OFFLINE` | implemented | Assign as focus, Dismiss and Undo are refused while the browser is offline, before anything is sent: the shell's toast (CH-1903) names what did not happen (Couldn’t assign the focus to Jonah: you’re offline), the error haptic fires and Retry is offered. Dismiss's warning haptic has already fired when the refusal comes. |
 | 130703 | CH-13902 | 07 Network / offline | `A_PROPOSED_FOCUS_AREA_IS_ACCEPTED_OR` | implemented | A proposed focus area is accepted or declined |
