@@ -46,7 +46,7 @@ import { isCoachHelmEnabledForCoach, isCoachHelmEnabledForPlayer } from '@/lib/c
 import { getCoachProgramPulse } from '@/lib/coachhelm/v3/chat/request-cache';
 import { ACTIVE_FOCUS_DUPLICATE_ERROR } from '@/lib/coachhelm/focus-areas/duplicate-guard';
 import { loadCoachCoachHelm, loadPlayerCoachHelm } from '../data/coachhelm';
-import { areaTypeFor, formatComparison, niceMax, splitContent, toChInsight, withoutCollegeAverage } from '../data/coachhelm-map';
+import { areaTypeFor, formatComparison, splitContent, toChInsight, withoutCollegeAverage } from '../data/coachhelm-map';
 import { partitionInsights, playersLine, pulseRows, sortCoachPlayers, type ChCoachHelmData, type ChPlayerHelm, type ChTourBaseline } from '../data/coachhelm-shape';
 import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachBoard } from '../screens/coachhelm/CoachBoard';
@@ -174,11 +174,7 @@ describe('Generator output to the board', () => {
     expect(i).toMatchObject({ category: 'Course management', priority: 'high', strength: false, areaType: 'mental_game' });
     expect(i.evidence).toMatchObject({ sample: '21 rounds', window: 'All rounds', read: { level: 3 } });
     // The generator's own Tour tick (0.3, "PGA Tour avg") is the same number now drawn as the comparison, so it is not drawn twice.
-    expect(i.evidence.gauge).toMatchObject({ you: '1.1', cmp: 'Tour 0.3', sec: null, secPct: null, good: false, fromZero: true });
-    const g = i.evidence.gauge!;
-    // A display scale a step above the largest value; the marks keep their order.
-    expect(g.youPct).toBeGreaterThan(g.cmpPct);
-    expect(g.youPct).toBeLessThan(100);
+    expect(i.evidence.gauge).toEqual({ you: '1.1', cmp: 'Tour 0.3', sec: null });
   });
 
   it('the generator’s placeholder recommended action is not shown as a drill', () => {
@@ -194,13 +190,13 @@ describe('Generator output to the board', () => {
   it('ahead of the generator’s own comparison at low priority is working, and its gauge is the green one, drawn against the Tour', () => {
     const i = toChInsight(bigNumber(jonah), { tour: PREVIEW_TOUR });
     expect(i.strength).toBe(true);
-    expect(i.evidence.gauge).toMatchObject({ good: true, cmp: 'Tour 2%' });
+    expect(i.evidence.gauge).toMatchObject({ cmp: 'Tour 2%' });
   });
 
   it('a break gap is a finding: a make rate below its comparison (higher is better in the registry) is amber, never working', () => {
     const i = toChInsight(breakBias(jonah));
     expect(i.strength).toBe(false);
-    expect(i.evidence.gauge?.good).toBe(false);
+    expect(i.evidence.gauge).not.toBeNull();
   });
 
   it('being ahead of the comparison only makes an insight working at low priority: at medium priority it is still a finding', () => {
@@ -229,7 +225,7 @@ describe('Generator output to the board', () => {
 
   it('Q-88 a women’s team’s college cohort is drawn as the LPGA Tour, never the men’s', () => {
     const lpga: ChTourBaseline = { tour: 'lpga', values: new Map([['penalty_rate_per_round', 0.4]]) };
-    expect(toChInsight(penalties(jonah), { tour: lpga }).evidence.gauge).toMatchObject({ cmp: 'LPGA Tour 0.4', sec: null, secPct: null });
+    expect(toChInsight(penalties(jonah), { tour: lpga }).evidence.gauge).toMatchObject({ cmp: 'LPGA Tour 0.4', sec: null });
   });
 
   it('Q-88 a metric the tour has no value for, or a tour that is not known, draws no comparison and no gauge, and still names its sample', () => {
@@ -293,7 +289,6 @@ describe('Generator output to the board', () => {
     const p = ownBaseline(penalties(jonah));
     const same = toChInsight({ ...p, evidence: { ...p.evidence, secondary_value: p.evidence.comparison_value } }).evidence.gauge!;
     expect(same.sec).toBeNull();
-    expect(same.secPct).toBeNull();
     const unnamed = toChInsight({ ...p, evidence: { ...p.evidence, secondary_label: undefined } }).evidence.gauge!;
     expect(unnamed.sec).toBe('Tour 0.3');
   });
@@ -311,16 +306,6 @@ describe('Generator output to the board', () => {
     expect(toChInsight({ ...p, lifecycle_state: 'archived' }).lifecycle).toBe('detected');
   });
 
-  it('a percent track never runs past 100, or past 1 for fractions', () => {
-    const b = ownBaseline(bigNumber(jonah));
-    const track = (you: number, cmp: number) =>
-      toChInsight({ ...b, evidence: { ...b.evidence, unit: 'percent', your_value: you, your_value_display: `${you}`, comparison_value: cmp, secondary_value: undefined } }).evidence.gauge!;
-    expect(track(58, 81).youPct).toBeCloseTo(58);
-    expect(track(58, 81).cmpPct).toBeCloseTo(81);
-    expect(track(0.5, 0.9).youPct).toBeCloseTo(50);
-    expect(track(0.5, 0.9).cmpPct).toBeCloseTo(90);
-  });
-
   it('with no display of its own the headline is the number in its unit, and a label that carries its own number stands alone', () => {
     const p = ownBaseline(penalties(jonah));
     const i = toChInsight({ ...p, evidence: { ...p.evidence, your_value_display: undefined as never, comparison_label: 'No penalties (your par 5 rate 12%)' } });
@@ -328,14 +313,6 @@ describe('Generator output to the board', () => {
     expect(i.evidence.gauge).toMatchObject({ you: '1.1', cmp: 'No penalties (your par 5 rate 12%)' });
     // When the generator has its own display of the number, that is what is shown.
     expect(toChInsight({ ...p, evidence: { ...p.evidence, your_value_display: 'about one' } }).evidence.gauge!.you).toBe('about one');
-  });
-
-  it('a track that has a negative mark starts below zero and draws only its ticks', () => {
-    const p = ownBaseline(penalties(jonah));
-    const g = toChInsight({ ...p, evidence: { ...p.evidence, your_value: -0.4, your_value_display: '−0.4', comparison_value: 0.6 } }).evidence.gauge!;
-    expect(g.fromZero).toBe(false);
-    expect(g.youPct).toBeGreaterThanOrEqual(0);
-    expect(g.cmpPct).toBeLessThanOrEqual(100);
   });
 
   it('splits sentences at a full stop before a capital or digit, never inside a number', () => {
@@ -351,9 +328,6 @@ describe('Generator output to the board', () => {
     expect(formatComparison(0.5, 'percent')).toBe('50%');
     expect(formatComparison(-1.25, 'strokes')).toBe('−1.3');
     expect(formatComparison(31.4, 'yards')).toBe('31 yd');
-    expect(niceMax(1.1)).toBe(1.5);
-    expect(niceMax(23)).toBe(30);
-    expect(niceMax(0)).toBe(1);
   });
 
   it('a category files under the focus-area type the other promote paths use', () => {
@@ -403,7 +377,7 @@ describe('Which insight leads, and who is most pressing', () => {
     expect(working.map((i) => i.id)).toEqual(['s0']);
     expect(more).toBe(13);
     const items = Array.from({ length: 9 }, (_, n) => ({ id: `rsvp-${n}`, headline: 'A headline', evidence: 'Some evidence', tone: 'neutral' as const }));
-    expect(pulseRows(items).map((r) => r.id)).toEqual(['rsvp-0', 'rsvp-1', 'rsvp-2', 'rsvp-3', 'rsvp-4', 'rsvp-5']);
+    expect(pulseRows(items).map((r) => r.id)).toEqual(['rsvp-0', 'rsvp-1', 'rsvp-2']);
   });
 
   it('130103 players: the most pressing top insight first, then the most signals, then the name; a strength last', () => {
@@ -442,7 +416,6 @@ describe('Which insight leads, and who is most pressing', () => {
       ['coverage-stale', 'warn', 'calendar-x'],
       ['movement-improve', 'good', 'trending-down'],
       ['rsvp-9', 'warn', 'rsvp'],
-      ['something-new', 'soft', 'flag'],
     ]);
   });
 });
@@ -461,11 +434,12 @@ describe('CoachHelm for the player, on screen', () => {
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Share/ })).toBeNull();
   });
 
-  it('the focus card: category and priority, the first sentence, the evidence bars with their sample, window and read, and this week’s drill', () => {
+  it('the focus card: the category (a medium finding wears no stance word), the path line, the first sentence, the evidence bars with their sample, window and read, and this week’s drill', () => {
     showPlayer(PREVIEW_HELM_PLAYER);
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
     expect(card.getByText('Putting')).toBeTruthy();
-    expect(card.getByText('Worth closing')).toBeTruthy();
+    expect(card.queryByText(/Worth closing/)).toBeNull();
+    expect(code('CH-13940')!.textContent).toMatch(/75 putts · Not yet traced shot by shot$/);
     expect(card.getByText(/^From 4–6 ft, you’re making 58%/)).toBeTruthy();
     const bars = within(card.getByRole('list'));
     expect(bars.getByText('Downhill').parentElement!.textContent).toBe('Downhill58%');
@@ -527,9 +501,9 @@ describe('CoachHelm for the player, on screen', () => {
     await user.click(inList('Also worth knowing').getByRole('button', { name: /Penalty strokes/ }));
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
     expect(card.getByText('Penalties per round')).toBeTruthy(); // the generator's Title Case, sentence-cased (P013 D12)
-    // The track is drawing only; the legend carries the numbers.
-    expect(document.querySelector('.ch-hl-g__t')!.getAttribute('aria-hidden')).toBe('true');
-    expect(card.getByText(/^You ·/).textContent).toBe('You · 1.1');
+    // D8: no track; the ledger says every number in words.
+    expect(document.querySelector('.ch-hl-g__t')).toBeNull();
+    expect(card.getByText('You').parentElement!.textContent).toBe('You1.1');
     expect(card.getByText('Tour 0.3')).toBeTruthy();
     // Q-88: the college cohort is not drawn, not in the legend and not in the reasoning beneath it.
     expect(card.queryByText(/College cohort/)).toBeNull();
@@ -537,17 +511,16 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')!.textContent).not.toMatch(/College players in our data/);
     expect(card.getByText('21 rounds')).toBeTruthy();
     expect(card.getByText('All rounds')).toBeTruthy();
-    expect(card.getByText('Priority')).toBeTruthy();
+    expect(card.getByText(/· Priority$/)).toBeTruthy();
     expect(card.queryByText('This week')).toBeNull();
   });
 
-  it('CH-13806 a strength picked from Working reads Working in words, with a green gauge and no drill', async () => {
+  it('CH-13806 a strength picked from Working reads Working in words, never by colour, and no drill', async () => {
     const user = userEvent.setup();
     showPlayer(PREVIEW_HELM_PLAYER);
     await user.click(inList('What’s working').getByRole('button', { name: /Double bogey-or-worse rate/ }));
     const card = within(document.querySelector('.ch-hl-focus') as HTMLElement);
-    expect(card.getByText('Working')).toBeTruthy();
-    expect(document.querySelector('.ch-hl-focus .ch-hl-g.is-good')).not.toBeNull();
+    expect(card.getByText(/· Working$/)).toBeTruthy();
     // Nothing is left to be working, so the section is gone.
     expect(screen.queryByRole('region', { name: 'What’s working' })).toBeNull();
   });
@@ -896,18 +869,26 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(code('CH-13969')).toBeNull();
   });
 
-  it('CH13-4 the header counts the players with an open signal, never the rows behind them; the pulse lists what the program needs, in its own words', () => {
+  it('CH13-4 D4 the header counts the players with an open signal, never the rows behind them; the pulse is one collapsed line in it, up to three items, in their own words', async () => {
+    const u = user();
     showCoach();
     expect(screen.getByText('Coach')).toBeTruthy();
     // Jonah, Eli and Priya have a finding open; Theo's top card is what is working, which is not an open signal.
     expect(screen.getByText('3 players have an open signal.')).toBeTruthy();
-    const pulse = within(screen.getByRole('region', { name: 'Program pulse' }));
-    expect(pulse.getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      '2 players haven’t replied to Team dinnerThu, Oct 16, 6:30 PM · 4 of 6 replied',
-      '2 players are scoring worse over their last three roundsJonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
-      '1 active focus area has no recent progressPriya Natarajan: Lag putting',
-      'No rounds recorded in 9 daysThe most recent round anywhere on the team was Oct 5.',
+    const header = document.querySelector('.ch-hl-h') as HTMLElement;
+    const since = within(header).getByRole('button', { name: /Since you were last here/ });
+    expect(since.getAttribute('aria-expanded')).toBe('false');
+    const list = document.getElementById(since.getAttribute('aria-controls')!)!;
+    expect(list.hidden).toBe(true);
+    await u.click(since);
+    expect(list.hidden).toBe(false);
+    expect([...list.querySelectorAll('li')].map((li) => li.textContent)).toEqual([
+      '2 players haven’t replied to Team dinner Thu, Oct 16, 6:30 PM · 4 of 6 replied',
+      '2 players are scoring worse over their last three rounds Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
+      '1 active focus area has no recent progress Priya Natarajan: Lag putting',
     ]);
+    // No block of its own comes before the decision: the header, then By player.
+    expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
     // The pulse's own signals item is left out: the header says it.
     expect(screen.queryByText('7 open signals across 4 players', { exact: false })).toBeNull();
   });
@@ -923,7 +904,7 @@ describe('CoachHelm for the coach, on screen', () => {
     ]);
     expect(players.getByRole('button', { name: /Eli Brandt/ }).getAttribute('aria-pressed')).toBe('true');
     expect(focusHeading()).toBe('Penalty strokes: 1.1 per round');
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Eli · Course management')).toBeTruthy();
+    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Eli · Course management · Priority')).toBeTruthy();
   });
 
   it('CH-13701 choosing a player shows their focus, with the selection haptic', async () => {
@@ -1149,29 +1130,34 @@ describe('CoachHelm for the coach, on screen', () => {
     const w = okWrites();
     showCoach(PREVIEW_HELM_COACH, w);
     await pick(u, 'Theo Marchetti');
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Working')).toBeTruthy();
+    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Theo · Course management · Working')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeTruthy();
     await u.click(screen.getByRole('button', { name: 'Assign as focus' }));
     expect(w.assign).toHaveBeenCalledWith(expect.objectContaining({ playerId: 'pl-theo', title: 'Double bogey-or-worse rate: 1.6%' }));
     await expectCode('CH-13601', /Assigned as Theo’s focus/);
   });
 
-  it('CH-13310 players with no insight yet are counted under the list', () => {
+  it('CH-13310 a player with no read yet is a By player row that says so, not a footer; the unnamed are one row', () => {
+    const rows = () => [...document.querySelectorAll('[data-ch-code="CH-13310"]')].map((r) => r.textContent);
     showCoach();
     // Named (owner decision, wave 6): the coach sees who to look at, not only how many.
-    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield has no insights yet.');
+    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet']);
+    expect(document.querySelector('[data-ch-code="CH-13310"]')!.closest('.ch-hl-plist')).not.toBeNull();
+    // Not a button: there is nothing to open for them.
+    expect(screen.queryByRole('button', { name: /Sam Whitfield/ })).toBeNull();
     cleanup();
     showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 3 });
-    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield and 2 more have no insights yet.');
+    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet', '+22 more playersNo reads yet']);
     cleanup();
     showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 2, withoutNames: ['Sam Whitfield', 'Ada Lee'] });
-    expect(code('CH-13310')!.textContent).toBe('Sam Whitfield and Ada Lee have no insights yet.');
+    expect(rows()).toEqual(['SWSam WhitfieldNo reads yet', 'ALAda LeeNo reads yet']);
     cleanup();
-    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 3, withoutNames: undefined });
-    expect(code('CH-13310')!.textContent).toBe('3 players have no insights yet.');
+    showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 1, withoutNames: undefined });
+    expect(rows()).toEqual(['+11 more playerNo reads yet']);
     cleanup();
     showCoach({ ...PREVIEW_HELM_COACH, withoutSignals: 0 });
-    expect(code('CH-13310')).toBeNull();
+    expect(rows()).toEqual([]);
+    expect(screen.queryByText(/have no insights yet|has no insights yet/)).toBeNull();
   });
 
   it('CH-13306 players on the team but no signal yet: says what will appear, with View roster', async () => {
@@ -1186,7 +1172,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await expectCode('CH-13307', /Add players to start CoachHelm.*Invite your players\. Each one’s insights show up here once they post rounds\./);
     expect(screen.getByRole('link', { name: 'Invite players' }).getAttribute('href')).toBe('/golf/dashboard/roster?invite=1');
     expect(screen.queryByRole('link', { name: 'Open roster' })).toBeNull();
-    expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
+    expect(screen.queryByText(/Since you were last here/)).toBeNull();
   });
 
   it('CH-13202 the players fail to load: said so, Try again asks the server again, never "no signals"; the pulse still shows', async () => {
@@ -1194,7 +1180,7 @@ describe('CoachHelm for the coach, on screen', () => {
     showCoach(PREVIEW_HELM_COACH_FAILED);
     await expectCode('CH-13202', /Your players’ insights didn’t load/);
     expect(code('CH-13306')).toBeNull();
-    expect(screen.getByRole('region', { name: 'Program pulse' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Since you were last here/ })).toBeTruthy();
     await u.click(within(code('CH-13202') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -1208,7 +1194,7 @@ describe('CoachHelm for the coach, on screen', () => {
   it('CH-13203 the pulse fails to load: said in its place, the players below are unaffected', async () => {
     const u = user();
     showCoach(PREVIEW_HELM_COACH_PULSE_FAILED);
-    await expectCode('CH-13203', /The program pulse didn’t load.*not affected/);
+    await expectCode('CH-13203', /What’s new since you were last here didn’t load.*not affected/);
     expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
     await u.click(within(code('CH-13203') as HTMLElement).getByRole('button', { name: /Try again/ }));
     expect(router.refresh).toHaveBeenCalled();
@@ -1216,14 +1202,14 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('CH-13309 nothing flagged in the pulse says so, and does not claim all is well', () => {
     showCoach(PREVIEW_HELM_COACH_QUIET);
-    expect(code('CH-13309')!.textContent).toBe('Nothing is flagged in the pulse right now.');
+    expect(code('CH-13309')!.textContent).toBe('Nothing new since you were last here.');
   });
 
   it('CH-13305 CoachHelm turned off for the team: said, with a way to Settings; a global switch has none', () => {
     showCoach(PREVIEW_HELM_COACH_OFF);
     expect(code('CH-13305')!.textContent).toMatch(/CoachHelm is off.*Your team has turned CoachHelm off\. Turn it back on in Settings/);
     expect(screen.getByRole('link', { name: 'Open CoachHelm settings' }).getAttribute('href')).toBe('/golf/dashboard/settings/coaching-intelligence');
-    expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
+    expect(screen.queryByText(/Since you were last here/)).toBeNull();
   });
 
   it('CH-13305 a reason the coach wrote is quoted; a global switch names no team', () => {
@@ -1237,18 +1223,18 @@ describe('CoachHelm for the coach, on screen', () => {
 
   it('CH-13204 a section that crashes while drawing is contained: the rest of the page stays', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // A pulse row whose icon can't be drawn throws inside the pulse's own section only.
-    showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: 'A headline', evidence: 'Some evidence', tone: 'warn', icon: 'nope' as never }], error: false } });
-    await expectCode('CH-13204', /The program pulse couldn’t be shown/);
+    // A pulse row that can't be drawn throws inside the header line's own boundary only.
+    showCoach({ ...PREVIEW_HELM_COACH, pulse: { rows: [{ id: 'x', headline: {} as never, evidence: 'Some evidence', tone: 'warn', icon: 'flag' }], error: false } });
+    await expectCode('CH-13204', /Since you were last here couldn’t be shown/);
     expect(screen.getByRole('region', { name: 'By player' })).toBeTruthy();
     quiet.mockRestore();
   });
 
-  it('CH-13803 CH-13806 a player row is one button; the focus says its priority in words', async () => {
+  it('CH-13803 CH-13806 a player row is one button; the focus wears no pill, and a medium finding no stance word (D8)', async () => {
     const u = user();
     showCoach();
     await pick(u, 'Jonah Okafor');
-    expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Worth closing')).toBeTruthy();
+    expect(document.querySelector('.ch-hl-focus .ch-hl-pri')).toBeNull();
     expect(within(document.querySelector('.ch-hl-focus') as HTMLElement).getByText('Jonah · Putting')).toBeTruthy();
   });
 
@@ -1258,7 +1244,7 @@ describe('CoachHelm for the coach, on screen', () => {
     try {
       showCoach();
       expect(document.querySelector('.ch-hl.is-phone')).not.toBeNull();
-      expect(screen.getByRole('region', { name: 'By player' }).querySelectorAll('.ch-hl-pl')).toHaveLength(4);
+      expect(screen.getByRole('region', { name: 'By player' }).querySelectorAll('button.ch-hl-pl')).toHaveLength(4);
     } finally {
       window.matchMedia = real;
     }
@@ -1298,11 +1284,11 @@ describe('CoachHelm route skeleton', () => {
     expect(main.querySelector('.ch-hl-sk--player .ch-hl-sk__card')).not.toBeNull();
   });
 
-  it('CH-13402 the coach’s: the pulse, then the players beside the focus card', () => {
+  it('CH-13402 the coach’s: the header with its one line, then the players beside the focus card', () => {
     render(<CoachHelmSkeleton view="coach" />);
     const main = screen.getByRole('main', { name: 'Loading CoachHelm' });
     expect(main.getAttribute('data-ch-code')).toBe('CH-13402');
-    expect(main.querySelector('.ch-hl-sk__pulse')).not.toBeNull();
+    expect(main.querySelector('.ch-hl-sk__pulse')).toBeNull();
     expect(main.querySelector('.ch-hl-sk--coach .ch-hl-sk__card')).not.toBeNull();
   });
 

@@ -6,7 +6,7 @@ import { resolved } from './route-view';
 
 /**
  * CoachHelm (P013), owner rule 6 (2026-10-01): the board frame and the top card first, the program pulse (the longest read on the
- * page, and one card's worth) streams in its own Suspense beside them, in a card that holds its place (CH-13405). The delivery actions
+ * page, and one card's worth) streams in its own Suspense beside them, in the header line, which holds its place (CH-13405). The delivery actions
  * record every insight they return as shown, so each still runs exactly once per render, after the gate, and the stream adds none.
  */
 
@@ -100,7 +100,7 @@ afterEach(() => {
 });
 
 describe('the coach’s board while the pulse is still on its way', () => {
-  it('CH-13405 the frame, the players and the top card are on screen with the pulse card holding its place; the rows land in that same place', async () => {
+  it('CH-13405 the frame, the players and the top card are on screen with the header line holding its place; the rows land in that same place', async () => {
     const later = deferred<ChPulseResult>();
     await act(async () => {
       render(wrap(<CoachBoard data={{ ...PREVIEW_HELM_COACH, pulse: later.promise }} />));
@@ -109,8 +109,8 @@ describe('the coach’s board while the pulse is still on its way', () => {
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'By player' })).toBeInTheDocument();
-    // The pulse's card is there, at its reserved place, with its skeleton (never "nothing is flagged", never zero).
-    const slot = document.querySelector('.ch-hl-pulse__slot');
+    // The header's "Since you were last here" line is there, in the header, with its skeleton (never "nothing is flagged", never zero).
+    const slot = document.querySelector('.ch-hl-h');
     expect(slot).not.toBeNull();
     expect(code('CH-13405')).not.toBeNull();
     expect(code('CH-13405')?.getAttribute('aria-busy')).toBe('true');
@@ -122,9 +122,9 @@ describe('the coach’s board while the pulse is still on its way', () => {
       later.resolve({ status: 'ok', pulse: PREVIEW_HELM_COACH.pulse as never });
     });
     expect(code('CH-13405')).toBeNull();
-    // The same slot, now holding the rows: the card did not move.
-    expect(document.querySelector('.ch-hl-pulse__slot')).toBe(slot);
-    expect(slot?.querySelectorAll('li').length).toBeGreaterThan(0);
+    // The same header, now holding the line and its rows.
+    expect(document.querySelector('.ch-hl-h')).toBe(slot);
+    expect(slot?.querySelectorAll('.ch-hl-since li').length).toBeGreaterThan(0);
   });
 
   it('CH-13405 a pulse that is already here draws no skeleton at all', () => {
@@ -143,7 +143,7 @@ describe('the coach’s board while the pulse is still on its way', () => {
     });
     expect(code('CH-13203')).not.toBeNull();
     expect(code('CH-13309')).toBeNull();
-    expect(document.querySelector('.ch-hl-pulse__slot')?.contains(code('CH-13203'))).toBe(true);
+    expect(document.querySelector('.ch-hl-h')?.contains(code('CH-13203'))).toBe(true);
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
   });
 
@@ -190,7 +190,7 @@ describe('the delivery actions, once per render, after the gate', () => {
       render(wrap(screenEl as React.ReactElement));
     });
     expect(code('CH-13405')).toBeNull();
-    expect(document.querySelector('.ch-hl-pulse__slot li')).not.toBeNull();
+    expect(document.querySelector('.ch-hl-since li')).not.toBeNull();
   });
 
   it('every render is its own: two renders read the top insights twice, not once and not four times', async () => {

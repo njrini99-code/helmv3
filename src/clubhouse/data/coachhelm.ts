@@ -13,6 +13,7 @@ import { resolveMinerWindows } from '@/lib/coachhelm/v2/mining/pattern-miner';
 import { chLogServer } from '../lib/track-server';
 import { isOpenFinding, kindOf, staleFloor } from './coachhelm-classify';
 import { toChInsight } from './coachhelm-map';
+import { isNotEnoughYet, notEnoughOf, notEnoughRead, splitFirm, type ChNotEnoughPlayer } from './coachhelm-firm';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
 import { readCorrections } from './coachhelm-corrections';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
@@ -278,7 +279,7 @@ async function tourBaselineOf(supabase: Supabase, team: { gender: string | null 
 }
 
 /** The coach's team's Tour. A failed team read is logged, claims no benchmark and says so (`error`). */
-async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
+export async function coachTour(supabase: Supabase, teamId: string): Promise<TourRead> {
   const res = await supabase.from('golf_teams').select('gender').eq('id', teamId).maybeSingle();
   if (res.error) {
     log('team', res.error);
@@ -533,10 +534,29 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
     ids.length ? topInsights(ids) : Promise.resolve(new Map<string, EvidenceInsight[]>()),
   ]);
 
-  const top = [...heads.values()].map((l) => l[0]).filter((i): i is EvidenceInsight => !!i);
+  const ranked = [...heads.values()].map((l) => l[0]).filter((i): i is EvidenceInsight => !!i);
   // The heads came back empty though the visible read found insights: the delivery action swallowed a failure.
-  const playersFailed = visible.error || (visible.rows.length > 0 && top.length === 0);
+  const playersFailed = visible.error || (visible.rows.length > 0 && ranked.length === 0);
   if (playersFailed) return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: [], error: true }, withoutSignals: 0 };
+
+  // With the support pass on, the board shows only reads at Working hypothesis or firmer: a read rated Not enough yet is held back
+  // into one collapsed line, and a head rated so gives way to the player's firmest other read (`coachhelm-firm.ts`). Flag off: the
+  // delivery's heads, exactly as before.
+  const flags = readEngineFlags();
+  const rowsByPlayer = new Map<string, EvidenceInsight[]>();
+  for (const r of visible.rows) rowsByPlayer.set(r.player_id, [...(rowsByPlayer.get(r.player_id) ?? []), r]);
+  const firmHeads = new Map<string, EvidenceInsight>();
+  const heldBack: ChNotEnoughPlayer[] = [];
+  for (const p of roster) {
+    const split = splitFirm<EvidenceInsight>(heads.get(p.id)?.[0], flags.support ? (rowsByPlayer.get(p.id) ?? []) : [], flags.support);
+    if (split.head) firmHeads.set(p.id, split.head);
+    if (split.held.length > 0) {
+      const coach = { role: 'coach', first: p.name === NO_NAME ? NO_NAME : firstName(p.name) } as const;
+      heldBack.push({ id: p.id, name: p.name, card: !!split.head, reads: split.held.map((r) => notEnoughRead(r, coach)) });
+    }
+  }
+  const notEnough = notEnoughOf(heldBack);
+  const top = [...firmHeads.values()];
 
   // The Tour is not waited for until here: nothing the next reads need comes from it, so it finishes beside them.
   // The team patterns count only current findings, by the same predicate as the player cards, so they wait for the newest rounds and
@@ -560,7 +580,6 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   const tour = tourResult.baseline;
   // The engine's states on each player's one card, each behind its flag (surfaces A). The lifecycle shapes each player's visible
   // reads, so a Contradicted pair finds its other read and the Cleared ones are listed under the card.
-  const flags = readEngineFlags();
   const now = new Date().toISOString();
   const [focus, corrections] = await Promise.all([
     readFocusVerdicts(
@@ -574,11 +593,11 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // Open signals: a player's current findings. A strength, a card that states no finding and a read older than the player's
   // newest round are not signals, and a player whose top card is one of those has none (the old floor of one counted them).
   const counts = new Map<string, number>();
-  for (const r of visible.rows) if (isOpenFinding(r, tour, newest.days.get(r.player_id) ?? null)) counts.set(r.player_id, (counts.get(r.player_id) ?? 0) + 1);
+  for (const r of visible.rows) if (!(flags.support && isNotEnoughYet(r.evidence)) && isOpenFinding(r, tour, newest.days.get(r.player_id) ?? null)) counts.set(r.player_id, (counts.get(r.player_id) ?? 0) + 1);
 
   const list: ChCoachPlayer[] = [];
   for (const p of roster) {
-    const head = heads.get(p.id)?.[0];
+    const head = firmHeads.get(p.id);
     if (!head) continue;
     const newestRound = newest.days.get(p.id) ?? null;
     // The engine's states are the coach's whatever the name: the support pass and the coach-first day key on the role.
@@ -602,8 +621,12 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   // A read beside the cards that failed leaves them drawn without it, and the board says so: never "not assigned", "not declined",
   // "not out of date" or "no Tour comparison", and with the focus status unknown it does not offer Assign.
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, declined: declined.error, newest: newest.error, tour: tourResult.error });
-  const withoutNames = roster.filter((p) => !heads.get(p.id)?.[0] && p.name !== NO_NAME).map((p) => p.name);
-  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length, withoutNames, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}) };
+  // A player all of whose reads were held back is listed as such, not as a player with no read yet.
+  const allHeld = new Set(heldBack.filter((p) => !p.card).map((p) => p.id));
+  const without = roster.filter((p) => !heads.get(p.id)?.[0] && !allHeld.has(p.id) && p.name !== NO_NAME);
+  const withoutNames = without.map((p) => p.name);
+  const withoutIds = without.map((p) => p.id);
+  return { off: null, roster: { count: roster.length, error: false }, pulse, players: { list: sortCoachPlayers(list), error: false }, withoutSignals: roster.length - list.length - allHeld.size, withoutNames, withoutIds, ...(missing ? { missing } : {}), ...(teamPatterns ? { teamPatterns } : {}), ...(isCoursePlanEnabled() ? { coursePlan: true } : {}), ...(notEnough ? { notEnough } : {}) };
 }
 
 /**

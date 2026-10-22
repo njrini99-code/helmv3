@@ -125,7 +125,7 @@ const selects = (f: Array<[string, unknown[]]>, col: string) => f.some(([k, a]) 
 
 function coachTables(over: ChFakeTables = {}): ChFakeTables {
   return {
-    golf_coaches: { data: { full_name: 'Maya Reyes', avatar_url: null } },
+    golf_coaches: { data: { full_name: 'Maya Reyes', avatar_url: null, title: 'Assistant coach' } },
     golf_teams: (f) =>
       selects(f, 'name')
         ? { data: { name: 'Varsity' } }
@@ -183,7 +183,7 @@ describe('Settings · the server loader', () => {
     tables.current = coachTables();
     const data = await loadSettings(coachSession, 't1');
     expect(data).toMatchObject({ role: 'coach', userId: 'u-maya', email: 'maya.reyes@unc.edu', teamId: 't1', teamName: 'Varsity', playerRouting: null, golf: null, membership: null });
-    expect(data.profile).toEqual({ value: { firstName: '', lastName: '', fullName: 'Maya Reyes', avatarUrl: null }, error: false });
+    expect(data.profile).toEqual({ value: { firstName: '', lastName: '', fullName: 'Maya Reyes', avatarUrl: null, title: 'Assistant coach' }, error: false });
     expect(data.scoring).toEqual({ value: { scoringFormat: 'match_play', handicapSystem: 'world', defaultTees: 'gold', timezone: 'America/Chicago' }, error: false });
     expect(data.reminders).toEqual({ value: { enabled: true, earlyHours: 48, lateMinutes: 120 }, error: false });
     expect(data.joinCode).toEqual({ value: 'K7M2Q9XA', error: false });
@@ -191,6 +191,25 @@ describe('Settings · the server loader', () => {
     expect(data.team).toMatchObject({ error: false, value: { id: 't1', name: 'Varsity', season: '2026–27', org: { name: 'UNC', state: 'NC' } } });
     expect(data.coachhelm).toMatchObject({ error: false, value: { coach: { enabled: true, showPredictions: false }, team: { enabled: true, isHeadCoach: true } } });
     expect(logServer).not.toHaveBeenCalled();
+  });
+
+  it('82101 a coach: the profile read is their own golf_coaches row, name, photo and title (P008 Title)', async () => {
+    const base = coachTables();
+    let filters: Array<[string, unknown[]]> = [];
+    tables.current = {
+      ...base,
+      golf_coaches: (f) => {
+        filters = f;
+        return { data: { full_name: 'Maya Reyes', avatar_url: null, title: null } };
+      },
+    };
+    const data = await loadSettings(coachSession, 't1');
+    expect(filters).toEqual([
+      ['select', ['full_name, avatar_url, title']],
+      ['eq', ['id', 'c1']],
+    ]);
+    // No title on record reads as an empty field.
+    expect(data.profile.value).toMatchObject({ fullName: 'Maya Reyes', title: '' });
   });
 
   it('82101 a coach: the team row and the CoachHelm philosophy row are each read once (they were read twice)', async () => {
@@ -331,7 +350,8 @@ describe('Settings · the server loader', () => {
     auth.user = { email: 'jonah.okafor@unc.edu' };
     const data = await loadSettings(playerSession, 't1');
     expect(data).toMatchObject({ role: 'player', playerId: 'p1', coachId: null, teamId: 't1', digest: null, scoring: null, team: null, coachhelm: null });
-    expect(data.profile).toEqual({ value: { firstName: 'Jonah', lastName: 'Okafor', fullName: 'Jonah Okafor', avatarUrl: null }, error: false });
+    // A player has no title: the field is '' and never shown.
+    expect(data.profile).toEqual({ value: { firstName: 'Jonah', lastName: 'Okafor', fullName: 'Jonah Okafor', avatarUrl: null, title: '' }, error: false });
     expect(data.golf).toEqual({ value: { handicap: '2.4', handicapIndex: '2.1', graduationYear: '2029', hometown: 'Charlotte', state: 'NC', phone: '' }, error: false });
     expect(data.playerRouting).toEqual({ value: { prefs: { new_insight: { push: true, email: false, in_app: true } }, quiet: true }, error: false });
     expect(data.membership).toEqual({
@@ -505,12 +525,16 @@ describe('Settings · the live writes', () => {
 
   it('80806 a coach saves their own profile row, a player their own, by the signed-in user', async () => {
     clientTables.current = { golf_coaches: record('golf_coaches'), golf_players: record('golf_players') };
-    await coachWrites().saveProfile({ firstName: '', lastName: '', fullName: ' Maya R ', avatarUrl: null });
+    await coachWrites().saveProfile({ firstName: '', lastName: '', fullName: ' Maya R ', avatarUrl: null, title: ' Assistant coach ' });
     expect(called('golf_coaches')[0]).toEqual([
-      ['update', [{ full_name: 'Maya R', avatar_url: null }, { count: 'exact' }]],
+      ['update', [{ full_name: 'Maya R', avatar_url: null, title: 'Assistant coach' }, { count: 'exact' }]],
       ['eq', ['user_id', 'u-maya']],
     ]);
-    await playerWrites().saveProfile({ firstName: ' Jonah ', lastName: 'Okafor', fullName: '', avatarUrl: 'https://cdn.test/a.png' });
+    // A blank title is cleared, not saved as an empty string.
+    await coachWrites().saveProfile({ firstName: '', lastName: '', fullName: 'Maya R', avatarUrl: null, title: '   ' });
+    expect(called('golf_coaches')[1]![0]).toEqual(['update', [{ full_name: 'Maya R', avatar_url: null, title: null }, { count: 'exact' }]]);
+    // A player has no title: their write never names the column.
+    await playerWrites().saveProfile({ firstName: ' Jonah ', lastName: 'Okafor', fullName: '', avatarUrl: 'https://cdn.test/a.png', title: '' });
     expect(called('golf_players')[0]).toEqual([
       ['update', [{ first_name: 'Jonah', last_name: 'Okafor', avatar_url: 'https://cdn.test/a.png' }, { count: 'exact' }]],
       ['eq', ['user_id', 'u-jonah']],
@@ -549,8 +573,8 @@ describe('Settings · the live writes', () => {
   it('80808 an update the database hides the row from is a failure that says so, not a save', async () => {
     const none = (what: string) => ({ success: false, error: `Nothing was saved. ${what} was not found, or you are not allowed to change it.` });
     clientTables.current = { golf_coaches: { count: 0 }, golf_players: { count: 0 } };
-    expect(await coachWrites().saveProfile({ firstName: '', lastName: '', fullName: 'Maya R', avatarUrl: null })).toEqual(none('Your profile'));
-    expect(await playerWrites().saveProfile({ firstName: 'Jonah', lastName: 'Okafor', fullName: '', avatarUrl: null })).toEqual(none('Your profile'));
+    expect(await coachWrites().saveProfile({ firstName: '', lastName: '', fullName: 'Maya R', avatarUrl: null, title: '' })).toEqual(none('Your profile'));
+    expect(await playerWrites().saveProfile({ firstName: 'Jonah', lastName: 'Okafor', fullName: '', avatarUrl: null, title: '' })).toEqual(none('Your profile'));
     expect(await playerWrites().saveGolf({ handicap: '', handicapIndex: '', graduationYear: '', hometown: '', state: '', phone: '' })).toEqual(none('Your golf profile'));
 
     // A school the coach may not change stops the save there; the team row is not touched.

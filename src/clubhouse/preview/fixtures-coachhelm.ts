@@ -385,6 +385,7 @@ export const PREVIEW_HELM_COACH: ChCoachHelmData = {
   players: { list: COACH_PLAYERS, error: false },
   withoutSignals: 1,
   withoutNames: ['Sam Whitfield'],
+  withoutIds: ['pl-sam'],
 };
 /** Jonah's slope insight already has a focus area made from it, waiting for him to accept. */
 export const PREVIEW_HELM_COACH_ASSIGNED: ChCoachHelmData = {
@@ -392,7 +393,7 @@ export const PREVIEW_HELM_COACH_ASSIGNED: ChCoachHelmData = {
   players: { list: sortCoachPlayers([player(HELM_PLAYERS.jonah, chSlope(jonah, coachOf(HELM_PLAYERS.jonah), 'in-slope', 'proposed'), 3), ...COACH_PLAYERS.filter((p) => p.id !== HELM_PLAYERS.jonah.id)]), error: false },
 };
 /** Players on the team, none with a signal yet. */
-export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5, withoutNames: [...Object.values(HELM_PLAYERS).map((p) => p.name), 'Sam Whitfield'] };
+export const PREVIEW_HELM_COACH_EMPTY: ChCoachHelmData = { ...PREVIEW_HELM_COACH, players: { list: [], error: false }, withoutSignals: 5, withoutNames: [...Object.values(HELM_PLAYERS).map((p) => p.name), 'Sam Whitfield'], withoutIds: [...Object.values(HELM_PLAYERS).map((p) => p.id), 'pl-sam'] };
 /** No players on the team yet. */
 export const PREVIEW_HELM_COACH_NO_ROSTER: ChCoachHelmData = {
   off: null,

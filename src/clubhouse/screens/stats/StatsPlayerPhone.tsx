@@ -4,6 +4,7 @@ import { Info, MessageSquare, Plus, Share } from 'lucide-react';
 import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
+import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, hasRange, isFiltered, per18, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -33,6 +34,7 @@ import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { devProgress, devTitle, goalLine } from './dev-format';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -52,6 +54,7 @@ const ROUNDS_SHOWN = 5;
 export function StatsPlayerPhone({
   data,
   initialTab,
+  reads,
   playerHref,
   messageHref,
   windowShown,
@@ -63,6 +66,8 @@ export function StatsPlayerPhone({
 }: {
   data: ChPlayerProfile;
   initialTab?: string;
+  /** What CoachHelm sees per Game detail section; the line follows the shown section's rule. */
+  reads?: ChStatsReads;
   /** This page's own address (player and window), for Share. */
   playerHref: string;
   messageHref: string | null;
@@ -210,7 +215,7 @@ export function StatsPlayerPhone({
         {data.statsError ? (
           <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
-          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={onRetry} phone />
+          <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={onRetry} phone />
         ) : (
           <section className="ch-stm-panel">
             <EmptyState
@@ -481,19 +486,23 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
       <h3 className="ch-spm-sub">
         Goals <span className="ch-num">{data.goals.length} this season</span>
       </h3>
+      {!coach && (
+        <>
+          <GoalSetButton />
+          <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />
+        </>
+      )}
       {data.goals.length === 0 ? (
-        <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
+        <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
       ) : (
         <ul className="ch-spm-dev">
           {data.goals.map((g) => {
             const done = g.state === 'achieved' || g.state === 'completed';
             return (
               <li key={g.id} className={done ? 'is-done' : undefined}>
-                <b>
-                  <span className="ch-sr-only">{done ? 'Achieved: ' : 'In progress: '}</span>
-                  {devTitle(g.title)}
-                </b>
+                <b>{devTitle(g.title)}</b>
                 <span className="ch-num">{goalLine(g)}</span>
+                <GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />
               </li>
             );
           })}

@@ -1027,7 +1027,7 @@
     "item": 21,
     "name": "THE_PLAYER_PEEK_NAME_AND_CLASS_WHY",
     "chCode": "CH-1832",
-    "meaning": "The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages. Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek`",
+    "meaning": "The player peek: name and class, why they need a look (ink, the amber on its icon), the last round, the average and a word-sized line of the last scores; Message opens Messages with the player as the recipient (never sends), View stats and Plan 1:1 open their pages, and CoachHelm the player's deep dive (`coachhelm?view=deep-dive&player=`, not drawn until CoachHelm is rebuilt for coaches). Wired on Home's leaderboard; other pages wrap their names in `PlayerPeek`",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/shell.md"
   },
@@ -1234,13 +1234,45 @@
     "category": 1,
     "item": 3,
     "name": "LINKS_OPEN_WHAT_THEY_NAME",
-    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), and the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
+    "meaning": "Every link out of Home opens the thing it names: Message team the team chat (?conversation=) or Messages when the chat did not load, Up next and a Today row that event in Calendar (?date=&event=), a week day Calendar's day view (?view=day&date=), New event, Plan, Add event and the quick event types the editor (?new=1, with &type=), a leaderboard row and a latest round's stats link that player's stats (?player=), My stats the player's own stats, Message coach the coach's thread (?user=), the first run's Invite players Roster with its invite sheet open (/golf/dashboard/roster?invite=1), each part of the coach's \"Waiting on you\" the screen that holds it (join requests Roster, replies that event in Calendar when one event holds them and Calendar when more do, overdue tasks Team Hub's Tasks ?tab=tasks, posts awaiting acknowledgement its Announcements ?tab=ann), a name in the team's four parts that player's Game tab on Stats on the same Last 10 (?player=&tab=game) and Team stats Stats, the coach's Next row Nudge Messages prefilled for who hasn't replied (the phone day card's own link, never sent), and CoachHelm in the player peek and the phone's round sheet that player's deep dive (/golf/dashboard/coachhelm?view=deep-dive&player=); a link to a screen not yet rebuilt for the viewer's role is not drawn.",
     "status": "implemented",
-    "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts",
+    "where": "src/clubhouse/screens/home/HomeActions.tsx#HomeActions; src/clubhouse/screens/home/HomePhone.tsx#UpNext, Today, WeekStrip, NoEvents, RoundSheet; src/clubhouse/screens/home/Leaderboard.tsx#Row; src/clubhouse/screens/home/LatestRound.tsx#LatestRound; src/clubhouse/screens/home/player-links.ts; src/clubhouse/screens/home/CoachQueue.tsx#queueParts; src/clubhouse/screens/home/TeamLegs.tsx#legPlayerHref; src/clubhouse/screens/home/Week.tsx#nextReplies; src/clubhouse/ui/PlayerPeek.tsx#coachHelmPlayerHref",
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx",
       "src/clubhouse/__tests__/player-home.test.tsx",
-      "src/clubhouse/__tests__/wiring-p002-home.test.tsx"
+      "src/clubhouse/__tests__/wiring-p002-home.test.tsx",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+    ]
+  },
+  {
+    "id": 20104,
+    "page": "P002",
+    "category": 1,
+    "item": 4,
+    "name": "COACH_QUEUE_COUNTS_AS_ITS_SCREEN",
+    "meaning": "Coach Home's \"Waiting on you\" (under the head on desktop, in the phone's hero, and on the first run) counts each part with the read and rule of the screen that holds it, so the two show one number: pending join requests as the sidebar's Roster badge counts them, replies missing on this week's events that still take one as Team Hub's RSVPs count \"no reply\" (rsvpQueue), overdue tasks as Team Hub's Tasks (taskStatus, overdueTaskCount) and posts awaiting an acknowledgement as its Announcements (unackedPostCount). Only parts above zero are drawn, in that order; with nothing waiting the row is not drawn. Each part reads on its own: one that fails is null, logged and left out, never 0 (CH-2220).",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home-queue.ts#loadCoachQueue; src/clubhouse/data/hub.ts#rsvpQueue, overdueTaskCount, unackedPostCount; src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue, queueParts",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/home-data-completeness.test.ts",
+      "src/clubhouse/__tests__/home-consumer-truthfulness.test.tsx",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+    ]
+  },
+  {
+    "id": 20105,
+    "page": "P002",
+    "category": 1,
+    "item": 5,
+    "name": "TEAM_PARTS_ON_THE_FORMS_LAST_10",
+    "meaning": "Coach Home's four parts (The team's game; under the team's form on desktop, after Team scoring on the phone) read the form's own Last 10 rounds of the active roster, hole-level only (Q-123): strokes gained per round in each part from 3 rounds with hole scores (else none), its change against the same players' previous ten (Q-112) coloured only when it clears its standard error, the part's plain stat (Fairways, Greens, Up and down, Putts) with the Tour's mark from the team's tour, and who gains and loses most from Team Stats' ranking (ties share a place and are named together; one ranked player, or everyone in one place, loses nothing). No other player's round reaches the figures.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/home.ts#teamLegs, legPeople, teamWindows; src/clubhouse/data/leg-rows.ts#legRows; src/clubhouse/data/stats-team.ts#teamGrid; src/clubhouse/screens/home/TeamLegs.tsx#TeamLegs, TeamLegsPhone",
+    "tests": [
+      "src/clubhouse/__tests__/home.test.tsx",
+      "src/clubhouse/__tests__/home-data-completeness.test.ts",
+      "src/clubhouse/__tests__/home-coach-parity.test.tsx"
     ]
   },
   {
@@ -1408,6 +1440,28 @@
     "name": "A_PLAYER_ON_NO_ACTIVE_TEAM",
     "chCode": "CH-2313",
     "meaning": "A player on no active team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20414,
+    "page": "P002",
+    "category": 4,
+    "item": 14,
+    "name": "NO_ROUND_IN_THE_TEAMS_LAST_10",
+    "chCode": "CH-2314",
+    "meaning": "No round in the team's last 10 has hole scores (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20415,
+    "page": "P002",
+    "category": 4,
+    "item": 15,
+    "name": "ROUNDS_WITH_HOLE_SCORES_BUT_NO_PLAYER",
+    "chCode": "CH-2315",
+    "meaning": "Rounds with hole scores, but no player with 3 of them (coach Home, the team's four parts)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/home.md"
   },
@@ -1610,6 +1664,50 @@
     "tests": [
       "src/clubhouse/__tests__/home.test.tsx"
     ]
+  },
+  {
+    "id": 20619,
+    "page": "P002",
+    "category": 6,
+    "item": 19,
+    "name": "UP_AND_DOWN_FIGURES_DONT_LOAD",
+    "chCode": "CH-2218",
+    "meaning": "Up-and-down figures don't load (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20620,
+    "page": "P002",
+    "category": 6,
+    "item": 20,
+    "name": "THE_TOURS_MARKS_DONT_LOAD",
+    "chCode": "CH-2219",
+    "meaning": "The Tour's marks don't load (coach Home, the team's four parts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20621,
+    "page": "P002",
+    "category": 6,
+    "item": 21,
+    "name": "A_PART_OF_WAITING_ON_YOU_DOESNT",
+    "chCode": "CH-2220",
+    "meaning": "A part of \"Waiting on you\" doesn't load (join requests, replies, tasks or posts)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
+  },
+  {
+    "id": 20622,
+    "page": "P002",
+    "category": 6,
+    "item": 22,
+    "name": "THE_TEAMS_FOUR_PARTS_CRASH_WHILE_DRAWING",
+    "chCode": "CH-2221",
+    "meaning": "The team's four parts crash while drawing (coach Home, desktop and phone)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/home.md"
   },
   {
     "id": 20801,
@@ -1885,7 +1983,7 @@
     "category": 23,
     "item": 1,
     "name": "FAILURES_REPORTED",
-    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
+    "meaning": "A section that crashes while drawing is reported through chReport with surface home.<section> (week, latestRound, leaderboard, upNext, today, form, game, legs) at high severity, a failed server read is logged through chLogServer('home', {read}), and the N shortcut and opening Up next or a round leave chTrail breadcrumbs (home new event (keyboard), home open next event, home open round).",
     "status": "implemented",
     "where": "src/clubhouse/ui/SectionBoundary.tsx; src/clubhouse/data/home.ts; src/clubhouse/data/player-home.ts; src/clubhouse/screens/home/HomeActions.tsx; src/clubhouse/screens/home/HomePhone.tsx",
     "tests": [
@@ -1952,6 +2050,17 @@
     "name": "A_STATUS_CHANGE_IS_IN_FLIGHT",
     "chCode": "CH-3404",
     "meaning": "A status change is in flight",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30203,
+    "page": "P003",
+    "category": 2,
+    "item": 3,
+    "name": "AN_AVAILABILITY_CHANGE_IS_IN_FLIGHT",
+    "chCode": "CH-3405",
+    "meaning": "An availability change is in flight",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2106,12 +2215,23 @@
     "category": 5,
     "item": 2,
     "name": "EXPORT_CELLS_ARE_TEXT",
-    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers.",
+    "meaning": "The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column.",
     "status": "implemented",
     "where": "src/clubhouse/screens/roster/Roster.tsx#exportCsv, asText",
     "tests": [
       "src/clubhouse/__tests__/roster.test.tsx"
     ]
+  },
+  {
+    "id": 30503,
+    "page": "P003",
+    "category": 5,
+    "item": 3,
+    "name": "AN_AVAILABILITY_NOTE_IS_WITHIN_40_CHARACTERS",
+    "chCode": "CH-3102",
+    "meaning": "Retired 2026-10-21, never shipped: the availability note’s counter",
+    "status": "deprecated",
+    "catalog": "docs/clubhouse/catalog/roster.md"
   },
   {
     "id": 30601,
@@ -2319,6 +2439,39 @@
     "name": "CHANGING_A_PLAYERS_STATUS_FAILS",
     "chCode": "CH-3008",
     "meaning": "Changing a player's status (Active or Inactive) fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30620,
+    "page": "P003",
+    "category": 6,
+    "item": 20,
+    "name": "MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY",
+    "chCode": "CH-3009",
+    "meaning": "Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30621,
+    "page": "P003",
+    "category": 6,
+    "item": 21,
+    "name": "THE_AVAILABILITY_NOTE_DOESNT_SAVE",
+    "chCode": "CH-3010",
+    "meaning": "Retired 2026-10-21, never shipped: the availability note",
+    "status": "deprecated",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 30622,
+    "page": "P003",
+    "category": 6,
+    "item": 22,
+    "name": "COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER",
+    "chCode": "CH-3212",
+    "meaning": "CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -2714,6 +2867,17 @@
     "name": "THE_PLAYERS_ROSTER_NAMES_THE_COACHES",
     "chCode": "CH-3808",
     "meaning": "The player's roster names the coaches (wave 7, decision D): a \"Coaches\" group above the players: name and role (\"Head coach\" first, else their title, else \"Coach\"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then \"Players\". Left out when the staff read failed (logged `playerCoaches`) or none is on record",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/roster.md"
+  },
+  {
+    "id": 31809,
+    "page": "P003",
+    "category": 18,
+    "item": 9,
+    "name": "AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A",
+    "chCode": "CH-3809",
+    "meaning": "Availability is said in words, never a colour: \"Injured\" or \"Away\" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append \"injured\" or \"away\"; the Availability control is a radio group named for the player; the head counts \"· 1 injured · 1 away\" among the active",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/roster.md"
   },
@@ -3588,6 +3752,28 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50203,
+    "page": "P005",
+    "category": 2,
+    "item": 3,
+    "name": "A_GOAL_IS_BEING_STARTED_A_SUGGESTION",
+    "chCode": "CH-5405",
+    "meaning": "A goal is being started, a suggestion answered, or a goal changed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50204,
+    "page": "P005",
+    "category": 2,
+    "item": 4,
+    "name": "SET_A_GOAL_THE_STARTING_POINT_FOR",
+    "chCode": "CH-5406",
+    "meaning": "Set a goal: the starting point for the chosen stat is being looked up",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50301,
     "page": "P005",
     "category": 3,
@@ -3852,6 +4038,17 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50423,
+    "page": "P005",
+    "category": 4,
+    "item": 23,
+    "name": "SET_A_GOAL_NO_STARTING_POINT_TO",
+    "chCode": "CH-5325",
+    "meaning": "Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50501,
     "page": "P005",
     "category": 5,
@@ -3870,6 +4067,17 @@
     "name": "THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT",
     "chCode": "CH-5102",
     "meaning": "The filter's date range starts after it ends, and Done is tapped",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50503,
+    "page": "P005",
+    "category": 5,
+    "item": 3,
+    "name": "SET_A_GOAL_THE_TARGET_IS_EMPTY",
+    "chCode": "CH-5103",
+    "meaning": "Set a goal: the target is empty or not a number",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
@@ -4085,6 +4293,72 @@
     "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
+    "id": 50620,
+    "page": "P005",
+    "category": 6,
+    "item": 20,
+    "name": "STARTING_A_GOAL_FAILS",
+    "chCode": "CH-5006",
+    "meaning": "Starting a goal fails (Set a goal)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50621,
+    "page": "P005",
+    "category": 6,
+    "item": 21,
+    "name": "ACCEPTING_A_SUGGESTED_GOAL_FAILS",
+    "chCode": "CH-5007",
+    "meaning": "Accepting a suggested goal fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50622,
+    "page": "P005",
+    "category": 6,
+    "item": 22,
+    "name": "DISMISSING_A_SUGGESTED_GOAL_FAILS",
+    "chCode": "CH-5008",
+    "meaning": "Dismissing a suggested goal fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50623,
+    "page": "P005",
+    "category": 6,
+    "item": 23,
+    "name": "A_COACH_PAUSES_RESUMES_OR_ABANDONS_A",
+    "chCode": "CH-5009",
+    "meaning": "A coach pauses, resumes or abandons a goal and it fails",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50624,
+    "page": "P005",
+    "category": 6,
+    "item": 24,
+    "name": "THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD",
+    "chCode": "CH-5214",
+    "meaning": "The player's suggested goals don't load (the read of `golf_goal_suggestions` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
+    "id": 50625,
+    "page": "P005",
+    "category": 6,
+    "item": 25,
+    "name": "COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL",
+    "chCode": "CH-5215",
+    "meaning": "CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
+  },
+  {
     "id": 50701,
     "page": "P005",
     "category": 7,
@@ -4203,6 +4477,17 @@
     "tests": [
       "src/clubhouse/__tests__/stats-player.test.tsx"
     ]
+  },
+  {
+    "id": 51101,
+    "page": "P005",
+    "category": 11,
+    "item": 1,
+    "name": "A_COACH_PRESSES_ABANDON_ON_A_GOAL",
+    "chCode": "CH-5501",
+    "meaning": "A coach presses Abandon on a goal",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/stats-player.md"
   },
   {
     "id": 51201,
@@ -7100,7 +7385,7 @@
     "item": 1,
     "name": "SAVING_THE_PROFILE_FAILS",
     "chCode": "CH-8001",
-    "meaning": "Saving the profile (name or photo) fails",
+    "meaning": "Saving the profile (name, a coach's title, or photo) fails",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/settings.md"
   },
@@ -11303,6 +11588,28 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110213,
+    "page": "P011",
+    "category": 2,
+    "item": 13,
+    "name": "TEAM_ROUNDS_IS_REFRESHING_WITH_THE_PAGE",
+    "chCode": "CH-11412",
+    "meaning": "Team rounds is refreshing (a Try again is running) with the page on screen",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110214,
+    "page": "P011",
+    "category": 2,
+    "item": 14,
+    "name": "TEAM_ROUNDS_IS_LOADING",
+    "chCode": "CH-11413",
+    "meaning": "Team rounds is loading",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110401,
     "page": "P011",
     "category": 4,
@@ -11488,6 +11795,72 @@
     "name": "CHANGE_ROUND_TYPE_THE_PLAYER_IS_IN",
     "chCode": "CH-11316",
     "meaning": "Change round type: there is no qualifier to choose",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110418,
+    "page": "P011",
+    "category": 4,
+    "item": 18,
+    "name": "TEAM_ROUNDS_NO_PLAYERS_ON_THE_TEAM",
+    "chCode": "CH-11317",
+    "meaning": "Team rounds: no players on the team yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110419,
+    "page": "P011",
+    "category": 4,
+    "item": 19,
+    "name": "TEAM_ROUNDS_A_COACH_WITH_NO_TEAM",
+    "chCode": "CH-11318",
+    "meaning": "Team rounds: a coach with no team",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110420,
+    "page": "P011",
+    "category": 4,
+    "item": 20,
+    "name": "TEAM_ROUNDS_THE_SEASON_FIGURES",
+    "chCode": "CH-11319",
+    "meaning": "Team rounds: the season figures",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110421,
+    "page": "P011",
+    "category": 4,
+    "item": 21,
+    "name": "TEAM_ROUNDS_NO_ROUND_POSTED_BY_ANYONE",
+    "chCode": "CH-11320",
+    "meaning": "Team rounds: no round posted by anyone",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110422,
+    "page": "P011",
+    "category": 4,
+    "item": 22,
+    "name": "TEAM_ROUNDS_THE_SEARCH_OR_PLAYER_FILTER",
+    "chCode": "CH-11321",
+    "meaning": "Team rounds: the search or player filter matches nothing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110423,
+    "page": "P011",
+    "category": 4,
+    "item": 23,
+    "name": "TEAM_ROUNDS_COMPLETED_ROUNDS_WITH_NO_SCORE",
+    "chCode": "CH-11322",
+    "meaning": "Team rounds: completed rounds with no score at all",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -12047,6 +12420,61 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110640,
+    "page": "P011",
+    "category": 6,
+    "item": 40,
+    "name": "SAVING_THE_COACHS_NOTE_ON_A_ROUND",
+    "chCode": "CH-11023",
+    "meaning": "Saving the coach's note on a round fails (the review's Coach note card)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110641,
+    "page": "P011",
+    "category": 6,
+    "item": 41,
+    "name": "A_REFRESH_OF_TEAM_ROUNDS_FAILS_WHILE",
+    "chCode": "CH-11219",
+    "meaning": "A refresh of Team rounds fails while the page already shows rounds",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110642,
+    "page": "P011",
+    "category": 6,
+    "item": 42,
+    "name": "TEAM_ROUNDS_THE_ROSTER_DOESNT_LOAD",
+    "chCode": "CH-11220",
+    "meaning": "Team rounds: the roster doesn't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110643,
+    "page": "P011",
+    "category": 6,
+    "item": 43,
+    "name": "TEAM_ROUNDS_THE_POSTED_ROUNDS_DONT_LOAD",
+    "chCode": "CH-11221",
+    "meaning": "Team rounds: the posted rounds don't load",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110644,
+    "page": "P011",
+    "category": 6,
+    "item": 44,
+    "name": "A_ROUNDS_COACH_NOTE_CANT_BE_CHECKED",
+    "chCode": "CH-11222",
+    "meaning": "A round's coach note can't be checked (the read of `golf_round_reviews.coach_notes` failed)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110701,
     "page": "P011",
     "category": 7,
@@ -12592,6 +13020,17 @@
     "name": "CHANGE_ROUND_TYPE_ON_A_SUBMITTED_ROUNDS",
     "chCode": "CH-11522",
     "meaning": "Change round type on a submitted round's review (the player who played it, or a coach of the player's team; the Fairway round page's `RoundTypeEditor`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111123,
+    "page": "P011",
+    "category": 11,
+    "item": 23,
+    "name": "THE_COACH_NOTE_CARD_ON_A_ROUNDS",
+    "chCode": "CH-11523",
+    "meaning": "The Coach note card on a round's review",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
@@ -14119,10 +14558,11 @@
     "category": 1,
     "item": 4,
     "name": "FAIRWAY_DRILL_LINKS_SAY_NOT_REBUILT",
-    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive is their own board (Q-76: the player's views are built; a coach's equivalents are not asked for).",
+    "meaning": "The Fairway drills' addresses (where /my-development, /my-game-profile, /my-standing and the focus-area cards send people) land on a screen that exists: ?view=development redirects to Stats' Development tab (/golf/dashboard/stats?tab=dev), and ?view=profile, ?view=standing and ?view=deep-dive are the player's own Game profile, Standing and Deep dive, built for the signed-in player alone (the loader takes the session's player id and nothing from the address). None of them says \"not rebuilt yet\" any more (the name is the contract's original, kept because Bridge IDs are append-only). ?view=insights, no view and any other value draw the board. A coach's ?view=profile, standing or deep-dive with no ?player= is their own board; with ?player=<golf_players.id> it is the coach's view of that player (spec A, 2026-10-21, which supersedes Q-76's \"a coach's equivalents are not asked for\"), read only once the id is checked against the coach's team (130807). A player's ?player= means nothing: their views read the session's id.",
     "status": "implemented",
-    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage",
+    "where": "src/clubhouse/routes/coachhelm.tsx#ClubhouseCoachHelmRoute (playerDrill, playerHelmDrill); src/app/golf/(dashboard)/dashboard/coachhelm/page.tsx#PlayerCoachHelmPage; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
     "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
       "src/clubhouse/__tests__/coachhelm-contracts.test.tsx"
     ]
   },
@@ -14298,6 +14738,28 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130213,
+    "page": "P013",
+    "category": 2,
+    "item": 13,
+    "name": "WHATS_NEW_IS_ON_ITS_WAY",
+    "chCode": "CH-13430",
+    "meaning": "What’s new is on its way",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130214,
+    "page": "P013",
+    "category": 2,
+    "item": 14,
+    "name": "WHATS_NEW_READS_AGAIN",
+    "chCode": "CH-13431",
+    "meaning": "What’s new reads again (Try again, or the page refreshes)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130401,
     "page": "P013",
     "category": 4,
@@ -14392,7 +14854,7 @@
     "item": 9,
     "name": "COACH_THE_PULSE_HAS_NOTHING_FLAGGED",
     "chCode": "CH-13309",
-    "meaning": "Coach: the pulse has nothing flagged, and every read it is made from landed",
+    "meaning": "Coach: the pulse has nothing new, and every read it is made from landed",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14403,7 +14865,7 @@
     "item": 10,
     "name": "COACH_SOME_PLAYERS_HAVE_NO_INSIGHT_YET",
     "chCode": "CH-13310",
-    "meaning": "Coach: some players have no insight yet",
+    "meaning": "Coach: some players have no read yet",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14482,8 +14944,8 @@
     "item": 17,
     "name": "ASK_ROUNDS_RECORDED_NOTHING_FLAGGED",
     "chCode": "CH-13325",
-    "meaning": "Ask: Rounds recorded, nothing flagged, and every read the pulse is made from landed",
-    "status": "implemented",
+    "meaning": "Ask: Rounds recorded, nothing flagged",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -14615,6 +15077,61 @@
     "name": "DEEP_DIVE_A_READ_IS_NOT_PART",
     "chCode": "CH-13384",
     "meaning": "Deep dive: a read is not part of a plan",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130430,
+    "page": "P013",
+    "category": 4,
+    "item": 30,
+    "name": "WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN",
+    "chCode": "CH-13330",
+    "meaning": "What’s new: nothing in the past seven days",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130431,
+    "page": "P013",
+    "category": 4,
+    "item": 31,
+    "name": "WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING",
+    "chCode": "CH-13331",
+    "meaning": "What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130432,
+    "page": "P013",
+    "category": 4,
+    "item": 32,
+    "name": "WHATS_NEW_A_CATEGORY_CAME_BACK_AT",
+    "chCode": "CH-13332",
+    "meaning": "What’s new: a category came back at its row ceiling (200)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130433,
+    "page": "P013",
+    "category": 4,
+    "item": 33,
+    "name": "COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE",
+    "chCode": "CH-13311",
+    "meaning": "Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130434,
+    "page": "P013",
+    "category": 4,
+    "item": 34,
+    "name": "COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE",
+    "chCode": "CH-13313",
+    "meaning": "Coach player page, CoachHelm off for the player: it is off for that player's team",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -14804,7 +15321,7 @@
     "name": "ASK_THE_PULSE_DOES_NOT_LOAD",
     "chCode": "CH-13223",
     "meaning": "Ask: The pulse does not load",
-    "status": "implemented",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15012,8 +15529,8 @@
     "item": 35,
     "name": "ASK_A_READ_THE_PULSE_IS_MADE",
     "chCode": "CH-13226",
-    "meaning": "Ask: a read the pulse is made from failed (rounds, the schedule, tasks or focus areas), the rest landed",
-    "status": "implemented",
+    "meaning": "Ask: a read the pulse is made from failed",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15035,6 +15552,50 @@
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
     "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130638,
+    "page": "P013",
+    "category": 6,
+    "item": 38,
+    "name": "WHATS_NEW_A_REFRESH_FAILS_AFTER_THE",
+    "chCode": "CH-13230",
+    "meaning": "What’s new: a refresh fails after the week loaded",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130639,
+    "page": "P013",
+    "category": 6,
+    "item": 39,
+    "name": "WHATS_NEW_THE_FEED_DOESNT_LOAD",
+    "chCode": "CH-13231",
+    "meaning": "What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130640,
+    "page": "P013",
+    "category": 6,
+    "item": 40,
+    "name": "WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING",
+    "chCode": "CH-13232",
+    "meaning": "What’s new: the feed crashes while drawing",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130641,
+    "page": "P013",
+    "category": 6,
+    "item": 41,
+    "name": "COACH_PLAYER_PAGE_DID_NOT_LOAD_ON",
+    "chCode": "CH-13209",
+    "meaning": "Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15492,6 +16053,50 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130742,
+    "page": "P013",
+    "category": 7,
+    "item": 42,
+    "name": "COACH_PLAYER_THE_PATH_LINE",
+    "chCode": "CH-13940",
+    "meaning": "Coach, player: the path line (design call D2)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130743,
+    "page": "P013",
+    "category": 7,
+    "item": 43,
+    "name": "COACH_SINCE_YOU_WERE_LAST_HERE",
+    "chCode": "CH-13941",
+    "meaning": "Coach: since you were last here (design call D4)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130744,
+    "page": "P013",
+    "category": 7,
+    "item": 44,
+    "name": "COACH_READS_RATED_NOT_ENOUGH_YET_ARE",
+    "chCode": "CH-13942",
+    "meaning": "Coach: reads rated Not enough yet are held back",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130745,
+    "page": "P013",
+    "category": 7,
+    "item": 45,
+    "name": "COACH_EVERY_READ_OF_A_PLAYER_IS",
+    "chCode": "CH-13943",
+    "meaning": "Coach: every read of a player is Not enough yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130801,
     "page": "P013",
     "category": 8,
@@ -15567,6 +16172,20 @@
     "where": "src/clubhouse/screens/coachhelm/CoachBoard.tsx#CoachBoard; src/clubhouse/data/coachhelm.ts#assignedByInsight",
     "tests": [
       "src/clubhouse/__tests__/coachhelm.test.tsx"
+    ]
+  },
+  {
+    "id": 130807,
+    "page": "P013",
+    "category": 8,
+    "item": 7,
+    "name": "A_COACH_READS_ONE_PLAYER_ONLY_THROUGH_THE_SCOPE",
+    "meaning": "A coach's view of one player (?view=deep-dive|standing|profile&player=) reads nothing about the player until loadCoachPlayerScope has found the id an active member of the team the shell resolved (golf_team_members, team_id, player_id and status active, through the session's client): an id that is not a uuid is answered with no query, and any id not on this team, on another team the coach staffs, or no longer active is the one \"That player isn't on your team\" page (CH-13311), so the page never says whether a player exists. The three loaders take only the branded scope that check makes, never an id (a raw id does not compile), because Standing's standing map and the goals read through the service client. A read the check needs that fails is CH-13209, never CH-13311. The Deep dive reads the coach feed (getInsightsForCoach with player_id), never the player's, and every row of anyone else's is dropped.",
+    "status": "implemented",
+    "where": "src/clubhouse/data/coachhelm-player.ts#loadCoachPlayerScope; src/clubhouse/routes/coachhelm.tsx#CoachPlayerPage",
+    "tests": [
+      "src/clubhouse/__tests__/coachhelm-coach-player.test.tsx",
+      "src/clubhouse/data/__tests__/coachhelm-player.test.ts"
     ]
   },
   {
@@ -15846,7 +16465,7 @@
     "name": "A_GAUGE",
     "chCode": "CH-13802",
     "meaning": "A gauge",
-    "status": "implemented",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {

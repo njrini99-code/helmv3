@@ -31,8 +31,9 @@ export interface ChNavItem {
 /**
  * Coach navigation, in the v2 design's order (D-66, design/handoff/gh-nav.js).
  * Every entry is a designed screen; one not rebuilt yet (CoachHelm, Team Hub)
- * opens the not-rebuilt notice. Rounds, Practice, Lineups, Events and
- * Scouting are not in v2's sidebar and are left out.
+ * opens the not-rebuilt notice. Practice, Lineups, Events and Scouting are not
+ * in v2's sidebar and are left out. Rounds (the team's posted rounds) was added after v2: the coach reached them only
+ * through Stats before.
  */
 export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'home', label: 'Home', href: '/golf/dashboard', icon: House },
@@ -43,6 +44,7 @@ export const CH_NAV_COACH: readonly ChNavItem[] = [
   { id: 'hub', label: 'Team Hub', href: '/golf/dashboard/team-hub', icon: ClipboardList, badge: 'hub', section: 'Team' },
   { id: 'roster', label: 'Roster', href: '/golf/dashboard/roster', icon: Users, section: 'Team', badge: 'joinRequests' },
   { id: 'stats', label: 'Stats', href: '/golf/dashboard/stats', icon: BarChart3, section: 'Team' },
+  { id: 'rounds', label: 'Rounds', href: '/golf/dashboard/rounds', icon: Flag, section: 'Team' },
   { id: 'qualifiers', label: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: Trophy, section: 'Team' },
   { id: 'recruiting', label: 'Recruiting', href: '/golf/dashboard/recruiting', icon: GraduationCap, section: 'Team' },
 ];
@@ -126,6 +128,8 @@ export const CH_NAV = CH_NAV_COACH;
 export function routeLabel(pathname: string): string | null {
   const seg = pathname.replace(/^\/golf\/dashboard\/?/, '').split('/')[0];
   if (!seg) return null;
+  // A name an apostrophe makes: the slug cannot carry it.
+  if (seg === 'whats-new') return 'What’s new';
   const words = seg.split('-').join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
@@ -158,6 +162,8 @@ export const CH_REBUILT_ROUTES: Record<ChRole, readonly string[]> = {
     '/golf/dashboard/recruiting',
     '/golf/dashboard/stats',
     '/golf/dashboard/stats/team',
+    '/golf/dashboard/rounds',
+    '/golf/dashboard/whats-new',
     '/golf/dashboard/qualifiers',
     '/golf/dashboard/team-hub',
     ...SETTINGS_ROUTES,
@@ -192,14 +198,14 @@ const CH_REBUILT_PATTERNS: Record<ChRole, readonly RegExp[]> = {
  * with every route that calls redirectToClubhouse.
  */
 export const CH_ALIASED_ROUTES: readonly RegExp[] = [
-  /^\/golf\/dashboard\/(whats-new|tasks|intelligence|courses|announcements|team|documents|travel)$/,
+  /^\/golf\/dashboard\/(tasks|intelligence|courses|announcements|team|documents|travel)$/,
   /^\/golf\/dashboard\/roster\/[^/]+$/,
   /^\/golf\/dashboard\/players\/[^/]+$/,
   /^\/golf\/dashboard\/coachhelm\/(chat|qualifying\/[^/]+|genome\/compare|genome\/[^/]+)$/,
   /^\/golf\/dashboard\/rounds\/[^/]+\/review$/,
-  // Rebuilt for one role and moved for the other (a coach's Rounds to Team stats and My qualifiers to Qualifiers, a
-  // player's Team stats to their Stats): the segment must render for its redirect to run.
-  /^\/golf\/dashboard\/(rounds|my-qualifiers|stats\/team)$/,
+  // Rebuilt for one role and moved for the other (My qualifiers to a coach's Qualifiers, a player's Team stats to their
+  // Stats, What's new to Home): the segment must render for its redirect to run.
+  /^\/golf\/dashboard\/(my-qualifiers|stats\/team|whats-new)$/,
 ];
 
 export function isAliased(pathname: string): boolean {

@@ -366,7 +366,7 @@ export interface DispersionInsight {
 
 /** Standard distance ranges for analysis */
 const DISTANCE_RANGES: DistanceRange[] = [
-  { min: 0, max: 50, label: 'Wedge (0-50)' },
+  { min: 0, max: 50, label: 'Inside 50 (0-50)' },
   { min: 50, max: 100, label: 'Short (50-100)' },
   { min: 100, max: 130, label: 'Mid-Short (100-130)' },
   { min: 130, max: 160, label: 'Mid (130-160)' },
@@ -1013,7 +1013,7 @@ class LieSpecificAnalyzer {
         id: crypto.randomUUID(),
         category: 'contact',
         headline: 'Sand Shot Deceleration',
-        body: `From sand, you miss short ${Math.round(sandPattern.missBreakdown.short)}% of the time. This strongly suggests deceleration through impact - a common issue where players slow the club through the sand instead of accelerating.`,
+        body: `From sand, you miss short ${Math.round(sandPattern.missBreakdown.short)}% of the time. This strongly suggests deceleration through impact - a common issue where players slow the swing through the sand instead of accelerating.`,
         evidence: [
           `Short miss rate from sand: ${Math.round(sandPattern.missBreakdown.short)}%`,
           `Sample size: ${sandPattern.totalShots} shots`,
@@ -1072,7 +1072,7 @@ class LieSpecificAnalyzer {
             `Multiplier: ${multiplier.toFixed(1)}x`,
           ],
           confidence: Math.min(fairwayPattern.confidence, roughPattern.confidence),
-          recommendation: 'When in rough, prioritize getting back in play over going for the green. Consider taking more club or playing a safer line to avoid compounding the mistake.',
+          recommendation: 'When in rough, prioritize getting back in play over going for the green. Consider playing for more carry or a safer line to avoid compounding the mistake.',
           affectedLies: ['rough'],
           strokeImpact: (roughPattern.penaltyRate - fairwayPattern.penaltyRate) / 100 * 4, // Assume 4 rough shots per round
         });
@@ -1140,13 +1140,13 @@ class LieSpecificAnalyzer {
   private getSwingPlaneRecommendation(miss: MissDirection): string {
     switch (miss) {
       case 'right':
-        return 'A consistent right miss often indicates an open club face at impact or an out-to-in swing path. Work on grip pressure and face control drills. Consider checking ball position and alignment.';
+        return 'A consistent right miss often indicates a face that is open at impact or an out-to-in swing path. Work on grip pressure and face control drills. Consider checking ball position and alignment.';
       case 'left':
         return 'A consistent left miss typically suggests a closed face or over-the-top swing path. Focus on maintaining proper face angle and swing plane. Check grip strength and ball position.';
       case 'short':
-        return 'Consistent short misses indicate club selection issues or deceleration through impact. Consider taking one more club and committing to a full, confident swing.';
+        return 'Consistent short misses indicate playing for too little carry or deceleration through impact. Consider playing for more carry and committing to a full, confident swing.';
       case 'long':
-        return 'Consistent long misses suggest club selection issues or course conditions affecting distance. Review your carry distances and consider wind and elevation factors.';
+        return 'Consistent long misses suggest playing for too much carry or course conditions affecting distance. Review your carry distances and consider wind and elevation factors.';
       default:
         return 'Work with your coach to identify the root cause of your consistent miss pattern.';
     }
@@ -1708,7 +1708,7 @@ class LieSpecificAnalyzer {
           ],
           severity: 'warning',
           strokeImpact: (fairwayBenchmark - driving.fairwayHitRate) / 100 * 14 * 0.3, // ~14 drives/round
-          recommendation: 'Focus on consistent contact and tempo. Consider a shorter club off the tee for better control.',
+          recommendation: 'Focus on consistent contact and tempo. Consider a non-driver tee shot for better control.',
         });
       }
 
@@ -1762,7 +1762,7 @@ class LieSpecificAnalyzer {
           ],
           severity: approach.girRate < benchmarkData.girRate * 0.5 ? 'critical' : 'warning',
           strokeImpact: (benchmarkData.girRate - approach.girRate) / 100 * 5 * 0.5, // ~5 approaches per bracket per round
-          recommendation: `Focus on controlled shots from this distance. Consider club down for better contact.`,
+          recommendation: `Focus on controlled shots from this distance. Consider playing for less carry for better contact.`,
         });
       }
 
@@ -1801,7 +1801,7 @@ class LieSpecificAnalyzer {
             ],
             severity: 'info',
             strokeImpact: girDrop / 100 * 3 * 0.3, // Estimate ~3 rough approaches per round at this distance
-            recommendation: 'Practice approaches from rough. Focus on clean contact and consider taking less club.',
+            recommendation: 'Practice approaches from rough. Focus on clean contact and consider playing for less carry.',
           });
         }
       }
@@ -2218,7 +2218,7 @@ class LieSpecificAnalyzer {
           `Percentile rank: ${Math.round(worstComparison.percentileRank)}th`,
         ],
         strokeImpact: worstComparison.differential / 10 * 0.4,
-        recommendation: 'Focus practice on this distance range. Consider taking less club for better control.',
+        recommendation: 'Focus practice on this distance range. Consider playing for less carry for better control.',
       });
     }
 
@@ -2258,8 +2258,8 @@ class LieSpecificAnalyzer {
           ],
           strokeImpact: shortLong / 20 * 0.3,
           recommendation: worseDir === 'short'
-            ? 'You tend to leave it short. Consider taking more club and committing to the swing.'
-            : 'You tend to fly greens. Consider taking less club or choking down.',
+            ? 'You tend to leave it short. Consider playing for more carry and committing to the swing.'
+            : 'You tend to fly greens. Consider playing for less carry or a shorter, controlled swing.',
         });
       }
     }

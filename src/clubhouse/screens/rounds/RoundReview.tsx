@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
@@ -9,6 +9,7 @@ import { distribution, type ChReviewHole, type ChReviewTypeEdit, type ChRoundRev
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { roundTypeFailure, savedLine, type ChRoundTypeChoice } from './entry/round-type';
+import { CoachNote } from './CoachNote';
 import { RoundTypeSheet } from './entry/RoundTypeSheet';
 import { scoreName } from './track/labels';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
@@ -381,7 +382,11 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));
-  const back = reviewBack(r);
+  // A coach who opened this round from Team rounds goes back there, as a player goes back to the library: the note is
+  // read after mount (session storage), so the first paint is the server's.
+  const [fromList, setFromList] = useState(false);
+  useEffect(() => setFromList(openedFromLibrary(r.id)), [r.id]);
+  const back = coach && fromList ? { label: 'Rounds', href: '/golf/dashboard/rounds' } : reviewBack(r);
   const insight = useMemo(() => headline(r), [r]);
   const points = useMemo(() => flow(r.holes), [r.holes]);
   const costly = useMemo(() => costliest(r.holes, 3), [r.holes]);
@@ -389,10 +394,10 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
   const approach = useMemo(() => approachFinish(r.holes), [r.holes]);
   const misses = useMemo(() => teeMisses(r.holes), [r.holes]);
   // Rule 8: a player's review opened from the library goes back in history, so the library returns with its search and its place
-  // (screens/rounds/return-state.ts); anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
+  // (screens/rounds/return-state.ts), and so does a coach's from Team rounds; anywhere else (a deep link, a reload in a fresh tab, a coach's Stats) it goes to the address as before.
   // A tab with no history behind it (a copied note in a new tab) has nothing to step back to: it goes to the address.
   const stepBack = () => {
-    if (coach || window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
+    if (window.history.length <= 1 || !openedFromLibrary(r.id)) return false;
     router.back();
     return true;
   };
@@ -422,7 +427,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
 
   return (
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
-      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
+      {phone && <PhoneTop heading={false} title="Round" back={{ label: coach && !fromList ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
         <Link
           href={back.href}
@@ -752,12 +757,12 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               </SectionBoundary>
             </Zone>
 
-            {(recap || r.notes) && (
+            {(recap || r.notes || r.coachNote || r.coachNoteError || coach) && (
               <Zone
                 n={6}
                 alt
                 title="In words"
-                def={<>What CoachHelm read in the round, and {coach ? 'what the player wrote' : 'what you wrote'} when posting it.</>}
+                def={<>What CoachHelm read in the round, {coach ? 'what the player wrote' : 'what you wrote'} when posting it, and the note {coach ? 'you leave' : 'your coach left'}.</>}
               >
                 {recap && (
                   // C2: a passage under a rule, labelled in words for who wrote it (no sparkle, D14).
@@ -782,6 +787,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     <p>{r.notes}</p>
                   </section>
                 )}
+                <CoachNote roundId={r.id} note={r.coachNote} error={r.coachNoteError} canWrite={coach} playerFirst={r.playerName ? (r.playerName.split(' ')[0] ?? null) : null} />
               </Zone>
             )}
           </>

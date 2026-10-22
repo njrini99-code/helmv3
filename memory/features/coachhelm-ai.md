@@ -80,7 +80,7 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2` (the Slice 8b
   shot-entry prompts, `src/lib/golf/data-prompts/flag.ts`),
   `coachhelm_corrections_v1`,
-  `coachhelm_recheck_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
+  `coachhelm_recheck_v1`, `coachhelm_stale_refresh_v1`, `coachhelm_support_v1`, `coachhelm_team_pool_v1`,
   `coachhelm_verdicts_v1`, `coachhelm_root_cause_diagnosis` and
   `coachhelm_insight_angles_v1` are read through `isCoachHelmFlagEnabled`. Unset, empty or `*`: the global flag
   decides, exactly as before, and no team is read. To run a wave on one team,
@@ -152,6 +152,30 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   entry side: `memory/features/shot-tracking.md`.
 - `upsertInsightV3` throws `InsightOwnershipLookupError` when the team or
   staff lookup keeps failing, instead of writing the row with no owner.
+- Every read that decides "is there already a row?" fails closed
+  (2026-10-21): a dedup lookup error, or an ownership lookup that throws
+  instead of returning an error, is logged and thrown as a retryable
+  `InsightOwnershipLookupError`; nothing is written and the next run writes
+  it. Only a genuine no-team or no-staff answer lands an orphan.
+- Idle-player stale refresh (`v3/engine/stale-refresh.ts`, behind
+  `coachhelm_stale_refresh_v1`, OFF): the nightly roster sweep also re-runs
+  an analyzed player whose newest analysis (newest visible-read refresh
+  stamp or `post_round_v2` engine run) is 14+ days old, who has an open read
+  and a completed round in the engine's 90-day window: at most 6 a night,
+  after the freshness picks and under the same time budget, logged with
+  `logServerEvent` (`cron.coachhelm.rosterSweep.staleRefresh`). A lookup
+  error means no stale refresh that night. A player the engine would park
+  for its owner (no coach, CoachHelm off for the coach or team) is skipped
+  with the engine's own check (`src/lib/coachhelm/engine-owner.ts`) and
+  never takes a slot; those checks stop once the cron's time budget is
+  spent or after 24 a night, keeping the picks found so far. The night's
+  window is a write-free rotation: the stale players ordered oldest first,
+  starting at offset (day index x 6) mod n and wrapping, so each gets a turn
+  within ceil(n / 6) nights. A pick whose run writes nothing stays stale
+  but cannot hold a slot every night; a productive run re-anchors the
+  player and drops them out. The sweep writes no marker row (a row in
+  `golf_insight_generation_log` would count as a failed run in
+  `get_admin_coachhelm_rollup`).
 - Team pool benchmark (supercharge Slice 7a, 2026-10-20), behind
   `coachhelm_team_pool_v1` (OFF; off reads nothing and writes nothing new):
   - Putt make by band, approach green-hit by band, sand save, par 3/4/5

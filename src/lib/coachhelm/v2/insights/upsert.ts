@@ -68,6 +68,10 @@ import { isRecheckEnabled } from '@/lib/coachhelm/v3/lifecycle/flag';
  * lookup minted a duplicate (2026-09-24 brownout: PGRST002 on the staff
  * lookup wrote 19 coachless twins for one player in 50 s). Carries the
  * PostgREST/Postgres `code` so `classifyThrown` reads it as transient.
+ *
+ * 2026-10-21: also thrown when the dedup lookup itself fails, or the
+ * ownership lookup throws instead of returning an error: any read that
+ * decides "is there already a row?" fails closed, and nothing is written.
  */
 export class InsightOwnershipLookupError extends Error {
   readonly code: string | undefined;
@@ -268,8 +272,19 @@ export async function upsertInsight(
     .order('created_at', { ascending: false })
     .limit(1);
 
+  // A failed read is NOT "no existing row": falling through to insertNew
+  // would mint a second row for the same issue when the lookup missed. Fail
+  // closed: log, write nothing, and let the next analysis run write it.
   if (lookupError) {
-    throw new Error(`upsertInsight.lookup failed: ${lookupError.message}`);
+    await logServerError(
+      `upsertInsight: dedup lookup failed for signature=${input.signature}; not writing the insight: ${lookupError.message}`,
+      { action: 'coachhelm.upsert.dedupLookup', featureArea: 'coachhelm', extra: { code: lookupError.code ?? null } },
+      'warning',
+    );
+    throw new InsightOwnershipLookupError(
+      `upsertInsight.lookup failed: ${lookupError.message}`,
+      lookupError.code,
+    );
   }
 
   const existing = (existingRows?.[0] ?? null) as ExistingInsightRow | null;
@@ -760,12 +775,18 @@ async function resolvePlayerOwnership(
     return { coachId, teamId };
   } catch (error) {
     if (error instanceof InsightOwnershipLookupError) throw error;
+    // 2026-10-21: an unexpected throw (a rejected fetch, a client bug) is a
+    // failed read, not "no team". Falling back to nulls here wrote the same
+    // coachless twin the error path above refuses to write. Fail closed.
     await logServerError(
-      `resolvePlayerOwnership failed: ${describeError(error)}`,
-      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
+      `resolvePlayerOwnership threw; not writing the insight: ${describeError(error)}`,
+      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm', playerId },
       'warning'
     );
-    return { coachId: null, teamId: null };
+    throw new InsightOwnershipLookupError(
+      `upsertInsight: ownership lookup threw for player=${playerId}: ${describeError(error)}`,
+      (error as { code?: string } | null)?.code,
+    );
   }
 }
 

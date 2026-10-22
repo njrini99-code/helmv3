@@ -1,5 +1,149 @@
 # P003 — Roster: changelog
 
+## 2026-10-21 — CoachHelm block and strokes by leg (spec D build B)
+
+```text
+Design package: none (spec D, Game Fingerprint and roster detail bridges)
+PR/commit:      parity/bridges (not pushed)
+Contract IDs:   CH-3212 (new)
+Actions:        none
+Data impact:    reads only: golf_coach_insights (visible rows, no exposure),
+                golf_teams, golf_pga_standards, golf_rounds; no new column
+Held items:     none
+```
+
+### Changed
+
+- The player panel has a CoachHelm section after Development: "3 costing
+  strokes · 1 working" and View insights to the coach's Deep dive of the
+  player, "No reads yet" with none, dashes and "Didn’t load. Refresh to try
+  again." when the counts did not load (CH-3212), nothing with CoachHelm off.
+  The phone profile has the same as a panel after Recent rounds.
+- Under the figures, one caption names the strokes-gained leg that loses the
+  most ("Loses most putting, −1.1 a round") or, with none losing, where the
+  player gains most.
+- The panel's Development counts link to the player's Development tab.
+
+### Why
+
+- Spec D: Fairway's roster detail page is covered by the panel, the coach's
+  player pages and Stats, except for what CoachHelm reads in the player's
+  rounds and the strokes-by-leg summary. The counts are `countReads`, so the
+  roster, the Board and the Game profile never disagree.
+
+### Verification
+
+- `roster-peek-reads.test.tsx`, `roster.test.tsx` › CH-3212, `alias.test.ts`;
+  VERIFY.md 2026-10-21.
+
+## 2026-10-21 — Availability is the word only: the note is pulled
+
+```text
+Design package: spec C, coach parity; code review follow-up
+PR/commit:      see git log (parity/roster-settings)
+Contract IDs:   CH-3010 (30621) and CH-3102 (30503) retired, never shipped;
+                30502, CH-3009, CH-3809 text
+Actions:        setPlayerAvailability (no note; refuses one)
+Data impact:    reads and writes golf_team_members.availability and
+                availability_updated_at only. availability_note is never read
+                or written.
+Held items:     a coach-only store for the note (needs a migration; see
+                docs/clubhouse/held/data/roster-availability.md)
+```
+
+### Changed
+
+- The availability note is gone: no note field, counter or blur save in the
+  panel or phone profile, no "Add a note" on the success toast (the shared
+  `doneAction` in `useAction` is reverted), and no "Availability note" column
+  in the export. The list, faces, phone row, panel and profile show the word
+  alone ("Injured", "Away").
+- `loadRoster` no longer selects `availability_note` and `ChRosterPlayer` has
+  no `availabilityNote`; `setPlayerAvailability` takes no note and refuses one
+  with "Availability notes are not saved", writing nothing.
+- The caption stays: "Shows on your roster only. It never changes their team
+  access; Mark inactive does." It is about the word, which is all there is.
+
+### Why
+
+- `golf_team_members_select_v5` lets every teammate read every column of their
+  team's rows through the API, so a note ("Only coaches see this") would have
+  reached players. Fixing that needs a migration, which is frozen.
+
+### Verification
+
+- `roster.test.tsx`: the panel has no note field, the toast has no action, the
+  export has no note column, the loader's select never names
+  `availability_note`, and no roster source mentions it;
+  `set-player-availability.test.ts`: a note is refused and nothing is written.
+
+## 2026-10-21 — Availability on the coach's roster; the desk view prints
+
+```text
+Design package: spec C, coach parity
+                (coach-parity/spec-C-roster-availability-settings.md)
+PR/commit:      see git log (parity/roster-settings)
+Contract IDs:   30203 (CH-3405), 30503 (CH-3102), 30620 (CH-3009),
+                30621 (CH-3010), 31809 (CH-3809) new; 30502 text
+Actions:        setPlayerAvailability (new,
+                src/app/golf/actions/team-management.ts)
+Data impact:    reads and writes golf_team_members.availability,
+                availability_note, availability_updated_at (already live; no
+                migration). Write policy golf_team_members_update_coach.
+Held items:     none
+```
+
+### Changed
+
+- Availability (Available, Injured, Away) is whether a player can play. It is
+  display only and never changes team access (Mark inactive does); the two
+  never share a phrase.
+- Row menu (kebab, right-click and a face's menu, one list): after the links,
+  the two states the player is not in (Bandage, Plane, CircleCheck), then Mark
+  inactive or active and Remove. No confirm; the word shows at once and goes
+  back if the save fails, and the toast's Retry finishes it (CH-3009). From the
+  menu the success toast offers "Add a note", which opens the panel with the
+  note focused (`useAction` copy gains `doneAction`, shared change).
+- List: the line under the name leads with "Injured · wrist", the word in
+  secondary ink, the full line in its title; the Status column is unchanged.
+  Faces: the note slot reads the line in plain ink in place of a Needs a look
+  reason. Head: "8 players · 7 active · 1 injured · 1 away." Phone: the row's
+  line ("Junior · Injured · …") and the kicker ("Varsity · 7 active · 1
+  injured · 1 away").
+- Panel and phone profile: the identity line adds the word; a new Availability
+  section (Segmented, "Availability for {name}") between Development and the
+  coach's note, with a note for injured or away (280 characters, saves on blur,
+  "Only coaches see this.", counter in the last 40, CH-3102, CH-3010),
+  "Updated 3 days ago", and the caption "Shows on your roster only. It never
+  changes their team access; Mark inactive does." The ⋯ sheet is unchanged.
+- Needs a look leaves out a player who is out (`attentionFor`); rankings, the
+  strip and the team average are unchanged. CSV: Availability and Availability
+  note after Status, the note written as text (30502).
+- No new colour: red stays under par, and the word carries the meaning
+  (CH-3809).
+- Players see none of it in v1 (`loadPlayerRoster` still reads `player_id`).
+- Print (`roster.css`): the desk view printed from a desktop shows (the phone
+  breakpoint hid it), fits the sheet without the actions column or avatars,
+  takes an ink head rule with "GolfHelm", and keeps a face or row whole. A
+  portrait letter sheet is under 820px, so the browser re-renders the phone
+  layout and that sheet prints as before; landscape prints the desk table.
+- Preview: `/clubhouse-preview/roster?state=availability` (Ava injured, Luca
+  away).
+
+### Why
+
+- Coach parity: coaches needed to mark who is hurt or travelling without
+  taking away their team access.
+
+### Verification
+
+- `roster.test.tsx` (new describe "availability", 10 tests, and 2 phone
+  tests), `roster-context-menu.test.tsx` (right-click equals kebab for an
+  injured player), `set-player-availability.test.ts` (8, the action's checks).
+- Screenshots (Chromium, preview fixtures, 1280 and 390): see VERIFY.md
+  Screenshots. No before shots: the surfaces are new. Not checked in WebKit,
+  on a phone or with VoiceOver.
+
 ## 2026-10-21 — The spread dots start in place
 
 ```text

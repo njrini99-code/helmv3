@@ -63,7 +63,7 @@ export function ComponentPlayground() {
         {TUNERS.map(tuner => <label className="ch-playground__field" key={tuner.key}>
           <span>{tuner.label} <output>{draft[tuner.key] === undefined ? 'Original' : `${draft[tuner.key]}${tuner.unit}`}</output></span>
           <input type="range" aria-label={tuner.label} min={tuner.min} max={tuner.max} value={draft[tuner.key] ?? tuner.initial}
-            onChange={e => setDraft(previous => ({ ...previous, [tuner.key]: Number(e.target.value) }))} />
+            onChange={e => { const next = Number(e.target.value); setDraft(previous => ({ ...previous, [tuner.key]: next })); }} />
         </label>)}
         <Button onClick={() => { setDraft({}); setStatus('Original styles restored.'); }}>Reset tuning</Button>
         <p>Focus with Tab and hold a control to inspect its pressed state. Motion follows the device preference and Clubhouse settings.</p>

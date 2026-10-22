@@ -2019,6 +2019,11 @@
         "category": "services"
       },
       {
+        "id": "services:src/clubhouse/data/stats-reads.ts",
+        "pattern": "src/clubhouse/data/stats-reads.ts",
+        "category": "services"
+      },
+      {
         "id": "services:src/clubhouse/routes/auth.tsx",
         "pattern": "src/clubhouse/routes/auth.tsx",
         "category": "services"
@@ -2553,6 +2558,11 @@
       {
         "id": "tests:src/clubhouse/__tests__/thread-anchor.test.tsx",
         "pattern": "src/clubhouse/__tests__/thread-anchor.test.tsx",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/clubhouse/data/__tests__/stats-reads.test.ts",
+        "pattern": "src/clubhouse/data/__tests__/stats-reads.test.ts",
         "category": "tests"
       },
       {
@@ -13772,6 +13782,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v2/insights/__tests__/upsert-fail-closed.test.ts",
+          "anchor": "src/lib/coachhelm/v3/engine/analysis-outcome"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v2/insights/standing-injection.ts",
           "anchor": "src/lib/coachhelm/v3/standing/loader"
         },
@@ -14283,6 +14298,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/course-plan/flag.ts",
           "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/engine-owner.ts",
+          "anchor": "src/lib/supabase/admin"
         },
         {
           "kind": "import_graph",
@@ -16731,6 +16751,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/round-coach-note.ts",
+          "anchor": "src/lib/admin/observed-action"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/round-partial.ts",
           "anchor": "src/lib/admin/observed-action"
         },
@@ -16927,6 +16952,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/golf-action-shared.ts",
           "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-coach-note.ts",
+          "anchor": "src/lib/supabase/server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-coach-note.ts",
+          "anchor": "src/lib/auth/verify-player-access"
         },
         {
           "kind": "import_graph",
@@ -17486,6 +17521,11 @@
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/round-coach-note.ts",
+          "anchor": "src/lib/coachhelm/v3/notifications/notify"
+        },
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/round-recap.ts",
@@ -24263,6 +24303,18 @@
     },
     {
       "source": "stats_analytics",
+      "target": "services:src/clubhouse/data/stats-reads.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/stats-reads.ts"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
       "target": "services:src/lib/cache/golf-stats-calculator.ts",
       "kind": "feature_service",
       "evidence": [
@@ -24330,6 +24382,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/golf/actions/__tests__/stats-data.test.ts"
+        }
+      ]
+    },
+    {
+      "source": "stats_analytics",
+      "target": "tests:src/clubhouse/data/__tests__/stats-reads.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/clubhouse/data/__tests__/stats-reads.test.ts"
         }
       ]
     },

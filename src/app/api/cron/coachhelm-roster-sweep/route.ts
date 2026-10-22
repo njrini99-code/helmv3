@@ -20,6 +20,13 @@
  * read and whose engine has not run in FRESHNESS_COOLDOWN_DAYS — in a
  * nightly rotation, at most MAX_FRESHNESS_REFRESHES_PER_RUN a night, and no
  * new freshness batch after FRESHNESS_TIME_BUDGET_MS.
+ *
+ * Idle-player stale refresh (flag `coachhelm_stale_refresh_v1`, off; see
+ * engine/stale-refresh.ts): an analyzed player whose newest analysis is
+ * STALE_REFRESH_DAYS+ days old, who has an open read and a round inside the
+ * engine's 90-day window, is re-analyzed anyway: at most STALE_REFRESH_CAP a
+ * night, in a nightly rotation through the stale players (oldest first),
+ * after the freshness picks and under the same time budget.
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';
@@ -31,14 +38,26 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import '@/app/golf/actions/insights-coachhelm';
 import { triggerPlayerInsightsAfterRound } from '@/lib/coachhelm/v2/trigger-insights-bridge';
 import { isAnalysisOutcomeCode, kindForCode, type AnalysisOutcomeKind } from '@/lib/coachhelm/v3/engine/analysis-outcome';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { describeError } from '@/lib/utils/describe-error';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { freshnessReadsEnabled } from '@/lib/coachhelm/v3/engine/read-floors';
-import { coachhelmTeamAllowlist, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { coachhelmTeamAllowlist, isCoachHelmFlagEnabled, runWithCoachHelmTeams } from '@/lib/coachhelm/canary';
+import { chunkIds } from '@/lib/supabase/chunk-ids';
+import { resolveEngineOwner } from '@/lib/coachhelm/engine-owner';
+import {
+  orderStaleRefreshCandidates,
+  roundInsideEngineWindow,
+  STALE_REFRESH_CAP,
+  STALE_REFRESH_DAYS,
+  STALE_REFRESH_FLAG,
+  STALE_REFRESH_OWNER_CHECK_CAP,
+  type StaleAnchorRow,
+  type StaleRefreshPick,
+} from '@/lib/coachhelm/v3/engine/stale-refresh';
 import { loadPlayerRoundIndex, newestCountableRound } from '@/lib/coachhelm/v3/engine/read-window';
 import {
   FRESHNESS_COOLDOWN_DAYS,
@@ -130,13 +149,14 @@ async function handleRosterSweep(): Promise<NextResponse> {
     }
   }
   const freshnessOn = canary ? false : freshnessReadsEnabled();
+  const staleOn = canary ? false : staleRefreshEnabled();
   const startedAt = Date.now();
   const decide = (playerId: string): Promise<SweepDecision> =>
     canary
       ? runWithCoachHelmTeams(teamsByPlayer.get(playerId) ?? [], () =>
-          decideSweep(supabase, playerId, freshnessReadsEnabled(), startedAt),
+          decideSweep(supabase, playerId, freshnessReadsEnabled(), staleRefreshEnabled(), startedAt),
         )
-      : decideSweep(supabase, playerId, freshnessOn, startedAt);
+      : decideSweep(supabase, playerId, freshnessOn, staleOn, startedAt);
 
   // Phase 1: decide per player (cheap reads only), in small batches.
   const decisions: SweepDecision[] = [];
@@ -155,30 +175,53 @@ async function handleRosterSweep(): Promise<NextResponse> {
   );
   const freshnessCooldown = decisions.filter((d) => d.kind === 'freshness_cooldown').length;
   let freshnessDeferred = plan.deferred.length;
-  const toRun: Array<{ playerId: string; freshness: boolean }> = [
-    ...decisions.filter((d) => d.kind === 'legacy').map((d) => ({ playerId: d.playerId, freshness: false })),
-    ...plan.run.map((d) => ({ playerId: d.playerId, freshness: true })),
+
+  // Idle-player stale refresh (flag off unless the owner turns it on): from
+  // the analyzed players nothing else will run tonight, up to
+  // STALE_REFRESH_CAP whose newest analysis is STALE_REFRESH_DAYS+ old, in
+  // tonight's rotation (engine/stale-refresh.ts). Nothing is written to mark
+  // a pick: a run that writes nothing leaves the player stale, and the
+  // rotation moves on to the others the next night.
+  const staleCandidates = decisions
+    .filter((d): d is AlreadyAnalyzedDecision => d.kind === 'already_analyzed' && d.staleEligible)
+    .map((d) => d.playerId);
+  // null: a lookup failed (logged), so no stale refresh tonight.
+  const stalePass = staleCandidates.length > 0
+    ? await pickStaleRefreshes(supabase, staleCandidates, startedAt, FRESHNESS_TIME_BUDGET_MS)
+    : null;
+  const stalePicks = stalePass?.picks ?? [];
+  let staleRefreshed = 0;
+  let staleDeferred = 0;
+  // Stale picks whose run wrote nothing (parked, failed or threw); logged only.
+  let staleUnproductive = 0;
+
+  const toRun: Array<{ playerId: string; mode: RunMode }> = [
+    ...decisions.filter((d) => d.kind === 'legacy').map((d) => ({ playerId: d.playerId, mode: 'legacy' as const })),
+    ...plan.run.map((d) => ({ playerId: d.playerId, mode: 'freshness' as const })),
+    ...stalePicks.map((p) => ({ playerId: p.playerId, mode: 'stale' as const })),
   ];
 
   for (let i = 0; i < toRun.length; i += CONCURRENCY) {
     let batch = toRun.slice(i, i + CONCURRENCY);
     if (Date.now() - startedAt > FRESHNESS_TIME_BUDGET_MS) {
-      // Out of freshness time: keep running unanalyzed rounds, defer the rest.
-      freshnessDeferred += batch.filter((p) => p.freshness).length;
-      batch = batch.filter((p) => !p.freshness);
+      // Out of refresh time: keep running unanalyzed rounds, defer the rest.
+      freshnessDeferred += batch.filter((p) => p.mode === 'freshness').length;
+      staleDeferred += batch.filter((p) => p.mode === 'stale').length;
+      batch = batch.filter((p) => p.mode === 'legacy');
       if (batch.length === 0) continue;
     }
     const pairs = await Promise.all(
-      batch.map(async ({ playerId, freshness }) => {
+      batch.map(async ({ playerId, mode }) => {
         try {
           const result = await triggerPlayerInsightsAfterRound(playerId, { runTrigger: 'sweep' });
-          return { playerId, freshness, ok: true as const, result };
+          return { playerId, mode, ok: true as const, result };
         } catch (err) {
-          return { playerId, freshness, ok: false as const, err };
+          return { playerId, mode, ok: false as const, err };
         }
       }),
     );
     for (const p of pairs) {
+      if (p.mode === 'stale' && !(p.ok && p.result.success)) staleUnproductive++;
       if (!p.ok) {
         failed++;
         await logServerError(
@@ -195,7 +238,8 @@ async function handleRosterSweep(): Promise<NextResponse> {
       if (p.result.success) {
         analyzed++;
         // Only a run that succeeded refreshed anything.
-        if (p.freshness) freshnessRefreshed++;
+        if (p.mode === 'freshness') freshnessRefreshed++;
+        if (p.mode === 'stale') staleRefreshed++;
       } else if (isAnalysisOutcomeCode(p.result.code) && isFailureKind(kindForCode(p.result.code))) {
         // R3: the engine names its own state. A transient or permanent
         // failure is a failure here too — it used to be folded into
@@ -213,7 +257,35 @@ async function handleRosterSweep(): Promise<NextResponse> {
   // set and nothing newer needs a refresh now (current, cooling down, or
   // waiting for another night).
   const alreadyAnalyzedSkipped =
-    decisions.filter((d) => d.kind === 'already_analyzed').length + freshnessCooldown + freshnessDeferred;
+    decisions.filter((d) => d.kind === 'already_analyzed').length
+    - stalePicks.length
+    + staleDeferred
+    + freshnessCooldown
+    + freshnessDeferred;
+
+  if (stalePass && (stalePicks.length > 0 || stalePass.ownerChecked > 0)) {
+    await logServerEvent(
+      `cron.rosterSweep.staleRefresh: ${staleRefreshed} of ${stalePicks.length} idle players refreshed`,
+      {
+        action: 'cron.coachhelm.rosterSweep.staleRefresh',
+        featureArea: 'coachhelm',
+        extra: {
+          candidates: staleCandidates.length,
+          picked: stalePicks.length,
+          refreshed: staleRefreshed,
+          deferred: staleDeferred,
+          unproductive: staleUnproductive,
+          stale: stalePass.stale,
+          ownerChecked: stalePass.ownerChecked,
+          ownerCheckStop: stalePass.ownerCheckStop,
+          cap: STALE_REFRESH_CAP,
+          staleDays: STALE_REFRESH_DAYS,
+          oldestDays: stalePicks[0]?.staleDays ?? null,
+        },
+      },
+      'info',
+    );
+  }
 
   return NextResponse.json({
     success: true,
@@ -226,13 +298,24 @@ async function handleRosterSweep(): Promise<NextResponse> {
     freshnessRefreshed,
     freshnessDeferred,
     freshnessCooldown,
+    staleRefreshed,
+    staleRefreshPicked: stalePicks.length,
+    staleRefreshDeferred: staleDeferred,
   });
 }
 
+/** The idle-player stale refresh flag, read in the current canary team scope. */
+function staleRefreshEnabled(): boolean {
+  return isCoachHelmFlagEnabled(STALE_REFRESH_FLAG);
+}
+
+type RunMode = 'legacy' | 'freshness' | 'stale';
 type FreshnessDecision = { playerId: string; kind: 'freshness' };
+/** `staleEligible`: the stale flag is on for this player and they have a round inside the engine window. */
+type AlreadyAnalyzedDecision = { playerId: string; kind: 'already_analyzed'; staleEligible: boolean };
 type SweepDecision =
   | { playerId: string; kind: 'legacy' }
-  | { playerId: string; kind: 'already_analyzed' }
+  | AlreadyAnalyzedDecision
   | { playerId: string; kind: 'freshness_cooldown' }
   | FreshnessDecision;
 
@@ -256,12 +339,13 @@ async function decideSweep(
   supabase: ReturnType<typeof createAdminClient>,
   playerId: string,
   freshnessOn: boolean,
+  staleOn: boolean,
   nowMs: number,
 ): Promise<SweepDecision> {
   try {
     const { data: latestRound, error: latestRoundError } = await supabase
       .from('golf_rounds')
-      .select('coachhelm_analyzed_at')
+      .select('coachhelm_analyzed_at, round_date')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -282,11 +366,16 @@ async function decideSweep(
       return { playerId, kind: 'legacy' };
     }
     if (!latestRound?.coachhelm_analyzed_at) return { playerId, kind: 'legacy' };
-    if (!freshnessOn) return { playerId, kind: 'already_analyzed' };
+    const analyzed: AlreadyAnalyzedDecision = {
+      playerId,
+      kind: 'already_analyzed',
+      staleEligible: staleOn && roundInsideEngineWindow(latestRound.round_date, nowMs),
+    };
+    if (!freshnessOn) return analyzed;
 
     const freshness = await loadFreshnessInputs(supabase, playerId);
     if (!freshness || !readsBehindNewestRound(freshness.newest, freshness.reads)) {
-      return { playerId, kind: 'already_analyzed' };
+      return analyzed;
     }
     const cooling = await engineRanRecently(supabase, playerId, nowMs);
     if (cooling !== false) return { playerId, kind: 'freshness_cooldown' };
@@ -358,4 +447,101 @@ async function loadFreshnessInputs(
     };
   });
   return { newest: newest ? { id: newest.id, round_date: newest.round_date } : null, reads };
+}
+
+/** Tonight's stale pass: the picks, and how far the owner checks got. */
+interface StaleRefreshPass {
+  picks: StaleRefreshPick[];
+  /** Candidates whose newest analysis is STALE_REFRESH_DAYS+ old. */
+  stale: number;
+  /** Engine-owner checks made tonight. */
+  ownerChecked: number;
+  /** Why the owner checks stopped before the picks were full; null when they did not. */
+  ownerCheckStop: 'time_budget' | 'check_cap' | null;
+}
+
+/**
+ * The stale-refresh picks for tonight (see engine/stale-refresh.ts): reads
+ * the candidates' visible reads and their engine runs inside the staleness
+ * window, in id chunks. Null on any read error (logged): the caller then
+ * runs no stale refresh tonight, since this pass is an extra.
+ *
+ * The owner checks are serial reads, so they stop once the cron's time
+ * budget (`budgetMs` from `startedAt`) is spent or after
+ * STALE_REFRESH_OWNER_CHECK_CAP checks, keeping the picks found so far: a
+ * large switched-off roster cannot eat the run.
+ */
+async function pickStaleRefreshes(
+  supabase: ReturnType<typeof createAdminClient>,
+  candidateIds: readonly string[],
+  startedAt: number,
+  budgetMs: number,
+): Promise<StaleRefreshPass | null> {
+  const nowMs = startedAt;
+  const since = new Date(nowMs - STALE_REFRESH_DAYS * 86_400_000).toISOString();
+  const reads: StaleAnchorRow[] = [];
+  const lastRunAt = new Map<string, number>();
+  for (const chunk of chunkIds(candidateIds)) {
+    const { data: rows, error: readsError } = await fetchAllRowsResult<StaleAnchorRow>((from, to) =>
+      applyInsightVisibility(
+        supabase.from('golf_coach_insights').select('player_id, created_at, metadata').in('player_id', chunk),
+      )
+        .order('id', { ascending: true })
+        .range(from, to) as unknown as PromiseLike<{ data: StaleAnchorRow[] | null; error: { message: string; code?: string | null } | null }>,
+    );
+    const { data: runs, error: runsError } = readsError
+      ? { data: null, error: null }
+      : await fetchAllRowsResult<{ player_id: string | null; created_at: string | null }>((from, to) =>
+          supabase
+            .from('golf_insight_generation_log')
+            .select('player_id, created_at')
+            .eq('insight_type', 'post_round_v2')
+            .in('player_id', chunk)
+            .gte('created_at', since)
+            .order('id', { ascending: true })
+            .range(from, to),
+        );
+    const error = readsError ?? runsError;
+    if (error) {
+      await logServerError(
+        `cron.rosterSweep.staleRefresh lookup failed; no stale refresh tonight: ${error.message}`,
+        {
+          action: 'cron.coachhelm.rosterSweep.staleRefresh',
+          featureArea: 'coachhelm',
+          extra: { code: error.code ?? null, candidates: candidateIds.length },
+        },
+        'warning',
+      );
+      return null;
+    }
+    reads.push(...(rows ?? []));
+    for (const run of runs ?? []) {
+      const t = run.created_at ? Date.parse(run.created_at) : Number.NaN;
+      if (!run.player_id || Number.isNaN(t)) continue;
+      lastRunAt.set(run.player_id, Math.max(lastRunAt.get(run.player_id) ?? Number.NEGATIVE_INFINITY, t));
+    }
+  }
+  // Every stale candidate in tonight's rotation; then keep the first
+  // STALE_REFRESH_CAP the engine would actually run. A player whose coach or
+  // team has CoachHelm off (or with no coach) is skipped with the engine's
+  // own park check, so they never take a slot.
+  const ordered = orderStaleRefreshCandidates(candidateIds, reads, lastRunAt, nowMs);
+  const picks: StaleRefreshPick[] = [];
+  let ownerChecked = 0;
+  let ownerCheckStop: StaleRefreshPass['ownerCheckStop'] = null;
+  for (const pick of ordered) {
+    if (picks.length >= STALE_REFRESH_CAP) break;
+    if (ownerChecked >= STALE_REFRESH_OWNER_CHECK_CAP) {
+      ownerCheckStop = 'check_cap';
+      break;
+    }
+    if (Date.now() - startedAt > budgetMs) {
+      ownerCheckStop = 'time_budget';
+      break;
+    }
+    ownerChecked++;
+    const owner = await resolveEngineOwner(supabase, pick.playerId);
+    if (owner.kind === 'ok') picks.push(pick);
+  }
+  return { picks, stale: ordered.length, ownerChecked, ownerCheckStop };
 }
