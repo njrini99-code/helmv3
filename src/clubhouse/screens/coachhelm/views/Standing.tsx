@@ -339,8 +339,9 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
               ) : undefined
             }
           />
-          {/* With no stats yet the page is its empty state; how they play is drawn under it only once a measure has a read. */}
-          {game?.status === 'ready' && game.data.state !== 'empty' && <HowYouPlay load={game} voice={voice} />}
+          {/* With no stats yet the page is its empty state; how they play is drawn under it once a measure has a read, or when its
+              read failed, so a failed read is said (CH-13260) and never shown as nothing to read. */}
+          {game && (game.status === 'failed' || game.data.state !== 'empty') && <HowYouPlay load={game} voice={voice} />}
         </>
       ) : (
         <SectionBoundary surface="coachhelm.standing" label={w.label} code="CH-13204">

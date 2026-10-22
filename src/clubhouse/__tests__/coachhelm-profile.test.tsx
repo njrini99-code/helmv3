@@ -260,6 +260,11 @@ describe('Standing’s How you play section', () => {
     cleanup();
     render(wrap(<Standing load={standingLoad(PREVIEW_STANDING_EMPTY)} game={gameLoad(PREVIEW_GAME_PARTIAL)} />));
     expect(section()).toBeTruthy();
+    cleanup();
+    // A failed read is said under the empty state, never left out as if there were nothing to read.
+    render(wrap(<Standing load={standingLoad(PREVIEW_STANDING_EMPTY)} game={{ status: 'failed' }} />));
+    expect(code('CH-13370')).not.toBeNull();
+    expect(code('CH-13260')).not.toBeNull();
   });
 
   it('CH-13913 Game profile’s old address opens Standing at How you play, once and without animation; any other address does not move', () => {
