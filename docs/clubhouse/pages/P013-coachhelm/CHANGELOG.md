@@ -48,6 +48,7 @@ Held items:     none
 
 - `coachhelm-coach-brief.test.tsx`, `alias.test.ts` (CH-13998) and the
   board link test in `coachhelm.test.tsx`.
+
 ## 2026-10-22 — Coach Standing: the ladder's reads are the player's, read as the coach
 
 ```text
