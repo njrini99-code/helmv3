@@ -60,7 +60,7 @@ export function TripEditSheet({
   }
   const t = trip ?? last;
 
-  const set = (k: keyof Draft) => (e: { target: { value: string } }) => setV((cur) => ({ ...cur, [k]: e.target.value }));
+  const set = (k: keyof Draft) => (e: { target: { value: string } }) => { const value = e.target.value; setV((cur) => ({ ...cur, [k]: value })); };
   const errs = {
     name: tried && v.name.trim().length < 3 ? 'Name the trip, at least three characters.' : null,
     destination: tried && !v.destination.trim() ? 'Where is the team going?' : null,

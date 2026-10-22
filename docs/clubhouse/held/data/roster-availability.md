@@ -3,7 +3,7 @@
 ```text
 Plan ID: HD-roster-availability
 Status: RELEASED
-Pages: Roster (P003): the player card and drawer status pill; later Home and Calendar
+Pages: Roster (P003): the player card and drawer status pill; Home (P002) and Calendar (P006) read the word since 2026-10-22
 Feature: roster_team (memory/registry.yml)
 Migration: supabase/migrations/20260929120000_golf_team_members_availability.sql
 Date: 2026-09-29

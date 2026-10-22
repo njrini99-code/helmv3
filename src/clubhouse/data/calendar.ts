@@ -6,6 +6,7 @@ import { classIdFromDescription, isClassEvent, stripClassTag } from '@/lib/calen
 import { describeRecurrenceRule, parseRecurrenceRule } from '@/lib/golf/recurrence';
 import { chLogServer } from '../lib/track-server';
 import { classYearLabel, fullName } from './season';
+import { parseAvailability } from './availability';
 import { loadAttendanceCounts } from './attendance-counts';
 import {
   addDays,
@@ -146,7 +147,8 @@ export async function loadCalendar(input: {
     supabase.from('golf_teams').select('name').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
-      .select('player:golf_players(id, first_name, last_name, graduation_year)')
+      // A coach also sees who is injured or away beside a name; a player's page never carries it (availability, v1).
+      .select(input.role === 'coach' ? 'availability, player:golf_players(id, first_name, last_name, graduation_year)' : 'player:golf_players(id, first_name, last_name, graduation_year)')
       .eq('team_id', input.teamId)
       .eq('status', 'active')
       .limit(200),
@@ -170,9 +172,14 @@ export async function loadCalendar(input: {
 
   type PlayerRow = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const people: ChCalPerson[] = (membersRes.data ?? [])
-    .map((m) => (m as unknown as { player: PlayerRow | null }).player)
-    .filter((p): p is PlayerRow => !!p)
-    .map((p) => ({ id: p.id, name: fullName(p), year: classYearLabel(p.graduation_year) }))
+    .map((m) => m as unknown as { availability?: string | null; player: PlayerRow | null })
+    .filter((m): m is { availability?: string | null; player: PlayerRow } => !!m.player)
+    .map((m) => ({
+      id: m.player.id,
+      name: fullName(m.player),
+      year: classYearLabel(m.player.graduation_year),
+      ...(input.role === 'coach' ? { availability: parseAvailability(m.availability) } : {}),
+    }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   // Pad the instant bounds by a day on each side; rows are bucketed by their zoned date below.
