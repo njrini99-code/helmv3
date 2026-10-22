@@ -11588,3 +11588,117 @@ END;
 $$;
 
 ALTER FUNCTION "public"."write_suppression_on_unsubscribe"() OWNER TO "postgres";
+
+
+create or replace function public.golf_import_player_classes(
+    p_player_id uuid,
+    p_team_id uuid,
+    p_term text,
+    p_rows jsonb
+)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $$
+declare
+    v_result jsonb;
+begin
+    if (select auth.uid()) is null then
+        raise exception 'not signed in' using errcode = '28000';
+    end if;
+    if p_rows is null or jsonb_typeof(p_rows) <> 'array' then
+        raise exception 'p_rows must be a json array' using errcode = '22023';
+    end if;
+
+    -- One import per player at a time. Released at commit, so the waiting
+    -- import's next statement reads the first one's rows.
+    perform pg_advisory_xact_lock(
+        hashtextextended('golf_import_player_classes:' || p_player_id::text, 0)
+    );
+
+    with incoming as (
+        select
+            o.n,
+            rec.class_name,
+            rec.instructor,
+            rec.days,
+            rec.start_time,
+            rec.end_time,
+            rec.building,
+            rec.room,
+            rec.credits,
+            rec.color,
+            rec.notes,
+            coalesce(nullif(btrim(rec.semester), ''), p_term) as term
+        from jsonb_array_elements(p_rows) with ordinality as o(elem, n)
+        cross join lateral jsonb_populate_record(
+            null::public.golf_player_classes, o.elem
+        ) as rec
+    ),
+
+    keyed as (
+        select
+            i.*,
+            row_number() over (
+                partition by i.class_name, i.term order by i.n
+            ) as rn
+        from incoming as i
+    ),
+
+    stored as (
+        select
+            c.*,
+            coalesce(nullif(btrim(c.semester), ''), p_term) as term
+        from public.golf_player_classes as c
+        where c.player_id = p_player_id
+    ),
+
+    fresh as (
+        select k.*
+        from keyed as k
+        where
+            k.rn = 1
+            and not exists (
+                select 1 from stored as s
+                where s.class_name = k.class_name and s.term = k.term
+            )
+    ),
+
+    ins as (
+        insert into public.golf_player_classes (
+            player_id, team_id, class_name, instructor, days, start_time,
+            end_time, building, room, credits, color, notes, semester
+        )
+        select
+            p_player_id, p_team_id, f.class_name, f.instructor, f.days,
+            f.start_time, f.end_time, f.building, f.room, f.credits, f.color,
+            f.notes, f.term
+        from fresh as f
+        order by f.n
+        returning *
+    )
+
+    select jsonb_build_object(
+        'inserted', coalesce((select jsonb_agg(to_jsonb(ins) order by ins.created_at, ins.id) from ins), '[]'::jsonb),
+        'skipped', coalesce((
+            select jsonb_agg(k.class_name order by k.n)
+            from keyed as k
+            where not exists (select 1 from fresh as f where f.n = k.n)
+        ), '[]'::jsonb),
+        'known', coalesce((
+            select jsonb_agg(to_jsonb(s) - 'term' order by s.created_at, s.id)
+            from stored as s
+            where exists (
+                select 1 from keyed as k
+                where k.class_name = s.class_name and k.term = s.term
+            )
+        ), '[]'::jsonb)
+    )
+    into v_result;
+
+    return v_result;
+end;
+$$;
+
+ALTER FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") OWNER TO "postgres";

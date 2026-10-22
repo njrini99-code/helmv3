@@ -447,11 +447,9 @@ CREATE POLICY "golf_acks_insert_own" ON "public"."golf_announcement_acknowledgem
    FROM "public"."golf_players"
   WHERE ("golf_players"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
-CREATE POLICY "golf_acks_select_coaches" ON "public"."golf_announcement_acknowledgements" FOR SELECT TO "authenticated" USING (("announcement_id" IN ( SELECT "golf_announcements"."id"
-   FROM "public"."golf_announcements"
-  WHERE ("golf_announcements"."team_id" IN ( SELECT "golf_announcements"."team_id"
-           FROM "public"."golf_coaches"
-          WHERE ("golf_coaches"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
+CREATE POLICY "golf_acks_select_coaches" ON "public"."golf_announcement_acknowledgements" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."golf_announcements" "a"
+  WHERE (("a"."id" = "golf_announcement_acknowledgements"."announcement_id") AND "public"."is_golf_team_coach"("a"."team_id")))));
 
 CREATE POLICY "golf_acks_select_own" ON "public"."golf_announcement_acknowledgements" FOR SELECT TO "authenticated" USING (("player_id" IN ( SELECT "golf_players"."id"
    FROM "public"."golf_players"
@@ -497,11 +495,10 @@ CREATE POLICY "golf_ann_tasks_delete_coaches" ON "public"."golf_announcement_tas
            FROM "public"."golf_coaches"
           WHERE ("golf_coaches"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
-CREATE POLICY "golf_ann_tasks_insert_coaches" ON "public"."golf_announcement_tasks" FOR INSERT TO "authenticated" WITH CHECK (("announcement_id" IN ( SELECT "golf_announcements"."id"
-   FROM "public"."golf_announcements"
-  WHERE ("golf_announcements"."team_id" IN ( SELECT "golf_announcements"."team_id"
-           FROM "public"."golf_coaches"
-          WHERE ("golf_coaches"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
+CREATE POLICY "golf_ann_tasks_insert_coaches" ON "public"."golf_announcement_tasks" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM ("public"."golf_announcements" "a"
+     JOIN "public"."golf_tasks" "t" ON (("t"."id" = "golf_announcement_tasks"."task_id")))
+  WHERE (("a"."id" = "golf_announcement_tasks"."announcement_id") AND ("t"."team_id" = "a"."team_id") AND "public"."is_golf_team_coach"("a"."team_id")))));
 
 CREATE POLICY "golf_calendar_feeds_delete_own" ON "public"."golf_calendar_feeds" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
