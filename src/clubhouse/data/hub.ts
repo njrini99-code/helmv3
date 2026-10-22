@@ -13,7 +13,7 @@ import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { chLogServer } from '../lib/track-server';
 import { rsvpOf } from './calendar';
-import { homeClock } from './home';
+import { homeClock } from './home-clock';
 import { fullName } from './season';
 
 /**
@@ -405,7 +405,6 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
     rsvps: {
       rows: events.map((e) => {
         const rows = attendance.byEvent.get(e.id) ?? [];
-        const count = (s: ChRsvp) => rows.filter((r) => r.status === s).length;
         return {
           eventId: e.id,
           title: e.title,
@@ -415,7 +414,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           // golf_events has no mandatory column (get_player_hub_events returns FALSE too); Q-71.
           mandatory: false,
           mine: null,
-          counts: attendance.error ? null : { going: count('accepted'), maybe: count('tentative'), no: count('declined'), none: count('pending') },
+          counts: attendance.error ? null : rsvpCounts(rows),
         };
       }),
       error: !!eventsRes.error,
@@ -461,7 +460,7 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
           detail: t.category ?? firstLine(t.description),
           dueDate: t.due_date,
           due: t.due_date ? f.due(t.due_date, today) : null,
-          status: a && a.total > 0 && a.done === a.total ? 'completed' : t.due_date && isGolfTaskOverdueInZone(t.due_date, tz) ? 'overdue' : 'pending',
+          status: taskStatus(t.due_date, a, tz),
           done: assignments.error || !a ? null : [a.done, a.total],
         };
       })),
@@ -469,6 +468,41 @@ export async function loadTeamHub(input: { role: ChHubRole; teamId: string; user
       total: tasksRes.count ?? null,
     },
   };
+}
+
+/** An event's replies so far, by answer (the coach's RSVPs section); `none` is who hasn't replied. */
+export function rsvpCounts(rows: ReadonlyArray<{ status: ChRsvp }>): NonNullable<ChHubRsvp['counts']> {
+  const count = (s: ChRsvp) => rows.filter((r) => r.status === s).length;
+  return { going: count('accepted'), maybe: count('tentative'), no: count('declined'), none: count('pending') };
+}
+
+/** A coach's task: completed when every assignee has done it, overdue when its due day has passed in the team's zone, else pending. */
+export function taskStatus(dueDate: string | null, assigned: { done: number; total: number } | undefined, tz: string): ChHubTask['status'] {
+  return assigned && assigned.total > 0 && assigned.done === assigned.total ? 'completed' : dueDate && isGolfTaskOverdueInZone(dueDate, tz) ? 'overdue' : 'pending';
+}
+
+/**
+ * Replies still missing (Coach Home's "Waiting on you", the same number as the Hub's "no reply"): over the RSVPs rows,
+ * the players who haven't answered, on each event still taking a reply (`open`; the Hub's rows are listed only while
+ * they ask for one, so a row without the flag counts). Null when any row's replies didn't load: the count is unknown,
+ * never a short one.
+ */
+export function rsvpQueue(rows: ReadonlyArray<Pick<ChHubRsvp, 'eventId' | 'counts'> & { open?: boolean }>): { missing: number; events: Array<{ eventId: string; missing: number }> } | null {
+  if (rows.some((r) => r.counts == null)) return null;
+  const events = rows.filter((r) => r.open !== false && r.counts!.none > 0).map((r) => ({ eventId: r.eventId, missing: r.counts!.none }));
+  return { missing: events.reduce((a, e) => a + e.missing, 0), events };
+}
+
+/** Tasks past their due day and not done by everyone they were set for (the Hub's Overdue rows). */
+export function overdueTaskCount(rows: ReadonlyArray<Pick<ChHubTask, 'status'>>): number {
+  return rows.filter((t) => t.status === 'overdue').length;
+}
+
+/** Posts asking for an acknowledgement that someone they went to hasn't given yet (the Hub's "waiting on" posts). Null when who is left didn't load. */
+export function unackedPostCount(rows: ReadonlyArray<Pick<ChHubAnnouncement, 'needAck' | 'notAcked'>>): number | null {
+  const asking = rows.filter((a) => a.needAck);
+  if (asking.some((a) => a.notAcked == null)) return null;
+  return asking.filter((a) => a.notAcked!.length > 0).length;
 }
 
 export async function attendanceFor(supabase: Awaited<ReturnType<typeof createClient>>, eventIds: string[]) {

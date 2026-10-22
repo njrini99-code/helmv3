@@ -17,6 +17,7 @@ import { TYPE_ICON } from '../calendar/views';
 import { messagesPrefillHref } from '../messages/prefill';
 import { sunTimes, type LatLng } from '../../lib/sun';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { nudgeDraft } from './nudge-draft';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the
@@ -46,13 +47,6 @@ export function dayPhase(next: ChHomeEvent | null, todays: ChHomeEvent[], rounds
 
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' });
 const firstName = (name: string) => name.split(' ')[0] ?? name;
-
-/** The nudge's draft: what it's about and when, in the coach's voice. The coach reads it and presses Send. */
-export function nudgeDraft(e: ChHomeEvent, today: string | null): string {
-  const day = e.date === today ? 'today' : WEEKDAY.format(new Date(`${e.date}T12:00:00Z`));
-  const at = e.allDay ? day : `${day} at ${e.startLabel}`;
-  return `Can you let me know if you’re coming to ${e.title} (${at})? You can reply on the event in Calendar.`;
-}
 
 /** Off-site events only: "Practice green" is not a place a maps app can find. A plain link, no maps API (D1-2). */
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);

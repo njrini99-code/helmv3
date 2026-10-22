@@ -4,17 +4,18 @@ import { ArrowRight, CalendarPlus, GraduationCap, Hash, MapPin, MessageSquare, S
 import { AnimatePresence, m } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
-import type { ChRosterPlayer } from '../../data/roster';
+import type { ChAvailability, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
-import { useAction } from '../../lib/use-action';
+import { Segmented } from '../../ui/Segmented';
+import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { formatHcp } from './format';
+import { AVAILABILITY_WORD, formatHcp, relativeAgo } from './format';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -29,11 +30,14 @@ export function RosterPeek({
   notesLocked,
   onClose,
   onNoteSaved,
+  availability,
 }: {
   p: ChRosterPlayer | undefined;
   notesLocked: boolean;
   onClose: () => void;
   onNoteSaved: NoteSaved;
+  /** Roster's availability write, shared with the row menu so one change at a time is in flight. */
+  availability: AvailabilityControl;
 }) {
   const reduced = useChReducedMotion();
   const panel = useRef<HTMLElement>(null);
@@ -64,14 +68,26 @@ export function RosterPeek({
           exit={reduced ? { opacity: 0 } : { opacity: 0, transform: 'translateX(12px)' }}
           transition={chTween('base', reduced)}
         >
-          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} />
+          <PeekBody p={p} notesLocked={notesLocked} onClose={onClose} onNoteSaved={onNoteSaved} availability={availability} />
         </m.aside>
       )}
     </AnimatePresence>
   );
 }
 
-function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer; notesLocked: boolean; onClose: () => void; onNoteSaved: NoteSaved }) {
+function PeekBody({
+  p,
+  notesLocked,
+  onClose,
+  onNoteSaved,
+  availability,
+}: {
+  p: ChRosterPlayer;
+  notesLocked: boolean;
+  onClose: () => void;
+  onNoteSaved: NoteSaved;
+  availability: AvailabilityControl;
+}) {
   const figs: Array<[string, string]> = [
     ['Scoring avg', formatFixed(p.avg)],
     ['Handicap', formatHcp(p.handicap)],
@@ -104,7 +120,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         </span>
         <h2 className="ch-display">{p.name}</h2>
         <span className="ch-rs-peek__sub">
-          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null].filter(Boolean).join(' · ') || 'Player'}
+          {[p.classYear, p.gradYear ? `Class of ${p.gradYear}` : null, p.availability !== 'available' ? AVAILABILITY_WORD[p.availability] : null].filter(Boolean).join(' · ') ||
+            'Player'}
         </span>
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
@@ -192,6 +209,8 @@ function PeekBody({ p, notesLocked, onClose, onNoteSaved }: { p: ChRosterPlayer;
         </div>
       </div>
 
+      <AvailabilityPanel key={`avail-${p.id}`} p={p} control={availability} />
+
       <CoachNote key={p.id} p={p} locked={notesLocked} onSaved={onNoteSaved} />
 
       {profileHref && (
@@ -274,6 +293,64 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
           </span>
         )
       )}
+    </div>
+  );
+}
+
+/** What Roster hands the panel: its availability write, and whether one is in flight. */
+export interface AvailabilityControl {
+  set: (p: ChRosterPlayer, to: ChAvailability) => void;
+  pending: boolean;
+}
+
+/** What `useAction('roster.setAvailability')` says (CH-3009 on failure). */
+export function availabilityCopy(name: string, to: ChAvailability): ActionCopy {
+  const word = AVAILABILITY_WORD[to].toLowerCase();
+  return {
+    done: `${name} marked ${word}`,
+    failed: `Couldn’t mark ${name} ${word}`,
+    hint: 'Nothing changed on the roster. Try again, or refresh if it keeps failing.',
+    code: 'CH-3009',
+  };
+}
+
+const AVAILABILITY_OPTIONS: ReadonlyArray<{ value: ChAvailability; label: string }> = [
+  { value: 'available', label: 'Available' },
+  { value: 'injured', label: 'Injured' },
+  { value: 'away', label: 'Away' },
+];
+
+/**
+ * Can they play: Available, Injured or Away, the word only. Display only, on the coach's roster; it never changes team
+ * access, which Mark inactive does (the caption says so where the control is). Shared by the desktop panel and the
+ * phone profile. The choice is written at once (optimistic, Roster's `roster.setAvailability`). There is no note:
+ * teammates can read every column of their team's rows, so a reason has nowhere coach-only to live yet
+ * (docs/clubhouse/held/data/roster-availability.md).
+ */
+export function AvailabilityPanel({ p, control, block = false }: { p: ChRosterPlayer; control: AvailabilityControl; block?: boolean }) {
+  const id = `avail-${p.id}`;
+  const [now] = useState(() => new Date());
+  return (
+    <div className="ch-rs-peek__sec ch-rs-avail">
+      <div className="ch-rs-peek__l">
+        <b id={`${id}-l`}>Availability</b>
+        {p.availabilityUpdated && <span>Updated {relativeAgo(p.availabilityUpdated, now)}</span>}
+      </div>
+      {/* CH-3405: while a change is in flight the control says so and refuses another for this player. */}
+      <div className="ch-rs-avail__seg" aria-busy={control.pending || undefined} data-ch-code={control.pending ? 'CH-3405' : undefined}>
+        <Segmented<ChAvailability>
+          size="sm"
+          block={block}
+          label={`Availability for ${p.name}`}
+          value={p.availability}
+          options={AVAILABILITY_OPTIONS}
+          onChange={(to) => {
+            if (control.pending) return;
+            control.set(p, to);
+          }}
+        />
+      </div>
+      <p className="ch-rs-avail__cap">Shows on your roster only. It never changes their team access; Mark inactive does.</p>
     </div>
   );
 }

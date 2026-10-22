@@ -30,7 +30,8 @@ earlier observations below retain their original date and scope.
 | Screenshots | `npm run clubhouse:shots -- gallery --page P002`, which opens `.helm/screenshots/clubhouse/P002-home/GALLERY.html` (local) |
 <!-- clubhouse:related:end -->
 
-The first screen of both roles: the coach's morning view of the program, and the player's own day. One address, two pages.
+The first screen of both roles: the coach's morning view of the program, and the
+player's own day. One address, two pages.
 
 ## Identity
 
@@ -44,42 +45,71 @@ Implementation Root: src/clubhouse/screens/home
 Manifest:           config/clubhouse/pages/P002-home.json
 ```
 
-The coach page is `CoachHome` (with `HomePhone`), read by `loadCoachHome` in `src/clubhouse/data/home.ts`. The player page is `PlayerHome` (with `PlayerHomePhone`), read by `loadPlayerHome` in `src/clubhouse/data/player-home.ts`. The manifest names one loader and one phone spec; the second of each is `player-home.ts` and `docs/clubhouse/phone/home-player.md`. The week, the clock and the latest rounds are shared (`loadHomeWeek`, `homeClock`, `latestWithHoles`, in `home.ts`).
+The coach page is `CoachHome` (with `HomePhone`), read by `loadCoachHome` in
+`src/clubhouse/data/home.ts`. The player page is `PlayerHome` (with
+`PlayerHomePhone`), read by `loadPlayerHome` in
+`src/clubhouse/data/player-home.ts`. The manifest names one loader and one phone
+spec; the second of each is `player-home.ts` and
+`docs/clubhouse/phone/home-player.md`. The week, the clock and the latest rounds
+are shared (`loadHomeWeek`, `homeClock`, `latestWithHoles`, in `home.ts`).
 
 ## Purpose
 
 ### Primary user
 
-Coach: a college golf coach who opens the app in the morning to see the day and the team. Player: a college golfer on the same team, who opens it to see their own day, their coach's schedule and their own scoring.
+Coach: a college golf coach who opens the app in the morning to see the day and
+the team. Player: a college golfer on the same team, who opens it to see their
+own day, their coach's schedule and their own scoring.
 
 ### Job to be done
 
-Coach: know who needs a look, what is on today and this week, and how the last rounds went, without opening anything else. Player: know what is next and when, how their own last rounds went, and where their game is gaining or losing strokes.
+Coach: know who needs a look, what is on today and this week, and how the last
+rounds went, without opening anything else. Player: know what is next and when,
+how their own last rounds went, and where their game is gaining or losing
+strokes.
 
 ### Primary action
 
-Coach: New event (the page's one primary button; N from anywhere on the page). Player: Message coach, and Start a round once round entry is rebuilt for players (until then it is not drawn, Q-69).
+Coach: New event (the page's one primary button; N from anywhere on the page).
+Player: Message coach, and Start a round once round entry is rebuilt for players
+(until then it is not drawn, Q-69).
 
 ### Secondary actions
 
-Coach: Message team; open an event, a day or a round; page through the latest three rounds; open a player's stats from the leaderboard or the latest round; Full roster; on the phone, Plan or add the first event from an empty Up next. Player: open Up next or a day in Calendar; page through Your latest round; choose the Scoring window (last 5, 10 or 20); My stats.
+Coach: Message team; open an event, a day or a round; page through the latest
+three rounds; open a player's stats from the leaderboard or the latest round;
+Full roster; on the phone, Plan or add the first event from an empty Up next.
+Player: open Up next or a day in Calendar; page through Your latest round;
+choose the Scoring window (last 5, 10 or 20); My stats.
 
 ### Information hierarchy
 
-1. Coach: the greeting and the one-sentence brief (who needs a look, then the week's next competition); the week beside the latest round; the leaderboard. Phone: Up next, Today, the team's scoring form, This week, Latest rounds.
-2. Player: the greeting and one sentence from their own rounds; the week with Up next and its countdown beside Your latest round; Scoring; the four parts of the game. Phone: Up next with the countdown and Message coach, This week, Today, Your latest round, Scoring, the parts of the game.
+1. Coach: the greeting and the one-sentence brief (who needs a look, then the
+   week's next competition); the week beside the latest round; the leaderboard.
+   Phone: Up next, Today, the team's scoring form, This week, Latest rounds.
+2. Player: the greeting and one sentence from their own rounds; the week with Up
+   next and its countdown beside Your latest round; Scoring; the four parts of
+   the game. Phone: Up next with the countdown and Message coach, This week,
+   Today, Your latest round, Scoring, the parts of the game.
 
 ### User should notice first
 
-Coach: the brief, and what is next on the calendar. Player: what is next and how long until it starts.
+Coach: the brief, and what is next on the calendar. Player: what is next and how
+long until it starts.
 
 ### User should never have to think about
 
-Whether a figure is a guess: a figure with no source is absent or reads "Early read" or "—", never invented. Whether a failed read is an empty page: it is always a notice with Try again. Whether a player can see teammates' scores or names: they cannot (CONTRACT.md, 08).
+Whether a figure is a guess: a figure with no source is absent or reads "Early
+read" or "—", never invented. Whether a failed read is an empty page: it is
+always a notice with Try again. Whether a player can see teammates' scores or
+names: they cannot (CONTRACT.md, 08).
 
 ### Success looks like
 
-A coach reads the brief, sees what the week holds, opens the latest round and messages the team in under a minute. A player sees the countdown to their next event and which part of their game is gaining or costing strokes, and every failure along the way says which part did not load.
+A coach reads the brief, sees what the week holds, opens the latest round and
+messages the team in under a minute. A player sees the countdown to their next
+event and which part of their game is gaining or costing strokes, and every
+failure along the way says which part did not load.
 
 ## Semantic features
 
@@ -91,7 +121,9 @@ Canonical IDs from `memory/registry.yml`:
 - stats_analytics (memory/features/stats-analytics.md)
 ```
 
-`npm run knowledge:map` maps none of the Clubhouse Home files to a feature (the `src/clubhouse` tree is not in the registry's code paths); the feature docs above describe the Fairway dashboard's data, which Home reads the same way.
+`npm run knowledge:map` maps none of the Clubhouse Home files to a feature (the
+`src/clubhouse` tree is not in the registry's code paths); the feature docs
+above describe the Fairway dashboard's data, which Home reads the same way.
 
 ## Design authority
 
@@ -111,11 +143,16 @@ Status:           approved
 
 ### Enters from
 
-The sidebar and the phone tab bar (Home is the first destination for both roles, D-66), and Back to Home on the route error view of any other page.
+The sidebar and the phone tab bar (Home is the first destination for both roles,
+D-66), and Back to Home on the route error view of any other page.
 
 ### Exits to
 
-Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor: `?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a player, `?user=` the coach), Stats (`?player=` a player's, and the player's own), Roster (Full roster, Invite players). Start a round and Add classes are not drawn for a player until round entry and Classes are rebuilt.
+Calendar (an event: `?date=&event=`; a day: `?view=day&date=`; the editor:
+`?new=1`, with `&type=`), Messages (`?conversation=` the team chat, `?player=` a
+player, `?user=` the coach), Stats (`?player=` a player's, and the player's
+own), Roster (Full roster, Invite players). Start a round and Add classes are
+not drawn for a player until round entry and Classes are rebuilt.
 
 ## Ownership
 

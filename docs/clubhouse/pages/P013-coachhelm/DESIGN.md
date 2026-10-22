@@ -126,9 +126,10 @@ v2 grammar (D-70): selection for choosing a player or an insight; the light
 press on Assign as focus, with success when it lands and error when it does not;
 the warning before Dismiss; Accept carries the light press, and is the primary
 button for a lone proposal and secondary when there are more (one primary per
-screen, P013 D10), and Decline is silent, each with success or error from `useAction` (CH-13704);
-choosing a view in the sub-navigation, a read in the Deep dive's list and a
-round or a plan link under it are selections (CH-13780); other taps are silent.
+screen, P013 D10), and Decline is silent, each with success or error from
+`useAction` (CH-13704); choosing a view in the sub-navigation, a read in the
+Deep dive's list and a round or a plan link under it are selections
+(CH-13780); other taps are silent.
 
 ## Desktop
 
@@ -327,6 +328,53 @@ rule. The Deep dive's pushed screen slides in over the page (the page under it
 inert), is a history entry so the iOS back swipe pops it, and fades with reduced
 motion. `?insight=<id>` opens on a read, checked against the player's own list.
 
+## A coach's views of one player (spec A, 2026-10-21)
+
+The player's three views, read by their coach, at
+`/golf/dashboard/coachhelm?view=deep-dive|standing|profile&player=<golf_players.id>`.
+Spec: `coach-parity/spec-A-coach-player-pages.md` (decided). It supersedes the
+non-goal below that a coach reads a player only through the Board and Ask.
+
+- Address and entry. The Deep dive is the landing view. In: the Board's
+  selected-player card ("All of Jonah’s reads", a ghost button with an arrow
+  after Dismiss), the names in "… have no insights yet." (to Standing) and
+  Roster's View insights (to the Deep dive). No player named is the board.
+- Header. The page's own `.ch-hl-h`: "CoachHelm" as the eyebrow (a link back
+  to the board open on the player on desktop), the player's name as the h1
+  ("Player" with none on file) and one line, the class and the newest round in
+  tabular figures ("Junior · Last round Oct 5, 16 days ago"; "No rounds posted
+  yet"). The top bar's breadcrumb reads CoachHelm › Jonah Okafor. On the phone
+  the bar carries the name, with Back to the board open on the player.
+- Strip. Deep dive · Standing · Game profile (desktop radiogroup, phone
+  chips), each address carrying the player; no Board and no Development.
+- Voice. The same views, by first name where the player's say "you"
+  (`voice` on Profile, Standing, DeepDive, Frame, Skeletons, KeepReading and
+  the shapers). The player's own copy is unchanged byte for byte; where one
+  string cannot serve both, the shaper keeps the player's and takes a coach's
+  beside it (a deviation from "write shape strings neutral", so the player's
+  page does not change). Numbers are the same for both roles. A coach sees an
+  inferred cause marked "Likely, not measured"; a player sees "Not traced
+  yet".
+- Deep dive. One action row under each read's four lines, the board's own
+  (`FocusActions` in `parts.tsx`, shared so the two cannot drift): Assign as
+  focus (primary), Dismiss (ghost), then "Message Jonah", a quiet text link.
+  Rounds link to the coach's round review, plan rows to Stats' Development
+  for the player. The read kept for the tab is kept per player.
+- Standing. A stat with an open read on its metric gets "Open the read →" to
+  the Deep dive on that read, in the row and in Most to gain; nothing else.
+  Start a round is not drawn.
+- Game profile. One line under the hero, "CoachHelm sees 3 reads costing
+  strokes and 1 working", to the Deep dive; Keep reading is "Also for Jonah".
+- States. Not on the team, not an id or removed: one page for every id
+  (CH-13311, UserX, Back to the board). The check failed: CH-13209. CoachHelm
+  off for the coach: the board's CH-13305. Off for the player's team: CH-13313
+  by name, with Open CoachHelm settings. Loading: the three skeletons (CH-13460,
+  CH-13470, CH-13480) with the header's shape, labelled with the name once the
+  page knows it.
+- Visual. No new surface, token or colour; `.ch-*` only. No motion added: the
+  view switch's dim, the shell's crossfade and the phone's pushed read are the
+  existing ones.
+
 ## Accessibility
 
 The page is a main landmark labelled by its title and each section is a labelled
@@ -375,8 +423,9 @@ Stats' tab; the owner's draft phone layouts for them are still to come) and Q-77
 
 ## Explicit non-goals
 
-A coach's version of the Game profile, Standing or Deep dive (a coach reads a
-player through the Board and Ask); Fairway's Development view (it is Stats'
+~~A coach's version of the Game profile, Standing or Deep dive (a coach reads a
+player through the Board and Ask)~~ (superseded 2026-10-21 by spec A: see "A
+coach's views of one player" above); Fairway's Development view (it is Stats'
 tab); the Fairway Deep dive's shot-analysis and what-if content and the Game
 profile's fingerprint, composite and trend cards (not rebuilt: nothing here
 estimates what the Fairway page computes from a model); the coach's Brief
