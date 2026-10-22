@@ -38,9 +38,9 @@
   color: var(--ch-text-tertiary);
 }
 /* Standing's "How you play" (CH-13915): the persona's sentence and the window it reads, over the measures. Landing on it
-   from Game profile's old address (CH-13913) keeps its heading clear of the phone's top bar. */
+   from Game profile's old address (CH-13913) keeps its heading clear of the top bar. */
 .ch-hg-game {
-  scroll-margin-top: 16px;
+  scroll-margin-top: calc(var(--ch-topbar-h) + 16px);
 }
 @media (max-width: 820px) {
   .ch-hg-game {
