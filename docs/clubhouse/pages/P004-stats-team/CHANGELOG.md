@@ -9,6 +9,14 @@ Contract IDs:   none
 Actions:        none
 Data impact:    none (each grid row gains `last`, the newest scored round in the
                 window, from the rounds the page already loaded)
+## 2026-10-21 — Player by leg grid is reusable (coach Home parity)
+
+```text
+Design package: none (coach dashboard parity, spec B)
+PR/commit:      claude/project-thread-icincd
+Contract IDs:   none
+Actions:        none
+Data impact:    none (same rounds, same cuts; the grid is built by `teamGrid`)
 Held items:     none
 ```
 
@@ -47,6 +55,9 @@ Held items:     none
   - Team stats already printed (the audit row missed `@media print` at the foot
     of stats.css); the leg grid's 760px minimum cut Total and Trend off the
     sheet, so it now narrows on paper. The new key prints; the cell links do not.
+- The player by leg grid moved out of `loadTeamStats` into an exported
+  `teamGrid`, and `sgLegs` is exported, so coach Home reads the same four legs
+  the Stats page does. Output is unchanged; the Stats tests pin it.
 
 ## 2026-10-21 — Range in rounds, shared putt bands, old charts removed (stats visuals 7)
 

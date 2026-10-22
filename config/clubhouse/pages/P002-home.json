@@ -72,7 +72,16 @@
         "golf_events",
         "golf_event_attendance",
         "golf_rounds",
-        "golf_holes"
+        "golf_holes",
+        "golf_teams",
+        "golf_round_stats_cache",
+        "golf_pga_standards",
+        "golf_team_join_requests",
+        "golf_tasks",
+        "golf_task_assignments",
+        "golf_announcements",
+        "golf_announcement_recipients",
+        "golf_announcement_acknowledgements"
       ],
       "bridge": {
         "ready": 20101,
@@ -82,10 +91,17 @@
         "noTeam": 20407,
         "firstRun": 20408,
         "failure": 20601,
-        "loadFailed": 20618
+        "loadFailed": 20618,
+        "queue": 20104,
+        "legs": 20105,
+        "legsPartial": 20619,
+        "tourMarks": 20620,
+        "queuePartial": 20621
       },
       "tests": [
-        "src/clubhouse/__tests__/home.test.tsx"
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-reads.test.ts",
+        "src/clubhouse/__tests__/home-data-completeness.test.ts"
       ]
     },
     {
@@ -304,6 +320,149 @@
       },
       "tests": [
         "src/clubhouse/__tests__/player-home.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-QUEUE-JOINS",
+      "label": "Open the join requests waiting on the coach (Waiting on you)",
+      "component": "src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue",
+      "handler": "the \"N join requests\" link",
+      "service": "src/clubhouse/data/home-queue.ts#loadCoachQueue",
+      "data": [
+        "golf_team_join_requests"
+      ],
+      "bridge": {
+        "links": 20103,
+        "count": 20104,
+        "partial": 20621
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-QUEUE-REPLIES",
+      "label": "Open the events with replies missing (Waiting on you)",
+      "component": "src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue",
+      "handler": "the \"N replies missing\" link: the event in Calendar when one event holds them, Calendar when more do",
+      "service": "src/clubhouse/data/home-queue.ts#loadCoachQueue",
+      "data": [
+        "golf_events",
+        "golf_event_attendance",
+        "golf_team_settings"
+      ],
+      "bridge": {
+        "links": 20103,
+        "count": 20104,
+        "partial": 20621
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx",
+        "src/clubhouse/__tests__/home-data-completeness.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P002-QUEUE-TASKS",
+      "label": "Open the overdue tasks (Waiting on you)",
+      "component": "src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue",
+      "handler": "the \"N tasks overdue\" link (Team Hub, ?tab=tasks)",
+      "service": "src/clubhouse/data/home-queue.ts#loadCoachQueue",
+      "data": [
+        "golf_tasks",
+        "golf_task_assignments",
+        "golf_team_settings"
+      ],
+      "bridge": {
+        "links": 20103,
+        "count": 20104,
+        "partial": 20621
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx",
+        "src/clubhouse/__tests__/home-data-completeness.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P002-QUEUE-POSTS",
+      "label": "Open the posts awaiting acknowledgement (Waiting on you)",
+      "component": "src/clubhouse/screens/home/CoachQueue.tsx#CoachQueue",
+      "handler": "the \"N posts awaiting acknowledgement\" link (Team Hub, ?tab=ann)",
+      "service": "src/clubhouse/data/home-queue.ts#loadCoachQueue",
+      "data": [
+        "golf_announcements",
+        "golf_announcement_recipients",
+        "golf_announcement_acknowledgements",
+        "golf_team_members"
+      ],
+      "bridge": {
+        "links": 20103,
+        "count": 20104,
+        "partial": 20621
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx",
+        "src/clubhouse/__tests__/home-data-completeness.test.ts"
+      ]
+    },
+    {
+      "id": "ACT-P002-NUDGE-NEXT",
+      "label": "Nudge who hasn’t replied to the Next event (coach, desktop week)",
+      "component": "src/clubhouse/screens/home/Week.tsx#AgendaRow",
+      "handler": "the Nudge link on the Next row (nextReplies): Messages prefilled, never sent",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103,
+        "roles": 20806,
+        "loadFailed": 20609
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-LEG-PLAYER",
+      "label": "Open a player’s Game tab from the team’s four parts (coach)",
+      "component": "src/clubhouse/screens/home/TeamLegs.tsx#TeamLegs",
+      "handler": "a Gains most / Loses most name (legPlayerHref), and Team stats",
+      "service": "src/clubhouse/data/home.ts#teamLegs",
+      "data": [
+        "golf_rounds",
+        "golf_teams",
+        "golf_round_stats_cache",
+        "golf_pga_standards"
+      ],
+      "bridge": {
+        "links": 20103,
+        "legs": 20105,
+        "empty": 20414,
+        "unranked": 20415,
+        "partial": 20619,
+        "tourMarks": 20620,
+        "crash": 20622
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home.test.tsx",
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx"
+      ]
+    },
+    {
+      "id": "ACT-P002-OPEN-COACHHELM-PLAYER",
+      "label": "Open a player’s CoachHelm deep dive (player peek, phone round sheet)",
+      "component": "src/clubhouse/ui/PlayerPeek.tsx#playerPeekActions",
+      "handler": "the CoachHelm action (coachHelmPlayerHref), in the peek and RoundSheet",
+      "service": null,
+      "data": [],
+      "bridge": {
+        "links": 20103
+      },
+      "tests": [
+        "src/clubhouse/__tests__/home-coach-parity.test.tsx",
+        "src/clubhouse/__tests__/peek.test.tsx"
       ]
     },
     {

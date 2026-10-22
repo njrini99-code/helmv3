@@ -290,6 +290,8 @@ export interface ChCoachHelmData {
   withoutSignals: number;
   /** Their names, roster order (a player with no name on file is counted, not named); absent where the board cannot say. */
   withoutNames?: string[];
+  /** The same players' ids, beside `withoutNames` in the same order, so each name can open that player's Standing (spec A). */
+  withoutIds?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
   /** Team pattern rows (supercharge Slice 7b, `coachhelm_team_pattern_v1`, off); absent with the flag off or nothing to show. */

@@ -35,15 +35,21 @@ Status:   approved (the owner's v2 boards are the spec, D-22)
 
 ## Design objective
 
-A calm morning view on the depth vocabulary: the day's facts on a lit sheet, no card grid and no imagery (the owner rejected both). The coach's Home answers "who needs a look and what is next". The player's answers "what is next, and where is my game". Everything on it is a fact the app has.
+A calm morning view on the depth vocabulary: the day's facts on a lit sheet, no
+card grid and no imagery (the owner rejected both). The coach's Home answers
+"who needs a look and what is next". The player's answers "what is next, and
+where is my game". Everything on it is a fact the app has.
 
 ## Problems being solved
 
-Coaches open five screens to learn who has gone quiet, what is on today and how the last rounds went. Players cannot see their own week and their own scoring in one place, and have no way to see how long until the next event.
+Coaches open five screens to learn who has gone quiet, what is on today and how
+the last rounds went. Players cannot see their own week and their own scoring in
+one place, and have no way to see how long until the next event.
 
 ## User goal
 
-Coach: read the day in one glance, then act (message the team, add an event). Player: know what is next and how the game is going.
+Coach: read the day in one glance, then act (message the team, add an event).
+Player: know what is next and how the game is going.
 
 ## Visual hierarchy
 
@@ -99,23 +105,42 @@ the phone (`ch-h-main--first`).
 
 ## Actions affected
 
-The list is `config/clubhouse/pages/P002-home.json` `actions` (13), and the graph is WIRING.md. Home only reads: every action is a link, a pager, a segmented choice, the N shortcut or Try again.
+The list is `config/clubhouse/pages/P002-home.json` `actions` (13), and the
+graph is WIRING.md. Home only reads: every action is a link, a pager, a
+segmented choice, the N shortcut or Try again.
 
 ## Contract categories affected
 
-All 25 (CONTRACT.md). Eight are N/A with a reason: validation, success, warning, destructive, state preservation, optimistic UI and data freshness, because Home takes no input and makes no change, and the Helm Bridge action, which is wired later (D-68).
+All 25 (CONTRACT.md). Eight are N/A with a reason: validation, success, warning,
+destructive, state preservation, optimistic UI and data freshness, because Home
+takes no input and makes no change, and the Helm Bridge action, which is wired
+later (D-68).
 
 ## Motion intent
 
-Paging the latest round slides the card 12px out and the next in from that side, or fades when motion is reduced (CH-2601); a leaderboard row lifts on hover and shrinks on press (CH-2602). Everything uses the v2 tokens (D-64). The player's countdown shows its two largest units ("1d 18h", "18h 02m") and ticks its seconds in place only inside the last hour. There is no count-up and no stagger beyond the shell's first-paint reveal.
+Paging the latest round slides the card 12px out and the next in from that side,
+or fades when motion is reduced (CH-2601); a leaderboard row lifts on hover and
+shrinks on press (CH-2602). Everything uses the v2 tokens (D-64). The player's
+countdown shows its two largest units ("1d 18h", "18h 02m") and ticks its
+seconds in place only inside the last hour. There is no count-up and no stagger
+beyond the shell's first-paint reveal.
 
 ## Haptic intent
 
-v2 grammar (D-70): a selection tick for paging, opening a round's card, choosing a quick event type and choosing the Scoring window; the light tap for New event (button or N), Add event and, on the phone, Message coach; nothing for Message team. Home makes no change, so it has no success or error haptic (21703).
+v2 grammar (D-70): a selection tick for paging, opening a round's card, choosing
+a quick event type and choosing the Scoring window; the light tap for New event
+(button or N), Add event and, on the phone, Message coach; nothing for Message
+team. Home makes no change, so it has no success or error haptic (21703).
 
 ## Desktop
 
-Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the week, the latest round), then the leaderboard table. Player: the same sheet, then Scoring (a chart of the last 5, 10 or 20 scores against par and the player's own mean, four figures and one sentence), then the four parts of the game. Below a 860px canvas (a container query) the sheet stacks into one column. A team with nothing yet, and a player with nothing yet, get the v2 page empty state under the date and greeting in place of the rest (D-71).
+Coach: a 1280px canvas holds the header, then one lit sheet in two columns (the
+week, the latest round), then the leaderboard table. Player: the same sheet,
+then Scoring (a chart of the last 5, 10 or 20 scores against par and the
+player's own mean, four figures and one sentence), then the four parts of the
+game. Below a 860px canvas (a container query) the sheet stacks into one column.
+A team with nothing yet, and a player with nothing yet, get the v2 page empty
+state under the date and greeting in place of the rest (D-71).
 
 ## Phone
 
@@ -177,11 +202,23 @@ margin and a one-class rule lost that tie (the brief hugged Up next).
 
 ## Accessibility
 
-Named regions and headings, every day of the week read as words, the leaderboard and both nines as tables, the pager announcing its position, the scorecard a focusable named region on the phone, and the countdown a timer heard once (CH-2801 to CH-2806, 21807).
+Named regions and headings, every day of the week read as words, the leaderboard
+and both nines as tables, the pager announcing its position, the scorecard a
+focusable named region on the phone, and the countdown a timer heard once
+(CH-2801 to CH-2806, 21807).
 
 ## Data assumptions
 
-Only data the app has. Not shown because no source exists: the prototype's weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's "Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team switcher (one team per coach), a Workout event type (the fourth quick type is Meeting), and a single-round recap (the round's card links to the player's stats instead). For the player: the Handicap figure's "down from +0.2 in Aug" (no handicap history is stored, so it says Index), shot-level notes (driver carry, proximity) need shot data Home does not read, Tour marks exist for Approach only (`golf_pga_standards` has greens in regulation among the four), and "the best on the team" would compare the player with teammates, so it is left out.
+Only data the app has. Not shown because no source exists: the prototype's
+weather and "Week 7 of 12" (golf teams have no season dates), the coach phone's
+"Needs you" rail (defined in `m-home.jsx` and never drawn by it), a team
+switcher (one team per coach), a Workout event type (the fourth quick type is
+Meeting), and a single-round recap (the round's card links to the player's stats
+instead). For the player: the Handicap figure's "down from +0.2 in Aug" (no
+handicap history is stored, so it says Index), shot-level notes (driver carry,
+proximity) need shot data Home does not read, Tour marks exist for Approach only
+(`golf_pga_standards` has greens in regulation among the four), and "the best on
+the team" would compare the player with teammates, so it is left out.
 
 Which rounds Home counts (owner, 2026-09-30, Q-122 and Q-123). A round
 posted as a total only (18 holes, no nines, no holes) counts in the scores:
@@ -198,7 +235,9 @@ strokes gained ("Season, per round") stays the season's.
 
 ## Existing backend capabilities used
 
-None of the server actions: both loaders read through the signed-in user's own Supabase client (`createClient` from `@/lib/supabase/server`). WIRING.md lists the tables.
+None of the server actions: both loaders read through the signed-in user's own
+Supabase client (`createClient` from `@/lib/supabase/server`). WIRING.md lists
+the tables.
 
 ## HELD requirements
 
@@ -212,11 +251,18 @@ None.
 
 ### Owner decisions
 
-D-4 (Message team and New event), D-17 (the brief states facts; "ready" is accepted replies), D-22 (the owner's phone boards are the spec), D-42 (red means under par, the flag or destructive; gains green, losses amber), D-60 (page IDs), D-64 (motion), D-66 (navigation), D-67 (order: phone Home, then player Home), D-70 (haptics), D-71 (page empty states), Q-66 (the coach phone's differences from the board), Q-69 (the player Home's differences from the boards).
+D-4 (Message team and New event), D-17 (the brief states facts; "ready" is
+accepted replies), D-22 (the owner's phone boards are the spec), D-42 (red means
+under par, the flag or destructive; gains green, losses amber), D-60 (page IDs),
+D-64 (motion), D-66 (navigation), D-67 (order: phone Home, then player Home),
+D-70 (haptics), D-71 (page empty states), Q-66 (the coach phone's differences
+from the board), Q-69 (the player Home's differences from the boards).
 
 ## Explicit non-goals
 
-Weather, a season week count, the "Needs you" rail, a phone leaderboard, a team switcher, a single-round recap, and for a player: Post a round, Start a round and Add classes until round entry and Classes are rebuilt for players.
+Weather, a season week count, the "Needs you" rail, a phone leaderboard, a team
+switcher, a single-round recap, and for a player: Post a round, Start a round
+and Add classes until round entry and Classes are rebuilt for players.
 
 ## Fresh-build confirmation
 

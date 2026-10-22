@@ -73,7 +73,18 @@ import { PlayerHome, PlayerHomeNoTeam } from '../screens/home/PlayerHome';
 import { chReport, chTrail } from '../lib/track';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
-import { PREVIEW_HOME, PREVIEW_HOME_NOW, PREVIEW_HOME_NO_EVENTS } from '../preview/fixtures';
+import {
+  PREVIEW_HOME,
+  PREVIEW_HOME_EMPTY,
+  PREVIEW_HOME_LEGS_CACHE_FAILED,
+  PREVIEW_HOME_LEGS_NO_HOLES,
+  PREVIEW_HOME_LEGS_TOUR_FAILED,
+  PREVIEW_HOME_LEGS_UNRANKED,
+  PREVIEW_HOME_NOW,
+  PREVIEW_HOME_NO_EVENTS,
+  PREVIEW_HOME_QUEUE_FAILED,
+  PREVIEW_LEGS,
+} from '../preview/fixtures';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -1220,5 +1231,151 @@ describe('Home · phone round rows peek (P003-C1)', () => {
     const bare = roundPeek(r, null, rounds);
     expect(bare).toMatchObject({ id: r.playerId, name: r.playerName, lastRound: { score: r.score, toPar: r.toPar } });
     expect(bare.avg).toBeUndefined();
+  });
+});
+
+describe('Home · the team’s game and what’s waiting on the coach (spec B)', () => {
+  const real = window.matchMedia;
+  const phoneMedia = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const legsTable = () => screen.getByRole('table', { name: 'The team’s game' });
+
+  it('20105 the four parts sit under the team’s form, before the week: each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const legs = document.querySelector('.ch-h-legs')!;
+    expect(legs.previousElementSibling?.className).toMatch(/ch-h-form|ch-hf/);
+    expect(legs.nextElementSibling?.className).toMatch(/ch-h-sheet/);
+    const rows = within(legsTable()).getAllByRole('row').slice(1);
+    expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
+    expect(rows[0]!.textContent).toContain('Fairways 61% · Tour 66%');
+    expect(rows[0]!.textContent).toContain('+0.4');
+    expect(rows[0]!.textContent).toContain('Better than previous 10');
+    expect(rows[2]!.textContent).toContain('Ava L. and Sofia A.');
+    expect(rows[3]!.textContent).toContain('Eli B. and 2 others');
+    expect(screen.getByRole('link', { name: 'Team stats' }).getAttribute('href')).toBe('/golf/dashboard/stats');
+  });
+
+  it('20105 the loader reads the four parts on the form’s own Last 10, with the team’s Tour and the round cache', async () => {
+    const round = (i: number) => ({ id: `r${i}`, player_id: 'p1', course_name: 'Finley GC', tees_played: null, round_date: `2026-09-${String(28 - i).padStart(2, '0')}`, round_type: 'practice', total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, total_putts: 30, total_gir: 11, total_gir_possible: 18, total_fairways_hit: 9, total_fairways: 14, strokes_gained_total: 0.5, strokes_gained_tee: 0.3, strokes_gained_approach: 0, strokes_gained_around_green: 0, strokes_gained_putting: 0.2 });
+    const roster = { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti', graduation_year: 2027 } }] };
+    tables.current = { golf_team_members: roster, golf_rounds: { data: [0, 1, 2].map(round) }, golf_teams: { data: { gender: 'men' } } };
+    const data = await load();
+    expect(data.legs).toMatchObject({ holeRounds: 3, ranked: true, tour: 'pga', cacheError: false, tourError: false });
+    expect(data.legs!.rows.find((r) => r.key === 'tee')).toMatchObject({ sg: 0.3, gains: { ids: ['p1'], names: ['Theo M.'] }, loses: null });
+    expect(data.legs!.rows.find((r) => r.key === 'tee')!.stat).toMatchObject({ label: 'Fairways', value: (27 / 42) * 100 });
+
+    tables.current = { ...tables.current, golf_round_stats_cache: { error: { message: 'boom' } }, golf_pga_standards: { error: { message: 'boom' } } };
+    const failed = await load();
+    expect(failed.legs).toMatchObject({ cacheError: true, tourError: true });
+    logged('roundCache');
+    logged('tourBenchmarks');
+
+    // No roster, no rounds: no four parts at all.
+    tables.current = {};
+    expect((await load()).legs).toBeNull();
+  });
+
+  it('CH-2218 up-and-down figures that didn’t load: one notice above the parts, strokes gained stays', async () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_CACHE_FAILED} now={PREVIEW_HOME_NOW} />);
+    await expectCode('CH-2218', /Up-and-down figures didn’t load/);
+    expect(within(code('CH-2218') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(code('CH-2219')).toBeNull();
+    expect(within(legsTable()).getAllByRole('row')[3]!.textContent).toContain('Up and down — · Tour 59%');
+  });
+
+  it('CH-2219 Tour marks that didn’t load: one notice, and each stat stands without its mark', async () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_TOUR_FAILED} now={PREVIEW_HOME_NOW} />);
+    await expectCode('CH-2219', /Tour marks didn’t load/);
+    expect(code('CH-2218')).toBeNull();
+    expect(within(legsTable()).getAllByRole('row')[1]!.textContent).toContain('Fairways 61%');
+    expect(legsTable().textContent).not.toContain('Tour 66%');
+  });
+
+  it('CH-1209 CH-2218 CH-2219 both failing: the page’s notice names them and carries the one Try again', () => {
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, cacheError: true, tourError: true } }} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-1209')!.textContent).toMatch(/Up-and-down figures and Tour marks didn’t load/i);
+    expect(screen.getAllByRole('button', { name: 'Try again' })).toHaveLength(1);
+  });
+
+  it('20104 Waiting on you sits under the head: each part counted as its screen counts it, and opening that screen', () => {
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    const nav = screen.getByRole('navigation', { name: 'Waiting on you' });
+    expect(nav.previousElementSibling?.className).toMatch(/ch-h-head/);
+    const links = within(nav).getAllByRole('link');
+    expect(links.map((a) => [a.textContent, a.getAttribute('href')])).toEqual([
+      ['1 join request', '/golf/dashboard/roster'],
+      ['3 replies missing', '/golf/dashboard/calendar'],
+      ['2 tasks overdue', '/golf/dashboard/team-hub?tab=tasks'],
+      ['1 post awaiting acknowledgement', '/golf/dashboard/team-hub?tab=ann'],
+    ]);
+    expect(links[1]!.getAttribute('title')).toBe('across 2 events');
+  });
+
+  it('20104 the loader counts what is waiting, each part on its own: one that fails is null and logged, never 0', async () => {
+    tables.current = { golf_team_join_requests: { count: 2 }, golf_tasks: { error: { message: 'boom' } } };
+    const data = await loadCoachHome({ teamId: 't1', coachName: 'Maya Reyes', userId: 'u1' });
+    expect(data.queue).toMatchObject({ joinRequests: 2, replies: { missing: 0, events: [] }, overdueTasks: null });
+    logged('queue tasks');
+  });
+
+  it('CH-2220 a part of Waiting on you that didn’t load is left out, and the row says some items didn’t load', async () => {
+    wrap(<CoachHome data={PREVIEW_HOME_QUEUE_FAILED} now={PREVIEW_HOME_NOW} />);
+    await expectCode('CH-2220', /some items didn’t load/);
+    const nav = screen.getByRole('navigation', { name: 'Waiting on you' });
+    expect(within(nav).queryByText(/post/)).toBeNull();
+    expect(within(nav).getAllByRole('link')).toHaveLength(3);
+  });
+
+  it('CH-2220 CH-2308 the first run shows what is waiting too (join requests above all), on desktop and the phone', () => {
+    wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);
+    expect(isFirstRun(PREVIEW_HOME_EMPTY)).toBe(true);
+    expect(within(screen.getByRole('navigation', { name: 'Waiting on you' })).getByRole('link', { name: '2 join requests' }).getAttribute('href')).toBe('/golf/dashboard/roster');
+    cleanup();
+    phoneMedia();
+    wrap(<CoachHome data={PREVIEW_HOME_EMPTY} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-hm-queue')).not.toBeNull();
+  });
+
+  it('CH-2221 22301 the four parts crashing is contained and reported as home.legs, on desktop and the phone; the rest of Home stays', () => {
+    const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const broken = { ...PREVIEW_HOME, legs: { ...PREVIEW_LEGS, rows: null as never } };
+    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
+    expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'home.legs', severity: 'high' }));
+    expect(screen.getByRole('table', { name: 'Leaderboard' })).toBeTruthy();
+    cleanup();
+    phoneMedia();
+    wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
+    quiet.mockRestore();
+  });
+
+  it('CH-2314 no hole-by-hole round in the last 10: the parts say so in place of the ledger', () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_NO_HOLES} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2314')!.textContent).toMatch(/No hole-by-hole rounds in the last 10 yet/);
+    expect(screen.queryByRole('table', { name: 'The team’s game' })).toBeNull();
+  });
+
+  it('CH-2315 nobody with 3 rounds with hole scores: the parts stay, and the line says no one is ranked', () => {
+    wrap(<CoachHome data={PREVIEW_HOME_LEGS_UNRANKED} now={PREVIEW_HOME_NOW} />);
+    expect(code('CH-2315')!.textContent).toBe('No player has 3 rounds with hole scores yet, so no one is ranked.');
+    expect(within(legsTable()).getAllByRole('row')).toHaveLength(5);
+  });
+
+  it('21901 20105 20104 on the phone: Waiting on you in the hero, the four parts after Team scoring as rows, names linking to the Game tab', () => {
+    phoneMedia();
+    wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-hm-queue')).not.toBeNull();
+    const list = screen.getByRole('list', { name: /Strokes gained per round/ });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(list).getAllByRole('listitem')[0]!.textContent).toContain('Theo M. gains most · Eli B. loses most');
+    expect(within(list).getAllByRole('listitem')[2]!.textContent).toContain('Ava L. and Sofia A. gain most');
+    expect(within(list).getAllByRole('link', { name: 'Theo M.' })[0]!.getAttribute('href')).toBe('/golf/dashboard/stats?player=theo&tab=game');
+    expect(screen.queryByRole('table', { name: 'The team’s game' })).toBeNull();
   });
 });

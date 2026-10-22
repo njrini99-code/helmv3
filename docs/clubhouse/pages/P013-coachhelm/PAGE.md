@@ -80,7 +80,10 @@ Player: open another insight into the focus card, open Why we think this, try a
 failed proposals read again, and move between the Board, Game profile, Standing
 and Deep dive (their own data, read only) or on to Stats' Development. Coach:
 choose another player, Dismiss an insight and Undo it, open Roster, and open
-CoachHelm settings. Both: try a failed section again.
+CoachHelm settings; open one player's Deep dive, Standing and Game profile
+(`?view=…&player=`, spec A, 2026-10-21), the player's own views in the coach's
+words, with the board's Assign as focus, Dismiss and Undo under each read of
+the Deep dive and Message after them. Both: try a failed section again.
 
 ### Information hierarchy
 
@@ -97,7 +100,9 @@ CoachHelm settings. Both: try a failed section again.
 4. The player's views, each on a green card then white ones: the Game profile
    (the shape of their game, then each measure), Standing (where they stand
    against the Tour and the team, then each stat) and the Deep dive (the list of
-   reads, then one read in full with its evidence, trend and rounds).
+   reads, then one read in full with its evidence, trend and rounds). A coach
+   opens the same three for one player of their team, under that player's
+   header (the name, the class and the newest round).
 
 ### User should notice first
 
@@ -143,17 +148,23 @@ Status:           approved
 ### Enters from
 
 The sidebar (coach and player) and the phone tab bar (CoachHelm is one of each
-role's four tabs, D-66).
+role's four tabs, D-66). A coach's view of one player: from the board's
+selected-player card ("All of Jonah’s reads"), the names under the list that
+have no insights yet, and Roster's View insights (the Deep dive).
 
 ### Exits to
 
-Roster, from Invite players (its invite sheet) and View roster (a coach), and CoachHelm settings, from
-Open CoachHelm settings (`/golf/dashboard/settings/coaching-intelligence`);
+Roster, from Invite players (its invite sheet) and View roster (a coach), and
+CoachHelm settings, from Open CoachHelm settings
+(`/golf/dashboard/settings/coaching-intelligence`);
 Rounds, from Open Rounds or Start a round (a player). A control whose target is
 not rebuilt is not drawn (`rebuiltHref`), so no control leads nowhere. Stats'
 Development tab, from the player's sub-navigation and from `?view=development`
 (where every stored dev-plan notification points); a round's review, from a
-round under a read in the Deep dive, once that screen is rebuilt.
+round under a read in the Deep dive, once that screen is rebuilt. From a
+coach's view of one player: back to the board open on that player, Messages
+with the player, the coach's round review, Stats' Development for the player
+and CoachHelm settings (when it is off for the player's team).
 
 ## Ownership
 

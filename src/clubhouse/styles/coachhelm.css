@@ -1893,3 +1893,13 @@ html:not([data-fw-theme='dark']) .ch-hl {
     min-height: 44px;
   }
 }
+
+/* A named player with no read yet is a link to their Standing (CH-13310, spec A): the row takes the tap back. */
+a.ch-hl-pl.is-none {
+  cursor: pointer;
+}
+@media (hover: hover) {
+  a.ch-hl-pl.is-none:hover {
+    background: rgb(28 25 18 / 0.03);
+  }
+}
