@@ -161,9 +161,9 @@ filter, so it has no filtered empty state.
 | 130429 | CH-13384 | `DEEP_DIVE_A_READ_IS_NOT_PART` | Deep dive: a read is not part of a plan |
 | 130430 | CH-13311 | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130431 | CH-13313 | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | Coach player page, CoachHelm off for the player: it is off for that player's team |
+| 130432 | CH-13332 | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | What’s new: a category came back at its row ceiling (200) |
 | 130433 | CH-13330 | `WHATS_NEW_NOTHING_IN_THE_PAST_SEVEN` | What’s new: nothing in the past seven days |
 | 130434 | CH-13331 | `WHATS_NEW_THE_CHOSEN_KIND_HAS_NOTHING` | What’s new: the chosen kind (Insights, Patterns, Focus areas) has nothing this week |
-| 130432 | CH-13332 | `WHATS_NEW_A_CATEGORY_CAME_BACK_AT` | What’s new: a category came back at its row ceiling (200) |
 
 ## 05 — Validation
 
@@ -229,9 +229,9 @@ the whole change again, follow-ups included (131401).
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
 | 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
 | 130638 | CH-13209 | `COACH_PLAYER_PAGE_DID_NOT_LOAD_ON` | Coach player page did not load: on a coach's view of one player (`?view=…&player=`), the check that the player is on this coach's team failed (the membership, the name, the newest round, or a CoachHelm gate lookup) |
-| 130641 | CH-13230 | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | What’s new: a refresh fails after the week loaded |
 | 130639 | CH-13231 | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | What’s new: the feed crashes while drawing |
+| 130641 | CH-13230 | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | What’s new: a refresh fails after the week loaded |
 
 ## 07 — Network / offline
 
