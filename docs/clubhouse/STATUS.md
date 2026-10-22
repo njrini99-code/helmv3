@@ -7,7 +7,7 @@ the 2026-10-17 audit" below). Read this page first. If another Clubhouse doc
 disagrees with it on current state, rollout, rollback or what is left, this page
 wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
-log).
+log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
 ## Since the 2026-10-17 audit (2026-10-19)
 
@@ -53,12 +53,7 @@ log).
 - **History:** on in production by mistake 2026-10-08 to 2026-10-11 (#2180),
   turned off with #2188. The owner's end state is "ready, not on": agents make
   it ready; the owner flips it.
-- **Open release work:** draft PR #2201 (`agent/course-picker-premium-pr`, head
-  `15ac49254`): course picker, Add a course photo, Qualifiers, CoachHelm and
-  Standing contrast, the sidebar re-sort and script brand, the sign-in round
-  trips (`loginAction`) and the welcome-to-dashboard hand-off. Its gates pass
-  with no build (owner, 2026-10-17: no builds); CI aggregate and Review Gate
-  are red only because it is a draft.
+- **Open release work:** none here: #2201 merged 2026-10-18 (see above).
 - **Database (wiring audit 2026-10-17, every page P001–P015 against the live
   catalog):** every table, view, bucket and RPC Clubhouse calls exists in
   production except five, each held with a fallback: `hidden_at` (P007 delete

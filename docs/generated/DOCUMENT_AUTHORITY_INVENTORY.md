@@ -754,7 +754,9 @@ them would bury everything above.
 | `docs/clubhouse/MOBILE.md` | current | - | - | - | - |
 | `docs/clubhouse/PAGE_PERFORMANCE.md` | current | - | - | - | - |
 | `docs/clubhouse/PROGRESS.md` | current | - | - | - | - |
+| `docs/clubhouse/PROJECT_INSTRUCTIONS.md` | current | - | - | - | - |
 | `docs/clubhouse/QUALITY_TOOLING.md` | current | - | - | - | - |
+| `docs/clubhouse/QUEUE.md` | current | - | - | - | - |
 | `docs/clubhouse/RELEASE_CANDIDATE.md` | current | - | - | yes | - |
 | `docs/clubhouse/SCREENS.md` | current | - | - | - | - |
 | `docs/clubhouse/STATUS.md` | current | - | - | yes | - |
@@ -880,7 +882,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
-| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | 1 |
+| `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/VERIFY.md` | current | - | - | - | - |

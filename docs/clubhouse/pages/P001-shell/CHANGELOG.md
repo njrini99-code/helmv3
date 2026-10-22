@@ -1,5 +1,22 @@
 # P001 — Shell: changelog
 
+## 2026-10-21 — A coach's Team Hub item carries a badge
+
+```text
+Design package: none (owner request via the Team Hub redesign, audit par-24)
+PR/commit:      draft PR from claude/project-thread-ya6ije (frozen: no merge)
+Contract IDs:   none
+Actions:        none
+Data impact:    reads only: one head count on golf_tasks with an inner embed
+Held items:     none
+```
+
+The coach's Team Hub nav item is `badge: 'hub'`. `loadClubhouseShell` reads
+`overdueTasks` for a coach, in the same parallel round as the shell's other
+reads (it waits only for the small team-zone read), and `badgeCount` shows it.
+It is not polled, so it is as fresh as the last load or refresh; a failed read
+hides the badge and is logged.
+
 ## 2026-10-21 — A coach's What's new in the palette
 
 ```text
