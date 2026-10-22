@@ -1117,7 +1117,6 @@ selection/persistence contracts remain unchanged.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
-
 ## 2026-10-06 — Smoothness repair
 
 StatsPlayer and the shared segmented indicator use zero-duration motion

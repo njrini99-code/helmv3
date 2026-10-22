@@ -998,7 +998,6 @@ In-page jumps on the phone player stats view ease through the shared smooth
 scroll helper and stay instant with reduced motion.
 
 <!-- clubhouse:release-audit:start -->
-
 ## 2026-10-06 — Smoothness repair
 
 The shared segmented indicator uses zero-duration motion when disabled.

@@ -116,6 +116,8 @@ Contract IDs:   CH-13932 to CH-13939
 Actions:        Open (a link to the player on the board); none written
 Data impact:    none written; reads the visible v3 reads, the roster's
                 countable rounds and the Slice 7b team pattern
+Held items:     none
+
 ## 2026-10-21 — Coach: What's new
 
 ```text
