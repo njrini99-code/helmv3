@@ -828,6 +828,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/WIRING.md` | current | - | - | - | 2 |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-22-edge-swipe-cleanup.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
