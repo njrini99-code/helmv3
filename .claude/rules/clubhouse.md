@@ -59,13 +59,19 @@ rejected the result; this tree exists so that cannot happen again.
 ## Docs and screenshots in the same change
 
 `clubhouse:check` fails a page whose implementation files changed since the
-merge-base with `origin/main` (tests exempt) but whose `CHANGELOG.md` did not.
+merge-base with `origin/main` (tests exempt) but which logged nothing.
 It runs in CI (Static checks, full history) and reads uncommitted files too, so
-a red gate can be another session's work in progress. A shared piece (a file
-under `src/clubhouse/ui`, `lib` or `styles` that no page owns, or a component
-several pages name) goes in `docs/clubhouse/CHANGELOG.md` once, not on each page.
+a red gate can be another session's work in progress.
 
-- **Visible change:** a dated entry in the page's `CHANGELOG.md` (the header
+Log a change as a new file, never by editing a shared log: a page's entry is
+`docs/clubhouse/pages/<P###-slug>/changes/<YYYY-MM-DD>-<slug>.md`, and a shared
+piece (a file under `src/clubhouse/ui`, `lib` or `styles` that no page owns, or
+a component several pages name) gets one entry in `docs/clubhouse/changes/`,
+not one on each page. Each branch adds its own file, so parallel branches never
+conflict on a log; the page `CHANGELOG.md` files keep the older history and
+an edit to one still satisfies the gate.
+
+- **Visible change:** a change file holding one entry (the `## YYYY-MM-DD`
   block in `docs/clubhouse/templates/CHANGELOG.md`), plus before and after
   screenshots.
 - **Naming:** `npm run clubhouse:shots -- name --page P### --surface <kebab>

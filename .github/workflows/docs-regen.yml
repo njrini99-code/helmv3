@@ -23,9 +23,14 @@ name: Docs Regen
 #   3. fails loudly if the generators do not converge or no PR could be
 #      opened.
 #
-# The PR still needs CI to merge. With `REGEN_PR_PAT` set (owner action,
-# see docs/CI_RUNBOOK.md) it gets CI like any PR; without it, a human push to
-# the branch (or close/reopen by hand) triggers CI.
+# The PR still needs CI to merge, and a PR opened with GITHUB_TOKEN gets
+# none. The token, first one set wins (owner action, see docs/CI_RUNBOOK.md):
+#   1. a GitHub App: variable REGEN_APP_ID and secret REGEN_APP_PRIVATE_KEY
+#      (preferred: short-lived tokens, nothing tied to a person);
+#   2. secret REGEN_PR_PAT, a fine-grained PAT;
+#   3. GITHUB_TOKEN: the PR opens but gets no CI until a human pushes to it.
+# On 2026-10-21 neither was set, and docs/auto-regen #2249 sat with no CI
+# until it was closed.
 #
 # SECURITY: no untrusted input; writes only generated files to its own
 # branch.
@@ -74,6 +79,9 @@ jobs:
             npm run "$check" || { rc=1; echo "::warning::$check is stale on main"; }
             echo "::endgroup::"
           done
+          echo "::group::clubhouse component catalog"
+          node scripts/clubhouse/component-catalog.mjs --check || { rc=1; echo "::warning::src/clubhouse/preview/component-catalog.json is stale on main"; }
+          echo "::endgroup::"
           exit "$rc"
 
       # Order matters: the document inventory counts the other generated
@@ -87,6 +95,7 @@ jobs:
           npm run tool-authority:regen
           npm run knowledge:feature-map
           npm run knowledge:world-model
+          node scripts/clubhouse/component-catalog.mjs
           npm run knowledge:doc-inventory
           # Converged? A generator that disagrees with its own --check is a
           # bug, and a PR carrying its output would fail the same gate.
@@ -94,7 +103,20 @@ jobs:
                        knowledge:feature-map:check knowledge:world-model:check knowledge:doc-inventory:check; do
             npm run --silent "$check"
           done
+          node scripts/clubhouse/component-catalog.mjs --check
           git --no-pager diff --stat
+
+      # A GitHub App token, when the owner has set one up: a PR it opens gets
+      # CI like any other (see the header for the order).
+      - name: Mint the regeneration token
+        id: app-token
+        if: steps.verify.outcome == 'failure' && vars.REGEN_APP_ID != ''
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          app-id: ${{ vars.REGEN_APP_ID }}
+          private-key: ${{ secrets.REGEN_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Open or update the regeneration PR
         id: cpr
@@ -102,8 +124,8 @@ jobs:
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
         with:
           # Same token rule as types-regen.yml: GITHUB_TOKEN-created PRs get
-          # no `pull_request` CI; REGEN_PR_PAT (when the owner adds it) does.
-          token: ${{ secrets.REGEN_PR_PAT || secrets.GITHUB_TOKEN }}
+          # no `pull_request` CI; the App token or REGEN_PR_PAT does.
+          token: ${{ steps.app-token.outputs.token || secrets.REGEN_PR_PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore(docs): regenerate generated artifacts on main"
           branch: docs/auto-regen
           delete-branch: true
@@ -124,6 +146,7 @@ jobs:
             docs/generated/WORLD_MODEL.json
             docs/generated/WORLD_MODEL.md
             docs/generated/DOCUMENT_AUTHORITY_INVENTORY.md
+            src/clubhouse/preview/component-catalog.json
 
       - name: Summary
         if: always()

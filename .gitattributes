@@ -33,3 +33,10 @@ src/lib/types/database.ts linguist-generated=true
 
 # Lockfile: same reasoning.
 package-lock.json linguist-generated=true
+
+# Generator output: collapsed in GitHub's review diff. Never hand-merge these;
+# on a conflict run `npm run regen:resolve` (scripts/regen-resolve.mjs).
+docs/generated/** linguist-generated=true
+docs/clubhouse/generated/** linguist-generated=true
+src/clubhouse/preview/component-catalog.json linguist-generated=true
+*.generated.ts linguist-generated=true

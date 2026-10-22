@@ -44,8 +44,8 @@
  * evaluateRequiredChecks — need no stubbing at all.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { canonicalRootOf, topLevelOf } from '../.claude/hooks/lib/workspace-identity.mjs';
@@ -356,6 +356,122 @@ export async function waitForMergedState({ readState, sleep, attempts = MERGED_S
   return false;
 }
 
+/**
+ * PRE-MERGE CHECK (2026-10-22). A PR's CI checked it against main as it was when CI ran; branch
+ * protection does not require branches to be up to date and there is no merge queue, so two PRs
+ * that each passed could still land a textual conflict GitHub resolved badly, or a Bridge ID or
+ * CH code that both picked (2026-10-21: several parallel branches took Bridge IDs 130742-130745).
+ * Before merging, pr:land builds the result of merging the PR head into the CURRENT origin/main
+ * without a checkout (`git merge-tree --write-tree`) and checks it. It runs under a local lock, so
+ * two sessions landing at once take turns and the second one checks against the first one's merge.
+ */
+
+/** `git merge-tree --write-tree --name-only` output: `{ clean, tree, conflicts }`. Exit 1 lists the conflicted paths. */
+export function parseMergeTree({ ok, stdout }) {
+  const lines = String(stdout ?? '').split('\n');
+  const tree = /^[0-9a-f]{40,64}$/.test(lines[0] ?? '') ? lines[0] : null;
+  if (ok) return { clean: !!tree, tree, conflicts: [] };
+  const conflicts = [];
+  for (const l of lines.slice(1)) {
+    if (!l) break;
+    conflicts.push(l);
+  }
+  return { clean: false, tree, conflicts: [...new Set(conflicts)] };
+}
+
+/** Bridge rows that share an id or a CH code: `{ ids, chCodes }`, each a sorted list of the duplicated values. */
+export function bridgeCollisions(rows) {
+  const dupes = (values) => {
+    const seen = new Set();
+    const twice = new Set();
+    for (const v of values) (seen.has(v) ? twice : seen).add(v);
+    return [...twice].sort();
+  };
+  const list = Array.isArray(rows) ? rows : [];
+  return { ids: dupes(list.map((r) => r?.id).filter((v) => v != null)), chCodes: dupes(list.map((r) => r?.chCode).filter(Boolean)) };
+}
+
+/**
+ * Merge the PR head into the current origin/main in memory and check the result. `run(cmd, args)`
+ * returns `{ ok, stdout, stderr }`. Returns `{ ok, mainSha, problems }`.
+ */
+export function preMergeCheck({ prNumber, headSha, run }) {
+  const fetched = run('git', ['fetch', '--quiet', 'origin', 'main', `refs/pull/${prNumber}/head`]);
+  if (!fetched.ok) return { ok: false, mainSha: null, problems: [`could not fetch origin/main and the PR head (${fetched.stderr || 'git fetch failed'})`] };
+  const mainSha = run('git', ['rev-parse', 'origin/main']).stdout || null;
+  const merged = parseMergeTree(run('git', ['merge-tree', '--write-tree', '--name-only', 'origin/main', headSha]));
+  if (!merged.clean) {
+    const files = merged.conflicts.length ? merged.conflicts.join(', ') : 'git merge-tree could not build a result';
+    return { ok: false, mainSha, problems: [`the PR does not merge cleanly into current main (${String(mainSha).slice(0, 9)}): ${files}. Merge origin/main into the branch, resolve, and push`] };
+  }
+  const problems = [];
+  const bridge = run('git', ['show', `${merged.tree}:config/clubhouse/bridge-contracts.json`]);
+  if (bridge.ok) {
+    let rows = null;
+    try {
+      rows = JSON.parse(bridge.stdout);
+    } catch {
+      problems.push('config/clubhouse/bridge-contracts.json is not valid JSON once merged with current main');
+    }
+    if (rows) {
+      const c = bridgeCollisions(rows);
+      if (c.ids.length) problems.push(`merged with current main, Bridge IDs are used twice: ${c.ids.join(', ')}. Renumber this branch's rows (main keeps its ids)`);
+      if (c.chCodes.length) problems.push(`merged with current main, CH codes are used twice: ${c.chCodes.join(', ')}. Give this branch's rows fresh codes (main keeps its codes)`);
+    }
+  }
+  return { ok: problems.length === 0, mainSha, problems };
+}
+
+/** A landing that has held the lock longer than this is treated as dead (a crashed or killed pr:land). */
+export const LAND_LOCK_STALE_MS = 30 * 60 * 1000;
+
+/**
+ * Take the single-flight landing lock: a directory under the git common dir, created atomically.
+ * Returns `{ ok: true, release }`, or `{ ok: false, holder }` while another live landing holds it.
+ * A lock older than `staleMs`, or whose pid is gone, is taken over.
+ */
+export function acquireLandLock(dir, { now = Date.now(), pid = process.pid, staleMs = LAND_LOCK_STALE_MS, isAlive = pidAlive } = {}) {
+  const info = join(dir, 'owner.json');
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      mkdirSync(dir);
+      writeFileSync(info, JSON.stringify({ pid, since: new Date(now).toISOString() }));
+      return { ok: true, release: () => rmSync(dir, { recursive: true, force: true }) };
+    } catch (err) {
+      if (err?.code !== 'EEXIST') return { ok: false, holder: { error: String(err?.message ?? err) } };
+    }
+    let holder;
+    let since;
+    try {
+      holder = JSON.parse(readFileSync(info, 'utf8'));
+      since = Date.parse(holder?.since);
+    } catch {
+      // The holder is still writing its owner file, or wrote a broken one: date the lock by the directory.
+      holder = null;
+    }
+    if (!Number.isFinite(since)) {
+      try {
+        since = statSync(dir).mtimeMs;
+      } catch {
+        continue; // released between the two calls: try to take it again
+      }
+    }
+    const stale = now - since > staleMs || (holder?.pid != null && !isAlive(holder.pid));
+    if (!stale) return { ok: false, holder };
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return { ok: false, holder: { error: 'could not take over a stale lock' } };
+}
+
+function pidAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err?.code === 'EPERM';
+  }
+}
+
 /** Run a command, returning { ok, stdout, stderr }. Never throws. */
 function exec(cmd, args, opts = {}) {
   const r = spawnSync(cmd, args, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'], ...opts });
@@ -478,44 +594,67 @@ async function main(argv) {
     return 1;
   }
 
-  process.stdout.write(
-    `pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}) and CI run ${shards.runId} ran all ${UNIT_SHARDS.length} unit shards — merging\n`,
-  );
-  // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
-  let mergedVia = 'async merge API (squash, pinned to the checked head)';
-  let merge;
-  if (repo && pr.headRefOid) {
-    const r = await asyncMerge({
-      repo,
-      prNumber: args.prNumber,
-      headSha: pr.headRefOid,
-      run: (a) => exec('gh', a, { cwd: canonicalRoot }),
-      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    });
-    merge = r.ok ? { ok: true, stdout: '', stderr: '' } : { ok: false, stdout: '', stderr: r.message ?? '' };
-    if (r.unsupported) {
-      mergedVia = 'gh pr merge --squash (no async merge endpoint)';
-      merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--match-head-commit', pr.headRefOid], { cwd: canonicalRoot });
-    }
-  } else {
-    mergedVia = 'gh pr merge --squash';
-    merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
+  // One landing at a time, then check the PR against main as it is now (see PRE-MERGE CHECK).
+  const commonDir = resolve(canonicalRoot, exec('git', ['rev-parse', '--git-common-dir'], { cwd: canonicalRoot }).stdout || '.git');
+  const lock = acquireLandLock(join(commonDir, 'pr-land.lock'));
+  if (!lock.ok) {
+    const h = lock.holder ?? {};
+    process.stderr.write(
+      h.error
+        ? `pr-land: could not take the landing lock (${h.error})\n`
+        : `pr-land: another pr:land is merging (pid ${h.pid ?? '?'}, since ${h.since ?? '?'}); land #${args.prNumber} again when it finishes\n`,
+    );
+    return 1;
   }
-  if (!merge.ok) {
-    // A transport error can arrive after GitHub accepts the merge. Re-read
-    // its state before reporting failure. Branch deletion belongs to the
-    // lifecycle tool so it can verify an archive before removing either ref.
-    const merged = await waitForMergedState({
-      readState: () => ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot)?.state ?? null,
-      sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-    });
-    if (!merged) {
-      process.stderr.write(`pr-land: merge failed (${mergedVia}):\n${merge.stderr || merge.stdout}\n`);
+  let mergedVia;
+  try {
+    const pre = preMergeCheck({ prNumber: args.prNumber, headSha: pr.headRefOid, run: (cmd, a) => exec(cmd, a, { cwd: canonicalRoot }) });
+    if (!pre.ok) {
+      process.stderr.write(`pr-land: PR #${args.prNumber} is green, but merged into current main it would not be:\n${pre.problems.map((p) => `  ${p}\n`).join('')}`);
       return 1;
     }
+
     process.stdout.write(
-      'pr-land: confirmed merged; branch archival and deletion deferred to --retire\n',
+      `pr-land: PR #${args.prNumber} is green on all ${contexts.length} required contexts (${source}), CI run ${shards.runId} ran all ${UNIT_SHARDS.length} unit shards, and it merges cleanly into main ${String(pre.mainSha).slice(0, 9)} with no Bridge ID or CH code used twice — merging\n`,
     );
+    // The async merge API pins the squash to the head whose checks were just read; a host without it falls back to `gh pr merge`.
+    mergedVia = 'async merge API (squash, pinned to the checked head)';
+    let merge;
+    if (repo && pr.headRefOid) {
+      const r = await asyncMerge({
+        repo,
+        prNumber: args.prNumber,
+        headSha: pr.headRefOid,
+        run: (a) => exec('gh', a, { cwd: canonicalRoot }),
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      });
+      merge = r.ok ? { ok: true, stdout: '', stderr: '' } : { ok: false, stdout: '', stderr: r.message ?? '' };
+      if (r.unsupported) {
+        mergedVia = 'gh pr merge --squash (no async merge endpoint)';
+        merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash', '--match-head-commit', pr.headRefOid], { cwd: canonicalRoot });
+      }
+    } else {
+      mergedVia = 'gh pr merge --squash';
+      merge = exec('gh', ['pr', 'merge', String(args.prNumber), '--squash'], { cwd: canonicalRoot });
+    }
+    if (!merge.ok) {
+      // A transport error can arrive after GitHub accepts the merge. Re-read
+      // its state before reporting failure. Branch deletion belongs to the
+      // lifecycle tool so it can verify an archive before removing either ref.
+      const merged = await waitForMergedState({
+        readState: () => ghJson(['pr', 'view', String(args.prNumber), '--json', 'state'], canonicalRoot)?.state ?? null,
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+      });
+      if (!merged) {
+        process.stderr.write(`pr-land: merge failed (${mergedVia}):\n${merge.stderr || merge.stdout}\n`);
+        return 1;
+      }
+      process.stdout.write(
+        'pr-land: confirmed merged; branch archival and deletion deferred to --retire\n',
+      );
+    }
+  } finally {
+    lock.release?.();
   }
 
   const canonicalBranch = exec('git', ['branch', '--show-current'], { cwd: canonicalRoot }).stdout;
