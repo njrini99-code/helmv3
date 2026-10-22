@@ -755,6 +755,7 @@ without compressing the actions. Dirty/busy guards and preference behavior are
 preserved. See [popup evidence](../../POPUP_AUDIT.md).
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 Desktop and phone sections enter immediately without an outgoing wait,

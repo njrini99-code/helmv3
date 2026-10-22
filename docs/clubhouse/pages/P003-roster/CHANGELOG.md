@@ -983,6 +983,7 @@ widen (width axis 88 → 96) and the tightest tracking eases to -0.026em, as on
 every Clubhouse page. Layout and content are unchanged.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 RosterPeek uses zero-duration transitions when motion is disabled.
