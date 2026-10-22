@@ -37,6 +37,11 @@ trips, Qualifiers, the component playground). A test pins the ban
 Owner rule: no digit rolling. The phone Roster row figure and the Team stats
 strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
 gone from both screens.
+## 2026-10-21 — Brand decision recorded; preview player page frame
+
+White cards and Instrument Sans stay (owner decision); STATUS item 7 and
+`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
+`/clubhouse-preview/player?state=self` with the player, not the coach shell.
 
 ## 2026-10-21 — Name the rollback deployment (doc-45)
 

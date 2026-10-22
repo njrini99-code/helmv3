@@ -269,6 +269,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-rls-template.md` | current | yes | - | yes | - |
 | `docs/v3-testing-standards.md` | current | - | - | - | - |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | - |
+| `memory/brand/clubhouse-ui.md` | current | - | - | yes | - |
 | `memory/brand/logos.md` | current | - | - | - | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | - |
