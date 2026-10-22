@@ -289,7 +289,7 @@ Stats And Analytics · active · criticality high · owner product
 - **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
 - **Tables:** `baseball_legacy_backfill_manifest`
 - **RPCs:** `recalculate_round_strokes_gained`, `recompute_team_sg`, `refresh_player_stats_cache`, `sg_scale_for_player`
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `my_game_profile`, `stats_analytics`
 
 ### `team_access_control`
@@ -331,6 +331,7 @@ Team Operations · active · criticality high · owner product
 | `vercel_cron:/api/cron/admin-digest` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-calibration` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-insight-lifecycle` | vercel_cron | `coach_intelligence_triage` |
+| `vercel_cron:/api/cron/coachhelm-monday-brief` | vercel_cron | _unmapped_ |
 | `vercel_cron:/api/cron/coachhelm-roster-sweep` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-safety-net` | vercel_cron | `coach_intelligence_triage` |
 | `vercel_cron:/api/cron/coachhelm-validation` | vercel_cron | `coach_intelligence_triage` |

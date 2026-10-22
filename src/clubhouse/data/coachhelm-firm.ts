@@ -1,6 +1,6 @@
 import { rankFactorsFromEvidence } from '@/lib/coachhelm/v3/effectiveness/exposure-rows';
 import { supportOf } from './coachhelm-engine-shape';
-import { speak, type ChViewer } from './coachhelm-voice';
+import { readTextFor, speak, type ChViewer } from './coachhelm-voice';
 
 /**
  * The coach board shows only reads at Working hypothesis or firmer (decided 2026-10-21, round 2C): a read the support pass rated
@@ -90,8 +90,10 @@ export function splitFirm<T extends Rated>(head: T | undefined, rest: readonly T
 }
 
 /** A held-back read as the line lists it, in the coach's voice. */
-export function notEnoughRead(ins: Rated & { title: string }, viewer: ChViewer): ChNotEnoughRead {
-  return { id: ins.id, title: speak(ins.title, viewer), watching: supportOf(ins.evidence, viewer)?.watching ?? null };
+export function notEnoughRead(ins: Rated & { title: string; content?: string }, viewer: ChViewer): ChNotEnoughRead {
+  // chs-40: the stored coach copy's title when the row has one (`readTextFor`), else the row's own through `speak`.
+  const title = readTextFor({ title: ins.title, content: ins.content ?? '', evidence: ins.evidence }, viewer.role === 'coach').title;
+  return { id: ins.id, title: speak(title, viewer), watching: supportOf(ins.evidence, viewer)?.watching ?? null };
 }
 
 /** The board's held-back reads from each player's, or undefined when none is held back. */

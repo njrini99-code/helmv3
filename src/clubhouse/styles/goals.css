@@ -1,0 +1,78 @@
+/* Goals on the Development tab: Set a goal (GoalSheet), the suggestions rail and a goal's state and coach controls (Goals.tsx). */
+.ch-gs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ch-gs {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 18px;
+}
+.ch-gs__h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font: 600 14px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-gs__h .ch-num {
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+}
+.ch-gs__list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-gs__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--ch-ledger-rule);
+}
+.ch-gs__row:first-child {
+  border-top: 0;
+}
+.ch-gs__row b {
+  display: block;
+  font: 600 15px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-primary);
+}
+.ch-gs__row span.ch-num {
+  display: block;
+  margin-top: 2px;
+  font: 400 14px/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-gs__ans {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.ch-gl-st {
+  display: block;
+  margin-top: 4px;
+  font: 500 13px/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-gl-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .ch-gs__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+}

@@ -126,9 +126,10 @@ v2 grammar (D-70): selection for choosing a player or an insight; the light
 press on Assign as focus, with success when it lands and error when it does not;
 the warning before Dismiss; Accept carries the light press, and is the primary
 button for a lone proposal and secondary when there are more (one primary per
-screen, P013 D10), and Decline is silent, each with success or error from `useAction` (CH-13704);
-choosing a view in the sub-navigation, a read in the Deep dive's list and a
-round or a plan link under it are selections (CH-13780); other taps are silent.
+screen, P013 D10), and Decline is silent, each with success or error from
+`useAction` (CH-13704); choosing a view in the sub-navigation, a read in the
+Deep dive's list and a round or a plan link under it are selections
+(CH-13780); other taps are silent.
 
 ## Desktop
 
@@ -243,19 +244,26 @@ worth in strokes a round (the shared counterfactual from their scoring average).
 The Tour is the only benchmark (Q-88), the LPGA's for a women's team; strokes
 gained is named against the Tour too, as Stats says "vs Tour". The hero leads
 with the most to gain ("Strokes gained: total is worth about 2.1 strokes a
-round") and gives one count, against the Tour's denominator (P013 D4). A comparison
-that cannot be made says why in the row and is drawn as a dash (a team under
-five measured teammates, a Tour value that is not comparable): never a zero.
-Ranks are never averages, and percent wording starts at 20 teammates. The top
-card counts how many comparisons they are ahead on and the three biggest
+round") and gives one count, against the Tour's denominator (P013 D4). A
+comparison that cannot be made says why in the row and is drawn as a dash (a
+team under five measured teammates, a Tour value that is not comparable): never
+a zero. Ranks are never averages, and percent wording starts at 20 teammates.
+The top card counts how many comparisons they are ahead on and the three biggest
 projections, which overlap and are not added. Under five rounds it is an early
 read, with no projection.
 
 **Deep dive.** Every insight the Board draws (the same feed, ranking, visibility
-and mapper, so one insight reads the same on both pages), in full. Desktop is a
-list (Needs work, then Working, a read that is out of date after the current
-ones) beside the read; the phone is the list, and a read is a pushed screen. A
-read opens with **the Read**, four lines under its title
+and mapper, so one insight reads the same on both pages), in full. It opens on
+one sentence ("CoachHelm has 5 reads on your game, 2 of them in your plan.";
+no count tiles) and the read ledger: one flush list grouped by area in the
+order a hole is played (Off the tee, Approach, Around the green, Putting,
+Course and scoring), each read in CoachHelm's own order within its area, each
+row with its stance word and its firmness word (the claim ladder's word for a
+coach with the support pass on, else the confidence word; an out-of-date read's
+greys). A read the recheck cleared stays in its area as a line ("Cleared Oct
+12" and its numbers); the newest three show, then "N more cleared". Desktop is
+the ledger beside the read; the phone is the ledger, and a read is a pushed
+screen. A read opens with **the Read**, four lines under its title
 (`data/coachhelm-read-shape.ts`), built only from fields the row carries:
 
 - **What**: the metric, the player's value and its sample ("18 of 31 putts"
@@ -278,26 +286,30 @@ read opens with **the Read**, four lines under its title
   when a newer round is not in it (CH-13903).
 
 The coach's rendering (through `speak`) has the same numbers; only the cause
-differs by role. Then
-the read's evidence: what was measured (the number in the colour of what it
-means, the metric, the dates, then the Board's own evidence with its sample and
-confidence word); how it has moved (since it was first seen, the outcome after
-it was worked on, the category's trend in words, and a line of the scores in the
-rounds listed); the rounds behind it (the newest eight of the total it names,
-each a link to its review once that screen is rebuilt); why CoachHelm thinks so
-(the drivers with their counts, why the confidence is what it is unless it is
-the stock "sample adequate", then the full write-up, its first sentence
-included); and where it goes (the focus area or
-goal made from it, or one on the same stat, linking to Development). Strength
-against needs work follows the Board's doctrine. There is no coach control and
-no write: nothing to assign, dismiss or accept.
+differs by role. Then the read's evidence: what was measured (the number in the
+colour of what it means, the metric, the dates, then the Board's own evidence
+with its sample and confidence word); how it has moved (since it was first seen,
+the outcome after it was worked on, the category's trend in words, and a line of
+the scores in the rounds listed); the rounds behind it (the newest eight of the
+total it names, each a link to its review once that screen is rebuilt); why
+CoachHelm thinks so (the drivers with their counts, why the confidence is what
+it is unless it is the stock "sample adequate", then the full write-up, its
+first sentence included); where it happened, only when the stored evidence
+carries a counted path with example holes (up to five, each with its round's day
+and course, the hole and the path in shot-type words; a hole on a round the
+player no longer has is left out, and with none the section is not drawn); and
+where it goes (the focus area or goal made from it, or one on the same stat,
+linking to Development). Strength against needs work follows the Board's
+doctrine. There is no coach control and no write: nothing to assign, dismiss or
+accept.
 
 **Honesty rules (all three).** A read that failed is its own notice with Try
 again and is never drawn as nothing: the Deep dive's rounds, plans and category
 trends each fail on their own, in place, without taking the insights down (two
 or more are said once under the read's head with one Try again, CH-1209, each
 part keeping its title where it would be; Standing's two side reads the same),
-and "In your plan" is a dash rather than a zero while plans did not load. First
+and the summary leaves its plan clause out rather than saying a zero while
+plans did not load. First
 run, early read and failed read are three different pages. A read from before
 the newest round says so (CH-13903). No sentence says strokes are being lost: a
 gain is "worth about 0.9 strokes a round" to the team's average, or to the Tour
@@ -326,6 +338,57 @@ its own feature card (category, stance, claim), its parts flush under the double
 rule. The Deep dive's pushed screen slides in over the page (the page under it
 inert), is a history entry so the iOS back swipe pops it, and fades with reduced
 motion. `?insight=<id>` opens on a read, checked against the player's own list.
+
+## A coach's views of one player (spec A, 2026-10-21)
+
+The player's three views, read by their coach, at
+`/golf/dashboard/coachhelm?view=deep-dive|standing|profile&player=<golf_players.id>`.
+Spec: `coach-parity/spec-A-coach-player-pages.md` (decided). It supersedes the
+non-goal below that a coach reads a player only through the Board and Ask.
+
+- Address and entry. The Deep dive is the landing view. In: the Board's
+  selected-player card ("All of Jonah’s reads", a ghost button with an arrow
+  after Dismiss), the names in "… have no insights yet." (to Standing),
+  Roster's View insights (to the Deep dive; the row menu, and since spec D the
+  player panel's and phone profile's CoachHelm block) and Stats' Game detail
+  "CoachHelm sees… Deep dive →" line per section (spec D; `&insight=<id>` when
+  the section has exactly one read). No player named is the board. A player's
+  own Game detail line opens their own Deep dive the same way.
+- Header. The page's own `.ch-hl-h`: "CoachHelm" as the eyebrow (a link back
+  to the board open on the player on desktop), the player's name as the h1
+  ("Player" with none on file) and one line, the class and the newest round in
+  tabular figures ("Junior · Last round Oct 5, 16 days ago"; "No rounds posted
+  yet"). The top bar's breadcrumb reads CoachHelm › Jonah Okafor. On the phone
+  the bar carries the name, with Back to the board open on the player.
+- Strip. Deep dive · Standing · Game profile (desktop radiogroup, phone
+  chips), each address carrying the player; no Board and no Development.
+- Voice. The same views, by first name where the player's say "you"
+  (`voice` on Profile, Standing, DeepDive, Frame, Skeletons, KeepReading and
+  the shapers). The player's own copy is unchanged byte for byte; where one
+  string cannot serve both, the shaper keeps the player's and takes a coach's
+  beside it (a deviation from "write shape strings neutral", so the player's
+  page does not change). Numbers are the same for both roles. A coach sees an
+  inferred cause marked "Likely, not measured"; a player sees "Not traced
+  yet".
+- Deep dive. One action row under each read's four lines, the board's own
+  (`FocusActions` in `parts.tsx`, shared so the two cannot drift): Assign as
+  focus (primary), Dismiss (ghost), then "Message Jonah", a quiet text link.
+  Rounds link to the coach's round review, plan rows to Stats' Development
+  for the player. The read kept for the tab is kept per player.
+- Standing. A stat with an open read on its metric gets "Open the read →" to
+  the Deep dive on that read, in the row and in Most to gain; nothing else.
+  Start a round is not drawn.
+- Game profile. One line under the hero, "CoachHelm sees 3 reads costing
+  strokes and 1 working", to the Deep dive; Keep reading is "Also for Jonah".
+- States. Not on the team, not an id or removed: one page for every id
+  (CH-13311, UserX, Back to the board). The check failed: CH-13209. CoachHelm
+  off for the coach: the board's CH-13305. Off for the player's team: CH-13313
+  by name, with Open CoachHelm settings. Loading: the three skeletons (CH-13460,
+  CH-13470, CH-13480) with the header's shape, labelled with the name once the
+  page knows it.
+- Visual. No new surface, token or colour; `.ch-*` only. No motion added: the
+  view switch's dim, the shell's crossfade and the phone's pushed read are the
+  existing ones.
 
 ## Accessibility
 
@@ -375,8 +438,9 @@ Stats' tab; the owner's draft phone layouts for them are still to come) and Q-77
 
 ## Explicit non-goals
 
-A coach's version of the Game profile, Standing or Deep dive (a coach reads a
-player through the Board and Ask); Fairway's Development view (it is Stats'
+~~A coach's version of the Game profile, Standing or Deep dive (a coach reads a
+player through the Board and Ask)~~ (superseded 2026-10-21 by spec A: see "A
+coach's views of one player" above); Fairway's Development view (it is Stats'
 tab); the Fairway Deep dive's shot-analysis and what-if content and the Game
 profile's fingerprint, composite and trend cards (not rebuilt: nothing here
 estimates what the Fairway page computes from a model); the coach's Brief

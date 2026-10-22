@@ -323,8 +323,8 @@ function detectMissDirectionPatterns(
           ],
           outcome: { metric: 'miss_pattern', direction: 'specific', comparison: 'absolute' },
           strokeImpact: 0.2,
-          description: `${playerName(player)} misses short ${short.toFixed(0)}% of the time: a distance control or club selection issue`,
-          recommendation: `Club up one more often. Work on distance control with stock yardages and partial shots.`,
+          description: `${playerName(player)} misses short ${short.toFixed(0)}% of the time: a distance control or carry issue`,
+          recommendation: `Play for more carry more often. Work on distance control with stock yardages and partial shots.`,
           lastOccurrence: now,
         }));
       }

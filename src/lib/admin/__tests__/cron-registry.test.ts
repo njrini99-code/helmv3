@@ -15,6 +15,11 @@ import { CRON_REGISTRY, classifyCronStatus } from '@/lib/admin/cron-registry';
 // hand-maintained 5-minute value did.
 function cronScheduleToMinutes(schedule: string): number {
   const [min, hour, day, month, weekday] = schedule.trim().split(/\s+/);
+  // Once a week: a fixed minute and hour on ONE weekday (0-6), every month.
+  // Any other weekday shape (a list, a range) still throws below.
+  if (day === '*' && month === '*' && weekday !== undefined && /^[0-6]$/.test(weekday) && min !== undefined && /^\d+$/.test(min) && hour !== undefined && /^\d+$/.test(hour)) {
+    return 7 * 24 * 60;
+  }
   if (day !== '*' || month !== '*' || weekday !== '*') {
     throw new Error(`cronScheduleToMinutes: day/month/weekday fields must be '*' (got "${schedule}")`);
   }
@@ -56,6 +61,8 @@ describe('cronScheduleToMinutes', () => {
     // The shape this contract test could not parse before: four
     // evenly-spaced daily hours (selfheal-triage).
     ['17 3,9,15,21 * * *', 6 * 60],
+    // Once a week on one weekday (coachhelm-monday-brief).
+    ['0 5 * * 1', 7 * 24 * 60],
   ])('%s -> %i', (schedule, expected) => {
     expect(cronScheduleToMinutes(schedule)).toBe(expected);
   });
@@ -64,6 +71,11 @@ describe('cronScheduleToMinutes', () => {
     // Gaps 3->9 (6), 9->15 (6), 15->3+24 (12) — not all equal, so there is no
     // single true cadence this schedule implies.
     expect(() => cronScheduleToMinutes('0 3,9,15 * * *')).toThrow(/unrecognized schedule shape/);
+  });
+
+  it('throws on a weekday list or range rather than inventing a weekly cadence', () => {
+    expect(() => cronScheduleToMinutes('0 5 * * 1,4')).toThrow(/must be '\*'/);
+    expect(() => cronScheduleToMinutes('0 5 * * 1-5')).toThrow(/must be '\*'/);
   });
 });
 

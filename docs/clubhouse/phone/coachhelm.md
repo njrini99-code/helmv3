@@ -191,6 +191,10 @@ too, not "off".
   fifths of the height the keyboard leaves), so the cut row says it scrolls. The
   text box keeps the focus, so the keyboard stays up; the return key picks the
   highlighted row, a tap picks any row, and the pick ticks the select haptic.
+- Re-check reads (coach, CH-13944; draft, no owner board): one secondary
+  button under the board, left-aligned at the regular button height, never
+  the page's primary. Its outcome line sits beside it and wraps under it on
+  the phone; the button keeps its place while it runs.
 - Not yet: a measured touch-target pass (the pills, the insight rows) and a pass
   on a real iPhone (haptics felt, the sideways row with the tab bar).
 

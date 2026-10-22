@@ -1,82 +1,15 @@
 /* The player's Deep dive: every insight in full. Spec docs/clubhouse/pages/P013-coachhelm/DESIGN.md */
 
-/* What CoachHelm has found, on the green feature card (the Game profile's and Standing's own), with the three counts beside it */
+/* What CoachHelm has found: one sentence, flush on the page (design call, Player Deep dive: the count tiles are retired) */
 .ch-hd-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) auto;
-  gap: 24px 40px;
-  align-items: center;
-  padding: 30px 34px;
-  border-radius: var(--ch-radius-xl);
-  overflow: hidden;
-  color: var(--ch-text-primary);
-  background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
-}
-.ch-hd-hero__main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-.ch-hd-hero__k {
-  font: 600 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  color: var(--ch-green-600);
+  padding: 2px 0 0;
 }
 .ch-hd-hero h2 {
-  max-width: 28ch;
-  font: var(--ch-type-serif-l);
-  letter-spacing: -0.008em;
+  max-width: 40ch;
+  font: 600 calc(22 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  letter-spacing: -0.02em;
   color: var(--ch-field-green);
   text-wrap: balance;
-}
-.ch-hd-hero__n {
-  color: var(--ch-green-500);
-  font-family: var(--ch-font-sans);
-  font-size: 0.84em;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
-.ch-hd-hero__sub {
-  max-width: 56ch;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  text-wrap: pretty;
-}
-.ch-hd-hero__f {
-  display: flex;
-  gap: 10px;
-  margin: 0;
-}
-.ch-hd-hero__f > div {
-  display: flex;
-  flex-direction: column-reverse;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 104px;
-  padding: 16px 18px 14px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-well-soft-bg);
-  box-shadow: var(--ch-well-soft-shadow);
-}
-.ch-hd-hero__f dt {
-  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-}
-.ch-hd-hero__f dd {
-  margin: 0;
-  font: 600 34px/1 var(--ch-font-sans);
-  letter-spacing: -0.03em;
-}
-.ch-hd-hero__f .is-needs dd {
-  color: var(--ch-warning-600);
-}
-.ch-hd-hero__f .is-working dd {
-  color: var(--ch-green-600);
-}
-.ch-hd-hero__f .is-plan dd {
-  color: var(--ch-field-green);
 }
 
 /* The list and the read */
@@ -118,12 +51,6 @@
 .ch-hd-grp__h span {
   font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
-}
-.ch-hd-grp > p {
-  padding: 0 6px 6px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
-  color: var(--ch-text-tertiary);
-  text-wrap: pretty;
 }
 .ch-hd-grp ul {
   list-style: none;
@@ -222,6 +149,66 @@
 }
 .ch-hd-it svg {
   color: var(--ch-text-tertiary);
+}
+/* Its stance word, then how firm it is (the claim ladder's word for a coach, else the confidence word). An out-of-date
+   read keeps its row; its firmness word greys (design call, States). */
+.ch-hd-it__b em .ch-hd-it__f {
+  font-weight: 500;
+  color: var(--ch-text-tertiary);
+}
+.ch-hd-it.is-stale .ch-hd-it__b em .ch-hd-it__f {
+  color: var(--ch-text-disabled);
+}
+
+/* A cleared read, kept in its area (D6): a hollow green dot, its label, "Cleared Oct 12" and the recheck's numbers. Not a
+   control: it has no dossier. */
+.ch-hd-cl {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 10px;
+}
+.ch-hd-cl .ch-hd-it__d {
+  margin-top: 6px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+}
+.ch-hd-cl__b {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.ch-hd-cl__b b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+}
+.ch-hd-cl__b em {
+  font: 600 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font-style: normal;
+  color: var(--ch-green-700);
+}
+.ch-hd-cl__b > span {
+  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  color: var(--ch-text-tertiary);
+  text-wrap: pretty;
+}
+/* "2 more cleared": shows the rest in their areas. */
+.ch-hd-more {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 6px;
+  font: 600 calc(13 * var(--ch-type-k))/44px var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-hd-more:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
 }
 
 /* One read in full */
@@ -459,6 +446,66 @@
   font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
+}
+
+/* Where it happened (chs-38): the example holes a counted path was recorded on, as the rounds are listed */
+.ch-hd-where {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ch-hd-where__i {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  min-height: 52px;
+  padding: 10px 8px;
+  border-top: 1px solid rgb(28 25 18 / 0.07);
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-hd-where__i.is-link {
+  grid-template-columns: 64px minmax(0, 1fr) 16px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-hd-where li:first-child .ch-hd-where__i {
+  border-top: 0;
+}
+@media (hover: hover) {
+  .ch-hd-where__i.is-link:hover {
+    background: rgb(28 25 18 / 0.035);
+  }
+}
+.ch-hd-where__i.is-link:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -2px;
+}
+.ch-hd-where__i.is-link svg {
+  color: var(--ch-text-tertiary);
+}
+.ch-hd-where__d {
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  color: var(--ch-green-700);
+}
+.ch-hd-where__b {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.ch-hd-where__b b {
+  font: 500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+}
+.ch-hd-where__b b span {
+  font-weight: 400;
+  color: var(--ch-text-tertiary);
+}
+.ch-hd-where__b > span {
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-wrap: pretty;
 }
 
 /* The rounds behind it */
@@ -703,16 +750,9 @@
 }
 
 /* Loading, in the page's final shape */
+/* The one-sentence summary's place, flush (chs-35). */
 .ch-hd-sk__hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.6fr);
-  gap: 24px 40px;
-  align-items: center;
-  min-height: 202px;
-  padding: 30px 34px;
-  border-radius: var(--ch-radius-xl);
-  background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  padding: 2px 0 0;
 }
 .ch-hd-sk__col {
   display: flex;
@@ -748,13 +788,6 @@
 
 /* Narrow canvases: the read goes under the list */
 @container chhl (max-width: 900px) {
-  .ch-hd-hero,
-  .ch-hd-sk__hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .ch-hd-hero__f > div {
-    flex: 1;
-  }
   .ch-hd {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -775,32 +808,8 @@
 
 /* Phone */
 @container chhl (max-width: 640px) {
-  .ch-hd-hero {
-    gap: 18px;
-    padding: 20px;
-    border-radius: var(--ch-radius-xl);
-  }
   .ch-hd-hero h2 {
-    font-size: calc(24 * var(--ch-type-k));
-  }
-  /* The page's own line, just above, says the same. */
-  .ch-hd-hero__sub {
-    display: none;
-  }
-  .ch-hd-hero__f {
-    gap: 8px;
-  }
-  .ch-hd-hero__f > div {
-    min-width: 0;
-    padding: 14px 14px 12px;
-  }
-  .ch-hd-hero__f dd {
-    font-size: calc(28 * var(--ch-type-k));
-  }
-  .ch-hd-sk__hero {
-    min-height: 224px;
-    padding: 20px;
-    border-radius: var(--ch-radius-xl);
+    font-size: calc(19 * var(--ch-type-k));
   }
   .ch-hd-dos {
     padding: 20px;
@@ -870,63 +879,16 @@
   padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
 }
 
-/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop what CoachHelm has found is a section on the
-   canvas: its label over one engraved rule, the headline beside the three counts, which are one figure line split by
-   soft rules. The reads and the open read are two columns whose heads share a ruled line, as the Board's do; the
+/* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop what CoachHelm has found is one sentence on
+   the canvas. The reads and the open read are two columns whose heads share a ruled line, as the Board's do; the
    read's parts follow on soft rules, and only the week's drill keeps its well. The loading shapes flatten the same
    way. */
 @media (min-width: 821px) {
-  main[data-canopy] :is(.ch-hd-hero, .ch-hd-rail, .ch-hd-dos, .ch-hd-dx, .ch-hd-plan__i, .ch-hd-sk__hero, .ch-hd-sk__dos) {
+  main[data-canopy] :is(.ch-hd-rail, .ch-hd-dos, .ch-hd-dx, .ch-hd-plan__i, .ch-hd-sk__dos) {
     padding: 0;
     border-radius: 0;
     background: none;
     box-shadow: none;
-  }
-  main[data-canopy] .ch-hd-hero {
-    gap: 14px 40px;
-    align-items: start;
-    overflow: visible;
-  }
-  main[data-canopy] .ch-hd-hero__main {
-    display: contents;
-  }
-  main[data-canopy] .ch-hd-hero__k {
-    grid-column: 1 / -1;
-    margin-bottom: 4px;
-    padding-bottom: 12px;
-    box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
-  }
-  @container chhl (min-width: 901px) {
-    main[data-canopy] .ch-hd-hero {
-      grid-template-rows: auto auto 1fr;
-    }
-    main[data-canopy] .ch-hd-hero__main > :is(h2, .ch-hd-hero__sub) {
-      grid-column: 1;
-    }
-    main[data-canopy] .ch-hd-hero__f {
-      grid-column: 2;
-      grid-row: 2 / span 2;
-      align-self: center;
-    }
-  }
-  main[data-canopy] .ch-hd-hero__f {
-    gap: 0;
-  }
-  main[data-canopy] .ch-hd-hero__f > div {
-    min-width: 0;
-    padding: 2px 28px;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  main[data-canopy] .ch-hd-hero__f > div:first-child {
-    padding-left: 0;
-  }
-  main[data-canopy] .ch-hd-hero__f > div:last-child {
-    padding-right: 0;
-  }
-  main[data-canopy] .ch-hd-hero__f > div + div {
-    box-shadow: inset 1px 0 0 var(--ch-ledger-rule-soft);
   }
 
   /* The list of reads keeps its own scroll. Its padding sits outside the column, so the heads align with the column's
@@ -947,9 +909,6 @@
     min-height: 34px;
     padding: 0 0 12px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
-  }
-  main[data-canopy] .ch-hd-grp > p {
-    padding: 10px 0 6px;
   }
   main[data-canopy] .ch-hd-it {
     width: calc(100% + 20px);
@@ -980,15 +939,15 @@
   main[data-canopy] .ch-hd-dos__h {
     gap: 18px;
   }
-  main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-dx__d > div) {
+  main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-where__i, .ch-hd-dx__d > div) {
     border-top-color: var(--ch-ledger-rule-soft);
   }
   @media (hover: hover) {
-    main[data-canopy] .ch-hd-r.is-link:hover {
+    main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:hover {
       background: var(--ch-ledger-row-hover);
     }
   }
-  main[data-canopy] .ch-hd-r.is-link:active {
+  main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:active {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -1014,17 +973,6 @@
 
   /* Loading holds the loaded sections (WebKit 1440, 2026-10-07: what CoachHelm has found 156px) and draws each head's
      rule where the page draws it: the hero's, each group's in the list, and the open read's. */
-  main[data-canopy] .ch-hd-sk__hero {
-    align-items: start;
-    min-height: 156px;
-    background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 25px / 100% 1px no-repeat;
-  }
-  main[data-canopy] .ch-hd-sk__hero > .ch-skel {
-    margin-top: 64px;
-  }
-  main[data-canopy] .ch-hd-sk__col > .ch-skel:first-child {
-    margin: 2px 0 17px;
-  }
   main[data-canopy] :is(.ch-hd-sk__grp, .ch-hd-sk__dos) {
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
   }
@@ -1040,71 +988,15 @@
 }
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"; the Coach Home board, round 3: "fewer containers,
-   one feature card"). On the phone what CoachHelm has found is the view's one green feature card, its three counts a
-   figure line on the green; Needs work and Working are sections flush on the parchment under the engraved double rule,
-   their reads rows between soft seams. A read's pushed screen opens on its own feature card (the category, the stance,
+   one feature card"). On the phone what CoachHelm has found is one sentence on the parchment (chs-35); each area of the
+   read ledger is a section flush under the engraved double rule, its reads rows between soft seams. A read's pushed screen opens on its own feature card (the category, the stance,
    the claim), and its parts follow flush under the double rule: no box around the figures, the trend, the diagnosis,
    the drill or the plan, which are rows. The round's to-par key and the stance pills keep their material. */
 @media (max-width: 820px) {
-  .ch-hd-hero {
-    gap: 16px;
-    padding: 18px;
-    border-radius: var(--ch-radius-lg);
-    color: var(--ch-on-green-ink);
-    background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
-  }
-  .ch-hd-hero__main {
-    gap: 10px;
-  }
-  .ch-hd-hero__k {
-    font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
-    color: var(--ch-hero-mint);
-  }
-  .ch-hd-hero h2 {
-    font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
-    letter-spacing: -0.03em;
-    color: var(--ch-on-green-ink);
-  }
-  .ch-hd-hero__n {
-    font-size: 1em;
-    font-weight: 600;
-    color: var(--ch-hero-mint);
-  }
-  .ch-hd-hero__f {
-    gap: 0;
-    padding-top: 14px;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
-  }
-  .ch-hd-hero__f > div {
-    padding: 0 14px;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
-  .ch-hd-hero__f > div:first-child {
-    padding-left: 0;
-  }
-  .ch-hd-hero__f > div + div {
-    box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.1);
-  }
-  .ch-hd-hero__f dt {
-    color: var(--ch-on-green-ink-muted);
-  }
-  .ch-hd-hero__f .is-needs dd {
-    color: var(--ch-champagne-300);
-  }
-  .ch-hd-hero__f .is-working dd {
-    color: var(--ch-hero-mint);
-  }
-  .ch-hd-hero__f .is-plan dd {
-    color: var(--ch-on-green-ink);
-  }
-
   /* The list: each group a section; its reads rows. */
   :is(.ch-hl.is-phone) .ch-hd-rail {
     align-items: stretch;
-    gap: 30px;
+    gap: 24px;
   }
   :is(.ch-hl.is-phone) .ch-hd-grp {
     gap: 0;
@@ -1123,9 +1015,6 @@
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
-  }
-  :is(.ch-hl.is-phone) .ch-hd-grp > p {
-    padding: 4px 0 4px;
   }
   :is(.ch-hl.is-phone) .ch-hd-it {
     padding: 10px 0;
@@ -1255,14 +1144,7 @@
     background: var(--ch-ledger-row-press);
   }
 
-  /* Loading (CH-13480) in the same shapes: the feature card's place, then each group's head and rows. */
-  .ch-hd-sk__hero {
-    min-height: 0;
-    padding: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-  }
+  /* Loading (CH-13480) in the same shapes: each area's head and rows. */
   :is(.ch-hl.is-phone) .ch-hd-sk__grp {
     gap: 0;
     padding-top: 12px;
@@ -1316,52 +1198,8 @@
 }
 
 /* Deep dive at more contrast (owner, 2026-10-16: "this needs to have more contrast too. on deep dive"). What CoachHelm
-   has found is the green board, its counts on lighter wells; the list of reads is a bright panel with a green edge and
-   the open read lit green; each section of a read heads in the field green. */
-main[data-canopy] .ch-hd-hero.ch-scoreboard,
-.ch-hd-hero.ch-scoreboard {
-  padding: 30px 32px;
-  border-radius: 24px;
-  background: var(--ch-board-bg);
-  box-shadow: var(--ch-board-shadow);
-}
-main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__k,
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__k {
-  box-shadow: inset 0 -1px 0 rgb(237 231 216 / 0.16);
-  color: var(--ch-hero-mint);
-}
-[data-ui='clubhouse'] .ch-hd-hero.ch-scoreboard h2 {
-  color: var(--ch-text-primary);
-}
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__n {
-  color: var(--ch-hero-mint);
-}
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__sub {
-  color: var(--ch-text-secondary);
-}
-/* On the scoreboard the counts are tiles again, so they take the tiles' gap back from the Ledger's flush figure line (gap 0),
-   which had them touching edge to edge (2026-10-19). */
-main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__f,
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f {
-  gap: 10px;
-}
-main[data-canopy] .ch-hd-hero.ch-scoreboard .ch-hd-hero__f > div,
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f > div {
-  padding: 16px 18px 14px;
-  border-radius: var(--ch-radius-xl);
-  background: rgb(255 255 255 / 0.08);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.07);
-}
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f dt {
-  color: var(--ch-text-secondary);
-}
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f .is-needs dd {
-  color: #e3b45c;
-}
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f .is-working dd,
-.ch-hd-hero.ch-scoreboard .ch-hd-hero__f .is-plan dd {
-  color: var(--ch-hero-mint);
-}
+   has found is one sentence in the field green (chs-35 retired the board and its counts); the read ledger is a bright
+   panel with a green edge and the open read lit green; each section of a read heads in the field green. */
 main[data-canopy] .ch-hd-rail {
   padding: 18px 12px 10px;
   border-radius: var(--ch-radius-xl);
@@ -1394,5 +1232,34 @@ main[data-canopy] .ch-hd-it.is-on,
   [data-ui='clubhouse'] .ch-hd-dos__h > :first-child,
   [data-ui='clubhouse'] .ch-hd-dos__h > :first-child span:first-child {
     color: var(--ch-on-green-ink-muted);
+  }
+}
+
+/* A coach's Deep dive (spec A): "Message {First}", the quiet text link after Dismiss in the read's action row. */
+.ch-hd-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 6px;
+  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  color: var(--ch-text-secondary);
+  text-decoration: none;
+  border-radius: var(--ch-radius-sm);
+}
+@media (hover: hover) {
+  .ch-hd-msg:hover {
+    color: var(--ch-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+.ch-hd-msg:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .ch-hd-msg {
+    min-height: 44px;
   }
 }

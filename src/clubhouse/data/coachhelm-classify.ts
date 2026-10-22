@@ -141,3 +141,54 @@ export function staleSince(ins: Pick<ClassifiableInsight, 'evidence' | 'metadata
 export function isOpenFinding(ins: ClassifiableInsight, tour: ChTourBaseline | null, newestRound: string | null): boolean {
   return kindOf(ins, tour) === 'finding' && staleSince(ins, newestRound) === null;
 }
+
+// ── What CoachHelm sees (counts) ───────────────────────────────────────────
+
+/** How many current reads are costing strokes (open findings) and how many are working (strengths). */
+export interface ChReadCount {
+  costing: number;
+  working: number;
+}
+
+/**
+ * The one count of what CoachHelm sees in a player's reads: the current findings ("costing strokes") and the current strengths
+ * ("working"); a note and an out-of-date read are neither. The coach's Game profile line, Game detail's line per section (P005) and
+ * the roster's CoachHelm block (P003) all count with this, so they never disagree.
+ */
+export function countReads(rows: ReadonlyArray<ClassifiableInsight>, tour: ChTourBaseline | null, newestRound: string | null): ChReadCount {
+  let costing = 0;
+  let working = 0;
+  for (const r of rows) {
+    if (staleSince(r, newestRound) !== null) continue;
+    const kind = kindOf(r, tour);
+    if (kind === 'finding') costing += 1;
+    else if (kind === 'strength') working += 1;
+  }
+  return { costing, working };
+}
+
+/** Game detail's five sections, by the ids its section chips use (screens/stats/GameDetail.tsx). */
+export type ChReadArea = 'scoring' | 'tee' | 'approach' | 'short' | 'putting';
+export const CH_READ_AREAS: readonly ChReadArea[] = ['scoring', 'tee', 'approach', 'short', 'putting'];
+
+/**
+ * The Game detail section a read's category belongs to; null for one no section draws. Course management is scoring; pressure
+ * belongs to Standing, so it is not counted on any section.
+ */
+export function readAreaOf(category: string | null | undefined): ChReadArea | null {
+  switch (category) {
+    case 'tee':
+      return 'tee';
+    case 'approach':
+      return 'approach';
+    case 'short_game':
+      return 'short';
+    case 'putting':
+      return 'putting';
+    case 'scoring':
+    case 'course_management':
+      return 'scoring';
+    default:
+      return null;
+  }
+}

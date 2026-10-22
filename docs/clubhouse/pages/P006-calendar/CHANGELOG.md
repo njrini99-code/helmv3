@@ -1,5 +1,24 @@
 # P006 — Calendar: changelog
 
+## 2026-10-22 — Coach lists show who is injured or away
+
+```text
+Design package: none (coach dashboard parity, availability on Home and Calendar)
+PR/commit:      claude/coach-parity-availability
+Contract IDs:   none
+Actions:        none
+Data impact:    reads golf_team_members.availability beside the roster the page already reads; no migration
+Held items:     none
+```
+
+### Changed
+
+- For a coach, the event's Responses/Invited list and the invite picker say
+  "Injured" or "Away" beside a name, in tertiary ink. Replies and counts are
+  unchanged: a player who is out can still answer or be invited.
+- The loader reads `availability` with the team members only for the coach; a
+  player's page never carries it (availability is a coach view in v1).
+
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
 ```text

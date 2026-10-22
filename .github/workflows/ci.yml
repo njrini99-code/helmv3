@@ -746,6 +746,8 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4, 5]
+    env:
+      VITEST_MAX_WORKERS: '4'  # 4-vCPU hosted runner; vitest.config.ts defaults to 3 for shared machines
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
@@ -821,7 +823,7 @@ jobs:
       - name: Related unit tests (shard ${{ matrix.shard }}/5, follow-up push)
         if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped'
         run: |
-          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, and on main)"
+          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
           npm run test:run -- --changed HEAD^1 --shard=${{ matrix.shard }}/5 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
@@ -837,7 +839,8 @@ jobs:
   next-build:
     name: Next build
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts builds the head.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -1008,7 +1011,8 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts runs it.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the ghcr.io login step below get the authenticated
@@ -1272,6 +1276,9 @@ jobs:
       - name: Fail if any required CI check failed
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
+          NEXT_BUILD_RESULT: ${{ needs.next-build.result }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+          ACTION: ${{ github.event.action }}
           CODE: ${{ needs.detect-changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1286,7 +1293,13 @@ jobs:
           fi
           incomplete=false
           if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
-          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          skips=$(jq '[.[] | select(. == "skipped")] | length' <<< "$RESULTS")
+          # Quick tier: a follow-up push skips Next build and Supabase on purpose.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            [ "$NEXT_BUILD_RESULT" = "skipped" ] && skips=$((skips - 1))
+            [ "$SUPABASE_RESULT" = "skipped" ] && skips=$((skips - 1))
+          fi
+          if [ "$CODE" = "true" ] && [ "$skips" -gt 0 ]; then incomplete=true; fi
           if [ "$incomplete" = "false" ]; then
             echo "CI hard gates clean."; exit 0
           fi

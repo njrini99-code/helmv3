@@ -154,6 +154,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/preview/PreviewCoachHelmCoachPlayer.tsx",
+      "group": "preview",
+      "exports": [
+        "PreviewCoachHelmCoachPlayer"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/PreviewCoachHelmPlayer.tsx",
       "group": "preview",
       "exports": [
@@ -337,6 +347,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/coachhelm-ask.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
@@ -507,6 +518,28 @@
       "styles": [
         "src/clubhouse/styles/stats.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/routes/team-rounds.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseTeamRoundsRoute"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/routes/whats-new.tsx",
+      "group": "routes",
+      "exports": [
+        "ClubhouseWhatsNewRoute"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -930,10 +963,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -965,6 +1000,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -993,6 +1029,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -1023,6 +1060,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -1060,6 +1098,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -1087,11 +1126,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1107,10 +1148,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1128,10 +1171,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1147,10 +1192,12 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1169,6 +1216,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -1235,11 +1283,13 @@
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1262,10 +1312,12 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1279,13 +1331,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1320,10 +1375,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1338,10 +1395,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1358,10 +1417,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1392,6 +1453,26 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/coachhelm/Recheck.tsx",
+      "group": "screens",
+      "exports": [
+        "RecheckReads"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/coachhelm/TeamPatterns.tsx",
       "group": "screens",
       "exports": [
@@ -1402,10 +1483,12 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-patterns.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1620,6 +1703,7 @@
       "exports": [
         "BoardPartial",
         "Evidence",
+        "FocusActions",
         "FocusCard",
         "Head",
         "InsightRow",
@@ -1630,10 +1714,29 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/views/CoachPlayerStates.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachPlayerFailed",
+        "CoachPlayerNotOnTeam"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -1649,14 +1752,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
-        "src/clubhouse/styles/coachhelm-profile.css",
-        "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1669,11 +1771,19 @@
         "PlayerHelmFrame"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
-        "src/clubhouse/styles/coachhelm.css"
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1687,6 +1797,29 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-views.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/coachhelm/views/MondayBrief.tsx",
+      "group": "screens",
+      "exports": [
+        "MondayBrief"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-brief.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1714,14 +1847,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
+        "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1752,19 +1887,21 @@
       "file": "src/clubhouse/screens/coachhelm/views/Standing.tsx",
       "group": "screens",
       "exports": [
+        "OpenRead",
         "Standing"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1782,11 +1919,13 @@
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-track.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1802,10 +1941,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1827,6 +1968,26 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/home/CoachQueue.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachQueue"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/home/Countdown.tsx",
       "group": "screens",
       "exports": [
@@ -1836,10 +1997,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1857,11 +2020,13 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1893,11 +2058,13 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1926,15 +2093,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1955,6 +2123,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -1982,11 +2151,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2002,11 +2173,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2021,15 +2194,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2093,10 +2267,46 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/home/TeamLegs.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamLegs",
+        "TeamLegsPhone"
+      ],
+      "styles": [
+        "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm-views.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2108,14 +2318,28 @@
         "Week"
       ],
       "styles": [
+        "src/clubhouse/styles/auth.css",
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
         "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2156,12 +2380,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2198,12 +2424,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2228,6 +2456,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2260,6 +2489,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -2314,6 +2544,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2389,6 +2620,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2428,10 +2660,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2574,11 +2808,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2593,11 +2829,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2613,6 +2851,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -2639,10 +2878,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2658,13 +2899,15 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2678,15 +2921,16 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2733,14 +2977,15 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-profile.css",
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2793,10 +3038,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2817,11 +3064,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2875,11 +3124,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2897,6 +3148,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -2945,6 +3197,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -2985,12 +3238,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3045,12 +3300,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3070,6 +3327,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -3107,7 +3365,10 @@
       "file": "src/clubhouse/screens/roster/RosterPeek.tsx",
       "group": "screens",
       "exports": [
+        "AvailabilityPanel",
         "CoachNote",
+        "HelmPanel",
+        "LegsCaption",
         "NOTE_MAX",
         "RosterPeek"
       ],
@@ -3116,12 +3377,14 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3131,7 +3394,6 @@
       "group": "screens",
       "exports": [
         "PhoneSort",
-        "RollFigure",
         "RosterPhone",
         "RosterPhoneRow"
       ],
@@ -3139,12 +3401,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3159,11 +3423,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3203,11 +3469,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3234,12 +3502,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3254,12 +3524,38 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/CoachNote.tsx",
+      "group": "screens",
+      "exports": [
+        "CoachNote"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3286,6 +3582,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -3310,10 +3607,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3329,11 +3628,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3366,6 +3667,40 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/rounds/TeamRounds.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamRounds"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/rounds/TeamRoundsSkeleton.tsx",
+      "group": "screens",
+      "exports": [
+        "TeamRoundsSkeleton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/rounds/card/RoundCard.tsx",
       "group": "screens",
       "exports": [
@@ -3375,11 +3710,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3525,11 +3862,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3544,11 +3883,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-recover.css",
-        "src/clubhouse/styles/rounds.css"
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3568,6 +3909,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -3600,6 +3942,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -3791,6 +4134,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -3862,11 +4206,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3955,11 +4301,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3976,11 +4324,13 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4000,6 +4350,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4069,11 +4420,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4125,6 +4478,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4163,11 +4517,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4182,12 +4538,14 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4244,6 +4602,26 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/stats/FocusLoop.tsx",
+      "group": "screens",
+      "exports": [
+        "FocusLoop"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/stats/GameDetail.tsx",
       "group": "screens",
       "exports": [
@@ -4254,6 +4632,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4278,10 +4657,58 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/stats/GoalSheet.tsx",
+      "group": "screens",
+      "exports": [
+        "GoalSheet"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/stats/Goals.tsx",
+      "group": "screens",
+      "exports": [
+        "GoalSetButton",
+        "GoalStatus",
+        "GoalSuggestions"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -4297,6 +4724,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4317,6 +4745,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4337,6 +4766,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4357,6 +4787,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4388,6 +4819,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4408,6 +4840,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4441,6 +4874,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4461,6 +4895,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4489,6 +4924,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -4538,6 +4974,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -4567,6 +5004,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4618,6 +5056,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4655,6 +5094,7 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4675,6 +5115,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4695,6 +5136,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4715,6 +5157,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4734,6 +5177,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4776,6 +5220,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -4805,12 +5250,49 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/whats-new/WhatsNew.tsx",
+      "group": "screens",
+      "exports": [
+        "WhatsNew"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/whats-new.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/whats-new/WhatsNewSkeleton.tsx",
+      "group": "screens",
+      "exports": [
+        "WhatsNewSkeleton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4920,6 +5402,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -4948,11 +5431,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5064,6 +5549,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/command.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -5114,11 +5600,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5277,11 +5765,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5320,11 +5810,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5664,6 +6156,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -5734,13 +6227,16 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/ui.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css",
+        "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5817,11 +6313,13 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -5842,13 +6340,15 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [
         "InlineNotice"
@@ -5866,6 +6366,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/hero-tones.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
@@ -5960,10 +6461,12 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -6084,6 +6587,7 @@
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -6108,6 +6612,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -6152,11 +6657,13 @@
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [
         "Slider"
@@ -6195,6 +6702,7 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -6282,6 +6790,7 @@
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
@@ -6349,6 +6858,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
@@ -7301,6 +7811,7 @@
         "ch-in__need",
         "ch-in__next",
         "ch-in__note",
+        "ch-in__out",
         "ch-in__person",
         "ch-in__plate",
         "ch-in__quiet",
@@ -7838,9 +8349,34 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/coachhelm-brief.css",
+      "classes": [
+        "ch-hmb-back",
+        "ch-hmb-body",
+        "ch-hmb-cleared",
+        "ch-hmb-counts",
+        "ch-hmb-link",
+        "ch-hmb-ood",
+        "ch-hmb-row",
+        "ch-hmb-row__a",
+        "ch-hmb-row__b",
+        "ch-hmb-row__m",
+        "ch-hmb-row__main",
+        "ch-hmb-row__n",
+        "ch-hmb-row__t",
+        "ch-hmb-row__who",
+        "ch-hmb-rows",
+        "ch-hmb-sub",
+        "ch-hmb-team"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/coachhelm-dive.css",
       "classes": [
         "ch-hd",
+        "ch-hd-cl",
+        "ch-hd-cl__b",
         "ch-hd-dos",
         "ch-hd-dos__h",
         "ch-hd-dx",
@@ -7853,20 +8389,18 @@
         "ch-hd-grp",
         "ch-hd-grp__h",
         "ch-hd-hero",
-        "ch-hd-hero__f",
-        "ch-hd-hero__k",
-        "ch-hd-hero__main",
-        "ch-hd-hero__n",
-        "ch-hd-hero__sub",
         "ch-hd-it",
         "ch-hd-it__b",
         "ch-hd-it__d",
+        "ch-hd-it__f",
         "ch-hd-it__v",
         "ch-hd-main",
         "ch-hd-meas",
         "ch-hd-meas__s",
         "ch-hd-meas__v",
         "ch-hd-meas__w",
+        "ch-hd-more",
+        "ch-hd-msg",
         "ch-hd-plan",
         "ch-hd-plan__b",
         "ch-hd-plan__i",
@@ -7899,6 +8433,10 @@
         "ch-hd-tr",
         "ch-hd-tr__k",
         "ch-hd-tr__t",
+        "ch-hd-where",
+        "ch-hd-where__b",
+        "ch-hd-where__d",
+        "ch-hd-where__i",
         "ch-hd-why",
         "ch-hl",
         "ch-hl-ev",
@@ -7907,7 +8445,6 @@
         "ch-hl-lede",
         "ch-hl-stale",
         "ch-hv-sk-head",
-        "ch-scoreboard",
         "ch-skel"
       ],
       "tokens": [
@@ -8129,18 +8666,28 @@
         "ch-hs-g",
         "ch-hs-g__h",
         "ch-hs-g__t",
-        "ch-hs-gaps",
-        "ch-hs-gaps__v",
         "ch-hs-hero",
         "ch-hs-hero__k",
         "ch-hs-hero__main",
         "ch-hs-hero__sub",
+        "ch-hs-ld__b",
+        "ch-hs-ld__bar",
+        "ch-hs-ld__fail",
+        "ch-hs-ld__h",
+        "ch-hs-ld__miss",
+        "ch-hs-ld__n",
+        "ch-hs-ld__none",
+        "ch-hs-ld__r",
+        "ch-hs-ld__v",
+        "ch-hs-ld__why",
         "ch-hs-note",
+        "ch-hs-open",
         "ch-hs-pct",
         "ch-hs-proj",
         "ch-hs-r",
         "ch-hs-r__f",
         "ch-hs-r__h",
+        "ch-hs-read",
         "ch-hs-rows",
         "ch-hs-sk__col",
         "ch-hs-sk__g",
@@ -8187,6 +8734,21 @@
           "name": "--ch-hs-ink",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hs-r.is-behind"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-ink-500)",
+          "scope": ".ch-hs-ld__r"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-chart-loss)",
+          "scope": ".ch-hs-ld__r.is-loss"
+        },
+        {
+          "name": "--ch-hs-tone",
+          "value": "var(--ch-green-fill-600)",
+          "scope": ".ch-hs-ld__r.is-gain"
         },
         {
           "name": "--ch-hs-tone",
@@ -8340,6 +8902,9 @@
         "ch-hv-chips",
         "ch-hv-link",
         "ch-hv-next",
+        "ch-hv-role-link",
+        "ch-hv-seen",
+        "ch-hv-seen__go",
         "ch-hv-sk-head",
         "ch-hv-sk-tabs",
         "ch-hv-tabs",
@@ -8395,6 +8960,7 @@
         "ch-hl-ney__m",
         "ch-hl-ney__w",
         "ch-hl-note",
+        "ch-hl-note__a",
         "ch-hl-path",
         "ch-hl-path__chip",
         "ch-hl-path__chips",
@@ -8419,6 +8985,8 @@
         "ch-hl-prop__a",
         "ch-hl-prop__r",
         "ch-hl-prop__t",
+        "ch-hl-rck",
+        "ch-hl-rck__s",
         "ch-hl-role",
         "ch-hl-row",
         "ch-hl-row__b",
@@ -8730,6 +9298,21 @@
       ]
     },
     {
+      "file": "src/clubhouse/styles/goals.css",
+      "classes": [
+        "ch-gl-ctl",
+        "ch-gl-st",
+        "ch-gs",
+        "ch-gs-form",
+        "ch-gs__ans",
+        "ch-gs__h",
+        "ch-gs__list",
+        "ch-gs__row",
+        "ch-num"
+      ],
+      "tokens": []
+    },
+    {
       "file": "src/clubhouse/styles/hero-tones.css",
       "classes": [
         "ch-hero",
@@ -8781,13 +9364,16 @@
         "ch-btn--primary",
         "ch-btn__kbd",
         "ch-cd",
+        "ch-empty",
         "ch-fgr__note",
         "ch-h-agenda",
         "ch-h-agenda__a",
         "ch-h-agenda__b",
         "ch-h-agenda__label",
         "ch-h-agenda__label--later",
+        "ch-h-agenda__nudge",
         "ch-h-agenda__row",
+        "ch-h-agenda__rsvp",
         "ch-h-agenda__t",
         "ch-h-agenda__txt",
         "ch-h-card",
@@ -8833,6 +9419,20 @@
         "ch-h-lb__status",
         "ch-h-lb__trend",
         "ch-h-lb__who",
+        "ch-h-legs",
+        "ch-h-legs__c1",
+        "ch-h-legs__c2",
+        "ch-h-legs__c3",
+        "ch-h-legs__c4",
+        "ch-h-legs__c5",
+        "ch-h-legs__c6",
+        "ch-h-legs__note",
+        "ch-h-legs__scroll",
+        "ch-h-legs__sg",
+        "ch-h-legs__skel",
+        "ch-h-legs__skrow",
+        "ch-h-legs__t",
+        "ch-h-legs__who",
         "ch-h-main",
         "ch-h-main--desk",
         "ch-h-main--first",
@@ -8844,6 +9444,11 @@
         "ch-h-pager",
         "ch-h-pane",
         "ch-h-pane__head",
+        "ch-h-queue",
+        "ch-h-queue__a",
+        "ch-h-queue__fail",
+        "ch-h-queue__k",
+        "ch-h-queue__v",
         "ch-h-rail",
         "ch-h-rail__item",
         "ch-h-rail__meta",
@@ -8891,6 +9496,15 @@
         "ch-hm-hero__brief",
         "ch-hm-hero__date",
         "ch-hm-lab",
+        "ch-hm-legs__a",
+        "ch-hm-legs__c",
+        "ch-hm-legs__l",
+        "ch-hm-legs__list",
+        "ch-hm-legs__note",
+        "ch-hm-legs__r",
+        "ch-hm-legs__s",
+        "ch-hm-legs__sg",
+        "ch-hm-legs__who",
         "ch-hm-link",
         "ch-hm-list",
         "ch-hm-meta",
@@ -8909,6 +9523,12 @@
         "ch-hm-none__ic",
         "ch-hm-none__q",
         "ch-hm-now",
+        "ch-hm-queue",
+        "ch-hm-queue__a",
+        "ch-hm-queue__fail",
+        "ch-hm-queue__k",
+        "ch-hm-queue__sep",
+        "ch-hm-queue__v",
         "ch-hm-rail",
         "ch-hm-rd",
         "ch-hm-rd__b",
@@ -10648,6 +11268,8 @@
         "ch-rs-attn__c",
         "ch-rs-attn__l",
         "ch-rs-attn__n",
+        "ch-rs-avail__cap",
+        "ch-rs-avail__seg",
         "ch-rs-bar",
         "ch-rs-bar__r",
         "ch-rs-body",
@@ -10681,12 +11303,15 @@
         "ch-rs-num2",
         "ch-rs-peek",
         "ch-rs-peek__av",
+        "ch-rs-peek__cap",
         "ch-rs-peek__dev",
         "ch-rs-peek__facts",
         "ch-rs-peek__figs",
         "ch-rs-peek__foot",
+        "ch-rs-peek__go",
         "ch-rs-peek__hero",
         "ch-rs-peek__l",
+        "ch-rs-peek__legs",
         "ch-rs-peek__memo",
         "ch-rs-peek__note",
         "ch-rs-peek__quick",
@@ -10724,6 +11349,7 @@
         "ch-rs-vt__b",
         "ch-rs-who",
         "ch-rs-who--static",
+        "ch-rs-who__avail",
         "ch-rs-who__cell",
         "ch-rs-who__m",
         "ch-rsm",
@@ -10737,8 +11363,8 @@
         "ch-rsm-code",
         "ch-rsm-facts",
         "ch-rsm-figs",
-        "ch-rsm-flowtext",
         "ch-rsm-head",
+        "ch-rsm-helm",
         "ch-rsm-hero",
         "ch-rsm-hero__act",
         "ch-rsm-hero__id",
@@ -11165,6 +11791,7 @@
       "file": "src/clubhouse/styles/rounds.css",
       "classes": [
         "ch-btn",
+        "ch-lgr__lead",
         "ch-notice",
         "ch-notice--danger",
         "ch-num",
@@ -11290,7 +11917,13 @@
         "ch-rv-card",
         "ch-rv-card__h",
         "ch-rv-cardw",
+        "ch-rv-cn__actions",
+        "ch-rv-cn__count",
+        "ch-rv-cn__form",
+        "ch-rv-cn__none",
         "ch-rv-cols",
+        "ch-rv-debrief__l",
+        "ch-rv-debrief__why",
         "ch-rv-dist",
         "ch-rv-dist__r",
         "ch-rv-dist__t",
@@ -11360,7 +11993,14 @@
         "ch-rztrail",
         "ch-score",
         "ch-search",
+        "ch-seg",
+        "ch-select",
         "ch-skel",
+        "ch-textarea",
+        "ch-trd",
+        "ch-trd-meta",
+        "ch-trd-meta__tee",
+        "ch-trd-score",
         "ch-zn",
         "ch-znbig"
       ],
@@ -12174,6 +12814,9 @@
         "ch-cup__st",
         "ch-delta",
         "ch-dv",
+        "ch-dv-loop",
+        "ch-dv-loop__l",
+        "ch-dv-loop__w",
         "ch-dv__done",
         "ch-dv__dot",
         "ch-dv__end",
@@ -12230,6 +12873,9 @@
         "ch-gm__ic",
         "ch-gm__id",
         "ch-gm__none",
+        "ch-gm__reads",
+        "ch-gm__reads-a",
+        "ch-gm__reads-go",
         "ch-gm__sub",
         "ch-gm__t",
         "ch-gm__vis",
@@ -12292,6 +12938,7 @@
         "ch-n",
         "ch-n2",
         "ch-note",
+        "ch-num",
         "ch-par3",
         "ch-par3__d",
         "ch-par3__l",
@@ -16197,6 +16844,18 @@
           "scope": ".ch-hscroll[data-end='true']"
         }
       ]
+    },
+    {
+      "file": "src/clubhouse/styles/whats-new.css",
+      "classes": [
+        "ch-lgr__lead",
+        "ch-lgr__title",
+        "ch-wn",
+        "ch-wn-detail",
+        "ch-wn-meta",
+        "ch-wn-what"
+      ],
+      "tokens": []
     }
   ],
   "previews": [
@@ -16235,6 +16894,14 @@
     {
       "name": "round",
       "href": "/clubhouse-preview/round"
+    },
+    {
+      "name": "team-rounds",
+      "href": "/clubhouse-preview/team-rounds"
+    },
+    {
+      "name": "whats-new",
+      "href": "/clubhouse-preview/whats-new"
     },
     {
       "name": "roster",
@@ -16325,8 +16992,16 @@
       "href": "/clubhouse-preview/coachhelm-views"
     },
     {
+      "name": "coachhelm-coach-player",
+      "href": "/clubhouse-preview/coachhelm-coach-player"
+    },
+    {
       "name": "coachhelm-track",
       "href": "/clubhouse-preview/coachhelm-track"
+    },
+    {
+      "name": "coachhelm-brief",
+      "href": "/clubhouse-preview/coachhelm-brief"
     },
     {
       "name": "auth",

@@ -85,6 +85,7 @@ import {
   type ReceiptExample,
 } from './angle-data';
 import { AngleGenerator } from './angle-generator';
+import { inBothVoices, type Voice } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { computeLagLeave, lagLinkLine, lagLinkOf, type LagLink } from './lag-leave';
 
 export type PuttBand = 'lt10' | '10_20' | '20_35' | '35_plus';
@@ -604,6 +605,9 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
   const pathwayLed = r.cause !== null && sequence?.meets_observed_floors === true;
   const lengthLed = r.cause === 'long_approach_leave';
   const benchName = bench.source === 'tour' ? `the ${bench.label}` : bench.label;
+  // The team benchmark's label is the player's ("your teammates' median"); the coach reads "their".
+  const coachBenchName = (v: Voice) =>
+    bench.source === 'tour' || !v.coach ? benchName : `their teammates' median (${bench.n} players)`;
   const worstExposure = [...r.exposure]
     .filter((e) => e.band !== '35_plus' && e.leave_recorded >= 10 && e.six_plus_pct !== null)
     .sort((a, b) => b.six_plus_pct! - a.six_plus_pct!)[0];
@@ -613,8 +617,8 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
           .map((p) => `${p.three_putts} ${p.pathway === 'long_approach_leave' ? `from first putts of ${LONG_LEAVE_FT}+ ft` : p.pathway === 'poor_first_putt_leave' ? `with the first putt leaving ${POOR_LEAVE_FT}+ ft` : `missing the second putt from inside ${POOR_LEAVE_FT} ft`}`)
           .join(', ')}${r.pathway_suppressed ? `; ${r.pathway_suppressed} more from inside ${LONG_LEAVE_FT} ft had no second-putt distance recorded and are left out` : ''}.`
       : ` No 3-putt could be classified (second-putt distances not recorded), so the pathways are not shown.`;
-  const exposureLine = worstExposure
-    ? ` From ${worstExposure.label}, ${worstExposure.six_plus_pct}% of your second putts were ${POOR_LEAVE_FT}+ ft (${worstExposure.buckets['6_10'] + worstExposure.buckets['10_plus']} of ${worstExposure.leave_recorded} recorded${worstExposure.leave_missing ? `; ${worstExposure.leave_missing} not recorded` : ''}).`
+  const exposureLine = (v: Voice) => worstExposure
+    ? ` From ${worstExposure.label}, ${worstExposure.six_plus_pct}% of ${v.your} second putts were ${POOR_LEAVE_FT}+ ft (${worstExposure.buckets['6_10'] + worstExposure.buckets['10_plus']} of ${worstExposure.leave_recorded} recorded${worstExposure.leave_missing ? `; ${worstExposure.leave_missing} not recorded` : ''}).`
     : '';
   const lagLink = agg.lag && agg.lag.n >= LAG_LINK_MIN_PUTTS ? agg.lag : null;
   const lagNote = lagLink ? ` ${lagLinkLine(lagLink)}` : '';
@@ -730,21 +734,24 @@ export function composeThreePuttChain(agg: ThreePuttAggregate): ComposedContent 
       confidence_reason: '',
     },
   };
-  const neutralTitle = bench.source === 'tour' ? `3-putts above the ${bench.label}` : "3-putts above your teammates' rate";
+  const neutralTitle = (v: Voice) =>
+    bench.source === 'tour' ? `3-putts above the ${bench.label}` : `3-putts above ${v.pick('your', 'the')} teammates' rate`;
   return {
     category: lengthLed ? 'approach' : 'putting',
-    title: !pathwayLed
-      ? neutralTitle
-      : r.cause === 'long_approach_leave'
-        ? majority
-          ? `Most 3-putts start from ${LONG_LEAVE_FT}+ ft`
-          : `3-putts from ${LONG_LEAVE_FT}+ ft lead the count`
-        : r.cause === 'poor_first_putt_leave'
-          ? `First putts are leaving ${POOR_LEAVE_FT}+ ft second putts`
-          : `Short second putts are turning into 3-putts`,
-    content:
-      `You 3-putt ${r.three_putts_per_18.toFixed(1)} times a round (${r.three_putts} of ${r.holes_putted} holes) vs ${benchPer18.toFixed(1)} for ${benchName}.` +
-      `${pathwayLine}${exposureLine}${lagNote}${slopeNote}`,
+    ...inBothVoices((v) => ({
+      title: !pathwayLed
+        ? neutralTitle(v)
+        : r.cause === 'long_approach_leave'
+          ? majority
+            ? `Most 3-putts start from ${LONG_LEAVE_FT}+ ft`
+            : `3-putts from ${LONG_LEAVE_FT}+ ft lead the count`
+          : r.cause === 'poor_first_putt_leave'
+            ? `First putts are leaving ${POOR_LEAVE_FT}+ ft second putts`
+            : `Short second putts are turning into 3-putts`,
+      content:
+        `${v.Player} ${v.pick('3-putt', '3-putts')} ${r.three_putts_per_18.toFixed(1)} times a round (${r.three_putts} of ${r.holes_putted} holes) vs ${benchPer18.toFixed(1)} for ${coachBenchName(v)}.` +
+        `${pathwayLine}${exposureLine(v)}${lagNote}${slopeNote}`,
+    })),
     priority: r.three_putts_per_18 - benchPer18 >= 0.5 ? 'medium' : 'low',
     signature: 'three_putt_chain:all',
     evidence,

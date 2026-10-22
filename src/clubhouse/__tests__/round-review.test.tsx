@@ -180,7 +180,7 @@ describe('112401 Round review, on screen', () => {
     expect(screen.getByRole('heading', { name: 'Your notes' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Rounds/ }).getAttribute('href')).toBe('/golf/dashboard/rounds');
     // Wave 9 (row 12): the player reads about their own notes in the second person.
-    expect(document.body.textContent).toContain('and what you wrote when posting it.');
+    expect(document.body.textContent).toContain('what you wrote when posting it, and the note your coach left.');
   });
 
   it('wave 9: the round line says which way is better without contradicting itself; the costliest holes name the score, not the shot count again', () => {
@@ -195,7 +195,7 @@ describe('112401 Round review, on screen', () => {
     show(PREVIEW_REVIEW_COACH);
     expect(within(screen.getByRole('banner')).getByText('Jonah Okafor · Wed Oct 14 · Practice')).toBeTruthy();
     expect(screen.getByRole('heading', { name: "Jonah’s notes" })).toBeTruthy();
-    expect(document.body.textContent).toContain('and what the player wrote when posting it.');
+    expect(document.body.textContent).toContain('what the player wrote when posting it, and the note you leave.');
     expect(screen.getByRole('link', { name: /Jonah Okafor/ }).getAttribute('href')).toBe('/golf/dashboard/stats?player=preview-player&tab=rounds');
   });
 
@@ -535,14 +535,11 @@ describe('Round review route', () => {
     await expect(ClubhouseRoundReviewRoute({ id: 'r-live' })).rejects.toThrow('NEXT_REDIRECT /golf/dashboard/rounds/continue/r-live');
   });
 
-  it('110801 110105 the review is rebuilt for both roles; the coach’s Rounds library is not', () => {
+  it('110801 110105 the review and the Rounds list are rebuilt for both roles (a coach’s is Team rounds)', () => {
     const id = PREVIEW_REVIEW_ROUND.id;
     expect([isRebuilt(`/golf/dashboard/rounds/${id}`, 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}`, 'player')]).toEqual([true, true]);
-    expect([isRebuilt('/golf/dashboard/rounds', 'coach'), isRebuilt(`/golf/dashboard/rounds/${id}/review`, 'player'), isRebuilt('/golf/dashboard/rounds/new', 'coach')]).toEqual([
-      false,
-      false,
-      false,
-    ]);
+    expect([isRebuilt('/golf/dashboard/rounds', 'coach'), isRebuilt('/golf/dashboard/rounds', 'player')]).toEqual([true, true]);
+    expect([isRebuilt(`/golf/dashboard/rounds/${id}/review`, 'player'), isRebuilt('/golf/dashboard/rounds/new', 'coach')]).toEqual([false, false]);
   });
 });
 

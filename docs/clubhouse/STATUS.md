@@ -175,8 +175,10 @@ VoiceOver, dark-mode scan or real-account write pass.
    the canvas and the canvas reflows once, at the start or the end). Frame
    cost in Safari is NOT VERIFIED: timing needs a production build (item 4).
    Recommendation: keep the spring; measure on the first allowed build.
-7. Also open: `20260929200000` (qualifier privacy); white cards and Instrument
-   Sans against the brand doc; making `clubhouse-quality` required; held
+7. Decided 2026-10-21 (owner, via the coordinator): keep white cards and
+   Instrument Sans in Clubhouse; the brand doc follows the product
+   (`memory/brand/clubhouse-ui.md`). Also open: `20260929200000` (qualifier
+   privacy); making `clubhouse-quality` required; held
    migration timing for the stats chain, the strokes-gained fix and Messages
    delete; roster availability; Player CoachHelm Ask; the iOS items; open PRs
    #2096, #2091, #2073, #2048, #2105, #2177, #2193, #2200.

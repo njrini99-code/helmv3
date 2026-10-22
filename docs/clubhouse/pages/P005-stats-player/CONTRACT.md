@@ -22,13 +22,27 @@ implemented/tested behavior from open runtime acceptance; this pass does not
 reserve new IDs or mark manual contracts verified.
 <!-- clubhouse:release-audit:end -->
 
-Every behaviour a player profile promises, by the 25 V2 categories (D-69). A contract's number is its Bridge ID (D-68: namespace 5, category, item); `Code` is the catalog code on the element and in the test (`docs/clubhouse/catalog/stats-player.md`). Rows without a code are behaviours with no single element, recorded in `config/clubhouse/bridge-contracts.json` by hand. The shell's contracts (P001, namespace 1) apply here too and are named where they carry a category. The team's numbers are Stats (team), P004, with its own contracts. `clubhouse:check` holds this file to the registry.
+Every behaviour a player profile promises, by the 25 V2 categories (D-69). A
+contract's number is its Bridge ID (D-68: namespace 5, category, item); `Code`
+is the catalog code on the element and in the test
+(`docs/clubhouse/catalog/stats-player.md`). Rows without a code are behaviours
+with no single element, recorded in `config/clubhouse/bridge-contracts.json` by
+hand. The shell's contracts (P001, namespace 1) apply here too and are named
+where they carry a category. The team's numbers are Stats (team), P004, with its
+own contracts. `clubhouse:check` holds this file to the registry.
 
 ## 01 — Default / core UI
 
 Status: DEFINED
 
-A profile opens on Overview, or the tab the address names, for the window the address names, with who and the four hero figures already in the server's first render (50101). The address is read for its tab and window (50102): ?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything else opening Overview and Last 10 (D-53; Roster's All N is `window=season&tab=rounds`). A coach pages through the team with Previous player and Next player (50103) and Message opens the player's direct thread (50104). A player's own address is /golf/dashboard/stats with no ?player=.
+A profile opens on Overview, or the tab the address names, for the window the
+address names, with who and the four hero figures already in the server's first
+render (50101). The address is read for its tab and window (50102):
+?tab=overview, game, rounds or dev, and ?window=season or qualifiers, anything
+else opening Overview and Last 10 (D-53; Roster's All N is
+`window=season&tab=rounds`). A coach pages through the team with Previous player
+and Next player (50103) and Message opens the player's direct thread (50104). A
+player's own address is /golf/dashboard/stats with no ?player=.
 
 Which rounds each window reads (owner, 2026-09-30, Q-122 and Q-123):
 
@@ -73,12 +87,19 @@ From the shell (P001): 10101 CH-1904, 10102 SHELL_READY,
 
 Status: DEFINED
 
-The route's loading state is the Stats skeleton (CH-4401, Bridge 40201 on Team stats), inside the Clubhouse shell only, with the shell's timing: nothing for 150ms, then a fade (11609). It is Team stats' shape: a loading.tsx does not receive the address, so it cannot tell a profile from the team, and a profile's first paint (a taller hero) moves what the skeleton drew. Each tab loads with the page, so there is no per-tab skeleton.
+The route's loading state is the Stats skeleton (CH-4401, Bridge 40201 on Team
+stats), inside the Clubhouse shell only, with the shell's timing: nothing for
+150ms, then a fade (11609). It is Team stats' shape: a loading.tsx does not
+receive the address, so it cannot tell a profile from the team, and a profile's
+first paint (a taller hero) moves what the skeleton drew. Each tab loads with
+the page, so there is no per-tab skeleton.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50201 | CH-5403 | `A_PLAYERS_STATS_ARE_LOADING_THEIR_OWN` | A player's stats are loading: their own, or a coach's `?player=` |
 | 50202 | CH-5404 | `A_PLAYERS_ANSWER_TO_A_PROPOSED_FOCUS` | A player's answer to a proposed focus area is being sent |
+| 50203 | CH-5405 | `A_GOAL_IS_BEING_STARTED_A_SUGGESTION` | A goal is being started, a suggestion answered, or a goal changed |
+| 50204 | CH-5406 | `SET_A_GOAL_THE_STARTING_POINT_FOR` | Set a goal: the starting point for the chosen stat is being looked up |
 
 From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
@@ -86,7 +107,10 @@ From the shell (P001): 10201 CH-1401, 10202 CH-1402.
 
 Status: DEFINED
 
-Changing the window or paging to another player reloads the page in place: it dims and is marked busy, and the scroll stays (50302). A focus area being proposed shows on its button as Adding, and the button cannot be pressed twice (50301). Nothing refreshes in the background: no polling and no realtime.
+Changing the window or paging to another player reloads the page in place: it
+dims and is marked busy, and the scroll stays (50302). A focus area being
+proposed shows on its button as Adding, and the button cannot be pressed twice
+(50301). Nothing refreshes in the background: no polling and no realtime.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -97,7 +121,16 @@ Changing the window or paging to another player reloads the page in place: it di
 
 Status: DEFINED
 
-First-run and filtered are distinct, and a failed read is never shown as empty. Each tab and section says what is missing and what fills it in: no shot-by-shot rounds (50401), no rounds in the window (50402), no focus areas (50403) and no goals (50404), and under three rounds an early read that says what will move (50405). Who may not see a profile at all is a permission outcome (50801, 50802), and a signed-in person with no team sees the no-team page state (40409, catalogued on Team stats). Open: v2 draws Stats with no rounds ever as a whole-page empty, "No stats yet" (D-71, gh-states.jsx); the built page shows the tab-level states, because the loader reads only this season's rounds and cannot say "ever". Owner decision, not built.
+First-run and filtered are distinct, and a failed read is never shown as empty.
+Each tab and section says what is missing and what fills it in: no shot-by-shot
+rounds (50401), no rounds in the window (50402), no focus areas (50403) and no
+goals (50404), and under three rounds an early read that says what will move
+(50405). Who may not see a profile at all is a permission outcome (50801,
+50802), and a signed-in person with no team sees the no-team page state (40409,
+catalogued on Team stats). Open: v2 draws Stats with no rounds ever as a
+whole-page empty, "No stats yet" (D-71, gh-states.jsx); the built page shows the
+tab-level states, because the loader reads only this season's rounds and cannot
+say "ever". Owner decision, not built.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -123,23 +156,35 @@ First-run and filtered are distinct, and a failed read is never shown as empty. 
 | 50420 | CH-5322 | `THE_SHEETS_ROUND_LIST_IS_CUT_AT` | The sheet's round list is cut at 200 rounds |
 | 50421 | CH-5323 | `THE_FILTER_LETS_9_HOLE_ROUNDS_IN` | The filter lets 9-hole rounds in (Holes: 9 holes or Both) |
 | 50422 | CH-5324 | `NO_ROUND_OF_THE_DEFAULT_LENGTH_BUT` | No round of the default length (18 holes), but this player has 9-hole rounds in this window |
+| 50423 | CH-5325 | `SET_A_GOAL_NO_STARTING_POINT_TO` | Set a goal: no starting point to base a target on (the stat has no standing yet, or the look-up failed) |
 
 ## 05 — Validation
 
 Status: DEFINED
 
-The one form is Add focus area: a name of at least three characters, checked before anything is sent, with the message under the field, the field focused and the warning haptic (50501).
+The one form is Add focus area: a name of at least three characters, checked
+before anything is sent, with the message under the field, the field focused and
+the warning haptic (50501).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 50501 | CH-5101 | `A_FOCUS_AREA_WITH_A_NAME_UNDER` | A focus area with a name under three characters |
 | 50502 | CH-5102 | `THE_FILTERS_DATE_RANGE_STARTS_AFTER_IT` | The filter's date range starts after it ends, and Done is tapped |
+| 50503 | CH-5103 | `SET_A_GOAL_THE_TARGET_IS_EMPTY` | Set a goal: the target is empty or not a number |
 
 ## 06 — Server / system error
 
 Status: DEFINED
 
-Every change that can fail has its own toast: proposing a focus area (50601) and sharing a link from the phone (50610). Every read that can fail has its own notice with Try again: rounds (50602), shot detail (50603) and development items (50604); a failed benchmark read (50609) has no notice, because nothing claims a benchmark it does not have. A crash stays in its tab (50605 to 50608): each tab is inside a SectionBoundary with a Suspense inside it (D-24). A failed player or roster read is not any of these: the loader throws and the route's error view offers Try again (50611), so it is never shown as "not on your team". A page that fails to render at all is the shell's route error view (10603 to 10607).
+Every change that can fail has its own toast: proposing a focus area (50601) and
+sharing a link from the phone (50610). Every read that can fail has its own
+notice with Try again: rounds (50602), shot detail (50603) and development items
+(50604); a failed benchmark read (50609) has no notice, because nothing claims a
+benchmark it does not have. A crash stays in its tab (50605 to 50608): each tab
+is inside a SectionBoundary with a Suspense inside it (D-24). A failed player or
+roster read is not any of these: the loader throws and the route's error view
+offers Try again (50611), so it is never shown as "not on your team". A page
+that fails to render at all is the shell's route error view (10603 to 10607).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -162,6 +207,12 @@ Every change that can fail has its own toast: proposing a focus area (50601) and
 | 50617 | CH-5212 | `THE_SPRAY_READ_THROWS` | The spray read throws |
 | 50618 | CH-5213 | `THE_ROUND_CACHE_DOESNT_LOAD` | The round cache doesn't load |
 | 50619 | CH-5005 | `SHARING_A_PERSONAL_BEST_CARD_FAILS` | Sharing a personal-best card fails (the share sheet or the download is blocked) |
+| 50620 | CH-5006 | `STARTING_A_GOAL_FAILS` | Starting a goal fails (Set a goal) |
+| 50621 | CH-5007 | `ACCEPTING_A_SUGGESTED_GOAL_FAILS` | Accepting a suggested goal fails |
+| 50622 | CH-5008 | `DISMISSING_A_SUGGESTED_GOAL_FAILS` | Dismissing a suggested goal fails |
+| 50623 | CH-5009 | `A_COACH_PAUSES_RESUMES_OR_ABANDONS_A` | A coach pauses, resumes or abandons a goal and it fails |
+| 50624 | CH-5214 | `THE_PLAYERS_SUGGESTED_GOALS_DONT_LOAD` | The player's suggested goals don't load (the read of `golf_goal_suggestions` failed) |
+| 50625 | CH-5215 | `COACHHELMS_READS_DONT_LOAD_FOR_GAME_DETAIL` | CoachHelm's reads don't load for Game detail (the gate, the visible reads, the player's dismissals or the newest rounds) |
 
 ## 07 — Network / offline
 
@@ -194,14 +245,34 @@ From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 
 Status: DEFINED
 
-A player may open only their own stats, and a coach the team and any player on it.
+A player may open only their own stats, and a coach the team and any player on
+it.
 
-- A player always gets their own profile (50803): ?player= is never read, the loader is asked for the caller's own id in the player view (their own rounds, D1 comparisons, no team average and no pager), and the page has no Message, no Add focus area and no way to the team.
-- A coach's ?player= is read against the coach's own team from the session (50804): an active or inactive player opens; another team's player, a pending or removed member, and an id that is not shaped like an id all open "That player isn't on your team" (50801), and the last makes no read.
-- A player with no active team sees "You aren't on a team yet" (40409); "Your stats aren't available" (50802) shows only when the team resolved but the roster has no row for the player when the profile is read.
-- A second lock sits behind the route. Every read but the shot-level detail uses the caller's own database session, so row-level security applies. Shot-level detail goes through getDetailedStats, which checks first that the caller is the player or their coach and answers empty otherwise; it then reads on the service role, so that check is the lock. An empty answer shows as "didn't load", never as zeros (50805).
-- Only a coach proposes focus areas (50806): the button and the sheet exist for a coach only, and the server action refuses a caller who is not a coach (read from the action, not tested). The shared action writes the signed-in coach's id (a coach id the page sends is ignored) and refuses a coach with no team or a player not active on the coach's team (fixed 2026-10-08; `development.team-id.test.ts`).
-- The whole Clubhouse is gated by the shell (10801) and each role sees its own navigation (10802).
+- A player always gets their own profile (50803): ?player= is never read, the
+  loader is asked for the caller's own id in the player view (their own rounds,
+  D1 comparisons, no team average and no pager), and the page has no Message, no
+  Add focus area and no way to the team.
+- A coach's ?player= is read against the coach's own team from the session
+  (50804): an active or inactive player opens; another team's player, a pending
+  or removed member, and an id that is not shaped like an id all open "That
+  player isn't on your team" (50801), and the last makes no read.
+- A player with no active team sees "You aren't on a team yet" (40409); "Your
+  stats aren't available" (50802) shows only when the team resolved but the
+  roster has no row for the player when the profile is read.
+- A second lock sits behind the route. Every read but the shot-level detail uses
+  the caller's own database session, so row-level security applies. Shot-level
+  detail goes through getDetailedStats, which checks first that the caller is
+  the player or their coach and answers empty otherwise; it then reads on the
+  service role, so that check is the lock. An empty answer shows as "didn't
+  load", never as zeros (50805).
+- Only a coach proposes focus areas (50806): the button and the sheet exist for
+  a coach only, and the server action refuses a caller who is not a coach (read
+  from the action, not tested). The shared action writes the signed-in coach's
+  id (a coach id the page sends is ignored) and refuses a coach with no team or
+  a player not active on the coach's team (fixed 2026-10-08;
+  `development.team-id.test.ts`).
+- The whole Clubhouse is gated by the shell (10801) and each role sees its own
+  navigation (10802).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -219,7 +290,10 @@ From the shell (P001): 10801 CLUBHOUSE_GATE, 10802 ROLE_SCOPED_NAV,
 
 Status: DEFINED
 
-A proposal that lands names itself in a toast, plays the success haptic, closes the sheet and empties it (50901). It goes through useAction, so it is also the shell's change-landed rule (10901). Copying a link from the phone says Link copied with the same haptic.
+A proposal that lands names itself in a toast, plays the success haptic, closes
+the sheet and empties it (50901). It goes through useAction, so it is also the
+shell's change-landed rule (10901). Copying a link from the phone says Link
+copied with the same haptic.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -229,17 +303,30 @@ From the shell (P001): 10901 CHANGE_LANDED.
 
 ## 10 — Warning
 
-Status: N/A — A profile warns about nothing: a small sample is an early read, and a figure the app cannot produce is a dash.
+Status: N/A — A profile warns about nothing: a small sample is an early read,
+
+and a figure the app cannot produce is a dash.
 
 ## 11 — Destructive
 
-Status: N/A — Nothing on a profile deletes or removes anything; a focus area can only be proposed here, and the player accepts it in their own app.
+Status: DEFINED
+
+Only a coach can end a goal: Abandon asks first (a dialog naming the goal, Keep
+it or Abandon goal) and the goal stays in the list marked Abandoned. Nothing
+else on a profile deletes anything; a focus area can only be proposed here, and
+the player accepts it in their own app.
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 51101 | CH-5501 | `A_COACH_PRESSES_ABANDON_ON_A_GOAL` | A coach presses Abandon on a goal |
 
 ## 12 — State preservation
 
 Status: DEFINED
 
-A focus area that fails to save keeps the sheet open with the area and the text the coach typed (51201). The chosen tab stays when the window changes or the coach pages to another player (51202). The address changes with scroll off.
+A focus area that fails to save keeps the sheet open with the area and the text
+the coach typed (51201). The chosen tab stays when the window changes or the
+coach pages to another player (51202). The address changes with scroll off.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -248,13 +335,19 @@ A focus area that fails to save keeps the sheet open with the area and the text 
 
 ## 13 — Optimistic UI
 
-Status: N/A — Nothing is optimistic: a proposal waits for the server with its button reading Adding, and a window change waits with the page dimmed.
+Status: N/A — Nothing is optimistic: a proposal waits for the server with its
+
+button reading Adding, and a window change waits with the page dimmed.
 
 ## 14 — Retry / recovery
 
 Status: DEFINED
 
-Try again on a failed-read notice asks the server for the whole page again (51401), so every read is retried, not one tab's. The failure toast's Retry sends the same proposal again (the shell's 11402). Try again on a crash notice only draws that tab again. A page that failed to render at all has the shell's Try again (11401).
+Try again on a failed-read notice asks the server for the whole page again
+(51401), so every read is retried, not one tab's. The failure toast's Retry
+sends the same proposal again (the shell's 11402). Try again on a crash notice
+only draws that tab again. A page that failed to render at all has the shell's
+Try again (11401).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -264,7 +357,9 @@ Try again on a failed-read notice asks the server for the whole page again (5140
 
 Status: DEFINED
 
-After a proposal lands the page is read again, so Development lists it as proposed without a reload (51501). There is no other write, and no polling or realtime.
+After a proposal lands the page is read again, so Development lists it as
+proposed without a reload (51501). There is no other write, and no polling or
+realtime.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -297,7 +392,11 @@ From the shell (P001): 11601 CH-1601, 11602 CH-1602, 11603 CH-1603,
 
 Status: DEFINED
 
-The profile's own haptics (51701, 51702) on the v2 grammar (D-70): a selection tick for a tab, a window, paging players or a Game detail section (the current one is silent); the warning pattern for a focus area with no name; success when a proposal lands or a link is copied; error when a save fails, a link cannot be shared or a window change is refused offline. With the shell's (11701 to 11706).
+The profile's own haptics (51701, 51702) on the v2 grammar (D-70): a selection
+tick for a tab, a window, paging players or a Game detail section (the current
+one is silent); the warning pattern for a focus area with no name; success when
+a proposal lands or a link is copied; error when a save fails, a link cannot be
+shared or a window change is refused offline. With the shell's (11701 to 11706).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -313,7 +412,13 @@ From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 
 Status: DEFINED
 
-The profile's own (51801 to 51807): real tabs with their panels, "Stats › name" in a coach's top bar, the strokes gained route and hero figures as text, the focus-area field's name and description, axe at 1280 and 390, the rounds table as a named scroll region, and the phone's All N rounds and section chips saying which is open. The shell's skip link, landmarks, focus rules and dialog behaviour (11801 to 11811). Not built: arrow-key movement between tabs; each tab is one Tab stop.
+The profile's own (51801 to 51807): real tabs with their panels, "Stats › name"
+in a coach's top bar, the strokes gained route and hero figures as text, the
+focus-area field's name and description, axe at 1280 and 390, the rounds table
+as a named scroll region, and the phone's All N rounds and section chips saying
+which is open. The shell's skip link, landmarks, focus rules and dialog
+behaviour (11801 to 11811). Not built: arrow-key movement between tabs; each tab
+is one Tab stop.
 
 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808, 11809
 CH-1809, 11810 CH-1810, 11811 CH-1811, 11812 CH-1812, 11813 CH-1813, 11814
@@ -345,7 +450,10 @@ From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 
 Status: DEFINED
 
-At 820px and below a profile is the phone view (51901); the phone spec is `docs/clubhouse/phone/stats-player.md` (approved). Above that the desktop layout follows its container, not the viewport, with steps at 1080, 900 and 720px in `stats.css`.
+At 820px and below a profile is the phone view (51901); the phone spec is
+`docs/clubhouse/phone/stats-player.md` (approved). Above that the desktop layout
+follows its container, not the viewport, with steps at 1080, 900 and 720px in
+`stats.css`.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -357,7 +465,11 @@ From the shell (P001): 11901 PHONE_CHROME.
 
 Status: DEFINED
 
-The window switch moves and chooses with the arrow keys, and Enter in the focus-area field proposes it (52001). The section tabs are one Tab stop, where the arrows (wrapping), Home and End move between them and select, as in every Clubhouse tab list and the Segmented control. Esc closes the focus-area sheet (the shell's Modal).
+The window switch moves and chooses with the arrow keys, and Enter in the
+focus-area field proposes it (52001). The section tabs are one Tab stop, where
+the arrows (wrapping), Home and End move between them and select, as in every
+Clubhouse tab list and the Segmented control. Esc closes the focus-area sheet
+(the shell's Modal).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -379,7 +491,8 @@ From the shell (P001): 12101 CH-1954.
 
 Status: DEFINED
 
-The shell records rage, dead and slow clicks for every page (12201 to 12203). A profile adds no events of its own.
+The shell records rage, dead and slow clicks for every page (12201 to 12203). A
+profile adds no events of its own.
 
 From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
@@ -387,7 +500,8 @@ From the shell (P001): 12201 CH-1951, 12202 CH-1952, 12203 CH-1953.
 
 Status: DEFINED
 
-Failed reads logged, crashes and failed saves reported, intents breadcrumbed (52301).
+Failed reads logged, crashes and failed saves reported, intents breadcrumbed
+(52301).
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -399,7 +513,9 @@ From the shell (P001): 12301 FAILURES_REPORTED.
 
 Status: DEFINED
 
-Every catalog code is forced by a named test, and each hand contract is named in a test title (52401); `clubhouse:check` fails a catalog row of kinds 0 to 5 that no test names.
+Every catalog code is forced by a named test, and each hand contract is named in
+a test title (52401); `clubhouse:check` fails a catalog row of kinds 0 to 5 that
+no test names.
 
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
@@ -409,7 +525,10 @@ From the shell (P001): 12401 TESTS_NAME_CONTRACTS.
 
 ## 25 — Helm Bridge action
 
-Status: N/A — the Bridge is wired later (owner, D-68). Every contract above already has its Bridge ID; the commands (change the window, open a tab, propose a focus area) are defined when the Bridge is.
+Status: N/A — the Bridge is wired later (owner, D-68). Every contract above
+
+already has its Bridge ID; the commands (change the window, open a tab, propose
+a focus area) are defined when the Bridge is.
 
 ## October 6 premium interaction corrections
 

@@ -19,7 +19,8 @@ counts include wrappers rather than unique popups.
 Route:                   /golf/dashboard/roster
 Page:                    src/app/golf/(dashboard)/dashboard/roster/page.tsx (a coach with golf_clubhouse_ui on, or a player
                          with no coach profile and the flag on -> ClubhouseRosterRoute, else Fairway)
-Old link:                roster/[id]/layout.tsx: with Clubhouse on, a coach goes to stats?player=<id>, a player to roster (30806)
+Old link:                roster/[id]/layout.tsx: with Clubhouse on, a coach goes
+                         to stats?player=<id>, a player to roster (30806)
 Clubhouse route adapter: src/clubhouse/routes/roster.tsx (session, then the active team through resolveClubhouseTeam;
                          the resolved role decides, not the coach row: coach -> the coach's screen, 30801; player ->
                          TeamRoster over loadPlayerRoster, 30804; no team -> RosterNoTeam for the dashboard role,
@@ -203,6 +204,30 @@ Read path:  loadNotes in loadRoster, filtered by coach_id (30802)
 Write path: setIntent (an upsert on coach_id and player_id, after verifyPlayerAccess)
 ```
 
+### DATA-ROSTER-HELM
+
+```text
+Loader:   src/clubhouse/data/roster.ts loadRoster -> loadHelm (spec D build B,
+          2026-10-21), beside the rounds, focus areas, goals and notes; never
+          throws
+Gate:     loadCoachHelmGate(coachId): off -> { status: 'off' } and nothing else
+          is read; a failed lookup -> 'failed'
+Ids:      the coach's own team membership rows (golf_team_members, active and
+          inactive), the session's client (RLS as for the Board)
+Tables:   golf_coach_insights (loadVisible, the Board's visible-rows read, no
+          exposure recorded), golf_teams + golf_pga_standards (coachTour),
+          golf_rounds (newestRounds from earliestStaleFloor)
+Count:    countReads (data/coachhelm-classify.ts) per player: current findings
+          costing, current strengths working; notes and out-of-date reads not
+          counted. A player with none is absent ("No reads yet")
+Answer:   ChRoster.helm = { status: 'on', byPlayer } | { status: 'off' } |
+          { status: 'failed' } (CH-3212)
+Legs:     ChRosterPlayer.sgLegs from summarizePlayer (data/season.ts, already
+          loaded); the caption is legsCaption (screens/roster/format.ts)
+Screen:   RosterPeek HelmBlock and LegsCaption; RosterProfile HelmPanel and
+          LegsCaption
+```
+
 ## Held dependencies
 
 - `docs/clubhouse/held/data/roster-availability.md` (the migration is written
@@ -222,8 +247,8 @@ Write path: setIntent (an upsert on coach_id and player_id, after verifyPlayerAc
   fails). Roster does not update it. Not verified: whether it refreshes after an
   approval.
 - `/golf/dashboard/roster/[id]` is Fairway's player page and is not rebuilt:
-  with Clubhouse on its layout sends a coach to that player's Stats and a player
-  to the roster (30806).
+  with Clubhouse on its layout sends a coach to `stats?player=<id>` and a
+  player to the roster (30806).
 - The player's view reads through a separate loader on purpose. Adding a field
   to `ChTeammate` is a privacy decision (30805): the test that lists the
   selected columns and the tables asked for fails until it is made on purpose.

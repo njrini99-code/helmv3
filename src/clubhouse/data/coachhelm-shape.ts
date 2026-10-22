@@ -290,6 +290,8 @@ export interface ChCoachHelmData {
   withoutSignals: number;
   /** Their names, roster order (a player with no name on file is counted, not named); absent where the board cannot say. */
   withoutNames?: string[];
+  /** The same players' ids, beside `withoutNames` in the same order, so each name can open that player's Standing (spec A). */
+  withoutIds?: string[];
   /** What the cards were drawn without because a read beside them failed. */
   missing?: ChBoardMissing;
   /** Team pattern rows (supercharge Slice 7b, `coachhelm_team_pattern_v1`, off); absent with the flag off or nothing to show. */
@@ -301,6 +303,32 @@ export interface ChCoachHelmData {
    * `coachhelm_support_v1` off or none held back. A player all of whose reads are held back has no card and is not in `withoutSignals`.
    */
   notEnough?: ChNotEnough;
+}
+
+/** Names said before the rest are counted: "A, B, C and 2 more". */
+const WITHOUT_NAMED_MAX = 3;
+
+/**
+ * "Theo Marchetti has no insights yet.", "Theo Marchetti and Sam Whitfield have no insights yet.", "A, B, C and 2 more have no
+ * insights yet."; with no names, the count alone. A player counted with no name on file is one of the "more".
+ */
+export function withoutSignalsLine(count: number, names: readonly string[] = []): string {
+  return withoutSignalsRuns(count, names)
+    .map((r) => (typeof r === 'number' ? names[r] : r))
+    .join('');
+}
+
+/**
+ * The same sentence as runs, so the board can draw each name as a link (spec A): a string is text, a number is the index of a name in
+ * `names`. Joined, it is `withoutSignalsLine` exactly.
+ */
+export function withoutSignalsRuns(count: number, names: readonly string[] = []): Array<string | number> {
+  if (count <= 0) return [''];
+  const shown = names.slice(0, Math.min(WITHOUT_NAMED_MAX, count));
+  if (shown.length === 0) return [`${count} ${count === 1 ? 'player has' : 'players have'} no insights yet.`];
+  const more = count - shown.length;
+  const sep = (i: number) => (more > 0 ? (i === shown.length - 1 ? ` and ${more} more` : ', ') : i === shown.length - 1 ? '' : i === shown.length - 2 ? ' and ' : ', ');
+  return [...shown.flatMap((_, i) => [i, sep(i)]), ` ${count === 1 ? 'has' : 'have'} no insights yet.`];
 }
 
 /**

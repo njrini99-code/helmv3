@@ -1,5 +1,40 @@
 # Clubhouse changelog
 
+## 2026-10-21 — Brand decision recorded; preview player page frame
+
+White cards and Instrument Sans stay (owner decision); STATUS item 7 and
+`memory/brand/clubhouse-ui.md` say so. The dev preview now frames
+`/clubhouse-preview/player?state=self` with the player, not the coach shell.
+
+## 2026-10-21 — Phone Roster and Team stats figures render directly
+
+Owner rule: no digit rolling. The phone Roster row figure and the Team stats
+strokes gained figures are plain tabular text, as on Qualifiers; Number Flow is
+gone from both screens.
+
+## 2026-10-21 — Lint bans reading the event inside a state updater
+
+`no-restricted-syntax` in the Clubhouse ESLint block rejects `e.target` /
+`e.currentTarget` read inside a `set*(...)` updater. The updater runs later
+and can see a box React has already reset, which lost the Settings name on
+WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
+trips, Qualifiers, the component playground). A test pins the ban
+(`no-lazy-event-read.test.ts`).
+
+## 2026-10-21 — The player peek opens CoachHelm
+
+The player peek (CH-1832, `ui/PlayerPeek.tsx`) adds a fourth action,
+CoachHelm, opening the player's deep dive
+(`/golf/dashboard/coachhelm?view=deep-dive&player=`, `coachHelmPlayerHref`);
+it is not drawn while CoachHelm isn't rebuilt for coaches. Every page that
+wraps a name in `PlayerPeek` gets it (Coach Home spec B §3).
+
+## 2026-10-21 — Goals styles
+
+`styles/goals.css` holds the Set a goal sheet's form, the suggested-goals rail
+and a goal's state line and coach controls (P005). It is imported by the
+components that use it, not by `stats.css`.
+
 ## 2026-10-21 — A fitted hover card is never wider than its cell
 
 `PeekTarget` with `within` (the team stats grid's player cell) opened no narrower
@@ -59,13 +94,13 @@ until hydrated, and look normal meanwhile (`styles/controls.css`,
 ## 2026-10-21 — Teammates read through the profile function (S4)
 
 No visible change. From the 2026-10-16 security review. A player could read a
-teammate's whole `golf_players` row (email, phone, gpa, school, hometown, state).
-The qualifier leaders, the qualifier form, the player roster and the messages
-now read teammates' names through `readGolfPlayerProfiles`
-(`src/lib/golf/player-profiles.ts`, the `golf_player_profiles` function): display
-columns only. Until the function is applied the read falls back to the table, so
-nothing changes on screen; the policy change that closes the hole stays held
-(`supabase/migrations/HELD.md`).
+teammate's whole `golf_players` row (email, phone, gpa, school, hometown,
+state). The qualifier leaders, the qualifier form, the player roster and the
+messages now read teammates' names through `readGolfPlayerProfiles`
+(`src/lib/golf/player-profiles.ts`, the `golf_player_profiles` function):
+display columns only. Until the function is applied the read falls back to the
+table, so nothing changes on screen; the policy change that closes the hole
+stays held (`supabase/migrations/HELD.md`).
 
 ## 2026-10-21 — Sign-out drops the offline copies (security review S2)
 
@@ -156,25 +191,34 @@ steps and the baseline are in STATUS.md "Monitoring".
 
 ## 2026-10-19 — A toast in a dialog no longer covers its Save on desktop
 
-- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's footer: after Publish, the "Published"
-  toast covered the Edit event dialog's Save changes and took its clicks (found by the write journeys on a production
-  build). Inside a dialog the toasts now sit at the top on desktop as they already did on the phone (ui.css), pinned
-  by a shell test.
+- CH-1812's in-dialog toast stack sat bottom right on desktop, over a dialog's
+  footer: after Publish, the "Published" toast covered the Edit event dialog's
+  Save changes and took its clicks (found by the write journeys on a production
+  build). Inside a dialog the toasts now sit at the top on desktop as they
+  already did on the phone (ui.css), pinned by a shell test.
 
 ## 2026-10-19 — Date fields drop this year's year
 
-- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit), and keeps the year for any other year.
-  Two half-width fields on the phone (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The value,
-  the month grid's day names and typing are unchanged; the server render keeps the year (the year is read on the
-  client, so no time zone is guessed).
+- ui/DateField shows a date in the current year as "Tue 22 Sep" (iOS's habit),
+  and keeps the year for any other year. Two half-width fields on the phone
+  (qualifier start and end) no longer cut the date to "Tue 22 Sep 20…". The
+  value, the month grid's day names and typing are unchanged; the server render
+  keeps the year (the year is read on the client, so no time zone is guessed).
 
 ## 2026-10-19 — The iPad tier of the shell
 
-`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is 208px (was 240px) and the page gutter 28px (was 40px), and the next-event card in the sidebar narrows with it. An iPad portrait with the sidebar open went from a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and everything from 1181px up are unchanged. Page-level tablet fixes are in each page's own changelog. Lane W4c.
+`shell.css` (end block "W4c tablet tier"): between 821 and 1180px the sidebar is
+208px (was 240px) and the page gutter 28px (was 40px), and the next-event card
+in the sidebar narrows with it. An iPad portrait with the sidebar open went from
+a 586px canvas to 618px, a 1024px Pro from 776px to 808px; the folded rail and
+everything from 1181px up are unchanged. Page-level tablet fixes are in each
+page's own changelog. Lane W4c.
 
 ## 2026-10-19 — Hero tone titles follow the iPhone's text size
 
-`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px) are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane W4b.
+`hero-tones.css` (shared): the scorecard and board tone titles (34px and 30px)
+are set in `calc(N * var(--ch-type-k))`, and their radii sit on the scale. Lane
+W4b.
 
 ## 2026-10-19 — Complete and elevate: shared pieces
 

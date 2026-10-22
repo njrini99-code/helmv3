@@ -869,6 +869,17 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(code('CH-13969')).toBeNull();
   });
 
+  it('CH-13938 the Monday brief link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
+    showCoach();
+    expect(code('CH-13938')).toBeNull();
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} mondayBriefHref="/golf/dashboard/coachhelm?view=monday-brief" />));
+    expect(within(code('CH-13938') as HTMLElement).getByRole('link', { name: 'Monday brief' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=monday-brief');
+    cleanup();
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} mondayBriefHref="/golf/dashboard/coachhelm?view=monday-brief" />));
+    expect(code('CH-13938')).toBeNull();
+  });
+
   it('CH13-4 D4 the header counts the players with an open signal, never the rows behind them; the pulse is one collapsed line in it, up to three items, in their own words', async () => {
     const u = user();
     showCoach();

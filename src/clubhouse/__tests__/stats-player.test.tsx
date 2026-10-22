@@ -47,7 +47,7 @@ import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import { sgBaseline } from '../lib/sg';
 import { ClubhouseMarker } from '../shell/context';
@@ -562,6 +562,18 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
   });
 
+  it('CH-5215 CoachHelm’s reads do not load: Game detail says so once under the section chips and draws no count line', () => {
+    wrap(
+      <PhoneChromeProvider>
+        <SlotHost />
+        <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={PREVIEW_READS_FAILED} />
+      </PhoneChromeProvider>,
+    );
+    expect(code('CH-5215')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
+    expect(document.querySelector('.ch-gm__reads')).toBeNull();
+  });
+
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
@@ -927,6 +939,14 @@ describe('Stats player · the loader', () => {
     const partial = await loadAs();
     expect(partial!.roundsError).toBe(true);
     expect(logServer).toHaveBeenCalledWith('stats', 'rounds', expect.anything());
+  });
+
+  it('a goal carries its metric_id from golf_goals into the profile, so a human-titled goal still formats by its metric', async () => {
+    tables.current = profileTables({
+      golf_goals: { data: [{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric_id: 'gir_pct', state: 'active', current_value: 62, target_value: 70, baseline_value: 55 }] },
+    });
+    const profile = await loadAs();
+    expect(profile!.goals).toEqual([{ id: 'g1', title: 'Greens in regulation, 30-day goal', metric: 'gir_pct', state: 'active', current: 62, target: 70, baseline: 55 }]);
   });
 
   it('52301 CH-5203 focus areas and goals that fail to read are logged and flagged, never thrown', async () => {

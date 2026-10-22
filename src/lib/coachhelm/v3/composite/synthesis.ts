@@ -32,6 +32,7 @@ import { describeError } from '@/lib/utils/describe-error';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
 import { INSIGHT_ANGLES_FLAG } from '@/lib/coachhelm/v3/generators/insight-angles/angle-data';
 import { stampAndCheckRead } from '@/lib/coachhelm/v3/engine/read-window';
+import { coachCopyIssues } from '@/lib/coachhelm/v3/engine/coach-voice';
 import { compositeFamilyKey, sampleUnitFor } from '@/lib/coachhelm/v3/engine/read-floors';
 import type { InsightSampleUnit } from '@/lib/coachhelm/v2/insights/types';
 
@@ -551,10 +552,20 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         result.below_floor = (result.below_floor ?? 0) + 1;
         continue;
       }
+      // The coach's voice (`evidence.coach_copy`), stored only when it states
+      // the player copy's numbers, in the third person, with no club named.
+      const coachIssues = composed.coach ? coachCopyIssues(composed, composed.coach) : [];
+      if (composed.coach && coachIssues.length > 0) {
+        await logServerEvent(`synthesizeForPlayer: rule ${rule.id} coach copy not stored (${coachIssues.join('; ')})`, {
+          action: `v3.composite.${rule.id}.coach_copy`,
+          metadata: { issues: coachIssues },
+        }, 'warning');
+      }
       const evidence = {
         ...read.evidence,
         composite_rule_id: rule.id,
         source_insight_ids: match.source_insight_ids,
+        ...(composed.coach && coachIssues.length === 0 ? { coach_copy: composed.coach } : {}),
       };
       const sig = `${COMPOSITE_PREFIX}:${rule.id}:${composed.signature}`;
       // Track BEFORE the gate check: a philosophy-gated match still owns its

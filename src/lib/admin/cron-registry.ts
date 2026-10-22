@@ -23,6 +23,9 @@ export const CRON_REGISTRY: readonly CronRegistryEntry[] = [
   { jobType: 'coachhelm-safety-net', path: '/api/cron/coachhelm-safety-net', cadenceMinutes: 30, schedule: '*/30 * * * *' },
   { jobType: 'coachhelm-insight-lifecycle', path: '/api/cron/coachhelm-insight-lifecycle', cadenceMinutes: DAILY, schedule: '0 4 * * *' },
   { jobType: 'coachhelm-roster-sweep', path: '/api/cron/coachhelm-roster-sweep', cadenceMinutes: DAILY, schedule: '0 2 * * *' },
+  // CoachHelm task chs-28: the coach Monday brief, Mondays 05:00 UTC. The route returns before any read while
+  // coachhelm_monday_brief_v1 is off, and sendEmail honours HELM_CUSTOMER_EMAIL_ENABLED.
+  { jobType: 'coachhelm-monday-brief', path: '/api/cron/coachhelm-monday-brief', cadenceMinutes: 7 * DAILY, schedule: '0 5 * * 1' },
   { jobType: 'event-reminders', path: '/api/cron/event-reminders', cadenceMinutes: 60, schedule: '0 * * * *' },
   // Moved off "0 * * * *" 2026-09-06 (cron consolidation) — it fired the same
   // minute as event-reminders, which owns the top of the hour.

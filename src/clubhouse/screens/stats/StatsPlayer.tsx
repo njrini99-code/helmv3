@@ -6,6 +6,7 @@ import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, typ
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
+import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -35,7 +36,10 @@ import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
+import type { ChFocusLoop } from '../../data/focus-loop-shape';
+import { FocusLoop } from './FocusLoop';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
@@ -61,8 +65,11 @@ export function formNote(first: string, scores: number[]): string {
   return `${first} is holding steady across these rounds.`;
 }
 
-/** `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. */
-export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string }) {
+/**
+ * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
+ * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
+ */
+export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChStatsReads }) {
   const router = useRouter();
   const toast = useToast();
   const delayedToast = useDelayedToast();
@@ -199,6 +206,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
           <StatsPlayerPhone
             data={data}
             initialTab={initialTab}
+            reads={reads}
             playerHref={href(data.id, data.filter)}
             messageHref={messageHref}
             windowShown={rangeOf(loading ?? data.filter)}
@@ -356,7 +364,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
-                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} onRetry={() => router.refresh()} />
+                  <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
                   <div className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
@@ -492,7 +500,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
 }
 
 /** One focus area or goal as a track from where it started to its target, the player's current value marked on it. */
-function DevTrack({ title, state, line, baseline, current, target, metric, done = false, extra }: { title: string; state?: string | null; line: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; done?: boolean; extra?: ReactNode }) {
+function DevTrack({ title, state, line, baseline, current, target, metric, done = false, extra, loop }: { title: string; state?: string | null; line: string; baseline: number | null; current: number | null; target: number | null; metric: string | null; done?: boolean; extra?: ReactNode; loop?: ChFocusLoop }) {
   const progress = progressOf(baseline, current, target);
   return (
     <li className={'ch-dv' + (done ? ' is-done' : '')}>
@@ -518,6 +526,7 @@ function DevTrack({ title, state, line, baseline, current, target, metric, done 
           <i className="ch-dv__flag" />
         </div>
       )}
+      <FocusLoop loop={loop} />
     </li>
   );
 }
@@ -566,6 +575,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                   target={f.target}
                   metric={devMetric(f.title, f.metric)}
                   extra={!coach && f.status === 'proposed' ? <ProposalAnswer id={f.id} title={f.title} /> : undefined}
+                  loop={f.loop}
                 />
               ))}
             </ul>
@@ -583,10 +593,12 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                 <span>
                   <b>this season</b>
                 </span>
+                {!coach && <GoalSetButton />}
               </div>
             </>
           }
         >
+          {!coach && <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />}
           {data.goals.length === 0 ? (
             <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
           ) : (
@@ -602,9 +614,9 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                     baseline={g.baseline}
                     current={g.current}
                     target={g.target}
-                    metric={devMetric(g.title)}
+                    metric={devMetric(g.title, g.metric)}
                     done={done}
-                    extra={<span className="ch-sr-only">{done ? 'Achieved' : 'In progress'}</span>}
+                    extra={<GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />}
                   />
                 );
               })}
