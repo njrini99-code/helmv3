@@ -40,6 +40,12 @@
 -- VERIFY: and relrowsecurity;
 -- VERIFY: select 1 where not has_table_privilege('anon',
 -- VERIFY: 'public.golf_player_availability_coach_notes', 'SELECT');
+-- VERIFY: select 1 from pg_indexes where indexname =
+-- VERIFY: 'idx_golf_player_availability_coach_notes_updated_by';
+
+-- The updated_by reference to auth.users takes a SHARE ROW EXCLUSIVE lock on
+-- auth.users for this transaction; cap the wait so sign-in is never queued.
+set lock_timeout = '3s';
 
 create table if not exists public.golf_player_availability_coach_notes (
     team_id uuid not null
@@ -62,6 +68,9 @@ comment on table public.golf_player_availability_coach_notes is
 
 create index if not exists idx_golf_player_availability_coach_notes_player
 on public.golf_player_availability_coach_notes (player_id);
+
+create index if not exists idx_golf_player_availability_coach_notes_updated_by
+on public.golf_player_availability_coach_notes (updated_by);
 
 alter table public.golf_player_availability_coach_notes
 enable row level security;

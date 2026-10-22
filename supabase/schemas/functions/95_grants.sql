@@ -1429,3 +1429,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
+
+REVOKE ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."golf_import_player_classes"("p_player_id" "uuid", "p_team_id" "uuid", "p_term" "text", "p_rows" "jsonb") TO "service_role";
