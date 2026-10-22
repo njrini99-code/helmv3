@@ -276,13 +276,17 @@ its rows together and does not map them one to one.
 | pr-22 | Tooling PRs closed unmerged with conflicts: preflight command (#2058), deploy policy doc (#2093), hermetic create-workspace test (#2216). Rebuild #2058 from main only if wanted | docs | closed | #2058, #2093, #2216 (closed) | |
 | pr-23 | Housekeeping PRs: #2278 (deno.lock) and #2259 (Bridge telemetry) landed; #2203, #2268, #2249 and #2261 closed as superseded | docs | done | #2278, #2259 | |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
+| new-02 | Roster CH-3009 menu flake: the test pressed Escape before the menu took focus; the helper now waits for focus (product code untouched) | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
+| new-03 | Presentation check times out starting its web server: readiness URL is `/manifest.json`, setup visits get 300 s | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
+| new-04 | Edge-swipe `finish` timer outlives the screen ("window is not defined" on main): cleanup cancels the timer and frames and runs the exit hand-over once | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
 | queue-01 | Move every audit row that is not here into this queue, with the design-call and output-spec items | docs | in progress | | claude/project-thread-f4qkrr (thread "Audit rows into queue") |
 
 <!-- markdownlint-enable MD013 -->
 
 Counts on 2026-10-22: 129 done, 25 held, 20 closed, 6 in progress, none
-open. Four of the six in-progress rows are one draft, #2333 (chs-21, chs-22,
-chs-23, par-14); chs-37 and chs-39 are #2328. The held rows wait on the owner
+open (rows added since the audit are not counted: new-02 to new-04 in
+progress in #2332, queue-01 in progress here). Four of the six in-progress
+rows are one draft, #2333 (chs-21, chs-22, chs-23, par-14); chs-37 and chs-39 are #2328. The held rows wait on the owner
 (the iPhone pass and App Store build in doc-37, which also gates doc-38 to
 doc-41 reaching users; device checks and reviews in doc-03, doc-08, doc-35,
 doc-36 and doc-49; the reset-email template in doc-55; the canary and deploy
@@ -363,12 +367,20 @@ the queue above.
 | #2320 | Coach Standing: the ladder's reads come from the coach feed | CoachHelm board UI | landed |
 | #2328 | Game profile folds into Standing; Ask answers link a player's reads | CoachHelm board UI | open (chs-37, chs-39) |
 | #2333 | CoachHelm data prompts in round entry, player Course plan | CoachHelm board UI | open draft (chs-21, chs-22, chs-23, par-14) |
-| #2332 | Roster CH-3009 flake, presentation server-start timeout, edge-swipe timer | Clubhouse fixes | open draft (its own rows new-02 to new-04) |
+| #2332 | Roster CH-3009 flake, presentation server-start timeout, edge-swipe timer | Clubhouse fixes | open (new-02, new-03, new-04) |
 | #2329 | `HELD.md` marks `20261022090000` applied; regenerated database types | docs | landed |
 | #2331 | Regenerate `database.ts` for `golf_import_player_classes`; incident close-out | docs | open |
 | #2327 | Regenerate `database.ts` from the production schema (bot; #2331 supersedes it) | docs | open |
 
 <!-- markdownlint-enable MD013 -->
+
+Two open PRs sit in CoachHelm board UI at once: #2328 (branch
+`claude/coachhelm-standing-ask`) and #2333 (branch
+`claude/coachhelm-round-prompts`). The rule is one thread per area. Both change
+`src/clubhouse/data/coachhelm.ts`, `docs/clubhouse/catalog/coachhelm.md`, the
+P013 `CONTRACT.md`, `config/clubhouse/bridge-contracts.json` and the generated
+Clubhouse files, so the second to merge must merge main and regenerate. The
+coordinator sequences them; this page records the state and does not choose.
 
 ## Reserving Bridge IDs and CH codes
 
