@@ -30,7 +30,7 @@ function createChainableMock({
   // `chain.lt is not a function` and the compute's try/catch turns that
   // TypeError into a silent `success: false`, which is what broke this
   // suite (not a single-flight regression).
-  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'range', 'filter', 'upsert'];
+  const methods = ['select', 'eq', 'neq', 'in', 'gte', 'lte', 'lt', 'not', 'order', 'limit', 'range', 'filter', 'upsert', 'update'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }
@@ -414,6 +414,19 @@ describe('generateAndStoreRoundReview — LLM/CoachHelm provider failure (§15.2
     coordShotsData = [];
     vi.mocked(isCoachHelmEnabledForPlayer).mockResolvedValue({ effectivelyEnabled: false } as never);
     vi.mocked(coachHelmIntelligence.generateRoundReview).mockReset();
+  });
+
+  it('clears the pending placeholder a coach note left, once the review is generated (and touches no other state)', async () => {
+    const result = await generateAndStoreRoundReview('round-coord-1', PLAYER_ID);
+
+    expect(result.success).toBe(true);
+    type Chain = Record<string, ReturnType<typeof vi.fn>>;
+    const settled = mockFrom.mock.calls
+      .map(([table], i) => ({ table, chain: mockFrom.mock.results[i]?.value as Chain }))
+      .find(({ table, chain }) => table === 'golf_round_reviews' && (chain.update?.mock.calls.length ?? 0) > 0);
+    expect(settled?.chain.update).toHaveBeenCalledWith({ patterns_detected: { status: 'draft' } });
+    // Scoped to a row that still says pending: a published or approved review is never rewritten.
+    expect(settled?.chain.eq).toHaveBeenCalledWith('patterns_detected->>status', 'pending');
   });
 
   it('falls back to the rule-based review instead of failing when the CoachHelm/LLM provider throws', async () => {

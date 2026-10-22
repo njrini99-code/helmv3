@@ -45,7 +45,8 @@
     "route": "src/clubhouse/routes/coachhelm.tsx",
     "styles": "src/clubhouse/styles/coachhelm.css",
     "tests": [
-      "src/clubhouse/__tests__/coachhelm.test.tsx"
+      "src/clubhouse/__tests__/coachhelm.test.tsx",
+      "src/clubhouse/__tests__/whats-new.test.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/coachhelm.md",
