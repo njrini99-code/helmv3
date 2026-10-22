@@ -3,7 +3,8 @@
 ## 2026-10-21 — Quick tier on follow-up pushes, full suite at land
 
 Measured on 2026-10-21: CI jobs ran 1 to 7 minutes but waited 5 to 13 minutes
-for a runner, because ~20 jobs per push compete for the account's 20 slots.
+for a runner, because ~20 jobs per push competed for the account's 20 slots
+(GitHub Pro, from later that day, raises the cap to 40).
 Runner-minutes per push are the lever, so a follow-up push (`synchronize`) now
 runs a quick tier:
 

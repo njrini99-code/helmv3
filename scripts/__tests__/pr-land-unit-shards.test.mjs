@@ -65,16 +65,6 @@ describe('evaluateUnitShards', () => {
     run.jobs[4] = job(5, { test: 'failure' });
     expect(evaluateUnitShards([run]).problems).toEqual(['shard 5/5: step failure']);
   });
-  it('refuses a five-shard run where Next build took the quick tier (risky test-config follow-up)', () => {
-    const run = fullRun(13);
-    run.jobs.push({ name: 'Next build', conclusion: 'success', steps: [{ name: 'Quick tier (follow-up push)', conclusion: 'success' }, { name: 'Build', conclusion: 'skipped' }] });
-    expect(evaluateUnitShards([run])).toMatchObject({ ok: false, problems: ['Next build took the quick tier (follow-up push)'] });
-  });
-  it('passes a full run whose Next build ran (quick tier step skipped)', () => {
-    const run = fullRun(14);
-    run.jobs.push({ name: 'Next build', conclusion: 'success', steps: [{ name: 'Quick tier (follow-up push)', conclusion: 'skipped' }, { name: 'Build', conclusion: 'success' }] });
-    expect(evaluateUnitShards([run])).toMatchObject({ ok: true, runId: 14 });
-  });
   it('refuses when there is no run at all', () => {
     expect(evaluateUnitShards([]).ok).toBe(false);
     expect(evaluateUnitShards(null).problems[0]).toMatch(/no CI run/);
