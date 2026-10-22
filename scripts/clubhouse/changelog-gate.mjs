@@ -1,8 +1,13 @@
 /**
  * clubhouse:check, changelog gate: a page whose implementation files changed on
- * this branch must also change its own docs/clubhouse/pages/<P###-slug>/CHANGELOG.md,
- * and a shared piece that changed must be in the cross-page log,
- * docs/clubhouse/CHANGELOG.md.
+ * this branch must also log it, and a shared piece that changed must be in the
+ * cross-page log.
+ *
+ * A log entry is a new fragment file: docs/clubhouse/pages/<P###-slug>/changes/<date>-<slug>.md
+ * for a page, docs/clubhouse/changes/<date>-<slug>.md for the cross-page log. Each branch adds
+ * its own file, so parallel branches never conflict on a log (2026-10-21: the page CHANGELOG.md
+ * files, every entry prepended at the top, conflicted on nearly every merge). An edit to the
+ * old CHANGELOG.md still satisfies the gate; those files keep the history before fragments.
  *
  * "This branch" is the working tree against the merge-base with origin/main
  * (--base <ref> or CLUBHOUSE_BASE overrides the ref), so uncommitted work counts, and a
@@ -33,6 +38,7 @@ const componentFiles = (m) => [...new Set((m.actions ?? []).map((a) => a.compone
 /** The shared-piece directories: a file here that no page owns is logged in the cross-page changelog. */
 export const SHARED_ROOTS = ['src/clubhouse/ui/', 'src/clubhouse/shell/', 'src/clubhouse/lib/', 'src/clubhouse/styles/'];
 export const CROSS_PAGE_LOG = 'docs/clubhouse/CHANGELOG.md';
+export const CROSS_PAGE_CHANGES = 'docs/clubhouse/changes/';
 
 /**
  * The paths a page owns (tests excluded): implementation.root, loader, route,
@@ -78,18 +84,22 @@ export function sharedTouched(manifests, changed) {
 }
 
 export const changelogPath = (m) => `docs/clubhouse/pages/${m.id}-${m.slug}/CHANGELOG.md`;
+/** The page's fragment folder: one new `<date>-<slug>.md` per change. */
+export const changesDir = (m) => `docs/clubhouse/pages/${m.id}-${m.slug}/changes/`;
+/** A fragment is a Markdown file directly in a changes folder (its README does not count). */
+const isFragment = (dir, f) => f.startsWith(dir) && f.endsWith('.md') && !f.slice(dir.length).includes('/') && f !== `${dir}README.md`;
 
 export function checkChangelogs(manifests, changed, baseLabel) {
   const changedSet = new Set(changed);
   const v = [];
   const list = (files) => files.slice(0, 5).join(', ') + (files.length > 5 ? `, +${files.length - 5} more` : '');
   for (const { m, files } of pagesTouched(manifests, changed).values()) {
-    if (changedSet.has(changelogPath(m))) continue;
-    v.push(`${m.id} ${m.name}: implementation changed since ${baseLabel} (${list(files)}) but ${changelogPath(m)} did not; add a dated entry`);
+    if (changedSet.has(changelogPath(m)) || changed.some((f) => isFragment(changesDir(m), f))) continue;
+    v.push(`${m.id} ${m.name}: implementation changed since ${baseLabel} (${list(files)}) but nothing was logged; add a fragment ${changesDir(m)}<date>-<slug>.md`);
   }
   const shared = sharedTouched(manifests, changed);
-  if (shared.length && !changedSet.has(CROSS_PAGE_LOG)) {
-    v.push(`Shared pieces changed since ${baseLabel} (${list(shared)}) but ${CROSS_PAGE_LOG} did not; add a dated entry (a shared piece is logged there once, not on each page that renders it)`);
+  if (shared.length && !changedSet.has(CROSS_PAGE_LOG) && !changed.some((f) => isFragment(CROSS_PAGE_CHANGES, f))) {
+    v.push(`Shared pieces changed since ${baseLabel} (${list(shared)}) but nothing was logged; add a fragment ${CROSS_PAGE_CHANGES}<date>-<slug>.md (a shared piece is logged there once, not on each page that renders it)`);
   }
   return v;
 }

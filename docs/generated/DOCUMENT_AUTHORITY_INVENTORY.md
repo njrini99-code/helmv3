@@ -634,6 +634,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/README.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/README.md` | current | yes | - | yes | - |
 | `docs/clubhouse/catalog/README.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/README.md` | current | - | - | - | - |
 | `docs/db/drafts/README.md` | current | - | - | - | - |
 | `e2e/README.md` | current | - | - | yes | 2 |
 | `ios/App/CapApp-SPM/README.md` | current | - | - | - | - |

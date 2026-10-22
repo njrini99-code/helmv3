@@ -51,6 +51,7 @@
     "docs:inventory-check": "node scripts/regen-docs.mjs --check",
     "docs:path-drift": "node scripts/check-doc-path-drift.mjs",
     "docs:regen": "node scripts/regen-docs.mjs",
+    "regen:resolve": "node scripts/regen-resolve.mjs",
     "docs:rules-current": "node scripts/check-rules-current.mjs",
     "docs:schema-drift": "node scripts/check-doc-schema-drift.mjs",
     "db:retention-table": "node scripts/db/retention-table.mjs",

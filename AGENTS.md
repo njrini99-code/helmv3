@@ -76,6 +76,12 @@ Canonical repo: `/Users/ricknini/Downloads/helmv3`. Start a task with
 - Stage explicit paths and push an explicit branch. Use `--force-with-lease`
   after rebasing your own branch. Fix red checks instead of bypassing them; if
   a check is broken by infrastructure, say so in the PR.
+- Never hand-merge a generated file (`docs/generated/**`,
+  `docs/clubhouse/generated/**`, `component-catalog.json`, `*.generated.ts`):
+  on a conflict run `npm run regen:resolve`, which regenerates and stages them.
+- `npm run pr:land` merges the PR into current `main` in memory first and
+  refuses a conflict or a Bridge ID or CH code used twice; it lands one PR at a
+  time. When it refuses, merge `origin/main` into the branch, fix, and push.
 - Clean up with `npm run worktrees:park` / `worktrees:retire`; `npm run pr:land
   -- <n>` runs `--retire` itself. STANDING OWNER AUTHORIZATION covers checkouts the
   tool verdicts PARKABLE and branches it verdicts DELETE_MERGED_EXACT /

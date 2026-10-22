@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkChangelogs, CROSS_PAGE_LOG, implementationPaths, isTestFile, pagesTouched, sharedTouched } from '../changelog-gate.mjs';
+import { changesDir, checkChangelogs, CROSS_PAGE_CHANGES, CROSS_PAGE_LOG, implementationPaths, isTestFile, pagesTouched, sharedTouched } from '../changelog-gate.mjs';
 
 const messages = {
   id: 'P007',
@@ -44,7 +44,7 @@ test('a changed implementation file without its CHANGELOG names the page and the
   assert.match(v[0], /P007 Messages/);
   assert.match(v[0], /messages\.css/);
   assert.match(v[0], /MessagesView\.tsx/);
-  assert.ok(v[0].includes(LOG));
+  assert.ok(v[0].includes('docs/clubhouse/pages/P007-messages/changes/'), 'it names the fragment folder to add to');
 });
 
 test('the page CHANGELOG changing in the same diff satisfies the gate', () => {
@@ -83,7 +83,7 @@ test('a shared piece needs the cross-page log, not the page logs', () => {
   const v = checkChangelogs(all, changed, 'base');
   assert.equal(v.length, 1);
   assert.match(v[0], /Shared pieces changed since base \(src\/clubhouse\/styles\/tokens\.css, src\/clubhouse\/ui\/Notices\.tsx\)/);
-  assert.ok(v[0].includes(CROSS_PAGE_LOG));
+  assert.ok(v[0].includes(CROSS_PAGE_CHANGES));
   assert.deepEqual(checkChangelogs(all, [...changed, CROSS_PAGE_LOG], 'base'), []);
   // The page that renders it is not asked for a changelog of its own.
   assert.ok(!v.some((x) => /P011|P012/.test(x)));
@@ -108,10 +108,33 @@ test("implementation.also: a second surface is the page's own, so its files need
   assert.deepEqual(sharedTouched([...all, auth], changed), [], 'an owned stylesheet under styles/ is not a shared piece');
   const v = checkChangelogs([...all, auth], changed, 'base');
   assert.equal(v.length, 1);
-  assert.ok(v[0].startsWith('P015 Auth:') && v[0].includes('docs/clubhouse/pages/P015-auth/CHANGELOG.md'));
+  assert.ok(v[0].startsWith('P015 Auth:') && v[0].includes('docs/clubhouse/pages/P015-auth/changes/'));
   assert.deepEqual(checkChangelogs([...all, auth], [...changed, 'docs/clubhouse/pages/P015-auth/CHANGELOG.md'], 'base'), []);
   // Without it, the same stylesheet is a shared piece and the screens are no page's.
   const bare = { ...auth, implementation: { root: auth.implementation.root, styles: auth.implementation.styles } };
   assert.deepEqual(sharedTouched([...all, bare], changed), ['src/clubhouse/styles/onboard.css', 'src/clubhouse/styles/onboard-tokens.css']);
   assert.equal(pagesTouched([...all, bare], changed).size, 0);
+});
+
+test('a new fragment in the page changes folder satisfies the gate, so parallel branches never edit the same log', () => {
+  assert.equal(changesDir(messages), 'docs/clubhouse/pages/P007-messages/changes/');
+  assert.deepEqual(checkChangelogs([messages], ['src/clubhouse/data/messages.ts', 'docs/clubhouse/pages/P007-messages/changes/2026-10-22-composer.md'], 'base'), []);
+});
+
+test("a fragment folder's README, a nested file, a non-Markdown file or another page's fragment does not satisfy it", () => {
+  const impl = 'src/clubhouse/data/messages.ts';
+  for (const f of [
+    'docs/clubhouse/pages/P007-messages/changes/README.md',
+    'docs/clubhouse/pages/P007-messages/changes/old/2026-10-22-x.md',
+    'docs/clubhouse/pages/P007-messages/changes/2026-10-22-x.txt',
+    'docs/clubhouse/pages/P002-home/changes/2026-10-22-x.md',
+  ]) assert.equal(checkChangelogs([messages, home], [impl, f], 'base').length, 1, f);
+});
+
+test('a shared piece is satisfied by a cross-page fragment or the old cross-page log', () => {
+  const shared = 'src/clubhouse/ui/Button.tsx';
+  assert.equal(checkChangelogs([messages], [shared], 'base').length, 1);
+  assert.ok(checkChangelogs([messages], [shared], 'base')[0].includes(CROSS_PAGE_CHANGES));
+  assert.deepEqual(checkChangelogs([messages], [shared, `${CROSS_PAGE_CHANGES}2026-10-22-button.md`], 'base'), []);
+  assert.deepEqual(checkChangelogs([messages], [shared, CROSS_PAGE_LOG], 'base'), []);
 });
