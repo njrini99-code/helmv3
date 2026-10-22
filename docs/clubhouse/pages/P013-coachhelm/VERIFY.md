@@ -281,6 +281,14 @@ before, after, baseline or evidence.
 | `P013__page__coach__390x792__default__after__77e553a.png` | after | 77e553a | page (coach), 390x792px, default |
 | `P013__page__player__1280x948__default__after__77e553a.png` | after | 77e553a | page (player), 1280x948px, default |
 | `P013__page__player__390x792__default__after__77e553a.png` | after | 77e553a | page (player), 390x792px, default |
+| `P013__board__player__390x844__course-plan-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-dark |
+| `P013__board__player__390x844__course-plan-failed-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-failed-dark |
+| `P013__board__player__390x844__course-plan-failed-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-failed-light |
+| `P013__board__player__390x844__course-plan-idle-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-idle-dark |
+| `P013__board__player__390x844__course-plan-idle-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-idle-light |
+| `P013__board__player__390x844__course-plan-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-light |
+| `P013__board__player__390x844__course-plan-none-dark__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-dark |
+| `P013__board__player__390x844__course-plan-none-light__after__8b6bf54.png` | after | 8b6bf54 | board (player), 390x844px, course-plan-none-light |
 
 ## Historical verification gaps
 

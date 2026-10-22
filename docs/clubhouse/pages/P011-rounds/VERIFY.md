@@ -467,6 +467,20 @@ before, after, baseline or evidence.
 | `P011__season-figures__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | season-figures (player), 1440px, default, after: season figures, putts on the recorded basis; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__month-spark__player__1440__default__before__2b3c6f5.png` | before | 2b3c6f5 | month-spark (player), 1440px, default, before: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
 | `P011__month-spark__player__1440__default__after__2b3c6f5.png` | after | 2b3c6f5 | month-spark (player), 1440px, default, after: month heads with the flipped month sparks; /clubhouse-preview/rounds; synthetic preview, captured in the cloud container (Chromium) |
+| `P011__track__player__390x844__course-nudge-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-dark |
+| `P011__track__player__390x844__course-nudge-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-light |
+| `P011__track__player__390x844__course-nudge-picker-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-picker-dark |
+| `P011__track__player__390x844__course-nudge-picker-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-picker-light |
+| `P011__track__player__390x844__course-nudge-summary-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-summary-dark |
+| `P011__track__player__390x844__course-nudge-summary-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, course-nudge-summary-light |
+| `P011__track__player__390x844__putt-prompt-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-dark |
+| `P011__track__player__390x844__putt-prompt-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-light |
+| `P011__track__player__390x844__putt-prompt-tagged-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-tagged-dark |
+| `P011__track__player__390x844__putt-prompt-tagged-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, putt-prompt-tagged-light |
+| `P011__track__player__390x844__recovery-answered-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-answered-dark |
+| `P011__track__player__390x844__recovery-answered-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-answered-light |
+| `P011__track__player__390x844__recovery-dark__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-dark |
+| `P011__track__player__390x844__recovery-light__after__8b6bf54.png` | after | 8b6bf54 | track (player), 390x844px, recovery-light |
 
 ## 2026-10-02 — Narrow setup layout and course selection
 
