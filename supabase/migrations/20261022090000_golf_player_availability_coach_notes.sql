@@ -63,7 +63,8 @@ comment on table public.golf_player_availability_coach_notes is
 create index if not exists idx_golf_player_availability_coach_notes_player
 on public.golf_player_availability_coach_notes (player_id);
 
-alter table public.golf_player_availability_coach_notes enable row level security;
+alter table public.golf_player_availability_coach_notes
+enable row level security;
 
 drop policy if exists golf_player_availability_coach_notes_select
 on public.golf_player_availability_coach_notes;

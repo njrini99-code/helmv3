@@ -55,36 +55,50 @@ SELECT ok(
 );
 
 SELECT ok(
-  tests.policy_with_check_contains('public', 'golf_player_availability_coach_notes',
+  tests.policy_with_check_contains(
+    'public',
+    'golf_player_availability_coach_notes',
     'golf_player_availability_coach_notes_insert', 'auth.uid()'),
   'INSERT is only as yourself'
 );
 
 SELECT ok(
-  tests.policy_with_check_contains('public', 'golf_player_availability_coach_notes',
+  tests.policy_with_check_contains(
+    'public',
+    'golf_player_availability_coach_notes',
     'golf_player_availability_coach_notes_insert', 'golf_team_members'),
   'INSERT is only for a member of the team'
 );
 
 SELECT ok(
-  tests.policy_with_check_contains('public', 'golf_player_availability_coach_notes',
+  tests.policy_with_check_contains(
+    'public',
+    'golf_player_availability_coach_notes',
     'golf_player_availability_coach_notes_update', 'auth.uid()'),
   'UPDATE is only as yourself'
 );
 
 SELECT ok(
-  NOT has_table_privilege('anon', 'public.golf_player_availability_coach_notes', 'SELECT'),
+  NOT has_table_privilege(
+    'anon', 'public.golf_player_availability_coach_notes', 'SELECT'
+  ),
   'anon cannot select'
 );
 
 SELECT ok(
-  NOT has_table_privilege('anon', 'public.golf_player_availability_coach_notes', 'INSERT'),
+  NOT has_table_privilege(
+    'anon', 'public.golf_player_availability_coach_notes', 'INSERT'
+  ),
   'anon cannot insert'
 );
 
 SELECT ok(
-  has_table_privilege('authenticated', 'public.golf_player_availability_coach_notes', 'SELECT')
-  AND has_table_privilege('authenticated', 'public.golf_player_availability_coach_notes', 'INSERT'),
+  has_table_privilege(
+    'authenticated', 'public.golf_player_availability_coach_notes', 'SELECT'
+  )
+  AND has_table_privilege(
+    'authenticated', 'public.golf_player_availability_coach_notes', 'INSERT'
+  ),
   'authenticated holds the table grants the policies narrow'
 );
 
