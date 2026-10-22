@@ -20120,11 +20120,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/putt-bias.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -20207,11 +20202,6 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/loader.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/standing/pga-standards.ts",
-          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
