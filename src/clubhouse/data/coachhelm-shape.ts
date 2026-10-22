@@ -305,6 +305,32 @@ export interface ChCoachHelmData {
   notEnough?: ChNotEnough;
 }
 
+/** Names said before the rest are counted: "A, B, C and 2 more". */
+const WITHOUT_NAMED_MAX = 3;
+
+/**
+ * "Theo Marchetti has no insights yet.", "Theo Marchetti and Sam Whitfield have no insights yet.", "A, B, C and 2 more have no
+ * insights yet."; with no names, the count alone. A player counted with no name on file is one of the "more".
+ */
+export function withoutSignalsLine(count: number, names: readonly string[] = []): string {
+  return withoutSignalsRuns(count, names)
+    .map((r) => (typeof r === 'number' ? names[r] : r))
+    .join('');
+}
+
+/**
+ * The same sentence as runs, so the board can draw each name as a link (spec A): a string is text, a number is the index of a name in
+ * `names`. Joined, it is `withoutSignalsLine` exactly.
+ */
+export function withoutSignalsRuns(count: number, names: readonly string[] = []): Array<string | number> {
+  if (count <= 0) return [''];
+  const shown = names.slice(0, Math.min(WITHOUT_NAMED_MAX, count));
+  if (shown.length === 0) return [`${count} ${count === 1 ? 'player has' : 'players have'} no insights yet.`];
+  const more = count - shown.length;
+  const sep = (i: number) => (more > 0 ? (i === shown.length - 1 ? ` and ${more} more` : ', ') : i === shown.length - 1 ? '' : i === shown.length - 2 ? ' and ' : ', ');
+  return [...shown.flatMap((_, i) => [i, sep(i)]), ` ${count === 1 ? 'has' : 'have'} no insights yet.`];
+}
+
 /**
  * The player's Board shows at most three reads that need work (the focus among them, the rest in "Also worth knowing") and one
  * that is working (supercharge 03 §2: working memory holds three to five items; production has a median of nine reads a player

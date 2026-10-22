@@ -1894,12 +1894,20 @@ html:not([data-fw-theme='dark']) .ch-hl {
   }
 }
 
-/* A named player with no read yet is a link to their Standing (CH-13310, spec A): the row takes the tap back. */
-a.ch-hl-pl.is-none {
-  cursor: pointer;
+/* "{names} have no insights yet." (CH-13310): each name is the way to that player's Standing (spec A). */
+.ch-hl-note__a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ch-border-strong);
+  text-underline-offset: 2px;
+  border-radius: var(--ch-radius-sm);
 }
 @media (hover: hover) {
-  a.ch-hl-pl.is-none:hover {
-    background: rgb(28 25 18 / 0.03);
+  .ch-hl-note__a:hover {
+    color: var(--ch-text-primary);
   }
+}
+.ch-hl-note__a:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }

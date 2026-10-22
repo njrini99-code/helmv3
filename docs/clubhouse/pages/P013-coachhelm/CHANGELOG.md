@@ -598,6 +598,8 @@ Held items:     none
 - `placeholder-cause.test.ts` (both production spellings) and
   `coachhelm-dive.test.tsx` (a placeholder row gets no diagnosis; the blank,
   observed and hypothesis cases are unchanged). No screenshot: the card loses
+  one block and no layout rule changed.
+
   one block and no layout rule
   changed.
 

@@ -180,27 +180,23 @@ export function CoachBoard({ data, writes = LIVE_COACHHELM_WRITES, coursePlanRea
                   );
                 })}
                 {/* CH-13310: a player with no read yet is a row in the list, not a footer under the card (design call §1, "What to cut"). */}
-                {noReads.map((r) => {
-                  const row = (
-                    <>
-                      {r.name ? <Avatar name={r.name} size={phone ? 28 : 34} /> : <span className="ch-hl-pl__more ch-num" aria-hidden="true">+{r.more}</span>}
-                      <span>
-                        <b>{r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`}</b>
-                        <em>No reads yet</em>
-                      </span>
-                    </>
-                  );
-                  // Spec A: a named player with no read yet opens their Standing in the coach's views, when the id came with the name.
-                  return r.id ? (
-                    <Link key={r.key} className="ch-hl-pl is-none" data-ch-code="CH-13310" href={coachPlayerHref('standing', r.id)} onClick={() => haptic('select')}>
-                      {row}
-                    </Link>
-                  ) : (
-                    <div key={r.key} className="ch-hl-pl is-none" data-ch-code="CH-13310">
-                      {row}
-                    </div>
-                  );
-                })}
+                {noReads.map((r) => (
+                  <div key={r.key} className="ch-hl-pl is-none" data-ch-code="CH-13310">
+                    {r.name ? <Avatar name={r.name} size={phone ? 28 : 34} /> : <span className="ch-hl-pl__more ch-num" aria-hidden="true">+{r.more}</span>}
+                    <span>
+                      <b>
+                        {r.name && r.id ? (
+                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)} onClick={() => haptic('select')}>
+                            {r.name}
+                          </Link>
+                        ) : (
+                          (r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`)
+                        )}
+                      </b>
+                      <em>No reads yet</em>
+                    </span>
+                  </div>
+                ))}
                 {heldOnly.map((p) => (
                   <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
                     <Avatar name={p.name} size={phone ? 28 : 34} />
@@ -413,16 +409,14 @@ function SinceSkeleton() {
   );
 }
 
-/**
- * Roster players with no read yet, as By player rows: each named one, then the unnamed as one "N more players" row. `ids`, in the
- * names' order, lets a named row open that player's Standing (spec A); without them, or out of step with the names, no row links.
- */
+/** Roster players with no read yet, as By player rows (each named one links to that player's Standing, spec A): each named one, then the unnamed as one "N more players" row. */
 function noReadRows(count: number, names: readonly string[] = [], ids?: readonly string[]): Array<{ key: string; name: string | null; id: string | null; more: number }> {
   if (count <= 0) return [];
   const shown = names.slice(0, count);
   const more = count - shown.length;
+  // The ids come beside the names, in the same order; without them (or out of step) a name is text, not a link.
   const linked = !!ids && ids.length === names.length;
-  return [...shown.map((name, i) => ({ key: `n${i}:${name}`, name, id: linked ? (ids[i] ?? null) : null, more: 0 })), ...(more > 0 ? [{ key: 'more', name: null, id: null, more }] : [])];
+  return [...shown.map((name, i) => ({ key: `n${i}:${name}`, name, id: linked ? ids![i]! : null, more: 0 })), ...(more > 0 ? [{ key: 'more', name: null, id: null, more }] : [])];
 }
 
 /** The top card is a signal the count includes: a finding whose read is current. */
