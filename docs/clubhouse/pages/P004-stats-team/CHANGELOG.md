@@ -7,6 +7,16 @@ Design package: none (owner rule: no digit rolling)
 PR/commit:      see git log (claude/clubhouse-no-digit-rolling)
 Contract IDs:   CH-4703
 Actions:        none
+Data impact:    none
+Held items:     none
+```
+
+Owner rule, already applied on Qualifiers: no count-up and no digits rolling.
+The phone's strokes gained figure under the legs and each player's SG were
+Number Flow numerals. They are now plain tabular text written at once
+(`formatSigned`, a true minus), and the hidden copy beside the rolling one is
+gone. Replays 1bff7a784 and c2710104e onto main.
+
 ## 2026-10-21 — Goals on the player's Development tab (see P005)
 
 ```text
@@ -18,11 +28,6 @@ Data impact:    none
 Held items:     none
 ```
 
-Owner rule, already applied on Qualifiers: no count-up and no digits rolling.
-The phone's strokes gained figure under the legs and each player's SG were
-Number Flow numerals. They are now plain tabular text written at once
-(`formatSigned`, a true minus), and the hidden copy beside the rolling one is
-gone. Replays 1bff7a784 and c2710104e onto main.
 `screens/stats/` gained `GoalSheet`, `Goals` and `goal-words`, used by the
 player profile only. Nothing on Team stats changed. Logged on P005.
 

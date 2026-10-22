@@ -13,6 +13,7 @@ Held items:     none
 
 The shared stats stylesheet lost one rule that styled the rolling figure inside
 the Team stats strokes gained line. The player Stats page is unchanged.
+
 ## 2026-10-21 — Goals: set one, answer a suggestion, and a coach's pause and abandon
 
 ```text

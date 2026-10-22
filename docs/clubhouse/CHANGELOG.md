@@ -20,6 +20,7 @@ and can see a box React has already reset, which lost the Settings name on
 WebKit. Eighteen sites now read the value in the handler first (Settings, Hub
 trips, Qualifiers, the component playground). A test pins the ban
 (`no-lazy-event-read.test.ts`).
+
 ## 2026-10-21 — Goals styles
 
 `styles/goals.css` holds the Set a goal sheet's form, the suggested-goals rail
