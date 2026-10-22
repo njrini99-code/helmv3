@@ -221,10 +221,17 @@ before, after, baseline or evidence.
   (2026-10-06); tests: "CH-12307 an import retried after its answer was lost
   shows and syncs the classes the first attempt saved", "CH-12307 a schedule
   that lists a class twice saves it once", "CH-12307 an import skips a class
-  already saved with no term". Left: the check is a read before the insert, not
-  a constraint, so two imports in flight at once (an answer lost while the first
-  insert is still running) could both insert; closing that needs a unique index
-  (a held migration), not app code.
+  already saved with no term". Left, now written (2026-10-21): the check was a
+  read before the
+  insert, so two imports in flight at once (an answer lost while the first
+  insert is still running) could both insert. Held migration `20261021110000`
+  adds `golf_import_player_classes`, which takes a per-player lock and reads and
+  inserts in one transaction; not a unique index, because a lecture and its lab
+  may share a name. The import calls it and falls back to the browser's own
+  check while it is not applied (PGRST202). Tests: "doc-61 the import goes
+  through one locked database call", "doc-61 a refused or failed database call
+  is an error", "doc-61 while the function is not applied"; pgTAP
+  `supabase/tests/rls/golf_import_player_classes.sql` runs in CI, not locally.
 - Also found: when the calendar removal lands and the delete then fails, the
   toast can read "It is still on your
   schedule and your calendar" (the hint of CH-12003), which is untrue for the

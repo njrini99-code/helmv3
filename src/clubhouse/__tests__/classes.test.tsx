@@ -19,9 +19,15 @@ const actions = vi.hoisted(() => ({ sync: vi.fn(), remove: vi.fn(), extract: vi.
 vi.mock('@/app/golf/actions/calendar-sync', () => ({ syncClassToCalendar: actions.sync, removeClassFromCalendar: actions.remove }));
 vi.mock('@/app/golf/actions/schedule-image', () => ({ extractClassesFromScheduleImage: actions.extract }));
 type Call = { table: string; op: string; args: unknown[]; filters: Array<[string, unknown[]]> };
-const client = vi.hoisted(() => ({ log: [] as Call[], answers: {} as Record<string, unknown> }));
+const client = vi.hoisted(() => ({ log: [] as Call[], answers: {} as Record<string, unknown>, rpcLog: [] as Array<{ fn: string; args: Record<string, unknown> }> }));
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
+    // A database function nobody stubbed is one that is not applied yet (PostgREST: PGRST202), as the held import function is today.
+    rpc: (fn: string, args: Record<string, unknown>) => {
+      client.rpcLog.push({ fn, args });
+      const a = client.answers[`rpc.${fn}`];
+      return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function' }, ...((typeof a === 'function' ? a(args) : a) as object) });
+    },
     from: (table: string) => {
       const rec: Call = { table, op: 'select', args: [], filters: [] };
       client.log.push(rec);
@@ -185,6 +191,7 @@ beforeEach(() => {
   actions.remove.mockReset();
   actions.extract.mockReset();
   client.log.length = 0;
+  client.rpcLog.length = 0;
   client.answers = {};
 });
 afterEach(() => {
@@ -832,6 +839,43 @@ describe('Classes live writes', () => {
     expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(0);
     // The current term is the page's, not next term's.
     await w.importRows(stat.map((r) => ({ ...r, semester: 'Spring 2027' })));
+    expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(1);
+  });
+
+  it('doc-61 the import goes through one locked database call when the function is applied, and shows what it saved, skipped and matched', async () => {
+    const stat = PREVIEW_PARSED.filter((p) => p.course_code === 'STAT 201').map(toImportRow);
+    const savedRow = rowFor('db1', { ...stat[0]!, semester: 'Fall 2026' }, {});
+    client.answers['rpc.golf_import_player_classes'] = { data: { inserted: [savedRow], skipped: ['ART 101 - Drawing'], known: [rowFor('old', input({ code: 'ART 101', name: 'Drawing' }))] }, error: null };
+    const res = await live().importRows(stat.map((r) => ({ ...r, semester: 'Fall 2026' })));
+    expect(res).toMatchObject({ success: true, data: { rows: [{ id: 'db1' }], skipped: ['ART 101 - Drawing'], known: [{ id: 'old' }] } });
+    // One call, no browser-side read or insert.
+    expect(client.rpcLog).toHaveLength(1);
+    expect(client.log.filter((c) => c.table === 'golf_player_classes')).toHaveLength(0);
+    const { fn, args } = client.rpcLog[0]!;
+    expect(fn).toBe('golf_import_player_classes');
+    expect(args).toMatchObject({ p_player_id: 'p1', p_team_id: 't1', p_term: 'Fall 2026' });
+    const sent = args.p_rows as Array<Record<string, unknown>>;
+    expect(sent.length).toBe(stat.length);
+    expect(sent[0]).toMatchObject({ semester: 'Fall 2026' });
+    expect(JSON.parse(JSON.stringify(sent[0]))).not.toHaveProperty('player_id');
+  });
+
+  it('doc-61 a refused or failed database call is an error the page shows, not a silent second path that could double the schedule', async () => {
+    const stat = PREVIEW_PARSED.filter((p) => p.course_code === 'STAT 201').map(toImportRow);
+    client.answers['rpc.golf_import_player_classes'] = { data: null, error: { code: '42501', message: 'new row violates row-level security policy' } };
+    client.answers['golf_player_classes.select'] = { data: [] };
+    const res = await live().importRows(stat.map((r) => ({ ...r, semester: 'Fall 2026' })));
+    expect(res).toMatchObject({ success: false, error: expect.stringContaining('row-level security') });
+    expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(0);
+  });
+
+  it('doc-61 while the function is not applied (PGRST202) the import uses its own read-then-insert path', async () => {
+    const stat = PREVIEW_PARSED.filter((p) => p.course_code === 'STAT 201').map(toImportRow);
+    client.answers['golf_player_classes.select'] = { data: [] };
+    client.answers['golf_player_classes.insert'] = (rec: Call) => ({ data: (rec.args[0] as Array<{ class_name: string }>).map((r, i) => rowFor(`n${i}`, { ...inputOfRow(r), code: r.class_name.split(' - ')[0]! })) });
+    const res = await live().importRows(stat.map((r) => ({ ...r, semester: 'Fall 2026' })));
+    expect(res).toMatchObject({ success: true });
+    expect(client.rpcLog).toHaveLength(1);
     expect(client.log.filter((c) => c.op === 'insert')).toHaveLength(1);
   });
 

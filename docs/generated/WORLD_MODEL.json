@@ -3928,6 +3928,10 @@
         "definedIn": "supabase/migrations/20261020120000_golf_focus_area_prescription.sql"
       },
       {
+        "id": "golf_import_player_classes",
+        "definedIn": "supabase/migrations/20261021110000_golf_import_player_classes.sql"
+      },
+      {
         "id": "golf_join_team_with_code",
         "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
       },
@@ -12608,6 +12612,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/components/golf/calendar/**"
+        }
+      ]
+    },
+    {
+      "source": "calendar_events",
+      "target": "golf_import_player_classes",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/screens/classes/writes.ts",
+          "anchor": "golf_import_player_classes"
         }
       ]
     },
