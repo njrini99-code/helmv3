@@ -16,6 +16,7 @@ The phone's strokes gained figure under the legs and each player's SG were
 Number Flow numerals. They are now plain tabular text written at once
 (`formatSigned`, a true minus), and the hidden copy beside the rolling one is
 gone. Replays 1bff7a784 and c2710104e onto main.
+
 ## 2026-10-22 — Player pages carry a CoachHelm count line (see P005)
 
 ```text
