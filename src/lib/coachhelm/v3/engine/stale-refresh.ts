@@ -159,4 +159,3 @@ export function roundInsideEngineWindow(roundDate: string | null | undefined, no
 
 /** config/feature-flags.yml; read through the CoachHelm canary gate by the route. */
 export const STALE_REFRESH_FLAG = 'coachhelm_stale_refresh_v1';
-
