@@ -29,7 +29,12 @@ import { buildIncidentSignature, type IncidentSeverity } from '@/lib/admin/incid
 import { classifyTraceFeature, classifyTraceSurface } from '@/lib/error-trace-classification';
 import { markBridgeLogged } from '@/lib/bridge-logged-marker';
 import { getRequestId, getRequestUserId, isRequestUserIdUnverified } from '@/lib/admin/request-context';
-import { collapseEmbeddedHtml, collapseEmbeddedRawJsonDump, describeError } from '@/lib/utils/describe-error';
+import {
+  collapseEmbeddedHtml,
+  collapseEmbeddedRawJsonDump,
+  collapseHtmlErrorPages,
+  describeError,
+} from '@/lib/utils/describe-error';
 import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
@@ -123,8 +128,11 @@ const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
   critical: 'fatal',
 };
 
+// Every sink reads this: error_logs.context, admin_events.metadata and Sentry's
+// server_trace context. A gateway HTML page a caller passed in metadata (a
+// PostgrestError as `dbError`, 2026-10-22 fae748c7) is collapsed to its title here.
 function normalizeContext(context: RoundErrorContext, traceMessage?: string): Record<string, unknown> {
-  return JSON.parse(JSON.stringify({
+  return collapseHtmlErrorPages(JSON.parse(JSON.stringify({
     action: context.action,
     route: context.route ?? null,
     url: redactSensitiveUrl(context.url ?? null),
@@ -159,7 +167,7 @@ function normalizeContext(context: RoundErrorContext, traceMessage?: string): Re
     // today — tagged explicitly so a future gate regression is visible in
     // the row itself, not just inferred from the gate having passed.
     runtimeEnv: getRuntimeEnv(),
-  }));
+  })));
 }
 
 function buildAdminTitle(message: string, context: RoundErrorContext, severity: ServerTraceSeverity): string {

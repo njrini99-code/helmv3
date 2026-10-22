@@ -96,6 +96,43 @@ export function collapseEmbeddedHtml(message: string): string | null {
 }
 
 /**
+ * Same collapse, applied to every string inside a JSON-shaped value — the
+ * shape `logServerError(..., { metadata: { dbError: error } })` stores.
+ *
+ * Found 2026-10-22 (/admin/errors/fae748c7): a Supabase 502 made a
+ * PostgrestError whose `message` was the whole Cloudflare page, and
+ * `pattern-miner.savePatterns` passed it as `metadata.dbError`. The trace
+ * message and stack were collapsed on the way in; metadata was not, so the row
+ * (and Sentry's `server_trace` context) carried 6.8KB of markup with the Ray ID
+ * and the egress IP.
+ *
+ * Only a string that IS a page is replaced: the match is anchored to its start
+ * (after the IE-shim comments a Cloudflare page opens with), so a value that
+ * merely contains HTML, such as an email body, is left alone. Returns a copy;
+ * the input is never mutated. Nesting past `MAX_HTML_COLLAPSE_DEPTH` is
+ * returned as is.
+ */
+const MAX_HTML_COLLAPSE_DEPTH = 8;
+
+function isHtmlErrorPage(text: string): boolean {
+  const head = text.slice(0, 2000).replace(/^(?:\s|<!--[\s\S]*?-->)+/, '');
+  return /^<(?:!doctype\s+html|html[\s>])/i.test(head);
+}
+
+export function collapseHtmlErrorPages<T>(value: T, depth = 0): T {
+  if (typeof value === 'string') {
+    return (isHtmlErrorPage(value) ? (collapseHtmlErrorBody(value) ?? value) : value) as T;
+  }
+  if (depth >= MAX_HTML_COLLAPSE_DEPTH || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => collapseHtmlErrorPages(item, depth + 1)) as T;
+  // fromEntries defines own properties, so a `__proto__` key (JSON.parse makes it an own key) stays data and never
+  // becomes the copy's prototype.
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [key, collapseHtmlErrorPages(item, depth + 1)]),
+  ) as T;
+}
+
+/**
  * A malformed/truncated 2xx response body puts the RAW, unparsed response
  * text into `error.message` — postgrest-js's own fallback when
  * `JSON.parse(body)` throws on an otherwise-successful request

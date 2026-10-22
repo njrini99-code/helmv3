@@ -287,6 +287,15 @@ alongside (not duplicated here).
   `['supabase-gateway', 'http:<status>']`, and replaces the message with
   `Supabase gateway error page: <title>` so the page body (including the
   client IP) is not stored.
+- **A gateway HTML page in a server trace's metadata is collapsed too.**
+  `logServerError(..., { metadata: { dbError: error } })` passes the
+  PostgrestError as is, and on a gateway failure its `message` is the page.
+  `normalizeContext` in `src/lib/server-error-logger.ts` runs
+  `collapseHtmlErrorPages` (`src/lib/utils/describe-error.ts`) over the whole
+  context, so `error_logs.context`, `admin_events.metadata` and Sentry's
+  `server_trace` context hold `upstream returned an HTML error page (HTTP
+  <status>): <title>` instead (2026-10-22, /admin/errors/fae748c7: 6.8KB of
+  markup with the egress IP). Only a string that starts as a page is replaced.
 
 ## Rollback
 
