@@ -76,6 +76,13 @@ shell's Try again offline is 10704).
 | ACT-P002-OPEN-PLAYER-STATS | A leaderboard row, the latest round's stats link (coach), the phone Latest rounds header's Team stats (Q-79) | links in `Leaderboard.Row`, `LatestRound` and `Rounds` (phone) | none | none | links 20103 · hover and press 21602 |
 | ACT-P002-MESSAGE-COACH | Message coach (player) | link built by `messageCoachHref` | `coachFor` (in `loadPlayerHome`) | golf_teams, golf_coaches | coach found 20805 · links 20103 · tap 21703 · Messages side 70801 (CH-7001) |
 | ACT-P002-CHOOSE-SCORING-WINDOW | Rounds shown: Last 5, 10, 20 (player) | `Segmented` in `Scoring` | none | none | tick 21703 · too few rounds 20410 |
+| ACT-P002-QUEUE-JOINS | "N join requests" in Waiting on you (coach, desktop, phone, first run) | link built by `queueParts` (`CoachQueue.tsx`) | `loadCoachQueue` (data/home-queue.ts) | golf_team_join_requests (the sidebar badge's count) | links 20103 · counts as its screen 20104 · a part fails 20621 |
+| ACT-P002-QUEUE-REPLIES | "N replies missing" | `queueParts`: the event in Calendar when one event holds them, Calendar when more do | `loadCoachQueue` | golf_events, golf_event_attendance, golf_team_settings | links 20103 · 20104 · 20621 |
+| ACT-P002-QUEUE-TASKS | "N tasks overdue" | `queueParts` → Team Hub `?tab=tasks` | `loadCoachQueue` (Hub's `taskStatus`, `overdueTaskCount`) | golf_tasks, golf_task_assignments | links 20103 · 20104 · 20621 |
+| ACT-P002-QUEUE-POSTS | "N posts awaiting acknowledgement" | `queueParts` → Team Hub `?tab=ann` | `loadCoachQueue` (`getAnnouncementsWithMeta`, Hub's `notAckedFor`, `unackedPostCount`) | golf_announcements, golf_announcement_recipients, golf_announcement_acknowledgements, the roster | links 20103 · 20104 · 20621 |
+| ACT-P002-NUDGE-NEXT | Nudge on the desktop week's Next row (coach) | `nextReplies` (`Week.tsx`), DayCard's `nudgeDraft` | none | none (the week's replies) | links 20103 · role 20806 · replies fail 20609 |
+| ACT-P002-OPEN-LEG-PLAYER | A name in Gains most / Loses most, Team stats (coach, desktop and phone) | `legPlayerHref` (`TeamLegs.tsx`) | `teamLegs` (in `loadCoachHome`) | golf_rounds, golf_teams, golf_round_stats_cache, golf_pga_standards | links 20103 · four parts 20105 · 20414, 20415, 20619, 20620, 20622 |
+| ACT-P002-OPEN-COACHHELM-PLAYER | CoachHelm in the player peek and the phone's round sheet | `coachHelmPlayerHref` (`ui/PlayerPeek.tsx`), `RoundSheet` | none | none | links 20103 · peek CH-1832 (11821) |
 | ACT-P002-TRY-AGAIN | Try again on a notice | `RefreshNotice` -> `router.refresh` | none | none | 21402 · pending 21401 · offline 10704 · week fails 20601 |
 
 ## Components
@@ -84,7 +91,9 @@ shell's Try again offline is 10704).
 | --- | --- | --- |
 | `screens/home/CoachHome.tsx` | Coach Home: header, sheet, leaderboard; the phone switch; `HomeFirstRun`, `CoachHomeNoTeam` | 20101, 20407, 20408, 20605 to 20607 |
 | `screens/home/HomeActions.tsx` | Message team, New event, the N key | 20103, 21801, 21702 |
-| `screens/home/Week.tsx` | This week: the days and the agenda (shared by both roles; `between` holds the player's Up next) | 20401, 20601, 20609 |
+| `screens/home/Week.tsx` | This week: the days and the agenda (shared by both roles; `between` holds the player's Up next; the coach's Next row adds who hasn't replied and Nudge, `nextReplies`) | 20401, 20601, 20609, 20103 |
+| `screens/home/CoachQueue.tsx` | Waiting on you (coach desktop, phone, first run): `queueParts`, `CoachQueue` | 20104, 20621 |
+| `screens/home/TeamLegs.tsx` | The team's game (coach): `TeamLegs` (desktop ledger), `TeamLegsPhone` (rows) | 20105, 20414, 20415, 20619, 20620, 20622 |
 | `screens/home/LatestRound.tsx` | The latest round, paged (shared; `mine` for the player) | 20402, 20403, 20602, 20603, 21701 |
 | `screens/home/Leaderboard.tsx` | Season leaderboard | 20404 to 20406, 20604, 20607 |
 | `screens/home/HomePhone.tsx` | Coach phone Home: hero, Up next, Today, Form, WeekStrip, Rounds, RoundSheet (`UpNext`, `Today`, `WeekStrip` are shared with the player's phone) | 20409, 20611 to 20614, 21901 |
@@ -111,6 +120,12 @@ Home calls no server action. The loaders are the services.
 | Name | Path | Existing/New/Held | Purpose |
 | --- | --- | --- | --- |
 | loadCoachHome | data/home.ts | New (Clubhouse) | Coach Home in one server pass |
+| teamLegs, legPeople, teamWindows | data/home.ts | New (Clubhouse) | The team's four parts on the form's Last 10 (spec B §1) |
+| loadCoachQueue | data/home-queue.ts | New (Clubhouse) | Waiting on you, each part on its own (spec B §2) |
+| legRows | data/leg-rows.ts | New (Clubhouse; moved from player-home.ts) | A part's stat and Tour mark, shared by both Homes |
+| rsvpCounts, taskStatus, rsvpQueue, overdueTaskCount, unackedPostCount, attendanceFor, assignmentsFor, notAckedFor | data/hub.ts | Existing (Team Hub) | Team Hub's reads and counts, so Home counts as the Hub does |
+| teamGrid, sgLegs | data/stats-team.ts | Existing (Stats) | Team Stats' per-player grid, ranked by `teamRankRows` (screens/stats/team-rank.ts) |
+| readTourBenchmarks | data/stats-common.ts | New (Clubhouse) | The Tour's marks with their error flag, without the page-level notice |
 | loadPlayerHome, coachFor | data/player-home.ts | New (Clubhouse) | Player Home in one server pass; the coach Message coach names |
 | homeClock, loadHomeWeek, latestWithHoles | data/home.ts | New (Clubhouse) | The timezone, greeting and date; the week; the latest rounds with their holes. Shared by both loaders |
 | loadSeasonRounds, summarizePlayer, isFull18 | data/season.ts | New (Clubhouse) | Season rounds and the derived figures, shared with Roster and Stats |
@@ -123,7 +138,13 @@ Home calls no server action. The loaders are the services.
 
 ```text
 Tables:   golf_team_settings (timezone), golf_team_members joined to golf_players (the roster), golf_conversations
-          (the team chat), golf_events and golf_event_attendance (the week), golf_rounds (the season), golf_holes
+          (the team chat), golf_events and golf_event_attendance (the week),
+          golf_rounds (the season), golf_holes; the four parts: golf_teams
+          (gender: the tour), golf_round_stats_cache, golf_pga_standards;
+          Waiting on you: golf_team_join_requests (count only), golf_events
+          and golf_event_attendance (this week's replies), golf_tasks and
+          golf_task_assignments, golf_announcements with their recipients
+          and acknowledgements
 RPCs:     none
 Storage:  none
 Realtime: none

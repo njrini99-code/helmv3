@@ -15,6 +15,8 @@ import { Leaderboard } from './Leaderboard';
 import { HomeActions } from './HomeActions';
 import { HomePhone, WeekStrip } from './HomePhone';
 import { coachFailedParts } from './model';
+import { CoachQueue } from './CoachQueue';
+import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
 import '../../styles/home.css';
 
@@ -44,10 +46,16 @@ export function CoachHome({ data, now }: { data: ChCoachHome; /** Preview and te
         <HomeActions teamChatId={data.teamChatId} />
       </header>
       <PageRefreshNotice parts={failed} />
+      <CoachQueue queue={data.queue} covered={covered} />
       {data.phone.form && <TeamForm form={data.phone.form} />}
+      {data.phone.form && data.legs && !noRounds && (
+        <SectionBoundary surface="home.legs" label="The team’s game" code="CH-2221">
+          <TeamLegs legs={data.legs} covered={covered} />
+        </SectionBoundary>
+      )}
       <div className={'ch-h-sheet ch-sheet' + (noRounds ? ' is-solo' : '')}>
         <SectionBoundary surface="home.week" label="This week" code="CH-2205">
-          <Week week={data.week} covered={covered} />
+          <Week week={data.week} covered={covered} events={data.phone.today} />
         </SectionBoundary>
         {!noRounds && (
           <SectionBoundary surface="home.latestRound" label="The latest round" code="CH-2206">
@@ -91,6 +99,8 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean }) {
         <span className="ch-h-head__date">{data.todayLabel}</span>
         <h1 className="ch-display">{data.greeting}</h1>
       </header>
+      {/* What is waiting on the coach (join requests above all) shows on the first run too. */}
+      <CoachQueue queue={data.queue} phone={phone} />
       {events &&
         (phone ? (
           <WeekStrip days={data.week.days} note={data.phone.weekNote} />

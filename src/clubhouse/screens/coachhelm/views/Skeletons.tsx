@@ -7,8 +7,19 @@ import { Skeleton } from '../../../ui/States';
  * Route loading for the player's views, each in its own final shape and height (the Game profile's is CH-13460, Standing's CH-13470, the Deep dive's CH-13480), so nothing jumps
  * when the read lands. `coachhelm/loading.tsx` cannot see `?view=`, so the route wraps each view in its own Suspense
  * (routes/coachhelm.tsx) and these are the fallbacks.
+ *
+ * `coach`: a coach's view of one player (spec A), with the player's header: the "CoachHelm" eyebrow over the name, then the one line
+ * (class and newest round), and the label says whose page it is. `first` is null until the route knows who the player is (the
+ * address only names an id until the scope is checked), and the label says "this player" meanwhile.
  */
-function Chrome({ label, code, chained, brief = 2, children }: { label: string; code: string; chained?: boolean; brief?: 2 | 3; children: React.ReactNode }) {
+export interface ChSkeletonCoach {
+  first: string | null;
+}
+
+/** "Loading your deep dive", or for a coach "Loading Jonah’s deep dive". */
+const labelFor = (what: string, coach: ChSkeletonCoach | undefined) => `Loading ${coach ? (coach.first ? `${coach.first}’s` : 'this player’s') : 'your'} ${what}`;
+
+function Chrome({ label, code, chained, brief = 2, coach, children }: { label: string; code: string; chained?: boolean; brief?: 2 | 3; coach?: ChSkeletonCoach; children: React.ReactNode }) {
   const phone = useChPhone();
   // The sub-navigation: a bar the height of the radiogroup (desktop) or the chip row (phone), where the page puts it.
   const tabs = (
@@ -21,7 +32,15 @@ function Chrome({ label, code, chained, brief = 2, children }: { label: string; 
       {/* The screen's one h1 while it loads, for the page outline (P013 D8). */}
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && tabs}
-      {phone ? (
+      {coach ? (
+        // The player's header: the eyebrow, the name (the phone's 31px title, desktop's 44px) and the one line.
+        <header className={'ch-hl-h' + (phone ? '' : ' has-aside')} data-canopy-head="">
+          <Skeleton width={84} height={11} />
+          {phone ? <Line h={33.5} w={176} sh={28} r={8} /> : <Skeleton width={260} height={44} radius={10} />}
+          <Skeleton width={phone ? '72%' : 280} height={14} />
+          {!phone && <div className="ch-hl-h__aside">{tabs}</div>}
+        </header>
+      ) : phone ? (
         // The phone's intro at its loaded line heights (the Mobile clubhouse pass): the 31px title (a player's page has no role eyebrow) and the brief under
         // the double rule, in the lines the view's own brief takes at the phone's width (`brief`: the Deep dive's runs to three).
         <header className="ch-hl-h" data-canopy-head="">
@@ -81,13 +100,13 @@ function MeasureSkeleton() {
 }
 
 /** The Game profile: the persona card, then the seven measures (CH-13460). */
-export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
+export function ProfileSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   if (phone) {
     // The phone: the shape of the game's feature card, then the measures' section and its rows. The card's height is the
     // loaded card's at 390; coachhelm-profile.css follows it at other widths.
     return (
-      <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
+      <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
         <div className="ch-hg-sk__hero">
           <Skeleton width="100%" height={268} radius={14} shape="solid" />
         </div>
@@ -101,7 +120,7 @@ export function ProfileSkeleton({ chained }: { chained?: boolean } = {}) {
     );
   }
   return (
-    <Chrome label="Loading your game profile" code="CH-13460" chained={chained}>
+    <Chrome label={labelFor('game profile', coach)} code="CH-13460" chained={chained} coach={coach}>
       <div className="ch-hg-sk__hero">
         <Skeleton width={150} height={11} />
         <Skeleton width="78%" height={32} radius={8} />
@@ -147,13 +166,13 @@ function StandingGroupSkeleton({ rows }: { rows: number }) {
 }
 
 /** Standing: the green card with what is most to gain, then the groups of stats (CH-13470). */
-export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
+export function StandingSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   if (phone) {
     // The phone: where you stand's feature card (the headline, the note and what is most to gain), then the groups. The
     // card's height is the loaded card's at 390; coachhelm-standing.css follows it at other widths.
     return (
-      <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
+      <Chrome label={labelFor('standing', coach)} code="CH-13470" chained={chained} coach={coach}>
         <div className="ch-hs-sk__hero">
           <Skeleton width="100%" height={511} radius={14} shape="solid" />
         </div>
@@ -163,7 +182,7 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
     );
   }
   return (
-    <Chrome label="Loading your standing" code="CH-13470" chained={chained}>
+    <Chrome label={labelFor('standing', coach)} code="CH-13470" chained={chained} coach={coach}>
       <div className="ch-hs-sk__hero">
         <div className="ch-hs-sk__col">
           <Skeleton width={150} height={11} />
@@ -181,10 +200,10 @@ export function StandingSkeleton({ chained }: { chained?: boolean } = {}) {
 }
 
 /** Deep dive: the green summary, the list of reads and, on desktop, the read beside it (CH-13480). */
-export function DiveSkeleton({ chained }: { chained?: boolean } = {}) {
+export function DiveSkeleton({ chained, coach }: { chained?: boolean; coach?: ChSkeletonCoach } = {}) {
   const phone = useChPhone();
   return (
-    <Chrome label="Loading your deep dive" code="CH-13480" chained={chained} brief={3}>
+    <Chrome label={labelFor('deep dive', coach)} code="CH-13480" chained={chained} brief={3} coach={coach}>
       {phone ? (
         // The phone: what CoachHelm has found's feature card, with its figure line.
         <div className="ch-hd-sk__hero">

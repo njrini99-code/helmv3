@@ -810,7 +810,7 @@ jobs:
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node and install dependencies
-        if: steps.gate.outputs.run == 'true' && (steps.scope.outputs.mode == 'full' || matrix.shard == 1)
+        if: steps.gate.outputs.run == 'true'
         uses: ./.github/actions/setup-node-npm
 
       - name: Unit tests (shard ${{ matrix.shard }}/5)
@@ -820,14 +820,11 @@ jobs:
       # Follow-up push: only the tests related to this PR's diff, in this
       # shard's slice. Not evidence that the suite passes (the full run on
       # ready and on main is), hence the different step name.
-      # Quick tier (2026-10-21): shard 1 runs every related test unsharded and
-      # shards 2-5 stop after the scope step, so a follow-up push holds one
-      # runner for tests instead of five.
-      - name: Related unit tests (follow-up push)
-        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped' && matrix.shard == 1
+      - name: Related unit tests (shard ${{ matrix.shard }}/5, follow-up push)
+        if: steps.gate.outputs.run == 'true' && steps.scope.outputs.mode == 'scoped'
         run: |
-          echo "::notice::follow-up push: running the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
-          npm run test:run -- --changed HEAD^1 --passWithNoTests
+          echo "::notice::follow-up push: running this shard's slice of the tests related to the diff (the full suite runs when the PR is opened or ready, on main, and on the run pr:land starts)"
+          npm run test:run -- --changed HEAD^1 --shard=${{ matrix.shard }}/5 --passWithNoTests
 
       # The `integration` project ran in no job of its own. It was still being
       # executed — but only by accident, because `--project business` matched
@@ -842,7 +839,8 @@ jobs:
   next-build:
     name: Next build
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts builds the head.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -869,35 +867,19 @@ jobs:
         with:
           filters: .github/path-filters.yml
 
-      # QUICK TIER (2026-10-21): a follow-up push skips this job unless it
-      # touched `build` (.github/path-filters.yml). The full suite runs when the
-      # PR is opened, reopened or marked ready, on main, and on the
-      # workflow_dispatch run `npm run pr:land` starts before it merges.
       - name: Code-relevant change? (fail closed)
         id: gate
         env:
           EVENT_NAME: ${{ github.event_name }}
-          ACTION: ${{ github.event.action }}
           FILTER_OUTCOME: ${{ steps.filter.outcome }}
           FILTER_CODE: ${{ steps.filter.outputs.code }}
-          FILTER_TIER: ${{ steps.filter.outputs.build }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_CODE" = "false" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
             echo "::notice::No code-relevant path changed; nothing for this job to check."
-          elif [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_TIER" = "false" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "quick=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Follow-up push (quick tier): the Next build runs on the full run pr:land starts."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
-
-      # pr:land reads this step: a run where it succeeded skipped this job's
-      # real work, so it is not the full run a merge needs.
-      - name: Quick tier (follow-up push)
-        if: steps.gate.outputs.quick == 'true'
-        run: echo "Skipped by the quick tier; npm run pr:land starts the full run."
 
       - name: Setup Node and install dependencies
         if: steps.gate.outputs.run == 'true'
@@ -1029,7 +1011,8 @@ jobs:
   supabase:
     name: Supabase lint + RLS tests
     # No `needs:` — in-job `code` path gate, see Unit tests. Skips while draft.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    # Quick tier: not on a follow-up push; the full run pr:land starts runs it.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft != true && github.event.action != 'synchronize')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # packages: read lets the ghcr.io login step below get the authenticated
@@ -1066,35 +1049,19 @@ jobs:
         with:
           filters: .github/path-filters.yml
 
-      # QUICK TIER (2026-10-21): a follow-up push skips this job unless it
-      # touched `db` (.github/path-filters.yml). The full suite runs when the
-      # PR is opened, reopened or marked ready, on main, and on the
-      # workflow_dispatch run `npm run pr:land` starts before it merges.
       - name: Code-relevant change? (fail closed)
         id: gate
         env:
           EVENT_NAME: ${{ github.event_name }}
-          ACTION: ${{ github.event.action }}
           FILTER_OUTCOME: ${{ steps.filter.outcome }}
           FILTER_CODE: ${{ steps.filter.outputs.code }}
-          FILTER_TIER: ${{ steps.filter.outputs.db }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_CODE" = "false" ]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
             echo "::notice::No code-relevant path changed; nothing for this job to check."
-          elif [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ] && [ "$FILTER_OUTCOME" = "success" ] && [ "$FILTER_TIER" = "false" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "quick=true" >> "$GITHUB_OUTPUT"
-            echo "::notice::Follow-up push (quick tier): Supabase lint and RLS runs on the full run pr:land starts."
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
-
-      # pr:land reads this step: a run where it succeeded skipped this job's
-      # real work, so it is not the full run a merge needs.
-      - name: Quick tier (follow-up push)
-        if: steps.gate.outputs.quick == 'true'
-        run: echo "Skipped by the quick tier; npm run pr:land starts the full run."
 
       - name: Setup Node and install dependencies
         if: steps.gate.outputs.run == 'true'
@@ -1309,6 +1276,9 @@ jobs:
       - name: Fail if any required CI check failed
         env:
           RESULTS: ${{ toJSON(needs.*.result) }}
+          NEXT_BUILD_RESULT: ${{ needs.next-build.result }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+          ACTION: ${{ github.event.action }}
           CODE: ${{ needs.detect-changes.outputs.code }}
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -1323,7 +1293,13 @@ jobs:
           fi
           incomplete=false
           if jq -e 'index("cancelled")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
-          if [ "$CODE" = "true" ] && jq -e 'index("skipped")' <<< "$RESULTS" >/dev/null; then incomplete=true; fi
+          skips=$(jq '[.[] | select(. == "skipped")] | length' <<< "$RESULTS")
+          # Quick tier: a follow-up push skips Next build and Supabase on purpose.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$ACTION" = "synchronize" ]; then
+            [ "$NEXT_BUILD_RESULT" = "skipped" ] && skips=$((skips - 1))
+            [ "$SUPABASE_RESULT" = "skipped" ] && skips=$((skips - 1))
+          fi
+          if [ "$CODE" = "true" ] && [ "$skips" -gt 0 ]; then incomplete=true; fi
           if [ "$incomplete" = "false" ]; then
             echo "CI hard gates clean."; exit 0
           fi

@@ -182,7 +182,8 @@ export function roundIdsToRead(ev: Pick<InsightEvidence, 'source_round_ids'> | u
   return Array.isArray(ids) ? ids.filter((x): x is string => typeof x === 'string').slice(0, DIVE_ROUNDS_READ) : [];
 }
 
-function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, DiveRoundRow>): ChDiveRounds {
+/** `role`: whose page lists the rounds; each links to that role's round review (the coach's, on a coach's page). */
+function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, DiveRoundRow>, role: ChViewer['role'] = 'player'): ChDiveRounds {
   const named = Array.isArray(ev?.source_round_ids) ? (ev as InsightEvidence).source_round_ids!.filter((x): x is string => typeof x === 'string') : [];
   const found = roundIdsToRead(ev)
     .map((id) => byId.get(id))
@@ -199,7 +200,7 @@ function roundsFor(ev: InsightEvidence | undefined, byId: ReadonlyMap<string, Di
       toPar: toPar != null ? formatToPar(toPar) : null,
       toPar18: toPar != null && holes > 0 ? (toPar * 18) / holes : null,
       nine: holes <= 9,
-      href: rebuiltHref(`/golf/dashboard/rounds/${r.id}`, 'player'),
+      href: rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role),
     };
   });
   const strip = [...list]
@@ -295,8 +296,11 @@ function goalLine(g: Goal): string | null {
   return parts.length ? parts.join(', ') : null;
 }
 
-/** The focus area and the goal an insight belongs to: the ones made from it first, else one on the same metric (a live focus area before a finished one). */
-function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goals: readonly Goal[]): ChDivePlan {
+/**
+ * The focus area and the goal an insight belongs to: the ones made from it first, else one on the same metric (a live focus area before a
+ * finished one). `say`: a coach's page puts the focus word in their voice ("Proposed to Jonah"); the player's reads it as written.
+ */
+function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goals: readonly Goal[], say: (t: string) => string = (t) => t): ChDivePlan {
   const known = (f: DiveFocusRow) => !!f.status && f.status in FOCUS_WORD;
   const own = focusAreas.find((f) => f.from_insight_id === raw.id && known(f));
   const sameMetric = [...focusAreas].filter((f) => f.target_metric === raw.evidence.metric && known(f)).sort((a, b) => Number(FOCUS_LIVE.has(b.status!)) - Number(FOCUS_LIVE.has(a.status!)))[0];
@@ -304,7 +308,7 @@ function planFor(raw: EvidenceInsight, focusAreas: readonly DiveFocusRow[], goal
   const ownGoal = goals.find((g) => g.origin_insight_id === raw.id);
   const goal = ownGoal ?? goals.find((g) => g.metric_id === raw.evidence.metric && g.state in GOAL_WORD) ?? null;
   return {
-    focus: focus ? { id: focus.id, title: focus.title, word: FOCUS_WORD[focus.status!]!, live: FOCUS_LIVE.has(focus.status!), fromThis: focus === own } : null,
+    focus: focus ? { id: focus.id, title: focus.title, word: say(FOCUS_WORD[focus.status!]!), live: FOCUS_LIVE.has(focus.status!), fromThis: focus === own } : null,
     goal: goal ? { id: goal.id, title: goal.title, word: GOAL_WORD[goal.state] ?? goal.state, line: goalLine(goal), fromThis: goal === ownGoal } : null,
   };
 }
@@ -321,12 +325,12 @@ function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeep
   return { strokes: cause.strokesSavedPerRound.toFixed(1), anchor: team ? 'team' : 'tour' };
 }
 
-function themeRead(t: ThemeNode): ChDiveTheme {
+function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme {
   const trend = t.trend;
   const sg = t.sgPerRound != null ? formatSigned(t.sgPerRound, 2) : null;
   if (!trend) return { label: t.displayLabel, state: t.state, sg, trend: null };
   const word = trend.direction === 'improving' ? 'Improving' : trend.direction === 'declining' ? 'Slipping' : 'Steady';
-  const span = `strokes gained averaged ${formatSigned(trend.recentAvg, 2)} a round over your last ${trend.recentN} rounds, against ${formatSigned(trend.priorAvg, 2)} over the ${trend.priorN} before`;
+  const span = `strokes gained averaged ${formatSigned(trend.recentAvg, 2)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSigned(trend.priorAvg, 2)} over the ${trend.priorN} before`;
   return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: trend.direction === 'improving' ? 'good' : trend.direction === 'declining' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
 }
 
@@ -353,7 +357,7 @@ export function toChDeepInsight(
   const ev = raw.evidence;
   const diagnosis = diagnosisFor(ev, say);
   const closes = closesFor(raw, inputs.themes);
-  const rounds = roundsFor(ev, inputs.rounds);
+  const rounds = roundsFor(ev, inputs.rounds, role);
   return {
     base,
     cat: raw.category ?? 'other',
@@ -364,14 +368,14 @@ export function toChDeepInsight(
     outcome: outcomeFor(raw),
     closes,
     rounds,
-    plan: planFor(raw, inputs.focusAreas, inputs.goals),
+    plan: planFor(raw, inputs.focusAreas, inputs.goals, role === 'coach' ? say : undefined),
     read: toChRead(raw, base, { diagnosis, closes, newestListed: rounds.list[0]?.date ?? null, windowEnd: fmtShortDate(ev.window_end || null), role }, say),
   };
 }
 
-/** The category reads by key, from the assembled themes (all seven, with honest `thin` stubs). */
-export function themesByCategory(themes: AssembledThemes | null): Record<string, ChDiveTheme> {
-  return Object.fromEntries((themes?.themes ?? []).map((t) => [t.category, themeRead(t)]));
+/** The category reads by key, from the assembled themes (all seven, with honest `thin` stubs). `role`: whose page they are on. */
+export function themesByCategory(themes: AssembledThemes | null, role: ChViewer['role'] = 'player'): Record<string, ChDiveTheme> {
+  return Object.fromEntries((themes?.themes ?? []).map((t) => [t.category, themeRead(t, role)]));
 }
 
 /** The page's counts, from the insights it draws. */

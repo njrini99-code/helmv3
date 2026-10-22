@@ -50,7 +50,24 @@ export const PREVIEW_ROSTER: ChRoster = {
     goals,
     coachNote: id === 'jonah' ? 'Confidence dips after a bad hole. Keep 1:1s short and specific.' : null,
     attention,
+    availability: 'available' as const,
+    availabilityUpdated: null,
   })),
+};
+
+/** Days before the preview's clock, as an ISO stamp (availability's "Updated 3 days ago"). */
+const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+const AVAILABILITY: Record<string, Pick<ChRosterPlayer, 'availability' | 'availabilityUpdated'>> = {
+  ava: { availability: 'injured', availabilityUpdated: daysAgo(3) },
+  luca: { availability: 'away', availabilityUpdated: daysAgo(0) },
+};
+/**
+ * `?state=availability`: Ava injured and Luca away (P003, availability). Both are active players, so the head counts
+ * "7 active · 1 injured · 1 away"; neither is asked about under Needs a look.
+ */
+export const PREVIEW_ROSTER_AVAILABILITY: ChRoster = {
+  ...PREVIEW_ROSTER,
+  players: PREVIEW_ROSTER.players.map((p) => (AVAILABILITY[p.id] ? { ...p, ...AVAILABILITY[p.id], attention: null } : p)),
 };
 
 export const PREVIEW_ROSTER_EMPTY: ChRoster = { ...PREVIEW_ROSTER, players: [], requests: [] };

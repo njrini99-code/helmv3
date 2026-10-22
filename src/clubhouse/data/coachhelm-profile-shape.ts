@@ -6,6 +6,7 @@ import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { GENOME_WINDOW_DAYS, type DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import { formatSigned } from '../lib/format';
 import type { ChInsight } from './coachhelm-shape';
+import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
  * The player's Game profile (Clubhouse P013, `?view=profile`): the genome the Fairway page's profile drill reads
@@ -98,6 +99,11 @@ export interface ChProfile {
    * actual CoachHelm output, not only the genome). `error`: the read failed, never "nothing to say"; absent when not read.
    */
   sees?: { list: ChInsight[]; error: boolean };
+  /**
+   * A coach's one line under the hero (spec A): how many of the player's current reads are costing strokes and how many are
+   * working, counted from the visible reads with no exposure recorded. `error`: that read failed. Absent on the player's own page.
+   */
+  seen?: { costing: number; working: number; error: boolean };
 }
 
 interface MeasureCopy {
@@ -112,6 +118,20 @@ interface MeasureCopy {
 }
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+/**
+ * A coach's words for the measures whose player copy says "you" (spec A): about the game, in no one's voice. The player's own
+ * words (`COPY`) are unchanged; a measure not listed here reads the same to both.
+ */
+const COACH_WORDS: Readonly<Record<string, Partial<Pick<MeasureCopy, 'meaning' | 'measured'>>>> = {
+  miss_side_bias: { meaning: 'Which side approach misses finish on. An even split is the goal; a lopsided one is a pattern to aim around.' },
+  pressure_delta: { meaning: 'How scoring changes when it counts: tournaments and qualifiers against practice rounds.' },
+  scrambling_rate: { meaning: 'How often par or better is saved after a missed green.', measured: 'The share of missed greens where par or better was still made.' },
+  par3_proficiency: { meaning: 'Scoring on par 3s against par. It points to the kind of course that suits this game.' },
+  back_nine_delta: { meaning: 'Whether scoring holds up over the round.' },
+  scoring_trend: { meaning: 'Whether scores are moving the right way lately.' },
+  driver_usage: { meaning: 'How often driver comes out off the tee. A profile of how the holes are played, not a grade.' },
+};
 
 /**
  * Plain words and scales for the registry's seven measures, written from each dimension's own file
@@ -219,10 +239,14 @@ function readOf(confidence: number | null): ChMeasure['read'] {
 
 const clamp100 = (v: number) => Math.min(100, Math.max(0, v));
 
-/** One measure from the registry and what the row stores for it. Exported for the tests, which draw a measure the registry has no copy for. */
-export function toMeasure(id: string, label: string, r: DimensionResult | undefined, stance: ChMeasureStance | null): ChMeasure {
+/**
+ * One measure from the registry and what the row stores for it. Exported for the tests, which draw a measure the registry has no copy
+ * for. `role`: whose page it is on; a coach's reads the measure's words in no one's voice (`COACH_WORDS`).
+ */
+export function toMeasure(id: string, label: string, r: DimensionResult | undefined, stance: ChMeasureStance | null, role: ChViewer['role'] = 'player'): ChMeasure {
   const copy = COPY[id];
-  const base = { id, label, category: copy?.category ?? 'Measure', meaning: copy?.meaning ?? null, measured: copy?.measured ?? null, floor: copy?.floor ?? null, scale: copy?.scale ?? null };
+  const words = role === 'coach' ? COACH_WORDS[id] : undefined;
+  const base = { id, label, category: copy?.category ?? 'Measure', meaning: words?.meaning ?? copy?.meaning ?? null, measured: words?.measured ?? copy?.measured ?? null, floor: copy?.floor ?? null, scale: copy?.scale ?? null };
   const value = r && typeof r.value === 'number' && Number.isFinite(r.value) ? r.value : null;
   if (value == null) return { ...base, locked: true, headline: null, figure: null, figureNote: null, bound: null, stance: null, tone: 'plain', pos: null, read: null };
   // A measure with no copy has no unit to put a number in, so it shows the word it gave and nothing else.
@@ -247,13 +271,14 @@ const PLACEHOLDER = /^Not enough rounds yet/;
 
 /**
  * The genome row as the screen draws it. `genome` null is a player with nothing computed (no row, or a row whose measures all
- * refused or were retired: `loadGenome` makes the two the same); `now` is for the "refreshed" wording.
+ * refused or were retired: `loadGenome` makes the two the same); `now` is for the "refreshed" wording. `viewer`: whose page it is
+ * (the player's own by default); a coach's measures and persona sentence are about the player, never "you".
  */
-export function toChProfile(genome: LoadedGenome | null, now: Date = new Date()): ChProfile {
+export function toChProfile(genome: LoadedGenome | null, now: Date = new Date(), viewer: ChViewer = { role: 'player' }): ChProfile {
   const vector = genome?.vector ?? {};
   const persona = genome ? derivePersona(vector) : null;
   const stanceOf = (id: string): ChMeasureStance | null => (persona?.strengths.some((s) => s.dim_id === id) ? 'strength' : persona?.watchouts.some((w) => w.dim_id === id) ? 'watch' : null);
-  const measures = GENOME_DIMENSIONS.map((d) => toMeasure(d.id, d.label, vector[d.id], stanceOf(d.id)));
+  const measures = GENOME_DIMENSIONS.map((d) => toMeasure(d.id, d.label, vector[d.id], stanceOf(d.id), viewer.role));
   const byId = new Map(measures.map((m) => [m.id, m]));
   const stand = (e: { dim_id: string; label: string; qualitative: string | null }): ChProfileStand => {
     const m = byId.get(e.dim_id);
@@ -265,7 +290,7 @@ export function toChProfile(genome: LoadedGenome | null, now: Date = new Date())
     windowDays: GENOME_WINDOW_DAYS,
     rounds: genome ? genome.rounds_basis : null,
     refreshed: genome ? formatGenomeRefreshed(genome.computed_at, now) : null,
-    courseProfile: persona && !PLACEHOLDER.test(persona.course_profile) ? persona.course_profile : null,
+    courseProfile: persona && !PLACEHOLDER.test(persona.course_profile) ? (viewer.role === 'coach' ? speak(persona.course_profile, viewer) : persona.course_profile) : null,
     strengths: (persona?.strengths ?? []).map(stand),
     watchouts: (persona?.watchouts ?? []).map(stand),
     measures,

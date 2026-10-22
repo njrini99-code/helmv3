@@ -1,4 +1,4 @@
-import type { ChRoster, ChRosterPlayer } from '../../data/roster';
+import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { MINUS, NO_DATA } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 
@@ -23,6 +23,27 @@ export function rosterFailedParts(data: Pick<ChRoster, 'playersError' | 'request
   return parts;
 }
 
+/** "today", "yesterday", "3 days ago": a join request's age, and when a player's availability last changed. */
+export function relativeAgo(iso: string, now: Date): string {
+  const d = Math.floor((now.getTime() - new Date(iso).getTime()) / 86_400_000);
+  if (d <= 0) return 'today';
+  if (d === 1) return 'yesterday';
+  return `${d} days ago`;
+}
+
+/** Availability in a word. Never the status's words: Active and Inactive are team access, these are whether they can play. */
+export const AVAILABILITY_WORD: Record<ChAvailability, string> = {
+  available: 'Available',
+  injured: 'Injured',
+  away: 'Away',
+};
+
+/** "Injured" or "Away", or null for an available player: the word that stands for them on the roster (P003, availability). */
+export function availabilityLine(p: Pick<ChRosterPlayer, 'availability'>): string | null {
+  const a = p.availability ?? 'available';
+  return a === 'available' ? null : AVAILABILITY_WORD[a];
+}
+
 const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
   improving: 'Improving',
   steady: 'Steady',
@@ -31,12 +52,14 @@ const FORM_WORD: Record<ChRosterPlayer['form'], string> = {
 };
 
 /**
- * The note under a player's name: their "needs a look" reason when there is
- * one (amber for a warning, green for a good run), otherwise their form in a
- * word. It is left out when season stats didn't load, so a missing read never
- * looks like "no rounds".
+ * The note under a player's name: their availability word when they are injured or away ("Injured", plain ink: no
+ * colour of its own), else their "needs a look" reason when there is one (amber for a warning, green for a good run),
+ * otherwise their form in a word. The form is left out when season stats didn't load, so a missing read never looks
+ * like "no rounds".
  */
 export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string; tone: 'warning' | 'positive' | null } | null {
+  const away = availabilityLine(p);
+  if (away) return { text: away, tone: null };
   if (p.attention) return { text: p.attention.text, tone: p.attention.tone };
   if (statsError) return null;
   if (p.form !== 'early') return { text: FORM_WORD[p.form], tone: null };

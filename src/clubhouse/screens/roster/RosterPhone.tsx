@@ -23,7 +23,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
-import type { NoteSaved } from './RosterPeek';
+import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
@@ -54,6 +54,7 @@ export function RosterPhone({
   onRemove,
   onStatus,
   onNoteSaved,
+  availability,
   onRetry,
   children,
 }: {
@@ -68,6 +69,8 @@ export function RosterPhone({
   /** Mark the player active or inactive; it asks first (CH-3502). */
   onStatus: (p: ChRosterPlayer) => void;
   onNoteSaved: NoteSaved;
+  /** Roster's availability write (the profile's Availability panel). */
+  availability: AvailabilityControl;
   onRetry: () => void;
   /** The dialogs (invite, remove confirm), shared with desktop. */
   children?: ReactNode;
@@ -97,6 +100,9 @@ export function RosterPhone({
   const [acting, setActing] = useState(false);
   const open = openId ? players.find((p) => p.id === openId) : undefined;
   const activeCount = players.filter((p) => p.status === 'active').length;
+  // Counted among the active players, as on desktop: availability never changes the active roster.
+  const injuredCount = players.filter((p) => p.status === 'active' && p.availability === 'injured').length;
+  const awayCount = players.filter((p) => p.status === 'active' && p.availability === 'away').length;
   // Avg and SG order nothing while season stats are missing: the list falls back to Name (P003 #7).
   const sortBy: PhoneSort = data.statsError ? 'name' : sort;
   const { active, inactive } = useRosterSort(players, sortBy);
@@ -140,6 +146,18 @@ export function RosterPhone({
                 <>
                   {' '}
                   · <span className="ch-num">{activeCount}</span> active
+                  {injuredCount > 0 && (
+                    <>
+                      {' '}
+                      · <span className="ch-num">{injuredCount}</span> injured
+                    </>
+                  )}
+                  {awayCount > 0 && (
+                    <>
+                      {' '}
+                      · <span className="ch-num">{awayCount}</span> away
+                    </>
+                  )}
                 </>
               )}
             </span>
@@ -249,7 +267,7 @@ export function RosterPhone({
             />
             <div className="ch-rsm-scroll">
               <SectionBoundary surface="roster.peek" label="The player panel" code="CH-3206">
-                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} />
+                <RosterProfile p={open} notesLocked={data.notesError} statsError={data.statsError} onNoteSaved={onNoteSaved} availability={availability} />
               </SectionBoundary>
             </div>
           </PhoneScreen>

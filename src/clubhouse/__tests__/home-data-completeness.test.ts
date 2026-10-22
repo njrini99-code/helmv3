@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../lib/track-server', () => ({ chLogServer: vi.fn() }));
+const logServer = vi.hoisted(() => vi.fn());
+vi.mock('../lib/track-server', () => ({ chLogServer: logServer }));
+const announcements = vi.hoisted(() => ({ current: async (): Promise<unknown> => ({ success: true, data: [] }) }));
+vi.mock('@/app/golf/actions/announcements', () => ({ getAnnouncementsWithMeta: () => announcements.current() }));
 const tables = vi.hoisted(() => ({ current: {} as import('./supabase-fake').ChFakeTables }));
 vi.mock('@/lib/supabase/server', async () => (await import('./supabase-fake')).fakeServer(tables));
 
 import { createClient } from '@/lib/supabase/server';
-import { loadHomeWeek } from '../data/home';
+import { loadHomeWeek, teamLegs } from '../data/home';
+import { loadCoachQueue } from '../data/home-queue';
 import { briefFor, legRows } from '../data/player-home';
 import type { ChRound } from '../data/season';
 import type { ChRoundCache } from '../data/stats-common';
@@ -153,5 +157,112 @@ describe('Player Home truthful brief', () => {
     } as ChRoundCache]]);
     const short = legRows(window, cache, null, { tee: null, approach: null, around: null, putting: null }).find((l) => l.key === 'short');
     expect(short?.note).toBe(saves === null ? 'Up and down 1 of 2' : 'Up and down 1 of 2 · sand saves 0 of 3');
+  });
+});
+
+describe('Coach Home · 20105 the team’s four parts (spec B §1)', () => {
+  let seq = 0;
+  const round = (o: { player?: string; back?: number; tee?: number | null; totalOnly?: boolean; fairways?: number } = {}): ChRound => {
+    const d = new Date('2026-09-30T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() - (o.back ?? seq));
+    return {
+      id: `r${String(++seq).padStart(4, '0')}`, player_id: o.player ?? 'p1', course_name: 'Home', tees_played: null,
+      round_date: d.toISOString().slice(0, 10), round_type: 'practice', total_score: 72, score_to_par: 0, front_nine: null, back_nine: null,
+      holes_played: 18, total_putts: 30, total_gir: 10, total_gir_possible: 18, total_fairways_hit: o.fairways ?? 8, total_fairways: 14,
+      strokes_gained_total: o.tee ?? null, strokes_gained_tee: o.tee ?? null, strokes_gained_approach: null, strokes_gained_around_green: null,
+      strokes_gained_putting: null, ...(o.totalOnly ? { total_only: true } : {}),
+    } as ChRound;
+  };
+  const players = [{ id: 'p1', first_name: 'Ada', last_name: 'Lin' }, { id: 'p2', first_name: 'Bo', last_name: 'Fox' }];
+  const cache = { byRound: new Map<string, ChRoundCache>(), error: false };
+  const legs = (full: ChRound[], over: Partial<Parameters<typeof teamLegs>[0]> = {}) => teamLegs({ full, players, cache, bench: { bench: new Map(), error: false }, tour: 'pga', ...over });
+  const tee = (l: ReturnType<typeof legs>) => l!.rows.find((r) => r.key === 'tee')!;
+
+  it('strokes gained in a part is null under 3 rounds with hole scores, however many totals sit beside them', () => {
+    const two = [round({ tee: 0.5, back: 1 }), round({ tee: 0.3, back: 2 }), ...[3, 4, 5].map((back) => round({ tee: 0.9, back, totalOnly: true }))];
+    expect(legs(two)!.holeRounds).toBe(2);
+    expect(tee(legs(two)).sg).toBeNull();
+    expect(tee(legs(two)).delta).toBeNull();
+    const three = [...two, round({ tee: 0.4, back: 6 })];
+    expect(tee(legs(three)).sg).toBeCloseTo(0.4, 5);
+  });
+
+  it('flags up-and-down that didn’t load (cacheError) and Tour marks that didn’t load (tourError), each on its own', () => {
+    const full = [1, 2, 3].map((back) => round({ tee: 0.2, back }));
+    expect(legs(full)).toMatchObject({ cacheError: false, tourError: false });
+    expect(legs(full, { cache: { byRound: new Map(), error: true } })).toMatchObject({ cacheError: true, tourError: false });
+    const noTour = legs(full, { bench: { bench: new Map(), error: true } })!;
+    expect(noTour).toMatchObject({ cacheError: false, tourError: true });
+    expect(noTour.rows.every((r) => r.stat.tour == null)).toBe(true);
+    // An unknown tour (the team row didn't load) has no marks and says nothing.
+    expect(legs(full, { bench: null })).toMatchObject({ tourError: false });
+  });
+
+  it('reads only the roster’s rounds: a former player’s round never reaches the figures or the grid', () => {
+    const mine = [1, 2, 3].map((back) => round({ tee: 0.2, back }));
+    const gone = [1, 2, 3].map((back) => round({ player: 'gone', tee: 3, back }));
+    const l = legs([...mine, ...gone])!;
+    expect(l.holeRounds).toBe(3);
+    expect(tee(l).sg).toBeCloseTo(0.2, 5);
+    expect(tee(l).gains?.ids).toEqual(['p1']);
+  });
+
+  it('is null with no round in the window', () => {
+    expect(legs([])).toBeNull();
+  });
+});
+
+describe('Coach Home · 20104 what’s waiting on the coach (spec B §2)', () => {
+  const at = new Date('2026-10-01T16:00:00Z');
+  const queue = async () => loadCoachQueue(await createClient(), { teamId: 't1', userId: 'u1', now: at, tz: Promise.resolve('America/New_York'), names: Promise.resolve(new Map([['p1', 'Ada Lin'], ['p2', 'Bo Fox']])) });
+  const replyEvent = { id: 'e1', start_time: '2026-10-02T18:00:00Z', end_time: null, all_day: false, status: null, cancelled_at: null, rsvp_deadline: null, requires_rsvp: true };
+  const answered = () => ({
+    golf_team_join_requests: { count: 2 },
+    golf_events: { data: [replyEvent] },
+    golf_event_attendance: { data: [{ event_id: 'e1', player_id: 'p1', status: 'pending' }, { event_id: 'e1', player_id: 'p2', status: 'accepted' }] },
+    golf_tasks: { data: [{ id: 't1', due_date: '2026-09-20' }, { id: 't2', due_date: '2026-12-01' }] },
+    golf_task_assignments: { data: [{ task_id: 't1', status: 'pending' }, { task_id: 't2', status: 'pending' }] },
+    golf_announcement_recipients: { data: [] },
+    golf_announcement_acknowledgements: { data: [{ announcement_id: 'n1', player_id: 'p1' }] },
+  });
+  afterEach(() => {
+    announcements.current = async () => ({ success: true, data: [] });
+    logServer.mockClear();
+  });
+
+  it('counts each part with the read and rule of the screen that holds it', async () => {
+    tables.current = answered();
+    announcements.current = async () => ({ success: true, data: [{ id: 'n1', requires_acknowledgement: true }, { id: 'n2', requires_acknowledgement: false }] });
+    expect(await queue()).toEqual({ joinRequests: 2, replies: { missing: 1, events: [{ id: 'e1', date: '2026-10-02', missing: 1 }] }, overdueTasks: 1, unackedPosts: 1 });
+  });
+
+  it('a part that fails is null and logged, never 0, and the others still count', async () => {
+    tables.current = { ...answered(), golf_tasks: { error: { message: 'boom' } } };
+    const q = await queue();
+    expect(q.overdueTasks).toBeNull();
+    expect(q.joinRequests).toBe(2);
+    expect(q.replies?.missing).toBe(1);
+    expect(logServer).toHaveBeenCalledWith('home', 'queue tasks', expect.anything());
+  });
+
+  it('every part failing is four nulls, never four zeros', async () => {
+    const boom = { error: { message: 'boom' } };
+    tables.current = { golf_team_join_requests: boom, golf_events: boom, golf_tasks: boom };
+    announcements.current = async () => ({ success: false, error: 'boom' });
+    expect(await queue()).toEqual({ joinRequests: null, replies: null, overdueTasks: null, unackedPosts: null });
+  });
+
+  it('replies that didn’t load, or acknowledgements that didn’t load, are unknown rather than short', async () => {
+    tables.current = { ...answered(), golf_event_attendance: { error: { message: 'boom' } }, golf_announcement_acknowledgements: { error: { message: 'boom' } } };
+    announcements.current = async () => ({ success: true, data: [{ id: 'n1', requires_acknowledgement: true }] });
+    const q = await queue();
+    expect(q.replies).toBeNull();
+    expect(q.unackedPosts).toBeNull();
+    expect(q.joinRequests).toBe(2);
+  });
+
+  it('an event past its reply deadline asks nothing more', async () => {
+    tables.current = { ...answered(), golf_events: { data: [{ ...replyEvent, rsvp_deadline: '2026-09-30T12:00:00Z' }] } };
+    expect((await queue()).replies).toEqual({ missing: 0, events: [] });
   });
 });
