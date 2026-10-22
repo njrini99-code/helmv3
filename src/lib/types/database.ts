@@ -21843,6 +21843,15 @@ export type Database = {
         Args: { p_conversation_id: string }
         Returns: boolean
       }
+      golf_import_player_classes: {
+        Args: {
+          p_player_id: string
+          p_rows: Json
+          p_team_id: string
+          p_term: string
+        }
+        Returns: Json
+      }
       golf_join_team_with_code: {
         Args: { p_code: string }
         Returns: {
