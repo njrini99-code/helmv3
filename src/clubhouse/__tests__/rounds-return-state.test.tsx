@@ -184,9 +184,16 @@ describe('CH-11912 Rounds library and review: Back is a real Back when the revie
     expect(router.back).not.toHaveBeenCalled();
   });
 
-  it('a coach’s Back goes to the player’s rounds on Stats, whatever was noted', async () => {
+  it('a coach who opened the round from Team rounds goes back there, in history', async () => {
     const user = userEvent.setup();
     noteOpenedFromLibrary(PREVIEW_REVIEW_COACH.id);
+    render(review(PREVIEW_REVIEW_COACH));
+    await user.click(await screen.findByRole('link', { name: /Rounds/ }));
+    expect(router.back).toHaveBeenCalledTimes(1);
+  });
+
+  it('a coach with no note (a deep link, Stats’ round list) goes back to the player’s rounds on Stats', async () => {
+    const user = userEvent.setup();
     render(review(PREVIEW_REVIEW_COACH));
     await user.click(screen.getByRole('link', { name: /Jonah Okafor/ }));
     expect(router.back).not.toHaveBeenCalled();

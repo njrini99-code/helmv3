@@ -9,11 +9,11 @@ vi.mock('../../../lib/track', () => ({ chReport: vi.fn(), chTrail: vi.fn(), chTa
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn(), back: vi.fn() }) }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: vi.fn() }));
-vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: vi.fn() }));
+vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: vi.fn(), setPlayerAvailability: vi.fn() }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: vi.fn(), rejectJoinRequest: vi.fn(), getTeamJoinRequests: vi.fn() }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: vi.fn() }));
 
-import { PREVIEW_ROSTER } from '../../../preview/fixtures-roster';
+import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY } from '../../../preview/fixtures-roster';
 import { clearPeople, usePeople } from '../../../shell/command/people';
 import { ToastProvider } from '../../../ui/Toast';
 import { Roster } from '../Roster';
@@ -30,16 +30,17 @@ afterEach(() => cleanup());
 function People() {
   return <output aria-label="people">{usePeople().map((p) => p.name).join('|')}</output>;
 }
-const tree = (
+const treeOf = (data: typeof PREVIEW_ROSTER) => (
   <LazyMotion features={domAnimation}>
     <ToastProvider>
       <div className="ch-root" data-ui="clubhouse">
-        <Roster data={PREVIEW_ROSTER} />
+        <Roster data={data} />
         <People />
       </div>
     </ToastProvider>
   </LazyMotion>
 );
+const tree = treeOf(PREVIEW_ROSTER);
 const labels = () => within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent);
 
 describe('Roster right-click menu', () => {
@@ -59,6 +60,29 @@ describe('Roster right-click menu', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
 
     const row = screen.getAllByRole('row').find((r) => within(r).queryByRole('button', { name: 'Actions for Theo Marchetti' }));
+    fireEvent.contextMenu(row!, { clientX: 100, clientY: 100 });
+    expect(labels()).toEqual(kebab);
+    expect(onFace).toEqual(kebab);
+  });
+
+  it('holds the same availability items as the kebab for an injured player (Mark available, Mark away)', async () => {
+    const user = userEvent.setup();
+    // The layout an earlier test chose is remembered: start on the faces.
+    window.localStorage.clear();
+    render(treeOf(PREVIEW_ROSTER_AVAILABILITY));
+    fireEvent.contextMenu(screen.getByRole('button', { name: /^Ava Lindqvist.*injured\. Open profile$/ }), { clientX: 200, clientY: 200 });
+    const onFace = labels();
+    expect(onFace).toEqual(expect.arrayContaining(['Mark available', 'Mark away', 'Mark inactive']));
+    expect(onFace).not.toContain('Mark injured');
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+
+    await user.click(screen.getByRole('button', { name: 'List view' }));
+    await user.click(screen.getByRole('button', { name: 'Actions for Ava Lindqvist' }));
+    const kebab = labels();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
+    const row = screen.getAllByRole('row').find((r) => within(r).queryByRole('button', { name: 'Actions for Ava Lindqvist' }));
     fireEvent.contextMenu(row!, { clientX: 100, clientY: 100 });
     expect(labels()).toEqual(kebab);
     expect(onFace).toEqual(kebab);

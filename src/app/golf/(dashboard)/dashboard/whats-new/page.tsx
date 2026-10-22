@@ -4,6 +4,8 @@ import { getWhatsNewForCoach } from '@/app/golf/actions/whats-new';
 import { fairwayScope } from '@/lib/redesign/flag';
 import { FairwayWhatsNew } from '@/components/fairway/pages/whats-new';
 import { FeatureUnavailable } from '@/components/fairway';
+import { isClubhouseFor } from '@/clubhouse/gate';
+import { ClubhouseWhatsNewRoute } from '@/clubhouse/routes/whats-new';
 
 // ============================================================================
 // METADATA
@@ -51,6 +53,9 @@ export default async function WhatsNewPage() {
       />
     );
   }
+
+  // Clubhouse What's new (golf_clubhouse_ui): the coach's week of CoachHelm activity.
+  if (await isClubhouseFor('coach')) return <ClubhouseWhatsNewRoute />;
 
   const result = await getWhatsNewForCoach();
 

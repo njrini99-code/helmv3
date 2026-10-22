@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Target } from 'lucide-react';
+import { CalendarPlus, ChevronLeft, ChevronRight, Info, MessageSquare, Plus, Sparkles, Target } from 'lucide-react';
 import Link from 'next/link';
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -30,12 +30,13 @@ import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { formatHcp } from '../roster/format';
 import { usePageCrumbs } from '../../shell/crumbs';
-import { LEGS_LIST } from './legs';
+import { gameSectionFromHash, LEGS_LIST, LEG_SECTION } from './legs';
 import { SgChangeChip } from './charts';
 import { ROUND_TYPE } from './detail';
 import { GameDetail } from './GameDetail';
 import { RoundsExtra } from './RoundsExtra';
 import { ProposalAnswer } from './ProposalAnswer';
+import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { StatsPlayerPhone } from './StatsPlayerPhone';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { useChSessionState } from '../../lib/session-state';
@@ -80,6 +81,31 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
     named.current = undefined;
     setKeptTab(t);
   };
+  // A leg's Game detail (Q12): opened from the Overview's pinned leg, or from an address that ends `#gm-<section>` (the team grid's cell).
+  // The section is only in the page once the Game detail tab is, so the scroll waits for it.
+  const wantSection = useRef<string | null>(null);
+  const openLeg = (label: string) => {
+    const id = (LEG_SECTION as Record<string, string | undefined>)[label];
+    if (!id) return;
+    wantSection.current = `gm-${id}`;
+    setTab('game');
+  };
+  // On the phone the hash picks the section Game detail draws (GameDetail reads it itself), so this scroll is the desktop's.
+  useEffect(() => {
+    if (!wantSection.current && !phone && gameSectionFromHash(window.location.hash)) wantSection.current = window.location.hash.slice(1);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- read once, as the page opens
+  useEffect(() => {
+    const id = wantSection.current;
+    if (phone) {
+      wantSection.current = null;
+      return;
+    }
+    if (!id || shownTab !== 'game') return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    wantSection.current = null;
+    el.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
+  });
   const [focusOpen, setFocusOpen] = useState(false);
   const [pending, start] = useTransition();
   const coach = data.viewer === 'coach';
@@ -130,6 +156,8 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;
   // The board's Schedule 1:1: Calendar's editor with only this player invited (D-52).
   const planHref = coach ? rebuiltHref(`/golf/dashboard/calendar?new=1&with=${data.id}`) : null;
+  // The player's CoachHelm reads (Roster's "View insights" opens the same page): a coach reads a player's stats and insights together.
+  const insightsHref = coach ? rebuiltHref(`/golf/dashboard/coachhelm?player=${data.id}`, 'coach') : null;
 
   const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
     ['Scoring avg', failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} rounds`],
@@ -226,7 +254,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             </div>
             <h1 className="ch-display">{coach ? data.name : 'Your stats'}</h1>
             <p>{[coach ? null : data.name, data.classYear, data.gradYear ? `Class of ${data.gradYear}` : null, data.hometown].filter(Boolean).join(' · ')}</p>
-            {coach && (messageHref || planHref || coachId) && (
+            {coach && (messageHref || planHref || insightsHref || coachId) && (
               <div className="ch-pf-hero__act">
                 {messageHref && (
                   <Button leftIcon={MessageSquare} href={messageHref}>
@@ -236,6 +264,11 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
                 {planHref && (
                   <Button leftIcon={CalendarPlus} href={planHref}>
                     Schedule 1:1
+                  </Button>
+                )}
+                {insightsHref && (
+                  <Button leftIcon={Sparkles} href={insightsHref}>
+                    CoachHelm
                   </Button>
                 )}
                 {coachId && (
@@ -310,7 +343,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
             {shownTab === 'overview' && !emptyFilter && !failed && (
               <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
                 {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={() => router.refresh()} />}
-                <Overview data={data} coach={coach} />
+                <Overview data={data} coach={coach} onOpenLeg={openLeg} />
               </SectionBoundary>
             )}
 
@@ -374,7 +407,7 @@ export function StatsPlayer({ data, coachId, initialTab }: { data: ChPlayerProfi
  */
 
 /** Memoised: the seven zones are the page's heaviest read, and the tab's own state (the focus sheet, a transition) must not recompute them. */
-const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile; coach: boolean }) {
+const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPlayerProfile; coach: boolean; onOpenLeg: (label: string) => void }) {
   const first = data.firstName;
   const trendRounds = [...data.rounds].reverse().slice(-10).map((r) => ({ label: r.date, course: r.course, score: per18(r.score, r.holes), toPar: r.toPar == null ? null : per18(r.toPar, r.holes), holes: r.holes }));
   // Seven zones, one per stat area; the last holds the scoring-form ribbon. Every figure is read from the profile (see OverviewZones).
@@ -382,6 +415,7 @@ const Overview = memo(function Overview({ data, coach }: { data: ChPlayerProfile
     <OverviewZones
       data={data}
       coach={coach}
+      onOpenLeg={onOpenLeg}
       ribbon={
         <PlayerStage
           rounds={trendRounds.map((r) => ({ label: r.label, course: r.course, score: r.score, toPar: r.toPar, holes: r.holes }))}
@@ -550,12 +584,14 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                 <span>
                   <b>this season</b>
                 </span>
+                {!coach && <GoalSetButton />}
               </div>
             </>
           }
         >
+          {!coach && <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />}
           {data.goals.length === 0 ? (
-            <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} sets goals from the player app.` : 'Set goals from your development page.'} />
+            <EmptyState code="CH-5304" compact title="No goals set." body={coach ? `${first} has no goals yet.` : 'Goals you and your coach set show here.'} />
           ) : (
             <ul className="ch-dvl" aria-label="Goals">
               {data.goals.map((g) => {
@@ -569,9 +605,9 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                     baseline={g.baseline}
                     current={g.current}
                     target={g.target}
-                    metric={devMetric(g.title)}
+                    metric={devMetric(g.title, g.metric)}
                     done={done}
-                    extra={<span className="ch-sr-only">{done ? 'Achieved' : 'In progress'}</span>}
+                    extra={<GoalStatus id={g.id} title={devTitle(g.title)} state={g.state} coach={coach} />}
                   />
                 );
               })}

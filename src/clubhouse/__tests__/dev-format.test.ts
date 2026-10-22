@@ -15,6 +15,13 @@ describe('development formatting (F-54)', () => {
     expect(goalLine({ title: 'Anything', state: 'achieved', current: null, target: 5 })).toBe('achieved');
   });
 
+  it('a goal with a human title formats by its own metric_id, and a legacy id title still works without one', () => {
+    expect(goalLine({ title: 'Greens in regulation, 30-day goal', state: 'active', current: 62, target: 70 })).toBe('Now 62 · target 70');
+    expect(goalLine({ title: 'Greens in regulation, 30-day goal', metric: 'gir_pct', state: 'active', current: 62, target: 70 })).toBe('Now 62% · target 70%');
+    expect(goalLine({ title: 'Greens in regulation, 30-day goal', metric: 'not_a_metric', state: 'active', current: 62, target: 70 })).toBe('Now 62 · target 70');
+    expect(goalLine({ title: 'Goal — gir_pct', metric: null, state: 'active', current: 62, target: 70 })).toBe('Now 62% · target 70%');
+  });
+
   it('focus area progress uses the metric when it has one', () => {
     expect(devProgress({ title: '3-5 ft putting', metric: null, current: 47.7, baseline: null, target: 68.5 })).toBe('47.7 → target 68.5');
     expect(devProgress({ title: 'Lag putts', metric: null, current: 1, baseline: null, target: null })).toBe('No target set');

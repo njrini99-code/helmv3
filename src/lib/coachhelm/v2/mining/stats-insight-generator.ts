@@ -597,11 +597,11 @@ export class StatsInsightGenerator {
             ? `GIR: ${gapToAvg.toFixed(0)}% Above Team Average`
             : `GIR: ${Math.abs(gapToAvg).toFixed(0)}% Below Team Average`,
           body: isAboveAvg
-            ? `Your ${stats.girPercentage.toFixed(0)}% GIR leads the team (avg: ${girComparison.teamAvg.toFixed(0)}%). Strong iron play is a competitive advantage.`
+            ? `Your ${stats.girPercentage.toFixed(0)}% GIR leads the team (avg: ${girComparison.teamAvg.toFixed(0)}%). Strong approach play is a competitive advantage.`
             : `Your ${stats.girPercentage.toFixed(0)}% GIR is below the team average of ${girComparison.teamAvg.toFixed(0)}%. Focus on approach consistency.`,
           strokeImpact: isAboveAvg ? 0 : Math.abs(gapToAvg) / 100 * this.getHolesPerRound(stats) * 0.3,
           recommendation: isAboveAvg
-            ? 'Your approach shots are a strength. Consider helping teammates with iron play.'
+            ? 'Your approach shots are a strength. Consider helping teammates with approach play.'
             : 'Study what top team performers do on approaches. Focus on distance control.',
           priority: isAboveAvg ? 'low' : 'medium',
           confidence: 0.85,
@@ -682,8 +682,8 @@ export class StatsInsightGenerator {
           : `Your greens in regulation dropped from ${girTrend.baselineValue.toFixed(0)}% to ${girTrend.currentValue.toFixed(0)}%. This puts more pressure on your short game.`,
         strokeImpact: isImproving ? 0 : Math.abs(girTrend.magnitude) / 100 * this.getHolesPerRound(stats) * 0.3,
         recommendation: isImproving
-          ? 'Your iron play is improving. Keep working on distance control.'
-          : 'Focus on approach shot consistency. Consider club selection and commit to your targets.',
+          ? 'Your approach play is improving. Keep working on distance control.'
+          : 'Focus on approach shot consistency. Check the carry you play for and commit to your targets.',
         priority: girTrend.significance === 'significant' ? 'high' : 'medium',
         confidence: 0.8,
         evidenceMetrics: [
@@ -886,7 +886,7 @@ export class StatsInsightGenerator {
 
       case 'Approach':
         if (severity > 1) {
-          return 'Priority: Iron play distance control. Focus on specific yardages and dial in your approach distances. Practice from 100-175 yards.';
+          return 'Priority: Approach distance control. Focus on specific yardages and dial in your approach distances. Practice from 100-175 yards.';
         }
         return 'Improve proximity to hole on approach shots. Work on distance control and consistent strike patterns.';
 
@@ -1072,7 +1072,7 @@ export class StatsInsightGenerator {
         headline: 'GIR% Below Target',
         body: `Hitting ${stats.girPercentage.toFixed(0)}% greens in regulation (target: ${BENCHMARKS.girPct}%). Missing greens puts pressure on your short game and reduces birdie opportunities.`,
         strokeImpact: strokesLost,
-        recommendation: 'Focus on approach shot consistency. Consider club selection - taking one more club often improves GIR without sacrificing much proximity.',
+        recommendation: 'Focus on approach shot consistency. Check the carry you play for - playing for more carry often improves GIR without sacrificing much proximity.',
         priority: strokesLost > 1 ? 'high' : 'medium',
         confidence: stats.roundsPlayed <= 5 ? 0.55 : stats.roundsPlayed <= 10 ? 0.70 : stats.roundsPlayed <= 20 ? 0.85 : 0.95,
         evidenceMetrics: [
@@ -1106,7 +1106,7 @@ export class StatsInsightGenerator {
           headline: `${zone.range} Approach Weakness`,
           body: `GIR from ${zone.range}: ${zone.pct.toFixed(0)}% (target: ${zone.benchmark}%). This distance band is significantly below expectations and worth focused practice.`,
           strokeImpact: deficit / 100 * 3 * 0.5, // ~3 approaches/round in each zone
-          recommendation: `Dial in your ${zone.range} club. Practice this specific distance with target focus, not just swing thoughts.`,
+          recommendation: `Dial in your carry from ${zone.range}. Practice this specific distance with target focus, not just swing thoughts.`,
           priority: 'medium',
           confidence: 0.75,
           evidenceMetrics: [
@@ -1132,9 +1132,9 @@ export class StatsInsightGenerator {
           playerId: this.playerId,
           category: 'approach',
           headline: 'Large Fairway vs Rough GIR Gap',
-          body: `GIR from fairway: ${stats.girPctFromFairway.toFixed(0)}%, from rough: ${stats.girPctFromRough.toFixed(0)}% (${fwRoughGap.toFixed(0)}% gap). Your iron play suffers significantly from the rough.`,
+          body: `GIR from fairway: ${stats.girPctFromFairway.toFixed(0)}%, from rough: ${stats.girPctFromRough.toFixed(0)}% (${fwRoughGap.toFixed(0)}% gap). Your approach play suffers significantly from the rough.`,
           strokeImpact: fwRoughGap / 100 * 6 * 0.2, // conservative multiplier
-          recommendation: 'Practice from rough lies. Focus on ball-first contact and consider club adjustment (take one more club) from rough.',
+          recommendation: 'Practice from rough lies. Focus on ball-first contact and consider a carry adjustment (play for more carry) from rough.',
           priority: 'medium',
           confidence: 0.8,
           evidenceMetrics: [
@@ -1181,15 +1181,15 @@ export class StatsInsightGenerator {
   private getApproachMissRecommendation(direction: string): string {
     switch (direction) {
       case 'Short':
-        return 'You\'re likely decelerating or mis-hitting. Take one more club and make a smooth, committed swing. "Club up and choke down" is a good mantra.';
+        return 'You\'re likely decelerating or mis-hitting. Play for more carry and make a smooth, committed swing. "More carry, smooth swing" is a good mantra.';
       case 'Long':
-        return 'Check if you\'re playing courses at elevation or with favorable conditions. Consider taking one less club when conditions are helping.';
+        return 'Check if you\'re playing courses at elevation or with favorable conditions. Consider playing for less carry when conditions are helping.';
       case 'Left':
         return 'Consistent left misses suggest an over-draw or pull. Check grip, ball position, and swing path. Aim slightly right to play the miss.';
       case 'Right':
         return 'Consistent right misses suggest a block or fade pattern. Check grip pressure and release through impact. Aim slightly left to work with the pattern.';
       default:
-        return 'Work on consistent strike and aim pattern with your approach clubs.';
+        return 'Work on consistent strike and aim pattern on your approach shots.';
     }
   }
 
@@ -1252,7 +1252,7 @@ export class StatsInsightGenerator {
             strokeImpact: 0.3,
             recommendation: dominantMiss === 'left'
               ? 'Check your grip (may be too strong), alignment, and swing path. Left misses often come from over-the-top moves or closed face.'
-              : 'Check for an open club face at impact or an in-to-out swing path. Right misses often indicate a block or push-fade.',
+              : 'Check for a face that is open at impact or an in-to-out swing path. Right misses often indicate a block or push-fade.',
             priority: 'medium',
             confidence: 0.7,
             evidenceMetrics: [
@@ -1274,7 +1274,7 @@ export class StatsInsightGenerator {
         headline: 'Penalty Strokes Adding Up',
         body: `Averaging ${stats.penaltiesPerRound.toFixed(1)} penalties per round. Each penalty is a free stroke to the field. Reducing penalties is the fastest way to lower scores.`,
         strokeImpact: excessPenalties,
-        recommendation: 'Analyze where penalties occur. Consider safer club selection or aim in penalty-prone situations. Course management > heroic shots.',
+        recommendation: 'Analyze where penalties occur. Consider a safer shot or aim in penalty-prone situations. Course management > heroic shots.',
         priority: excessPenalties > 0.5 ? 'high' : 'medium',
         confidence: 0.9,
         evidenceMetrics: [
@@ -1567,7 +1567,7 @@ export class StatsInsightGenerator {
             headline: 'Likely Root Cause: Driving Accuracy Impact',
             body: `Data suggests your scoring issues likely trace back to the tee. ${chainSteps.join('. ')}. Estimated cascade cost: ~${strokeCostFromChain.toFixed(1)} strokes per round. Improving fairway accuracy would likely improve your approach play, reduce scrambling pressure, and cut big numbers.`,
             strokeImpact: strokeCostFromChain,
-            recommendation: `Priority #1 is hitting more fairways. Consider: (1) Hitting 3-wood on tight holes: fairway from 260 yards beats rough from 285. (2) Aim for the wide side of fairways, not the center. (3) Work on consistent tee shot shape rather than chasing distance.`,
+            recommendation: `Priority #1 is hitting more fairways. Consider: (1) Hitting a tee shot that isn't driver on tight holes: fairway from 260 yards beats rough from 285. (2) Aim for the wide side of fairways, not the center. (3) Work on consistent tee shot shape rather than chasing distance.`,
             priority: strokeCostFromChain > 1 ? 'critical' : 'high',
             confidence: 0.88,
             evidenceMetrics: [
@@ -1604,13 +1604,13 @@ export class StatsInsightGenerator {
         if (stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10 - 5) {
           bodyParts.push(`Key issue: only making ${stats.puttMakePct5_10.toFixed(0)}% from 5-10 feet (benchmark: ${BENCHMARKS.puttMake5_10}%). These are your birdie putts.`);
         }
-        bodyParts.push(`Based on your data, you're likely leaving ~${strokesWasted.toFixed(1)} strokes per round on the table by not converting the opportunities your iron play creates.`);
+        bodyParts.push(`Based on your data, you're likely leaving ~${strokesWasted.toFixed(1)} strokes per round on the table by not converting the opportunities your approach play creates.`);
 
         insights.push({
           id: 'root-cause-wasted-approach',
           playerId: this.playerId,
           category: 'putting',
-          headline: 'Likely Root Cause: Putting Conversion Limiting Iron Play',
+          headline: 'Likely Root Cause: Putting Conversion Limiting Approach Play',
           body: bodyParts.join(' '),
           strokeImpact: strokesWasted,
           recommendation: `Your approach game is a strength, so don't change it. Focus ALL practice improvement on putting: (1) 5-10 foot make rate is your biggest ROI zone. (2) Work on start line consistency with gate drills. (3) Speed control: practice leaving every putt 6-12 inches past the cup.`,
@@ -1654,17 +1654,17 @@ export class StatsInsightGenerator {
         }
 
         const body = weakZones.length > 0
-          ? `${totalShortMissPct.toFixed(0)}% of approach misses are short (including short-left/right). Worst distance zones: ${weakZones.join(', ')}. This pattern strongly suggests under-clubbing: you're consistently taking one club too little. From rough, the problem compounds because grass grabs the clubface and reduces distance further.`
-          : `${totalShortMissPct.toFixed(0)}% of approach misses are short. This is the #1 sign of under-clubbing. The average amateur/college golfer takes 1 club too few on approach shots. Factor in: (1) shots rarely come out as pure as on the range, (2) rough reduces carry 5-10%, (3) the front of greens is always harder to hold.`;
+          ? `${totalShortMissPct.toFixed(0)}% of approach misses are short (including short-left/right). Worst distance zones: ${weakZones.join(', ')}. This pattern strongly suggests playing for too little carry: you're consistently playing for one full step too little carry. From rough, the problem compounds because grass grabs the face at impact and reduces distance further.`
+          : `${totalShortMissPct.toFixed(0)}% of approach misses are short. This is the #1 sign of playing for too little carry. The average amateur/college golfer plays for one full step too little carry on approach shots. Factor in: (1) shots rarely come out as pure as on the range, (2) rough reduces carry 5-10%, (3) the front of greens is always harder to hold.`;
 
         insights.push({
           id: 'root-cause-club-selection',
           playerId: this.playerId,
           category: 'approach',
-          headline: 'Likely Root Cause: Club Selection Pattern',
+          headline: 'Likely Root Cause: Carry Distance Pattern',
           body,
           strokeImpact: totalShortMissPct / 100 * (stats.approachMissTotal / stats.roundsPlayed) * 0.4,
-          recommendation: `Rule of thumb: when between clubs, ALWAYS take more club and swing smooth. Specific drills: (1) On the range, note your AVERAGE carry, not your best carry: that's your real number. (2) From rough, add 1 full club. (3) Front pin = aim middle of green. Back pin = aim at pin. Never short-side yourself.`,
+          recommendation: `Rule of thumb: when between numbers, ALWAYS play for more carry and swing smooth. Specific drills: (1) On the range, note your AVERAGE carry, not your best carry: that's your real number. (2) From rough, add one full step of carry. (3) Front pin = aim middle of green. Back pin = aim at pin. Never short-side yourself.`,
           priority: 'high',
           confidence: 0.82,
           evidenceMetrics: [
@@ -1797,7 +1797,7 @@ export class StatsInsightGenerator {
         if (par5Fw < 50) {
           bodyParts.push(`The problem starts on the tee: only ${par5Fw.toFixed(0)}% fairways on par 5s. Missing the fairway on par 5s turns birdie opportunities into bogey risks because your second shot is compromised.`);
         } else if (par5Gir < 55) {
-          bodyParts.push(`You're finding fairways (${par5Fw.toFixed(0)}%) but not converting to greens (${par5Gir.toFixed(0)}% GIR). This points to poor second-shot distance or club selection on par 5 approaches.`);
+          bodyParts.push(`You're finding fairways (${par5Fw.toFixed(0)}%) but not converting to greens (${par5Gir.toFixed(0)}% GIR). This points to poor second-shot distance or carry choices on par 5 approaches.`);
         }
 
         insights.push({
@@ -1807,7 +1807,7 @@ export class StatsInsightGenerator {
           headline: 'Par 5s: Turning Birdie Holes into Bogey Holes',
           body: bodyParts.join(' '),
           strokeImpact: strokesLeak,
-          recommendation: `Par 5 strategy: (1) Hit fairway first; 3-wood is fine if driver isn't reliable. (2) If you can't reach in 2, lay up to YOUR best wedge distance, not just "short of the green." (3) Par 5 birdies come from wedge proximity, not heroic second shots. A 100-yard wedge from the fairway > 220-yard wood from the rough.`,
+          recommendation: `Par 5 strategy: (1) Hit fairway first; a tee shot that isn't driver is fine if driver isn't reliable. (2) If you can't reach in 2, lay up to YOUR best short-approach distance, not just "short of the green." (3) Par 5 birdies come from short-approach proximity, not heroic second shots. A 100-yard approach from the fairway > a 220-yard approach from the rough.`,
           priority: strokesLeak > 0.5 ? 'high' : 'medium',
           confidence: 0.85,
           evidenceMetrics: [
@@ -1829,11 +1829,11 @@ export class StatsInsightGenerator {
 
         const bodyParts: string[] = [];
         bodyParts.push(`Only ${par3Gir.toFixed(0)}% GIR on par 3s (benchmark: ${BENCHMARKS.girPctPar3}%).`);
-        bodyParts.push(`Par 3s are a pure test of iron play, with no driving variable. Low GIR here points to distance control or club selection issues with mid/long irons.`);
+        bodyParts.push(`Par 3s are a pure test of approach play, with no driving variable. Low GIR here points to distance control or carry issues on mid and long approaches.`);
 
         // Check if approach miss direction gives a clue
         if (stats.approachMissShortPct !== null && stats.approachMissShortPct > 40) {
-          bodyParts.push(`Your general approach miss tendency is short (${stats.approachMissShortPct.toFixed(0)}%). On par 3s this likely means under-clubbing.`);
+          bodyParts.push(`Your general approach miss tendency is short (${stats.approachMissShortPct.toFixed(0)}%). On par 3s this likely means playing for too little carry.`);
         }
 
         // Cross-reference approach proximity on par 3s
@@ -1845,10 +1845,10 @@ export class StatsInsightGenerator {
           id: 'par-type-par3-scoring',
           playerId: this.playerId,
           category: 'approach',
-          headline: 'Par 3s: Iron Play Costing Strokes',
+          headline: 'Par 3s: Approach Play Costing Strokes',
           body: bodyParts.join(' '),
           strokeImpact: strokesLeak,
-          recommendation: `Par 3 improvement: (1) Know your EXACT carry distances for every iron. (2) On par 3s, always aim center of green: chasing pins on par 3s creates short-sided misses. (3) Most par 3 GIR misses come from taking too little club. When in doubt, club up.`,
+          recommendation: `Par 3 improvement: (1) Know your EXACT carry distances for every full swing. (2) On par 3s, always aim center of green: chasing pins on par 3s creates short-sided misses. (3) Most par 3 GIR misses come from playing for too little carry. When in doubt, play for more carry.`,
           priority: strokesLeak > 0.4 ? 'high' : 'medium',
           confidence: 0.80,
           evidenceMetrics: [
@@ -1893,7 +1893,7 @@ export class StatsInsightGenerator {
           headline: `Scoring Leak: Rough at ${zone.label}`,
           body: `From ${zone.label} in the rough, it takes an average of ${zone.eff.rough.toFixed(1)} strokes to hole out vs ${zone.eff.fairway.toFixed(1)} from the fairway, a ${roughPenalty.toFixed(1)} stroke penalty per occurrence. ${zone.girPct !== null ? `GIR from this zone is only ${zone.girPct.toFixed(0)}% (target: ${zone.girBench}%).` : ''} This specific distance+lie combination is one of your biggest stroke sinks.`,
           strokeImpact: roughPenalty * 1.5, // Estimate ~1.5 occurrences per round for a given zone
-          recommendation: `Specific practice: hit approach shots from rough at ${zone.label}. Focus on: (1) Ball position: move it slightly back in stance for cleaner contact. (2) Take one more club, since rough reduces carry 5-15 yards. (3) Accept center of green as the target from rough; don't chase pins.`,
+          recommendation: `Specific practice: hit approach shots from rough at ${zone.label}. Focus on: (1) Ball position: move it slightly back in stance for cleaner contact. (2) Play for more carry, since rough reduces carry 5-15 yards. (3) Accept center of green as the target from rough; don't chase pins.`,
           priority: roughPenalty > 0.7 ? 'high' : 'medium',
           confidence: 0.78,
           evidenceMetrics: [
@@ -1927,7 +1927,7 @@ export class StatsInsightGenerator {
       let specificCause = '';
       if (hasLieData && worstZone.eff) {
         if (worstZone.eff.fairway !== null && worstZone.eff.fairway > 3.0) {
-          specificCause = ` Even from the fairway at this distance, you take ${worstZone.eff.fairway.toFixed(1)} strokes to hole out. This suggests a club fitting or distance gapping issue at this yardage.`;
+          specificCause = ` Even from the fairway at this distance, you take ${worstZone.eff.fairway.toFixed(1)} strokes to hole out. This suggests a carry gap or distance control issue at this yardage.`;
         } else if (worstZone.eff.rough !== null && worstZone.eff.rough > 3.5 && worstZone.eff.fairway !== null && worstZone.eff.fairway < 3.0) {
           specificCause = ` Your fairway efficiency is acceptable (${worstZone.eff.fairway.toFixed(1)}) but rough efficiency is poor (${worstZone.eff.rough.toFixed(1)}). The problem is lie-specific, not distance-specific.`;
         }
@@ -1940,7 +1940,7 @@ export class StatsInsightGenerator {
         headline: `Biggest Approach Weakness: ${worstZone.label}`,
         body: `GIR at ${worstZone.label}: ${worstZone.girPct?.toFixed(0)}% (benchmark: ${worstZone.girBench}%). This ${worstZone.girDeficit.toFixed(0)}% deficit is your worst distance zone.${specificCause} Focus your range sessions on this exact distance.`,
         strokeImpact: worstZone.girDeficit / 100 * 3 * 0.5,
-        recommendation: `Dedicated practice: hit 20 balls to a target at ${worstZone.label} distance. Track how many land on a green-sized circle. Identify if it's a distance control issue (long/short) or direction issue (left/right). Also check: do you have a clear club for this distance, or does it fall in a gap between clubs?`,
+        recommendation: `Dedicated practice: hit 20 balls to a target at ${worstZone.label} distance. Track how many land on a green-sized circle. Identify if it's a distance control issue (long/short) or direction issue (left/right). Also check: do you have a stock shot for this distance, or does it fall between your full-swing carry numbers?`,
         priority: 'high',
         confidence: 0.82,
         evidenceMetrics: [
@@ -2050,7 +2050,7 @@ export class StatsInsightGenerator {
         unit: '%',
         strokesLostPerRound: deficit / 100 * 14 * 0.4,
         fixDescription: `Improve fairways from ${stats.fairwayPercentage.toFixed(0)}% to ${BENCHMARKS.fairwayPct}%`,
-        practiceAction: 'Tee shot accuracy: consider 3-wood on tight holes',
+        practiceAction: 'Tee shot accuracy: consider a non-driver tee shot on tight holes',
       });
     }
 
@@ -2094,7 +2094,7 @@ export class StatsInsightGenerator {
         unit: 'per round',
         strokesLostPerRound: stats.penaltiesPerRound - BENCHMARKS.penaltiesPerRound,
         fixDescription: `Reduce penalties from ${stats.penaltiesPerRound.toFixed(1)} to ${BENCHMARKS.penaltiesPerRound}`,
-        practiceAction: 'Course management: safer club/target selection in danger zones',
+        practiceAction: 'Course management: safer shot and target selection in danger zones',
       });
     }
 

@@ -6,6 +6,13 @@
 Design package: none (follow-up to the nightly WebKit finding)
 PR/commit:      see git log (claude/clubhouse-eager-event-read)
 Contract IDs:   none
+
+## 2026-10-21 — Team Hub's counts shared with Coach Home
+
+```text
+Design package: none (Coach Home spec B §2, counts as the Hub)
+PR/commit:      parity/coach-home (local)
+Contract IDs:   none changed
 Actions:        none
 Data impact:    none
 Held items:     none
@@ -14,6 +21,20 @@ Held items:     none
 The trip boxes read the typed value in the change handler before the draft
 setter, not inside the state updater. ESLint now bans the pattern in
 `src/clubhouse`.
+
+### Changed (data/hub.ts, no behaviour change)
+
+- The reply counts and the task status rule are pure helpers (`rsvpCounts`,
+  `taskStatus`) that the coach's loader now calls, with the same logic.
+- New pure counts for Coach Home's "Waiting on you": `rsvpQueue`,
+  `overdueTaskCount`, `unackedPostCount`.
+- The team clock comes from `data/home-clock.ts` (moved out of `home.ts`), so
+  Home can read the Hub's counts without an import cycle.
+
+### Verification
+
+- `hub.test.tsx`, `hub-paged-reads.test.ts`, `wiring-p010-hub.test.tsx`;
+  parity on the Hub's coach fixtures in `home-coach-parity.test.tsx`.
 
 ## 2026-10-19 — Type, shape and touch in the page stylesheet
 
