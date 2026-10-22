@@ -109,7 +109,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | P001 | 3 | 2 | 1 | 6 |  | 14 | 6 | 4 | 1 |  |  |  | 1 | 2 |  | 22 | 9 | 26 | 1 | 3 | 1 | 3 | 1 | 1 |  | 107 |
 | P002 | 5 | 1 | 1 | 15 |  | 22 |  | 6 |  |  |  |  |  | 2 |  | 2 | 3 | 7 | 1 |  | 1 |  | 1 | 1 |  | 68 |
-| P003 | 2 | 3 | 3 | 9 | 3 | 22 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
+| P003 | 2 | 3 | 3 | 9 | 3 | 23 | 1 | 6 | 1 |  | 2 | 3 | 1 | 3 |  | 4 | 4 | 9 | 1 | 1 | 1 |  | 1 | 1 |  | 82 |
 | P004 | 2 | 1 | 1 | 19 | 2 | 12 | 3 | 2 | 1 |  |  | 1 |  | 1 |  | 4 | 4 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 64 |
 | P005 | 4 | 4 | 2 | 23 | 3 | 25 | 3 | 6 | 1 |  | 1 | 2 |  | 1 | 1 | 4 | 3 | 10 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
@@ -354,6 +354,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 30620 | CH-3009 | 06 Server / system error | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | implemented | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
 | 30621 | CH-3010 | 06 Server / system error | `THE_AVAILABILITY_NOTE_DOESNT_SAVE` | deprecated | Retired 2026-10-21, never shipped: the availability note |
 | 30622 | CH-3212 | 06 Server / system error | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | implemented | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
+| 30623 | CH-3011 | 06 Server / system error | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | implemented | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
 | 30701 |  | 07 Network / offline | `WRITES_REFUSED_OFFLINE` | implemented | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
 | 30801 |  | 08 Permission / authorization | `COACH_ONLY_ROSTER` | implemented | The coach's roster (the list with its figures, the coach's notes, the join requests, Invite, Export and the player panel) is a coach's: the page hands it over for a coach with the flag on, the route checks the session again before any read, and a player is handed their own read-only roster (30804), never this one, its loader, the notes or the join requests. |
 | 30802 |  | 08 Permission / authorization | `NOTES_PRIVATE_TO_THE_COACH` | implemented | The loader reads the members of the coach's active team (active and inactive only) and only the notes this coach wrote (coach_id), so another coach's note about the same player is never loaded. |

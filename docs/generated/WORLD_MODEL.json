@@ -3399,6 +3399,12 @@
         ]
       },
       {
+        "id": "golf_player_availability_coach_notes",
+        "definedIn": [
+          "supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -20130,11 +20136,6 @@
         },
         {
           "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/generators/pressure-gap.ts",
-          "anchor": "src/lib/supabase/untyped"
-        },
-        {
-          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/generators/putt-bias.ts",
           "anchor": "src/lib/supabase/untyped"
         },
@@ -20217,11 +20218,6 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/standing/loader.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/coachhelm/v3/standing/pga-standards.ts",
-          "anchor": "src/lib/supabase/untyped"
         },
         {
           "kind": "import_graph",
@@ -22787,6 +22783,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/supabase/untyped"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/app/golf/actions/team-switcher.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -22880,6 +22881,17 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/teams.ts",
           "anchor": "golf_my_join_requests"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "golf_player_availability_coach_notes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql"
         }
       ]
     },

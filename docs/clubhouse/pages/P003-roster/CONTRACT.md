@@ -128,8 +128,9 @@ Status: DEFINED
 
 One input has a limit: the coach's note (30501, 2,000 characters; the counter
 appears in the last 200 and typing stops at the limit). There is no
-availability note (30503 is retired with CH-3102; `setPlayerAvailability`
-refuses a note). The search box takes any text. Nothing else is typed into a form:
+availability note on the team row (30503 is retired with CH-3102; `setPlayerAvailability`
+refuses a note); the coach-only Why field (280 characters, 30623) exists only once its table
+does (`availabilityCoachNotes`; held migration 20261022090000). The search box takes any text. Nothing else is typed into a form:
 players join by code, and the server checks who may decide a request (30803).
 What players and coaches typed comes out safely: the export writes a name that
 could be read as a formula as text (30502).
@@ -173,6 +174,7 @@ refused change shows the server's own sentence when it is short and readable
 | 30619 | CH-3008 | `CHANGING_A_PLAYERS_STATUS_FAILS` | Changing a player's status (Active or Inactive) fails |
 | 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
 | 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
+| 30623 | CH-3011 | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,

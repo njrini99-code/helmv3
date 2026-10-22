@@ -51,7 +51,7 @@ describe('pgaReferenceLabel — LPGA label for women\'s teams', () => {
 // ---------------------------------------------------------------------------
 // pga-standards.ts — loadStandardsForGender / loadStandardsForTour
 //
-// We mock createAdminClient + fromUntyped since these functions do DB IO.
+// We mock createAdminClient (its .from) since these functions do DB IO.
 // ---------------------------------------------------------------------------
 
 const mockSelectChain = (rows: unknown[]) => {
@@ -75,11 +75,9 @@ const mockSelectChain = (rows: unknown[]) => {
 };
 
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: vi.fn(),
-}));
-
-vi.mock('@/lib/supabase/untyped', () => ({
-  fromUntyped: vi.fn((_supabase: unknown, _table: string) => mockSelectChain(mockDbRows)),
+  createAdminClient: vi.fn(() => ({
+    from: vi.fn((_table: string) => mockSelectChain(mockDbRows)),
+  })),
 }));
 
 /** Shared mock DB rows — updated per-test group. */

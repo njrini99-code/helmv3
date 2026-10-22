@@ -257,7 +257,7 @@ Recruiting HQ · active · criticality medium · owner product
 Roster And Team · active · criticality high · owner product
 
 - **Relations:** 0 doc/structurally-evidenced, 5 import-graph-only (weak)
-- **Tables:** `baseball_seasons`
+- **Tables:** `baseball_seasons`, `golf_player_availability_coach_notes`
 - **RPCs:** `get_coach_today_schedule`, `golf_join_team_with_code`, `golf_my_join_requests`, `golf_team_by_join_code`, `sg_scale_for_player`
 - **Test surfaces:** 1
 - **Sentry/admin_events signals:** `roster_management`, `team_info`

@@ -5,6 +5,8 @@ import { AnimatePresence, m } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { setIntent } from '@/app/golf/actions/v3/intent';
+import { setPlayerAvailabilityCoachNote } from '@/app/golf/actions/team-management';
+import { AVAILABILITY_NOTE_MAX } from '../../data/availability';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import type { ChAvailability, ChRosterHelm, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
@@ -400,6 +402,11 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
 export interface AvailabilityControl {
   set: (p: ChRosterPlayer, to: ChAvailability) => void;
   pending: boolean;
+  /**
+   * The coach-only reason beside Injured or Away. Present only when its table answered (`ChRoster.availabilityCoachNotes`);
+   * absent, the panel draws the word only. `onSaved` tells the list the note is stored.
+   */
+  note?: { onSaved: (id: string, note: string | null) => void };
 }
 
 /** What `useAction('roster.setAvailability')` says (CH-3009 on failure). */
@@ -449,7 +456,67 @@ export function AvailabilityPanel({ p, control, block = false }: { p: ChRosterPl
           }}
         />
       </div>
+      {control.note && p.availability !== 'available' && <AvailabilityNote key={`avail-note-${p.id}`} p={p} onSaved={control.note.onSaved} />}
       <p className="ch-rs-avail__cap">Shows on your roster only. It never changes their team access; Mark inactive does.</p>
+    </div>
+  );
+}
+
+/**
+ * Why they are out, for the coaches of the team only (CH-3011 when it does not save). Kept in its own table because teammates
+ * can read every column of golf_team_members; the field is drawn only when that table answered, so it can never save over a note
+ * that could not be read. Saved when the field loses focus, like the Coach's note.
+ */
+function AvailabilityNote({ p, onSaved }: { p: ChRosterPlayer; onSaved: (id: string, note: string | null) => void }) {
+  const [saved, setSaved] = useState(p.availabilityCoachNote ?? '');
+  const [draft, setDraft] = useState(p.availabilityCoachNote ?? '');
+  const save = useAction(
+    'roster.availabilityReason',
+    async (note: string) => {
+      const res = await setPlayerAvailabilityCoachNote({ playerId: p.id, note: note || null });
+      // Inside the action, so the toast's Retry marks the note saved as well.
+      if (res.success) {
+        setSaved(note);
+        onSaved(p.id, note || null);
+      }
+      return res;
+    },
+    {
+      done: `Note saved for ${p.firstName}`,
+      failed: `Couldn’t save the note about ${p.firstName}`,
+      hint: 'Your text is still in the field. Try again in a moment.',
+      code: 'CH-3011',
+    },
+  );
+  const left = AVAILABILITY_NOTE_MAX - draft.length;
+  const helpId = `avail-note-help-${p.id}`;
+  return (
+    <div className="ch-rs-avail__note">
+      <label className="ch-rs-peek__l" htmlFor={`avail-note-${p.id}`}>
+        <b>Why</b>
+        <span>Only coaches on this team see this</span>
+      </label>
+      <textarea
+        id={`avail-note-${p.id}`}
+        className="ch-textarea ch-rs-peek__memo"
+        rows={2}
+        value={draft}
+        maxLength={AVAILABILITY_NOTE_MAX}
+        placeholder="Optional. Kept off every player’s screen."
+        aria-describedby={left <= NOTE_WARN ? helpId : undefined}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={async () => {
+          const next = draft.trim();
+          if (next === saved.trim()) return;
+          await save.run(next);
+        }}
+        aria-busy={save.pending}
+      />
+      {left <= NOTE_WARN && (
+        <span id={helpId} className="ch-field__help ch-num" aria-live="polite">
+          {left === 0 ? `That’s the limit: ${AVAILABILITY_NOTE_MAX} characters.` : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+        </span>
+      )}
     </div>
   );
 }

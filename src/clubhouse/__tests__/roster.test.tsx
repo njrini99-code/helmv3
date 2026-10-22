@@ -32,9 +32,10 @@ const actions = vi.hoisted(() => ({
   intent: vi.fn(),
   status: vi.fn(),
   availability: vi.fn(),
+  availabilityNote: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/roster', () => ({ removePlayerFromTeam: actions.remove }));
-vi.mock('@/app/golf/actions/team-management', () => ({ updatePlayerStatus: actions.status, setPlayerAvailability: actions.availability }));
+vi.mock('@/app/golf/actions/team-management', () => ({ setPlayerAvailabilityCoachNote: actions.availabilityNote, updatePlayerStatus: actions.status, setPlayerAvailability: actions.availability }));
 vi.mock('@/app/golf/actions/teams', () => ({ acceptJoinRequest: actions.accept, rejectJoinRequest: actions.reject, getTeamJoinRequests: actions.requests }));
 vi.mock('@/app/golf/actions/v3/intent', () => ({ setIntent: actions.intent }));
 vi.mock('@/lib/auth/session', () => ({ getGolfSessionProfile: vi.fn() }));
@@ -969,7 +970,7 @@ describe('Roster · availability (injured, away)', () => {
     expect(within(group).getByRole('radio', { name: 'Injured' }).getAttribute('aria-checked')).toBe('true');
   });
 
-  it('the panel says the word, when it changed and what it never does, and has no note field', async () => {
+  it('the panel says the word, when it changed and what it never does, and has no note field while the notes table is not there', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_ROSTER_AVAILABILITY);
     // Ava's card opens the panel (the profile route is not rebuilt in this file).
@@ -982,6 +983,68 @@ describe('Roster · availability (injured, away)', () => {
     expect(within(panel).queryByText('Only coaches see this.')).toBeNull();
     expect(code('CH-3010')).toBeNull();
     expect(code('CH-3102')).toBeNull();
+  });
+
+  it('CH-3011 with the coach-only notes table, an out player gets a Why field that saves on leaving it; an available player and a missing table get none', async () => {
+    const user = userEvent.setup();
+    actions.availabilityNote.mockResolvedValue({ success: true });
+    wrap({ ...PREVIEW_ROSTER_AVAILABILITY, availabilityCoachNotes: true, players: PREVIEW_ROSTER_AVAILABILITY.players.map((p) => (p.id === 'ava' ? { ...p, availabilityCoachNote: 'wrist, back by Friday' } : p)) });
+    await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
+    const panel = await screen.findByRole('complementary', { name: ava.name });
+    const why = within(panel).getByRole('textbox', { name: /Why/ }) as HTMLTextAreaElement;
+    expect(why.value).toBe('wrist, back by Friday');
+    expect(within(panel).getByText('Only coaches on this team see this')).toBeTruthy();
+    expect(why.maxLength).toBe(280);
+    // Leaving it unchanged writes nothing.
+    await user.click(why);
+    await user.tab();
+    expect(actions.availabilityNote).not.toHaveBeenCalled();
+    await user.clear(why);
+    await user.type(why, '  hamstring  ');
+    await user.tab();
+    expect(actions.availabilityNote).toHaveBeenCalledWith({ playerId: 'ava', note: 'hamstring' });
+    // Emptying it removes the note (null, not an empty string).
+    await user.clear(why);
+    await user.tab();
+    expect(actions.availabilityNote).toHaveBeenLastCalledWith({ playerId: 'ava', note: null });
+  });
+
+  it('CH-3011 a note that does not save says so and keeps the text in the field', async () => {
+    const user = userEvent.setup();
+    actions.availabilityNote.mockResolvedValue({ success: false, error: 'Failed to save the note' });
+    wrap({ ...PREVIEW_ROSTER_AVAILABILITY, availabilityCoachNotes: true });
+    await user.click(screen.getByRole('button', { name: /^Ava Lindqvist/ }));
+    const panel = await screen.findByRole('complementary', { name: ava.name });
+    const why = within(panel).getByRole('textbox', { name: /Why/ }) as HTMLTextAreaElement;
+    await user.type(why, 'concussion protocol');
+    await user.tab();
+    await expectCode('CH-3011');
+    expect(why.value).toBe('concussion protocol');
+  });
+
+  it('the Why field is not drawn for an available player, even with the notes table', async () => {
+    const user = userEvent.setup();
+    wrap({ ...roster(), availabilityCoachNotes: true });
+    await openPeek(user);
+    expect(screen.queryByRole('textbox', { name: /Why/ })).toBeNull();
+  });
+
+  it('the loader reads the coach-only notes by team; a missing table reads as notes not available, quietly; another failure is logged and also hides the field', async () => {
+    const member = { status: 'active', jersey_number: null, joined_at: null, availability: 'injured', availability_updated_at: null, player: { id: 'p1', first_name: 'Ava', last_name: 'L' } };
+    tables.current = { golf_team_members: () => ({ data: [member] }), golf_player_availability_coach_notes: () => ({ data: [{ player_id: 'p1', note: 'wrist' }] }) };
+    let data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(data.availabilityCoachNotes).toBe(true);
+    expect(data.players[0]!.availabilityCoachNote).toBe('wrist');
+    logServer.mockClear();
+    tables.current = { golf_team_members: () => ({ data: [member] }), golf_player_availability_coach_notes: () => ({ error: { code: 'PGRST205', message: 'missing' } }) };
+    data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(data.availabilityCoachNotes).toBe(false);
+    expect(data.players[0]!.availabilityCoachNote).toBeNull();
+    expect(logServer).not.toHaveBeenCalledWith('roster', 'availabilityCoachNotes', expect.anything());
+    tables.current = { golf_team_members: () => ({ data: [member] }), golf_player_availability_coach_notes: () => ({ error: { code: '57014', message: 'timeout' } }) };
+    data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(data.availabilityCoachNotes).toBe(false);
+    expect(logServer).toHaveBeenCalledWith('roster', 'availabilityCoachNotes', expect.objectContaining({ code: '57014' }));
   });
 
   it('CH-3809 the head counts injured and away among the active; the list, faces and labels say it in words, never a colour', async () => {
@@ -1060,7 +1123,7 @@ describe('Roster · availability (injured, away)', () => {
     for (const p of data.players) expect(p).not.toHaveProperty('availabilityNote');
   });
 
-  it('no roster loader or screen names availability_note (held until a coach-only store exists)', () => {
+  it('no roster loader or screen names the teammate-readable availability_note column (the reason lives in the coach-only table)', () => {
     const here = dirname(fileURLToPath(import.meta.url));
     for (const file of ['../data/roster.ts', '../screens/roster/Roster.tsx', '../screens/roster/RosterPeek.tsx', '../screens/roster/RosterProfile.tsx', '../screens/roster/RosterPhone.tsx', '../screens/roster/format.ts']) {
       const src = readFileSync(resolve(here, file), 'utf8');

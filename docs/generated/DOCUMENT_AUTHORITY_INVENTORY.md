@@ -802,6 +802,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/message-attachments-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/qualifier-db-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/recruit-documents-film.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/roster-availability-note.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |

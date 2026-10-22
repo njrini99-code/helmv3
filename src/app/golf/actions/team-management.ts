@@ -15,6 +15,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { logServerError } from '@/lib/server-error-logger';
 import { getCoachTeamId } from './golf-action-shared';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import type { ActionResult } from './golf-action-shared';
 
 const announcementSchema = z.object({
@@ -403,6 +404,107 @@ const observedSetPlayerAvailability = withAdminObserved(
   },
   setPlayerAvailabilityImpl,
 );
+
+/**
+ * The coach-only reason beside Injured or Away (at most 280 characters, one per player per team). It lives in
+ * golf_player_availability_coach_notes, whose policies admit only a coach of the team: golf_team_members.availability_note
+ * stays unused because teammates can read it. That table arrives with a held migration
+ * (supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql); until it is applied the write answers
+ * "not available yet" and the roster draws no note field. An empty note removes the row.
+ */
+const AVAILABILITY_NOTE_MAX = 280; // same as data/availability.ts; a 'use server' file exports only async functions
+const NOTE_TABLE_MISSING = new Set(['42P01', 'PGRST205']);
+
+async function setPlayerAvailabilityCoachNoteImpl(input: {
+  playerId: string;
+  note: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const action = 'roster.setPlayerAvailabilityCoachNote';
+  try {
+    const note = typeof input?.note === 'string' ? input.note.trim() : '';
+    if (note.length > AVAILABILITY_NOTE_MAX) {
+      return { success: false, error: `Keep the note to ${AVAILABILITY_NOTE_MAX} characters` };
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in to save a note' };
+    }
+
+    const { data: coach, error: coachError } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (coachError) {
+      await logServerError(`setPlayerAvailabilityCoachNote coach read failed: ${coachError.message}`, { action, playerId: input.playerId });
+      return { success: false, error: 'Failed to save the note' };
+    }
+    if (!coach) {
+      return { success: false, error: 'Only coaches can save a note' };
+    }
+
+    const teamId = await getCoachTeamId(supabase, coach.organization_id, coach.id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', input.playerId)
+      .eq('team_id', teamId)
+      .maybeSingle();
+    if (membershipError) {
+      await logServerError(`setPlayerAvailabilityCoachNote membership read failed: ${membershipError.message}`, { action, playerId: input.playerId, teamId });
+      return { success: false, error: 'Failed to save the note' };
+    }
+    if (!membership) {
+      return { success: false, error: 'Player is not on your team' };
+    }
+
+    const table = fromUntyped(supabase, 'golf_player_availability_coach_notes');
+    const { error } = note
+      ? await table.upsert(
+          { team_id: teamId, player_id: input.playerId, note, updated_by: user.id, updated_at: new Date().toISOString() },
+          { onConflict: 'team_id,player_id' },
+        )
+      : await table.delete().eq('team_id', teamId).eq('player_id', input.playerId);
+    if (error) {
+      if (NOTE_TABLE_MISSING.has(String(error.code))) {
+        return { success: false, error: 'Notes are not available yet' };
+      }
+      await logServerError(`setPlayerAvailabilityCoachNote failed: ${error.message}`, { action, playerId: input.playerId, teamId });
+      return { success: false, error: 'Failed to save the note' };
+    }
+
+    revalidatePath('/golf/dashboard/roster');
+    updateTag(CACHE_TAGS.ROSTER);
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AuthorizationError || err instanceof NotFoundError) {
+      return { success: false, error: err.message };
+    }
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+const observedSetPlayerAvailabilityCoachNote = withAdminObserved(
+  'setPlayerAvailabilityCoachNote',
+  {
+    demoSafe: true,
+    sport: 'golf',
+    feature: 'roster_management',
+    contextFrom: ([i]) => ({ playerId: i.playerId }),
+  },
+  setPlayerAvailabilityCoachNoteImpl,
+);
+export async function setPlayerAvailabilityCoachNote(input: {
+  playerId: string;
+  note: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  return observedSetPlayerAvailabilityCoachNote(input);
+}
 export async function setPlayerAvailability(input: {
   playerId: string;
   availability: PlayerAvailability;
