@@ -47,7 +47,7 @@ import { ClubhouseStatsRoute, NotOnTeam, StatsNoTeam } from '../routes/stats';
 import { ToastProvider } from '../ui/Toast';
 import { CrumbProvider, useCrumbTrail } from '../shell/crumbs';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
-import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY } from '../preview/fixtures-stats';
+import { PREVIEW_PLAYER, PREVIEW_PLAYER_EARLY, PREVIEW_READS_FAILED } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
 import { sgBaseline } from '../lib/sg';
 import { ClubhouseMarker } from '../shell/context';
@@ -560,6 +560,18 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('C-24 CH-5213 the round cache does not load: the phone says so above the figures', () => {
     phone(player({ cacheError: true }));
     expect(code('CH-5213')!.textContent).toMatch(/fairways, greens, putts and scrambling are missing/);
+  });
+
+  it('CH-5215 CoachHelm’s reads do not load: Game detail says so once under the section chips and draws no count line', () => {
+    wrap(
+      <PhoneChromeProvider>
+        <SlotHost />
+        <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={PREVIEW_READS_FAILED} />
+      </PhoneChromeProvider>,
+    );
+    expect(code('CH-5215')!.textContent).toBe('CoachHelm’s reads didn’t load, so the sections don’t say how many there are. Try again in a moment.');
+    expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
+    expect(document.querySelector('.ch-gm__reads')).toBeNull();
   });
 
   it('CH-5302 no rounds in the window', () => {

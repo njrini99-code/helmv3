@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isUuid } from '@/lib/utils/uuid';
 import { chLogServer } from '../lib/track-server';
 import { assignedByInsight, coachTour, countCountableRounds, declinedByInsight, drillTextByInsight, earliestStaleFloor, handled, loadCoachHelmGate, loadPlayerHelmGate, loadVisible, newestRounds, PLAYER_FEED_LIMIT, type CoachHelmGate } from './coachhelm';
-import { isOpenFinding, kindOf, staleSince } from './coachhelm-classify';
+import { countReads, isOpenFinding, kindOf } from './coachhelm-classify';
 import { EMPTY_DIVE, readPlans, readRounds, readThemes } from './coachhelm-dive';
 import { diveCounts, orderDive, roundIdsToRead, themesByCategory, toChDeepInsight, toDiveCleared, type ChDeepDive } from './coachhelm-dive-shape';
 import { readEngineFlags, readFocusVerdicts } from './coachhelm-engine';
@@ -134,8 +134,7 @@ async function visibleReads(supabase: Supabase, scope: ChCoachPlayerScope) {
 async function readSeen(supabase: Supabase, scope: ChCoachPlayerScope): Promise<NonNullable<ChProfile['seen']>> {
   const v = await visibleReads(supabase, scope);
   if (v.error) return { costing: 0, working: 0, error: true };
-  const current = v.rows.filter((r) => staleSince(r, scope.lastRound) === null);
-  return { costing: current.filter((r) => kindOf(r, v.tour) === 'finding').length, working: current.filter((r) => kindOf(r, v.tour) === 'strength').length, error: false };
+  return { ...countReads(v.rows, v.tour, scope.lastRound), error: false };
 }
 
 /**

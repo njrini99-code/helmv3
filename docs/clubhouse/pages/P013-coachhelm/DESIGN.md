@@ -348,8 +348,12 @@ non-goal below that a coach reads a player only through the Board and Ask.
 
 - Address and entry. The Deep dive is the landing view. In: the Board's
   selected-player card ("All of Jonah’s reads", a ghost button with an arrow
-  after Dismiss), the names in "… have no insights yet." (to Standing) and
-  Roster's View insights (to the Deep dive). No player named is the board.
+  after Dismiss), the names in "… have no insights yet." (to Standing),
+  Roster's View insights (to the Deep dive; the row menu, and since spec D the
+  player panel's and phone profile's CoachHelm block) and Stats' Game detail
+  "CoachHelm sees… Deep dive →" line per section (spec D; `&insight=<id>` when
+  the section has exactly one read). No player named is the board. A player's
+  own Game detail line opens their own Deep dive the same way.
 - Header. The page's own `.ch-hl-h`: "CoachHelm" as the eyebrow (a link back
   to the board open on the player on desktop), the player's name as the h1
   ("Player" with none on file) and one line, the class and the newest round in
