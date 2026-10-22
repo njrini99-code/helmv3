@@ -70,6 +70,11 @@ export interface MondayBriefInput {
   /** Players with enough rounds for reads (the pattern's eligible roster). */
   withEnoughRounds: number;
   now: Date;
+  /**
+   * The most items in the brief, the team pattern included. The Monday brief keeps {@link MONDAY_BRIEF_MAX_ITEMS}; the coach Brief
+   * behind `/intelligence` (the team view) passes `Infinity` so every player's top read is listed.
+   */
+  maxItems?: number;
 }
 
 export interface MondayBriefPatternItem {
@@ -266,7 +271,7 @@ export function computeMondayBrief(input: MondayBriefInput): MondayBrief {
   }
   const reads = [...best.values()].sort((a, b) => (better(a, b) ? -1 : better(b, a) ? 1 : 0));
   for (const c of reads) {
-    if (items.length >= MONDAY_BRIEF_MAX_ITEMS) break;
+    if (items.length >= (input.maxItems ?? MONDAY_BRIEF_MAX_ITEMS)) break;
     items.push(c.item);
   }
 
