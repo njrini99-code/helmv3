@@ -29,6 +29,55 @@ Held items:     none
 - Phone screenshots (390 × 844), light and dark, of the coach board's team
   patterns and engine states and the player's Profile.
 
+## 2026-10-21 — Coach: the Brief behind /intelligence (flag off)
+
+```text
+Design package: none (supercharge 04 Layout 1, Layout 4, Examples 8 and 11;
+                design call "Team-level rollup" and IA)
+PR/commit:      see git log (claude/coachhelm-coach-brief, par-05)
+Contract IDs:   CH-13983 to CH-13989, CH-13997 to CH-13999; CH-13938 now
+                links to the Brief
+Actions:        Open (the board on that player); Track record; none written
+Data impact:    none written; reads the Monday brief's inputs, the roster's
+                live focus areas, active goals and standing, and the Track
+                record. No new table
+Held items:     none
+```
+
+### Added
+
+- `?view=brief` for a coach, behind `coachhelm_monday_brief_v1` (production
+  off, preview on): the Monday brief grown into the team view. Five
+  sections, each only when it has something in it: This week (every
+  player's top read at Likely or above, most strokes first, the counts line,
+  Cleared and out of date), Team patterns (`coachhelm_team_pattern_v1`),
+  What players are working on (live focus areas with progress in the
+  stat's unit and the rounds since they started), How the reads have held
+  (the Track record's program line, `coachhelm_track_record_v1`) and Goals
+  and standing (each active goal with the team and Tour on its stat).
+- `/intelligence` lands on the Brief with the flag on, and its old sub-links
+  on their part: Signals (`/alerts`, `/insights`) on This week,
+  `/patterns` on Team patterns, Players (`/development`) on Working on,
+  Effectiveness (`/analytics/coachhelm`) on the track record
+  (`&section=`). `?player=` still opens the board on that player and
+  `view=chat` still opens Ask. Flag off: the board, as before (CH-13998).
+- The coach board's button under the board now reads "Brief" and opens the
+  Brief (CH-13938); the Monday brief view stays for the Monday email.
+- States: no open reads (CH-13988), a section's read failed (CH-13989, the
+  rest still draws), CoachHelm off (CH-13999), failed (CH-13997).
+- Preview: `/clubhouse-preview/coachhelm-coach-brief` with `?state=thin |
+  noreads | partial | failed | off | loading` and `&section=`.
+
+### Why
+
+- `/intelligence` ("CoachHelm Brief") was an alias to the thin board, so
+  every old Signals, Players and Effectiveness link lost its place.
+
+### Verification
+
+- `coachhelm-coach-brief.test.tsx`, `alias.test.ts` (CH-13998) and the
+  board link test in `coachhelm.test.tsx`.
+
 ## 2026-10-22 — Coach Standing: the ladder's reads are the player's, read as the coach
 
 ```text

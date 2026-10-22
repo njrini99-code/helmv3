@@ -93,7 +93,7 @@ Every row the audit left open is now an alias or built. Route files are under
 
 | Route | Role | Today (flag on) | Evidence |
 | --- | --- | --- | --- |
-| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | Alias to `coachhelm` (`?player=` kept, `view=chat` becomes `view=ask`) | `intelligence/layout.tsx` |
+| `/intelligence` (and `/alerts`, `/insights`, `/patterns`, `/analytics/coachhelm`, `/development`, which redirect to it) | coach | Alias to the coach Brief `coachhelm?view=brief` with `coachhelm_monday_brief_v1` on, each old view on its section (`&section=`); with it off, to `coachhelm`. `?player=` opens the board on that player, `view=chat` becomes `view=ask` | `intelligence/layout.tsx` |
 | `coachhelm?view=profile\|standing\|deep-dive`; `/my-game-profile`, `/my-standing` (and `/my-development`, which goes to `coachhelm?view=development`) | player | **Built** (F-04): Game profile `28f83d3a8`, Standing `a657a7d15`, Deep dive `438781162`; `?view=development` goes to Stats' Development | — |
 | `/players/[id]`, `/players/[id]/game`, `/genome`; `/coachhelm/genome/[id]` | coach | Alias to `stats?player=<id>&tab=game` (the player pages, spec D, 2026-10-21) and `stats?player=<id>` (the genome) | `players/[playerId]/layout.tsx`, `coachhelm/genome/[playerId]/layout.tsx` |
 | `/players/[id]/game/print` (printable scouting report) | coach | **RETIRED** (owner, 2026-10-12); covered by the `players/[id]` alias to `stats?player=<id>` | `players/[playerId]/layout.tsx` |

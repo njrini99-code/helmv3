@@ -15,7 +15,7 @@ import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { isCountableRound } from '@/lib/golf/round-countable';
 import { applyInsightVisibility } from '@/lib/coachhelm/v3/insight-visibility';
 import { teamPatternEnabled } from '@/lib/coachhelm/v3/team-pattern/flag';
-import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS } from '@/lib/coachhelm/v3/team-pattern/pattern';
+import { computeTeamPatterns, TEAM_PATTERN_MIN_ROUNDS, type TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { computeMondayBrief, dayOfIso, type MondayBrief, type MondayBriefRead, type MondayBriefRound } from './brief';
@@ -90,8 +90,19 @@ async function loadRounds(supabase: SupabaseClient, ids: string[]): Promise<Mond
   return out;
 }
 
-/** One team's brief at `now`, or null when a read failed. */
-export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, now: Date = new Date()): Promise<MondayBrief | null> {
+/** What a team's brief is computed from: the roster, the visible reads, the countable rounds and (flag on) the team patterns. */
+export interface BriefInputs {
+  roster: Array<{ id: string; name: string }>;
+  reads: MondayBriefRead[];
+  rounds: MondayBriefRound[];
+  /** Players with at least `TEAM_PATTERN_MIN_ROUNDS` countable rounds. */
+  eligible: Set<string>;
+  /** Every team pattern over the current reads; null when `coachhelm_team_pattern_v1` is off or the roster is empty. */
+  patterns: TeamPatternResult | null;
+}
+
+/** The inputs of one team's brief at `now`, or null when a read failed. Read only; never throws. */
+export async function loadBriefInputs(supabase: SupabaseClient, teamId: string, now: Date = new Date()): Promise<BriefInputs | null> {
   try {
     const members = await supabase.from('golf_team_members').select('player_id').eq('team_id', teamId).eq('status', 'active');
     if (members.error) {
@@ -118,7 +129,7 @@ export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, 
     for (const r of rounds) perPlayer.set(r.player_id, (perPlayer.get(r.player_id) ?? 0) + 1);
     const eligible = new Set([...perPlayer].filter(([, n]) => n >= TEAM_PATTERN_MIN_ROUNDS).map(([id]) => id));
 
-    let teamPattern = null;
+    let patterns: TeamPatternResult | null = null;
     if (teamPatternEnabled() && ids.length > 0) {
       // The pattern counts current reads only, as the coach board does: a read with a newer countable round than its last refresh is out.
       const newest = new Map<string, string>();
@@ -128,17 +139,28 @@ export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, 
         const latest = newest.get(r.player_id);
         return !!fresh && (!latest || latest <= fresh);
       });
-      teamPattern =
-        computeTeamPatterns({
-          teamId,
-          reads: current.map((r) => ({ id: r.id, player_id: r.player_id, insight_type: r.insight_type ?? '', evidence: r.evidence })),
-          rosterTotal: roster.length,
-          eligiblePlayerIds: eligible,
-          now,
-        }).patterns[0] ?? null;
+      patterns = computeTeamPatterns({
+        teamId,
+        reads: current.map((r) => ({ id: r.id, player_id: r.player_id, insight_type: r.insight_type ?? '', evidence: r.evidence })),
+        rosterTotal: roster.length,
+        eligiblePlayerIds: eligible,
+        now,
+      });
     }
+    return { roster, reads, rounds, eligible, patterns };
+  } catch (err) {
+    await note('brief', err);
+    return null;
+  }
+}
 
-    return computeMondayBrief({ teamId, roster, reads, rounds, teamPattern, withEnoughRounds: eligible.size, now });
+/** One team's brief at `now`, or null when a read failed. */
+export async function loadMondayBrief(supabase: SupabaseClient, teamId: string, now: Date = new Date()): Promise<MondayBrief | null> {
+  const inputs = await loadBriefInputs(supabase, teamId, now);
+  if (!inputs) return null;
+  try {
+    const { roster, reads, rounds, eligible, patterns } = inputs;
+    return computeMondayBrief({ teamId, roster, reads, rounds, teamPattern: patterns?.patterns[0] ?? null, withEnoughRounds: eligible.size, now });
   } catch (err) {
     await note('brief', err);
     return null;

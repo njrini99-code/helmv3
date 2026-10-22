@@ -132,4 +132,34 @@ describe('.githooks/pre-push', () => {
     expect(args).toContain('--redact\n');
     expect(args).toContain(`--log-opts=${base}..${head}\n`);
   });
+
+  it('checks only the branch’s own change after it merges main, not whitespace that is already on main', () => {
+    const { dir, base } = makeFixture();
+    // main moves on with a whitespace error of its own; the branch merges it in and adds a clean change.
+    git(['checkout', '--quiet', '-b', 'feature'], dir);
+    git(['checkout', '--quiet', '-'], dir);
+    writeFileSync(join(dir, 'MAIN.md'), 'landed on main  \n');
+    git(['add', '.'], dir);
+    git(['commit', '--quiet', '-m', 'main moves'], dir);
+    const main = git(['rev-parse', 'HEAD'], dir);
+    git(['update-ref', 'refs/remotes/origin/main', main], dir);
+    git(['checkout', '--quiet', 'feature'], dir);
+    git(['merge', '--quiet', '--no-edit', main], dir);
+    writeFileSync(join(dir, 'README.md'), '# Fixture\n\nThe branch’s own clean change.\n');
+    git(['add', '.'], dir);
+    git(['commit', '--quiet', '-m', 'feature change'], dir);
+    const head = git(['rev-parse', 'HEAD'], dir);
+
+    const clean = runHook({ cwd: dir, localSha: head, remoteSha: base });
+    expect(clean.status).toBe(0);
+    expect(clean.output).toContain(`git diff --check OK (${main}..${head})`);
+
+    // The branch's own whitespace error is still caught.
+    writeFileSync(join(dir, 'README.md'), '# Fixture  \n');
+    git(['add', '.'], dir);
+    git(['commit', '--quiet', '-m', 'own whitespace'], dir);
+    const bad = runHook({ cwd: dir, localSha: git(['rev-parse', 'HEAD'], dir), remoteSha: base });
+    expect(bad.status).not.toBe(0);
+    expect(bad.output).toContain('trailing whitespace');
+  });
 });

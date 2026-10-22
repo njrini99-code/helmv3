@@ -869,14 +869,14 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(code('CH-13969')).toBeNull();
   });
 
-  it('CH-13938 the Monday brief link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
+  it('CH-13938 the Brief link is drawn only when the route hands its address over (flag on), and never with CoachHelm off', () => {
     showCoach();
     expect(code('CH-13938')).toBeNull();
     cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} mondayBriefHref="/golf/dashboard/coachhelm?view=monday-brief" />));
-    expect(within(code('CH-13938') as HTMLElement).getByRole('link', { name: 'Monday brief' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=monday-brief');
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH} writes={okWrites()} briefHref="/golf/dashboard/coachhelm?view=brief" />));
+    expect(within(code('CH-13938') as HTMLElement).getByRole('link', { name: 'Brief' }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=brief');
     cleanup();
-    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} mondayBriefHref="/golf/dashboard/coachhelm?view=monday-brief" />));
+    render(wrap(<CoachBoard data={PREVIEW_HELM_COACH_OFF} writes={okWrites()} briefHref="/golf/dashboard/coachhelm?view=brief" />));
     expect(code('CH-13938')).toBeNull();
   });
 
