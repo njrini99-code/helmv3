@@ -10,9 +10,9 @@ describe('what each role is offered', () => {
   it('a coach is never offered a player action, and a player never a coach one', () => {
     const coach = ids(actionsFor('coach'));
     const player = ids(actionsFor('player'));
-    expect(coach).toEqual(['action:new-event', 'action:new-message', 'action:post-announcement', 'action:new-qualifier']);
+    expect(coach).toEqual(['action:new-event', 'action:new-message', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']);
     expect(player).toEqual(['action:new-round', 'action:new-message', 'action:add-class']);
-    for (const coachOnly of ['action:new-event', 'action:post-announcement', 'action:new-qualifier']) expect(player).not.toContain(coachOnly);
+    for (const coachOnly of ['action:new-event', 'action:post-announcement', 'action:new-qualifier', 'action:whats-new']) expect(player).not.toContain(coachOnly);
     for (const playerOnly of ['action:new-round', 'action:add-class']) expect(coach).not.toContain(playerOnly);
   });
 
@@ -27,7 +27,7 @@ describe('what each role is offered', () => {
     const coach = ids(buildCommands({ role: 'coach', pathname: '/golf/dashboard', people: [], recent: [] }).filter((c) => c.group === 'goto'));
     const player = ids(buildCommands({ role: 'player', pathname: '/golf/dashboard', people: [], recent: [] }).filter((c) => c.group === 'goto'));
     expect(coach).toContain('goto:recruiting');
-    expect(coach).not.toContain('goto:rounds');
+    expect(coach).toContain('goto:rounds');
     expect(coach).not.toContain('goto:classes');
     expect(player).toContain('goto:rounds');
     expect(player).toContain('goto:classes');
@@ -53,7 +53,7 @@ describe('what each role is offered', () => {
   });
 
   it('never replays a recent section the role does not have', () => {
-    const out = buildCommands({ role: 'coach', pathname: '/golf/dashboard', people: [], recent: [{ id: 'rounds', href: '/x' }, { id: 'stats', href: '/x' }] });
+    const out = buildCommands({ role: 'coach', pathname: '/golf/dashboard', people: [], recent: [{ id: 'classes', href: '/x' }, { id: 'stats', href: '/x' }] });
     expect(ids(out.filter((c) => c.group === 'recent'))).toEqual(['recent:stats']);
   });
 });
@@ -96,6 +96,6 @@ describe('no results', () => {
   });
 
   it('does not suggest a section the role does not have', () => {
-    expect(nearestSection('rounds', 'coach')?.id).not.toBe('rounds');
+    expect(nearestSection('classes', 'coach')?.id).not.toBe('classes');
   });
 });

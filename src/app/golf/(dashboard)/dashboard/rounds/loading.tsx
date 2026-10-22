@@ -1,6 +1,9 @@
+'use client';
+
 import { fairwayScope } from '@/lib/redesign/flag';
-import { ClubhouseSwitch } from '@/clubhouse/shell/ClubhouseSwitch';
+import { useClubhouseRole, useInClubhouse } from '@/clubhouse/shell/context';
 import { RoundsSkeleton } from '@/clubhouse/screens/rounds/RoundsSkeleton';
+import { TeamRoundsSkeleton } from '@/clubhouse/screens/rounds/TeamRoundsSkeleton';
 import { Skeleton } from '@/components/fairway/feedback/Skeleton';
 import { Surface } from '@/components/fairway/surfaces/surface';
 
@@ -119,7 +122,11 @@ function FairwayRoundsLoading() {
   );
 }
 
-// Clubhouse Rounds (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell.
+// Clubhouse Rounds (golf_clubhouse_ui) gets its own skeleton inside the Clubhouse shell: the player's library, or the
+// coach's team list. A client component because the shell's role is read from context.
 export default function Loading() {
-  return <ClubhouseSwitch clubhouse={<RoundsSkeleton />} fallback={<FairwayRoundsLoading />} />;
+  const inClubhouse = useInClubhouse();
+  const role = useClubhouseRole();
+  if (!inClubhouse) return <FairwayRoundsLoading />;
+  return role === 'coach' ? <TeamRoundsSkeleton /> : <RoundsSkeleton />;
 }

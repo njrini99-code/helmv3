@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 import { Icon } from './Icon';
 
 /**
@@ -54,7 +54,8 @@ export function LedgerRow({
   meta?: ReactNode;
   trail?: ReactNode;
   href?: string;
-  onClick?: () => void;
+  /** Runs on press; it gets the click, so a caller can ignore a Ctrl/Cmd/Shift/Alt click that opens a new tab. */
+  onClick?: (e: MouseEvent<HTMLElement>) => void;
   /** The row that is happening now or selected: its lead and title take the green. */
   current?: boolean;
 }) {
