@@ -1,5 +1,5 @@
 import 'server-only';
-import { getInsightsForPlayer } from '@/app/golf/actions/insight-delivery';
+import { getInsightsForPlayer, type EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { createClient } from '@/lib/supabase/server';
 import { loadPlayerCohort } from '@/lib/coachhelm/v3/counterfactual/player-cohort-loader';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
@@ -79,7 +79,8 @@ async function readCohort(playerId: string): Promise<{ failed: boolean }> {
 /**
  * The player's open reads for the ladder's "Because" (`coachhelm-ladder-shape.ts`): the reads the Deep dive delivers, kept to current
  * findings by the Board's own `isOpenFinding`, each mapped by the Board's mapper in their own voice. Every link goes to
- * `?view=deep-dive&insight=<id>`, so the ids come from the Deep dive's own feed read (`getInsightsForPlayer` with its limit and
+ * `?view=deep-dive&insight=<id>`, so the ids come from the Deep dive's own feed read (`getInsightsForPlayer`, or the coach's feed for the
+ * player when a coach's page hands one over (`feed`), with its limit and
  * `includeMore`), which applies the ranking, the player's feedback, the reads-v1 folding and the limit: a raw visible-row list can hold
  * an id that folding or the limit removes, and the ladder would link to a read the destination does not draw. `drawnLater` answers
  * no ids, so the feed records nothing as shown (this page shows only titles). A feed that comes back empty is told from a first run
@@ -87,10 +88,10 @@ async function readCohort(playerId: string): Promise<{ failed: boolean }> {
  * the ladder says, and the strokes still draw: a null Tour or newest round would read a stat that beats the Tour as a finding or an
  * out-of-date read as current.
  */
-async function readLadderReads(supabase: Supabase, playerId: string): Promise<ChLadderReads> {
+async function readLadderReads(supabase: Supabase, playerId: string, viewer: ChViewer, readFeed: (() => Promise<EvidenceInsight[]>) | undefined): Promise<ChLadderReads> {
   try {
     const [feed, team] = await Promise.all([
-      getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => Promise.resolve([]), includeMore: true }),
+      readFeed ? readFeed() : getInsightsForPlayer(playerId, { limit: PLAYER_FEED_LIMIT, drawnLater: () => Promise.resolve([]), includeMore: true }),
       playerTeam(supabase, playerId),
     ]);
     if (team.error || team.tourError) return { status: 'failed' };
@@ -105,7 +106,6 @@ async function readLadderReads(supabase: Supabase, playerId: string): Promise<Ch
     const newestRound = newest.days.get(playerId) ?? null;
     const flags = readEngineFlags();
     const now = new Date().toISOString();
-    const viewer = { role: 'player' } as const;
     // With the recheck on, a cleared or retired read is not open (the Deep dive's own shaping); with it off this keeps them all.
     const kept = shapeReadsLifecycle(
       mine.filter((r) => isOpenFinding(r, team.tour, newestRound)),
@@ -133,7 +133,7 @@ async function readLadderReads(supabase: Supabase, playerId: string): Promise<Ch
  * The standing read is the page: when it throws the page says it did not load, never "no standing yet". The scoring-average read
  * is only the projections' base, so its failure is its own flag on the page (`baselineFailed`) and the rows still draw.
  */
-export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer }): Promise<ChViewLoad<ChStanding>> {
+export async function loadPlayerStanding(input: { playerId: string; viewer?: ChViewer; feed?: () => Promise<EvidenceInsight[]> }): Promise<ChViewLoad<ChStanding>> {
   try {
     const supabase = await createClient();
     const [map, baseline, cohort, reads] = await Promise.all([
@@ -147,7 +147,7 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
       ),
       readBaseline(supabase, input.playerId),
       readCohort(input.playerId),
-      readLadderReads(supabase, input.playerId),
+      readLadderReads(supabase, input.playerId, input.viewer ?? { role: 'player' }, input.feed),
     ]);
     if (!map.ok) return { status: 'failed' };
     return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads, input.viewer), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
