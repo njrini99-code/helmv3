@@ -15,7 +15,7 @@ assistive-technology acceptance.
 Route `/golf/dashboard/stats?player=<id>` (coach) and `/golf/dashboard/stats` (player) · code
 `src/clubhouse/screens/stats/StatsPlayer.tsx`, `GameDetail.tsx`, loader `src/clubhouse/data/stats-player.ts` ·
 tests `src/clubhouse/__tests__/stats-player.test.tsx` · preview `/clubhouse-preview/player`
-(`?state=early|self|failed`).
+(`?state=early|self|failed|loops|loops-self`).
 
 Loading is the profile skeleton (CH-5403); the team page's is CH-4401. Each tab is its own component inside
 its own boundary, so a crash stays inside the tab.

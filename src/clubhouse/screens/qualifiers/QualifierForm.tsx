@@ -387,7 +387,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     {...inputProps('rounds', FORM_HELP.rounds)}
                     inputMode="numeric"
                     value={v.rounds}
-                    onChange={(e) => setV((cur) => ({ ...cur, rounds: e.target.value.replace(/\D/g, '').slice(0, 2), oneRoundAck: false }))}
+                    onChange={(e) => { const rounds = e.target.value.replace(/\D/g, '').slice(0, 2); setV((cur) => ({ ...cur, rounds, oneRoundAck: false })); }}
                   />
                   {fieldHelp('rounds', FORM_HELP.rounds)}
                 </div>

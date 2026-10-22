@@ -269,6 +269,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-rls-template.md` | current | yes | - | yes | - |
 | `docs/v3-testing-standards.md` | current | - | - | - | - |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | - |
+| `memory/brand/clubhouse-ui.md` | current | - | - | yes | - |
 | `memory/brand/logos.md` | current | - | - | - | - |
 | `memory/context/agent-operations.md` | current | yes | - | - | - |
 | `memory/context/agent-traps.md` | current | yes | - | - | - |
@@ -798,6 +799,7 @@ them would bury everything above.
 | `docs/clubhouse/held/data/message-attachments-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/qualifier-db-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/recruit-documents-film.md` | current | - | - | - | - |
+| `docs/clubhouse/held/data/roster-availability-note.md` | current | - | - | - | - |
 | `docs/clubhouse/held/data/roster-availability.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/conversation-files.md` | current | - | - | - | - |
 | `docs/clubhouse/held/features/qualifier-squad-and-entrants.md` | current | - | - | - | - |
@@ -1012,7 +1014,7 @@ them would bury everything above.
 | `src/app/golf/actions/ACTIONS.md` | current | - | - | - | - |
 | `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 4 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |

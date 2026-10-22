@@ -291,6 +291,14 @@ its own.
 | 130743 | CH-13941 | `COACH_SINCE_YOU_WERE_LAST_HERE` | Coach: since you were last here (design call D4) |
 | 130744 | CH-13942 | `COACH_READS_RATED_NOT_ENOUGH_YET_ARE` | Coach: reads rated Not enough yet are held back |
 | 130745 | CH-13943 | `COACH_EVERY_READ_OF_A_PLAYER_IS` | Coach: every read of a player is Not enough yet |
+| 130746 | CH-13936 | `MONDAY_BRIEF_COACHHELM_IS_OFF_FOR_THE` | Monday brief: CoachHelm is off for the team |
+| 130747 | CH-13937 | `MONDAY_BRIEF_A_READ_IT_IS_MADE` | Monday brief: a read it is made from failed |
+| 130748 | CH-13938 | `COACH_BOARD_THE_LINK_TO_THE_MONDAY` | Coach board: the link to the Monday brief |
+| 130749 | CH-13939 | `MONDAY_BRIEF_THE_COUNTS_LINE` | Monday brief: the counts line |
+| 130750 | CH-13932 | `COACH_THE_MONDAY_BRIEF` | Coach: the Monday brief (`?view=monday-brief`, flag `coachhelm_monday_brief_v1`) |
+| 130751 | CH-13933 | `MONDAY_BRIEF_A_PLAYER_READ_AT_LIKELY` | Monday brief: a player read at Likely or above |
+| 130752 | CH-13934 | `MONDAY_BRIEF_THE_TEAM_PATTERN_ROW` | Monday brief: the team pattern row |
+| 130753 | CH-13935 | `MONDAY_BRIEF_NOTHING_TO_RAISE_THIS_WEEK` | Monday brief: nothing to raise this week |
 
 ## 08 — Permission / authorization
 

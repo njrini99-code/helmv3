@@ -250,10 +250,11 @@ export interface InsightEvidence {
   // out of `content`. Optional + additive — every legacy v2 row is unchanged.
   diagnosis?: Diagnosis;
 
-  // Coach voice (PR #2073, `ComposedContent.coach`): the generator's
-  // title/content retold for a coach in neutral third person. `title`/
-  // `content` stay in the player's voice. Optional + additive; no generator
-  // on main sets it yet.
+  // Coach voice (`ComposedContent.coach`, `v3/engine/coach-voice.ts`): the
+  // read's title/content retold for a coach in the third person ("the
+  // player", then "they"), with the same numbers. `title`/`content` stay in
+  // the player's voice. Every v3 generator and composite rule writes it;
+  // rows written before that carry none until their next re-analyze.
   coach_copy?: InsightCoachCopy;
 
   // Honest root cause (CoachHelm supercharge Slice 2, `v3/engine/root-cause.ts`,

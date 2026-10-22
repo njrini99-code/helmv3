@@ -196,6 +196,32 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
     exactly Slice 1b (leave-one-out team mean). An angle's own composed
     `comparison` is kept; the team line is only appended.
 
+- Coach Monday brief (task chs-28, 2026-10-21), behind
+  `coachhelm_monday_brief_v1` (production OFF, preview on):
+  - `v3/monday-brief/brief.ts` (pure): per team, at most 5 items: the team
+    pattern's first row (Slice 7b, only with `coachhelm_team_pattern_v1`
+    on), then one read per player at Likely or above, most strokes first
+    (`strokes_shrunk`, else the raw estimate); rows print raw strokes. Never
+    strengths, Watching, Working hypothesis, reads 2+ countable rounds
+    behind their `metadata.last_refreshed_at` (S3), Cleared, the retired side
+    of a Contradicted pair, Under review, or a read the pattern row already
+    covers. Fail closed: a read missing ladder, `support.direction`, an
+    estimated strokes value, a title, a refresh day or a roster name is left
+    out. Counts line for the 7 days before the brief: new (Likely+ findings
+    created), cleared (recheck cleared), contradicted (pairs once), out of
+    date (Likely+ findings 1+ rounds behind).
+  - `v3/monday-brief/loader.ts` reads roster, visible reads and countable
+    rounds; any failed read answers null (never a partial brief).
+  - Clubhouse view `?view=monday-brief` (coach only; the route checks the
+    flag) and a "Monday brief" button on the coach board.
+  - Delivery: `/api/cron/coachhelm-monday-brief`, vercel.json `0 5 * * 1`
+    (Mondays 05:00 UTC). Flag off: returns before any read. On: emails the
+    primary coach of each in-season team a non-empty brief through
+    `v3/foundation/email.sendEmail` (so `HELM_CUSTOMER_EMAIL_ENABLED` must be
+    on too), only when `golf_coach_philosophy.email_digest_enabled` is
+    explicitly true (opt-in; a missing row sends nothing). Idempotency key
+    `coachhelm-monday-brief:<coach>:<team>:<ISO week>`.
+
 - Team pattern and same-day field (supercharge Slice 7b, 2026-10-21),
   behind `coachhelm_team_pattern_v1` (OFF; off reads nothing new):
   - `v3/team-pattern/pattern.ts` (pure): a cause family (support family,
@@ -537,6 +563,15 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   <!-- schema-drift-absent: golf_coachhelm_corrections -->
   (Applied in production 2026-10-21, but `database.ts` is not regenerated yet
   (PR #2203). After the regen, drop this comment.)
+- **Coach voice (2026-10-21).** Every v3 generator and composite rule writes
+  `evidence.coach_copy`: the same read in the third person ("the player",
+  then "they"), the same numbers, the coach's action, no club words. One
+  template per read renders both voices (`v3/engine/coach-voice.ts`
+  `inBothVoices`); the player's `title`/`content` are unchanged. The base and
+  the composite runner store the copy only when `coachCopyIssues` passes,
+  else log it and store none. Rule-based, no LLM, no flag or migration; rows
+  get it on their next re-analyze. Contract:
+  `docs/architecture/coachhelm-evidence-contract.md` "Coach voice".
 
 ## UI Contract
 
@@ -764,8 +799,8 @@ Use `memory/context/golfhelm-database.md` for exact columns and `memory/glossary
   `detail.driver_area`). Without the player's SG scale
   (`sg_scale_for_player` error, logged) the SG-based angles say nothing.
   The cause stays `inferred_hypothesis`, and counted shot sequences go to
-  `detail.sequence` until the Slice 2 root-cause ladder can read them. No
-  `coach_copy` is written (player voice only) until Slice 2 lands. Turning
+  `detail.sequence` until the Slice 2 root-cause ladder can read them.
+  `coach_copy` is written like every v3 read (coach voice, below). Turning
   the flag off stops new rows but does not sweep rows written while it was
   on; the flag's `cleanup_plan` lists the signature prefixes to archive.
   Tests: `insight-angles/__tests__/` (`contract.ts` asserts the family

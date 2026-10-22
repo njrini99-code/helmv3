@@ -1,5 +1,29 @@
 # P005 — Stats (player): changelog
 
+## 2026-10-21 — CoachHelm verdict loop on the focus areas (chs-11)
+
+```text
+Design package: none (supercharge 04 example 11 and layout 5)
+PR/commit:      claude/coachhelm-verdict-loop
+Contract IDs:   none
+Actions:        none
+Data impact:    read-only (golf_player_focus_areas prescription columns;
+                golf_rounds, golf_shots and golf_round_stats_cache for the
+                live count), only with coachhelm_verdicts_v1 on
+Held items:     none
+```
+
+With `coachhelm_verdicts_v1` on, each active focus area that carries a
+prescription draws its loop on itself under Development, on the desktop
+track and on the phone line: the target ("70% or better over 40 putts"),
+the progress counted live as the verdict step counts it ("22 of 40 putts
+in · 68% so far") and Too early until the horizon, then the verdict word
+(Worked, Moved, Did not move, Got worse) with both numbers and the
+regression line, in the viewer's voice. Got worse reaches the player a day
+after the coach. An area with no prescription, a database without the
+columns and the flag off draw the focus area exactly as before. Preview:
+`/clubhouse-preview/player?state=loops|loops-self`.
+
 ## 2026-10-21 — Goals: set one, answer a suggestion, and a coach's pause and abandon
 
 ```text
@@ -1130,6 +1154,7 @@ selection/persistence contracts remain unchanged.
 See [premium audit](../../PREMIUM_AUDIT.md) for focused evidence and limits.
 
 <!-- clubhouse:release-audit:start -->
+
 ## 2026-10-06 — Smoothness repair
 
 StatsPlayer and the shared segmented indicator use zero-duration motion

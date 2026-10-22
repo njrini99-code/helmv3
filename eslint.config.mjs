@@ -259,6 +259,18 @@ export default tseslint.config(
       "helm/no-raw-button": "off",
       "helm/no-raw-input": "off",
       "no-restricted-imports": clubhouseRestrictions,
+      // Read the event's value in the handler, before the setter. A state updater can run after React has put the
+      // controlled value back (during hydration, or on a deferred render), and then reads the stale box and drops what
+      // was typed: the Settings name that never saved on WebKit. `const v = e.target.value; setX((d) => ({ ...d, v }))`.
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression:matches([callee.name=/^set[A-Z]/], [callee.property.name=/^set[A-Z]/]):not(:matches([callee.name=/^set(Timeout|Interval|Immediate)$/], [callee.property.name=/^set(Timeout|Interval|Immediate)$/])) > :matches(ArrowFunctionExpression, FunctionExpression) MemberExpression[property.name=/^(target|currentTarget)$/][object.name=/^(e|ev|evt|event)$/]",
+          message:
+            "Do not read e.target / e.currentTarget inside a state updater: it runs later and can see a stale value. Read the value in the handler first (const value = e.target.value) and use that.",
+        },
+      ],
     },
   },
   {

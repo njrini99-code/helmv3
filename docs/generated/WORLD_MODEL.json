@@ -3399,6 +3399,12 @@
         ]
       },
       {
+        "id": "golf_player_availability_coach_notes",
+        "definedIn": [
+          "supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql"
+        ]
+      },
+      {
         "id": "golf_qualifier_round_courses",
         "definedIn": [
           "supabase/migrations/20260621231000_qualifier_round_courses.sql"
@@ -4406,6 +4412,12 @@
         "kind": "vercel_cron",
         "path": "/api/cron/coachhelm-insight-lifecycle",
         "schedule": "0 4 * * *"
+      },
+      {
+        "id": "vercel_cron:/api/cron/coachhelm-monday-brief",
+        "kind": "vercel_cron",
+        "path": "/api/cron/coachhelm-monday-brief",
+        "schedule": "0 5 * * 1"
       },
       {
         "id": "vercel_cron:/api/cron/coachhelm-roster-sweep",
@@ -19849,6 +19861,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/flag.ts",
+          "anchor": "src/lib/flags/is-enabled"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/notifications/dispatch.ts",
           "anchor": "src/lib/supabase/admin"
         },
@@ -20163,6 +20180,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/supabase/chunk-ids"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/ranking/score.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
@@ -20305,6 +20332,11 @@
         {
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/engine/__tests__/read-window.test.ts",
+          "anchor": "src/lib/coachhelm/v2/insights/types"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/engine/coach-voice.ts",
           "anchor": "src/lib/coachhelm/v2/insights/types"
         },
         {
@@ -20897,6 +20929,11 @@
           "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/metrics/sequence-attribution-window.ts",
           "anchor": "src/lib/golf/date-only"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/monday-brief/loader.ts",
+          "anchor": "src/lib/golf/round-countable"
         },
         {
           "kind": "import_graph",
@@ -22838,6 +22875,17 @@
           "kind": "rpc_call",
           "path": "src/app/golf/actions/teams.ts",
           "anchor": "golf_my_join_requests"
+        }
+      ]
+    },
+    {
+      "source": "roster_team",
+      "target": "golf_player_availability_coach_notes",
+      "kind": "feature_table",
+      "evidence": [
+        {
+          "kind": "migration_schema",
+          "path": "supabase/migrations/20261022090000_golf_player_availability_coach_notes.sql"
         }
       ]
     },
