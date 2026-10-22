@@ -283,17 +283,17 @@ its rows together and does not map them one to one.
 
 <!-- markdownlint-enable MD013 -->
 
-Counts on 2026-10-22: 129 done, 25 held, 20 closed, 6 in progress, none
-open (rows added since the audit are not counted: new-02 to new-04 in
-progress in #2332, queue-01 in progress here). Four of the six in-progress
-rows are one draft, #2333 (chs-21, chs-22, chs-23, par-14); chs-37 and chs-39 are #2328. The held rows wait on the owner
-(the iPhone pass and App Store build in doc-37, which also gates doc-38 to
-doc-41 reaching users; device checks and reviews in doc-03, doc-08, doc-35,
-doc-36 and doc-49; the reset-email template in doc-55; the canary and deploy
-in doc-46, doc-47 and pr-02), on held migrations that Production rollout
-applies (doc-31 to doc-34, chs-62, pr-09, pr-10), or on a stated trigger
-because they were deferred on purpose (doc-07, doc-09, doc-58 to doc-60,
-chs-59, chs-60).
+Counts on 2026-10-22: 129 done, 25 held, 20 closed, 6 in progress, none open
+(rows added since the audit are not counted: new-02 to new-04 in progress in
+PR #2332, queue-01 in progress here). Four of the six in-progress rows are one
+draft, #2333 (chs-21, chs-22, chs-23, par-14); chs-37 and chs-39 are #2328.
+The held rows wait on the owner (the iPhone pass and App Store build in
+doc-37, which also gates doc-38 to doc-41 reaching users; device checks and
+reviews in doc-03, doc-08, doc-35, doc-36 and doc-49; the reset-email template
+in doc-55; the canary and deploy in doc-46, doc-47 and pr-02), on held
+migrations that Production rollout applies (doc-31 to doc-34, chs-62, pr-09,
+pr-10), or on a stated trigger because they were deferred on purpose (doc-07,
+doc-09, doc-58 to doc-60, chs-59, chs-60).
 
 Held rows that need no migration, flag or deploy, only an owner nod or a
 tool: doc-07 (a time-format choice), doc-60 (invite by email, needs a server
