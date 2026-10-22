@@ -77,6 +77,34 @@ function transportFailureKind(event: Fingerprintable): string | null {
 }
 
 /**
+ * A gateway in front of Supabase (Cloudflare) can answer with an HTML error
+ * PAGE instead of a PostgREST error. The integration then throws
+ * `new Error(<the whole document>)`: no code, no transport signature, and a
+ * body that differs on every request (Ray ID, timestamp, client IP), so
+ * default grouping makes one issue per event. 2026-10-22 15:29-15:33Z: one
+ * Supabase 502 became JAVASCRIPT-NEXTJS-1D6, -1D7 and -1D8, each titled
+ * "Error: <!DOCTYPE html>" and each storing the page.
+ *
+ * The page states its cause in `<title>` ("supabase.co | 502: Bad gateway"),
+ * the same line `summariseErrorBody` in src/lib/admin/job-log.ts keeps. The
+ * match is anchored to the START of the message (after the IE-shim comments a
+ * Cloudflare page opens with), so a message that merely quotes a tag is not a
+ * page.
+ */
+export function gatewayErrorPage(text: string): { status: string; title: string } | null {
+  const head = text.replace(/^(?:\s|<!--[\s\S]*?-->)+/, '');
+  if (!/^<(?:!doctype\s|html[\s>])/i.test(head)) return null;
+  const title =
+    /<title[^>]*>([\s\S]*?)<\/title>/i
+      .exec(text)?.[1]
+      ?.replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200) || 'HTML error page (no title)';
+  const status = /\b([45]\d\d)\b/.exec(title)?.[1] ?? /Error code ([45]\d\d)\b/i.exec(text)?.[1] ?? 'unknown';
+  return { status, title };
+}
+
+/**
  * Regroups an integration auto-capture. Never overrides a deliberate
  * fingerprint, and returns every other event untouched.
  */
@@ -94,6 +122,22 @@ export function fingerprintSupabaseAutoCapture<E extends Fingerprintable>(
       fingerprint: isInfrastructurePgCode(code)
         ? ['supabase-infra', `pg:${code}`]
         : ['{{ default }}', `pg:${code}`],
+    };
+  }
+
+  const values = event.exception?.values ?? [];
+  const page = values.map((value) => gatewayErrorPage(value.value ?? '')).find((found) => found !== null);
+  if (page) {
+    return {
+      ...event,
+      tags: { ...event.tags, http_status: page.status },
+      exception: {
+        ...event.exception,
+        values: values.map((value) =>
+          gatewayErrorPage(value.value ?? '') ? { ...value, value: `Supabase gateway error page: ${page.title}` } : value,
+        ),
+      },
+      fingerprint: ['supabase-gateway', `http:${page.status}`],
     };
   }
 
