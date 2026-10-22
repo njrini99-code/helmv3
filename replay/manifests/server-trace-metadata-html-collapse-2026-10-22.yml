@@ -1,0 +1,35 @@
+schema_version: 1
+replay_id: server-trace-metadata-html-collapse-2026-10-22
+incident_id: fae748c7
+feature_id: admin_incidents
+title: >-
+  A Supabase 502 made pattern-miner.savePatterns log a PostgrestError whose
+  message was the whole Cloudflare page as metadata.dbError, and
+  normalizeContext stored metadata verbatim (6.8KB with the Ray ID and egress
+  IP) in admin_events, error_logs and Sentry's server_trace context. It now
+  runs collapseHtmlErrorPages, which keeps the page title only.
+bad_version: 50b2f8bd9b264b4666e142fae0a172fbf0f1b733
+fixed_version: f8d28828f91a8036bbe31146b583c4e27c5d8730
+fixture:
+  - source: collapse-html-error-pages.test.ts
+    target: src/lib/utils/__tests__/collapse-html-error-pages.test.ts
+  - source: server-error-logger-bridge.test.ts
+    target: src/lib/__tests__/server-error-logger-bridge.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/utils/__tests__/collapse-html-error-pages.test.ts src/lib/__tests__/server-error-logger-bridge.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: missing-export
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    A synthetic Cloudflare-style page with made-up Ray IDs and TEST-NET
+    documentation IPs (203.0.113.7, 198.51.100.4); no production rows, PII,
+    tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-22"
+notes: >-
+  On bad_version the five helper tests fail with "collapseHtmlErrorPages is
+  not a function" and the logger test fails by assertion (metadata stored
+  verbatim); the other 26 logger tests pass on both versions.
