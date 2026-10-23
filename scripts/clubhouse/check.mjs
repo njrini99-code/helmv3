@@ -95,7 +95,24 @@ export function checkSource(file, raw) {
       const selector = m[1].trim();
       const body = m[2];
       if (selector.startsWith('@') || /^(from|to|\d+%)/.test(selector)) continue;
-      const parts = selector.split(',').map((s) => s.trim()).filter(Boolean);
+      // Split the list on its own commas only: one inside :is(), :where() or :not() is part of a selector.
+      const parts = [];
+      let depth = 0;
+      let start = 0;
+      for (let i = 0; i < selector.length; i += 1) {
+        const c = selector[i];
+        if (c === '(') depth += 1;
+        else if (c === ')') depth -= 1;
+        else if (c === ',' && depth === 0) {
+          parts.push(selector.slice(start, i));
+          start = i + 1;
+        }
+      }
+      parts.push(selector.slice(start));
+      for (let i = parts.length - 1; i >= 0; i -= 1) {
+        parts[i] = parts[i].trim();
+        if (!parts[i]) parts.splice(i, 1);
+      }
       for (const part of parts) {
         if (!/\.ch-|\[data-ui=/.test(part)) add(m.index, `unscoped selector "${part}"`);
       }

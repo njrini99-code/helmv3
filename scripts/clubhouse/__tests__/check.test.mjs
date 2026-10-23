@@ -152,3 +152,9 @@ test('a client file may import only types from a server-only module', () => {
   });
   assert.deepEqual(ok, []);
 });
+
+test('a comma inside :is() is part of one selector, not a second unscoped one', () => {
+  const v = checkSource('src/clubhouse/styles/x.css', '.ch-a:is(:active, [data-ch-pressed]) { color: red; }\n.ch-b, .button { color: red; }');
+  assert.ok(!v.some((x) => x.includes('data-ch-pressed')));
+  assert.ok(v.some((x) => x.includes('unscoped selector ".button"')));
+});
