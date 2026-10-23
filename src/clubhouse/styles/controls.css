@@ -614,7 +614,7 @@
 }
 .ch-pp__row[aria-pressed='true'],
 .ch-pp__row[aria-selected='true'] {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
 }
 .ch-pp__row > svg {
   color: var(--ch-green-700);

@@ -5,11 +5,11 @@ import { ratchet, ROOT, walk, type Hit } from './_scan';
 
 /**
  * CONS-22: the selected state is a few tokens. A rule for something chosen (pressed, selected, current, `.is-on`,
- * `.is-selected`) paints its background with --ch-selected-bg, --ch-selected-pill-bg, --ch-bg-selected or the chosen
- * segment's --ch-seg-on-bg. The files below still paint their own; their counts may only fall.
+ * `.is-selected`) paints its background with --ch-selected-bg, --ch-selected-pill-bg, --ch-selected-strong (a solid plate),
+ * --ch-bg-selected or the chosen segment's --ch-seg-on-bg. The files below still paint their own; their counts may only fall.
  */
 const SELECTED = /\[aria-pressed='true'\]|\[aria-selected='true'\]|\.is-selected\b|\.is-on\b|\[aria-current/;
-const TOKEN = /^var\(--ch-(selected-bg|selected-pill-bg|bg-selected|seg-on-bg)\)$/;
+const TOKEN = /^var\(--ch-(selected-bg|selected-pill-bg|selected-strong|bg-selected|seg-on-bg)\)$/;
 
 function paints(): Hit[] {
   const out: Hit[] = [];
@@ -30,19 +30,17 @@ const ALLOW_SELECTED_PAINT: Record<string, number> = {
   'styles/classes.css': 2,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 3,
-  'styles/coachhelm-thread.css': 2,
-  'styles/coachhelm-views.css': 2,
-  'styles/coachhelm.css': 9,
-  'styles/controls.css': 10,
-  'styles/hub.css': 7,
-  'styles/messages.css': 6,
+  'styles/coachhelm-thread.css': 1,
+  'styles/coachhelm.css': 6,
+  'styles/controls.css': 9,
+  'styles/hub.css': 3,
+  'styles/messages.css': 4,
   'styles/qualifiers.css': 2,
   'styles/recruiting.css': 3,
-  'styles/roster.css': 1,
   'styles/rounds-setup.css': 2,
-  'styles/rounds-track.css': 5,
+  'styles/rounds-track.css': 2,
   'styles/settings.css': 6,
-  'styles/shell.css': 8,
+  'styles/shell.css': 5,
   'styles/stats.css': 3,
   'styles/ui.css': 3,
 };

@@ -698,7 +698,7 @@
     transform var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ms-reactbar__b.is-on {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   color: var(--ch-green-700);
 }
 @media (hover: hover) {
@@ -777,7 +777,7 @@
     color: var(--ch-forest-900);
   }
   .ch-ms-reactbar__b.is-on:hover {
-    background: var(--ch-green-800);
+    background: var(--ch-selected-strong);
     color: #fffdf6;
   }
 }

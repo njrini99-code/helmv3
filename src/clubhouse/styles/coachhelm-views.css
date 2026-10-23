@@ -54,7 +54,7 @@
   inset: -4px -2px;
 }
 .ch-hv-chip[aria-current='true'] {
-  background: var(--ch-green-800);
+  background: var(--ch-selected-strong);
   color: var(--ch-on-fill-100);
   font-weight: 600;
   box-shadow: none;
@@ -199,7 +199,7 @@
     background: var(--ch-ledger-row-press);
   }
   .ch-hv-chip[aria-current='true'] {
-    background: var(--ch-green-800);
+    background: var(--ch-selected-strong);
     box-shadow: none;
   }
   .ch-hv-chip.is-link {

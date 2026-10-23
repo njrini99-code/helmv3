@@ -146,6 +146,8 @@
   --ch-selected-pill-bg: #edf4ef;
   --ch-selected-pill-ring: rgb(21 90 57 / 0.28);
   --ch-selected-ink: var(--ch-green-700);
+  /* A chosen key drawn as a solid plate (a day, a chip, a filter on the green): the strong selected fill. */
+  --ch-selected-strong: var(--ch-green-800);
   --ch-text-primary: var(--ch-ink-900);
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);

@@ -257,7 +257,7 @@
   color: var(--ch-green-600);
 }
 .ch-th-toggle[aria-pressed='true'] {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
 }
 .ch-th--phone .ch-th-toggle {
   position: relative;

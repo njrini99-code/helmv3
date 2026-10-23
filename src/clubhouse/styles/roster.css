@@ -235,7 +235,7 @@
 @media (hover: hover) {
   .ch-rs .ch-pill[aria-pressed='true']:hover,
   .ch-rs .ch-rs-vt__b[aria-pressed='true']:hover {
-    background: var(--ch-green-800);
+    background: var(--ch-selected-strong);
   }
 }
 

@@ -1009,7 +1009,7 @@
   cursor: pointer;
 }
 .ch-hb-picks button[aria-pressed='true'] {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   box-shadow: 0 0 0 1.5px var(--ch-green-600);
   color: var(--ch-forest-800);
 }
@@ -1086,7 +1086,7 @@
   }
 }
 .ch-hb-dp__row[aria-pressed='true'] {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
 }
 .ch-hb-dp__b {
   display: flex;
@@ -1118,7 +1118,7 @@
   color: var(--ch-on-fill-100);
 }
 .ch-hb-dp__row[aria-pressed='true'] .ch-hb-dp__ck {
-  background: var(--ch-green-800);
+  background: var(--ch-selected-strong);
   box-shadow: none;
 }
 .ch-hb-opts {
@@ -1686,7 +1686,7 @@
   color: var(--ch-green-700);
 }
 .ch-hb-steps li.is-on {
-  background: var(--ch-green-800);
+  background: var(--ch-selected-strong);
   color: var(--ch-on-fill-100);
 }
 /* Travelers, with no calendar event to choose them from. */

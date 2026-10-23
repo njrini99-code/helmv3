@@ -208,7 +208,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tsw__opt[aria-selected='true'] .ch-tsw__ic {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   color: var(--ch-green-700);
 }
 .ch-tsw__name {
@@ -1023,7 +1023,7 @@
   font-weight: 600;
 }
 .ch-more__row[aria-current='page'] .ch-more__ic {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   color: var(--ch-green-700);
 }
 /* v2 More (m-ch.jsx MoreM): who you are, the app, then Settings, Help and Sign out. */
@@ -1095,7 +1095,7 @@ button.ch-more__row[disabled] {
   font-weight: 600;
 }
 .ch-more__row[aria-current='true'] .ch-more__ic {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   color: var(--ch-green-700);
 }
 .ch-more__tick {
