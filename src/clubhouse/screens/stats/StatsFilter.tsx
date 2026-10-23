@@ -201,6 +201,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
   return (
     <div className="ch-st-card">
       <EmptyState
+        kind="filtered"
         code={code}
         icon={SlidersHorizontal}
         title="No rounds match these filters."
@@ -448,6 +449,7 @@ function FilterSheet({
               {pickable.length === 0 ? (
                 <EmptyState
                   compact
+                  kind="filtered"
                   icon={CalendarRange}
                   code={codes.pickEmpty}
                   title="No rounds to pick from."
