@@ -1436,7 +1436,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-trend {
     padding: 14px 0 0;
   }
-  .ch-rsm-trend .ch-form__line {
+  .ch-rsm-trend .ch-line__path {
     stroke-width: 2.2;
   }
   .ch-rsm-trend__lg {

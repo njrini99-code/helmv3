@@ -11,7 +11,7 @@ import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
@@ -191,7 +191,8 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           </div>
           {(() => {
             const places = leaderPlaces(data.rows);
-            return data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />);
+            // B5: the board's form lines share one range, so the same height is the same score in every row.
+            return <FormRange trends={data.rows.map((p) => p.trend)}>{data.rows.map((p, i) => <Row key={p.playerId} p={p} pos={places[i]!} rounds={rounds} />)}</FormRange>;
           })()}
         </SideScroll>
       )}

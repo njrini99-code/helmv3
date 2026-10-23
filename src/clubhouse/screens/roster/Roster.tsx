@@ -12,7 +12,7 @@ import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
@@ -669,122 +669,123 @@ function RosterList({
   onShowEveryone: () => void;
 }) {
   return (
-    <>
-      {rows.length === 0 ? (
-        <EmptyState
-          kind="filtered"
-          code={q.trim() ? 'CH-3302' : 'CH-3303'}
-          title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
-          body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
-          action={<Button onClick={onShowEveryone}>Show everyone</Button>}
-        />
-      ) : view === 'faces' ? (
-        <div className="ch-rs-faces">
-          {rows.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
-              onClick={() => openProfile(p.id)}
-              {...bind(p)}
-            >
-              <span className="ch-rs-face__top">
-                <span />
-                {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
-                    apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
-                    the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
-                {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
-                <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
-              </span>
-              <span className="ch-rs-face__av">
-                <Avatar name={p.name} size={76} />
-              </span>
-              <span className="ch-rs-face__name">{p.name}</span>
-              <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
-              <span className="ch-rs-face__form">
-                <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
-              </span>
-              <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
-              {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
-              {availabilityLine(p) ? (
-                <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
-                  {availabilityLine(p)}
+    // B5: every row's form line on one range, so the same height is the same score down the table.
+    <FormRange trends={rows.map((p) => p.trend)} earlyBelow={3}>
+        {rows.length === 0 ? (
+          <EmptyState
+            kind="filtered"
+            code={q.trim() ? 'CH-3302' : 'CH-3303'}
+            title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
+            body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
+            action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+          />
+        ) : view === 'faces' ? (
+          <div className="ch-rs-faces">
+            {rows.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
+                onClick={() => openProfile(p.id)}
+                {...bind(p)}
+              >
+                <span className="ch-rs-face__top">
+                  <span />
+                  {/* CH-3802: the status is a word; the dot is decoration, drawn only under All where it tells players
+                      apart (P003-A3: under Active or Inactive every dot is the same). CH-3602: on desktop the cell takes
+                      the Ledger tint on hover and a deeper one on press; the phone's card lifts. */}
+                  {show === 'all' && <span className={`ch-rs-face__dot is-${p.status}`} aria-hidden="true" />}
+                  <span className="ch-sr-only">{p.status === 'active' ? 'Active' : 'Inactive'}</span>
                 </span>
-              ) : (
-                p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
-          <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
-            <span role="columnheader">Player</span>
-            <span role="columnheader">Status</span>
-            <span role="columnheader">Last 7 rounds</span>
-            <span role="columnheader" className="r">Avg</span>
-            <span role="columnheader" className="r">HCP</span>
-            <span role="columnheader" className="r">SG / rd</span>
-            <span role="columnheader" className="r">Rounds</span>
-            <span role="columnheader">
-              <span className="ch-sr-only">Actions</span>
-            </span>
-          </div>
-          {rows.map((p) => (
-            <div
-              key={p.id}
-              role="row"
-              className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
-              {...bind(p)}
-            >
-              <span role="cell" className="ch-rs-who__cell">
-                <button
-                  type="button"
-                  className="ch-rs-who"
-                  onClick={() => openProfile(p.id)}
-                  aria-label={`${p.name}. Open profile`}
-                >
-                  <Avatar name={p.name} size={40} />
-                  <span>
-                    <b>{p.name}</b>
-                    <RowMeta p={p} />
+                <span className="ch-rs-face__av">
+                  <Avatar name={p.name} size={76} />
+                </span>
+                <span className="ch-rs-face__name">{p.name}</span>
+                <span className="ch-rs-face__meta">{[p.classYear, p.hometown].filter(Boolean).join(' · ') || ' '}</span>
+                <span className="ch-rs-face__form">
+                  <FormLine data={p.trend} width={150} height={30} earlyBelow={3} label={`${p.name} form`} />
+                </span>
+                <FaceFigures p={p} avgs={standings.avgs} standing={standings.byId.get(p.id)} />
+                {/* Injured or away takes the note slot in plain ink, in place of a Needs a look reason (CH-3809: a word). */}
+                {availabilityLine(p) ? (
+                  <span className="ch-rs-face__note is-availability" title={availabilityLine(p)!}>
+                    {availabilityLine(p)}
                   </span>
-                </button>
-              </span>
-              <span role="cell">
-                <span className={`ch-rs-status is-${p.status}`}>
-                  <i aria-hidden="true" />
-                  {p.status === 'active' ? 'Active' : 'Inactive'}
-                </span>
-              </span>
-              <span role="cell">
-                <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
-              </span>
-              <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
-              <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-              <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
-                {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
-              </span>
-              <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
-              <span role="cell" className="r">
-                <Menu
-                  label={`Actions for ${p.name}`}
-                  items={menuFor(p)}
-                  trigger={(t) => (
-                    <Tooltip>
-                      <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                        <Icon icon={Ellipsis} size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
-                />
+                ) : (
+                  p.attention && <span className={`ch-rs-face__note is-${p.attention.tone}`}>{p.attention.text}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
+            <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
+              <span role="columnheader">Player</span>
+              <span role="columnheader">Status</span>
+              <span role="columnheader">Last 7 rounds</span>
+              <span role="columnheader" className="r">Avg</span>
+              <span role="columnheader" className="r">HCP</span>
+              <span role="columnheader" className="r">SG / rd</span>
+              <span role="columnheader" className="r">Rounds</span>
+              <span role="columnheader">
+                <span className="ch-sr-only">Actions</span>
               </span>
             </div>
-          ))}
-        </SideScroll>
-      )}
-    </>
+            {rows.map((p) => (
+              <div
+                key={p.id}
+                role="row"
+                className={'ch-rs-row' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
+                {...bind(p)}
+              >
+                <span role="cell" className="ch-rs-who__cell">
+                  <button
+                    type="button"
+                    className="ch-rs-who"
+                    onClick={() => openProfile(p.id)}
+                    aria-label={`${p.name}. Open profile`}
+                  >
+                    <Avatar name={p.name} size={40} />
+                    <span>
+                      <b>{p.name}</b>
+                      <RowMeta p={p} />
+                    </span>
+                  </button>
+                </span>
+                <span role="cell">
+                  <span className={`ch-rs-status is-${p.status}`}>
+                    <i aria-hidden="true" />
+                    {p.status === 'active' ? 'Active' : 'Inactive'}
+                  </span>
+                </span>
+                <span role="cell">
+                  <FormLine data={p.trend} width={120} height={30} earlyBelow={3} label={`${p.name} form`} />
+                </span>
+                <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
+                <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
+                <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
+                  {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
+                </span>
+                <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
+                <span role="cell" className="r">
+                  <Menu
+                    label={`Actions for ${p.name}`}
+                    items={menuFor(p)}
+                    trigger={(t) => (
+                      <Tooltip>
+                        <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
+                          <Icon icon={Ellipsis} size={15} />
+                        </button>
+                      </Tooltip>
+                    )}
+                  />
+                </span>
+              </div>
+            ))}
+          </SideScroll>
+        )}
+    </FormRange>
   );
 }
 

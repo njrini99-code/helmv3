@@ -9,7 +9,7 @@ import type { ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
@@ -323,7 +323,8 @@ function RosterPhoneList({
     </li>
   );
   return (
-    <>
+    // B5: the active and inactive rows' sparks share one range, so the same height is the same score down the list.
+    <FormRange trends={[...active, ...inactive].map((p) => p.trend)} earlyBelow={3}>
       {active.length > 0 && (
         <ul className="ch-rsm-panel ch-rsm-list" aria-label="Active players">
           {active.map(row)}
@@ -339,7 +340,7 @@ function RosterPhoneList({
           </ul>
         </>
       )}
-    </>
+    </FormRange>
   );
 }
 

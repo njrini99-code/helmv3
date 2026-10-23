@@ -7,7 +7,7 @@ import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
-import { FormLine } from '../../ui/FormLine';
+import { FormLine, FormRange } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
@@ -460,39 +460,42 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
       ) : !data.rounds.length ? (
         <EmptyState compact code="CH-2302" icon={BarChart3} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
-        <ul className="ch-hm-list">
-          {data.rounds.map((r) => (
-            <li key={r.id}>
-              {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
-              <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
-                <button
-                  type="button"
-                  className="ch-hm-rd"
-                  onClick={() => {
-                    haptic('select');
-                    chTrail('home open round');
-                    onOpen(r);
-                  }}
-                >
-                  <Avatar name={r.playerName} size={38} />
-                  <span className="ch-hm-rd__b">
-                    <b>{r.playerName}</b>
-                    <RoundMeta meta={r.meta} />
-                  </span>
-                  {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
-                    <span className="ch-hm-rd__spark" aria-hidden="true">
-                      <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+        // B5: the rows' sparks share one range, so the same height is the same score down the list.
+        <FormRange trends={data.rounds.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
+          <ul className="ch-hm-list">
+            {data.rounds.map((r) => (
+              <li key={r.id}>
+                {/* P003-C1: a hold on the row peeks at the player, from what Home loaded (the board's row, else this round). */}
+                <PlayerPeek player={roundPeek(r, trends, data.rounds)}>
+                  <button
+                    type="button"
+                    className="ch-hm-rd"
+                    onClick={() => {
+                      haptic('select');
+                      chTrail('home open round');
+                      onOpen(r);
+                    }}
+                  >
+                    <Avatar name={r.playerName} size={38} />
+                    <span className="ch-hm-rd__b">
+                      <b>{r.playerName}</b>
+                      <RoundMeta meta={r.meta} />
                     </span>
-                  )}
-                  <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
-                    <b>{r.score}</b>
-                    <em>{formatToPar(r.toPar)}</em>
-                  </span>
-                </button>
-              </PlayerPeek>
-            </li>
-          ))}
-        </ul>
+                    {(trendOf.get(r.playerId)?.length ?? 0) >= 3 && (
+                      <span className="ch-hm-rd__spark" aria-hidden="true">
+                        <FormLine data={trendOf.get(r.playerId)!} width={64} height={18} earlyBelow={3} bare label={`${r.playerName}, last ${trendOf.get(r.playerId)!.length} rounds: ${trendOf.get(r.playerId)!.join(', ')}`} />
+                      </span>
+                    )}
+                    <span className={'ch-hm-score ch-num' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>
+                      <b>{r.score}</b>
+                      <em>{formatToPar(r.toPar)}</em>
+                    </span>
+                  </button>
+                </PlayerPeek>
+              </li>
+            ))}
+          </ul>
+        </FormRange>
       )}
     </section>
   );

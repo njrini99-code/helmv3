@@ -80,7 +80,7 @@ describe('FormLine', () => {
   const tone = (data: number[]) => {
     cleanup();
     const { container } = render(<FormLine data={data} label="form" />);
-    return container.querySelector('svg')!.getAttribute('class');
+    return container.querySelector('.ch-form')!.getAttribute('class');
   };
 
   it('is ink when the newer half has not moved past the change’s standard error', () => {

@@ -76,4 +76,11 @@ describe('ui/charts/Line options (B5)', () => {
     expect(wash.startsWith(`M`)).toBe(true);
     expect(wash).toContain(`,${Number(zero).toFixed(1)} Z`);
   });
+
+  it('a wash under a two-point segment is a well-formed path', () => {
+    const { container } = render(<Line label="Two rounds." lowerIsBetter axis={false} wash points={[{ x: 'a', y: 74 }, { x: 'b', y: 72 }]} />);
+    const d = container.querySelector('.ch-line__wash')!.getAttribute('d')!;
+    expect(d).not.toMatch(/LL|[^\d] ,/);
+    expect(d).toMatch(/^M[\d.]+,[\d.]+( L[\d.]+,[\d.]+){3} Z$/);
+  });
 });

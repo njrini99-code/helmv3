@@ -21,8 +21,11 @@ export interface ChLinePoint {
 /** Room for the value ticks at the left; without them the line runs nearly edge to edge. */
 const PAD_AXIS = { l: 34, r: 14, t: 14, b: 24 } as const;
 const PAD_BARE = { l: 4, r: 4, t: 10, b: 22 } as const;
-/** Bare with no end labels (a small multiple inside a card). */
-const PAD_MINI = { l: 4, r: 4, t: 8, b: 8 } as const;
+/** Bare with no end labels (a small multiple or a row's spark): an eighth of the height above and below, 3 to 8. */
+const padMini = (h: number) => {
+  const v = Math.min(8, Math.max(3, h / 8));
+  return { l: 4, r: 4, t: v, b: v };
+};
 
 /** A few round ticks that cover [lo, hi]: a step of 0.5, 1, 2, 5, 10 or 20, so the labels are plain numbers. */
 export function lineTicks(lo: number, hi: number, want = 3): number[] {
@@ -121,9 +124,9 @@ export function Line({
   height?: number;
   className?: string;
 }) {
-  const PAD = axis ? PAD_AXIS : ends ? PAD_BARE : PAD_MINI;
   const W = width ?? (size === 'phone' ? 340 : 680);
   const H = height ?? (size === 'phone' ? 168 : 184);
+  const PAD = axis ? PAD_AXIS : ends ? PAD_BARE : padMini(H);
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
   const n = points.length;
@@ -139,8 +142,7 @@ export function Line({
   const floor = wash === 'baseline' && baseline ? y(baseline.value).toFixed(1) : String(PAD.t + plotH);
   const washPath = wash
     ? path.replace(/M([\d.]+),([\d.]+)((?: L[\d.]+,[\d.]+)*)/g, (_m, x0, y0, rest: string) => {
-        const pts = rest.trim() ? rest.trim().split(' L').filter(Boolean) : [];
-        const xEnd = pts.length ? pts[pts.length - 1]!.split(',')[0] : x0;
+        const xEnd = /L([\d.]+),[\d.]+$/.exec(rest)?.[1] ?? x0;
         return `M${x0},${floor} L${x0},${y0}${rest} L${xEnd},${floor} Z`;
       })
     : '';
