@@ -332,6 +332,7 @@ its rows together and does not map them one to one.
 | aplus-cons35 | z-index ladder; skip links above a toast; literals ratcheted (CONS-35) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
 | aplus-b21 | Dark primary key on a lighter face (B21, X-6) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
 | aplus-b15 | Chart ink under Increase Contrast (B15) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-cons23 | One grab handle and one FormSheet for Settings and Recruiting (CONS-23) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-13); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
