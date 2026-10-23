@@ -259,13 +259,13 @@ describe('112401 Rounds library, on screen', () => {
     expect(within(screen.getByRole('link', { name: 'Sep 1, Finley GC, 40 (−32)' })).getByText('Not counted')).toBeTruthy();
   });
 
-  it('CH-11702 CH-11801 each round is one named link to its review, with the selection haptic', async () => {
+  it('CH-11702 CH-11801 each round is one named link to its review, silent as navigation is (A14)', async () => {
     const user = userEvent.setup();
     show(PREVIEW_ROUNDS_IDLE);
     const r = screen.getByRole('link', { name: 'Sep 26, Finley GC, 72 (E)' });
     expect(r.getAttribute('href')).toBe('/golf/dashboard/rounds/a0000000-0000-4000-8000-000000000001');
     await user.click(r);
-    expect(hapticSpy).toHaveBeenCalledWith('select');
+    expect(hapticSpy).not.toHaveBeenCalledWith('select');
     expect(screen.getByRole('main').getAttribute('aria-labelledby')).toBe('ch-rd-title');
     expect(screen.getByRole('region', { name: 'September 2026' })).toBeTruthy();
   });
