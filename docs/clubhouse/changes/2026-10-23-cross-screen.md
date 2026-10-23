@@ -133,3 +133,35 @@ menu, a cold People list and page-aware shortcuts follow
 
 - `shortcuts.test.ts` (Cmd-comma), `home-new-key.test.tsx` (N over a
   native dialog and in a field), a Messages test for the arrow keys.
+
+## 2026-10-23 — One rank rule, the season on the team's calendar (B13)
+
+```text
+Design package: none (Clubhouse A+ handoff, B13.2 and B13.4)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none (figures read the same rows; places and the season
+boundary are computed differently)
+Held items: Standing's window (B13.1) and the qualifier completeness
+rule (B13.3) offer two options each, for the owner; the SQL readers'
+CURRENT_DATE is C10, held
+```
+
+### Changed
+
+- Places are taken on the value as shown, so two players shown at 74.3
+  share a place ("T1"); Roster's standings and Home's leaderboard use
+  the one rule. Stats' TeamRank keeps its "about the same" tie.
+- The season turns on 1 August in the team's zone (New York where the
+  zone isn't to hand), not the server's UTC date.
+
+### Why
+
+- Two players shown with the same average had different places, and an
+  Eastern team's season turned about four hours early.
+
+### Verification
+
+- New `lib/__tests__/rank.test.ts` and `data/__tests__/season.test.ts`;
+  a roster standings test for 74.30 and 74.333.
