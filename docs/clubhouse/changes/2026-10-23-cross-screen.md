@@ -597,3 +597,41 @@ Held items: the CSV export, CSS geometry and color-mix percentages keep
 
 - `display-rounding`, `selected-state`, `tone-vocabulary` and
   `strokes-gained` tests; related tests (32 files).
+
+## 2026-10-23 — Same words, avatar steps and control guards
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-31, CONS-33, CONS-37,
+CONS-39)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the avatar step scale, the Roster sort keys, What's new's
+filter, chip and tab migrations, the font shorthands that block .ch-num
+```
+
+### Changed
+
+- Phone and desktop take their sort and figure words (handicap, strokes
+  gained, scoring average) from `lib/glossary`; a parity test holds the
+  pairs (CONS-37).
+- `ui/Avatar` takes named steps (`xs` 24, `sm` 28, `md` 36, `lg` 40,
+  `xl` 64). The 29 sizes already on a step use the name, so no pixel
+  moves; 59 numeric sizes and the three own avatar classes are ratcheted
+  (CONS-33).
+- Hand-rolled chips (99), segmented controls (77) and tabs (58) are
+  ratcheted (CONS-31).
+- Local `font-variant-numeric` declarations are ratcheted (498 → 497).
+  Most sit in rules that also set the `font` shorthand, which resets the
+  tabular setting, so they stay until the role tokens change (CONS-39).
+
+### Why
+
+- One source for each word, size and control, and no new copies.
+
+### Verification
+
+- `phone-desktop-words`, `avatar-sizes`, `chips-tabs` and `tabular-nums`
+  tests; related tests (109 files); `tsgo`, eslint, `clubhouse:check`,
+  `clubhouse:css`.
