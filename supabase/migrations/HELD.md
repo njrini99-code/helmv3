@@ -39,7 +39,8 @@ actions. This covers a decision that leaves no runtime trace at all.
 ## Apply queue (read-only plan, 2026-10-22)
 
 Built from this register, the production ledger (`list_migrations`, read-only,
-2026-10-22: 439 files on main, 45 with no ledger row) and `git merge-base`
+2026-10-22: 439 files on main, 45 with no ledger row; `20261023130000` added
+2026-10-23) and `git merge-base`
 against the commit production serves (`d0f467a73`, 56 commits behind `main`
 `fada94fac`). Nothing here was applied. Owner approves one file at a time; the
 rows below stay HOLD until the owner's go.
@@ -87,10 +88,19 @@ run `npm run db:types` only where the file says so.
    test:rls` and a reviewer pass first. Rollback file exists but predates
    `20260929200000` (applied 10-21): re-pin `is_team_coach` / `is_team_player`
    to `public, pg_temp` after a rollback, or re-capture first.
+- **Step 6.** `20261023130000_anon_surface_grants.sql` (no QUEUE row; added
+  2026-10-23). Grants only: revokes every `anon` and `authenticated` grant on the
+  32 `graveyard` tables and drops `anon` from the default EXECUTE on new
+  `public` functions. Low risk, independent of every other held file. Rollback
+  file exists (`supabase/rollbacks/20261023130000_anon_surface_grants.rollback.sql`).
+  New pgTAP `anon_surface_guard.sql` was written but not run (no Docker): run
+  `npm run test:rls` before the apply. Its row says no out-of-order override is
+  needed; the older unapplied files above still show in the dry-run's pending
+  list, so read that list and tick `allow_out_of_order` if it appears.
 
 ### Tier 2: owner sees numbers move first
 
-- **Step 6.** `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql` (QUEUE chs-62 and
+- **Step 7.** `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql` (QUEUE chs-62 and
    doc-34). Strokes-gained penalty and shot-end rules; `is_test` rounds store
    NULL strokes gained. Owner approved the rule 2026-09-30; applying is a
    separate go after the before/after numbers in
@@ -99,7 +109,7 @@ run `npm run db:types` only where the file says so.
    header, then refresh player caches and Standing for all teams. The DO guard
    refuses unless the live bodies match md5 `7f8fc142…` and `a51718c1…`.
    Rollback file exists. Independent of the OD-01 chain.
-- **Step 7.** The OD-01 chain, one session, in this order: `20260924120000_golf_countable_round_stats_cache.sql`, then `20260924140000_golf_standing_pressure_gap_parity.sql`, then `20260925120000_golf_standing_team_pct_floor_5.sql`, then
+- **Step 8.** The OD-01 chain, one session, in this order: `20260924120000_golf_countable_round_stats_cache.sql`, then `20260924140000_golf_standing_pressure_gap_parity.sql`, then `20260925120000_golf_standing_team_pct_floor_5.sql`, then
    `20260928120000_golf_putt_make_pct_countable_non_test.sql`, then
    `20260928150000_golf_stats_cache_exclude_test_rounds.sql`; then the cache and
    Standing refreshes in the first file's header (QUEUE chs-62 and doc-34).
@@ -113,7 +123,7 @@ run `npm run db:types` only where the file says so.
 
 ### Tier 3: needs a deploy first
 
-- **Step 8.** `20261017005000_golf_players_select_drop_teammate_branch.sql` (QUEUE doc-33
+- **Step 9.** `20261017005000_golf_players_select_drop_teammate_branch.sql` (QUEUE doc-33
    and pr-09, #2269 / #2275 / #2276). A player can read only their own
    `golf_players` row. Prerequisite: a deploy that carries `main`'s reads
    through `golf_player_profiles` (`d86aa917` for #2269 and `45906c55` for
@@ -123,12 +133,15 @@ run `npm run db:types` only where the file says so.
 
 ### Last, highest risk
 
-- **Step 9.** `20261007102000_revoke_anon_public_table_grants.sql` (no QUEUE row). Removes
+- **Step 10.** `20261007102000_revoke_anon_public_table_grants.sql` (no QUEUE row). Removes
    every `anon` privilege in `public` except the landing-page demo insert and
    three public views (810 grants live on 2026-10-11). Needs a full anon-path
    audit, `test:rls` and owner sign-off. Re-capture the ACL rollback snapshot
    right before apply (it predates `20260929200000`, `20261005120000` and the
-   10-21 applies). Apply after item 4.
+   10-21 applies). Apply after item 4, and only after a deploy that carries `/api/health` reading
+   `organizations_public_profile` (#2344, found 2026-10-23: the old probe read
+   `users` as `anon`, so this revoke would turn every signed-out health probe into
+   a 503). #2344 is on `main`, not yet in the served release.
 
 ### Not applyable as written (retire or rewrite, owner decides)
 
