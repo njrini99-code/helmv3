@@ -347,54 +347,6 @@
 .ch-rsu-in[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
 }
-.ch-rsu-seg {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--ch-radius-md);
-  background: var(--ch-well-bg);
-  box-shadow: var(--ch-well-shadow);
-}
-.ch-rsu-seg button {
-  all: unset;
-  cursor: pointer;
-  box-sizing: border-box;
-  flex: 1;
-  height: 38px;
-  padding: 0 14px;
-  border-radius: var(--ch-radius-sm);
-  text-align: center;
-  font: 500 calc(14 * var(--ch-type-k))/38px var(--ch-font-sans);
-  color: var(--ch-text-secondary);
-}
-.ch-rsu-seg button[aria-checked='true'] {
-  font-weight: 600;
-  color: var(--ch-seg-on-ink);
-  background: var(--ch-seg-on-bg);
-  box-shadow: var(--ch-seg-on-shadow);
-  text-shadow: 0 1px 0 rgb(0 0 0 / 0.18);
-}
-.ch-rsu-seg button:disabled {
-  cursor: default;
-  opacity: 0.45;
-}
-@media (hover: hover) {
-  .ch-rsu-seg button:not([aria-checked='true']):not(:disabled):hover {
-    color: var(--ch-text-primary);
-  }
-}
-.ch-rsu-seg--sm {
-  flex: none;
-}
-.ch-rsu-seg--sm button {
-  height: 30px;
-  padding: 0 11px;
-  font-size: calc(13 * var(--ch-type-k));
-  line-height: 30px;
-  /* "Front 9" never breaks between its words. */
-  white-space: nowrap;
-}
-.ch-rsu-seg button:focus-visible,
 .ch-rsu-par button:focus-visible,
 .ch-rsu-crs:focus-visible,
 .ch-rsu-tee:focus-visible,
@@ -1496,9 +1448,6 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
     width: 100%;
     min-height: 44px;
   }
-  .ch-rsu-seg button {
-    padding-inline: 8px;
-  }
   .ch-rsu-dock__s {
     white-space: normal;
     overflow: visible;
@@ -1522,13 +1471,10 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
     padding-top: calc(env(safe-area-inset-top) + 12px);
     border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
   }
-  .ch-rsu-band__back,
-  .ch-rsu-seg button {
+  .ch-rsu-band__back {
     position: relative;
   }
-  /* The segments are drawn 38px (30px small) inside the well's 3px; their reach is 44px tall. */
-  .ch-rsu-band__back::after,
-  .ch-rsu-seg button::after {
+  .ch-rsu-band__back::after {
     content: '';
     position: absolute;
     inset: min(0px, calc(50% - 22px));

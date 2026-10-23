@@ -488,7 +488,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -1376,7 +1375,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -1581,7 +1579,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -1596,7 +1593,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -1807,7 +1803,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -1948,7 +1943,6 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -3242,7 +3236,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
@@ -3411,7 +3404,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -3462,7 +3454,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -3514,7 +3505,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -4295,7 +4285,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/rounds-track.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -5194,7 +5183,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -5280,7 +5268,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/hero-tones.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
@@ -5817,7 +5804,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
@@ -6218,7 +6204,6 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -6254,7 +6239,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/shell.css",
@@ -7076,7 +7060,6 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
         "src/clubhouse/styles/controls.css",
-        "src/clubhouse/styles/home.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css"
@@ -9228,7 +9211,7 @@
         {
           "name": "--ch-line-ink",
           "value": "var(--ch-chart-loss)",
-          "scope": ".ch-th-trend.is-worse"
+          "scope": ".ch-th-trend.is-loss"
         }
       ]
     },
@@ -9946,8 +9929,6 @@
         "ch-hm-tl__rail",
         "ch-hm-tl__t",
         "ch-hm-tl__w",
-        "ch-hm-week",
-        "ch-hm-week__d",
         "ch-hm-week__n",
         "ch-lgr__go",
         "ch-lgr__lead",
@@ -10022,7 +10003,6 @@
         "ch-seg__b",
         "ch-seg__pill",
         "ch-sheet",
-        "ch-sr-only",
         "ch-well-soft"
       ],
       "tokens": [
@@ -10175,8 +10155,6 @@
         "ch-hw-count__t",
         "ch-hw-count__when",
         "ch-hw-count__where",
-        "ch-hw-days",
-        "ch-hw-days__dots",
         "ch-hw-discs",
         "ch-hw-discs__k",
         "ch-hw-discs__line",
@@ -12065,8 +12043,6 @@
         "ch-rsu-rv__hero",
         "ch-rsu-rv__tee",
         "ch-rsu-search",
-        "ch-rsu-seg",
-        "ch-rsu-seg--sm",
         "ch-rsu-spine",
         "ch-rsu-spine--sm",
         "ch-rsu-sw",
