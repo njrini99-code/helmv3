@@ -323,6 +323,8 @@ its rows together and does not map them one to one.
 | aplus-b1 | Type roles per step with leading and tracking; one bar title, one hero, two widths; ratchet on raw font shorthands (B1, stage 1) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 | aplus-cons5 | Done is primary, Clear filters never, Try again by scope; AST guard (CONS-5) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 | aplus-cons30 | One eyebrow role, 13/500 with no tracking (CONS-30) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
+| aplus-b2 | Spacing scale and reading widths; six stylesheets migrated behind a guard; What's new measure (B2) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
+| aplus-cons39 | Ratchet on local tabular-figure declarations (CONS-39) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

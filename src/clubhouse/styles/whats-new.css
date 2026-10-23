@@ -3,6 +3,8 @@
   display: grid;
   gap: 4px;
   min-width: 0;
+  /* A row's lines stop at a reading width (B2): on a wide screen they ran to about 130 characters. */
+  max-width: var(--ch-measure-text);
 }
 .ch-wn-what.is-good {
   color: var(--ch-accent);

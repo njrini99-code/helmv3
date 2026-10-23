@@ -199,3 +199,42 @@ describe('eyebrows (CONS-30)', () => {
     expect(off).toEqual([]);
   });
 });
+
+/**
+ * CONS-39: tabular figures come from `.ch-num` (ui.css) or a primitive (ui.css, controls.css), not a local
+ * `font-variant-numeric` in every screen's stylesheet. The `font` shorthand can't carry it, so each one moves with its
+ * element; until then they are counted per file and may only fall.
+ */
+describe('tabular figures (CONS-39)', () => {
+  it('local font-variant-numeric outside the primitives only falls', () => {
+    const css = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !/styles\/(ui|controls|tokens)\.css$/.test(f));
+    const { over, stale } = ratchet(hits(/font-variant-numeric:/, css), LOCAL_TABULAR);
+    expect(over).toEqual([]);
+    expect(stale).toEqual([]);
+  });
+});
+
+/** Local `font-variant-numeric` per stylesheet on 2026-10-23. Only falls. */
+const LOCAL_TABULAR: Record<string, number> = {
+  'styles/auth.css': 1,
+  'styles/base.css': 2,
+  'styles/calendar.css': 29,
+  'styles/classes.css': 22,
+  'styles/coachhelm-profile.css': 5,
+  'styles/coachhelm-thread.css': 9,
+  'styles/coachhelm.css': 4,
+  'styles/home.css': 61,
+  'styles/hub.css': 31,
+  'styles/messages.css': 15,
+  'styles/onboard.css': 8,
+  'styles/qualifiers.css': 54,
+  'styles/recruiting.css': 9,
+  'styles/roster.css': 26,
+  'styles/rounds-recover.css': 1,
+  'styles/rounds-setup.css': 15,
+  'styles/rounds-track.css': 35,
+  'styles/rounds.css': 62,
+  'styles/settings.css': 9,
+  'styles/shell.css': 5,
+  'styles/stats.css': 99,
+};

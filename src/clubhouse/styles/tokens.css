@@ -298,6 +298,23 @@
   --ch-track-card-title: var(--ch-track-17);
 
   /* Space and layout */
+  /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
+     list uses only these steps; the rest move screen by screen. */
+  --ch-space-0_5: 2px;
+  --ch-space-1: 4px;
+  --ch-space-1_5: 6px;
+  --ch-space-2: 8px;
+  --ch-space-3: 12px;
+  --ch-space-4: 16px;
+  --ch-space-5: 20px;
+  --ch-space-6: 24px;
+  --ch-space-8: 32px;
+  --ch-space-10: 40px;
+  --ch-space-12: 48px;
+  /* Reading widths: running text, a form, a page's content. */
+  --ch-measure-text: 68ch;
+  --ch-measure-form: 640px;
+  --ch-measure-page: 1200px;
   --ch-gutter: 40px;
   /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still
      between tabs. The gutter is each main's side padding (the head's 4px inset puts the title 44px in from the frame);
