@@ -13,12 +13,17 @@ Held items:     none
 
 ### Changed
 
-- The Live and Paused chip's "updated 4:12 PM" reads "16:12" on a 24-hour device (`clockLabel` takes the clock).
+- The Live and Paused chip's "updated 4:12 PM" reads "16:12" on a 24-hour device
+  (`clockLabel` takes the clock).
 
 ### Why
 
-- QUEUE doc-07 (D-76): a coach or player who reads a 24-hour clock should see Clubhouse in it. The choice is a device preference like the distance unit, so nothing is stored on the account and no request is made.
+- QUEUE doc-07 (D-76): a coach or player who reads a 24-hour clock should see
+  Clubhouse in it. The choice is a device preference like the distance unit, so
+  nothing is stored on the account and no request is made.
 
 ### Verification
 
-- `clock-format.test`, `clock-surfaces.test`, `settings-time-format.test` (CH-8980); `npm run typecheck:fast`; `clubhouse:check`. 12-hour output is byte-for-byte what it was (the default, and every existing test).
+- `clock-format.test`, `clock-surfaces.test`, `settings-time-format.test`
+  (CH-8980); `npm run typecheck:fast`; `clubhouse:check`. 12-hour output is
+  byte-for-byte what it was (the default, and every existing test).

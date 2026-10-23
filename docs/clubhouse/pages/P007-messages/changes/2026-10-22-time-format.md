@@ -13,12 +13,18 @@ Held items:     none
 
 ### Changed
 
-- `clock` and `railTime` take the clock; `ChMessagesApi.clock` (optional, absent reads as 12) is set from the provider in `Messages`, and the rail, thread, announcement and mute lines draw with it.
+- `clock` and `railTime` take the clock; `ChMessagesApi.clock` (optional, absent
+  reads as 12) is set from the provider in `Messages`, and the rail, thread,
+  announcement and mute lines draw with it.
 
 ### Why
 
-- QUEUE doc-07 (D-76): a coach or player who reads a 24-hour clock should see Clubhouse in it. The choice is a device preference like the distance unit, so nothing is stored on the account and no request is made.
+- QUEUE doc-07 (D-76): a coach or player who reads a 24-hour clock should see
+  Clubhouse in it. The choice is a device preference like the distance unit, so
+  nothing is stored on the account and no request is made.
 
 ### Verification
 
-- `clock-format.test`, `clock-surfaces.test`, `settings-time-format.test` (CH-8980); `npm run typecheck:fast`; `clubhouse:check`. 12-hour output is byte-for-byte what it was (the default, and every existing test).
+- `clock-format.test`, `clock-surfaces.test`, `settings-time-format.test`
+  (CH-8980); `npm run typecheck:fast`; `clubhouse:check`. 12-hour output is
+  byte-for-byte what it was (the default, and every existing test).
