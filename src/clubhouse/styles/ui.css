@@ -1747,6 +1747,148 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   stroke-width: 2;
 }
 
+/* B18: the one week strip (ui/WeekStrip.tsx). A flat row of seven days; the chosen day on the accent plate, which glides
+   from day to day (CH-6606); today ringed; events as dots, a reply owed amber, a day on the road gold. */
+.ch-wks {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ch-wks[data-chosen]::before {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: calc((100% - 12px) / 7);
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-green-fill-600);
+  transform: translateX(calc(var(--ch-wks-at, 0) * (100% + 2px)));
+  transition: transform var(--ch-dur-base) var(--ch-ease);
+  content: '';
+  pointer-events: none;
+}
+.ch-wks > li {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.ch-wks__d {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 64px;
+  padding: 11px 0 0;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: background-color var(--ch-dur-press) var(--ch-ease);
+}
+:is(button, a).ch-wks__d {
+  cursor: pointer;
+}
+:is(button, a).ch-wks__d:is(:active, [data-ch-pressed]):not(.is-on) {
+  background-color: var(--ch-ledger-row-press);
+}
+.ch-wks__d:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
+.ch-wks__d.is-today:not(.is-on) {
+  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+}
+.ch-wks__d em {
+  overflow: hidden;
+  max-width: 100%;
+  font: var(--ch-type-12-medium);
+  font-style: normal;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ch-text-tertiary);
+  transition: color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-wks__d b {
+  font: var(--ch-type-17-medium);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-primary);
+  transition: color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-wks__d i {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 11px;
+  color: var(--ch-text-secondary);
+}
+.ch-wks__d i span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ch-ink-300);
+  transition: background-color var(--ch-dur-base) var(--ch-ease);
+}
+.ch-wks__d.is-today b {
+  font: var(--ch-type-17-strong);
+  line-height: 1;
+  color: var(--ch-green-700);
+}
+.ch-wks__d.is-on em {
+  color: var(--ch-on-green-ink-muted);
+}
+.ch-wks__d.is-on b {
+  font: var(--ch-type-17-strong);
+  line-height: 1;
+  color: var(--ch-on-green-ink);
+}
+.ch-wks__d.is-on i {
+  color: var(--ch-on-green-ink);
+}
+.ch-wks__d.is-on i span {
+  background: var(--ch-on-green-ink-soft);
+}
+.ch-wks__d i span.is-reply {
+  background: var(--ch-warning-600);
+}
+.ch-wks__d i span.is-trip {
+  background: var(--ch-champagne-500);
+}
+/* A strip that pages (WeekStrip with onPage): a week a swipe with the phone's own momentum, as the calendar's day pages. */
+.ch-wks-pager {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.ch-wks-pager::-webkit-scrollbar {
+  display: none;
+}
+.ch-wks-page {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ch-wks[data-chosen]::before,
+  .ch-wks__d,
+  .ch-wks__d :is(em, b, i span) {
+    transition: none;
+  }
+}
+
 /* The page is waiting, not missing (EmptyState with a `shape` or `kind`; ui/EmptyShape.tsx). The sentence takes the place
    of the first row, flush on the Ledger like the rows that will follow it, and under it the layout's own rules, rings and
    baseline are drawn empty. Hairlines only: no bars, no sheen (those are the loading skeleton's) and no motion, so there

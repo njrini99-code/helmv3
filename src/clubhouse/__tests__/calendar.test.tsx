@@ -1184,10 +1184,10 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     const user = userEvent.setup();
     wrap(cal());
     const strip = screen.getByRole('list', { name: 'This week' });
-    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('3');
+    expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('3');
     expect(screen.getByRole('heading', { level: 3, name: 'Wed 14 October' })).toBeTruthy();
     await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
-    expect(strip.style.getPropertyValue('--ch-calm-at')).toBe('4');
+    expect(strip.style.getPropertyValue('--ch-wks-at')).toBe('4');
     expect(live('.ch-calm-dayk')!.textContent).toMatch(/Thu 15 October/);
     // The day that left is hidden from assistive tech while it fades.
     for (const h of screen.queryAllByRole('heading', { level: 3 })) expect(h.textContent).not.toMatch(/Wed 14 October/);
@@ -2314,7 +2314,7 @@ describe('Calendar · a player’s own week (wave 7)', () => {
 
     it('a coach’s strip and rows never carry a player’s reply mark', () => {
       wrap(cal());
-      expect(document.querySelector('.ch-calm-week .is-reply')).toBeNull();
+      expect(document.querySelector('.ch-wks .is-reply')).toBeNull();
       expect(screen.queryByText('Reply')).toBeNull();
     });
   });

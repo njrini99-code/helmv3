@@ -6816,6 +6816,16 @@
       "fixture": "Shared gallery example"
     },
     {
+      "file": "src/clubhouse/ui/ScrollPager.tsx",
+      "group": "ui",
+      "exports": [
+        "ScrollPager"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/ScrollRegion.tsx",
       "group": "ui",
       "exports": [
@@ -7139,6 +7149,29 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/WeekStrip.tsx",
+      "group": "ui",
+      "exports": [
+        "WeekStrip"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
@@ -8060,8 +8093,6 @@
         "ch-calm-skel__dayk",
         "ch-calm-skel__week",
         "ch-calm-today",
-        "ch-calm-week",
-        "ch-calm-week__d",
         "ch-calm-weekstep",
         "ch-cg",
         "ch-cg__code",
@@ -17194,6 +17225,16 @@
           "scope": "html:has([data-ui='clubhouse'])"
         },
         {
+          "name": "--ch-push-dim",
+          "value": "rgb(20 18 12 / 0.1)",
+          "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
+          "name": "--ch-vt-push-dim",
+          "value": "brightness(0.9)",
+          "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
           "name": "--ch-ease-vt-push",
           "value": "linear(0, 0.0418, 0.136, 0.2508, 0.3677, 0.477, 0.5739, 0.657, 0.7266, 0.7839, 0.8303, 0.8675, 0.8971, 0.9204, 0.9387, 0.953, 0.964, 0.9725, 0.9791, 0.9841, 0.988, 0.9909, 0.9931, 0.9948, 0.9961, 0.9971, 0.9978, 0.9983, 0.9988, 1)",
           "scope": "@supports (transition-timing-function: linear(0, 1)) → html:has([data-ui='clubhouse'])"
@@ -17651,6 +17692,10 @@
         "ch-toast__icon",
         "ch-toasts",
         "ch-toasts--in-dialog",
+        "ch-wks",
+        "ch-wks-page",
+        "ch-wks-pager",
+        "ch-wks__d",
         "ch-zn",
         "ch-zn--alt",
         "ch-zn--note",
