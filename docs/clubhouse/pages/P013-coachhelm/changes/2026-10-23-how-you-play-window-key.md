@@ -13,8 +13,9 @@ Held items: none
 
 ### Changed
 
-- Standing's How you play window key (`.ch-hg-lede__k`) is 12px, down from
-  12.5px. Weight, line height and colour are unchanged.
+- Standing's How you play window key (`.ch-hg-lede__k`) is 13px, up from
+  12.5px (ties round up, as in mot-08). Weight, line height and colour are
+  unchanged.
 
 ### Why
 
