@@ -9,6 +9,7 @@ import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
+import { afterRailMove } from '../../../lib/rail-fold';
 
 /** Who is on the coach's team: a read about anyone else is drawn, never linked. */
 type Roster = ReadonlyArray<{ id: string }>;
@@ -282,7 +283,8 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
     };
     read();
     if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(read);
+    // Once the sidebar's fold has settled, not on every frame of it (lib/rail-fold.ts).
+    const ro = new ResizeObserver(() => afterRailMove(read));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);

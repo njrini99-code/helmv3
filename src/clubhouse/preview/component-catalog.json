@@ -12962,7 +12962,7 @@
         },
         {
           "name": "--ch-type-serif-l",
-          "value": "600 32px/1.1 var(--ch-font-sans)",
+          "value": "600 34px/1.1 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]"
         },
         {
@@ -12972,7 +12972,7 @@
         },
         {
           "name": "--ch-type-serif-s",
-          "value": "600 19px/1.2 var(--ch-font-sans)",
+          "value": "600 20px/1.2 var(--ch-font-sans)",
           "scope": "@media (min-width: 821px) → [data-ui='clubhouse'] main[data-canopy]"
         },
         {
@@ -14329,6 +14329,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-text-placeholder",
+          "value": "#736f66",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-text-on-accent",
           "value": "#ffffff",
           "scope": "[data-ui='clubhouse']"
@@ -14560,12 +14565,12 @@
         },
         {
           "name": "--ch-type-serif-l",
-          "value": "600 calc(36 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
+          "value": "600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-serif-m",
-          "value": "600 calc(24 * var(--ch-type-k))/1.15 var(--ch-font-sans)",
+          "value": "600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -14575,7 +14580,7 @@
         },
         {
           "name": "--ch-type-display-l",
-          "value": "600 calc(36 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
+          "value": "600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -14605,17 +14610,17 @@
         },
         {
           "name": "--ch-type-label",
-          "value": "500 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
+          "value": "500 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-label-s",
-          "value": "500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
+          "value": "500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-type-caption",
-          "value": "400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans)",
+          "value": "400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -15377,6 +15382,11 @@
           "name": "--ch-z-toast",
           "value": "100",
           "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-text-placeholder",
+          "value": "#8f897c",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-nav-well-bg",

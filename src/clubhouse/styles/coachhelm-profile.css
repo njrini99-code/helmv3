@@ -108,7 +108,7 @@
 .ch-hg-tag {
   padding: 5px 10px;
   border-radius: 999px;
-  font: 600 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
 }
@@ -147,7 +147,7 @@
   color: var(--ch-hg-ink);
 }
 .ch-hg-m__fig span {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
 
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -170,7 +170,7 @@
   color: var(--ch-ink-500);
 }
 .ch-hg-m__floor {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-m__f {
@@ -273,7 +273,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font: 400 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 400 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -288,7 +288,7 @@
 /* Phone: the measures as list rows */
 @container chhl (max-width: 640px) {
   .ch-hg-sec h2 {
-    font-size: calc(19 * var(--ch-type-k));
+    font-size: calc(20 * var(--ch-type-k));
   }
   .ch-hg-grid {
     gap: 12px;
@@ -298,7 +298,7 @@
     border-radius: var(--ch-radius-lg);
   }
   .ch-hg-m__word {
-    font-size: calc(24 * var(--ch-type-k));
+    font-size: calc(22 * var(--ch-type-k));
   }
 }
 
@@ -331,7 +331,7 @@
     align-items: flex-end;
   }
   main[data-canopy] .ch-hg-sec h2 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 20px/1.2 var(--ch-font-sans);
   }
   /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a
      soft seam, as the profile's figure line does. One column on a narrow canvas. */
@@ -402,7 +402,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hg-sec h2 {
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -524,7 +524,7 @@ main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m:nth-child(n),
 }
 .ch-hg-grid.is-locked .ch-hg-m__lock {
   gap: 5px;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   letter-spacing: 0;
   color: var(--ch-green-700);
 }

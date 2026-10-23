@@ -614,6 +614,39 @@ describe('savePartialRound — single admin_events row per failure (no duplicate
     expect(logServerEvent).not.toHaveBeenCalled();
   });
 
+  it('a failed update returns the Postgres code and the trace id its server log row carries', async () => {
+    // Bridge rel:5a4785bd / 9a6618a3: the client's "Round start failed: server_rejected" report could not be joined
+    // to the server row that logged the cause. The generic message is unchanged; the code and trace id ride beside it.
+    seedExistingRound();
+    failUpdate(fake, 'golf_rounds', { code: '55000', message: 'A started round keeps its original qualifier identity.' });
+
+    const result = await savePartialRound({
+      courseName: 'Same Course',
+      courseId: COURSE_A,
+      roundType: 'practice',
+      roundDate: '2026-07-10',
+      currentHole: 2,
+      holesToPlay: 18,
+      holes: [],
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: 'Failed to save round. Please try again.',
+      failure: { code: '55000', traceId: expect.any(String) },
+    });
+    const failure = (result as { failure: { traceId: string } }).failure;
+    expect(failure.traceId.length).toBeGreaterThan(0);
+    // Only the code and an opaque id cross to the client, never the Postgres message.
+    expect(JSON.stringify(result)).not.toContain('qualifier identity');
+
+    const { logServerError } = await import('@/lib/server-error-logger');
+    expect(logServerError).toHaveBeenCalledWith(
+      expect.stringContaining('Auto-save update failed'),
+      expect.objectContaining({ errorCode: '55000', helmTraceId: failure.traceId }),
+    );
+  });
+
   it('an RLS-denied update logs exactly ONE admin_events row (via maybeCaptureRlsDenial only)', async () => {
     seedExistingRound();
     failUpdate(fake, 'golf_rounds', { code: '42501', message: 'permission denied for table golf_rounds' });

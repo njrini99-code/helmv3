@@ -352,13 +352,28 @@ export interface SavePartialRoundDuplicateCompleted {
   code: 'duplicate_completed_round';
   completedRoundId: string;
 }
+/**
+ * A save the server could not complete for a database or unexpected reason. `error` is the same generic message it
+ * always was; `failure` (additive) names what rejected it: the Postgres error code (`'exception'` for a throw) and the
+ * flight-recorder trace id that this branch's server log row also carries as `helmTraceId`, so the client's
+ * "Round start failed: server_rejected" report joins the row with the cause (Bridge rel:5a4785bd, 9a6618a3). Only the
+ * code and an opaque id cross to the client, never the Postgres message, hint or details.
+ */
+export interface SavePartialRoundServerFailure {
+  success: false;
+  error: string;
+  /** Never set here; kept so `result.code` still reads on every failure, as it does on `ActionResult`'s. */
+  code?: string;
+  failure: { code: string | null; traceId: string };
+}
 export type SavePartialRoundResult =
   // `courseId` (additive): the golf_courses id the round is linked to when the server resolved one (a typed course name
   // that matches the library), so the client knows the round has a course. Absent when none was resolved.
   | ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[]; courseId?: string }>
   | SavePartialRoundHoleInvalid
   | SavePartialRoundInProgressExists
-  | SavePartialRoundDuplicateCompleted;
+  | SavePartialRoundDuplicateCompleted
+  | SavePartialRoundServerFailure;
 async function savePartialRoundImpl(
   data: PartialRoundData,
   existingRoundId?: string,
@@ -404,6 +419,11 @@ async function savePartialRoundImpl(
     traceEnded = true;
     void flightRecorder.finalize(status);
   };
+  const serverFailure = (code: string | null | undefined): SavePartialRoundServerFailure => ({
+    success: false,
+    error: 'Failed to save round. Please try again.',
+    failure: { code: code ?? null, traceId: flightRecorder.traceId },
+  });
 
   try {
     void flightRecorder.start('server.validation');
@@ -1247,7 +1267,7 @@ async function savePartialRoundImpl(
           traceStep: 'db.save_partial_round_atomic',
           extra: { courseName: data.courseName, currentHole: data.currentHole },
         });
-        return { success: false, error: 'Failed to save round. Please try again.' };
+        return serverFailure(rpcError.code);
       }
 
       if (rpcResult && !rpcResult.success) {
@@ -1650,11 +1670,12 @@ async function savePartialRoundImpl(
               errorCode: updateError.code,
               errorHint: updateError.hint,
               errorDetails: updateError.details,
+              helmTraceId: flightRecorder.traceId,
             });
           }
           void flightRecorder.fail('db.create_or_update_draft', { errorCode: updateError.code, errorSummary: updateError.message });
           endTrace('failure');
-          return { success: false, error: 'Failed to save round. Please try again.' };
+          return serverFailure(updateError.code);
         }
         if (!updatedRound) {
           // Round was completed by submit — don't create a new one, just return success
@@ -1714,11 +1735,12 @@ async function savePartialRoundImpl(
               userEmail: user.email,
               errorCode: roundError.code,
               errorDetails: roundError.details,
+              helmTraceId: flightRecorder.traceId,
             });
           }
           void flightRecorder.fail('db.create_or_update_draft', { errorCode: roundError.code, errorSummary: roundError.message });
           endTrace('failure');
-          return { success: false, error: 'Failed to save round. Please try again.' };
+          return serverFailure(roundError.code);
         }
         round = newRound;
       }
@@ -1972,12 +1994,10 @@ async function savePartialRoundImpl(
     // same unexpected error to admin_events.
     await logServerError(`Auto-save unexpected error: ${describeError(err)}`, {
       action: 'savePartialRound.catch',
+      helmTraceId: flightRecorder.traceId,
       extra: { stack: err instanceof Error ? err.stack : undefined },
     }, 'critical');
-    return {
-      success: false,
-      error: 'Failed to save round. Please try again.'
-    };
+    return serverFailure('exception');
   } finally {
     // Safety net, not the primary mechanism: every meaningful branch above
     // already calls `endTrace` with a precise status. This only catches a

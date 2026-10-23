@@ -81,9 +81,9 @@ describe('GET /api/health — healthy', () => {
     expect(body.database).toBe('ok');
   });
 
-  it('probes the users table', async () => {
+  it('probes the anon-readable organizations_public_profile view', async () => {
     await GET();
-    expect(currentSupabase.__fromCalls).toEqual(['users']);
+    expect(currentSupabase.__fromCalls).toEqual(['organizations_public_profile']);
   });
 
   it('never logs anything on the healthy path', async () => {
@@ -112,7 +112,7 @@ describe('GET /api/health — degraded (query returns an error shape)', () => {
     __resetEmitThrottleForTests();
     mocks.logServerError.mockClear();
     mocks.scheduleBridgeWrite.mockClear();
-    currentSupabase = makeQueryBuilder({ data: null, error: { message: 'relation "users" does not exist' } });
+    currentSupabase = makeQueryBuilder({ data: null, error: { message: 'relation "organizations_public_profile" does not exist' } });
   });
 
   it('returns 503 with status degraded — 200 only when healthy (Phase A finding)', async () => {
@@ -251,7 +251,7 @@ describe('GET /api/health — one retry on a timeout', () => {
     const res = await GET();
     expect(res.status).toBe(200);
     expect((await res.json()).status).toBe('healthy');
-    expect(currentSupabase.__fromCalls).toEqual(['users', 'users']);
+    expect(currentSupabase.__fromCalls).toEqual(['organizations_public_profile', 'organizations_public_profile']);
     expect(mocks.logServerError).not.toHaveBeenCalled();
   });
 
@@ -261,7 +261,7 @@ describe('GET /api/health — one retry on a timeout', () => {
     });
     const res = await GET();
     expect(res.status).toBe(503);
-    expect(currentSupabase.__fromCalls).toEqual(['users', 'users']);
+    expect(currentSupabase.__fromCalls).toEqual(['organizations_public_profile', 'organizations_public_profile']);
     const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
     expect(ctx.metadata).toMatchObject({ failureKind: 'timeout', attempts: 2 });
   });
@@ -270,7 +270,7 @@ describe('GET /api/health — one retry on a timeout', () => {
     currentSupabase = makeQueryBuilder({ data: null, error: { message: 'boom' } });
     const res = await GET();
     expect(res.status).toBe(503);
-    expect(currentSupabase.__fromCalls).toEqual(['users']);
+    expect(currentSupabase.__fromCalls).toEqual(['organizations_public_profile']);
     const [, ctx] = mocks.logServerError.mock.calls[0] as [string, { metadata?: Record<string, unknown> }];
     expect(ctx.metadata).toMatchObject({ failureKind: 'error', attempts: 1 });
   });
