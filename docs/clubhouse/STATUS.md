@@ -9,6 +9,87 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
+## Release plan (2026-10-23)
+
+Read-only check on 2026-10-23, refreshed the same evening after the
+overnight merges. Nothing below has been deployed or applied by this plan;
+the owner said prepare only.
+
+- **Production** is Vercel `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21
+  10:35 UTC, release `d0f467a73`), flag off. `main` (`f30a6d509`) is 72
+  commits ahead and has not been built for production.
+- **Held list corrected.** Applied since this page last listed them (ledger
+  read 2026-10-23): `20260929120000`, `20260929200000`, `20260930140000`,
+  `20261008160000`, `20261016220000`, `20261017100000`, `20261017101000`,
+  `20261021110000`. Still unapplied: `20261001000000` (Q-120),
+  `20261017102000` (attendance privacy), `20261017110000` (null putts),
+  `20260930150000` (SG), the OD-01 chain (`20260924120000` → `140000` →
+  `20260925120000` → `20260928120000` → `20260928150000`), `20261017005000`
+  (after the deploy that carries #2276), `20261007100000`, `20261005120000`
+  and `20261007102000` (last), plus `20261023130000` (anon surface grants,
+  from #2344, independent of the others). `20260928160000` stays OBSOLETE.
+  HELD.md's apply queue is the authority for order and prerequisites.
+- **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
+  Oct 21 build calling `golf_event_attendance_counts` before
+  `20261017102000` exists; the app falls back. #2340 (landed) ignores it
+  until the apply; the apply change removes that ignore and
+  `src/lib/golf/attendance-counts-rpc.ts`, then runs `db:types`.
+- **Order.** Overnight on 10-23 the owner merged #2330, #2340, #2332,
+  #2339 and #2337 as planned, and also #2328, #2333, #2334 and #2338
+  (Next.js 16.4.2), which this plan had held until after the rollout; #2327
+  is closed. So the flag-off deploy of `main` now also carries Next 16.4.2,
+  the CoachHelm changes and the 12/24-hour clock, and that deploy is the
+  rollback target (owner call: keep that cut, or pick another). Before it,
+  turn `main` green: the type-scale fix (#2357, or the same two lines in
+  #2356) and the journeys fix (#2355). Then deploy `main` with the flag off
+  and record it as the rollback target. Apply Q-120 and attendance privacy,
+  then on a separate day the null-putts, SG and OD-01 corrections. Then turn
+  the flag on for one team, then a second, then everyone.
+- **Canary order (owner, 2026-10-22):** Demo University Golf
+  (`6ecdd1a6-63fe-4beb-b094-00118f334163`) with the owner's iPhone pass,
+  then one real team the owner picks, for a full weekday, then every team.
+- **Baseline:** 0 of 110 rounds completed in the 14 days to 2026-10-23 have
+  no hole rows.
+- **Wiring check (2026-10-23, read only against production, plus a local
+  stack built from `main`):**
+  - Ledger: the repo files missing from production since 2026-09-20 were
+    exactly the 13 held above plus OBSOLETE `20260928160000` (before #2344
+    added `20261023130000`).
+  - Catalog: 1,150 of 1,153 table columns Clubhouse's code reaches exist in
+    production; the three missing are `baseball_messages` columns on the
+    baseball branch of a shared helper (missing on `main`'s schema too). 36
+    of the 37 RPCs exist with matching argument names; the 37th,
+    `golf_event_attendance_counts`, is held and the code falls back. The 14
+    that `authenticated` cannot execute are each called through
+    `createAdminClient()` (traced to the call site, including the cron
+    routes and the flight recorder).
+    Buckets `avatars` (public), `course-images`, `documents`,
+    `golf-attachments`, `recruit-documents` exist; the 7 realtime tables are
+    in `supabase_realtime`.
+  - RLS (read-only transaction as real users of the canary team): a player
+    and a head coach see 0 rows from any other team; the player sees no
+    one else's insights, goals, focus areas, reviews, coach notes or private
+    documents, and sees teammates' attendance until `20261017102000`. Anon is
+    refused. pgTAP on the local stack: 112 of 112 files, 1,920 assertions.
+  - Gate: every page and alias goes through `isClubhouseFor`; preview pages
+    404 when `NODE_ENV=production`. Run on a local production build: flag off
+    gives Fairway on every route for a coach and a player; flag on with
+    `HELM_CLUBHOUSE_TEAMS` set to another team gives Fairway; set to the
+    team gives Clubhouse. 25 coach and 19 player routes answer with no error,
+    medians 144 to 501 ms against the local stack.
+  - Journeys (on GitHub, 10-23): main's run 39886557860 failed only on the
+    player acknowledgement test, left stale by the Team Hub redesign
+    (#2287); #2355's run on its head passed 18 of 18. The 10-23 nightly on
+    `f30a6d509` failed the same way, with the 8 journeys before it passing
+    and the accessibility scan clean (610 of 610). Earlier failures: 10-21
+    a WebKit hydration bug fixed by #2274, 10-22 the build out of memory,
+    fixed by #2336. `clubhouse:perf` has not run (no browser here).
+  - Unit tests: main's shard 1 fails at `look-feel-pass-css.test.ts:59`
+    since #2328 (two 12.5 sizes off the type scale); #2357 fixes it.
+  - Watch: a `HELM_CLUBHOUSE_TEAMS` value with no id (for example `,`) passes
+    `check-required-env` but means every team; confirm the exact value
+    before the canary deploy.
+
 ## Since the 2026-10-17 audit (2026-10-19)
 
 - **Production** serves `1e8a9fad8` (#2201, checked with `npm run
@@ -56,7 +137,8 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 - **Open release work:** none here: #2201 merged 2026-10-18 (see above).
 - **Database (wiring audit 2026-10-17, every page P001–P015 against the live
   catalog):** every table, view, bucket and RPC Clubhouse calls exists in
-  production except five, each held with a fallback: `hidden_at` (P007 delete
+  production except five, each held with a fallback (2026-10-23: all five
+  are now in production; see the wiring check below): `hidden_at` (P007 delete
   hidden), `golf_qualifier_selection_reasons` (P009 reads the column instead),
   `golf_set_course_image` (P011: coaches fall back, a player's photo is refused
   and the upload is now discarded), the batch trace writer (falls back per
@@ -92,7 +174,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 | --- | --- | --- |
 | P001 Shell | Ready with caveats | No device or VoiceOver pass for the frame every page sits in; the 10-16 brand and team-heading work is on #2201 |
 | P002 Home | Ready with caveats | `golf_event_attendance` RLS lets a player read every teammate's replies through the API (Home shows counts only; decision 5); day labels and the midnight rollover fixed 2026-10-17 |
-| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability stays read-only (held `20260929120000`). Fixed 2026-10-17: a `?player=` link on the phone could open the list instead of the profile. Fixed since: `roster?tab=requests` from the join-request notification opens the phone's requests sheet (#2201) and, 2026-10-20, focuses the desktop requests card |
+| P003 Roster | Ready with caveats | Status-change write never watched in a real session; availability column applied 2026-10-21 (`20260929120000`); the write path is still unwatched. Fixed 2026-10-17: a `?player=` link on the phone could open the list instead of the profile. Fixed since: `roster?tab=requests` from the join-request notification opens the phone's requests sheet (#2201) and, 2026-10-20, focuses the desktop requests card |
 | P004 Stats (team) | Ready with caveats | No phone browser capture. Fixed 2026-10-17: whoever the dashboard draws as a player now goes to their Stats instead of "not rebuilt" |
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
 | P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
@@ -101,7 +183,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); `20260929200000` (coach reasoning coach-only, D-35) was applied 2026-10-21 and the app reads it coach-only. Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
 | P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 1 contract without a test (111809, was 11 on 10-17); the round E2E runs only against a local stack, in CI only once draft #2208 lands |
-| P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once are closed by a locked database function (held `20261021110000`; until it is applied the import keeps its read before the insert, so two at once could still both insert) |
+| P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once are closed by a locked database function (`20261021110000`, applied 2026-10-22; the read-then-insert fallback is now unused) |
 | P013 CoachHelm | Ready with caveats | Q-124 (the stats cache counts test rounds; fix is the held stats chain); 8 contracts without a test (was 17 on 10-17); Player Ask decision open |
 | P014 Recruiting | Ready with caveats | Film uploads on (`20260930140000` applied 2026-10-21; `RECRUIT_FILM_ENABLED` is the off switch). Fixed 2026-10-20: after a lost reply, an Add with a corrected field (not the name) created the prospect twice; Retry and a repeated Save were already safe (CH-14915) |
 | P015 Auth (front door) | Not ready, stays off | Since #2210 (D-77) reset-password, demo, coach onboarding, `coach/pending`, `join`, `join/[code]` and `staff/join/[token]` have Clubhouse screens; crash containment, route error, not-found, error tracking and the device checks are still unticked in `screens/auth.md`. Off at turn-on (step 5) |
@@ -125,11 +207,13 @@ VoiceOver, dark-mode scan or real-account write pass.
   turning the flag on releases them. Their plans
   (`docs/clubhouse/held/features/`) say they wait for the owner's explicit
   release.
-- **Held migrations Clubhouse needs (apply order; `20261008160000` and
-  `20260929200000` were applied 2026-10-21, see HELD.md):** `20261016220000`
-  (after #2201), `20261007100000`, `20261017100000`–`20261017102000` (with the
-  app change), `20261001000000` (Q-120), `20260930140000` (check the project
-  Storage limit is at least 100 MB first), `20260930150000`, then the OD-01
+- **Held migrations Clubhouse needs (apply order as written 2026-10-19;
+  `20261008160000` and `20260929200000` were applied 2026-10-21, see HELD.md;
+  the 2026-10-23 release plan above lists what is still unapplied):**
+  `20261016220000` (after #2201), `20261007100000`,
+  `20261017100000`–`20261017102000` (with the app change),
+  `20261001000000` (Q-120), `20260930140000` (check the project Storage limit
+  is at least 100 MB first), `20260930150000`, then the OD-01
   chain in one session (`20260924120000` → `140000` → `20260925120000` →
   `20260928120000` → `20260928150000`). `20260929120000` waits for a writer;
   `20261007102000` goes last with a fresh rollback snapshot.
@@ -158,15 +242,20 @@ VoiceOver, dark-mode scan or real-account write pass.
 
 1. **Held features that the flag releases:** release conversation files (P007)
    and qualifier squad-size and entrant edits (P009), or give them their own
-   switch so the flag does not release them.
+   switch so the flag does not release them. **Decided 2026-10-22 (owner):**
+   the flag releases them; the canary watches them.
 2. **Q-120:** apply `20261001000000` (server-side version check on submit) or
-   keep holding with the app-side check.
+   keep holding with the app-side check. **Decided 2026-10-22 (owner):** apply
+   it, before the canary (not applied yet).
 3. **Settings desktop:** review the screen built from the design system.
 4. **Builds:** the turn-on criteria and `clubhouse:perf` need one production
    build; the owner said no builds on 2026-10-17. Decide when one is allowed.
 5. **Attendance privacy:** `golf_event_attendance`'s select policy lets a player
    read every teammate's reply on every team event through the API (Home shows
    counts only). Narrow it to the player's own rows, or accept it.
+   **Decided 2026-10-22 (owner):** narrow it: apply `20261017102000` before the
+   canary (not applied yet), accepting that a Fairway player's event People list
+   then shows only their own reply.
 6. **Folding sidebar motion:** the fold animates the sidebar's width (and the
    brand's margin, padding and word track) on the smooth spring, so the canvas
    reflows each frame. `clubhouse:css` flags it as new layout motion, which
@@ -185,7 +274,7 @@ VoiceOver, dark-mode scan or real-account write pass.
 ## Shortest path to turn-on, in order
 
 1. Done: #2201 landed and is in production (`1e8a9fad8`). Apply
-   `20261016220000` with the owner's OK (still held, 2026-10-19).
+   `20261016220000` with the owner's OK (applied 2026-10-21, ledger read 2026-10-23).
 2. Agent fix passes: done 2026-10-17 (route dead ends, busy-time retry,
    Settings' refused-save message and Back with edits, Team Hub's
    failed-roster notice, Home's midnight rollover, the Roster `?player=` link,
