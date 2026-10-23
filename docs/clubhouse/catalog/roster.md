@@ -13,16 +13,18 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/roster` (coach) · code `src/clubhouse/screens/roster/`, loader
-`src/clubhouse/data/roster.ts` · tests `src/clubhouse/__tests__/roster.test.tsx` · preview
-`/clubhouse-preview/roster` (`?state=empty|failed|partial|loading`).
+Route `/golf/dashboard/roster` (coach) · code `src/clubhouse/screens/roster/`,
+loader `src/clubhouse/data/roster.ts` · tests
+`src/clubhouse/__tests__/roster.test.tsx` · preview `/clubhouse-preview/roster`
+(`?state=empty|failed|partial|loading`).
 
 The player's roster (owner, 2026-10-01: "the same thing as coach except they
 can't click") is the same route for a player: `TeamRoster` and
 `TeamRosterPhone`, loader `src/clubhouse/data/roster-player.ts`, tests
 `src/clubhouse/__tests__/roster-player.test.tsx`, preview
-`/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`). CH-3210,
-CH-3211, CH-3307, CH-3308, CH-3309, CH-3807 and CH-3808 are its own; CH-3302 is shared.
+`/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`).
+CH-3210, CH-3211, CH-3307, CH-3308, CH-3309, CH-3807 and CH-3808 are its own;
+CH-3302 is shared.
 
 Success toasts sit next to their error. Every save goes through `useAction`, so
 offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
@@ -43,6 +45,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3009 | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) | "Couldn’t mark Jonah Okafor injured" + "Nothing changed on the roster. Try again, or refresh if it keeps failing." Retry. The word shows at once and goes back on failure; Retry applies it again and finishes the job. Done: "Jonah Okafor marked injured" (success haptic), with no action on the toast. No confirm: availability is display only and never changes team access (Mark inactive does). Offline, nothing is sent (CH-1903) | `useAction('roster.setAvailability')` → `setPlayerAvailability`, optimistic | roster.test › CH-3009 |
 | CH-3010 | Retired 2026-10-21, never shipped: the availability note | There is no note. golf_team_members_select_v5 lets every teammate read every column of their team’s rows, so `availability_note` stays unused until a coach-only store exists (a held migration, docs/clubhouse/held/data/roster-availability.md). The number stays unused | — | retired |
 | CH-3011 | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) | "Couldn’t save the note about Ava" + "Your text is still in the field. Try again in a moment." + Retry; the text stays | — | defined |
+| CH-3080 | Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code | "Couldn’t send the invites" + the reason ("You have sent a lot of invites. Try again in a little while, or share the team code or link.", "Email invites are off right now. Share the team code or link instead."). Retry only for a failure trying again can fix; every address stays in the box. Done: "Invite sent" or "3 invites sent"; "Sent 2 of 3 invites" when some did not go, those addresses stay marked "didn’t send" |`emailPlayerInvites` (`team-management.ts`; owner-gated customer email, `golf_player_invite`), `InviteByEmail` via `useAction` | roster-invite-email.test › CH-3080; email-player-invites.test |
 
 ## 31xx Validation
 
@@ -50,6 +53,7 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | --- | --- | --- | --- | --- |
 | CH-3101 | A coach's note is within 200 characters of its 2,000 limit | "150 characters left" under the field, then "That’s the limit: 2,000 characters." Typing stops at the limit | `CoachNote`, `maxLength` | roster.test › CH-3101 |
 | CH-3102 | Retired 2026-10-21, never shipped: the availability note’s counter | No note, so no counter (CH-3010) | — | retired |
+| CH-3180 | An address typed or pasted in Email them can’t be read as an email address | The address stays in the box as a red chip, "One address can’t be read. Fix or remove it." under the box, and Send is held until it is fixed or removed. Nothing is sent, and nothing is dropped | `parseInviteEmails` (`src/lib/golf/invite-emails.ts`), `InviteByEmail` chips (`data-ch-code`) | roster-invite-email.test › CH-3180; invite-emails.test |
 
 ## 32xx Didn't load
 
@@ -129,3 +133,10 @@ offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics
 | CH-3807 | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed | `TeamRoster`, `TeamRosterPhone` (`ch-rs-face--static`, `ch-rsm-row--static`) | roster-player.test › CH-3807 |
 | CH-3808 | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record | `TeamRoster`, `TeamRosterPhone`; `loadPlayerRoster` (`golf_team_coach_staff` with `golf_coaches(full_name, title)`) | roster-player.test › CH-3808 |
 | CH-3809 | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active | `RowMeta`, `faceLabel`, `RosterPhoneRow`, `AvailabilityPanel` | roster.test › CH-3809 |
+| CH-3880 | Email them is one labelled field ("Or email them"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds ", can’t be read as an email address" and one that did not send ", didn’t send"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert | `label`, `aria-label`, `ch-sr-only`, `role="alert"` / `role="status"` | roster-invite-email.test › CH-3880 |
+
+## 39xx Network and UX
+
+| # | When | They see | How | Test |
+| --- | --- | --- | --- | --- |
+| CH-3980 | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone | The sheet keeps the team code and the invite link and replaces the email field with one quiet line: "Email invites are off for now. Share the team code or link above." No field, no button | `loadRoster` → `emailInvites` (`canEmailPlayerInvites`), `InviteByEmail` | roster-invite-email.test › CH-3980 |

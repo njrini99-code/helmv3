@@ -515,7 +515,7 @@ function PhoneThread({
             <div className="ch-msp-acts__preview" aria-label="Selected message">
               {/* Whose it is, then when (wave 5 #20): in a group the time alone doesn't say. */}
               <span className="ch-ms-msg__t ch-num">
-                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone)}
+                {acting.mine ? "You" : firstName(personOf(api, acting.senderId)?.name ?? "Member")} · {clock(acting.at, api.timeZone, api.clock)}
               </span>
               <p>{acting.text || (acting.hasAttachments ? "Attachment" : "Message")}</p>
             </div>

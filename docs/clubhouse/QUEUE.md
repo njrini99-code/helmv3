@@ -147,6 +147,7 @@ its rows together and does not map them one to one.
 | mot-07 | Placeholder text on its own readable token in both themes | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
 | mot-08 | Text on 11 sizes (11 to 34px), nearest step, from approved before/after renders | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (type scale the owner approved 2026-10-23); no Bridge IDs or CH codes needed |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
+| doc-07 | A 12 or 24-hour time choice in Clubhouse Settings (D-76), kept on the device and followed by every Clubhouse time | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; Bridge items 80-89 and CH suffixes 80-89 on P008 and P003; uses CH-8980 (80780) |
 | doc-12 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-13 | Team stats print: the leg grid narrows on paper | Clubhouse parity & pages | done | #2281 | |
 | doc-23 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
@@ -156,9 +157,13 @@ its rows together and does not map them one to one.
 | doc-45 | Name the production rollback deployment in STATUS | docs | done | #2296 | |
 | doc-50 | Phone Roster and Team stats figures render directly, no digit rolling | Clubhouse fixes | done | #2282 (landed in #2314) | claude/clubhouse-no-digit-rolling |
 | doc-55 | Password reset email: the Clubhouse screens exist; applying the template to the auth project is an owner production setting | Clubhouse fixes | held | | |
+| doc-60 | Invite players by email from Roster (a new server action; no migration) | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; same window as doc-07; uses CH-3080 (30680), CH-3180 (30580), CH-3880 (31880), CH-3980 (30780) |
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
+| new-02 | Roster test CH-3009 flakes on `main` (came in with #2295): the menu focuses its first item on the next frame and the test pressed Escape first; the helper now waits for focus | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-03 | The `presentation` CI check times out starting its web server (3 min): readiness waited for the first compile of the popup lab (112 s on two cores, over 180 s on a runner); it now waits for a static file and the setup file compiles the routes | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-04 | Unit shard fails with "window is not defined" from `use-edge-swipe.ts` (`finish` timer of a committed swipe outlives the test file; main run 39714700693, #2217). The effect cleanup now hands a committed swipe's exit back and cancels its frames; a fake-timer test fails without it | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
 | new-05 | `npm run docs:check` fails on main at `docs:rules-current`: the rules file states a date ("owner-approved 2026-10-23", from #2339); rules state current behavior only, so the date is dropped. CI does not run this step | Clubhouse fixes | done | | claude/project-thread-llcuya-rules-current (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->

@@ -17,6 +17,7 @@ import {
   type ChTerm,
   type ChWeek,
 } from '../../data/classes-shape';
+import { useChClock } from '../../lib/use-clock';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -51,6 +52,7 @@ export function ClassDetail({
   onRemove: (c: ChClass) => void;
   onRetrySync: (c: ChClass) => void;
 }) {
+  const hours = useChClock();
   const flexible = c ? isFlexible(c) : true;
   const mine = c && !week.error ? conflictsOf([c], week.events, week.dates) : [];
   // From the later of today and the first day of the class's own term: a class in next term meets from then, not from today.
@@ -60,7 +62,7 @@ export function ClassDetail({
   const meetings = c && !gap ? upcomingMeetings(c, own && own.start > todayIso ? own.start : todayIso, own?.end ?? term.end, 4) : [];
   const facts: Array<[string, string]> = c
     ? [
-        ['When', flexible ? (hasNoTime(c) ? `${daysLabel(c.days)} · No time set` : 'No fixed meeting') : `${daysLabel(c.days)} · ${timeRange(c.start, c.end)}`],
+        ['When', flexible ? (hasNoTime(c) ? `${daysLabel(c.days)} · No time set` : 'No fixed meeting') : `${daysLabel(c.days)} · ${timeRange(c.start, c.end, hours)}`],
         ...(gap ? ([['Calendar', `Not on your calendar: ${gapReason(gap)}`]] as Array<[string, string]>) : []),
         ['Where', c.location ?? 'Not set'],
         ['Instructor', c.instructor ?? 'Not listed'],

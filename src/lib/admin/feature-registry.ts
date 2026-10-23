@@ -314,7 +314,7 @@ export const FEATURE_REGISTRY: readonly FeatureDef[] = [
     app: 'golfhelm',
     actions: {
       'src/app/golf/actions/roster.ts': 'ALL',
-      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'updatePlayerStatus', 'setPlayerAvailability', 'setPlayerAvailabilityCoachNote'],
+      'src/app/golf/actions/team-management.ts': ['invitePlayerToTeam', 'emailPlayerInvites', 'updatePlayerStatus', 'setPlayerAvailability', 'setPlayerAvailabilityCoachNote'],
       'src/app/golf/actions/calendar-events.ts': ['getPendingInvitations'],
     },
     primaryTable: 'golf_team_members',

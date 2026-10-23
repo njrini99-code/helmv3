@@ -1,6 +1,16 @@
 {
   "components": [
     {
+      "file": "src/clubhouse/lib/use-clock.tsx",
+      "group": "lib",
+      "exports": [
+        "ChClockProvider"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/ComponentCatalog.tsx",
       "group": "preview",
       "exports": [
@@ -3441,6 +3451,25 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/roster/InviteByEmail.tsx",
+      "group": "screens",
+      "exports": [
+        "InviteByEmail"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/recruiting.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -11589,6 +11618,14 @@
         "ch-rs-bar",
         "ch-rs-bar__r",
         "ch-rs-body",
+        "ch-rs-em",
+        "ch-rs-em__box",
+        "ch-rs-em__chip",
+        "ch-rs-em__foot",
+        "ch-rs-em__in",
+        "ch-rs-em__off",
+        "ch-rs-em__receipt",
+        "ch-rs-em__x",
         "ch-rs-face",
         "ch-rs-face--static",
         "ch-rs-face__av",

@@ -52,6 +52,7 @@ import {
 import { createPortal } from "react-dom";
 import { AnimatePresence, m as M } from "motion/react";
 import { chTween } from "../../lib/motion";
+import type { ChClock } from "../../lib/clock-cookie";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useComposerInset } from "./composer-inset";
 import { useFocusMessage } from "./use-focus-message";
@@ -156,6 +157,8 @@ export interface ChMessagesApi {
   /** Coaches by golf_coaches.id, for an announcement's signature (P007-A1). */
   signers?: Record<string, { name: string; title: string }>;
   timeZone: string;
+  /** The device's clock for message times; a test's partial api leaves it out and times read in 12 hours. */
+  clock?: ChClock;
   now: string;
   teamName: string | null;
 
@@ -346,7 +349,7 @@ export function MessageHits({ api, q }: { api: ChMessagesApi; q: string }) {
                 <span className="ch-ms-row__top">
                   <b>{h.conversationName}</b>
                   <span className="ch-num">
-                    {railTime(h.at, api.now, api.timeZone)}
+                    {railTime(h.at, api.now, api.timeZone, api.clock)}
                   </span>
                 </span>
                 <span className="ch-ms-row__bot">
@@ -414,7 +417,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
         <span className="ch-ms-row__top">
           <b>{c.title}</b>
           <span className="ch-num">
-            {railTime(c.lastAt, api.now, api.timeZone)}
+            {railTime(c.lastAt, api.now, api.timeZone, api.clock)}
           </span>
         </span>
         <span className="ch-ms-row__bot">
@@ -1115,7 +1118,7 @@ export function Bubble({
         ) : (
           (last || showTime) && (
             <span className="ch-ms-msg__t ch-num">
-              {clock(m.at, api.timeZone)}
+              {clock(m.at, api.timeZone, api.clock)}
               {m.edited ? " · Edited" : ""}
               {m.mine && !group && m.seen ? " · Seen" : ""}
             </span>
@@ -2338,8 +2341,8 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
 }
 
 /** "Muted until tomorrow · 2:40 PM", or until turned back on (wave 5 #2: a week from now read "today"). */
-export const muteLabel = (m: ChMute, api: Pick<ChMessagesApi, "now" | "timeZone">) =>
-  m.until ? `Muted until ${untilLabel(m.until, api.now, api.timeZone)} · ${clock(m.until, api.timeZone)}` : "Muted until you turn it back on";
+export const muteLabel = (m: ChMute, api: Pick<ChMessagesApi, "now" | "timeZone" | "clock">) =>
+  m.until ? `Muted until ${untilLabel(m.until, api.now, api.timeZone)} · ${clock(m.until, api.timeZone, api.clock)}` : "Muted until you turn it back on";
 
 function MuteControl({ api }: { api: ChMessagesApi }) {
   const [busy, setBusy] = useState(false);
