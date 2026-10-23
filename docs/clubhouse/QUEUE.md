@@ -351,6 +351,7 @@ its rows together and does not map them one to one.
 | aplus-b13 | One rank rule on the shown value; season in the team's zone (B13.2, B13.4) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-19); B13.1 and B13.3 held for the owner; no Bridge IDs or CH codes needed |
 | aplus-cons15 | One number formatter per metric (CONS-15) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-19); formatSG precision held for the owner; ratchet at 112; no Bridge IDs or CH codes needed |
 | aplus-b16 | Menu origin and the push dim (B16, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-20); physics springs wait on OQ-17; no Bridge IDs or CH codes needed |
+| aplus-b18 | One week strip, WeekStrip, paging on the calendar (B18) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-20); desktop Home held (owner decision 2026-10-06); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

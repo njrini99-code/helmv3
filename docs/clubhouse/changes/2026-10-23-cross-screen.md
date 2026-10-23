@@ -228,3 +228,41 @@ unverified
 
 - New `ui/__tests__/menu-origin.test.tsx`; the context menu, popup
   layout and CSS guard tests (31 files); `clubhouse:css` 0 findings.
+
+## 2026-10-23 — One week strip (B18)
+
+```text
+Design package: none (Clubhouse A+ handoff, B18)
+PR/commit: #2361
+Contract IDs: none (CH-6606's gliding plate and CH-2802's words kept)
+Actions: none
+Data impact: none
+Held items: desktop Home keeps its frosted today key (owner, 2026-10-06);
+device paging at 60Hz is unverified (headless WebKit freezes scroll and
+transitions)
+```
+
+### Changed
+
+- New `ui/WeekStrip`: one look (a flat row, the chosen day on the green
+  plate that glides between days, today ringed, dots, a reply owed
+  amber, a day on the road gold). A day is chosen (buttons, one Tab
+  stop, arrow keys), linked, or only read.
+- New `ui/ScrollPager`: the calendar's day pager, pulled out unchanged.
+  The phone calendar's week strip pages a week with a swipe on it, with
+  the same native momentum and one tick as the day.
+- Used on the phone calendar, the Hub's week and phone Home. Their own
+  strip CSS is gone. Phone Home's today is ringed, not filled, and its
+  competition day keeps its mark but not the raised green key.
+
+### Why
+
+- The week strip had three designs, and the phone calendar's week did
+  not page with a swipe.
+
+### Verification
+
+- New `ui/__tests__/WeekStrip.test.tsx` (chosen and today, arrow keys,
+  a page past either end, `onPage` on a settled swipe, links and read
+  only); calendar, Hub and Home tests; WebKit shots at 390 and 1280
+  (P006, P002, P010 `week-strip`, after).
