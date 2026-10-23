@@ -30,6 +30,7 @@ import { TrackRecord } from '../screens/coachhelm/views/TrackRecord';
 import { MondayBrief } from '../screens/coachhelm/views/MondayBrief';
 import { CoachBrief } from '../screens/coachhelm/views/CoachBrief';
 import { resolveClubhouseTeam } from './team';
+import { NoTeam } from '../ui/NoTeam';
 import '../styles/coachhelm.css';
 import '../styles/coachhelm-ask.css';
 import '../styles/coachhelm-views.css';
@@ -38,7 +39,6 @@ import '../styles/coachhelm-standing.css';
 import '../styles/coachhelm-dive.css';
 import '../styles/coachhelm-track.css';
 import '../styles/coachhelm-brief.css';
-import { NoTeam } from '../ui/NoTeam';
 
 /**
  * /golf/dashboard/coachhelm in Clubhouse, for coaches and players (the Fairway

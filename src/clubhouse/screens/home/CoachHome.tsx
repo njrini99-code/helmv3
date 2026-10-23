@@ -18,8 +18,8 @@ import { coachFailedParts } from './model';
 import { CoachQueue } from './CoachQueue';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
-import '../../styles/home.css';
 import { NoTeam } from '../../ui/NoTeam';
+import '../../styles/home.css';
 
 /**
  * Coach Home (handoff: Coach Home v3). The coach's day at a glance: the week

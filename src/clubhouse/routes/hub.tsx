@@ -5,8 +5,8 @@ import { loadTeamHub } from '../data/hub';
 import { parseHubTab } from '../lib/hub-tabs';
 import { TeamHub } from '../screens/hub/TeamHub';
 import { resolveClubhouseTeam } from './team';
-import '../styles/hub.css';
 import { NoTeam } from '../ui/NoTeam';
+import '../styles/hub.css';
 
 /**
  * /golf/dashboard/team-hub in Clubhouse, for coaches and players (the

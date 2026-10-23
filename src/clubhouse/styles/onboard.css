@@ -726,14 +726,6 @@
 .ch-ox-check[data-tone='warn'] {
   color: var(--ch-warning-600);
 }
-.ch-ox-spin {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 2px solid rgb(28 25 18 / 0.15);
-  border-top-color: var(--ch-green-700);
-  animation: chOxSpin var(--ch-ox-t-spin) linear infinite;
-}
 
 /* The team a code matched: its name and the season, nothing about its people before you're on it. */
 .ch-ox-team {
@@ -2002,11 +1994,6 @@
     transform: translateX(5px);
   }
 }
-@keyframes chOxSpin {
-  to {
-    transform: rotate(1turn);
-  }
-}
 @keyframes chOxFlash {
   0% {
     opacity: 0;
@@ -2087,13 +2074,10 @@
   }
 }
 
-/* Reduced motion, or Animations off: the loops stop and the caret holds still. */
-[data-ui='clubhouse'][data-motion='off'] .ch-ox-spin,
 [data-ui='clubhouse'][data-motion='off'] .ch-ox-slot[data-cur]::after {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .ch-ox-spin,
   .ch-ox-code[data-focus] .ch-ox-slot[data-cur]::after {
     animation: none;
   }
@@ -2227,10 +2211,6 @@ html[data-fw-theme='dark'] .ch-ox-code[data-st='ok'] .ch-ox-slot {
 }
 html[data-fw-theme='dark'] .ch-ox-code[data-st='error'] .ch-ox-slot[data-filled] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-raised-shadow);
-}
-html[data-fw-theme='dark'] .ch-ox-spin {
-  border-color: rgb(237 231 216 / 0.15);
-  border-top-color: var(--ch-green-700);
 }
 html[data-fw-theme='dark'] .ch-ox-big input {
   border-bottom-color: var(--ch-border-control);

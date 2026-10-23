@@ -975,7 +975,8 @@ describe('Calendar · no team', () => {
   it('CH-6307 a coach or player with no team gets the v2 page empty state', () => {
     const { unmount } = render(<CalendarNoTeam coach />);
     const el = code('CH-6307')!;
-    expect(el.classList.contains('ch-empty-page')).toBe(true);
+    // CONS-10: the one no-team state, a v2 page state.
+    expect(el.classList.contains('ch-es--page')).toBe(true);
     expect(within(el as HTMLElement).getByRole('heading', { level: 2, name: 'You aren’t on a team yet' })).toBeTruthy();
     expect(el.textContent).toMatch(/once your team is set up/);
     expect(within(el as HTMLElement).getByRole('link', { name: 'Open team settings' }).getAttribute('href')).toBe('/golf/dashboard/settings?section=team');

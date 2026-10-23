@@ -1,5 +1,5 @@
-import '../../styles/recruiting.css';
 import { NoTeam } from '../../ui/NoTeam';
+import '../../styles/recruiting.css';
 
 /**
  * A coach signed in with no team the page can resolve (CH-14306): the whole page says so, with the way out the

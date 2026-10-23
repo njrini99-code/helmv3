@@ -12,8 +12,8 @@ import { RefreshNotice } from '../ui/RefreshNotice';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
-import '../styles/qualifiers.css';
 import { NoTeam } from '../ui/NoTeam';
+import '../styles/qualifiers.css';
 
 export type ChQView = 'list' | 'mine' | 'detail' | 'new' | 'edit' | 'selection';
 

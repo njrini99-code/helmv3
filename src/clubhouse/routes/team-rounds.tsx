@@ -3,8 +3,8 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadTeamRounds } from '../data/team-rounds';
 import { TeamRounds } from '../screens/rounds/TeamRounds';
 import { resolveClubhouseTeam } from './team';
-import '../styles/rounds.css';
 import { NoTeam } from '../ui/NoTeam';
+import '../styles/rounds.css';
 
 /**
  * /golf/dashboard/rounds in Clubhouse, for coaches: every round the team has posted. The team is the coach's own

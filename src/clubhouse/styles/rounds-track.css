@@ -967,8 +967,7 @@ button.ch-rt-strip__h {
 .ch-rt-note > span {
   flex: 1;
 }
-.ch-rt-note > svg,
-.ch-rt-note > .ch-rt-spin {
+.ch-rt-note > svg {
   flex: none;
   margin-top: 2px;
 }
@@ -1191,41 +1190,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-review__f .ch-btn--primary {
   flex: 1;
-}
-
-/* Spinners */
-.ch-rt-spin {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid rgb(21 90 57 / 0.2);
-  border-top-color: var(--ch-green-600);
-  animation: ch-rt-spin 0.9s linear infinite;
-}
-.ch-rt-spin--sm {
-  width: 10px;
-  height: 10px;
-}
-.ch-rt-spin--lg {
-  width: 54px;
-  height: 54px;
-  border-width: 3px;
-  border-color: rgb(255 255 255 / 0.15);
-  border-top-color: var(--ch-hero-mint);
-}
-.ch-rt-spin.is-still {
-  animation: none;
-}
-/* D20: Settings > Animations off stills the spinner too, not only the system's reduced motion. */
-[data-ui='clubhouse'][data-motion='off'] .ch-rt-spin,
-[data-motion='off'] [data-ui='clubhouse'] .ch-rt-spin {
-  animation: none;
-}
-@keyframes ch-rt-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Sheets */
@@ -1664,9 +1628,6 @@ button.ch-rt-strip__h {
   .ch-rt-seg button {
     transition: none;
   }
-  .ch-rt-spin {
-    animation: none;
-  }
 }
 
 /* Narrower: the hole above the entry */
@@ -1870,14 +1831,6 @@ button.ch-rt-strip__h {
 :where(html[data-fw-theme='dark']) .ch-rt-bar__go:disabled {
   background: var(--ch-ivory-200);
   color: var(--ch-ink-500);
-}
-:where(html[data-fw-theme='dark']) .ch-rt-spin {
-  border-color: rgb(107 187 140 / 0.2);
-  border-top-color: var(--ch-green-600);
-}
-:where(html[data-fw-theme='dark']) .ch-rt-spin--lg {
-  border-color: rgb(255 255 255 / 0.12);
-  border-top-color: var(--ch-hero-mint);
 }
 :where(html[data-fw-theme='dark']) .ch-rt-radio {
   box-shadow: inset 0 0 0 1.5px rgb(237 231 216 / 0.35);
@@ -2228,8 +2181,7 @@ button.ch-rt-strip__h {
   .ch-rt-hero__foot > .ch-rt-sync {
     margin-left: auto;
   }
-  .ch-rt-sync > svg,
-  .ch-rt-sync > .ch-rt-spin {
+  .ch-rt-sync > svg {
     flex: none;
     margin-top: 1px;
   }

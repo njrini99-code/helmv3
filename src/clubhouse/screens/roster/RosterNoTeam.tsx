@@ -1,5 +1,5 @@
-import '../../styles/roster.css';
 import { NoTeam } from '../../ui/NoTeam';
+import '../../styles/roster.css';
 
 /**
  * Signed in with no active team: the whole page says so (CH-3306 for a coach, CH-3308 for a player).

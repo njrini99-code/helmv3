@@ -12,8 +12,8 @@ import { StatsPlayer } from '../screens/stats/StatsPlayer';
 import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
-import '../styles/stats.css';
 import { NoTeam } from '../ui/NoTeam';
+import '../styles/stats.css';
 
 /**
  * /golf/dashboard/stats in Clubhouse.

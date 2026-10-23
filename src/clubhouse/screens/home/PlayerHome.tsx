@@ -26,8 +26,8 @@ import { NoRoundsYet, PlayerHomePhone } from './PlayerHomePhone';
 import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
-import '../../styles/home.css';
 import { NoTeam } from '../../ui/NoTeam';
+import '../../styles/home.css';
 
 /**
  * Player Home (design/handoff/Player - Home.html): the day, a sentence from

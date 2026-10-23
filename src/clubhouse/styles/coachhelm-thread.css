@@ -188,20 +188,6 @@
   flex: none;
   color: var(--ch-green-600);
 }
-@keyframes ch-th-spin {
-  to {
-    rotate: 360deg;
-  }
-}
-.ch-th-spin {
-  flex: none;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--ch-ivory-300);
-  border-top-color: var(--ch-green-600);
-  animation: ch-th-spin calc(var(--ch-dur-reveal) * 2) linear infinite;
-}
 .ch-th-work__time {
   display: inline-flex;
   align-items: center;
@@ -1031,8 +1017,7 @@ a.ch-th-reads__r:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ch-th-turn.is-new,
-  .ch-th-spin {
+  .ch-th-turn.is-new {
     animation: none;
   }
 }
