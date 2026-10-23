@@ -15,6 +15,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
 import { formatHcp, NO_DATA } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
 import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
@@ -142,7 +143,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
                 options={[
                   { value: 'name', label: 'Name' },
                   { value: 'class', label: 'Class' },
-                  { value: 'hcp', label: 'Handicap' },
+                  { value: 'hcp', label: TERMS.handicap.long },
                 ]}
               />
             </div>

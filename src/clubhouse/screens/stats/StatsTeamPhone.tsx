@@ -15,6 +15,7 @@ import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/Sect
 import { Segmented } from '../../ui/Segmented';
 import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
 import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
@@ -180,7 +181,7 @@ const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${formatFixed
  */
 /** Finds its own figure, so a malformed list crashes inside the figures' boundary, not the phone page (CH-4204). */
 function Hero({ figures }: { figures: readonly ChFigure[] }) {
-  const f = figures.find((x) => x.label === 'Scoring average');
+  const f = figures.find((x) => x.label === TERMS.scoringAvg.long);
   if (!f) return null;
   const none = f.delta == null;
   // What the average is against par a round (the loader's, per 18 holes), over the change: no bare number (2026-10-07).
@@ -269,7 +270,7 @@ function reference(f: ChFigure): string | null {
 
 /** Greens, putts and scrambling as an inset group: the value, then its change (green better, amber worse; D-42). */
 function RoundFigures({ data }: { data: ChTeamStats }) {
-  const rows = data.figures.filter((f) => !f.signed && f.label !== 'Scoring average').slice(0, 3);
+  const rows = data.figures.filter((f) => !f.signed && f.label !== TERMS.scoringAvg.long).slice(0, 3);
   // Greens, putts and scrambling read the rounds with their holes (Q-123); this says how many, under the group.
   const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
   return (
@@ -418,8 +419,8 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
           value={sort}
           onChange={onSort}
           options={[
-            { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-            { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+            { value: 'avg', label: 'Avg', aria: `Avg, ${TERMS.scoringAvg.long.toLowerCase()}` },
+            { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
           ]}
         />
       </div>

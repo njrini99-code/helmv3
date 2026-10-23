@@ -316,7 +316,7 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 
   const exportCsv = () => {
-    const head = ['Player', 'Class', 'Status', 'Availability', 'Rounds', 'Scoring avg', 'SG per round', 'Handicap'];
+    const head = ['Player', 'Class', 'Status', 'Availability', 'Rounds', TERMS.scoringAvg.short, `${TERMS.strokesGained.short} per round`, TERMS.handicap.long];
     const lines = rows.map((p) =>
       [
         asText(p.name),
@@ -610,7 +610,7 @@ export function Roster({ data }: { data: ChRoster }) {
                 onChange={setSort}
                 options={[
                   ...(data.statsError ? [] : [{ value: 'avg' as const, label: TERMS.scoringAvg.short }]),
-                  { value: 'hcp', label: 'Handicap' },
+                  { value: 'hcp', label: TERMS.handicap.long },
                   { value: 'rounds', label: 'Rounds' },
                   { value: 'name', label: 'Name' },
                 ]}

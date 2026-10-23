@@ -70,7 +70,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
                   options={[
                     { value: 'name', label: 'Name' },
                     { value: 'class', label: 'Class' },
-                    { value: 'hcp', label: 'HCP', aria: 'HCP, handicap' },
+                    { value: 'hcp', label: TERMS.handicap.short, aria: `${TERMS.handicap.short}, ${TERMS.handicap.long.toLowerCase()}` },
                   ]}
                 />
               </div>

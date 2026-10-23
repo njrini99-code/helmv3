@@ -27,6 +27,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
 import { rebuiltHref } from '../../shell/nav';
 import { usePageCrumbs } from '../../shell/crumbs';
@@ -165,8 +166,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
   const insightsHref = coach ? rebuiltHref(`/golf/dashboard/coachhelm?player=${data.id}`, 'coach') : null;
 
   const heroFigs: Array<[string, string, string, string?, ReactNode?]> = [
-    ['Scoring avg', failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${w.rounds} rounds`],
-    ['Handicap', formatHcp(data.handicap), 'Index'],
+    [TERMS.scoringAvg.short, failed ? NO_DATA : formatFixed(w.avg), failed ? 'Didn’t load' : coach && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${w.rounds} rounds`],
+    [TERMS.handicap.long, formatHcp(data.handicap), 'Index'],
     // The change's line is always there (a window with no change leaves it empty, `hold`), so the figures, the tabs and the page below do not move between windows.
     ['SG / round', failed || w.sgPerRound == null ? NO_DATA : formatSigned(w.sgPerRound), `Per round ${baseline.vs}`, failed ? undefined : changeInk(w.sgPerRound) || undefined, !failed && w.sgPerRound != null && (data.sgChange.delta != null || data.sgChange.context) ? <SgChangeChip change={data.sgChange} code="CH-5310" /> : <span aria-hidden="true" />],
     ['Rounds', failed ? NO_DATA : String(data.season.rounds), 'This season'],

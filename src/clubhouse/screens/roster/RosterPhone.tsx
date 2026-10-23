@@ -234,8 +234,8 @@ export function RosterPhone({
                   data.statsError
                     ? [{ value: 'name', label: 'Name' }]
                     : [
-                        { value: 'avg', label: 'Avg', aria: 'Avg, scoring average' },
-                        { value: 'sg', label: 'SG', aria: 'SG, strokes gained' },
+                        { value: 'avg', label: 'Avg', aria: `Avg, ${TERMS.scoringAvg.long.toLowerCase()}` },
+                        { value: 'sg', label: TERMS.strokesGained.short, aria: `${TERMS.strokesGained.short}, ${TERMS.strokesGained.long.toLowerCase()}` },
                         { value: 'name', label: 'Name' },
                       ]
                 }
