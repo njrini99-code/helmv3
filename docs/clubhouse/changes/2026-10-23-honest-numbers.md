@@ -75,43 +75,6 @@ Held items: none
   a real change worded as one, and the grid cell toned only past its error.
 - `stats-player.test.tsx`, `stats-team.test.tsx`: the phone cell and trend.
 
-## 2026-10-23 — One change-signal rule (A1)
-
-```text
-Design package: none (Clubhouse A+ handoff, section 5, A1)
-PR/commit: #2356
-Contract IDs: none
-Actions: none
-Data impact: none
-Held items: none
-```
-
-### Changed
-
-- Every trend claim compares the newer half of the window with the older
-  half (`halvesChange`) and words it as a change only past its standard
-  error (`deltaTone`). Otherwise it says "No clear change". This covers the
-  team trend note, the four leg cards, the phone team trend, Home's leg
-  sparks and the phone player's scoring cell.
-- The team grid's Trend column carries the change's standard error and
-  paints it, with an arrow, only past it; otherwise neutral, no arrow, and
-  "No clear change" on hover.
-- The four leg cards share one scale, so the same height is the same strokes.
-- The phone scoring cell's headline is "No clear change" when the change is
-  inside its error, never "2.1 higher" beside "No clear change".
-
-### Why
-
-- Screens told a coach "up about 0.8 a round since Aug 30" from two end
-  points, while other cells on the same data said "No clear change".
-
-### Verification
-
-- `strokes-gained.test.tsx`: the team and player notes from the halves,
-  a real change worded as one, and the grid cell toned only past its error.
-- `stats-player.test.tsx`, `stats-team.test.tsx`: the phone cell and trend.
-
-
 ## 2026-10-23 — Ahead of or behind the team, on the shown values (A5)
 
 ```text
@@ -141,7 +104,6 @@ Held items: none
   72.04 against 71.96 read level; real gaps read ahead or behind, lower is
   better for scoring.
 
-
 ## 2026-10-23 — Average to par is the window's weighted value (A6)
 
 ```text
@@ -170,3 +132,38 @@ Held items: none
 - New `screens/stats/__tests__/overview-topar.test.tsx`: an 18-hole +4 and a
   9-hole +1 make +3.3; the Overview prints `win.toPar`; a round with no par
   does not pull it toward 0.
+
+## 2026-10-23 — Rate floors on Fairways, GIR, Scrambling and Sand saves (A7)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A7)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The player's Fairways hit, Greens in regulation, Scrambling and Sand saves
+  rows are held to their floors (`floorRate` in `lib/stats-signal.ts`).
+  Fairways and greens count rounds with a chance at them (show 2, steady 5);
+  scrambling and sand saves count the chances (show 10, steady 30). Under
+  the show floor the row has no value and says what it needs ("Needs 10
+  chances"); between the floors it keeps the value with "Early read · 12
+  chances", untoned against the team or Tour.
+- The team's Greens in regulation and Scrambling cards follow the same
+  floors: under them the card is empty with what it needs; an early read
+  says so on its second line.
+
+### Why
+
+- "100% sand saves" from one bunker shot read as a real rate.
+
+### Verification
+
+- New `stats-player-floors.test.ts`: 1 sand attempt needs more, 12 are an
+  early read, 40 read plain; fairways count rounds, not chances.
+- `stats-team.test.tsx`: one round and six chances leave both cards empty
+  with what they need.

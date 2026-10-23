@@ -67,9 +67,17 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const sgLo = -sgEnd;
   const sgTone = deltaTone(data.sgChange.delta, data.sgChange.se, false);
   // A rate's big reading is green or amber only against a reference (the team for a coach, the Tour for a player); none, no colour.
+  // Toned on the whole percents it prints (A5): 61% beside a reference of 61% is level, no tone. An early read is untoned (A7).
   const against = (you: number | null | undefined, label: string): 'good' | 'bad' | undefined => {
     const r = ref(label);
-    return you == null || r == null ? undefined : you >= r ? 'good' : 'bad';
+    if (you == null || r == null || cmp(label)?.early || Math.round(you) === Math.round(r)) return undefined;
+    return you > r ? 'good' : 'bad';
+  };
+  // What a rate under its floor needs, or its early-read tag (A7).
+  const floorNote = (label: string) => {
+    const c = cmp(label);
+    const note = c?.you == null ? c?.floor : c.early;
+    return note ? <span className="ch-zfloor">{note}</span> : null;
   };
 
   // 2 · scoring
@@ -257,6 +265,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 fairways hit{ref('Fairways hit') != null && <> · <b>{refName} {Math.round(ref('Fairways hit')!)}%</b></>}
               </span>
+              {floorNote('Fairways hit')}
               {s?.penaltiesPerRound != null && (
                 <span>
                   <b>{s.penaltiesPerRound.toFixed(1)}</b> penalty strokes a round
@@ -343,6 +352,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                 greens in regulation
                 {ref('Greens in regulation') != null && <> · <b>{refName} {Math.round(ref('Greens in regulation')!)}%</b></>}
               </span>
+              {floorNote('Greens in regulation')}
               {w.sgLegs.approach != null && (
                 <span>
                   Strokes gained <b>{formatSigned(w.sgLegs.approach)}</b>
@@ -409,6 +419,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               <span>
                 scrambling{ref('Scrambling') != null && <> · <b>{refName} {Math.round(ref('Scrambling')!)}%</b></>}
               </span>
+              {floorNote('Scrambling')}
               {sandAtt > 0 && (
                 <span>
                   Sand saves <b>{sandMade} of {sandAtt}</b>

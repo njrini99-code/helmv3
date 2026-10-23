@@ -255,10 +255,27 @@ describe('Stats team · reads that fail', () => {
     quiet.mockRestore();
   });
 
+  it('A7 the team greens and scrambling cards hold to their floors: one round and six chances say what they need', async () => {
+    const data = await load();
+    const gir = data.figures.find((f) => f.key === 'gir')!;
+    const scr = data.figures.find((f) => f.key === 'scramble')!;
+    expect(gir).toMatchObject({ value: null, context: 'Needs 2 rounds', state: 'empty' });
+    expect(scr).toMatchObject({ value: null, context: 'Needs 10 chances', state: 'empty' });
+  });
+
   it('CH-4209 Tour benchmarks do not load: greens read against the sample, not a made-up benchmark', async () => {
+    // Two rounds with greens, so the rate clears its floor (A7) and the context is the benchmark's, not "Needs 2 rounds".
+    const base = seasonTables();
+    const day = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    const twoRounds = {
+      ...base,
+      golf_rounds: { data: ['r1', 'r2'].map((id) => ({ id, player_id: 'p1', round_date: day, total_score: 72, score_to_par: 0, front_nine: 36, back_nine: 36, holes_played: 18, status: 'completed', round_type: 'practice' })) },
+      golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18, total_putts: 30, scramble_attempts: 6, scrambles_converted: 3, birdies: 2, eagles: 0 })) },
+    };
+    tables.current = twoRounds;
     const ok = await load();
     expect(ok.figures.find((f) => f.label === 'Greens in regulation')!.context).toBe('Tour averages 67%');
-    tables.current = { ...seasonTables(), golf_pga_standards: { error: { message: 'boom' } } };
+    tables.current = { ...twoRounds, golf_pga_standards: { error: { message: 'boom' } } };
     const data = await load();
     expect(logServer).toHaveBeenCalledWith('stats', 'tourBenchmarks', expect.anything());
     expect(data.figures.find((f) => f.label === 'Greens in regulation')!.context).not.toMatch(/Tour/);

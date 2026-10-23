@@ -16,6 +16,7 @@ import {
   loadSince,
   previousInFilter,
   rate,
+  rateSample,
   roundsInFilter,
   seasonOnly,
   sgChange,
@@ -29,7 +30,7 @@ import {
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
-import { changeSe, meanSe, type SpreadKind } from '../lib/stats-signal';
+import { changeSe, floorRate, meanSe, type SpreadKind } from '../lib/stats-signal';
 
 /**
  * Team Stats (Clubhouse). Trends and strokes gained first; the owner removed
@@ -244,9 +245,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // Per 18 holes, as the scoring average is: what the gauge draws from par.
   const toPar = weightedMean(windowRounds, (r) => r.score_to_par);
   const prevScoring = hasPrev ? weightedMean(prevRounds, (r) => r.total_score) : null;
-  const gir = rate(cur, 'greens_hit', 'greens_total');
+  // Rates held to their floors (A7): greens need two rounds with a green to hit, scrambling ten chances.
+  const gir = floorRate('fraction', rateSample(cur, 'greens_total', 'round'), rate(cur, 'greens_hit', 'greens_total'));
   const puttsPer = weightedMean(holeWindow, puttsOf);
-  const scramble = rate(cur, 'scrambles_converted', 'scramble_attempts');
+  const scramble = floorRate('scramble', rateSample(cur, 'scramble_attempts', 'chance'), rate(cur, 'scrambles_converted', 'scramble_attempts'));
   const birdies = weightedMean(holeWindow, birdiesOf);
   const d = (a: number | null, b: number | null) => (hasPrev && a != null && b != null ? a - b : null);
   // Each change's standard error (Q4), over the same rounds its two means read: per 18 for a per-round figure, a round's own rate for
@@ -265,6 +267,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // The hole-level cards rest on the rounds with their holes: their own count, and when it is fewer than the window's, a line saying so.
   const holeSample = count(holeWindow.length);
   const coverage = holeCoverage(holeWindow.length, windowRounds.length) ?? undefined;
+  // An early-read rate (A7) says so on its second line, before the coverage line it shares with the other cards.
+  const withEarly = (early: string | undefined) => (early ? [early, coverage].filter(Boolean).join(' · ') : coverage);
   // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
   const sgNow = holeWindow.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
   const sgTotal = weightedMean(holeWindow, (r) => r.strokes_gained_total);
@@ -304,9 +308,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     },
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), se: rateSe('greens_hit', 'greens_total'), lowerIsBetter: false, context: benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample, note: coverage, gauge: { kind: 'rate', ref: benchGir ?? null } },
+    { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir.value, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), se: rateSe('greens_hit', 'greens_total'), lowerIsBetter: false, context: gir.needs ?? (benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample), ...(gir.needs ? { state: 'empty' as const } : {}), note: withEarly(gir.early), gauge: { kind: 'rate', ref: benchGir ?? null } },
     { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), se: seOf(puttsOf, holePaired, holePrev, null), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), se: rateSe('scrambles_converted', 'scramble_attempts'), lowerIsBetter: false, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble.value, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), se: rateSe('scrambles_converted', 'scramble_attempts'), lowerIsBetter: false, context: scramble.needs ?? (hasPrev ? previousWords(f.last) : holeSample), ...(scramble.needs ? { state: 'empty' as const } : {}), note: withEarly(scramble.early), gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
     {
       key: 'birdies',
       series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),

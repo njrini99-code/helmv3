@@ -49,28 +49,3 @@ Held items: none
 ### Verification
 
 - `strokes-gained.test.tsx`, `stats-team.test.tsx`, `stats-player.test.tsx`.
-
-## 2026-10-23 — One change-signal rule (A1)
-
-```text
-Design package: none (Clubhouse A+ handoff, section 5, A1)
-PR/commit: #2356
-Contract IDs: none
-Actions: none
-Data impact: none
-Held items: none
-```
-
-### Changed
-
-- A trend on this page compares the newer half of the window with the older
-  half and calls it a change only past its standard error; otherwise "No
-  clear change". First against last is gone.
-
-### Why
-
-- See docs/clubhouse/changes/2026-10-23-honest-numbers.md.
-
-### Verification
-
-- `strokes-gained.test.tsx`, `stats-team.test.tsx`, `stats-player.test.tsx`.

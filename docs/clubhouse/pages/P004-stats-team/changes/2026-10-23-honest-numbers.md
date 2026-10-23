@@ -50,10 +50,10 @@ Held items: none
 
 - `strokes-gained.test.tsx`, `stats-team.test.tsx`, `stats-player.test.tsx`.
 
-## 2026-10-23 — One change-signal rule (A1)
+## 2026-10-23 — Rate floors on Fairways, GIR, Scrambling and Sand saves (A7)
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 5, A1)
+Design package: none (Clubhouse A+ handoff, section 5, A7)
 PR/commit: #2356
 Contract IDs: none
 Actions: none
@@ -63,9 +63,9 @@ Held items: none
 
 ### Changed
 
-- A trend on this page compares the newer half of the window with the older
-  half and calls it a change only past its standard error; otherwise "No
-  clear change". First against last is gone.
+- Fairways hit, Greens in regulation, Scrambling and Sand saves show no value
+  under their floor (with what they need) and an early-read tag between the
+  floors.
 
 ### Why
 
@@ -73,4 +73,4 @@ Held items: none
 
 ### Verification
 
-- `strokes-gained.test.tsx`, `stats-team.test.tsx`, `stats-player.test.tsx`.
+- `stats-player-floors.test.ts`, `stats-team.test.tsx`.

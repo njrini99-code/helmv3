@@ -1010,8 +1010,9 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     const tablesFor = (gender: string): import('./supabase-fake').ChFakeTables => ({
       golf_teams: { data: { name: 'Varsity', gender } },
       golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }] },
-      golf_rounds: { data: [rnd('r1', 'p1', 1, 1, [0.5, 0.5, null, null])] },
-      golf_round_stats_cache: { data: [{ round_id: 'r1', greens_hit: 12, greens_total: 18 }] },
+      // Two rounds with greens: the rate clears its floor (A7), so the context is the Tour's.
+      golf_rounds: { data: [rnd('r1', 'p1', 1, 1, [0.5, 0.5, null, null]), rnd('r2', 'p1', 2, 1, [0.5, 0.5, null, null])] },
+      golf_round_stats_cache: { data: ['r1', 'r2'].map((round_id) => ({ round_id, greens_hit: 12, greens_total: 18 })) },
       golf_pga_standards: standards,
       golf_shots: { data: [] },
     });
