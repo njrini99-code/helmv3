@@ -24,6 +24,11 @@
 .ch-wn .ch-lgr__lead {
   min-width: 68px;
 }
+/* B22: on a title that wraps, the time sits on its first line, not in the middle of the row. */
+.ch-wn .ch-lgr__lead,
+.ch-wn .ch-lgr__txt {
+  align-self: baseline;
+}
 .ch-wn .ch-lgr__title {
   overflow: visible;
   text-overflow: clip;
