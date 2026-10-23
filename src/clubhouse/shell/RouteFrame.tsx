@@ -22,6 +22,8 @@ import { chNavKind, chNavShown } from '../lib/nav-motion';
  * (shell.css) fades them; the sidebar, top bar and tab bar are anchored and never move. Navigations are transitions,
  * so this runs on every in-app route change and on nothing else. Reduced motion and Settings › Animations off render without it: the page swaps at once. CH-1601.
  * A Back that iOS already played with its own edge swipe swaps at once too, rather than fade a second time (CH-1908).
+ * A section switch (the tab bar, a sidebar item) swaps at once as well, with the same hold onto a skeleton (mot-03:
+ * lib/nav-motion.ts marks it `data-ch-tab`, shell.css drops the keyframes).
  * A page that arrives after its route skeleton fades in over it (useSkeletonReveal, CH-1619).
  * On a phone a drill-in pushes and Back pops instead of crossfading (lib/nav-motion.ts, shell.css); the top bar and tab
  * bar are their own view-transition groups and never fade or move.

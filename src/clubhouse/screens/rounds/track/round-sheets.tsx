@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
 import { haptic } from '../../../lib/haptics';
@@ -241,11 +241,14 @@ export function RoundCompleteSheet({
   backHole,
   onBack,
   onSubmit,
+  notice,
 }: {
   open: boolean;
   /** "Finley GC · Blue · Oct 14". */
   heading: string;
   holes: ChSummaryHole[];
+  /** One row under the card before posting: the course nudge (CH-11962) for a round with no library course. */
+  notice?: ReactNode;
   /** The hole Back returns to (the one the player is on: with a shotgun start, not the card's last). Omitted, the card's last. */
   backHole?: number;
   onBack: () => void;
@@ -297,6 +300,7 @@ export function RoundCompleteSheet({
         </dl>
       </div>
       <Scorecard holes={holes} current={null} />
+      {notice}
       {/* R-11: no promise of edits the round review doesn't offer, or of a coach the player may not have. */}
       <p className="ch-rt-sum__n">Posting adds this round to your stats.</p>
     </Modal>

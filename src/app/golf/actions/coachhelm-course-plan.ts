@@ -12,6 +12,11 @@
  * Read only: nothing is written. The caller must coach a team the player is
  * active on (golf_team_coach_staff ∩ golf_team_members); RLS scopes the reads
  * as well. Flag off: `{ status: 'not_available' }` and nothing is read.
+ *
+ * The player's own copy (chs-21) is two more actions, `listMyCoursePlanCourses`
+ * and `getMyCoursePlan`, which take no player id: the player is the session's
+ * own `golf_players` row, so a player can only ever read their own plan. They
+ * answer the player's lines only, never the coach's copy.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -27,6 +32,12 @@ type ServerClient = Awaited<ReturnType<typeof createClient>>;
 export type CoursePlanFailure = { status: 'not_available' } | { status: 'forbidden' } | { status: 'failed' };
 export type CoursePlanCoursesResult = CoursePlanFailure | { status: 'ok'; courses: CoursePlanCourse[] };
 export type CoursePlanResult = CoursePlanFailure | { status: 'ok'; plan: CoursePlan };
+
+/** The player's own plan: their lines in their voice, nothing of the coach's copy. */
+export type MyCoursePlan =
+  | { status: 'too_few'; courseName: string; rounds: number }
+  | { status: 'plan'; courseName: string; rounds: number; title: string; lines: string[]; thinLine: string | null; emptyLine: string | null };
+export type MyCoursePlanResult = CoursePlanFailure | { status: 'ok'; plan: MyCoursePlan };
 
 /** Newest rounds read on the course, and elsewhere for the three-putt comparison. */
 const COURSE_ROUNDS_MAX = 30;
@@ -85,8 +96,14 @@ async function countableRounds(supabase: ServerClient, playerId: string): Promis
   return filterCountableRounds((data ?? []) as RoundRow[]);
 }
 
-/** Session, flag and coach check shared by both actions. */
-async function open(action: string, playerId: string): Promise<{ supabase: ServerClient; userId: string } | CoursePlanFailure> {
+interface PlanContext {
+  supabase: ServerClient;
+  userId: string;
+  playerId: string;
+}
+
+/** Session, flag and coach check shared by the coach's two actions. */
+async function open(action: string, playerId: string): Promise<PlanContext | CoursePlanFailure> {
   if (!isCoursePlanEnabled()) return { status: 'not_available' };
   if (!UUID.test(playerId)) return { status: 'forbidden' };
   const supabase = await createClient();
@@ -97,24 +114,71 @@ async function open(action: string, playerId: string): Promise<{ supabase: Serve
   const ok = await coachesPlayer(supabase, user.id, playerId);
   if (ok === null) return failed(action, 'coach lookup failed', { userId: user.id, playerId });
   if (!ok) return { status: 'forbidden' };
-  return { supabase, userId: user.id };
+  return { supabase, userId: user.id, playerId };
+}
+
+/**
+ * Session and flag check for the player's own two actions. The player is the session user's own `golf_players` row, never
+ * an id from the caller, so a player reads only their own rounds (RLS scopes the reads to their own rows as well). A user
+ * with no player row (a coach) is refused.
+ */
+async function openSelf(action: string): Promise<PlanContext | CoursePlanFailure> {
+  if (!isCoursePlanEnabled()) return { status: 'not_available' };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { status: 'forbidden' };
+  const { data: player, error } = await supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle();
+  if (error) return failed(action, 'player lookup failed', { userId: user.id });
+  if (!player?.id) return { status: 'forbidden' };
+  return { supabase, userId: user.id, playerId: player.id };
+}
+
+async function listCourses(action: string, ctx: PlanContext): Promise<CoursePlanCoursesResult> {
+  const rounds = await countableRounds(ctx.supabase, ctx.playerId);
+  if (!rounds) return failed(action, 'rounds read failed', { userId: ctx.userId, playerId: ctx.playerId });
+  return { status: 'ok', courses: eligibleCourses(rounds.map((r) => ({ courseId: r.course_id, courseName: r.course_name, roundDate: r.round_date }))) };
 }
 
 async function listCoursePlanCoursesImpl(playerId: string): Promise<CoursePlanCoursesResult> {
   const action = 'listCoursePlanCourses';
   const ctx = await open(action, playerId);
   if ('status' in ctx) return ctx;
-  const rounds = await countableRounds(ctx.supabase, playerId);
-  if (!rounds) return failed(action, 'rounds read failed', { userId: ctx.userId, playerId });
-  return { status: 'ok', courses: eligibleCourses(rounds.map((r) => ({ courseId: r.course_id, courseName: r.course_name, roundDate: r.round_date }))) };
+  return listCourses(action, ctx);
 }
 
 async function getCoursePlanImpl(playerId: string, courseId: string): Promise<CoursePlanResult> {
   const action = 'getCoursePlan';
   const ctx = await open(action, playerId);
   if ('status' in ctx) return ctx;
+  return buildPlan(action, ctx, courseId);
+}
+
+async function listMyCoursePlanCoursesImpl(): Promise<CoursePlanCoursesResult> {
+  const action = 'listMyCoursePlanCourses';
+  const ctx = await openSelf(action);
+  if ('status' in ctx) return ctx;
+  return listCourses(action, ctx);
+}
+
+/** The player's lines only: the coach's copy (third person, the Plan: lines) is not sent to the player. */
+function playerCopy(plan: CoursePlan): MyCoursePlan {
+  if (plan.status === 'too_few') return plan;
+  return { status: 'plan', courseName: plan.courseName, rounds: plan.rounds, title: plan.player.title, lines: plan.player.lines, thinLine: plan.player.thinLine, emptyLine: plan.player.emptyLine };
+}
+
+async function getMyCoursePlanImpl(courseId: string): Promise<MyCoursePlanResult> {
+  const action = 'getMyCoursePlan';
+  const ctx = await openSelf(action);
+  if ('status' in ctx) return ctx;
+  const res = await buildPlan(action, ctx, courseId);
+  return res.status === 'ok' ? { status: 'ok', plan: playerCopy(res.plan) } : res;
+}
+
+async function buildPlan(action: string, ctx: PlanContext, courseId: string): Promise<CoursePlanResult> {
   if (!UUID.test(courseId)) return { status: 'forbidden' };
-  const { supabase, userId } = ctx;
+  const { supabase, userId, playerId } = ctx;
   const rounds = await countableRounds(supabase, playerId);
   if (!rounds) return failed(action, 'rounds read failed', { userId, playerId });
   const here = rounds.filter((r) => r.course_id === courseId).slice(0, COURSE_ROUNDS_MAX);
@@ -179,6 +243,8 @@ async function getCoursePlanImpl(playerId: string, courseId: string): Promise<Co
 
 const observedList = withAdminObserved('listCoursePlanCourses', { sport: 'golf', feature: 'coachhelm_ai_engine' }, listCoursePlanCoursesImpl);
 const observedGet = withAdminObserved('getCoursePlan', { sport: 'golf', feature: 'coachhelm_ai_engine' }, getCoursePlanImpl);
+const observedListMine = withAdminObserved('listMyCoursePlanCourses', { sport: 'golf', feature: 'coachhelm_ai_engine' }, listMyCoursePlanCoursesImpl);
+const observedGetMine = withAdminObserved('getMyCoursePlan', { sport: 'golf', feature: 'coachhelm_ai_engine' }, getMyCoursePlanImpl);
 
 /** Courses the player has three or more countable rounds on (coach only). */
 export async function listCoursePlanCourses(playerId: string): Promise<CoursePlanCoursesResult> {
@@ -188,4 +254,14 @@ export async function listCoursePlanCourses(playerId: string): Promise<CoursePla
 /** The course plan for one player on one course (coach only). */
 export async function getCoursePlan(playerId: string, courseId: string): Promise<CoursePlanResult> {
   return observedGet(playerId, courseId);
+}
+
+/** The signed-in player's own courses with three or more countable rounds (player only; no id is taken). */
+export async function listMyCoursePlanCourses(): Promise<CoursePlanCoursesResult> {
+  return observedListMine();
+}
+
+/** The signed-in player's own plan for one course, their lines only (player only; no player id is taken). */
+export async function getMyCoursePlan(courseId: string): Promise<MyCoursePlanResult> {
+  return observedGetMine(courseId);
 }

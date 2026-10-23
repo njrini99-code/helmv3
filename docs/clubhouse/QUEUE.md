@@ -109,7 +109,7 @@ its rows together and does not map them one to one.
 | par-11 | Coach note on a round review | Clubhouse parity & pages | done | #2293 | claude/project-thread-eitv8h |
 | par-12 | Team-grid leg figure opens that player's Game detail section | Clubhouse parity & pages | done | #2281 | |
 | par-13 | As chs-15 (Track record view) | CoachHelm board UI | done | #2253 | |
-| par-14 | As chs-21 (course plan) | CoachHelm board UI | in progress | #2252 (coach half), #2333 | claude/coachhelm-round-prompts |
+| par-14 | As chs-21 (course plan) | CoachHelm board UI | done | #2252 (coach half), #2333 | claude/coachhelm-round-prompts |
 | par-15 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-16 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | par-17 | Coach's player Stats hero has a CoachHelm button | Clubhouse parity & pages | done | #2281 | |
@@ -147,9 +147,9 @@ its rows together and does not map them one to one.
 | chs-18 | Slice 7a: team pool benchmark words (flag `coachhelm_team_pool_v1`). The audit found the coach Board card does not draw the team line; not rechecked | CoachHelm engine | done | #2238 | |
 | chs-19 | Slice 7b: Team pattern rows on the coach Board (flag `coachhelm_team_pattern_v1`) | CoachHelm board UI | done | #2251 | |
 | chs-20 | Same-day field context on bad-day-floor and pressure reads | CoachHelm engine | done | #2251 | |
-| chs-21 | Slice 7c: Course plan from a player's own history on a course. The coach has it (flag `coachhelm_course_plan_v1`); #2333 draws the player copy on the player Board | CoachHelm board UI | in progress | #2252 (coach half), #2333 | claude/coachhelm-round-prompts (CH-13916, CH-13917, CH-13233, CH-13333) |
-| chs-22 | Slice 8a: one-tap putt miss prompt after a missed putt. Fairway round entry only (flag `coachhelm_data_gap_prompt_v1`); Clubhouse round entry has none. Left alone by #2293 | CoachHelm board UI | in progress | #2333 | claude/coachhelm-round-prompts (CH-11960, Bridge 110760) |
-| chs-23 | Slice 8b: course-picker nudge and recovery-lie tap (flag `coachhelm_data_prompts_v2`). Fairway round entry only until #2333; the `lie_after_recovery` column is applied | CoachHelm board UI | in progress | #2333 | claude/coachhelm-round-prompts (CH-11961, CH-11962, Bridge 110761, 110762) |
+| chs-21 | Slice 7c: Course plan from a player's own history on a course. The coach has it (flag `coachhelm_course_plan_v1`); #2333 draws the player copy on the player Board | CoachHelm board UI | done | #2252 (coach half), #2333 | claude/coachhelm-round-prompts (CH-13916, CH-13917, CH-13233, CH-13333) |
+| chs-22 | Slice 8a: one-tap putt miss prompt after a missed putt. Fairway round entry only (flag `coachhelm_data_gap_prompt_v1`); Clubhouse round entry has none. Left alone by #2293 | CoachHelm board UI | done | #2333 | claude/coachhelm-round-prompts (CH-11960, Bridge 110760) |
+| chs-23 | Slice 8b: course-picker nudge and recovery-lie tap (flag `coachhelm_data_prompts_v2`). Fairway round entry only until #2333; the `lie_after_recovery` column is applied | CoachHelm board UI | done | #2333 | claude/coachhelm-round-prompts (CH-11961, CH-11962, Bridge 110761, 110762) |
 | chs-24 | Optional club chip on approaches: not built on purpose, CoachHelm names no clubs | CoachHelm engine | closed | | |
 | chs-25 | Level anchors (hs and div) and a GolfHelm-wide benchmark pool: owner decision Q-88, Tour and teammates only | CoachHelm engine | closed | | |
 | chs-26 | One-team canary for the v3 flags (env `HELM_COACHHELM_TEAMS`) | CoachHelm engine | done | #2258 | |
@@ -163,9 +163,9 @@ its rows together and does not map them one to one.
 | chs-34 | "No reads yet" becomes a By player row | CoachHelm board UI | done | #2294 | |
 | chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | done | #2290 (landed in #2312) | claude/coachhelm-strokes-ladder |
-| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | in progress | #2328 | claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge 130760 to 130762) |
+| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | done | #2328 | claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge 130760 to 130762) |
 | chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
-| chs-39 | Coach Ask: an answer that names a read links to that player's Deep dive | CoachHelm board UI | in progress | #2328 | claude/coachhelm-standing-ask (CH-13914, Bridge 130761) |
+| chs-39 | Coach Ask: an answer that names a read links to that player's Deep dive | CoachHelm board UI | done | #2328 | claude/coachhelm-standing-ask (CH-13914, Bridge 130761) |
 | chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | done | #2303, #2306 (landed in #2310, #2312) | claude/coachhelm-coach-voice |
 | chs-41 | PR #2073 root map, Team roots, leak ladder and summary cards: PR closed 2026-10-21 as superseded, UI not carried over | CoachHelm board UI | closed | #2073 (closed) | |
 | chs-42 | PR #2073 would have turned on nine Fairway CoachHelm flags: PR closed 2026-10-21, the flips were never applied | CoachHelm engine | closed | #2073 (closed) | |
@@ -196,7 +196,7 @@ its rows together and does not map them one to one.
 | doc-04 | D-75: desktop keyboard layer (Cmd+K palette, G-then-letter, ? sheet, tooltips, right-click menus) | Clubhouse fixes | done | #2202 | |
 | doc-05 | D-76: Clubhouse date and time fields replace every browser date and time input | Clubhouse fixes | done | #2202 | |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
-| doc-07 | D-76: a 12 or 24-hour time choice in Settings. Deferred on purpose: promised as a later option, no trigger yet | Clubhouse fixes | held | | |
+| doc-07 | A 12 or 24-hour time choice in Clubhouse Settings (D-76), kept on the device and followed by every Clubhouse time | Clubhouse parity & pages | done | #2334 | claude/project-thread-a106un; Bridge items 80-89 and CH suffixes 80-89 on P008 and P003; uses CH-8980 (80780) |
 | doc-08 | D-77: Clubhouse screens for reset password, join by code, staff invite, coach onboarding, coach pending and demo, behind `golf_clubhouse_front_door` (production off); the P015 device checklist is unticked | Owner | held | #2202 | |
 | doc-09 | D-78: the native launch colour changes to Clubhouse's in the native build that ships with Clubhouse on. Deferred on purpose: needs a native build | Owner | held | | |
 | doc-10 | D-79: a finished round becomes a scorecard to keep (settles in once, prints on one page, exports an image) | Clubhouse parity & pages | done | #2202 | |
@@ -249,7 +249,7 @@ its rows together and does not map them one to one.
 | doc-57 | Make `clubhouse-quality` a required check: decided 10-21, it stays advisory, no work | Owner | closed | | |
 | doc-58 | Practice, Lineups, Events and Scouting in the navigation. Deferred on purpose: no design exists | Clubhouse parity & pages | held | | |
 | doc-59 | Home weather and Week N of 12. Deferred on purpose: no season dates or weather source | Clubhouse parity & pages | held | | |
-| doc-60 | Invite players by email. Deferred on purpose: invite is team code and link only, there is no server action | Clubhouse parity & pages | held | | |
+| doc-60 | Invite players by email from Roster (a new server action; no migration) | Clubhouse parity & pages | done | #2334 | claude/project-thread-a106un; same window as doc-07; uses CH-3080 (30680), CH-3180 (30580), CH-3880 (31880), CH-3980 (30780) |
 | doc-61 | Classes: two imports at once save a class once (held migration `20261021110000`, applied 2026-10-22) | Clubhouse fixes | done | #2289 | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | pr-01 | As chs-07: CoachHelm v3 slices 0 to 8 are in main; #2283 turned the flags on in preview, production stays off | CoachHelm engine | done | #2283 | |
@@ -276,28 +276,36 @@ its rows together and does not map them one to one.
 | pr-22 | Tooling PRs closed unmerged with conflicts: preflight command (#2058), deploy policy doc (#2093), hermetic create-workspace test (#2216). Rebuild #2058 from main only if wanted | docs | closed | #2058, #2093, #2216 (closed) | |
 | pr-23 | Housekeeping PRs: #2278 (deno.lock) and #2259 (Bridge telemetry) landed; #2203, #2268, #2249 and #2261 closed as superseded | docs | done | #2278, #2259 | |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
-| new-02 | Roster CH-3009 menu flake: the test pressed Escape before the menu took focus; the helper now waits for focus (product code untouched) | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
-| new-03 | Presentation check times out starting its web server: readiness URL is `/manifest.json`, setup visits get 300 s | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
-| new-04 | Edge-swipe `finish` timer outlives the screen ("window is not defined" on main): cleanup cancels the timer and frames and runs the exit hand-over once | Clubhouse fixes | in progress | #2332 | claude/project-thread-llcuya |
+| new-02 | Roster test CH-3009 flakes on `main` (came in with #2295): the menu focuses its first item on the next frame and the test pressed Escape first; the helper now waits for focus | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-03 | The `presentation` CI check times out starting its web server (3 min): readiness waited for the first compile of the popup lab (112 s on two cores, over 180 s on a runner); it now waits for a static file and the setup file compiles the routes | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| new-04 | Unit shard fails with "window is not defined" from `use-edge-swipe.ts` (`finish` timer of a committed swipe outlives the test file; main run 39714700693, #2217). The effect cleanup now hands a committed swipe's exit back and cancels its frames; a fake-timer test fails without it | Clubhouse fixes | done | #2332 | claude/project-thread-llcuya (Roster flake and presentation timeout); no Bridge IDs or CH codes needed |
+| mot-01 | Desktop sidebar fold: the spring keeps its look, but resize readers and Lenis wait until it settles and the brand panel drops its blur while it moves | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-02 | Dialog backdrop is a solid wash on desktop too, never a live blur | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-03 | Tab bar and sidebar section switches swap at once (no fade-through dip); pushes, pops and other links keep their motion | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-04 | Back during a phone push reverses from where the push stood instead of waiting it out | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-05 | A sheet or dialog reopened while closing picks up from where it stood instead of snapping | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-06 | Font weights on four rungs (400 to 700) and the phone player name wraps instead of truncating | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-07 | Placeholder text on its own readable token in both themes | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-08 | Text on 11 sizes (11 to 34px), nearest step, from approved before/after renders | Clubhouse fixes | done | #2339 | claude/clubhouse-motion-apple-bar (type scale the owner approved 2026-10-23); no Bridge IDs or CH codes needed |
 | queue-01 | Move every audit row that is not here into this queue, with the design-call and output-spec items | docs | in progress | | claude/project-thread-f4qkrr (thread "Audit rows into queue") |
 
 <!-- markdownlint-enable MD013 -->
 
-Counts on 2026-10-22: 129 done, 25 held, 20 closed, 6 in progress, none open
-(rows added since the audit are not counted: new-02 to new-04 in progress in
-PR #2332, queue-01 in progress here). Four of the six in-progress rows are one
-draft, #2333 (chs-21, chs-22, chs-23, par-14); chs-37 and chs-39 are #2328.
-The held rows wait on the owner (the iPhone pass and App Store build in
-doc-37, which also gates doc-38 to doc-41 reaching users; device checks and
-reviews in doc-03, doc-08, doc-35, doc-36 and doc-49; the reset-email template
-in doc-55; the canary and deploy in doc-46, doc-47 and pr-02), on held
-migrations that Production rollout applies (doc-31 to doc-34, chs-62, pr-09,
-pr-10), or on a stated trigger because they were deferred on purpose (doc-07,
-doc-09, doc-58 to doc-60, chs-59, chs-60).
+Counts on 2026-10-23: 137 done, 23 held, 20 closed, none in progress, none
+open. Rows added since the audit are not counted: new-02 to new-04 (#2332) and
+mot-01 to mot-08 (#2339) are done, queue-01 is in progress here. On
+2026-10-23 PRs #2328 (chs-37, chs-39), #2333 (chs-21, chs-22, chs-23, par-14)
+and #2334 (doc-07, doc-60) merged, so those rows are done. The held rows wait on
+the owner (the iPhone pass and App Store build in doc-37, which also gates
+doc-38 to doc-41 reaching users; device checks and reviews in doc-03, doc-08,
+doc-35, doc-36 and doc-49; the reset-email template in doc-55; the canary and
+deploy in doc-46, doc-47 and pr-02), on held migrations that Production
+rollout applies (doc-31 to doc-34, chs-62, pr-09, pr-10), or on a stated
+trigger because they were deferred on purpose (doc-09, doc-58, doc-59, chs-59,
+chs-60).
 
 Held rows that need no migration, flag or deploy, only an owner nod or a
-tool: doc-07 (a time-format choice), doc-60 (invite by email, needs a server
-action), chs-59 and chs-60 (two stats charts, deferred on purpose), doc-36
+tool: chs-59 and chs-60 (two stats charts, deferred on purpose), doc-36
 (`clubhouse:perf` needs a production build, which is a local `npm run build`,
 not a deploy) and doc-44 (the Sentry alert can now be created with the Sentry
 tools). Moving any of them to open is the owner's call.

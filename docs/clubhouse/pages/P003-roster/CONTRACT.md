@@ -139,6 +139,7 @@ could be read as a formula as text (30502).
 | --- | --- | --- | --- |
 | 30501 | CH-3101 | `A_COACHS_NOTE_IS_WITHIN_200_CHARACTERS` | A coach's note is within 200 characters of its 2,000 limit |
 | 30502 | — | `EXPORT_CELLS_ARE_TEXT` | The CSV export writes a player's name that starts with =, +, - or @ (or a tab or a return) as text, with a leading apostrophe, so a spreadsheet never reads it as a formula; numbers are left as numbers. Availability (the word) follows Status; there is no note column. |
+| 30580 | CH-3180 | `AN_ADDRESS_TYPED_OR_PASTED_IN_EMAIL` | An address typed or pasted in Email them can’t be read as an email address |
 
 ## 06 — Server / system error
 
@@ -175,6 +176,7 @@ refused change shows the server's own sentence when it is short and readable
 | 30620 | CH-3009 | `MARKING_A_PLAYER_AVAILABLE_INJURED_OR_AWAY` | Marking a player available, injured or away fails (row menu, the panel's or phone profile's Availability control) |
 | 30622 | CH-3212 | `COACHHELMS_COUNTS_DONT_LOAD_FOR_THE_ROSTER` | CoachHelm's counts don't load for the roster (the coach's gate, the visible reads or the newest rounds) |
 | 30623 | CH-3011 | `THE_COACH_ONLY_REASON_FOR_AN_INJURED` | The coach-only reason for an injured or away player doesn’t save (Why field, on leaving it) |
+| 30680 | CH-3080 | `EMAILING_THE_INVITE_TO_PLAYERS_FAILS_THE` | Emailing the invite to players fails (Invite players › Email them): the request fails, the coach has sent a lot of invites this hour, email is paused, or the team has no code |
 
 From the shell (P001): 10601 CH-1001, 10602 CH-1201, 10603 CH-1202,
 10604 CH-1203, 10605 CH-1204, 10606 CH-1205, 10607 CH-1206, 10608 CH-1207,
@@ -190,6 +192,7 @@ Roster's writes all go through useAction, so offline every one is refused before
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 30701 | — | `WRITES_REFUSED_OFFLINE` | Offline, every Roster write (a removal, an approval, a decline, Approve all, a note) is refused before anything is sent, the toast names what did not happen, and nothing on screen changes; Export, Copy and the filters are local and keep working. |
+| 30780 | CH-3980 | `CUSTOMER_EMAIL_IS_SWITCHED_OFF_FOR_EVERYONE` | Customer email is switched off for everyone (`HELM_CUSTOMER_EMAIL_ENABLED` is not `true`, `src/lib/email/outbound-gate.ts`) or no mail transport is configured, so Invite players cannot email anyone |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.
@@ -359,6 +362,7 @@ CH-1842, 11825 CH-1816.
 | 31807 | CH-3807 | `THE_PLAYERS_ROSTER_A_TEAMMATE_IS_TEXT` | The player's roster is read-only: a teammate is text, not a control. The desktop cards and table rows and the phone rows are not links or buttons, so none takes focus or a press, and nothing on the screen opens a profile, stats or notes or does anything to a teammate. Search, layout and sort only change what is listed |
 | 31808 | CH-3808 | `THE_PLAYERS_ROSTER_NAMES_THE_COACHES` | The player's roster names the coaches (wave 7, decision D): a "Coaches" group above the players: name and role ("Head coach" first, else their title, else "Coach"), plain text like every row. Desktop: a Coach and Role table; phone: a list under its heading, then "Players". Left out when the staff read failed (logged `playerCoaches`) or none is on record |
 | 31809 | CH-3809 | `AVAILABILITY_IS_SAID_IN_WORDS_NEVER_A` | Availability is said in words, never a colour: "Injured" or "Away" (the word only, no note) in the list's line under the name, a face's note slot and the phone row, in plain ink (red is under par, amber a slide, green a gain). A face's name and a phone row's name append "injured" or "away"; the Availability control is a radio group named for the player; the head counts "· 1 injured · 1 away" among the active |
+| 31880 | CH-3880 | `EMAIL_THEM_IS_ONE_LABELLED_FIELD_EACH` | Email them is one labelled field ("Or email them"). Each address is a chip with its own `Remove eli@school.edu` button, an unreadable one adds ", can’t be read as an email address" and one that did not send ", didn’t send"; Backspace in the empty field removes the last chip; the count and the result are read politely, and an unreadable address is announced as an alert |
 
 From the shell (P001): 11801 CH-1801, 11802 CH-1802, 11803 CH-1803,
 11804 CH-1804, 11805 CH-1805, 11806 CH-1806, 11807 CH-1807, 11808 CH-1808,

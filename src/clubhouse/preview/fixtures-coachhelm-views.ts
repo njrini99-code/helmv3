@@ -9,21 +9,21 @@ import type { AssembledThemes, CauseNode, ThemeNode } from '@/lib/coachhelm/v3/t
 import { SLOPE_METRIC, toChInsight } from '../data/coachhelm-map';
 import { diveCounts, orderDive, themesByCategory, toChDeepInsight, type ChDeepDive, type ChDeepInsight, type ChDiveInputs, type DiveFocusRow, type DiveRoundRow } from '../data/coachhelm-dive-shape';
 import { speak } from '../data/coachhelm-voice';
-import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
+import { toChGame, toChProfile, type ChGame, type ChGameLoad, type ChProfile } from '../data/coachhelm-profile-shape';
 import type { ChLadderReads } from '../data/coachhelm-ladder-shape';
 import { toChStanding, type ChStandBaselineRead, type ChStanding } from '../data/coachhelm-standing-shape';
 import type { ChViewLoad } from '../data/coachhelm-views-shape';
 import { bigNumber, breakBias, MANY_FINDINGS, MANY_NEWEST_ROUND, MANY_STALE, MANY_STRENGTHS, PREVIEW_TOUR, penalties, slope } from './fixtures-coachhelm';
 
 /**
- * Sample data for the player's CoachHelm views (Game profile, Standing, Deep dive). Each fixture is the stored shape the loader reads
+ * Sample data for the player's CoachHelm views (Standing with How you play, Deep dive). Each fixture is the stored shape the loader reads
  * (a genome row, the standing rows) run through the same mapper the page runs, so a preview cannot draw what the page cannot.
  */
 
 /** The day the fixtures were read: "refreshed" wording is relative to it. */
 export const VIEWS_NOW = new Date('2026-10-01T15:00:00Z');
 
-// ── Game profile ───────────────────────────────────────────────────────────
+// ── How you play (the genome; Standing's last section, once the Game profile) ─
 
 export const FULL_VECTOR: GenomeVector = {
   miss_side_bias: { value: -0.42, confidence: 0.85, label: 'Left bias' },
@@ -55,6 +55,14 @@ export const PREVIEW_PROFILE_EDGE: ChProfile = toChProfile(
 );
 
 export const profileLoad = (data: ChProfile): ChViewLoad<ChProfile> => ({ status: 'ready', data });
+
+/** Standing's "How you play" from the same genome rows: full, an early read, nothing yet, and values at the edge of their scales. */
+export const PREVIEW_GAME: ChGame = toChGame(genome(FULL_VECTOR), VIEWS_NOW);
+export const PREVIEW_GAME_PARTIAL: ChGame = toChGame(genome(PARTIAL_VECTOR, 6), VIEWS_NOW);
+export const PREVIEW_GAME_EMPTY: ChGame = toChGame(null, VIEWS_NOW);
+export const PREVIEW_GAME_EDGE: ChGame = toChGame(genome({ ...FULL_VECTOR, back_nine_delta: { value: -2, confidence: 1, label: 'Closes strong' } }), VIEWS_NOW);
+
+export const gameLoad = (data: ChGame): ChGameLoad => ({ status: 'ready', data });
 
 // ── Standing ───────────────────────────────────────────────────────────────
 

@@ -343,7 +343,10 @@ CREATE POLICY "approach_miss_details_delete_own" ON "public"."approach_miss_deta
 
 CREATE POLICY "approach_miss_details_insert_own" ON "public"."approach_miss_details" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
-CREATE POLICY "approach_miss_details_select" ON "public"."approach_miss_details" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_shot_detail"("shot_id"));
+CREATE POLICY "approach_miss_details_select" ON "public"."approach_miss_details" FOR SELECT TO "authenticated" USING (((( SELECT "gs"."round_id"
+   FROM ("public"."golf_shots" "gs"
+     JOIN "public"."golf_holes" "gh" ON ((("gh"."id" = "gs"."hole_id") AND ("gh"."round_id" = "gs"."round_id"))))
+  WHERE ("gs"."id" = "approach_miss_details"."shot_id")) IN ( SELECT "public"."golf_shot_detail_round_ids"() AS "golf_shot_detail_round_ids")) OR "public"."can_read_golf_shot_detail"("shot_id")));
 
 CREATE POLICY "approach_miss_details_update_own" ON "public"."approach_miss_details" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_shot"("shot_id")) WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
@@ -1201,7 +1204,10 @@ CREATE POLICY "putt_details_delete_own" ON "public"."putt_details" FOR DELETE TO
 
 CREATE POLICY "putt_details_insert_own" ON "public"."putt_details" FOR INSERT TO "authenticated" WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 
-CREATE POLICY "putt_details_select" ON "public"."putt_details" FOR SELECT TO "authenticated" USING ("public"."can_read_golf_shot_detail"("shot_id"));
+CREATE POLICY "putt_details_select" ON "public"."putt_details" FOR SELECT TO "authenticated" USING (((( SELECT "gs"."round_id"
+   FROM ("public"."golf_shots" "gs"
+     JOIN "public"."golf_holes" "gh" ON ((("gh"."id" = "gs"."hole_id") AND ("gh"."round_id" = "gs"."round_id"))))
+  WHERE ("gs"."id" = "putt_details"."shot_id")) IN ( SELECT "public"."golf_shot_detail_round_ids"() AS "golf_shot_detail_round_ids")) OR "public"."can_read_golf_shot_detail"("shot_id")));
 
 CREATE POLICY "putt_details_update_own" ON "public"."putt_details" FOR UPDATE TO "authenticated" USING ("public"."owns_golf_shot"("shot_id")) WITH CHECK ("public"."owns_golf_shot"("shot_id"));
 

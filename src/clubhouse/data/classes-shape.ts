@@ -1,6 +1,8 @@
 import { isClassEvent } from '@/lib/calendar/class-events';
 import { inferTermForImport, parseSemesterDates } from '@/lib/golf/semester';
 import type { ParsedClass } from '@/lib/utils/schedule-parser';
+import type { ChClock } from '../lib/clock-cookie';
+import { clockFromMinutes } from '../lib/clock-format';
 
 /**
  * The Classes page's data shapes and the pure steps that build them, kept apart
@@ -121,23 +123,24 @@ export const toHHMM = (t: string | null | undefined): string | null => {
 const meridiem = (min: number) => (min < 720 ? 'AM' : 'PM');
 const clock = (min: number) => `${((Math.floor(min / 60) + 11) % 12) + 1}:${String(min % 60).padStart(2, '0')}`;
 
-/** "9:00", the clock without AM or PM (the week strip's start under a day). */
-export const clockLabel = (t: string | null | undefined): string | null => {
+/** "9:00", the clock without AM or PM (the week strip's start under a day); "09:00" on a 24-hour device. */
+export const clockLabel = (t: string | null | undefined, hours: ChClock = '12'): string | null => {
   const m = toMinutes(t);
-  return m == null ? null : clock(m);
+  return m == null ? null : hours === '24' ? clockFromMinutes(m, '24') : clock(m);
 };
 
-/** "9:00 AM". */
-export const timeLabel = (t: string | null | undefined): string | null => {
+/** "9:00 AM", or "09:00". */
+export const timeLabel = (t: string | null | undefined, hours: ChClock = '12'): string | null => {
   const m = toMinutes(t);
-  return m == null ? null : `${clock(m)} ${meridiem(m)}`;
+  return m == null ? null : hours === '24' ? clockFromMinutes(m, '24') : `${clock(m)} ${meridiem(m)}`;
 };
 
-/** "9:00–10:15 AM", or "11:30 AM–12:45 PM" when the two sit either side of noon; a lone start is "9:00 AM". */
-export function timeRange(start: string | null | undefined, end: string | null | undefined): string | null {
+/** "9:00–10:15 AM", or "11:30 AM–12:45 PM" when the two sit either side of noon; a lone start is "9:00 AM". On a 24-hour device "09:00–10:15". */
+export function timeRange(start: string | null | undefined, end: string | null | undefined, hours: ChClock = '12'): string | null {
   const s = toMinutes(start);
   const e = toMinutes(end);
   if (s == null) return null;
+  if (hours === '24') return e == null ? clockFromMinutes(s, '24') : `${clockFromMinutes(s, '24')}–${clockFromMinutes(e, '24')}`;
   if (e == null) return `${clock(s)} ${meridiem(s)}`;
   return meridiem(s) === meridiem(e) ? `${clock(s)}–${clock(e)} ${meridiem(e)}` : `${clock(s)} ${meridiem(s)}–${clock(e)} ${meridiem(e)}`;
 }
@@ -405,12 +408,12 @@ export function eventWindowOn(e: ChTeamEvent, date: string): [number, number] | 
 const hhmm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 
 /** When an event occupies `date`: "3:30–5:30 PM", "All day", or "From 6:15 AM" for a trip that carries on past midnight. */
-export function eventWhen(e: ChTeamEvent, date: string): string {
+export function eventWhen(e: ChTeamEvent, date: string, hours: ChClock = '12'): string {
   const w = eventWindowOn(e, date);
   if (!w) return '';
   if (w[0] === 0 && w[1] === 1440) return 'All day';
-  if (w[1] === 1440) return `From ${timeLabel(hhmm(w[0]))}`;
-  return timeRange(hhmm(w[0]), hhmm(w[1])) ?? '';
+  if (w[1] === 1440) return `From ${timeLabel(hhmm(w[0]), hours)}`;
+  return timeRange(hhmm(w[0]), hhmm(w[1]), hours) ?? '';
 }
 
 type Meeting = Pick<ChClass, 'id' | 'days' | 'start' | 'end'>;

@@ -15,7 +15,7 @@
 .ch-hl-tp .ch-hl-tp__below,
 .ch-hl-tp .ch-hl-tp__none {
   margin: 0 0 8px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-tp .ch-hl-tp__below {
@@ -77,7 +77,7 @@
   text-wrap: pretty;
 }
 .ch-hl-tp__t span {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-tp .ch-hl-tp__next {

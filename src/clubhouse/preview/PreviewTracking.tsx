@@ -8,10 +8,19 @@ import { AutoSaveHeldError } from '@/hooks/golf/use-shot-state-machine';
 import { RoundTracking, type RoundTrackingProps } from '../screens/rounds/track/RoundTracking';
 import { ExitSheet, RoundCompleteSheet, ScorecardSheet, SubmitOverlay, type ChSummaryHole } from '../screens/rounds/track/round-sheets';
 import { PREVIEW_TRACK_ROUND, trackingFixture } from './fixtures-tracking';
+import { PREVIEW_SETUP_COURSES, PREVIEW_SETUP_TEES } from './fixtures-setup';
 import { postedScore } from '../screens/rounds/entry/session';
+import { CourseNudge, useChCourseNudge } from '../screens/rounds/entry/CourseNudge';
+import type { ChSetupPorts } from '../screens/rounds/setup/shape';
 
 const wait = <T,>(v: T, ms = 500) => new Promise<T>((r) => setTimeout(() => r(v), ms));
 const NONE: ShotRecord[] = [];
+/** The course nudge's picker (CH-11962), over the setup preview's library. */
+const NUDGE_PORTS: Pick<ChSetupPorts, 'listCourses' | 'listTees'> = {
+  listCourses: () => wait({ ok: true, data: PREVIEW_SETUP_COURSES }),
+  listTees: (id) => wait({ ok: true, data: PREVIEW_SETUP_TEES[id] ?? [] }),
+};
+const noLink = () => undefined;
 
 /**
  * The round's background save, faked for the save line's states (CH-11901): `saved` (the server acknowledged it),
@@ -56,6 +65,8 @@ export function PreviewTracking({ state, statusSlot }: { state?: string; statusS
   const [sheet, setSheet] = useState(f.sheet);
   const [submit, setSubmit] = useState(f.submit);
   const [discarding, setDiscarding] = useState(false);
+  // `nudge` and `nudge-summary`: a round with no library course; the pick only shows its receipt here.
+  const nudge = useChCourseNudge({ enabled: !!f.nudge, hasCourse: false, courseName: PREVIEW_TRACK_ROUND.course, onLink: noLink });
 
   const stats = (i: number): HoleStats | null => {
     const shots = shotsByHole[i];
@@ -105,6 +116,9 @@ export function PreviewTracking({ state, statusSlot }: { state?: string; statusS
         onOpenScorecard={() => setSheet('card')}
         holeShots={(i) => shotsByHole[i] ?? null}
         statusSlot={statusSlot}
+        dataGapAsks={f.asks}
+        recoveryPrompt={f.recovery ?? false}
+        startPrompt={nudge ? <CourseNudge nudge={nudge} ports={NUDGE_PORTS} /> : undefined}
         onReviewRound={holes.every((h) => h.score !== null) ? () => setSheet('summary') : undefined}
       />
       <ExitSheet
@@ -124,7 +138,14 @@ export function PreviewTracking({ state, statusSlot }: { state?: string; statusS
         }}
       />
       <ScorecardSheet open={sheet === 'card'} onClose={() => setSheet(null)} course={PREVIEW_TRACK_ROUND.course} tee="Blue" holes={card} current={holes[index]!.number} />
-      <RoundCompleteSheet open={sheet === 'summary'} heading="Finley GC · Blue · Oct 14" holes={summary} onBack={() => setSheet(null)} onSubmit={submitRound} />
+      <RoundCompleteSheet
+        open={sheet === 'summary'}
+        heading="Finley GC · Blue · Oct 14"
+        holes={summary}
+        notice={nudge ? <CourseNudge nudge={nudge} ports={NUDGE_PORTS} sheet /> : undefined}
+        onBack={() => setSheet(null)}
+        onSubmit={submitRound}
+      />
       {submit && <SubmitOverlay state={submit} course={PREVIEW_TRACK_ROUND.course} shots={shotCount} coach="Coach Reyes" score={postedScore(card)} reviewHref={`/clubhouse-preview/round`} error={null} onRetry={submitRound} />}
     </>
   );

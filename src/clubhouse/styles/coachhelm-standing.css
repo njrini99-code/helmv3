@@ -1,6 +1,6 @@
 /* The player's Standing: every tracked stat against the Tour and the team. Spec docs/clubhouse/pages/P013-coachhelm/DESIGN.md */
 
-/* Where they stand, on the green feature card (the Game profile's own), with what is most to gain beside it */
+/* Where they stand, on the green feature card, with what is most to gain beside it */
 .ch-hs-hero {
   position: relative;
   display: grid;
@@ -54,7 +54,7 @@
 .ch-hs-hero__sub {
   max-width: 58ch;
   margin-top: auto;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -128,7 +128,7 @@
 }
 .ch-hs-r__h h3 {
   margin: 0;
-  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   text-wrap: balance;
 }
 .ch-hs-r__h p {
@@ -136,7 +136,7 @@
   flex-wrap: wrap;
   gap: 2px 10px;
   margin: 5px 0 0;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
 }
 .ch-hs-vs.is-ahead {
   color: var(--ch-green-700);
@@ -206,7 +206,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hs-r__f dt::before {
@@ -233,7 +233,7 @@
   color: var(--ch-ink-700);
 }
 .ch-hs-r__f .is-you dd {
-  font-size: calc(21 * var(--ch-type-k));
+  font-size: calc(22 * var(--ch-type-k));
   color: var(--ch-hs-ink);
 }
 .ch-hs-note {
@@ -346,7 +346,7 @@
     border-radius: var(--ch-radius-xl);
   }
   .ch-hs-hero h2 {
-    font-size: calc(24 * var(--ch-type-k));
+    font-size: calc(22 * var(--ch-type-k));
   }
   .ch-hs-sk__hero {
     padding: 20px;
@@ -359,13 +359,13 @@
     border-radius: var(--ch-radius-lg);
   }
   .ch-hs-g h2 {
-    font-size: calc(18 * var(--ch-type-k));
+    font-size: calc(17 * var(--ch-type-k));
   }
   .ch-hs-r {
     padding: 16px 0;
   }
   .ch-hs-r__f .is-you dd {
-    font-size: calc(19 * var(--ch-type-k));
+    font-size: calc(20 * var(--ch-type-k));
   }
 }
 
@@ -417,7 +417,7 @@
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   main[data-canopy] .ch-hs-g h2 {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 20px/1.2 var(--ch-font-sans);
   }
   main[data-canopy] :is(.ch-hs-r:first-child, .ch-hs-sk__g > :nth-child(2)) {
     border-top-color: transparent;
@@ -452,14 +452,14 @@
     gap: 12px;
   }
   .ch-hs-hero__k {
-    font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+    font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
     color: var(--ch-hero-mint);
   }
   .ch-hs-hero__k span:last-child {
     color: var(--ch-on-green-ink-muted);
   }
   .ch-hs-hero h2 {
-    font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+    font: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
     letter-spacing: -0.03em;
     color: var(--ch-on-green-ink);
   }
@@ -505,7 +505,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hs-g h2 {
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -626,7 +626,7 @@
   align-items: center;
   gap: 10px;
   min-height: 36px;
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-hs-ld__n {
@@ -686,7 +686,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hs-ld__b em {
-  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
