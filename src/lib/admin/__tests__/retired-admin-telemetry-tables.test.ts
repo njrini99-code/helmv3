@@ -49,6 +49,9 @@ describe('retired admin telemetry tables', () => {
     expect(moved?.sort()).toEqual([...RETIRED].sort());
     expect(statements).toMatch(/SET SCHEMA graveyard/);
     expect(statements).toMatch(/ALTER PUBLICATION supabase_realtime DROP TABLE/);
+    // SET SCHEMA keeps the ACL, and main's anon_surface_guard pgTAP test
+    // fails on any anon or authenticated grant in graveyard.
+    expect(statements).toMatch(/REVOKE ALL ON TABLE graveyard\.%I FROM anon, authenticated/);
     // The publication's own `DROP TABLE` only takes the table out of realtime.
     const withoutPublication = statements.replace(/ALTER PUBLICATION supabase_realtime DROP TABLE/g, '');
     expect(withoutPublication).not.toMatch(/\bDROP\s+(TABLE|SCHEMA|COLUMN)\b/i);

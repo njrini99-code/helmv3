@@ -35,11 +35,21 @@
 --   alter table graveyard.admin_api_perf_log set schema public;
 --   alter table graveyard.admin_client_errors set schema public;
 --   alter publication supabase_realtime add table public.admin_api_perf_log;
+--   grant all on table public.admin_api_perf_log to anon, authenticated;
+--   grant all on table public.admin_client_errors to anon, authenticated;
+--   (the grants supabase/schemas/shared/95_grants.sql records; service_role
+--   keeps its grant through the move)
 --
 -- VERIFY: select 1 where to_regclass('public.admin_api_perf_log') is null
 -- VERIFY:   and to_regclass('public.admin_client_errors') is null
 -- VERIFY:   and to_regclass('graveyard.admin_api_perf_log') is not null
 -- VERIFY:   and to_regclass('graveyard.admin_client_errors') is not null;
+-- VERIFY: select 1 where not exists (select 1 from pg_class c cross join
+-- VERIFY:   lateral aclexplode(c.relacl) a where c.relnamespace =
+-- VERIFY:   'graveyard'::regnamespace and c.relname in ('admin_api_perf_log',
+-- VERIFY:   'admin_client_errors') and a.grantee in ((select oid from pg_roles
+-- VERIFY:   where rolname = 'anon'), (select oid from pg_roles where rolname =
+-- VERIFY:   'authenticated')));
 
 SET LOCAL lock_timeout = '3s';
 
@@ -60,6 +70,9 @@ BEGIN
         EXECUTE format('ALTER PUBLICATION supabase_realtime DROP TABLE public.%I', t);
       END IF;
       EXECUTE format('ALTER TABLE public.%I SET SCHEMA graveyard', t);
+      -- SET SCHEMA keeps the ACL; main's anon_surface_guard allows no anon or
+      -- authenticated grant on any graveyard relation.
+      EXECUTE format('REVOKE ALL ON TABLE graveyard.%I FROM anon, authenticated', t);
       EXECUTE format('COMMENT ON TABLE graveyard.%I IS %L', t,
         'Moved from public 2026-10-23 (no writer and no reader; health report #2061 item F). Restore: ALTER TABLE graveyard.' || t || ' SET SCHEMA public;');
     END IF;
