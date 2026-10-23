@@ -3,6 +3,7 @@ import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 import { isOut, type ChAvailability } from '../../data/availability';
 import { firstName } from '../../lib/names';
+import { plural } from '../../lib/plural';
 
 /**
  * Coach Home's derived copy, kept pure so it can be tested without a
@@ -33,14 +34,14 @@ export function inviteDetail(input: { location: string | null; title: string; in
   const { location, title, invitees, names } = input;
   let who: string | null = null;
   if (typeof invitees === 'number') {
-    if (invitees > 0) who = `${invitees} ${invitees === 1 ? 'player' : 'players'}`;
+    if (invitees > 0) who = `${plural(invitees, 'player')}`;
   } else if (invitees && invitees.length > 0) {
     const firsts = invitees.map((id) => names.get(id)).filter((n): n is string => !!n).map(firstName);
     if (invitees.length <= 3 && firsts.length === invitees.length) {
       const named = firsts.length === 1 && title.toLowerCase().includes(firsts[0]!.toLowerCase());
       who = named ? null : firsts.join(', ');
     } else {
-      who = `${invitees.length} ${invitees.length === 1 ? 'player' : 'players'}`;
+      who = `${plural(invitees.length, 'player')}`;
     }
   }
   return [location, who].filter(Boolean).join(' · ') || null;

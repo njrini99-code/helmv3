@@ -68,6 +68,7 @@ import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 import { BackLink } from '../../ui/Section';
+import { plural } from '../../lib/plural';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -266,7 +267,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
                   <Icon icon={MailQuestion} size={14} />
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <b>{role === 'coach' ? `${pending.length} ${pending.length === 1 ? 'reply' : 'replies'} pending` : e.title}</b>
+                  <b>{role === 'coach' ? `${plural(pending.length, 'reply', 'replies')} pending` : e.title}</b>
                   <span>
                     {role === 'coach' ? `${e.title} · ${pending.length <= 2 ? pending.map((p) => first(people.get(p)?.name)).join(', ') : `${dowOf(e.date)} ${dayNum(e.date)}`}` : `${dowOf(e.date)} ${dayNum(e.date)} · ${rangeLabel(e, clock)}`}
                   </span>
@@ -523,7 +524,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
           <div className="ch-in__sechead">
             {/* Replies are counted only when the coach asked for them; otherwise this is the invite list (owner, 2026-10-08). */}
             <b>{e.rsvpRequired ? 'Responses' : 'Invited'}</b>
-            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${e.people.length} ${e.people.length === 1 ? 'player' : 'players'}`}</span>
+            <span>{e.rsvpRequired ? `${e.people.length} invited` : `${plural(e.people.length, 'player')}`}</span>
           </div>
           {ctx.rsvpError ? (
             <InlineNotice

@@ -23,6 +23,7 @@ import { CalendarLine, CommitRule, ContactHint, ContactSection, MetaLine, NextSt
 import { Pipeline } from './Pipeline';
 import { NoMatch } from './RecruitingDesktop';
 import { RecPickSheet } from './RecSheet';
+import { plural } from '../../lib/plural';
 
 /**
  * Recruiting on the phone (owner boards PhoneList, PhoneDetail, PhoneStage and the states; spec
@@ -81,7 +82,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
               ) : (
                 <>
                   <div className="ch-recm-count">
-                    <span className="ch-num">{c.rows.length === c.total ? `${c.total} ${c.total === 1 ? 'prospect' : 'prospects'}` : `${c.rows.length} of ${c.total}`}</span>
+                    <span className="ch-num">{c.rows.length === c.total ? `${plural(c.total, 'prospect')}` : `${c.rows.length} of ${c.total}`}</span>
                     <Menu
                       label="Sort prospects"
                       align="end"

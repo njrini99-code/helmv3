@@ -20,6 +20,7 @@ import { shortDay } from '../parts';
 import { LIVE_RECOVER_PORTS, type ChRecoverPorts } from './ports';
 import type { ChDeviceScan, ChRecoverRound } from './scan';
 import '../../../styles/rounds-recover.css';
+import { plural } from '../../../lib/plural';
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}/;
 
@@ -163,7 +164,7 @@ export function RoundRecover({ playerId, ports = LIVE_RECOVER_PORTS }: { playerI
       if (!result.success) return { ...copy, hint: reasonText(result.error) ?? copy.hint };
       if (result.data?.declined) return { ...copy, done: 'A sync is already running' };
       const synced = result.data?.synced ?? 0;
-      return { ...copy, done: synced > 0 ? `Synced ${synced} ${synced === 1 ? 'round' : 'rounds'}` : 'Nothing was sent this time. Restore a round to send it now' };
+      return { ...copy, done: synced > 0 ? `Synced ${plural(synced, 'round')}` : 'Nothing was sent this time. Restore a round to send it now' };
     },
   );
 

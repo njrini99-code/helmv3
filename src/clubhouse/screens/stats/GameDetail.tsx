@@ -26,6 +26,7 @@ import { ScoreMixBar } from './ScoreMixBar';
 import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts, READS_FAILED } from './reads-line';
+import { plural } from '../../lib/plural';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
@@ -363,19 +364,19 @@ export function GameDetail({
 
   // Every figure below but the scoring average reads the rounds with their holes scored; a round posted as a total only is a score and nothing else (Q-123).
   const holeCount = x.holeRounds ?? rounds;
-  const sample = `${holeCount} ${holeCount === 1 ? 'round' : 'rounds'} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
+  const sample = `${plural(holeCount, 'round')} · ${s.totalPutts} putts · ${s.girOpportunities} approaches`;
   // What every section counts: the window's own rounds, of the lengths the filter chose, the same ones the Rounds table lists.
   const lengths =
     holes === '18'
       ? '18 holes only (9-hole rounds are left out)'
       : `${holes === '9' ? '9-hole rounds' : '18- and 9-hole rounds'}; per-round figures are per 18 holes (a 9-hole round counts as half a round)`;
   const coverage = holeCoverage(holeCount, rounds);
-  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${rounds} ${rounds === 1 ? 'round' : 'rounds'}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
+  const basisLine = `${basis ?? RULE_WINDOW[win]} · ${plural(rounds, 'round')}, ${lengths}${coverage ? `. ${coverage}, the rest posted as a total only` : ''}`;
   // The phone's one short line: the window, and how many rounds count. "Last 10 rounds" with three behind it says three qualify, not that ten were read (likewise Last 5 and Last 20).
   const lastN = Number(/^Last (\d+) rounds$/.exec(basis ?? RULE_WINDOW[win])?.[1]);
   const fewer = win === 'last10' && lastN > 0 && rounds < lastN;
   const kept = /hole/i.test(basis ?? '') ? null : holes === '18' ? '18 holes only' : holes === '9' ? '9 holes only' : '18 and 9 holes';
-  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${rounds} ${rounds === 1 ? 'round qualifies' : 'rounds qualify'}` : `${rounds} ${rounds === 1 ? 'round' : 'rounds'}`}${kept ? `, ${kept}` : ''}`;
+  const shortBasis = `${basis ?? RULE_WINDOW[win]} · ${fewer ? `${plural(rounds, 'round qualifies', 'rounds qualify')}` : `${plural(rounds, 'round')}`}${kept ? `, ${kept}` : ''}`;
   /** The rule under a section's figures: the long line on a screen; on the phone the short line, and the rest behind "How this is measured". */
   const ruleOf = (tail: string) => (phone ? { rule: shortBasis, how: `${basisLine}. ${tail}` } : { rule: `${basisLine}. ${tail}` });
   /** A panel's note: the whole paragraph on a screen; on the phone one short line, and the paragraph behind "How this is measured". */
@@ -544,7 +545,7 @@ export function GameDetail({
                   title="Some distances need more shots."
                   body={tourProx
                     .filter((b) => b.value == null)
-                    .map((b) => `${b.band} yards: ${b.n ? `${b.n} ${b.n === 1 ? 'shot' : 'shots'}, under ${b.floor}` : 'no shots'}`)
+                    .map((b) => `${b.band} yards: ${b.n ? `${plural(b.n, 'shot')}, under ${b.floor}` : 'no shots'}`)
                     .join(' · ')}
                 />
               )}
@@ -603,7 +604,7 @@ export function GameDetail({
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
             : sampleState('scramble', s.scrambleAttempts) === 'none'
-              ? `Up and down ${s.scramblesMade} of ${s.scrambleAttempts} ${s.scrambleAttempts === 1 ? 'time' : 'times'} so far: too few chances to read as a rate yet.`
+              ? `Up and down ${s.scramblesMade} of ${plural(s.scrambleAttempts, 'time')} so far: too few chances to read as a rate yet.`
               : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
                   s.scramblingPctRough != null ? ` From the rough it’s ${Math.round(s.scramblingPctRough)}%` : ''
                 }${s.sandSavePercentage != null && sampleState('scramble', s.sandSaveAttempts) !== 'none' ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`

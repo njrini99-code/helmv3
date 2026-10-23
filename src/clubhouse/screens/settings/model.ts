@@ -1,6 +1,7 @@
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 import type { ChClock } from '../../lib/clock-cookie';
+import { plural } from '../../lib/plural';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -185,7 +186,7 @@ export function remindersValid(r: ChReminders): boolean {
 
 export function hoursLabel(h: number): string {
   if (h % 24 === 0) return `${h / 24} ${h === 24 ? 'day' : 'days'} before`;
-  return `${h} ${h === 1 ? 'hour' : 'hours'} before`;
+  return `${plural(h, 'hour')} before`;
 }
 
 export function minutesLabel(m: number): string {

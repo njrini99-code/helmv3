@@ -13,6 +13,7 @@ import { trendRounds, withValue } from './round-trend';
 import { PuttBands } from './PuttBands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
+import { plural } from '../../lib/plural';
 
 /**
  * P005: the Overview as seven zones, one per stat area (strokes gained, scoring, off the tee, approach, short game, putting,
@@ -238,7 +239,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         )}
         {s && holesScored > 0 ? (
           <>
-            <Vis title="Every hole, by result" note={`${holesScored} holes over ${s.roundsPlayed} ${s.roundsPlayed === 1 ? 'round' : 'rounds'}.`}>
+            <Vis title="Every hole, by result" note={`${holesScored} holes over ${plural(s.roundsPlayed, 'round')}.`}>
               <ScoreMixBar counts={mixCounts!} perRound={mixPer} triple={data.extra.triplePlus} label="Every hole, by result" />
             </Vis>
             <Vis title="Each par against par" note="Average strokes over or under par a hole. The gold tick is the Tour.">

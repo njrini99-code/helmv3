@@ -7,6 +7,7 @@ import { SerifText } from '../../ui/SerifText';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
+import { plural } from '../../lib/plural';
 
 /**
  * The yardage book: charts drawn the way a caddie's book reads, numbers where
@@ -299,7 +300,7 @@ export function BandRows({ rows, unit, label, invert = false, none = 'No shots',
                 ) : (
                   <b className={'ch-num' + (tone === ' is-loss' ? ' ch-loss' : tone === ' is-gain' ? ' ch-gain' : '')}>{`${Math.round(r.value)}${unit}`}</b>
                 )}
-                {r.n != null && r.n > 0 && <small className="ch-num">{`${r.n} ${r.n === 1 ? 'shot' : 'shots'}`}</small>}
+                {r.n != null && r.n > 0 && <small className="ch-num">{`${plural(r.n, 'shot')}`}</small>}
               </span>
             </li>
           );

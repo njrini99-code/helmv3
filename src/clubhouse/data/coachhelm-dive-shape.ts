@@ -14,6 +14,7 @@ import { toChRead, type ChRead } from './coachhelm-read-shape';
 import type { ChViewer } from './coachhelm-voice';
 import { stanceOf, type ChBoardMissing, type ChInsight, type ChStance } from './coachhelm-shape';
 import { figure } from './coachhelm-standing-shape';
+import { plural } from '../lib/plural';
 
 /**
  * The player's Deep dive (Clubhouse P013, `?view=deep-dive`): every insight the Board draws, in full. Each one shows what was
@@ -292,7 +293,7 @@ function movementChange(from: number, to: number, unit: InsightUnit): string | n
     case 'percent':
       return `${r} pts`;
     case 'strokes':
-      return `${r} ${r === 1 ? 'stroke' : 'strokes'}`;
+      return `${plural(r, 'stroke')}`;
     case 'yards':
       return `${r} yd`;
     case 'feet':

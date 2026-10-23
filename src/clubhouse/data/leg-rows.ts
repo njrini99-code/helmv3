@@ -2,6 +2,7 @@ import type { ChRound } from './season';
 import { mean, type summarizePlayer } from './season';
 import { recordedPutts } from './round-scope';
 import type { ChRoundCache } from './stats-common';
+import { plural } from '../lib/plural';
 
 /**
  * The four parts of the game as rates and a per-round figure over a window of rounds (Player Home's legs, and the
@@ -88,7 +89,7 @@ export function legRows(window: ChRound[], cache: Map<string, ChRoundCache>, ben
     },
     { saves: 0, att: 0 },
   );
-  const rounds = (k: number) => `${k} ${k === 1 ? 'round' : 'rounds'}`;
+  const rounds = (k: number) => `${plural(k, 'round')}`;
   const row = (key: ChLegKey, value: number | null, unit: '%' | '', digits: number, lowerIsBetter: boolean, legSg: number | null, benchValue: number | null, trend: number[], note: string | null): ChPlayerLeg => ({
     key,
     label: LEG_LABELS[key][0],

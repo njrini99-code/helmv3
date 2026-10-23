@@ -45,6 +45,7 @@ import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
 import { TERMS } from '../../lib/glossary';
+import { plural } from '../../lib/plural';
 
 /**
  * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
@@ -339,7 +340,7 @@ export function Roster({ data }: { data: ChRoster }) {
       URL.revokeObjectURL(a.href);
       // CH-3702: an export lands with the success tap.
       haptic('success');
-      toast({ title: `Roster exported · ${rows.length} ${rows.length === 1 ? 'player' : 'players'}` });
+      toast({ title: `Roster exported · ${plural(rows.length, 'player')}` });
     } catch {
       haptic('error');
       toast({ tone: 'error', title: 'Couldn’t export the roster', body: 'Your browser blocked the download. Try again, or use a desktop browser.', code: 'CH-3005' });

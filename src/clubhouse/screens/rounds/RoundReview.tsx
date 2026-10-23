@@ -41,6 +41,7 @@ import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
 import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
+import { plural } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -246,8 +247,8 @@ function HoleCard({
           <h3 id="ch-rv-hole-h">{title}</h3>
           <span>
             {[
-              strokes ? `${strokes} ${strokes === 1 ? 'shot' : 'shots'}` : null,
-              hole.putts != null ? `${hole.putts} ${hole.putts === 1 ? 'putt' : 'putts'}` : null,
+              strokes ? `${plural(strokes, 'shot')}` : null,
+              hole.putts != null ? `${plural(hole.putts, 'putt')}` : null,
               hole.penalties ? `${hole.penalties} penalty` : null,
             ]
               .filter(Boolean)

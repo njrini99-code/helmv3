@@ -17,6 +17,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';
+import { plural } from '../../../lib/plural';
 
 const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team, and how you play.';
 
@@ -155,7 +156,7 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
 
 function Hero({ s, voice = PLAYER_VOICE }: { s: ChStanding; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
-  const meta = [s.rounds != null ? `${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
+  const meta = [s.rounds != null ? `${plural(s.rounds, 'round')}` : null, s.scoringAverage ? `Scoring average ${s.scoringAverage}` : null, s.refreshed ? `Refreshed ${s.refreshed.replace(' ', '\u00a0')}` : null].filter(Boolean);
   const { tour, team } = s.counts;
   const top = s.ladder.top;
   const tourName = s.tour === 'Tour' ? 'the Tour' : 'the LPGA Tour';
@@ -327,8 +328,8 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
             title="Standing starts with a few rounds"
             body={
               f
-                ? `Standing puts ${f}’s stats next to the Tour and the team, and refreshes overnight.${s.rounds ? ` ${f} has posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'} so far.` : ''} It fills in once ${f}’s first rounds are in.`
-                : `Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${s.rounds} ${s.rounds === 1 ? 'round' : 'rounds'}.` : ''}`
+                ? `Standing puts ${f}’s stats next to the Tour and the team, and refreshes overnight.${s.rounds ? ` ${f} has posted ${plural(s.rounds, 'round')} so far.` : ''} It fills in once ${f}’s first rounds are in.`
+                : `Standing puts your stats next to the Tour and your team. It fills in once your first rounds are in, and refreshes overnight.${s.rounds ? ` You have posted ${plural(s.rounds, 'round')}.` : ''}`
             }
             action={
               startHref ? (

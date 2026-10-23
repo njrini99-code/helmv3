@@ -16,6 +16,7 @@ import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { moveOrder, orderToPriorities, PRIORITY_LABEL, priorityOrder, type ChCoachHelmSettings, type ChSettingsData, type ChSettingsWrites, type PriorityKey } from './model';
 import { useCoachHelmPower } from './hooks';
 import { Card, ReadFailed, Row, saveFailureBody, SavedMark, SettingSwitch, useSavedKeys, useWarnOnOpen } from './parts';
+import { plural } from '../../lib/plural';
 
 export type Phil = CoachPhilosophy & { id: string | null };
 
@@ -224,7 +225,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
             description="Rounds a player needs before CoachHelm says anything about them."
             value={p.minRoundsForSignal}
             {...SIGNAL_CONTROL_RANGES.minRoundsForSignal}
-            format={(v) => `${v} ${v === 1 ? 'round' : 'rounds'}`}
+            format={(v) => `${plural(v, 'round')}`}
             onChange={(v) => change({ minRoundsForSignal: v }, { debounce: 'minRoundsForSignal' })}
           />
         </div>

@@ -11,6 +11,7 @@ import {
 } from '@/app/golf/actions/recruit-documents-limits';
 import type { ChDivision, ChProgramGender } from './recruiting-calendar';
 import { RECRUIT_FILM_ENABLED } from './recruiting-film';
+import { plural } from '../lib/plural';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -373,8 +374,8 @@ export function nextStepSummary(list: readonly ChProspect[], now: Date, tz?: str
     if (kind === 'decision' && p.stage !== 'committed' && p.nextStepDate.slice(0, 7) <= month) decisions += 1;
   }
   const parts = [
-    visits ? `${visits} ${visits === 1 ? 'visit' : 'visits'} this month` : null,
-    decisions ? `${decisions} ${decisions === 1 ? 'decision' : 'decisions'} due` : null,
+    visits ? `${plural(visits, 'visit')} this month` : null,
+    decisions ? `${plural(decisions, 'decision')} due` : null,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }

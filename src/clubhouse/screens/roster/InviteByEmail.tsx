@@ -8,6 +8,7 @@ import { haptic } from '../../lib/haptics';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
+import { plural } from '../../lib/plural';
 
 interface Chip {
   /** What was typed: the normalised address when it reads as one. */
@@ -188,7 +189,7 @@ export function InviteByEmail({ enabled }: { enabled: boolean }) {
         {receipt
           ? receipt.failed
             ? `${receipt.sent ? `Sent to ${receipt.sent}. ` : ''}${receipt.failed} didn’t send. Try again.`
-            : `Sent to ${receipt.sent} ${receipt.sent === 1 ? 'player' : 'players'}.`
+            : `Sent to ${plural(receipt.sent, 'player')}.`
           : ''}
       </span>
     </div>

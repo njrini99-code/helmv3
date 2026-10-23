@@ -2,6 +2,7 @@ import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster
 import { formatSigned, MINUS } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { displayPlaces } from '../../lib/rank';
+import { plural } from '../../lib/plural';
 
 export { MINUS };
 
@@ -58,7 +59,7 @@ export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string;
   if (statsError) return null;
   if (p.form !== 'early') return { text: FORM_WORD[p.form], tone: null };
   if (p.rounds === 0) return { text: 'No rounds this season', tone: null };
-  return { text: `Early read · ${p.rounds} ${p.rounds === 1 ? 'round' : 'rounds'}`, tone: null };
+  return { text: `Early read · ${plural(p.rounds, 'round')}`, tone: null };
 }
 
 /** Under this many rounds a player's average is an early read: no place on the team, no strip (P003 #3). */

@@ -36,6 +36,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
 import { Line } from '../../ui/charts/Line';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { plural } from '../../lib/plural';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -381,7 +382,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
           <span className="ch-sgt__vs">
             {isSg
               ? `Per round, weekly average · dashed line is ${baseline.noun} · names show the window average`
-              : `Against par · ${data.roundCount} ${data.roundCount === 1 ? 'round' : 'rounds'} · lower is better · names show the window average`}
+              : `Against par · ${plural(data.roundCount, 'round')} · lower is better · names show the window average`}
           </span>
           {best && (
             <dl className="ch-sgt__facts">

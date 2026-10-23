@@ -16,6 +16,7 @@ import { TeamPatterns } from '../TeamPatterns';
 import { Row } from './MondayBrief';
 import { BackLink } from '../../../ui/Section';
 import '../../../styles/coachhelm-brief.css';
+import { plural } from '../../../lib/plural';
 
 const LINE = 'Who to talk to this week, what the team is working on, and how CoachHelm’s reads have held.';
 
@@ -130,7 +131,7 @@ function Ready({ d, section }: { d: ChCoachBrief; section: ChBriefSection | null
       )}
       {d.working.length > 0 && (
         <div id={briefSectionId('working')} className="ch-hbr-sec" data-ch-code="CH-13985">
-          <Surface id="ch-hbr-working-s" title="What players are working on" subtitle={`${d.working.length} ${d.working.length === 1 ? 'focus area' : 'focus areas'} open`}>
+          <Surface id="ch-hbr-working-s" title="What players are working on" subtitle={`${plural(d.working.length, 'focus area')} open`}>
             <ol className="ch-hmb-rows">
               {d.working.map((w) => (
                 <WorkingRow key={w.id} w={w} />

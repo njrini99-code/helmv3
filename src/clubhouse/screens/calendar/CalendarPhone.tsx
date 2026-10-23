@@ -20,6 +20,7 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
+import { plural } from '../../lib/plural';
 
 /** The phone's three views (board: Day, Month, List); the desktop's week is the phone's Day. */
 export type ChCalPhoneView = 'day' | 'month' | 'list';
@@ -198,7 +199,7 @@ function DayView({
         isToday: d === now.date,
         dots: failed ? 0 : n,
         flag: reply ? 'reply' : undefined,
-        label: `${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${n} ${n === 1 ? 'event' : 'events'}`}${reply ? ', needs your reply' : ''}`,
+        label: `${dowOf(d)} ${dayNum(d)}${d === now.date ? ', today' : ''}${failed ? '' : `, ${plural(n, 'event')}`}${reply ? ', needs your reply' : ''}`,
       };
     });
   // The day on show and the way it went: a later day comes in from the right, an earlier one from the left. A swipe has

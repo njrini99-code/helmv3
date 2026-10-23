@@ -4,6 +4,7 @@ import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
+import { plural } from '../../lib/plural';
 
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
@@ -124,7 +125,7 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
   return {
     id: r.playerId,
     name: r.name,
-    sub: [r.classYear, `${r.played} of ${numRounds} ${numRounds === 1 ? 'round' : 'rounds'} in`].filter(Boolean).join(' \u00b7 '),
+    sub: [r.classYear, `${r.played} of ${plural(numRounds, 'round')} in`].filter(Boolean).join(' \u00b7 '),
     avg: r.avg,
   };
 }
@@ -134,7 +135,7 @@ export function qualifierPeek(r: ChQRow, numRounds: number): ChPlayerPeek {
  * eight rounds) keeps the figure, since a row of dots that long stops being countable at a glance.
  */
 export function ThruDots({ played, total }: { played: number; total: number }) {
-  const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
+  const label = `${played} of ${plural(total, 'round')}`;
   if (total > 8) {
     return (
       <span role="img" className="ch-num" aria-label={label}>

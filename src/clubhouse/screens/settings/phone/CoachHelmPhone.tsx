@@ -10,6 +10,7 @@ import { ReadFailed } from '../parts';
 import { Reorder } from './Reorder';
 import { ActionSheet } from './sheets';
 import { Group, PickerRow, SliderRow, SwitchRow } from './ui';
+import { plural } from '../../../lib/plural';
 
 /**
  * CoachHelm on the phone (coach): the power switches, the priorities with the native reorder handle, and every setting
@@ -112,7 +113,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
           description="Rounds a player needs before CoachHelm says anything about them."
           value={p.minRoundsForSignal}
           {...SIGNAL_CONTROL_RANGES.minRoundsForSignal}
-          format={(v) => `${v} ${v === 1 ? 'round' : 'rounds'}`}
+          format={(v) => `${plural(v, 'round')}`}
           onChange={(v) => change({ minRoundsForSignal: v }, { debounce: 'minRoundsForSignal' })}
         />
         <PickerRow

@@ -29,6 +29,7 @@ import { SerifText } from '../../../ui/SerifText';
 import { Line } from '../../../ui/charts/Line';
 import { EngineState, WhyAudit } from '../EngineState';
 import { CorrectionChips, ReadLater } from '../Corrections';
+import { plural } from '../../../lib/plural';
 
 /** A sentence ends in its stop: a generator's line without one gets a full stop (P013 D6). */
 export const sentence = (t: string): string => (/[.!?…”"’)]$/.test(t.trim()) ? t.trim() : `${t.trim()}.`);
@@ -186,7 +187,7 @@ function Trend({ i, theme, themesFailed, covered = false, voice = PLAYER_VOICE }
 function Rounds({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepInsight; failed: boolean; covered?: boolean; voice?: ChViewVoice }) {
   const w = wordsFor(voice);
   const { total, list } = i.rounds;
-  const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${total} ${total === 1 ? 'round' : 'rounds'}`) : undefined;
+  const aside = total > 0 ? (list.length > 0 && total > list.length ? `Newest ${list.length} of ${total}` : `${plural(total, 'round')}`) : undefined;
   return (
     <Section id={`${i.base.id}-rounds`} title="The rounds behind it" aside={aside}>
       {failed && total > 0 ? (
@@ -204,7 +205,7 @@ function Rounds({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDee
           title={total > 0 ? 'None of the rounds can be listed' : 'No rounds are named'}
           body={
             total > 0
-              ? `This read was made from ${total} ${total === 1 ? 'round' : 'rounds'}, but none of them can be listed here. ${w.removed}`
+              ? `This read was made from ${plural(total, 'round')}, but none of them can be listed here. ${w.removed}`
               : `This read does not name the rounds it was made from. It uses ${w.stats} over the window above, so there is no list to show.`
           }
         />
@@ -630,7 +631,7 @@ function Ledger({ list, cleared = [], pickedId, onPick, dismissed }: { list: rea
 export function heroLine(d: Pick<ChDeepDive, 'counts' | 'plansFailed'>, first: string | null = null): string {
   const { insights, inPlan } = d.counts;
   const whose = first ? `${first}’s` : 'your';
-  const head = `CoachHelm has ${insights} ${insights === 1 ? 'read' : 'reads'} on ${whose} game`;
+  const head = `CoachHelm has ${plural(insights, 'read')} on ${whose} game`;
   if (d.plansFailed || inPlan === 0) return `${head}.`;
   if (insights === 1) return `${head}, and it is in ${whose} plan.`;
   return `${head}, ${inPlan === insights ? 'all' : inPlan} of them in ${whose} plan.`;
@@ -740,10 +741,10 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
             f
               ? none
                 ? `CoachHelm reads ${f}’s rounds for patterns worth time, and each one lands here with its evidence. The first reads follow ${f}’s first round.`
-                : `CoachHelm writes an insight when a pattern in ${f}’s rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} ${f} has posted` : ''}. It checks again as ${f} posts more.`
+                : `CoachHelm writes an insight when a pattern in ${f}’s rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${plural(d.rounds, 'round')} ${f} has posted` : ''}. It checks again as ${f} posts more.`
               : none
                 ? 'CoachHelm reads your rounds for patterns worth your time, and each one lands here with its evidence. Post a round and the first reads follow.'
-                : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${d.rounds} ${d.rounds === 1 ? 'round' : 'rounds'} you have posted` : ''}. It checks again as you post more.`
+                : `CoachHelm writes an insight when a pattern in your rounds is clear enough to stand behind. None is yet${d.rounds ? `, from the ${plural(d.rounds, 'round')} you have posted` : ''}. It checks again as you post more.`
           }
           action={
             startHref ? (

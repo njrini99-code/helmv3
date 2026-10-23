@@ -40,6 +40,7 @@ import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { TERMS } from '../../lib/glossary';
+import { plural } from '../../lib/plural';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -169,7 +170,7 @@ export function StatsPlayerPhone({
                 )}
               </>
             )}
-            {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`]
+            {[failed ? null : `${plural(data.season.rounds, 'round')} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`]
               .filter(Boolean)
               .map((part, i, all) => (
                 <Fragment key={i}>
@@ -274,7 +275,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         <div>
           <dt>Scoring avg</dt>
           <dd className="ch-num">{formatFixed(w.avg)}</dd>
-          <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${w.rounds} ${w.rounds === 1 ? 'round' : 'rounds'}`}</dd>
+          <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${plural(w.rounds, 'round')}`}</dd>
         </div>
         <div>
           <dt>SG / round</dt>

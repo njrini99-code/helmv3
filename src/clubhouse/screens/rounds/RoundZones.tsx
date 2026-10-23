@@ -6,6 +6,7 @@ import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
 import { afterRailMove } from '../../lib/rail-fold';
+import { plural } from '../../lib/plural';
 
 /**
  * P011: the pictures of a round's review. A zone is a band under a gold rule: what the area is and one reading on the left,
@@ -347,7 +348,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
   const width = (text: string) => text.length * fs * 0.46;
   const GAP = fs * 0.6;
   const teeText = hole.yards ? `Tee · ${hole.yards} yds` : 'Tee';
-  const puttText = t.putts > 0 ? `${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
+  const puttText = t.putts > 0 ? `${plural(t.putts, 'putt')}${t.firstPutt != null ? ` · from ${t.firstPutt} ft` : ''}` : null;
   const puttLeft = puttText ? RIGHT - width(puttText) : Infinity;
   let edge = X0 - 8 + width(teeText);
   const shown = new Set<number>();
@@ -359,7 +360,7 @@ export function ShotTrail({ hole }: { hole: ChReviewHole }) {
     shown.add(st.n);
     edge = b + w / 2;
   }
-  const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${t.putts} ${t.putts === 1 ? 'putt' : 'putts'}` : ''}`;
+  const label = `Hole ${hole.n} shots along the hole: ${t.steps.map((s) => `${s.kind}${s.penalty ? ' penalty' : ''}${s.left ? ` to ${s.left}` : ''}`).join(', ')}${t.putts ? `, then ${plural(t.putts, 'putt')}` : ''}`;
   return (
     <div className="ch-rzplate">
       <svg ref={svgRef} className="ch-rzsvg ch-rztrail" viewBox="0 0 740 150" role="img" aria-label={label}>

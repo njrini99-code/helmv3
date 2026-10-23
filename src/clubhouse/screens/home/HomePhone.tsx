@@ -38,6 +38,7 @@ import { useLightPlace } from '../../shell/light';
 
 export { CALENDAR, eventHref, whenLabel } from './event-links';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
+import { plural } from '../../lib/plural';
 const newEventHref = (type?: ChHomeEvent['type']) => `${CALENDAR}?new=1${type ? `&type=${type}` : ''}`;
 
 /**
@@ -323,7 +324,7 @@ const shortDay = (ymd: string) => SHORT_DAY.format(new Date(`${ymd}T12:00:00Z`))
 /** What the average, greens and putts rest on: "3 rounds · Aug 2", "24 rounds · Sep 1 – Sep 28". */
 export function formBasis(b: ChTeamForm['basis']): string {
   const span = b.from === b.to ? shortDay(b.from) : `${shortDay(b.from)} – ${shortDay(b.to)}`;
-  return `${b.rounds} ${b.rounds === 1 ? 'round' : 'rounds'} · ${span}`;
+  return `${plural(b.rounds, 'round')} · ${span}`;
 }
 
 /** "2 of 3 rounds" when a figure rests on fewer rounds than the average; blank when it rests on all of them, or on none (the figure is then —). */
@@ -405,7 +406,7 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
           isToday: d.isToday,
           dots: d.eventCount,
           mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
-          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${d.eventCount} ${d.eventCount === 1 ? 'event' : 'events'}`,
+          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${plural(d.eventCount, 'event')}`,
           href: `${CALENDAR}?view=day&date=${d.date}`,
         }))}
       />

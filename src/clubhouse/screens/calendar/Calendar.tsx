@@ -41,6 +41,7 @@ import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
+import { plural } from '../../lib/plural';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -316,7 +317,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
   const stack = (chosen.length ? chosen : people).slice(0, 4);
   const count = chosen.length || people.length;
   const label = !chosen.length ? 'Everyone' : chosen.length === 1 ? chosen[0]!.name : `${chosen.length} players`;
-  const detail = !chosen.length ? `Team schedule · ${people.length} ${people.length === 1 ? 'player' : 'players'}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
+  const detail = !chosen.length ? `Team schedule · ${plural(people.length, 'player')}` : chosen.length === 1 ? 'Their events and classes' : chosen.map((p) => p.name.split(' ')[0]).join(', ');
   const list = people.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase()));
   const tog = (id: string) => {
     haptic('select');

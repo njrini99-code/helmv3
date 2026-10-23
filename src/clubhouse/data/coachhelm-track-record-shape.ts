@@ -147,7 +147,7 @@ function programLine(tr: TrackRecord, sinceWord: string): string {
   const parts = [
     `${p.held} held when rechecked`,
     `${p.cleared} cleared on ${p.cleared === 1 ? 'its' : 'their'} own`,
-    `${p.contradicted} ${p.contradicted === 1 ? 'was' : 'were'} contradicted by later rounds`,
+    `${plural(p.contradicted, 'was', 'were')} contradicted by later rounds`,
   ];
   const waiting = p.shown - p.rechecked;
   return `${shown} ${parts.join(', ')}.${waiting > 0 ? ` ${waiting} not rechecked yet.` : ''}`;

@@ -31,6 +31,7 @@ import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
 import { changeSe, floorRate, meanSe, needsText, type SpreadKind } from '../lib/stats-signal';
+import { plural } from '../lib/plural';
 
 /**
  * Team Stats (Clubhouse). Trends and strokes gained first; the owner removed
@@ -262,7 +263,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     });
   const rateSe = (made: keyof ChRoundCache, total: keyof ChRoundCache) => (hasPrev ? changeSe(roundRates(curPaired, made, total), roundRates(prev, made, total), null) : null);
   const benchGir = bench.get('gir_pct');
-  const count = (n: number) => `${n} ${n === 1 ? 'round' : 'rounds'}`;
+  const count = (n: number) => `${plural(n, 'round')}`;
   const sample = count(windowRounds.length);
   // The hole-level cards rest on the rounds with their holes: their own count, and when it is fewer than the window's, a line saying so.
   const holeSample = count(holeWindow.length);
@@ -310,10 +311,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       se: sgDelta.se ?? null,
       lowerIsBetter: false,
       // With rounds with shots but no player at the floor yet, the card says what it needs (A4), never a number from one round.
-      context: sgDelta.context || (sgNow.length ? `${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : holeWindow.some((r) => sgOf(r) != null) ? `${needsText('sgLong')} with shots from one player` : 'Needs rounds with shots'),
+      context: sgDelta.context || (sgNow.length ? `${plural(sgNow.length, 'round')} with shots` : holeWindow.some((r) => sgOf(r) != null) ? `${needsText('sgLong')} with shots from one player` : 'Needs rounds with shots'),
       state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
-      note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
+      note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${plural(sgNow.length, 'round')} with shots` : ''}`,
       gauge: { kind: 'sg', tour },
     },
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },

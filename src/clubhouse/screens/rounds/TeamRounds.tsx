@@ -21,6 +21,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
+import { plural } from '../../lib/plural';
 
 type Group = 'month' | 'player';
 
@@ -151,7 +152,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
               label="The team this season"
               code="CH-11319"
               items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : NO_DATA, note: s.players ? `${s.players} ${s.players === 1 ? 'player' : 'players'}` : undefined },
+                { label: 'Rounds', value: s.rounds ? s.rounds : NO_DATA, note: s.players ? `${plural(s.players, 'player')}` : undefined },
                 { label: 'Average', value: s.avg == null ? NO_DATA : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
                 { label: 'Under par', value: s.rounds ? s.underPar : NO_DATA, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
                 { label: 'Low round', value: best ? best.score : NO_DATA, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },

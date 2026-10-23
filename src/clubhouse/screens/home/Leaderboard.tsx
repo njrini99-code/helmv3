@@ -16,6 +16,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
 import { displayPlaces, placeLabel } from '../../lib/rank';
+import { plural } from '../../lib/plural';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -171,7 +172,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             code="CH-2305"
             shape="people"
             title="No 18-hole rounds posted yet this season."
-            body={`${data.rosterSize} ${data.rosterSize === 1 ? 'player is' : 'players are'} on the roster. The leaderboard fills in as rounds are posted.`}
+            body={`${plural(data.rosterSize, 'player is', 'players are')} on the roster. The leaderboard fills in as rounds are posted.`}
           />
         </div>
       ) : (

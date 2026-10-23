@@ -7,6 +7,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
+import { plural } from '../../lib/plural';
 
 /**
  * Game detail's "More detail": for each section the figures the production
@@ -99,7 +100,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           items={types.map(([l, avg, n]) => ({
             label: l,
             value: formatAvg(avg),
-            sub: n ? `${n} ${n === 1 ? 'round' : 'rounds'}` : 'No rounds',
+            sub: n ? `${plural(n, 'round')}` : 'No rounds',
             empty: n === 0,
             code: 'CH-5312',
           }))}

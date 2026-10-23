@@ -32,6 +32,7 @@ import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import { Tooltip } from '../../ui/Tooltip';
 import { screenFile, type ChReadFail, type ChReadResult, type ChReadSource } from './import-read';
+import { plural } from '../../lib/plural';
 
 type Step = 'pick' | 'reading' | 'review' | 'error';
 
@@ -241,7 +242,7 @@ export function ImportSchedule({
                 Start over
               </Button>
               <Button variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
-                {importing ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? 'class' : 'classes'}`}
+                {importing ? 'Importing…' : `Import ${plural(rows.length, 'class', 'classes')}`}
               </Button>
             </>
           ) : undefined

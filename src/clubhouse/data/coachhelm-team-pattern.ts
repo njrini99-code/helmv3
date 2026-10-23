@@ -1,6 +1,7 @@
 import type { TeamPatternResult } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import { teamPatternBelowLine, teamPatternMembersLine, teamPatternStrokesLine } from '@/lib/coachhelm/v3/team-pattern/pattern';
 import type { LadderRung } from '@/lib/coachhelm/v3/support/ladder';
+import { plural } from '../lib/plural';
 
 /**
  * The Team pattern rows on the coach's CoachHelm board (Clubhouse P013;
@@ -53,7 +54,7 @@ export function memberValue(value: number | null, unit: string | null): string |
     case 'percent':
       return `${v}%`;
     case 'strokes':
-      return `${v} ${v === 1 ? 'stroke' : 'strokes'}`;
+      return `${plural(v, 'stroke')}`;
     case 'feet':
       return `${v} ft`;
     case 'yards':

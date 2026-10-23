@@ -19,6 +19,7 @@ import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/whats-new.css';
+import { plural } from '../../lib/plural';
 
 type Filter = 'all' | ChWhatsNewKind;
 
@@ -93,7 +94,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
       {phone && <PhoneTop start heading={false} title="What’s new" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
-          <span className="ch-rd-k">{data.total ? `Past 7 days · ${data.total} ${data.total === 1 ? 'update' : 'updates'}` : 'Past 7 days'}</span>
+          <span className="ch-rd-k">{data.total ? `Past 7 days · ${plural(data.total, 'update')}` : 'Past 7 days'}</span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-13431' : undefined}>
             {refreshing ? 'Updating…' : ''}
           </span>

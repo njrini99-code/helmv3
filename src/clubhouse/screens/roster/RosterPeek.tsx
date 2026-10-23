@@ -21,6 +21,7 @@ import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../.
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { plural } from '../../lib/plural';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -393,7 +394,7 @@ export function CoachNote({ p, locked, onSaved }: { p: ChRosterPlayer; locked: b
       ) : (
         left <= NOTE_WARN && (
           <span id={helpId} className="ch-field__help ch-num" data-ch-code="CH-3101" aria-live="polite">
-            {left === 0 ? 'That’s the limit: 2,000 characters.' : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+            {left === 0 ? 'That’s the limit: 2,000 characters.' : `${plural(left, 'character')} left`}
           </span>
         )
       )}
@@ -517,7 +518,7 @@ function AvailabilityNote({ p, onSaved }: { p: ChRosterPlayer; onSaved: (id: str
       />
       {left <= NOTE_WARN && (
         <span id={helpId} className="ch-field__help ch-num" aria-live="polite">
-          {left === 0 ? `That’s the limit: ${AVAILABILITY_NOTE_MAX} characters.` : `${left} ${left === 1 ? 'character' : 'characters'} left`}
+          {left === 0 ? `That’s the limit: ${AVAILABILITY_NOTE_MAX} characters.` : `${plural(left, 'character')} left`}
         </span>
       )}
     </div>

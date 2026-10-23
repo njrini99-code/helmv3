@@ -1,5 +1,6 @@
 import type { ChReviewHole, ChReviewShot, ChRoundReview } from '../../data/round-review-shape';
 import { formatSigned } from '../../lib/format';
+import { plural } from '../../lib/plural';
 
 /**
  * P011: what a round's holes and shots say, worked out once here so the review's pictures and its headline read the same
@@ -202,7 +203,7 @@ export function headline(r: ChRoundReview): string | null {
   if (!parts.length && points.length) {
     const b = points.filter((p) => p.delta < 0).length;
     const d = points.filter((p) => p.delta >= 2).length;
-    parts.push(`${b} ${b === 1 ? 'birdie' : 'birdies'}`, d ? `${d} ${d === 1 ? 'double or worse' : 'doubles or worse'}` : 'no double or worse');
+    parts.push(`${plural(b, 'birdie')}`, d ? `${plural(d, 'double or worse', 'doubles or worse')}` : 'no double or worse');
   }
   if (!parts.length) return null;
   const text = parts.join(', ');
