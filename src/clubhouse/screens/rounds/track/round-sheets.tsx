@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowRight, Bookmark, Check, CirclePlay, Flag, Send, Table2, Trash2, TriangleAlert } from 'lucide-react';
 import { formatToPar, NO_DATA } from '../../../lib/format';
-import { haptic } from '../../../lib/haptics';
 import { useDialogLifetime } from '../../../lib/dialog-lifetime';
+import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Modal } from '../../../ui/Modal';
 import { ScoreMark } from '../../../ui/ScoreMark';
@@ -171,20 +171,10 @@ export function ExitSheet({
               </span>
             )}
           </div>
-          <button type="button" className="ch-btn ch-btn--ghost" disabled={discarding} onClick={() => setConfirm(false)}>
-            <span>Keep it</span>
-          </button>
-          <button
-            type="button"
-            className="ch-btn ch-btn--danger"
-            disabled={discarding}
-            onClick={() => {
-              haptic('warning');
-              onDiscard();
-            }}
-          >
-            <span>{discarding ? 'Discarding…' : 'Discard round'}</span>
-          </button>
+          <Button variant="ghost" disabled={discarding} onClick={() => setConfirm(false)}>Keep it</Button>
+          <Button variant="danger" busy={discarding} onClick={onDiscard}>
+            {discarding ? 'Discarding…' : 'Discard round'}
+          </Button>
         </div>
       ) : (
         <div className="ch-rt-exit__opts">
@@ -274,9 +264,7 @@ export function RoundCompleteSheet({
       code="CH-11508"
       footer={
         <>
-          <button type="button" className="ch-btn ch-btn--ghost" onClick={onBack}>
-            <span>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</span>
-          </button>
+          <Button variant="ghost" onClick={onBack}>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</Button>
           <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
             <span>Post round</span>
             <Icon icon={Send} size={16} />
@@ -398,13 +386,9 @@ export function SubmitOverlay({
               The round didn&rsquo;t post
             </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Check your connection, then try again.'}</span>
-            <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onRetry}>
-              <span>Try again</span>
-            </button>
+            <Button variant="primary" size="lg" onClick={onRetry}>Try again</Button>
             {onGoBack && (
-              <button type="button" className="ch-btn ch-btn--ghost" onClick={onGoBack}>
-                <span>Go back</span>
-              </button>
+              <Button variant="ghost" onClick={onGoBack}>Go back</Button>
             )}
           </>
         )}
