@@ -58,6 +58,14 @@ const PAR4 = (): ShotRecord[] => [
   shot(3, { shotType: 'putting', clubType: 'putter', lieBefore: 'green', distanceToHoleBefore: 20, distanceUnitBefore: 'feet', result: 'hole', distanceToHoleAfter: 0, distanceUnitAfter: 'feet', shotDistance: 7, puttDistanceFeet: 20 }),
 ];
 
+/** Tee to fairway 150, an errant stroke from 150 that went OB, the OB row at 150, the replay from 150. */
+const OB_PAIR = (): ShotRecord[] => [
+  shot(1, { shotType: 'tee', lieBefore: 'tee', distanceToHoleBefore: 400, result: 'fairway', distanceToHoleAfter: 150, distanceUnitAfter: 'yards', shotDistance: 250 }),
+  shot(2, { lieBefore: 'fairway', distanceToHoleBefore: 150, result: 'other', distanceToHoleAfter: 150, distanceUnitAfter: 'yards', shotDistance: 0 }),
+  penalty(3, 'ob', { lieBefore: 'fairway', distanceToHoleBefore: 150, distanceToHoleAfter: 150, distanceUnitAfter: 'yards' }),
+  shot(4, { lieBefore: 'fairway', distanceToHoleBefore: 150, result: 'green', distanceToHoleAfter: 20, distanceUnitAfter: 'feet' }),
+];
+
 describe('relinkAfterEdit', () => {
   it('moves the next shot\'s lie as well as its distance when a result changes', () => {
     const before = PAR4();
@@ -176,6 +184,41 @@ describe('relinkAfterEdit', () => {
     expect(deriveLieAfter(out[1]!)).toBe('rough');
   });
 
+  it('files an approach that now ends in other under the rough miss, as live entry does', () => {
+    const before = PAR4();
+    const original = { ...before[1]!, result: 'sand' as const, distanceToHoleAfter: 15, distanceUnitAfter: 'yards' as const, approachMissDirection: 'short' as const, approachMissLieType: 'bunker' as const };
+    const putt = { ...before[2]!, lieBefore: 'sand' as const, distanceToHoleBefore: 15, distanceUnitBefore: 'yards' as const };
+    const editedPutt = { ...putt, lieBefore: 'other' as const };
+
+    const { history: out } = relinkAfterEdit([before[0]!, original, editedPutt], 2, putt);
+
+    expect(out[1]).toMatchObject({ result: 'other', approachMissLieType: 'rough' });
+  });
+
+  it('moves the OB row and the replay when the shot before the OB stroke changes', () => {
+    const history = OB_PAIR();
+    const edited = { ...history[0]!, result: 'rough' as const, distanceToHoleAfter: 160 };
+
+    const { history: out, changed } = relinkAfterEdit([edited, ...history.slice(1)], 0, history[0]!);
+
+    expect(changed).toEqual([1, 2, 3]);
+    // The errant stroke starts and ends where the tee shot now finished.
+    expect(out[1]).toMatchObject({ lieBefore: 'rough', distanceToHoleBefore: 160, distanceToHoleAfter: 160, shotDistance: 0 });
+    expect(out[2]).toMatchObject({ lieBefore: 'rough', distanceToHoleBefore: 160, distanceToHoleAfter: 160 });
+    expect(out[3]).toMatchObject({ lieBefore: 'rough', distanceToHoleBefore: 160 });
+  });
+
+  it('turns a putt that now starts off the green into an approach', () => {
+    const before = PAR4();
+    const edited = { ...before[1]!, result: 'rough' as const, distanceToHoleAfter: 10, distanceUnitAfter: 'yards' as const };
+
+    const { history: out, changed } = relinkAfterEdit([before[0]!, edited, before[2]!], 1, before[1]!);
+
+    expect(changed).toEqual([2]);
+    expect(out[2]).toMatchObject({ shotType: 'approach', lieBefore: 'rough', distanceToHoleBefore: 10, distanceUnitBefore: 'yards' });
+    expect(out[2]!.puttDistanceFeet).toBeUndefined();
+  });
+
   it('changes nothing around an edit that keeps the shot\'s start and end', () => {
     const before = PAR4();
     const edited = { ...before[1]!, clubType: 'driver' as const };
@@ -196,6 +239,17 @@ describe('relinkAfterDelete', () => {
     expect(changed).toEqual([1]);
     expect(out[1]).toMatchObject({ distanceToHoleBefore: 5, puttDistanceFeet: 5 });
     expect(chainBreaks(out)).toEqual([]);
+  });
+
+  it('leaves the OB row and the replay where they are when the OB stroke is deleted', () => {
+    const history = OB_PAIR();
+    const remaining = [history[0]!, history[2]!, history[3]!];
+
+    const { history: out, changed } = relinkAfterDelete(remaining, 1);
+
+    expect(changed).toEqual([]);
+    expect(out[1]).toMatchObject({ distanceToHoleBefore: 150 });
+    expect(out[2]).toMatchObject({ lieBefore: 'fairway', distanceToHoleBefore: 150 });
   });
 
   it('leaves a new first shot as it is', () => {

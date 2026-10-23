@@ -85,15 +85,23 @@ function placePenalty(row: ShotRecord, spot: Spot): ShotRecord {
   };
 }
 
-/** Start a real shot at `spot`, keeping a recovery lie the player chose ('other' after rough). */
+/**
+ * Start a real shot at `spot`, keeping a recovery lie the player chose ('other'
+ * after rough). A putt whose start is now off the green becomes what live entry
+ * writes for a shot from there (an approach), without its putt-only fields.
+ */
 function startShotAt(shot: ShotRecord, spot: Spot, previousLieAfter: string | null): ShotRecord {
   const keepLie = previousLieAfter !== null && liesChain(previousLieAfter, shot.lieBefore);
-  const moved: ShotRecord = {
+  let moved: ShotRecord = {
     ...shot,
     lieBefore: keepLie ? shot.lieBefore : spot.lie,
     distanceToHoleBefore: spot.distance,
     distanceUnitBefore: spot.unit,
   };
+  if (moved.shotType === 'putting' && moved.lieBefore !== 'green') {
+    const { puttDistanceFeet: _feet, puttMissTags: _tags, ...rest } = moved;
+    moved = { ...rest, shotType: 'approach' };
+  }
   if (moved.shotType === 'putting') {
     const feet = spot.unit === 'yards' ? spot.distance * 3 : spot.distance;
     moved.puttDistanceFeet = Math.min(500, Math.max(0, feet));
@@ -114,6 +122,8 @@ const MISS_LIE_FOR_LIE: Partial<Record<ShotRecord['lieBefore'], NonNullable<Shot
   fairway: 'fairway',
   rough: 'rough',
   sand: 'bunker',
+  // Live entry files an approach that finished in 'other' under the rough miss (editResultUpdates).
+  other: 'rough',
 };
 
 /** End a real shot at `spot`. The result follows only when the stored lie would not chain. */
@@ -128,6 +138,11 @@ function endShotAt(shot: ShotRecord, spot: Spot): ShotRecord {
     }
   }
   return withShotDistance(moved);
+}
+
+/** A stroke whose recorded end is its own start: the errant stroke of an OB / lost pair. */
+function endsWhereItBegan(shot: ShotRecord): boolean {
+  return shot.distanceToHoleAfter === shot.distanceToHoleBefore && shot.distanceUnitAfter === shot.distanceUnitBefore;
 }
 
 function relinkForward(history: ShotRecord[], from: number, changed: Set<number>): void {
@@ -148,12 +163,31 @@ function relinkForward(history: ShotRecord[], from: number, changed: Set<number>
       lieAfter = null;
       continue;
     }
-    const started = startShotAt(row, spot, lieAfter);
-    if (!sameSpot(startOf(started), startOf(row)) || started.puttDistanceFeet !== row.puttDistanceFeet) {
+    let started = startShotAt(row, spot, lieAfter);
+    const offendsStrokeAndDistance = i + 1 < history.length && isStrokeAndDistance(history[i + 1]!);
+    if (offendsStrokeAndDistance && endsWhereItBegan(row)) {
+      // An errant stroke stays where it began, wherever that now is.
+      started = withShotDistance({
+        ...started,
+        distanceToHoleAfter: started.distanceToHoleBefore,
+        distanceUnitAfter: started.distanceUnitBefore,
+      });
+    }
+    const moved = !sameSpot(startOf(started), startOf(row));
+    if (
+      moved ||
+      started.puttDistanceFeet !== row.puttDistanceFeet ||
+      started.shotType !== row.shotType ||
+      started.distanceToHoleAfter !== row.distanceToHoleAfter
+    ) {
       history[i] = started;
       changed.add(i);
     }
-    return;
+    // The shot that went OB / was lost moved: its penalty row and the replay
+    // after it are played from its new start, so keep walking.
+    if (!offendsStrokeAndDistance || !moved) return;
+    spot = endOf(started);
+    lieAfter = deriveLieAfter(started);
   }
 }
 
@@ -201,10 +235,16 @@ export function relinkAfterEdit(history: readonly ShotRecord[], editedIndex: num
  * Relink a hole after the row at `removedIndex` was deleted (`history` no
  * longer contains it): the shot that followed now starts where the shot
  * before it ended. Deleting the first shot leaves the new first shot as it is.
+ * Deleting the stroke that went OB / was lost leaves its penalty row and the
+ * replay where they are: they sit where that stroke was hit, which is where
+ * the shot before it ended, and replaying them from an earlier shot's start
+ * is not what removing the stroke means.
  */
 export function relinkAfterDelete(history: readonly ShotRecord[], removedIndex: number): RelinkResult {
   const next = [...history];
   const changed = new Set<number>();
+  const after = next[removedIndex];
+  if (after && isStrokeAndDistance(after)) return { history: next, changed: [] };
   const before = removedIndex - 1;
   if (before >= 0 && before < next.length - 1 && next[before]!.result !== 'hole') {
     relinkForward(next, before, changed);
