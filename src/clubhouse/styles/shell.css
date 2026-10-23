@@ -916,7 +916,7 @@
   left: 0;
   z-index: var(--ch-z-overlay);
   padding: 0 16px calc(16px + env(safe-area-inset-bottom));
-  border-radius: 22px 22px 0 0;
+  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-sheet);
   touch-action: pan-y;
@@ -2850,7 +2850,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-asks__panel {
     height: 56dvh;
     max-height: none;
-    border-radius: 22px 22px 0 0;
+    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
     box-shadow: var(--ch-elevation-sheet);
     /* A bottom sheet on the phone: it rises on the smooth spring as every sheet does, not the desktop dialog's pop. */
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);

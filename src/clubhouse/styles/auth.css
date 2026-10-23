@@ -1277,7 +1277,7 @@
     right: 0;
     bottom: 0;
     width: auto;
-    border-radius: 26px 26px 0 0;
+    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
     padding: 26px 20px calc(42px + var(--keyboard-height, 0px));
     box-shadow: 0 -1px 0 rgb(255 255 255 / 0.6) inset, 0 -18px 40px -20px rgb(0 0 0 / 0.5);
     transition: transform var(--ch-au-t-sheet) var(--ch-au-ease), opacity var(--ch-au-t-sheet-fade) linear;

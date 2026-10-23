@@ -1658,7 +1658,7 @@
     max-height: calc(100dvh - 54px);
     padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
     overflow: hidden;
-    border-radius: 24px 24px 0 0;
+    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
     background: var(--ch-bg-page);
     box-shadow: var(--ch-elevation-sheet);
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);

@@ -2052,7 +2052,7 @@ button.ch-rt-strip__h {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 8px 20px calc(20px + env(safe-area-inset-bottom));
-  border-radius: 28px 28px 0 0;
+  border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
   background: var(--ch-ivory-100);
   color: var(--ch-ink-900);
   box-shadow: var(--ch-elevation-sheet);
