@@ -146,8 +146,31 @@ SELECT is(
   'the RPC leaves hole triggers undeferred for the rest of the transaction'
 );
 
+-- Any other hole writer (a coach edit, a repair script) still recomputes per
+-- row. This runs while the round is in progress, because a completed round's
+-- holes can only change through the RPCs.
+RESET role;
+RESET request.jwt.claims;
+
+UPDATE public.golf_holes
+SET putts = 4
+WHERE round_id = '00000000-0000-0000-0000-00000000b903'
+  AND hole_number = 3;
+
+SELECT is(
+  (SELECT total_putts::int FROM public.golf_rounds
+   WHERE id = '00000000-0000-0000-0000-00000000b903'),
+  8,
+  'a direct hole edit outside the RPCs still updates the round totals'
+);
+
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000b901", "role": "authenticated"}';
+
 -- Submit: the round is completed before the holes are rewritten, so each
--- per-row write also used to rerun the stats cache.
+-- per-row write also used to rerun the stats cache. The submit also writes
+-- the round's strokes-gained totals once at the end, as it always has.
 SELECT pg_temp.mark_round_updates('submit_before');
 
 SELECT is(
@@ -172,8 +195,8 @@ SELECT pg_temp.mark_round_updates('submit_after');
 SELECT cmp_ok(
   pg_temp.round_updates_between('submit_before', 'submit_after'),
   '<=',
-  2::bigint,
-  'submit writes golf_rounds at most twice (was 7 for three holes)'
+  3::bigint,
+  'submit writes golf_rounds at most three times (was 8 for three holes)'
 );
 
 SELECT is(
@@ -181,24 +204,11 @@ SELECT is(
    FROM public.golf_rounds
    WHERE id = '00000000-0000-0000-0000-00000000b903'),
   ARRAY[5, 3],
-  'submitted round totals match its holes'
+  'submitted round totals match its holes, undoing the direct edit'
 );
 
 RESET role;
 RESET request.jwt.claims;
-
--- Any other hole writer (a coach edit, a repair script) still recomputes per row.
-UPDATE public.golf_holes
-SET putts = 4
-WHERE round_id = '00000000-0000-0000-0000-00000000b903'
-  AND hole_number = 3;
-
-SELECT is(
-  (SELECT total_putts::int FROM public.golf_rounds
-   WHERE id = '00000000-0000-0000-0000-00000000b903'),
-  8,
-  'a direct hole edit outside the RPCs still updates the round totals'
-);
 
 SELECT ok(
   position('helm.defer_round_totals' IN

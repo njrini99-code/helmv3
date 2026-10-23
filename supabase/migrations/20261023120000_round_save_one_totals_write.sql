@@ -27,8 +27,9 @@
 -- The recompute runs exactly when the trigger would have fired at least once,
 -- and at the same point (after the last hole write, before the shots), so the
 -- round row, the stats cache and every later step see the same values as
--- today. Per auto-save: 37 golf_rounds writes become 2. Per submit: 37 become
--- 2, and ~36 stats-cache recomputes become 2.
+-- today. Per auto-save: 37 golf_rounds writes become 2. Per submit: 38 become
+-- 3 (the strokes-gained write at the end is unchanged), and ~36 stats-cache
+-- recomputes become 2.
 --
 -- 1. golf_holes_recompute_round_totals_fn: CREATE OR REPLACE, same body plus
 --    the defer check. SECURITY DEFINER, search_path, owner and ACL unchanged
