@@ -307,6 +307,8 @@ features:
         - supabase/migrations/*coachhelm*.sql
         - supabase/migrations/*insight*.sql
         - supabase/migrations/*attribution*.sql
+        # golf_prediction_performance, written by lib/coachhelm/v2/analytics.
+        - supabase/migrations/*prediction_perf*.sql
       tests:
         - src/test/coachhelm/**
         - src/test/api/cron/coachhelm*.test.ts
