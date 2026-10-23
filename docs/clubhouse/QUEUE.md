@@ -347,6 +347,7 @@ its rows together and does not map them one to one.
 | aplus-cons24 | One spinner: dead local spinners removed (CONS-24) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); no Bridge IDs or CH codes needed |
 | aplus-cons29 | One back link, BackLink (CONS-29, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); band back, onboarding back and pagers held; no Bridge IDs or CH codes needed |
 | aplus-b12 | Icons draw an absolute line weight (B12, stroke) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-18); size steps wait on CONS-4; no Bridge IDs or CH codes needed |
+| aplus-b11 | Cmd-comma Settings, N out of dialogs, arrow keys in the Messages rail and the Bell (B11, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-18); Cmd-1 to 9 waits on OQ-63; no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

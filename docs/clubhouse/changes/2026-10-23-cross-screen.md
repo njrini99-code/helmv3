@@ -102,3 +102,34 @@ decision
 
 - New `one-spinner.test.ts`, `ui/__tests__/Icon.test.tsx` and
   `one-back-link.test.ts` (which lists the held backs).
+
+## 2026-10-23 — Desktop keys: Settings, a quiet N, arrow keys in lists (B11)
+
+```text
+Design package: none (Clubhouse A+ handoff, B11, partial)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: Cmd-1 to 9 waits on OQ-63; the toolbar search, the identity
+menu, a cold People list and page-aware shortcuts follow
+```
+
+### Changed
+
+- Cmd or Ctrl and a comma opens Settings, from a field too but never over
+  a dialog, and the shortcuts sheet lists it.
+- Home's N no longer fires inside a Modal: it checks a field, a dialog or
+  a menu, and any open modal, with the shell's own tests.
+- The Messages rail and the open Bell are one Tab stop each, and the
+  arrow keys walk their rows (Home and End to the ends).
+
+### Why
+
+- A Mac app opens its settings with Cmd-comma, a key typed in a dialog
+  should stay there, and a long list should not take a Tab per row.
+
+### Verification
+
+- `shortcuts.test.ts` (Cmd-comma), `home-new-key.test.tsx` (N over a
+  native dialog and in a field), a Messages test for the arrow keys.
