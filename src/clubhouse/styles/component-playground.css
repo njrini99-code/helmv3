@@ -15,7 +15,7 @@
 .ch-playground h1, .ch-gallery h1 { margin: 0; font: var(--ch-type-display-s); }
 .ch-playground h2, .ch-gallery h2 { margin: 0; font: var(--ch-type-title); }
 .ch-playground p, .ch-gallery p { margin: 8px 0; }
-.ch-playground__eyebrow { color: var(--ch-text-secondary); font: var(--ch-type-caption); }
+.ch-playground__eyebrow { color: var(--ch-text-secondary); font: var(--ch-type-eyebrow); }
 .ch-playground__layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 32px; }
 .ch-playground__controls { display: grid; align-content: start; gap: 14px; }
 .ch-playground__controls h2 { margin-top: 12px; }

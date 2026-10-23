@@ -291,6 +291,9 @@
   --ch-track-hero: -0.01em;
   --ch-type-section: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-section: var(--ch-track-20);
+  /* CONS-30: every eyebrow and kicker, one role (13/500, no tracking). */
+  --ch-type-eyebrow: 500 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-eyebrow: 0;
   --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-card-title: var(--ch-track-17);
 

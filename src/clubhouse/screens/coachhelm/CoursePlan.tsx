@@ -69,7 +69,7 @@ export function CoursePlan({ playerId, who, reads }: { playerId: string; who: st
       {step.at === 'failed' && (
         <div className="ch-hl-plan__start" role="status">
           <p className="ch-hl-note">The course plan didn’t load. Nothing was changed.</p>
-          <Button size="sm" variant="ghost" onClick={step.retry}>
+          <Button size="sm" onClick={step.retry}>
             Try again
           </Button>
         </div>

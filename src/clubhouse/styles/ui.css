@@ -923,7 +923,7 @@ button.ch-feat {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-eyebrow);
   line-height: 1;
   color: var(--ch-on-green-ink-muted);
 }
@@ -969,9 +969,9 @@ button.ch-feat {
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
 .ch-intro__eyebrow {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-eyebrow);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.01em;
+  letter-spacing: var(--ch-track-eyebrow);
   color: var(--ch-ledger-eyebrow);
 }
 /* It wraps: under Safari's larger page text the title and a view switch outgrow a phone's line, and the switch went off

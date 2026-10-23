@@ -321,6 +321,8 @@ its rows together and does not map them one to one.
 | aplus-up1 | Hub documents upload straight to Storage on a signed URL; Classes import refuses an image too large for one request (W7 UP-1) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-9); no Bridge IDs or CH codes needed |
 | aplus-cons0 | One source-scan helper for Clubhouse guard tests (walk, code, hits, ratchet) (CONS-0) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-10); no Bridge IDs or CH codes needed |
 | aplus-b1 | Type roles per step with leading and tracking; one bar title, one hero, two widths; ratchet on raw font shorthands (B1, stage 1) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
+| aplus-cons5 | Done is primary, Clear filters never, Try again by scope; AST guard (CONS-5) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
+| aplus-cons30 | One eyebrow role, 13/500 with no tracking (CONS-30) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

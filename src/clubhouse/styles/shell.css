@@ -2059,8 +2059,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] :is(.ch-h-head__date, .ch-hl-role, .ch-hero__eyebrow) {
-    font: 500 13px/1.3 var(--ch-font-sans);
-    letter-spacing: 0.01em;
+    font: var(--ch-type-eyebrow);
+    letter-spacing: var(--ch-track-eyebrow);
     color: var(--ch-ledger-eyebrow);
   }
   [data-ui='clubhouse'] main[data-canopy] [data-canopy-head] p {
@@ -2232,7 +2232,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   grid-column: 1;
 }
 .ch-hero__eyebrow {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-eyebrow);
   line-height: 1;
   color: var(--ch-text-tertiary);
 }

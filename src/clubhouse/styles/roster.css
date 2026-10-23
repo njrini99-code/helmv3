@@ -1130,8 +1130,8 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* 12px, the phone text floor (F09), as the kit's PageIntro eyebrow. */
   .ch-rsm-kicker {
-    font: var(--ch-type-12-medium);
-    letter-spacing: 0;
+    font: var(--ch-type-eyebrow);
+    letter-spacing: var(--ch-track-eyebrow);
     color: var(--ch-ledger-eyebrow);
   }
   .ch-rsm-title {

@@ -182,3 +182,20 @@ const OFF_TRACK: Record<string, number> = {
   'styles/stats.css': 9,
   'styles/ui.css': 5,
 };
+
+describe('eyebrows (CONS-30)', () => {
+  it('every eyebrow and kicker is the one role, 13/500 with no tracking, or sets no type at all', () => {
+    expect(tokens).toMatch(/--ch-type-eyebrow: 500 calc\(13 \* var\(--ch-type-k\)\)/);
+    const off: string[] = [];
+    for (const f of readdirSync(dir).filter((x) => x.endsWith('.css') && x !== 'auth.css')) {
+      const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const [, sel, body] of src.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+        if (!/eyebrow|kicker/.test(sel!)) continue;
+        for (const d of body!.match(/(?:font|font-size|letter-spacing):\s*[^;]+;/g) ?? []) {
+          if (d !== 'font: var(--ch-type-eyebrow);' && d !== 'letter-spacing: var(--ch-track-eyebrow);') off.push(`${f} ${sel!.trim()}: ${d}`);
+        }
+      }
+    }
+    expect(off).toEqual([]);
+  });
+});

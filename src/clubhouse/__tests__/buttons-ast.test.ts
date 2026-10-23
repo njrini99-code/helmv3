@@ -1,0 +1,51 @@
+import { readFileSync } from 'node:fs';
+import { relative } from 'node:path';
+import ts from 'typescript';
+import { describe, expect, it } from 'vitest';
+import { ROOT, walk } from './_scan';
+
+/**
+ * CONS-5: a button's weight follows its role, not its file. "Done" closes a sheet the person finished with, so it is the
+ * sheet's one primary action; "Clear filters" and "Clear search" are a way back, never the primary. Read from the JSX
+ * itself (a `<Button>` whose only text is the label), so a moved line or a reformatted prop still counts.
+ */
+type Found = { file: string; label: string; variant: string | null };
+
+function buttons(): Found[] {
+  const out: Found[] = [];
+  for (const file of walk(ROOT, /\.tsx$/)) {
+    const src = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+    const visit = (node: ts.Node) => {
+      if (ts.isJsxElement(node) && node.openingElement.tagName.getText(src) === 'Button') {
+        const label = node.children.map((c) => (ts.isJsxText(c) ? c.getText(src) : '')).join('').trim();
+        const prop = node.openingElement.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === 'variant');
+        const init = prop && ts.isJsxAttribute(prop) ? prop.initializer : undefined;
+        const variant = init && ts.isStringLiteral(init) ? init.text : init ? init.getText(src) : null;
+        out.push({ file: relative(ROOT, file), label, variant });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(src);
+  }
+  return out;
+}
+
+describe('Button weight by role (CONS-5)', () => {
+  const all = buttons();
+
+  it('reads the buttons', () => {
+    expect(all.length).toBeGreaterThan(100);
+  });
+
+  it('"Done" is the primary action', () => {
+    const done = all.filter((b) => b.label === 'Done' && !b.file.startsWith('preview/'));
+    expect(done.length).toBeGreaterThanOrEqual(2);
+    expect(done.filter((b) => b.variant !== 'primary')).toEqual([]);
+  });
+
+  it('"Clear filters" and "Clear search" are never primary', () => {
+    const clear = all.filter((b) => b.label === 'Clear filters' || b.label === 'Clear search');
+    expect(clear.length).toBeGreaterThanOrEqual(3);
+    expect(clear.filter((b) => b.variant === 'primary')).toEqual([]);
+  });
+});

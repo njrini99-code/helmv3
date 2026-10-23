@@ -388,7 +388,7 @@
   align-items: center;
   gap: 8px;
   align-self: flex-start;
-  font: 500 14px/1 var(--ch-font-sans);
+  font: var(--ch-type-eyebrow);
   color: #155a39;
 }
 /* The owner's relaxed display tracking (2026-10-06) at a size that keeps the longest question on one line. */

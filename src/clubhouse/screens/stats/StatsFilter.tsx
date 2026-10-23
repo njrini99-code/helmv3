@@ -192,7 +192,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button variant="primary" leftIcon={X} onClick={onClear}>
+          <Button leftIcon={X} onClick={onClear}>
             Clear filters
           </Button>
         }
@@ -206,7 +206,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button size="sm" variant="primary" onClick={onClear}>
+          <Button size="sm" onClick={onClear}>
             Clear filters
           </Button>
         }

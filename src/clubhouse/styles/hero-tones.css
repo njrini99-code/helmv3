@@ -11,7 +11,7 @@
   row-gap: 6px;
 }
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__eyebrow {
-  font: 600 11px/1.2 var(--ch-font-sans);
+  font: var(--ch-type-eyebrow);
   color: var(--ch-hero-brass);
 }
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__title {

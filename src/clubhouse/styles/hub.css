@@ -132,7 +132,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-eyebrow);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
@@ -1387,7 +1387,7 @@
     color: var(--ch-on-green-ink);
   }
   .ch-hb-ann.is-featured .ch-hb-eyebrow {
-    font: var(--ch-type-13-medium);
+    font: var(--ch-type-eyebrow);
     line-height: 1;
     font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink-muted);

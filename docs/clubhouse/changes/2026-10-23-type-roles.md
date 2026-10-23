@@ -92,8 +92,7 @@ Held items: none
 ### Changed
 
 - `type-roles.mjs --tracking` moved 132 negative `letter-spacing` values onto
-  their rule's step tracking (`var(--ch-track-<n>)`); 40 kinds of value
-  became the role set.
+  their rule's step tracking (`var(--ch-track-<n>)`).
 - Left (76, ratcheted): positive tracking, which is deliberate on join
   codes, initials and file badges; large figures off the steps; `inherit`;
   and the sign-in pages.

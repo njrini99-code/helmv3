@@ -824,7 +824,7 @@ function InviteModal({
       icon={UserPlus}
       title="Invite players"
       description={`Players who sign up with the team code or open the invite link join ${teamName} right away. Players already on GolfHelm who enter the code in Settings send a request you approve.`}
-      footer={<Button onClick={onClose}>Done</Button>}
+      footer={<Button variant="primary" onClick={onClose}>Done</Button>}
     >
       {code ? (
         <div className="ch-rs-inv">
