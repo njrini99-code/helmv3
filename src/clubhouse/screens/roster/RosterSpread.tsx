@@ -14,6 +14,9 @@ import type { ChRosterPlayer } from '../../data/roster';
 const COIN = 38;
 const LANE = 62;
 
+/** Half the team pill's width as a share of the plot (about 74px of a 600px plot), for the axis ticks it covers. */
+const TEAM_PILL_HALF = 7;
+
 export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPlayer[]; teamAvg: number | null; onOpen: (id: string) => void }) {
   const layout = useMemo(() => {
     const ranked = players.filter((p) => p.avg != null).sort((a, b) => a.avg! - b.avg!);
@@ -63,7 +66,8 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
           ))}
         </ul>
         <div className="ch-rs-sp__axis" aria-hidden="true">
-          {layout.ticks.map((v) => (
+          {/* The team's pill sits on this row and reads its own value: a tick it would cover is left out. */}
+          {layout.ticks.filter((v) => team == null || Math.abs(layout.at(v) - team) > TEAM_PILL_HALF).map((v) => (
             <span key={v} style={{ left: `${layout.at(v)}%` }} className="ch-num">
               {v}
             </span>
