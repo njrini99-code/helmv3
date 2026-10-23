@@ -2441,6 +2441,20 @@
   .ch-spm-round .ch-topar.is-under {
     color: var(--ch-chart-flag);
   }
+  /* A round opens its review (B14): the row is the link, and answers a press with the Ledger's row tint (CH-1606). */
+  .ch-spm-round.is-link {
+    color: inherit;
+    text-decoration: none;
+    touch-action: manipulation;
+    transition: background-color var(--ch-dur-press) var(--ch-ease);
+  }
+  .ch-spm-round.is-link:is(:active, [data-ch-pressed]) {
+    background-color: var(--ch-ledger-row-press);
+  }
+  .ch-spm-round.is-link:focus-visible {
+    outline: 2px solid var(--ch-border-focus);
+    outline-offset: -2px;
+  }
   .ch-spm-more {
     align-self: center;
     min-height: 44px;

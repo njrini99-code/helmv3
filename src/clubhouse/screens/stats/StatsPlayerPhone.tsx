@@ -234,7 +234,7 @@ export function StatsPlayerPhone({
 
       <SectionBoundary surface="stats.player.rounds" label="The rounds" code="CH-5206">
         {data.rounds.length > 0 && <RoundsExtra x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
-        <Rounds rounds={data.rounds} open={initialTab === 'rounds'} />
+        <Rounds rounds={data.rounds} open={initialTab === 'rounds'} role={data.viewer === 'coach' ? 'coach' : 'player'} />
       </SectionBoundary>
         </>
       )}
@@ -393,8 +393,11 @@ function Trend({ data }: { data: ChPlayerProfile }) {
   );
 }
 
-/** Newest first; five, then "All N rounds" (CH-5807). Roster's "All N" (tab=rounds) opens it in full and scrolls to it. */
-function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boolean }) {
+/**
+ * Newest first; five, then "All N rounds" (CH-5807). Roster's "All N" (tab=rounds) opens it in full and scrolls to it. A
+ * round opens its review, as the desktop table's do (CH-5808, B14), where the review is rebuilt for this viewer.
+ */
+function Rounds({ rounds, open, role }: { rounds: ChPlayerProfile['rounds']; open: boolean; role: 'coach' | 'player' }) {
   const [all, setAll] = useState(open);
   const ref = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
@@ -413,19 +416,33 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
       ) : (
         <>
           <ul className="ch-stm-list">
-            {shown.map((r) => (
-              <li key={r.id} className="ch-spm-round">
-                <span className="ch-stm-row__b">
-                  <b>{r.course}</b>
-                  <span className="ch-num">{[r.date, r.holes === 9 ? '9 holes' : null, r.type ? ROUND_TYPE[r.type] : null, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
-                </span>
-                <span className="ch-stm-row__v ch-num">
-                  <b>{r.score}</b>
-                  <span className={'ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                  <span className={changeInk(r.sg)}>{formatSigned(r.sg)} SG</span>
-                </span>
-              </li>
-            ))}
+            {shown.map((r) => {
+              const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
+              const row = (
+                <>
+                  <span className="ch-stm-row__b">
+                    <b>{r.course}</b>
+                    <span className="ch-num">{[r.date, r.holes === 9 ? '9 holes' : null, r.type ? ROUND_TYPE[r.type] : null, r.gir ? `GIR ${r.gir}` : null, r.putts != null ? `${r.putts} putts` : null].filter(Boolean).join(' · ')}</span>
+                  </span>
+                  <span className="ch-stm-row__v ch-num">
+                    <b>{r.score}</b>
+                    <span className={'ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
+                    <span className={changeInk(r.sg)}>{formatSigned(r.sg)} SG</span>
+                  </span>
+                </>
+              );
+              return (
+                <li key={r.id} className={href ? undefined : 'ch-spm-round'}>
+                  {href ? (
+                    <Link href={href} className="ch-spm-round is-link" aria-label={`${r.course}, ${r.date}: open the round`}>
+                      {row}
+                    </Link>
+                  ) : (
+                    row
+                  )}
+                </li>
+              );
+            })}
           </ul>
           {rounds.length > ROUNDS_SHOWN && (
             <button

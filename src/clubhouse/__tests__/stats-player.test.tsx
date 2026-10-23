@@ -490,6 +490,17 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(screen.queryByRole('button', { name: 'Add focus area' })).toBeNull();
   });
 
+  it('B14 a phone round row opens its review, as the desktop table does; a round the review can\'t open stays a row', () => {
+    const id = '5b0c6a1e-2f4d-4c8e-9a7b-1d2e3f4a5b6c';
+    const [first, second] = PREVIEW_PLAYER.rounds;
+    phone(player({ rounds: [{ ...first!, id }, { ...second!, id: 'not-a-uuid' }] }));
+    const link = screen.getByRole('link', { name: `${first!.course}, ${first!.date}: open the round` });
+    expect(link).toHaveAttribute('href', `/golf/dashboard/rounds/${id}`);
+    expect(link.className).toContain('ch-spm-round');
+    expect(screen.queryByRole('link', { name: `${second!.course}, ${second!.date}: open the round` })).toBeNull();
+    expect(document.querySelectorAll('.ch-spm-round')).toHaveLength(2);
+  });
+
   it('CH-5807 rounds show five, then all; ?tab=rounds opens them all', async () => {
     const user = userEvent.setup();
     const { unmount } = phone(player());
