@@ -26,6 +26,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { useHydrated } from '../use-hydrated';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { SerifText } from '../../../ui/SerifText';
+import { Line } from '../../../ui/charts/Line';
 import { EngineState, WhyAudit } from '../EngineState';
 import { CorrectionChips, ReadLater } from '../Corrections';
 
@@ -82,26 +83,29 @@ function wordsFor(voice: ChViewVoice) {
   };
 }
 
-/** To par per 18 holes, oldest to newest: a line that rises as the scores come down. Decoration; the caption and the label say every number. */
+/**
+ * To par per 18 holes, oldest to newest, on the one line chart (ui/charts/Line, B5): a line that rises as the scores come
+ * down, par dashed when the line crosses it, the older rounds hollow and the last filled. Decoration; the caption and the
+ * label say every number.
+ */
 function Strip({ values }: { values: number[] }) {
-  const w = 240;
-  const h = 56;
-  const pad = 7;
   const lo = Math.min(...values);
   const hi = Math.max(...values);
-  const x = (i: number) => pad + (i * (w - pad * 2)) / (values.length - 1);
-  // Lower is better, so a lower score is drawn higher.
-  const y = (v: number) => (hi === lo ? h / 2 : pad + ((v - lo) / (hi - lo)) * (h - pad * 2));
-  const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
-  const last = values.length - 1;
   return (
-    <svg className="ch-hd-strip__svg" viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
-      {lo <= 0 && hi >= 0 && hi !== lo && <line className="ch-hd-strip__par" x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} />}
-      <polyline className="ch-hd-strip__line" points={pts.join(' ')} />
-      {values.map((v, i) => (
-        <circle key={i} className={'ch-hd-strip__dot' + (i === last ? ' is-last' : '')} cx={x(i)} cy={y(v)} r={i === last ? 4 : 2.6} />
-      ))}
-    </svg>
+    <Line
+      className="ch-hd-strip__chart"
+      interactive={false}
+      label="To par per 18 holes, oldest to newest."
+      points={values.map((y, i) => ({ x: String(i + 1), y }))}
+      lowerIsBetter
+      domain={hi === lo ? [lo - 1, hi + 1] : [lo, hi]}
+      baseline={lo <= 0 && hi >= 0 && hi !== lo ? { value: 0, dashed: true } : undefined}
+      axis={false}
+      ends={false}
+      marks="trail"
+      width={240}
+      height={56}
+    />
   );
 }
 

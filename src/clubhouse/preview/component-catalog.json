@@ -7160,6 +7160,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-dive.css",
         "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
@@ -8741,10 +8742,7 @@
         "ch-hd-sk__hero",
         "ch-hd-sk__it",
         "ch-hd-strip__c",
-        "ch-hd-strip__dot",
-        "ch-hd-strip__line",
-        "ch-hd-strip__par",
-        "ch-hd-strip__svg",
+        "ch-hd-strip__chart",
         "ch-hd-tr",
         "ch-hd-tr__k",
         "ch-hd-tr__t",
@@ -8760,6 +8758,8 @@
         "ch-hl-lede",
         "ch-hl-stale",
         "ch-hv-sk-head",
+        "ch-line__dot",
+        "ch-line__ref",
         "ch-skel"
       ],
       "tokens": [
@@ -8847,6 +8847,11 @@
           "name": "--ch-hd-fig",
           "value": "var(--ch-chart-loss-on-tint)",
           "scope": ".ch-hd-tr li.is-warn"
+        },
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-hd-fig)",
+          "scope": ".ch-hd-strip__chart"
         },
         {
           "name": "--ch-hd-ink",

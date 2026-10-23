@@ -2146,7 +2146,7 @@
     height: auto;
     overflow: visible;
   }
-  /* A panel with no chart to draw keeps the chart's frame (the same 340:120 box as ScoreLine's viewBox), so the panels below stay put. */
+  /* A panel with no chart to draw keeps the chart's frame (the same 340:120 box the trend chart draws in), so the panels below stay put. */
   .ch-stm-chart-hold {
     display: grid;
     place-items: center;

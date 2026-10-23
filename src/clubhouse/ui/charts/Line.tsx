@@ -262,7 +262,7 @@ export function Line({
             key={`${p.x}-${i}`}
             cx={x(i)}
             cy={y(p.y)}
-            r={i === pin.active ? 5 : marks === 'trail' ? 4 : 3}
+            r={i === pin.active ? 5 : marks === 'trail' && i === newest ? 4 : 3}
             className={'ch-line__dot' + (early || (marks === 'trail' && i !== newest) ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
           />
         ),
