@@ -6519,6 +6519,17 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/ui/ListPresence.tsx",
+      "group": "ui",
+      "exports": [
+        "ListPresence",
+        "PresenceRow"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/Menu.tsx",
       "group": "ui",
       "exports": [
