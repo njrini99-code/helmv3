@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { haptic } from '../lib/haptics';
 import { CH_RAIL_COOKIE } from '../lib/rail-cookie';
+import { startRailMove } from '../lib/rail-fold';
 import { Icon } from '../ui/Icon';
 import { Tooltip } from '../ui/Tooltip';
 import { isApple, modKey } from './command/shortcuts';
@@ -22,6 +23,8 @@ function rememberFold(folded: boolean): void {
 export function RailToggle({ folded, onFold }: { folded: boolean; onFold: (folded: boolean) => void }) {
   const toggle = useCallback(() => {
     const next = !folded;
+    // Marks the fold as moving before it moves, so the page's size readers wait it out (lib/rail-fold.ts).
+    startRailMove();
     onFold(next);
     rememberFold(next);
     haptic('select');

@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { CH_DUR } from './motion';
+import { CH_DUR, CH_EASE, chSpringCurve } from './motion';
 import { acquireOverlayScroll } from './overlay-scroll';
 import { useChReducedMotion } from './reduced-motion';
 import { chSupportsLinear, chThrownExit, takeSheetFling } from './sheet-drag';
@@ -32,6 +32,8 @@ export function useDialogLifetime(open: boolean, {
   const opener = useRef<Element | null>(null);
   const openRef = useRef(open);
   const content = useRef<ReactNode>(null);
+  /** Where a leaving surface stood when it was opened again mid-exit, so it goes back up from there. */
+  const caught = useRef<{ transform: string; opacity: string } | null>(null);
   const [retained, setRetained] = useState(open);
   const reduced = useChReducedMotion();
   openRef.current = open;
@@ -62,6 +64,16 @@ export function useDialogLifetime(open: boolean, {
         surface.inert = false;
         surface.style.translate = '';
         surface.style.transition = '';
+      }
+      // Opened again while it was leaving (motion pass 2026-10-22): it turns round where it is and goes back to rest on
+      // the spring it rose on, as an iOS sheet does, rather than snap open from part way down.
+      const back = caught.current;
+      caught.current = null;
+      if (back && surface?.animate && dialog.open && !reduced && back.transform !== 'none') {
+        const curve = chSpringCurve('smooth');
+        surface.animate([back, { transform: 'none', opacity: '1' }], direction !== 'center' && chSupportsLinear()
+          ? { duration: curve.ms, easing: curve.linear }
+          : { duration: CH_DUR.base * 1000, easing: `cubic-bezier(${CH_EASE.join(', ')})` });
       }
       if (!dialog.open) {
         opener.current = document.activeElement;
@@ -108,7 +120,16 @@ export function useDialogLifetime(open: boolean, {
       ? { duration: thrown.ms, easing: thrown.linear, fill: 'forwards' }
       : { duration: CH_DUR.base * 1000, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
     exit.onfinish = finish;
-    return () => { active = false; exit.onfinish = null; exit.cancel(); };
+    return () => {
+      active = false;
+      exit.onfinish = null;
+      // Reopened mid-exit: keep where it is before the exit lets go of it, for the way back up (above).
+      if (openRef.current && exit.playState === 'running') {
+        const now = getComputedStyle(surface);
+        caught.current = { transform: now.transform, opacity: now.opacity };
+      }
+      exit.cancel();
+    };
   }, [open, reduced, direction, surfaceSelector, focusSelector]);
 
   // A caller can clear its selected object immediately on dismiss. Retain the
