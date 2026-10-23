@@ -303,6 +303,9 @@ its rows together and does not map them one to one.
 | aplus-a12 | A finger's press waits 70ms before a button shrinks; a quick tap still shows it (A12) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
 | aplus-a21 | Held prefetch pages dropped after a round is submitted, discarded or retyped; Roster revalidates on submit (A21) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
 | aplus-a13 | A row's push target is fetched whole on touch-down (rounds cards, Stats player list, qualifier rows, Roster's View insights) (A13) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
+| aplus-a14 | Navigation links are silent (no `haptic('select')` on a Link), with a lint rule and a source scan (A14) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-4); no Bridge IDs or CH codes needed |
+| aplus-a16 | Palette New message, Post announcement and Add class open their forms (`?compose=1`, `?new=1`); Home's join requests open the requests (A16). The coach round's back label stays Stats: D-53 (owner) set it, so A16 part 3 waits on the owner | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-4); no Bridge IDs or CH codes needed |
+| aplus-a30 | A player's old pages (`/players/<id>/game`, `/print`, `/genome`) are aliased, so old links reach Stats; a test reads next.config's served URLs (A30). G3 (classes, rounds/new, rounds/recover for a coach) waits on the owner | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-4); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

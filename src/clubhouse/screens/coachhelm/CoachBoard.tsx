@@ -207,7 +207,7 @@ export function CoachBoard({
                     <span>
                       <b>
                         {r.name && r.id ? (
-                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)} onClick={() => haptic('select')}>
+                          <Link className="ch-hl-note__a" href={coachPlayerHref('standing', r.id)}>
                             {r.name}
                           </Link>
                         ) : (

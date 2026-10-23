@@ -234,13 +234,13 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" onClick={() => haptic('select')} scroll={false}>
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" scroll={false}>
                   <Icon icon={ChevronLeft} size={15} />
                 </Link>
                 <span className="ch-num">
                   {data.nav.index} of {data.nav.total}
                 </span>
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" onClick={() => haptic('select')} scroll={false}>
+                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" scroll={false}>
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
               </div>

@@ -131,7 +131,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
 
   // Deep links: ?conversation=<id>, or ?player=<golf_players.id> or ?user=<auth user id> (a player's
   // "Message coach" on Home) to open (or start) a direct thread.
-  const linkKey = ['conversation', 'player', 'user', 'prefill'].map((k) => params.get(k) ?? '').join('\u0000');
+  // `?compose=1` (the command palette's New message, A16) opens New message with no one chosen.
+  const linkKey = ['conversation', 'player', 'user', 'prefill', 'compose'].map((k) => params.get(k) ?? '').join('\u0000');
   useEffect(() => {
     if (loading || handledParams.current === linkKey) return;
     const first = handledParams.current === null;
@@ -141,6 +142,8 @@ export function Messages({ data }: { data: ChMessagesData }) {
     const user = params.get('user');
     // Read once: the entry is deleted as it is taken, so Back or a reload never brings the draft back.
     const pre = takePrefill(params);
+    const compose = params.get('compose') === '1';
+    // New message opens over the inbox as it is (the newest thread beside the rail on desktop), so it waits for nothing.
     if (first) setParamsDone(!conv && !player && !user && !pre);
     if (params.get('prefill')) router.replace('/golf/dashboard/messages', { scroll: false });
     if (pre) {
@@ -176,6 +179,9 @@ export function Messages({ data }: { data: ChMessagesData }) {
       // opened; one that still isn't there says so (CH-7015, MessagesScreen) rather than opening nothing.
       if (convs.length && !convs.some((c) => c.id === conv)) void refetch().catch(() => undefined).then(() => select(conv));
       else select(conv);
+    } else if (compose) {
+      router.replace('/golf/dashboard/messages', { scroll: false });
+      setPrefill({ to: [], draft: '', title: '' });
     } else if (player || user) {
       const person = data.directory.find((p) => (player ? p.playerId === player : p.userId === user));
       router.replace('/golf/dashboard/messages', { scroll: false });

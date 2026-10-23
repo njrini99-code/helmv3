@@ -2642,3 +2642,15 @@ describe('Classes reader', () => {
     expect(actions.extract).not.toHaveBeenCalled();
   });
 });
+
+describe('Classes · the palette’s Add class (A16)', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('?new=1 opens the add form once and cleans the address', async () => {
+    window.history.replaceState(null, '', '/golf/dashboard/classes?new=1');
+    router.replace.mockClear();
+    show();
+    expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+    expect(router.replace).toHaveBeenCalledWith('/golf/dashboard/classes', { scroll: false });
+  });
+});

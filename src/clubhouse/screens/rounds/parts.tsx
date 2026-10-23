@@ -577,8 +577,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
       {...bind}
       {...press(href)}
       onClick={(e) => {
-        haptic('select');
-        // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
+        // Silent, as navigation is (D-70, A14). A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.
         if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) onOpen?.();
       }}
     >
