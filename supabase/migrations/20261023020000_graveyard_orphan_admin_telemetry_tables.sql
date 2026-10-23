@@ -48,9 +48,10 @@ REVOKE ALL ON SCHEMA graveyard FROM PUBLIC, anon, authenticated;
 
 DO $$
 DECLARE
+  tables text[] := ARRAY['admin_api_perf_log', 'admin_client_errors'];
   t text;
 BEGIN
-  FOREACH t IN ARRAY ARRAY['admin_api_perf_log', 'admin_client_errors'] LOOP
+  FOREACH t IN ARRAY tables LOOP
     IF to_regclass('public.' || t) IS NOT NULL THEN
       IF EXISTS (
         SELECT 1 FROM pg_publication_tables
