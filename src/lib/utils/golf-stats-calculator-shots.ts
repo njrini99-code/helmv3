@@ -693,6 +693,20 @@ const STROKES_GAINED_BENCHMARKS = {
     100: 3.23, 20: 2.53,
   },
 
+  // From 'other' (trees, pine straw, waste, hazard edges), yards: halfway
+  // between rough and Broadie's recovery curve (Interfaces 2012, Appendix A
+  // Table 9), at the recovery anchors. Same anchors as the 'other' branch of
+  // sg_expected_strokes() (migration 20261023120000, held), which explains the
+  // choice: priced as fairway, 'other' shots ran 0.78 strokes over the curve
+  // against about 0.21 for fairway and rough; this curve puts them at 0.25.
+  other: {
+    540: 5.19, 520: 5.10, 500: 5.00, 480: 4.91, 460: 4.81, 440: 4.72,
+    420: 4.62, 400: 4.53, 380: 4.44, 360: 4.35, 340: 4.25, 320: 4.14,
+    300: 4.05, 280: 3.96, 260: 3.88, 240: 3.81, 220: 3.73, 200: 3.65,
+    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.39,
+    80: 3.38, 70: 3.35, 60: 3.32, 50: 3.27, 40: 3.20, 30: 3.11, 20: 3.05,
+  },
+
   // From green (putting, by distance in FEET) — Broadie Tour expected putts.
   green: {
     1: 1.00, 2: 1.00, 3: 1.04, 4: 1.13, 5: 1.23,
@@ -754,8 +768,8 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     | Record<number, number>
     | undefined;
 
-  // SG-1: unmapped / non-tabulated lies ('other', 'recovery', 'water', and any
-  // unrecognised value) previously collapsed to a flat 3.50 with ZERO distance
+  // SG-1: unmapped / non-tabulated lies ('recovery', 'water', and any
+  // unrecognised value; 'other' has its own curve above) previously collapsed to a flat 3.50 with ZERO distance
   // sensitivity — fabricating ±1-stroke SG that flipped sign with distance.
   // Route them to the FAIRWAY table: it keeps the estimate distance-sensitive
   // AND matches the canonical DB sg_expected_strokes() ELSE branch (which uses

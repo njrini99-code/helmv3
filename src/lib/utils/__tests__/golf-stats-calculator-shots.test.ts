@@ -424,13 +424,32 @@ describe('getExpectedStrokes', () => {
   });
 
   it('routes unknown lie types to the distance-sensitive fairway table (SG-1, matches DB)', () => {
-    // 'water'/'other'/'recovery'/unmapped no longer collapse to a flat 3.50.
+    // 'water'/'recovery'/unmapped no longer collapse to a flat 3.50.
     // They use the FAIRWAY table — matching the canonical DB sg_expected_strokes()
     // ELSE branch — so the TS recompute agrees with the cache. 100yd fairway =
     // 2.80, 200yd = 3.19, and the value MOVES with distance instead of being flat.
     expect(getExpectedStrokes('water', 100)).toBeCloseTo(2.80, 5);
-    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.19, 5);
     expect(getExpectedStrokes('recovery', 100)).not.toBe(getExpectedStrokes('recovery', 200));
+  });
+
+  it("prices an 'other' lie (trees, waste) between rough and recovery, not as fairway", () => {
+    // Same anchors as sg_expected_strokes('other', …) in 20261023120000.
+    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.65, 5);
+    expect(getExpectedStrokes('other', 100)).toBeCloseTo(3.41, 5);
+    expect(getExpectedStrokes('other', 20)).toBeCloseTo(3.05, 5);
+    // Interpolated between anchors, clamped outside them like every curve.
+    expect(getExpectedStrokes('other', 150)).toBeCloseTo((3.49 + 3.54) / 2, 5);
+    expect(getExpectedStrokes('other', 10)).toBeCloseTo(3.05, 5);
+    expect(getExpectedStrokes('other', 600)).toBeCloseTo(5.19, 5);
+    // Harder than rough and sand from the same spot, at every distance played.
+    for (const yards of [30, 80, 150, 220, 300, 450]) {
+      expect(getExpectedStrokes('other', yards)).toBeGreaterThan(getExpectedStrokes('rough', yards));
+      expect(getExpectedStrokes('other', yards)).toBeGreaterThan(getExpectedStrokes('fairway', yards));
+    }
+  });
+
+  it('scales the other curve with the team baseline like every lie', () => {
+    expect(getExpectedStrokes('other', 200, undefined, 1.1)).toBeCloseTo(3.65 * 1.1, 5);
   });
 });
 
@@ -1130,7 +1149,7 @@ describe('SG-1: unknown lie fallback (rough table, distance-sensitive)', () => {
   it('"recovery" and unmapped lies use the fairway table (matches DB), not 3.50', () => {
     expect(getExpectedStrokes('recovery', 150)).toBeCloseTo(getExpectedStrokes('fairway', 150), 5);
     expect(getExpectedStrokes('totally_unknown_lie', 150)).toBeCloseTo(getExpectedStrokes('fairway', 150), 5);
-    // And the value is no longer the old flat 3.50.
+    // And 'other' is no longer the old flat 3.50 (it has its own curve).
     expect(getExpectedStrokes('other', 150)).not.toBe(3.5);
   });
 });

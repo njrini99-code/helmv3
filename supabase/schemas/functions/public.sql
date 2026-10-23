@@ -9697,6 +9697,12 @@ BEGIN
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
     v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+  ELSIF p_lie = 'other' THEN
+    -- 'Other' (trees, pine straw, waste, hazard edges): halfway between rough
+    -- and Broadie's recovery curve (see 20261023120000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.39,3.38,3.35,3.32,3.27,3.20,3.11,3.05]::NUMERIC[];
   ELSE
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
@@ -9749,6 +9755,12 @@ BEGIN
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,100,20]::NUMERIC[];
     v_strokes   := ARRAY[5.36,4.69,4.04,3.84,3.55,3.23,2.53]::NUMERIC[];
+  ELSIF p_lie = 'other' THEN
+    -- 'Other' (trees, pine straw, waste, hazard edges): halfway between rough
+    -- and Broadie's recovery curve (see 20261023120000).
+    v_distance  := p_distance_yards;
+    v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
+    v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.39,3.38,3.35,3.32,3.27,3.20,3.11,3.05]::NUMERIC[];
   ELSE
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,400,300,240,200,180,140,100,80,20]::NUMERIC[];
@@ -9788,6 +9800,7 @@ BEGIN
     WHEN 'rough', 'primary_rough'                                  THEN RETURN 'rough';
     WHEN 'sand', 'bunker', 'greenside_bunker', 'fairway_bunker'    THEN RETURN 'sand';
     WHEN 'green', 'fringe'                                         THEN RETURN 'green';
+    WHEN 'other'                                                   THEN RETURN 'other';
     ELSE                                                                RETURN 'fairway';
   END CASE;
 END;
