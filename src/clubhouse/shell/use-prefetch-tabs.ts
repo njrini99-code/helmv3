@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
 import { useContext, useEffect, useRef } from 'react';
 import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { fullPrefetchAllowed } from '../lib/prefetch-guard';
 import { chReturning } from '../lib/pop-mark';
 
 /** Whether the device asked to save data or is offline: then nothing is fetched ahead of a tap. */
@@ -47,6 +48,8 @@ export function needsRefresh(at: number | null | undefined, shown: number | unde
 type Router = ReturnType<typeof useRouter>;
 
 export function fetchAhead(router: Router, href: string, now: number): void {
+  // CoachHelm records what it returns as shown: never fetched ahead (CH-R1, lib/prefetch-guard.ts).
+  if (!fullPrefetchAllowed(href)) return;
   // Not held (never fetched, dropped by a refresh, or past Next's hold): this call fetches it now.
   if (!held(fetchedAt.get(href), shownAt.get(href), now)) fetchedAt.set(href, now);
   router.prefetch?.(href, { kind: PrefetchKind.FULL });
