@@ -1919,7 +1919,7 @@
     color: #fff;
   }
   /* The outer corners start a run; close corners join messages from the same sender. */
-  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: 20px; }
+  .ch-msp-thread .ch-ms-bub { position: relative; border-radius: var(--ch-radius-xl); }
   .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: 6px; }
   .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: 6px; }
   .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: 6px; }
@@ -2386,7 +2386,7 @@
     height: 28px;
     padding: 0 8px 0 10px;
     border: 0;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-green-50);
     box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
     font: var(--ch-type-14-medium);

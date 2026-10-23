@@ -235,7 +235,7 @@
   position: relative;
   height: 10px;
   margin: 14px 0 18px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: rgb(255 255 255 / 0.1);
 }
 .ch-cl-tb__fill {

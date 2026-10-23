@@ -405,7 +405,7 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   color: var(--ch-green-700);
 }
 .ch-modal__action {
@@ -480,7 +480,7 @@
     --ch-modal-max-h: 92dvh;
     max-height: var(--ch-modal-max-h);
     padding-bottom: env(safe-area-inset-bottom);
-    border-radius: 20px 20px 0 0;
+    border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;
     /* It rises on the smooth spring, as More and the bell do (CH-1602, CH-1612): a soft start and a settle with no
        overshoot; the ease-out over base where linear() is missing. */
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
@@ -646,7 +646,7 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
   color: var(--ch-text-on-accent);
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -880,7 +880,7 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-ivory-25);
   box-shadow: inset 0 0 0 1.5px var(--ch-border-strong);
   color: var(--ch-text-on-accent);
@@ -1353,7 +1353,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     background: rgb(12 12 10 / 0.42);
   }
   .ch-modal__panel {
-    border-radius: 20px;
+    border-radius: var(--ch-radius-xl);
     background: #fbfaf6;
     box-shadow:
       0 0 0 1px rgb(16 18 14 / 0.08),

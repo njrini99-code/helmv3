@@ -935,7 +935,7 @@
   width: 38px;
   height: 5px;
   margin: 8px auto 4px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: rgb(28 25 18 / 0.18);
 }
 .ch-more__head {
@@ -973,7 +973,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -1017,7 +1017,7 @@
   height: 20px;
   padding: 0 6px;
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-green-fill-600);
   color: var(--ch-text-on-accent);
   font: 600 calc(12 * var(--ch-type-k))/20px var(--ch-font-sans);
@@ -1065,7 +1065,7 @@ button.ch-more__row[disabled] {
   gap: 12px;
   margin-bottom: 12px;
   padding: 12px 16px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
   color: var(--ch-text-tertiary);
@@ -2188,7 +2188,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
      bleeding a few pixels into its left edge, a soft green mist at the top left, and a fine edge. */
   .ch-canvas {
     isolation: isolate;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     /* The light across the canvas top and the paper's temperature come from the global light (P001-A1). */
     background:
       var(--ch-light-canvas) local,
@@ -3146,7 +3146,7 @@ html[data-fw-theme='dark'] .ch-offline {
     height: 40px;
     padding: 0 15px 0 13px;
     border: 0;
-    border-radius: 20px;
+    border-radius: var(--ch-radius-xl);
     background: rgb(255 255 255 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
     color: var(--ch-on-green-ink-soft);
@@ -3395,7 +3395,7 @@ html[data-fw-theme='dark'] .ch-offline {
     height: 28px;
     padding: 0 12px;
     border: 0;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: rgb(255 255 255 / 0.13);
     color: var(--ch-on-green-ink);
     font: 600 calc(13 * var(--ch-type-k)) var(--ch-font-sans);
@@ -3483,7 +3483,7 @@ html[data-fw-theme='dark'] .ch-offline {
     place-items: center;
     width: 22px;
     height: 22px;
-    border-radius: 7px;
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-green-fill-600);
     color: var(--ch-text-on-accent);
   }

@@ -142,7 +142,7 @@
 }
 .ch-hl-bars__t {
   height: 10px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: rgb(28 25 18 / 0.07);
   overflow: hidden;
 }

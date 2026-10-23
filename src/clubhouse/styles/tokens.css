@@ -124,6 +124,9 @@
   /* No wash: large soft gradients band on 8-bit displays (owner, 2026-10-06: the ivory looked grainy). */
   --ch-canvas-wash: linear-gradient(transparent, transparent);
   --ch-bg-surface: #fcfaf5;
+  /* B4: what floats above the page (sheets, menus, popovers, the palette). In light, the surface itself; dark lifts. */
+  --ch-bg-elevated: #fcfaf5;
+  --ch-bg-elevated-2: #fcfaf5;
   --ch-bg-subtle: #f5f2ea;
   --ch-bg-inset: var(--ch-ivory-150);
   --ch-bg-hover: var(--ch-ivory-50);
@@ -410,12 +413,20 @@
   --ch-radius-md: 10px;
   --ch-radius-lg: 14px;
   --ch-radius-xl: 20px;
+  /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
+     corner is the card's less the padding between them, floored at --ch-radius-xs. */
+  --ch-radius-card: 16px;
+  --ch-radius-sheet: 20px;
+  /* B3: the width of a separator. One device pixel on a Retina screen is set further down (min-resolution). */
+  --ch-hairline-w: 1px;
 
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */
   --ch-shadow-sm: var(--ch-elevation-reading);
   --ch-shadow-md: var(--ch-elevation-floating);
   --ch-shadow-lg: var(--ch-elevation-overlay);
+  /* B3: the Surface card's own lift (ui.css .ch-surface): a hairline ring, a contact shadow and a soft fall. */
+  --ch-elevation-card: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
   --ch-glass-bg: rgb(250 248 241 / 0.7);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
@@ -616,10 +627,17 @@
   /* 0: a route load on a phone runs past any delay, so a delay only added a blank frame before the skeleton (F-37). */
   --ch-skel-delay: 0ms;
 
-  /* Z */
+  /* Z: the ladder (CONS-35). Values 0 to 5 stay local literals inside one component. */
+  --ch-z-raised: 10;
+  --ch-z-panel: 30;
   --ch-z-sticky: 40;
+  --ch-z-dock: 50;
+  --ch-z-popover: 60;
   --ch-z-overlay: 80;
+  --ch-z-sheet: 90;
   --ch-z-toast: 100;
+  /* The skip link sits above a toast. */
+  --ch-z-skip: 110;
 }
 
 /*
@@ -709,6 +727,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   --ch-bg-page: #111512;
   --ch-bg-surface: #1b201c;
+  --ch-bg-elevated: #1b201c;
+  --ch-bg-elevated-2: #1b201c;
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;

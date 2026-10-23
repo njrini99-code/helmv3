@@ -150,7 +150,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
   gap: 28px;
   padding: 26px 28px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -224,7 +224,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 18px 20px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-reading);
 }
@@ -532,7 +532,7 @@
 .ch-qf-panel,
 .ch-qf-side {
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -578,7 +578,7 @@
   min-height: 56px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--ch-border-hairline);
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
 }
 .ch-qf-row--head {
   min-height: 0;
@@ -597,7 +597,7 @@
 }
 .ch-qf-row.is-open {
   border-bottom-color: transparent;
-  border-radius: 10px 10px 0 0;
+  border-radius: var(--ch-radius-md) var(--ch-radius-md) 0 0;
   background: var(--ch-bg-selected);
 }
 .ch-qf-row.is-me {
@@ -733,7 +733,7 @@
   gap: 12px;
   margin-bottom: 6px;
   padding: 14px 16px;
-  border-radius: 0 0 10px 10px;
+  border-radius: 0 0 var(--ch-radius-md) var(--ch-radius-md);
   background: var(--ch-green-25);
 }
 /* CH-09602: the tray opens with its row (no height animation); what is in it drops 6px into place as it fades in, over
@@ -920,7 +920,7 @@
   margin: 0;
   padding: 0 20px 20px;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
@@ -953,7 +953,7 @@
 }
 .ch-qf-one {
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: var(--ch-champagne-100);
   box-shadow: inset 0 0 0 1px var(--ch-champagne-ring);
 }
@@ -971,7 +971,7 @@
   gap: 10px;
   min-height: 48px;
   padding: 0 8px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   cursor: pointer;
 }
 @media (hover: hover) {
@@ -1496,7 +1496,7 @@
     justify-items: start;
     gap: 8px;
     padding: 18px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
     color: var(--ch-on-green-ink);
@@ -1633,7 +1633,7 @@
   .ch-qf-card {
     gap: 12px;
     padding: 16px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-sheet-bg);
   }
   .ch-qf-card__h p {
@@ -2237,7 +2237,7 @@
   }
   .ch-qf-skel-words > .ch-skel {
     display: inline;
-    border-radius: 5px;
+    border-radius: var(--ch-radius-xs);
     color: transparent;
     -webkit-box-decoration-break: clone;
     box-decoration-break: clone;
@@ -3197,7 +3197,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   }
   .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card {
     padding: 20px 24px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-bg-surface);
     box-shadow:
       inset 0 0 0 1px var(--ch-border-subtle),
@@ -3271,7 +3271,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   .ch-qf--list[data-canopy] .ch-qf-hero {
     margin-top: 0;
     padding: 30px 32px;
-    border-radius: 20px;
+    border-radius: var(--ch-radius-xl);
     background: var(--ch-bg-surface);
     box-shadow:
       inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 30%, transparent),
@@ -3302,7 +3302,7 @@ html[data-fw-theme='dark'] .ch-qf-board .ch-badge {
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card,
   .ch-qf--list[data-canopy] .ch-qf-sec.is-done .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
     padding: 14px 22px;
-    border-radius: 14px;
+    border-radius: var(--ch-radius-lg);
     background: color-mix(in srgb, var(--ch-bg-surface) 70%, transparent);
     box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   }
@@ -3438,7 +3438,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   display: grid;
   gap: 16px;
   padding: 20px 20px 18px;
-  border-radius: 20px;
+  border-radius: var(--ch-radius-xl);
 }
 .ch-qf-prounds__head {
   display: flex;
@@ -3495,7 +3495,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   align-items: center;
   gap: 12px;
   padding: 12px 12px 12px 10px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(255 255 255 / 0.07);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.08),
@@ -3519,7 +3519,7 @@ html[data-fw-theme='dark'] .ch-qf-dots i {
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: var(--ch-radius-md);
   background: rgb(0 0 0 / 0.22);
   font: 700 12px/1 var(--ch-font-sans);
   color: var(--ch-hero-mint);
@@ -3639,7 +3639,7 @@ button.ch-qf-prounds__r.is-open {
   display: grid;
   gap: 14px;
   padding: 14px 12px 12px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: rgb(0 0 0 / 0.2);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.25);
   animation: ch-qf-tray-in var(--ch-dur-base) var(--ch-ease);
@@ -3866,7 +3866,7 @@ button.ch-qf-prounds__r.is-open {
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card,
   .ch-qf--list .ch-qf-grid.is-ledger .ch-qf-card + .ch-qf-card {
     padding: 16px;
-    border-radius: 16px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-bg-surface);
     box-shadow:
       inset 0 0 0 1px var(--ch-border-subtle),

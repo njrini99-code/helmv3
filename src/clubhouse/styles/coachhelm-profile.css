@@ -552,7 +552,7 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
 /* Bars you can see, as on Standing: a green-tinted track, the fill at full strength, the marker a solid dot. */
 [data-ui='clubhouse'] .ch-hg-sc__t {
   height: 10px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   background: color-mix(in srgb, var(--ch-green-fill-600) 14%, var(--ch-bg-surface));
   box-shadow: inset 0 1px 2px rgb(11 58 37 / 0.12);
 }

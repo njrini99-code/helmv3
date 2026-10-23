@@ -323,7 +323,7 @@
 .ch-rd-range {
   position: relative;
   height: 14px;
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
 }
@@ -3820,7 +3820,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-putts {
   height: 10px;
   margin: 2px 0;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-rd .ch-rd-putts i {
   border-radius: var(--ch-radius-xs);

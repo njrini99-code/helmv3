@@ -128,7 +128,7 @@
   height: 18px;
   margin-right: -5px;
   padding: 0 5px;
-  border-radius: 5px;
+  border-radius: var(--ch-radius-xs);
   font: var(--ch-type-mono);
   background: rgb(28 25 18 / 0.05);
   color: var(--ch-text-tertiary);
@@ -302,13 +302,13 @@
 }
 .ch-score--bogey {
   color: var(--ch-ink-900);
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: linear-gradient(180deg, #fffefb 0%, #f1eee6 100%);
   box-shadow: var(--ch-score-bogey-shadow);
 }
 .ch-score--double {
   color: var(--ch-on-fill-50);
-  border-radius: 7px;
+  border-radius: var(--ch-radius-sm);
   background: linear-gradient(180deg, #3a3832 0%, #1c1b18 100%);
   box-shadow: var(--ch-score-double-shadow);
 }
@@ -501,9 +501,9 @@
 .ch-surface {
   position: relative;
   min-width: 0;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-surface--flat {
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
@@ -547,7 +547,7 @@
   gap: 12px;
   padding: 12px 20px;
   border-top: 1px solid var(--ch-border-hairline);
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
   background: #f4f2ea;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
@@ -573,7 +573,7 @@
 /* Popover panel: an overlay over content, opaque (owner 2026-10-01: glass only on the floating navigation). */
 .ch-popover {
   padding: 5px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: #faf8f2;
   box-shadow: var(--ch-elevation-overlay);
 }
@@ -879,7 +879,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 18px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
   color: var(--ch-on-green-ink);
@@ -1541,7 +1541,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   gap: 8px;
   margin-top: 4px;
   padding: 18px 18px 16px;
-  border-radius: 16px;
+  border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
 }
@@ -1601,7 +1601,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-znmiss {
   margin: 0;
   padding: 18px 20px;
-  border-radius: 14px;
+  border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
