@@ -376,3 +376,35 @@ chips, Holed / ace and Messages' section gaps; compound first names
 - New `screens/whats-new/__tests__/time-first-line.test.ts` and
   `lib/__tests__/names.test.ts` (with the guard that names shorten only
   in `lib/names`); Home, Hub, Messages and CoachHelm tests.
+
+## 2026-10-23 — One plural rule and the golf glossary (CONS-14, CONS-18)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-14, CONS-18)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: "Around green" in tight cells, "Short game" as its own leg,
+and the phone sort's "Avg" (CONS-31) wait on the owner; the inline plural
+ternaries (168) and the off-glossary words are ratcheted
+```
+
+### Changed
+
+- `lib/plural.ts` (`plural`, `pluralWord`, on `Intl.PluralRules`)
+  replaces ten local helpers.
+- `lib/glossary.ts` holds the golf words, long and short. The phone's
+  lowercase "hcp" is "HCP" on Roster, the team roster, the requests and
+  Stats, as the desktop has it, and Roster's "Avg score" sort is
+  "Scoring avg".
+
+### Why
+
+- Ten helpers pluralised the same way three ways, and one word had two
+  spellings between phone and desktop.
+
+### Verification
+
+- New `lib/__tests__/plural.test.ts` and `lib/__tests__/glossary.test.ts`
+  (each with its ratchet); related tests for every changed file.

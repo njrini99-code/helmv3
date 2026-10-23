@@ -355,6 +355,7 @@ its rows together and does not map them one to one.
 | aplus-wp21 | Segmented and avatar tests, one tone vocabulary, the selected state as tokens (B17, B19, CONS-20, CONS-22, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-21); restyles held for the owner; ratchets at 54 and 75; no Bridge IDs or CH codes needed |
 | aplus-b14 | Screen gaps: phone round links, margin-of-error copy, greens tone, onboarding name, photo key (B14, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-22); owner calls and recorded decisions held; no Bridge IDs or CH codes needed |
 | aplus-b22-cons17 | What's new times on the first line; one name module (B22 partial, CONS-17) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-22); qualifier leader weight held (recorded rule); compound first names held; no Bridge IDs or CH codes needed |
+| aplus-cons14-18 | One plural rule; the golf glossary (CONS-14, CONS-18) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-22); ternaries and off-glossary words ratcheted; owner words held; no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
