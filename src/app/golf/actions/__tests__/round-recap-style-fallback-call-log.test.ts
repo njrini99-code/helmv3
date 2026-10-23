@@ -71,7 +71,7 @@ const LONG_REPLY =
   'Sam carded an even-par 72 at Pinehurst No. 2 with 31 putts, hitting 9 of 14 fairways and finding 10 greens in regulation across a steady and patient day on a demanding layout that rewards careful placement. ' +
   'Next time out, converting more of those greens into birdie chances should be the clear priority for the round.';
 
-const composeMock = vi.fn(async () => ({
+const composeMock = vi.fn(async (_req: { prompt: string }) => ({
   text: LONG_REPLY,
   used_llm: true,
   citations_verified: true,
@@ -80,7 +80,7 @@ const composeMock = vi.fn(async () => ({
 }));
 
 vi.mock('@/lib/coachhelm/v3/llm/compose', () => ({
-  compose: () => composeMock(),
+  compose: (req: { prompt: string }) => composeMock(req),
   markCallFellBackToTemplate: markCallFellBackMock,
 }));
 
@@ -90,6 +90,12 @@ vi.mock('@/lib/golf/recap-season-context', () => ({
 }));
 
 import { generateRoundRecap } from '../round-recap';
+import {
+  countRecapWords,
+  RECAP_MAX_WORDS,
+  RECAP_SENTENCE_WORD_TARGETS,
+  RECAP_SHORTEN_SENTENCE_WORD_TARGETS,
+} from '@/lib/coachhelm/v3/llm/recap-style';
 
 const SHORT_REPLY =
   'Sam shot an even-par 72 at Pinehurst No. 2 with 31 putts. Next round, turning 10 greens into more birdie looks is the clear opening.';
@@ -160,6 +166,49 @@ describe('generateRoundRecap — a style-rejected model reply is logged as a tem
       expect.stringContaining('broke style limits'),
       expect.anything(),
     );
+  });
+
+  it('asks for a short cap on each sentence instead of one total the model has to count (JAVASCRIPT-NEXTJS-15A)', async () => {
+    composeMock.mockResolvedValueOnce({
+      text: SHORT_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-ok',
+      cost_usd: 0.001,
+    });
+
+    await generateRoundRecap('round-1');
+
+    const firstPrompt = composeMock.mock.calls[0]?.[0].prompt;
+    const [firstCap, secondCap] = RECAP_SENTENCE_WORD_TARGETS;
+    expect(firstPrompt).toContain(`the first ${firstCap} words or fewer, the second ${secondCap} words or fewer`);
+    expect(firstPrompt).not.toContain(`${RECAP_MAX_WORDS} words or fewer in total`);
+  });
+
+  it('the rewrite pass tells the model how long its draft ran and hands the draft back (JAVASCRIPT-NEXTJS-15A)', async () => {
+    composeMock.mockResolvedValueOnce({
+      text: LONG_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-long',
+      cost_usd: 0.001,
+    });
+    composeMock.mockResolvedValueOnce({
+      text: SHORT_REPLY,
+      used_llm: true,
+      citations_verified: true,
+      call_log_id: 'call-short',
+      cost_usd: 0.001,
+    });
+
+    await generateRoundRecap('round-1');
+
+    expect(composeMock).toHaveBeenCalledTimes(2);
+    const rewritePrompt = composeMock.mock.calls[1]?.[0].prompt;
+    const [firstCap, secondCap] = RECAP_SHORTEN_SENTENCE_WORD_TARGETS;
+    expect(rewritePrompt).toContain(`is ${countRecapWords(LONG_REPLY)} words, over the ${RECAP_MAX_WORDS}-word limit`);
+    expect(rewritePrompt).toContain(`first sentence ${firstCap} words or fewer and the second ${secondCap} words or fewer`);
+    expect(rewritePrompt).toContain(LONG_REPLY);
   });
 
   it('a reply that breaks a limit other than length gets no rewrite pass', async () => {

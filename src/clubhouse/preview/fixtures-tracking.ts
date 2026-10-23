@@ -1,4 +1,5 @@
 import type { RoundHole, ShotRecord } from '@/lib/types/golf';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 import type { ChTrackingRound } from '../screens/rounds/track/RoundTracking';
 import { PREVIEW_FINLEY, PREVIEW_FINLEY_PATTERN } from './fixtures-round-review';
 
@@ -106,6 +107,36 @@ const H4_APPROACH = shot({
   shotDistance: 136,
 });
 
+// CoachHelm's one-tap prompts (CH-11960, CH-11961): the approach that finds the green at 8 ft and the first putt that
+// misses from there, leaving 2 ft; and a tee shot into the right rough.
+const H4_APPROACH_8 = shot({ ...H4_APPROACH, distanceToHoleAfter: 8, shotDistance: 139 });
+const H4_PUTT_MISS = shot({
+  shotNumber: 3,
+  shotType: 'putting',
+  lieBefore: 'green',
+  distanceToHoleBefore: 8,
+  distanceUnitBefore: 'feet',
+  result: 'green',
+  distanceToHoleAfter: 2,
+  distanceUnitAfter: 'feet',
+  puttDistanceFeet: 8,
+});
+const H4_TEE_ROUGH = shot({ ...H4_TEE, result: 'rough', missDirection: 'right', distanceToHoleAfter: 151, shotDistance: 230 });
+
+/** A read waiting on putt miss tags from 5–10 ft: 3 tagged since it was written, 6 wanted ("3 of 6 for your 5–10 ft putt read"). */
+export const PREVIEW_PUTT_ASK: DataGapAsk = {
+  readId: 'preview-read-putts',
+  readTitle: 'Putts from 5–10 ft',
+  field: 'miss_direction',
+  filter: { shot_type: 'putting', first_putt: true, distance_feet: [5, 10], holed: false },
+  targetCount: 6,
+  haveCount: 2,
+  taggedSince: 3,
+  untaggedSince: 0,
+  bandLabel: '5–10 ft',
+  windowEnd: '2026-10-01',
+};
+
 export interface ChTrackFixture {
   holes: RoundHole[];
   index: number;
@@ -115,6 +146,12 @@ export interface ChTrackFixture {
   /** onHoleComplete resolves false (the hole didn't save). */
   checkpointFails: boolean;
   meters: boolean;
+  /** CH-11960: the open putt-miss asks the round screen hands in. */
+  asks?: DataGapAsk[];
+  /** CH-11961: the recovery tap is on. */
+  recovery?: boolean;
+  /** CH-11962: the round has no library course, so the course nudge shows at the start and in the summary. */
+  nudge?: boolean;
 }
 
 /** `?state=` of /clubhouse-preview/track. */
@@ -136,6 +173,16 @@ export function trackingFixture(state: string | undefined): ChTrackFixture {
       return { ...base, shotsByHole: on4([H4_TEE]), meters: true };
     case 'putt':
       return { ...base, shotsByHole: on4([H4_TEE, H4_APPROACH]) };
+    // CoachHelm's one-tap prompts: Which side? after the missed first putt; Next shot from there? after the tee shot in the
+    // rough; the course nudge on the first hole before a shot, and in the Round complete sheet.
+    case 'puttprompt':
+      return { ...base, shotsByHole: on4([H4_TEE, H4_APPROACH_8, H4_PUTT_MISS]), asks: [PREVIEW_PUTT_ASK] };
+    case 'recovery':
+      return { ...base, shotsByHole: on4([H4_TEE_ROUGH]), recovery: true };
+    case 'nudge':
+      return { ...base, holes: HOLES, index: 0, shotsByHole: {}, nudge: true };
+    case 'nudge-summary':
+      return { ...base, holes: upTo(18), index: 17, shotsByHole: shotsUpTo(18), sheet: 'summary', nudge: true };
     case 'checkpointfail':
       return { ...base, shotsByHole: on4([H4_TEE, H4_APPROACH]), checkpointFails: true };
     case 'holed':

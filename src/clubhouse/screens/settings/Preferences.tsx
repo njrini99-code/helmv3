@@ -1,22 +1,23 @@
 'use client';
 
-import { Ruler, SunMoon, Sparkle, Type, Vibrate } from 'lucide-react';
+import { Clock, Ruler, SunMoon, Sparkle, Type, Vibrate } from 'lucide-react';
 import { Button } from '../../ui/Button';
 import { haptic } from '../../lib/haptics';
 import { useGolfTheme } from '@/lib/golf/theme';
 import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
-import { DISTANCE_OPTIONS, THEME_OPTIONS, type ChDevice } from './model';
+import { CLOCK_OPTIONS, DISTANCE_OPTIONS, THEME_OPTIONS, type ChDevice } from './model';
 import { useDevicePrefs } from './hooks';
 import { Card, Row, SettingSwitch } from './parts';
 
 /**
  * Preferences saved on this device. Only the ones Clubhouse honours are
  * shown: appearance (light, dark or the system's), animations (every Clubhouse
- * transition), the distance unit (the shot screen) and haptics (the native app).
+ * transition), the distance unit (the shot screen), the clock (every time, 12 or
+ * 24 hours) and haptics (the native app).
  */
 export function PreferencesSection({ device }: { device: ChDevice }) {
-  const { animations, setAnimations, distance, setDistance, haptics, setHaptics } = useDevicePrefs();
+  const { animations, setAnimations, distance, setDistance, clock, setClock, haptics, setHaptics } = useDevicePrefs();
   const { theme, setTheme } = useGolfTheme();
   return (
     <Card id="set-prefs" title="This device" description="Saved on this device only. Changes apply right away.">
@@ -28,6 +29,13 @@ export function PreferencesSection({ device }: { device: ChDevice }) {
       </Row>
       <Row label={<><Icon icon={Ruler} size={15} /> Distance units</>} help="How far a shot or a hole is shown. What you enter and what is stored don’t change.">
         <Segmented label="Distance units" size="sm" value={distance} options={DISTANCE_OPTIONS} onChange={setDistance} />
+      </Row>
+      <Row
+        code="CH-8980"
+        label={<><Icon icon={Clock} size={15} /> Time format</>}
+        help={clock === '24' ? 'Times read 15:30. In your team’s time zone; what is stored doesn’t change.' : 'Times read 3:30 PM. In your team’s time zone; what is stored doesn’t change.'}
+      >
+        <Segmented label="Time format" size="sm" value={clock} options={CLOCK_OPTIONS} onChange={setClock} />
       </Row>
       {device.native && (
         <Row label={<><Icon icon={Vibrate} size={15} /> Haptics</>} help="Taps you feel on buttons, switches and saves.">

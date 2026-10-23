@@ -622,6 +622,12 @@ GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "authenticated";
 
 GRANT ALL ON FUNCTION "public"."golf_readable_round_ids"() TO "service_role";
 
+REVOKE ALL ON FUNCTION "public"."golf_shot_detail_round_ids"() FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "public"."golf_shot_detail_round_ids"() TO "authenticated";
+
+GRANT ALL ON FUNCTION "public"."golf_shot_detail_round_ids"() TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."golf_recruit_documents_assert_same_team"() TO "anon";
 
 GRANT ALL ON FUNCTION "public"."golf_recruit_documents_assert_same_team"() TO "authenticated";
@@ -1422,8 +1428,6 @@ GRANT ALL ON FUNCTION "public"."write_suppression_on_unsubscribe"() TO "authenti
 GRANT ALL ON FUNCTION "public"."write_suppression_on_unsubscribe"() TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
-
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
 

@@ -7,6 +7,7 @@ import { createPortal } from 'react-dom';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CAL_HH, dayNum, dowOf, fmtHour, monthName, rangeLabel, type ChCalEvent, type ChCalPerson, type ChClassGroup } from './model';
@@ -51,6 +52,7 @@ export function ClassGroupBlock({
 }) {
   const id = useId();
   const reduced = useChReducedMotion();
+  const clock = useChClock();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
   const btn = useRef<HTMLButtonElement | null>(null);
@@ -139,7 +141,7 @@ export function ClassGroupBlock({
         data-print-visible
         className={`ch-ev ch-ev--class ch-ev--group ch-ev--fill-${fill}${short ? ' ch-ev--short' : ''}${lanes > 1 ? ' ch-ev--lane' : ''}${sel || open ? ' is-sel' : ''}`}
         style={{ top, height: h, left: `calc(${left}% + 3px)`, width: `calc(${100 - left}% - 6px)`, zIndex: lanes > 1 ? lane + 1 : undefined }}
-        aria-label={`Class: ${names.length} players, ${fmtHour(g.start)} to ${fmtHour(g.until)}. ${names.join(', ')}`}
+        aria-label={`Class: ${names.length} players, ${fmtHour(g.start, true, clock)} to ${fmtHour(g.until, true, clock)}. ${names.join(', ')}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={id}
@@ -178,7 +180,7 @@ export function ClassGroupBlock({
                   <span className="ch-cg__title">
                     <b>Class</b>
                     <span className="ch-num">
-                      {dowOf(g.date)} {dayNum(g.date)} {monthName(g.date)} · {fmtHour(g.start)} – {fmtHour(g.until)}
+                      {dowOf(g.date)} {dayNum(g.date)} {monthName(g.date)} · {fmtHour(g.start, true, clock)} – {fmtHour(g.until, true, clock)}
                     </span>
                   </span>
                   <span className="ch-cg__count ch-num">{names.length}</span>
@@ -206,7 +208,7 @@ export function ClassGroupBlock({
                             {e.busyOnly ? 'In class' : course}
                           </span>
                         </span>
-                        {(e.start !== g.start || e.end !== g.until) && <span className="ch-cg__time ch-num">{rangeLabel(e)}</span>}
+                        {(e.start !== g.start || e.end !== g.until) && <span className="ch-cg__time ch-num">{rangeLabel(e, clock)}</span>}
                         <Icon icon={ChevronRight} size={14} />
                       </button>
                     );

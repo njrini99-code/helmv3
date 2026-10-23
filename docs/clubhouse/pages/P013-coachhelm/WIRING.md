@@ -31,7 +31,9 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          coach -> resolveClubhouseTeam, and no team (or not a
                          coach team)
                          -> the no-team page (CH-13308); ?view=profile|
-                         standing|deep-dive with ?player= -> ONE <Suspense>
+                         standing|deep-dive with ?player= (profile is the
+                         Game profile's old address: Standing at How Jonah
+                         plays, CH-13913) -> ONE <Suspense>
                          around an async CoachPlayerPage (spec A, below); else
                          ONE <Suspense>, not keyed by view, around an async
                          CoachHelmView
@@ -40,7 +42,8 @@ Clubhouse route adapter: src/clubhouse/routes/coachhelm.tsx
                          CoachBoard), its fallback the skeleton of the view the
                          address names;
                          session.player -> likewise ONE <Suspense> around an
-                         async PlayerHelmView: ?view=profile|standing|deep-dive
+                         async PlayerHelmView: ?view=standing|deep-dive (and
+                         profile, Standing at How you play, CH-13913)
                          -> the gate first (loadPlayerHelmGate: off -> the
                          board's own page CH-13304, a lookup that failed -> the
                          view's did-not-load, never "off"), then the view's one
@@ -81,8 +84,8 @@ Coach player pages:      CoachPlayerPage({ coachId, teamId, playerId, drill,
                          scope: a second <Suspense> (the view's skeleton with
                          the name) around CoachPlayerRead -> the view's loader,
                          each taking only the branded ChCoachPlayerScope:
-                         loadCoachPlayerProfile (loadGenome + loadVisible
-                         counts, no exposure), loadCoachPlayerStanding
+                         loadCoachPlayerGame (loadGenome, read beside
+                         Standing's own), loadCoachPlayerStanding
                          (loadPlayerStanding with the coach viewer, then the
                          open read per metric from loadVisible),
                          loadCoachPlayerDeepDive (getInsightsForCoach with
@@ -91,7 +94,8 @@ Coach player pages:      CoachPlayerPage({ coachId, teamId, playerId, drill,
                          The views take voice = { role: 'coach', ...head }; the
                          Deep dive's action row is parts.tsx FocusActions with
                          LIVE_COACHHELM_WRITES, the board's own.
-View loaders (player):   coachhelm-profile.ts loadPlayerProfile,
+View loaders (player):   coachhelm-profile.ts loadPlayerGame (Standing's How
+                         you play, read beside loadPlayerStanding),
                          coachhelm-standing.ts loadPlayerStanding and
                          coachhelm-dive.ts loadPlayerDeepDive, each
                          `({ playerId }) -> ChViewLoad<…>` (ready / off /
@@ -106,14 +110,15 @@ Screens:                 src/clubhouse/screens/coachhelm/PlayerBoard.tsx (->
                          Proposals.tsx) and CoachBoard.tsx -> parts.tsx (the
                          cards); the player's views in screens/coachhelm/views/:
                          Frame (page, sub-navigation, off page), PlayerHelmTabs,
-                         Profile, Standing, DeepDive, KeepReading, Skeletons
+                         Standing (with HowYouPlay), DeepDive, KeepReading,
+                         Skeletons
 Skeleton:                src/clubhouse/screens/coachhelm/CoachHelmSkeleton.tsx
                          (CH-13401 player, CH-13402 coach), from
                          coachhelm/loading.tsx through ClubhouseSwitch and
                          CoachHelmRouteSkeleton (the role from the golf user
                          context). A view's own skeleton is the page's Suspense
-                         fallback (views/Skeletons.tsx: CH-13460 profile,
-                         CH-13470 standing, CH-13480 deep dive; Ask's is
+                         fallback (views/Skeletons.tsx: CH-13470 standing,
+                         CH-13480 deep dive; Ask's is
                          chat/AskSkeleton.tsx), because coachhelm/loading.tsx
                          cannot read ?view=. Every skeleton draws the view
                          strip's place and height (38px desktop, 44px phone).
@@ -170,9 +175,8 @@ component) -> the view's loader, for session.player.id
 ↓
 Reads (the shared client unless the lib's own loader says otherwise; every
 failure logs through chLogServer('coachhelm', …)):
-  profile   -> loadGenome (golf_player_genome) and loadPlayerCoachHelm (the
-               Board's insight read, carried as `sees`)
-  standing  -> loadPlayerStandingMap (golf_player_standing; the lib's
+  standing  -> loadGenome (golf_player_genome) for How you play, beside
+               loadPlayerStandingMap (golf_player_standing; the lib's
                service-role client, scoped by the player id and filtered to
                it), golf_player_stats_cache (rounds played and the scoring
                average; the five-round floor the Fairway loader uses)
@@ -183,23 +187,26 @@ failure logs through chLogServer('coachhelm', …)):
                service-role client, scoped by the player id and filtered to
                it)
 ↓
-Pure steps (toChProfile, toChStanding, toChDeepInsight): what the screen
+Pure steps (toChGame, toChStanding, toChDeepInsight): what the screen
 draws, so the preview and the tests run the same code
 ↓
 Contract outcomes: CONTRACT.md (CH-13260, CH-13270, CH-13271, CH-13280 to
                    CH-13283, CH-13304, CH-13360, CH-13361, CH-13370 to
-                   CH-13373, CH-13380 to CH-13384, CH-13460, CH-13470,
+                   CH-13373, CH-13380 to CH-13384, CH-13470,
                    CH-13480, CH-13780, CH-13860, CH-13880, CH-13890,
-                   CH-13930, CH-13931, CH-13980 to CH-13982)
+                   CH-13913, CH-13915, CH-13930, CH-13931, CH-13980 to
+                   CH-13982)
 ↓
 Tests: coachhelm-profile.test.tsx, coachhelm-standing.test.tsx,
        coachhelm-dive.test.tsx, coachhelm-views.test.tsx
 
-A coach's view of one player (spec A): the same three reads, for the player
+A coach's view of one player (spec A): the same reads, for the player
 of the coach's branded scope (data/coachhelm-player.ts), with the Deep dive on
 getInsightsForCoach (player_id) and getThemesForCoach instead of the player's
-own, and the open reads behind Standing and the Game profile's count from
-loadVisible (the Board's read, no exposure). Contract outcomes: CH-13209,
+own, and the open reads behind Standing from loadVisible (the Board's read,
+no exposure). An Ask answer that names a player's reads links each to that
+player's Deep dive on the read only when the id is on the coach's roster
+(coachReadHref, CH-13914). Contract outcomes: CH-13209,
 CH-13311, CH-13313, 130104, 130807. Tests: coachhelm-coach-player.test.tsx,
 data/__tests__/coachhelm-player.test.ts.
 ```
@@ -234,9 +241,9 @@ Choosing a player or an insight is page state, not an action record.
 | `screens/coachhelm/writes.ts` | The writes interfaces, `LIVE_COACHHELM_WRITES`, `LIVE_PLAYER_WRITES` and `LIVE_RECHECK_WRITES` (Re-check reads, `Recheck.tsx`: CH-13006, CH-13007, CH-13406, CH-13705, CH-13944, CH-13945); preview and tests pass their own set | — |
 | `screens/coachhelm/CoachHelmSkeleton.tsx` | Route skeleton, one shape per role | CH-13401, CH-13402 |
 | `screens/coachhelm/views/Frame.tsx` | The page every player view is drawn in (phone top bar, sub-navigation, header; `after` holds a pushed phone screen outside the page's size container) and `HelmOff` | CH-13304, CH-13801 |
-| `screens/coachhelm/views/PlayerHelmTabs.tsx` | The player's sub-navigation: Board, Game profile, Standing, Deep dive as one radiogroup, a row of chips on the phone, and the Development link | CH-13930, CH-13931 |
-| `screens/coachhelm/views/Profile.tsx` | Game profile: the persona and the seven measures, each with its value, plain meaning, sample and confidence | CH-13260, CH-13304, CH-13360, CH-13361, CH-13860 |
-| `screens/coachhelm/views/Standing.tsx` | Standing: every tracked stat against the Tour and the team, the projections and the most to gain | CH-13270, CH-13271, CH-13304, CH-13370 to CH-13373, CH-13880 |
+| `screens/coachhelm/views/PlayerHelmTabs.tsx` | The player's sub-navigation: Board, Standing, Deep dive as one radiogroup, a row of chips on the phone, and the Development link | CH-13930, CH-13931 |
+| `screens/coachhelm/views/HowYouPlay.tsx` | Standing's How you play (once the Game profile): the persona's sentence, the window, and the measures Standing has no row for, each with its value, plain meaning and confidence | CH-13260, CH-13360, CH-13361, CH-13860, CH-13915 |
+| `screens/coachhelm/views/Standing.tsx` | Standing: every tracked stat against the Tour and the team, the projections and the most to gain, then How you play; `?view=profile` lands there | CH-13913, CH-13270, CH-13271, CH-13304, CH-13370 to CH-13373, CH-13880 |
 | `screens/coachhelm/views/DeepDive.tsx` | Deep dive: the list of reads beside one read in full (a pushed screen on the phone) | CH-13280 to CH-13283, CH-13304, CH-13380 to CH-13384, CH-13780, CH-13890, CH-13903, CH-13980 to CH-13982 |
 | `screens/coachhelm/views/Skeletons.tsx`, `KeepReading.tsx` | Each view's skeleton at final height; the closing links between views | CH-13460, CH-13470, CH-13480 |
 | `screens/coachhelm/views/CoachPlayerStates.tsx` | A coach's view of one player: the "isn't on your team" page and the page's "didn't load" | CH-13209, CH-13311 |

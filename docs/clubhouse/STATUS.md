@@ -11,11 +11,12 @@ log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
 ## Release plan (2026-10-23)
 
-Read-only check on 2026-10-23. Nothing below has been deployed, merged or
-applied; the owner said prepare only.
+Read-only check on 2026-10-23, refreshed the same evening after the
+overnight merges. Nothing below has been deployed or applied by this plan;
+the owner said prepare only.
 
 - **Production** is Vercel `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21
-  10:35 UTC, release `d0f467a73`), flag off. `main` (`a3aa9670f`) is 59
+  10:35 UTC, release `d0f467a73`), flag off. `main` (`f30a6d509`) is 72
   commits ahead and has not been built for production.
 - **Held list corrected.** Applied since this page last listed them (ledger
   read 2026-10-23): `20260929120000`, `20260929200000`, `20260930140000`,
@@ -25,19 +26,25 @@ applied; the owner said prepare only.
   `20260930150000` (SG), the OD-01 chain (`20260924120000` → `140000` →
   `20260925120000` → `20260928120000` → `20260928150000`), `20261017005000`
   (after the deploy that carries #2276), `20261007100000`, `20261005120000`
-  and `20261007102000` (last). `20260928160000` stays OBSOLETE.
+  and `20261007102000` (last), plus `20261023130000` (anon surface grants,
+  from #2344, independent of the others). `20260928160000` stays OBSOLETE.
+  HELD.md's apply queue is the authority for order and prerequisites.
 - **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
   Oct 21 build calling `golf_event_attendance_counts` before
-  `20261017102000` exists; the app falls back. Draft #2340 ignores it until
-  the apply; the apply change removes that ignore and
+  `20261017102000` exists; the app falls back. #2340 (landed) ignores it
+  until the apply; the apply change removes that ignore and
   `src/lib/golf/attendance-counts-rpc.ts`, then runs `db:types`.
-- **Order.** Land #2330, #2340, #2332, #2339, #2337 (in that order). Hold
-  #2328, #2333, #2334 and #2338 (Next.js) until after the rollout; close
-  #2327 and regenerate types after the applies. Deploy `main` with the flag
-  off and record that deployment as the rollback target. Apply Q-120 and
-  attendance privacy, then on a separate day the null-putts, SG and OD-01
-  corrections. Then turn the flag on for one team, then a second, then
-  everyone.
+- **Order.** Overnight on 10-23 the owner merged #2330, #2340, #2332,
+  #2339 and #2337 as planned, and also #2328, #2333, #2334 and #2338
+  (Next.js 16.4.2), which this plan had held until after the rollout; #2327
+  is closed. So the flag-off deploy of `main` now also carries Next 16.4.2,
+  the CoachHelm changes and the 12/24-hour clock, and that deploy is the
+  rollback target (owner call: keep that cut, or pick another). Before it,
+  turn `main` green: the type-scale fix (#2357, or the same two lines in
+  #2356) and the journeys fix (#2355). Then deploy `main` with the flag off
+  and record it as the rollback target. Apply Q-120 and attendance privacy,
+  then on a separate day the null-putts, SG and OD-01 corrections. Then turn
+  the flag on for one team, then a second, then everyone.
 - **Canary order (owner, 2026-10-22):** Demo University Golf
   (`6ecdd1a6-63fe-4beb-b094-00118f334163`) with the owner's iPhone pass,
   then one real team the owner picks, for a full weekday, then every team.
@@ -45,8 +52,9 @@ applied; the owner said prepare only.
   no hole rows.
 - **Wiring check (2026-10-23, read only against production, plus a local
   stack built from `main`):**
-  - Ledger: the repo files missing from production since 2026-09-20 are
-    exactly the 13 held above plus OBSOLETE `20260928160000`.
+  - Ledger: the repo files missing from production since 2026-09-20 were
+    exactly the 13 held above plus OBSOLETE `20260928160000` (before #2344
+    added `20261023130000`).
   - Catalog: 1,150 of 1,153 table columns Clubhouse's code reaches exist in
     production; the three missing are `baseball_messages` columns on the
     baseball branch of a shared helper (missing on `main`'s schema too). 36
@@ -69,10 +77,15 @@ applied; the owner said prepare only.
     `HELM_CLUBHOUSE_TEAMS` set to another team gives Fairway; set to the
     team gives Clubhouse. 25 coach and 19 player routes answer with no error,
     medians 144 to 501 ms against the local stack.
-  - Not run here: the browser journeys and `clubhouse:perf` (no browser can
-    be installed in this environment). The last two nightly journeys runs
-    failed (10-21 in the journeys step, 10-22 out of memory in the build,
-    fixed by #2336); the last 18 of 18 pass was #2210's head on 10-19.
+  - Journeys (on GitHub, 10-23): main's run 39886557860 failed only on the
+    player acknowledgement test, left stale by the Team Hub redesign
+    (#2287); #2355's run on its head passed 18 of 18. The 10-23 nightly on
+    `f30a6d509` failed the same way, with the 8 journeys before it passing
+    and the accessibility scan clean (610 of 610). Earlier failures: 10-21
+    a WebKit hydration bug fixed by #2274, 10-22 the build out of memory,
+    fixed by #2336. `clubhouse:perf` has not run (no browser here).
+  - Unit tests: main's shard 1 fails at `look-feel-pass-css.test.ts:59`
+    since #2328 (two 12.5 sizes off the type scale); #2357 fixes it.
   - Watch: a `HELM_CLUBHOUSE_TEAMS` value with no id (for example `,`) passes
     `check-required-env` but means every team; confirm the exact value
     before the canary deploy.
@@ -165,9 +178,9 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P004 Stats (team) | Ready with caveats | No phone browser capture. Fixed 2026-10-17: whoever the dashboard draws as a player now goes to their Stats instead of "not rebuilt" |
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
 | P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
-| P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); the Messages E2E signs in to production and waits for the owner |
+| P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); its migrations are in (`20261001130000` applied 2026-10-03, `20261008160000` applied 2026-10-21); the Messages E2E signs in to production and waits for the owner |
 | P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3). Fixed 2026-10-17: a refused save says why; Back over any edit sheet with edits asks first and keeps Settings; the priority order after a failed save; one read per table; warning ticks on destructive confirms |
-| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); `20260929200000` applied 2026-10-21 (coach reasoning coach-only, D-35; the app already reads it coach-only). Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
+| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); `20260929200000` (coach reasoning coach-only, D-35) was applied 2026-10-21 and the app reads it coach-only. Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
 | P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 1 contract without a test (111809, was 11 on 10-17); the round E2E runs only against a local stack, in CI only once draft #2208 lands |
 | P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once are closed by a locked database function (`20261021110000`, applied 2026-10-22; the read-then-insert fallback is now unused) |
@@ -194,13 +207,13 @@ VoiceOver, dark-mode scan or real-account write pass.
   turning the flag on releases them. Their plans
   (`docs/clubhouse/held/features/`) say they wait for the owner's explicit
   release.
-- **Held migrations Clubhouse needs (apply order, as written 2026-10-19;
-  superseded by the 2026-10-23 release plan above, which lists what is still
-  unapplied):** `20261016220000` (after
-  #2201), `20261008160000` then `db:types`, `20260929200000` then
-  `20261007100000` (that order), `20261017100000`–`20261017102000` (with the
-  app change), `20261001000000` (Q-120), `20260930140000` (check the project
-  Storage limit is at least 100 MB first), `20260930150000`, then the OD-01
+- **Held migrations Clubhouse needs (apply order as written 2026-10-19;
+  `20261008160000` and `20260929200000` were applied 2026-10-21, see HELD.md;
+  the 2026-10-23 release plan above lists what is still unapplied):**
+  `20261016220000` (after #2201), `20261007100000`,
+  `20261017100000`–`20261017102000` (with the app change),
+  `20261001000000` (Q-120), `20260930140000` (check the project Storage limit
+  is at least 100 MB first), `20260930150000`, then the OD-01
   chain in one session (`20260924120000` → `140000` → `20260925120000` →
   `20260928120000` → `20260928150000`). `20260929120000` waits for a writer;
   `20261007102000` goes last with a fresh rollback snapshot.
@@ -253,9 +266,8 @@ VoiceOver, dark-mode scan or real-account write pass.
    Recommendation: keep the spring; measure on the first allowed build.
 7. Decided 2026-10-21 (owner, via the coordinator): keep white cards and
    Instrument Sans in Clubhouse; the brand doc follows the product
-   (`memory/brand/clubhouse-ui.md`). Also open: `20260929200000` (qualifier
-   privacy); making `clubhouse-quality` required; held
-   migration timing for the stats chain, the strokes-gained fix and Messages
+   (`memory/brand/clubhouse-ui.md`). Also open: making `clubhouse-quality`
+   required; held migration timing for the stats chain, the strokes-gained fix and Messages
    delete; roster availability; Player CoachHelm Ask; the iOS items; open PRs
    #2096, #2091, #2073, #2048, #2105, #2177, #2193, #2200.
 

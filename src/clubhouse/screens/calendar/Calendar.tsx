@@ -32,6 +32,7 @@ import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
 import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_POP, chTween } from '../../lib/motion';
 import { useLightPlace } from '../../shell/light';
@@ -109,6 +110,7 @@ const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${Strin
 /** `preview`: the dev preview keeps a move on screen and writes nothing. */
 function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onSaved: () => void, preview: boolean) {
   const toast = useToast();
+  const clock = useChClock();
   const [moves, setMoves] = useState<Map<string, ChMoveTarget>>(() => new Map());
   /** The move waiting on its Undo; each move is its own record, so a stale toast never acts on a newer move. */
   const held = useRef<{ id: string; write: () => void } | null>(null);
@@ -165,7 +167,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
       held.current = entry;
       const day = to.date === e.date ? '' : ` ${to.date === today ? 'today' : `on ${dowOf(to.date)} ${dayNum(to.date)}`}`;
       toast({
-        title: `Moved to ${fmtHour(to.start)}${day}`,
+        title: `Moved to ${fmtHour(to.start, true, clock)}${day}`,
         action: {
           label: 'Undo',
           run: () => {
@@ -184,7 +186,7 @@ function useHeldMoves(timezone: string, events: ChCalEvent[], today: string, onS
         },
       });
     },
-    [flush, drop, toast, timezone, today, onSaved, preview],
+    [flush, drop, toast, timezone, today, onSaved, preview, clock],
   );
   return { moves, move };
 }

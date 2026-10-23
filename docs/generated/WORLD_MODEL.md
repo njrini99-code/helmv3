@@ -146,7 +146,7 @@ CRM Outreach (NCAA cold email) · active · criticality medium · owner founder
 
 Outbound Customer Email (kill switch) · active · criticality high · owner founder
 
-- **Relations:** 0 doc/structurally-evidenced, 9 import-graph-only (weak)
+- **Relations:** 0 doc/structurally-evidenced, 10 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
 - **Test surfaces:** 3
@@ -166,7 +166,7 @@ Feature Awareness System · active · criticality high · owner platform
 
 Golf Round Lifecycle · active · criticality high · owner product
 
-- **Relations:** 2 doc/structurally-evidenced, 25 import-graph-only (weak)
+- **Relations:** 2 doc/structurally-evidenced, 26 import-graph-only (weak)
 - **Tables:** `golf_course_edit_history`, `golf_course_tee_edit_history`, `golf_course_tee_holes`, `golf_course_tees`, `golf_demo_sessions`, `golf_round_recap_locks`, `golf_round_recap_provenance`, `golf_team_saved_courses`
 - **RPCs:** `golf_event_attendance_counts`, `golf_player_profiles`, `golf_set_course_image`, `reclassify_golf_round`, `record_round_coachhelm_terminal_state`, `save_partial_round_atomic`, `submit_round_atomic`
 - **Test surfaces:** 3
@@ -438,6 +438,7 @@ Team Operations · active · criticality high · owner product
 | `golf_round_lifecycle` | `clubhouse` | import_graph (weak) |
 | `golf_round_lifecycle` | `coach_intelligence_triage` | import_graph (weak) |
 | `golf_round_lifecycle` | `coachhelm_ai` | import_graph (weak) |
+| `golf_round_lifecycle` | `email_outbound` | import_graph (weak) |
 | `golf_round_lifecycle` | `ios_native_shell` | import_graph (weak) |
 | `golf_round_lifecycle` | `observability_sentry` | import_graph (weak) |
 | `golf_round_lifecycle` | `player_coachhelm_development` | import_graph (weak) |
