@@ -74,3 +74,32 @@ Held items: none
 ### Verification
 
 - `strokes-gained.test.tsx`, `stats-team.test.tsx`, `stats-player.test.tsx`.
+
+
+## 2026-10-23 — Ahead of or behind the team, on the shown values (A5)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A5)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The player Overview's strokes gained and scoring lines decide ahead of,
+  behind or level on the values as printed (`versusTeam` in `lib/format.ts`),
+  and give the printed gap. Two figures that print alike read "level with the
+  team".
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-honest-numbers.md.
+
+### Verification
+
+- `screens/stats/__tests__/honest-deltas.test.tsx`: 0.44 against 0.36 and
+  72.04 against 71.96 read level; real gaps read ahead or behind, lower is
+  better for scoring.

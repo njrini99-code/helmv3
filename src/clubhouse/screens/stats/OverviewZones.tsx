@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { changeVerdict, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeVerdict, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
@@ -148,7 +148,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
             <div className="ch-znlines">
               {sgTeam != null && sg != null && (
                 <span>
-                  <b>Team {formatSigned(sgTeam)}</b> · {Math.abs(sg - sgTeam).toFixed(1)} {sg >= sgTeam ? 'ahead of' : 'behind'} them
+                  <b>Team {formatSigned(sgTeam)}</b> · {versusTeam(sg, sgTeam, false)}
                 </span>
               )}
               {data.sgChange.delta != null && (
@@ -215,7 +215,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               {coach && data.teamAvg != null && w.avg != null && (
                 <span>
-                  Team <b>{data.teamAvg.toFixed(1)}</b> · {Math.abs(w.avg - data.teamAvg).toFixed(1)} {w.avg <= data.teamAvg ? 'ahead of' : 'behind'} them
+                  Team <b>{data.teamAvg.toFixed(1)}</b> · {versusTeam(w.avg, data.teamAvg, true)}
                 </span>
               )}
             </div>
