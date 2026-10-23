@@ -1114,7 +1114,29 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(fig('Putts per round')).toBeCloseTo((30 + 34 + 28) / 3, 10);
     // Birdies only: r3's eagle is not a birdie, as on production's Team stats page (stats-production-parity.test.ts).
     expect(fig('Birdies per round')).toBeCloseTo((2 + 0 + 3) / 3, 10);
-    expect(fig('Team SG per round')).toBeCloseTo((1.0 - 2.0 + 2.5) / 3, 10);
+    // Neither player has three rounds with shots: the team's strokes gained waits for one who does (A4).
+    expect(fig('Team SG per round')).toBeNull();
+  });
+
+  it('A4 the team strokes gained headline and leg totals read only the players at the three-round floor', async () => {
+    const legs = (r: ReturnType<typeof round>, l: number[]) => ({ ...r, strokes_gained_tee: l[0], strokes_gained_approach: l[1], strokes_gained_around_green: l[2], strokes_gained_putting: l[3] });
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: {
+        data: [
+          ...[1, 2, 3, 4, 5].map((n) => legs(round(`a${n}`, 'p1', n, 72, 1.0), [0.4, 0.3, 0.2, 0.1])),
+          legs(round('b1', 'p2', 6, 80, -4.0), [-1, -1, -1, -1]),
+        ],
+      },
+      golf_round_stats_cache: { data: [] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'season' });
+    const sg = data.figures.find((f) => f.key === 'sg')!;
+    expect(sg.value).toBeCloseTo(1.0, 10);
+    expect(data.team.sgMean).toBeCloseTo(1.0, 10);
+    expect(sg.state).toBeUndefined();
+    expect(data.legTotals.map((v) => Number(v!.toFixed(2)))).toEqual([0.4, 0.3, 0.2, 0.1]);
   });
 
   // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.

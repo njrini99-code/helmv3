@@ -74,3 +74,28 @@ Held items: none
 ### Verification
 
 - `stats-player-floors.test.ts`, `stats-team.test.tsx`.
+
+## 2026-10-23 — Team strokes gained obeys the three-round floor (A4)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A4)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The strokes gained headline and the leg totals read only the players with
+  three whole rounds with shots in the window; with none yet, the headline
+  says what it needs.
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-honest-numbers.md.
+
+### Verification
+
+- `stats-team.test.tsx`, `strokes-gained.test.tsx`, `stats-filter-data.test.tsx`.

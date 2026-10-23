@@ -30,7 +30,7 @@ import {
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
 import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
-import { changeSe, floorRate, meanSe, type SpreadKind } from '../lib/stats-signal';
+import { changeSe, floorRate, meanSe, needsText, type SpreadKind } from '../lib/stats-signal';
 
 /**
  * Team Stats (Clubhouse). Trends and strokes gained first; the owner removed
@@ -270,17 +270,23 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // An early-read rate (A7) says so on its second line, before the coverage line it shares with the other cards.
   const withEarly = (early: string | undefined) => (early ? [early, coverage].filter(Boolean).join(' · ') : coverage);
   // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
-  const sgNow = holeWindow.map((r) => r.strokes_gained_total).filter((v): v is number => v != null);
-  const sgTotal = weightedMean(holeWindow, (r) => r.strokes_gained_total);
+  // A4: only the players with three whole rounds with shots in the window count, as each player's own figure and the previous
+  // stretch do, so one player's first round or two never swings the headline or the leg totals.
+  const sgOf = (r: ChRound) => r.strokes_gained_total;
+  const sgReady = new Set(players.filter((p) => effectiveCount(holeWindow.filter((r) => r.player_id === p.id), sgOf) >= MIN_SG_ROUNDS).map((p) => p.id));
+  const sgWindow = holeWindow.filter((r) => sgReady.has(r.player_id));
+  const sgPairedWindow = holePaired.filter((r) => sgReady.has(r.player_id));
+  const sgNow = sgWindow.map(sgOf).filter((v): v is number => v != null);
+  const sgTotal = weightedMean(sgWindow, sgOf);
   const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
   // The previous stretch needs three whole rounds with shots, as the window's own figures do.
   const sgPrev = effectiveCount(holePrev, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(holePrev, (r) => r.strokes_gained_total) : null;
   // The reason (or "vs previous 10") reads the whole window; the number compares the same players (Q-112).
   const sgBase = sgChange(sgTotal, sgPrev, effectiveWindow(f), earlier, null, f.last);
-  const sgPaired = weightedMean(holePaired, (r) => r.strokes_gained_total);
+  const sgPaired = weightedMean(sgPairedWindow, sgOf);
   const sgDelta =
     sgBase.delta != null
-      ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null, se: windowChangeSe(holePaired, holePrev, (r) => r.strokes_gained_total, 'sg') }
+      ? { ...sgBase, delta: sgPaired != null && sgPrev != null ? sgPaired - sgPrev : null, se: windowChangeSe(sgPairedWindow, holePrev, sgOf, 'sg') }
       : sgBase;
   const baseline = sgBaseline(tour);
   // Weekly trend: team and each player, strokes gained and scoring.
@@ -300,7 +306,8 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       delta: sgDelta.delta,
       se: sgDelta.se ?? null,
       lowerIsBetter: false,
-      context: sgDelta.context || (sgNow.length ? `${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : 'Needs rounds with shots'),
+      // With rounds with shots but no player at the floor yet, the card says what it needs (A4), never a number from one round.
+      context: sgDelta.context || (sgNow.length ? `${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : holeWindow.some((r) => sgOf(r) != null) ? `${needsText('sgLong')} with shots from one player` : 'Needs rounds with shots'),
       state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
@@ -385,7 +392,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     players: playerSeries,
     legWeeks,
     grid,
-    legTotals: LEGS.map((_, i) => avgOf(holeWindow, (r) => sgLegs(r)[i] ?? null)),
+    legTotals: LEGS.map((_, i) => avgOf(sgWindow, (r) => sgLegs(r)[i] ?? null)),
     putting,
     bests,
     tour,

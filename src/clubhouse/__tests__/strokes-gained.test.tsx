@@ -457,11 +457,12 @@ describe('team loader', () => {
     expect(data.players[0]!.scoreMean).toBe(72);
   });
 
-  it('a player with fewer than three strokes gained rounds has no mean to sort by (an early read, as in the grid)', async () => {
+  it('a player with fewer than three strokes gained rounds has no mean to sort by (an early read, as in the grid), and the team headline waits too (A4)', async () => {
     tables.current = teamTables('men', three.slice(0, 2));
     const data = await loadTeamStats({ teamId: 't1', window: 'season' });
     expect(data.players[0]!.sgMean).toBeNull();
-    expect(data.figures[0]!.value).toBe(2);
+    expect(data.figures[0]).toMatchObject({ value: null, state: 'empty', context: 'Needs 3 rounds with shots from one player' });
+    expect(data.legTotals).toEqual([null, null, null, null]);
   });
 
   it('CH-4311 no strokes gained in the window: no value, never a zero', async () => {

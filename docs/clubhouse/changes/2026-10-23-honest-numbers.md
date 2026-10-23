@@ -195,3 +195,37 @@ Held items: none
 
 - `roster.test.tsx`: two rounds of 70 and ten of 80 make 78.3, not 75.0; the
   head-line pins compute the pooled figure from the fixture.
+
+## 2026-10-23 — Team strokes gained obeys the three-round floor (A4)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A4)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The team's strokes gained headline, its change against the previous
+  stretch and the four leg totals read only the players with three whole
+  rounds with shots in the window (`MIN_SG_ROUNDS`), as each player's own
+  figure and the previous stretch already did.
+- With rounds with shots but no player at the floor yet, the headline is
+  empty and says "Needs 3 rounds with shots from one player".
+
+### Why
+
+- A player's first one or two rounds swung the team headline, while the
+  "previous" figure it was compared with applied the floor.
+
+### Verification
+
+- `stats-team.test.tsx`: a player at five rounds (+1.0) and one at one
+  round (−4.0) give +1.0 and leg totals from the first only.
+- `strokes-gained.test.tsx`: a player under the floor leaves the headline
+  empty with what it needs and no leg totals.
+- `stats-filter-data.test.tsx`: three nine-hole rounds are under the floor,
+  six read per 18.
