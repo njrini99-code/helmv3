@@ -1634,6 +1634,102 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   animation: ch-zn-settle var(--ch-dur-base) var(--ch-ease) backwards;
 }
 
+/* The one line chart (ui/charts/Line.tsx, B5): better is up, a missing value is a gap, ticks in tabular figures. The line
+   takes --ch-line-ink from itself or a parent (the ink when none sets it; a screen sets the gain green). A point reads in a line above the plot or a tip
+   over its top corner. */
+.ch-line {
+  display: block;
+  position: relative;
+}
+.ch-line:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-line__read {
+  min-height: 22px;
+  margin: 0;
+  font: var(--ch-type-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-line__read.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-line__tip {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  z-index: var(--ch-z-raised);
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ink-900);
+  color: var(--ch-bg-surface);
+  font: var(--ch-type-12-medium);
+  box-shadow: var(--ch-elevation-overlay);
+  pointer-events: none;
+}
+.ch-line__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-line__grid {
+  stroke: var(--ch-border-hairline);
+  stroke-width: 1;
+}
+.ch-line__ref {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-line__ref.is-dashed {
+  stroke-dasharray: 3 4;
+}
+.ch-line__t {
+  font: var(--ch-type-11-medium);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ch-text-tertiary);
+}
+.ch-line__path {
+  stroke: var(--ch-line-ink, var(--ch-text-primary));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-line__wash-top {
+  stop-color: var(--ch-line-ink, var(--ch-text-primary));
+  stop-opacity: 0.16;
+}
+.ch-line__wash-end {
+  stop-color: var(--ch-line-ink, var(--ch-text-primary));
+  stop-opacity: 0;
+}
+.ch-line__wash.is-flat {
+  fill: var(--ch-line-ink, var(--ch-text-primary));
+  opacity: 0.08;
+}
+.ch-line__guide {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-line__dot {
+  fill: var(--ch-line-ink, var(--ch-text-primary));
+  stroke: var(--ch-bg-surface);
+  stroke-width: 1.5;
+}
+.ch-line__dot.is-hollow {
+  fill: var(--ch-bg-surface);
+  stroke: var(--ch-line-ink, var(--ch-text-primary));
+}
+.ch-line__dot.is-active {
+  stroke-width: 2;
+}
+
 /* The page is waiting, not missing (EmptyState with a `shape` or `kind`; ui/EmptyShape.tsx). The sentence takes the place
    of the first row, flush on the Ledger like the rows that will follow it, and under it the layout's own rules, rings and
    baseline are drawn empty. Hairlines only: no bars, no sheen (those are the loading skeleton's) and no motion, so there
@@ -1910,99 +2006,4 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     -webkit-mask-image: none;
     mask-image: none;
   }
-}
-
-/* The one line chart (ui/charts/Line.tsx, B5): better is up, a missing value is a gap, ticks in tabular figures. The line
-   takes --ch-line-ink from itself or a parent (the ink when none sets it; a screen sets the gain green). A point reads in a line above the plot or a tip
-   over its top corner. */
-.ch-line {
-  position: relative;
-}
-.ch-line:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
-  border-radius: var(--ch-radius-md);
-}
-.ch-line__read {
-  min-height: 22px;
-  margin: 0;
-  font: var(--ch-type-13);
-  font-variant-numeric: tabular-nums;
-  color: var(--ch-text-secondary);
-}
-.ch-line__read.is-on {
-  color: var(--ch-text-primary);
-}
-.ch-line__tip {
-  position: absolute;
-  top: 0;
-  left: 4px;
-  z-index: 1;
-  margin: 0;
-  padding: 6px 10px;
-  border-radius: var(--ch-radius-md);
-  background: var(--ch-ink-900);
-  color: var(--ch-bg-surface);
-  font: var(--ch-type-12-medium);
-  box-shadow: var(--ch-elevation-overlay);
-  pointer-events: none;
-}
-.ch-line__svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  touch-action: pan-y;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-.ch-line__grid {
-  stroke: var(--ch-border-hairline);
-  stroke-width: 1;
-}
-.ch-line__ref {
-  stroke: var(--ch-border-strong);
-  stroke-width: 1;
-}
-.ch-line__ref.is-dashed {
-  stroke-dasharray: 3 4;
-}
-.ch-line__t {
-  font: 500 11px/1 var(--ch-font-sans);
-  font-variant-numeric: tabular-nums;
-  fill: var(--ch-text-tertiary);
-}
-.ch-line__path {
-  stroke: var(--ch-line-ink, var(--ch-text-primary));
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.ch-line__wash-top {
-  stop-color: var(--ch-line-ink, var(--ch-text-primary));
-  stop-opacity: 0.16;
-}
-.ch-line__wash-end {
-  stop-color: var(--ch-line-ink, var(--ch-text-primary));
-  stop-opacity: 0;
-}
-.ch-line__wash.is-flat {
-  fill: var(--ch-line-ink, var(--ch-text-primary));
-  opacity: 0.08;
-}
-.ch-line__guide {
-  stroke: var(--ch-border-strong);
-  stroke-width: 1;
-}
-.ch-line__dot {
-  fill: var(--ch-line-ink, var(--ch-text-primary));
-  stroke: var(--ch-bg-surface);
-  stroke-width: 1.5;
-}
-.ch-line__dot.is-hollow {
-  fill: var(--ch-bg-surface);
-  stroke: var(--ch-line-ink, var(--ch-text-primary));
-}
-.ch-line__dot.is-active {
-  stroke-width: 2;
 }

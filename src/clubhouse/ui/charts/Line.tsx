@@ -220,11 +220,12 @@ export function Line({
       )}
     </svg>
   );
+  // A span, since this chart sits inside a button or a span (phrasing content only); .ch-line makes it a block.
   if (!interactive)
     return (
-      <div className={'ch-line' + (className ? ` ${className}` : '')} aria-hidden="true">
+      <span className={'ch-line' + (className ? ` ${className}` : '')} aria-hidden="true">
         {plot}
-      </div>
+      </span>
     );
   return (
     <div
