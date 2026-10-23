@@ -165,3 +165,66 @@ CURRENT_DATE is C10, held
 
 - New `lib/__tests__/rank.test.ts` and `data/__tests__/season.test.ts`;
   a roster standings test for 74.30 and 74.333.
+
+## 2026-10-23 — One number formatter per metric (CONS-15)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-15)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none (display only)
+Held items: formatSG's precision (two decimals in the spec body, one in
+its table row) waits for the owner before any strokes-gained figure
+moves onto it; the .toFixed ratchet starts at 112, not 0
+```
+
+### Changed
+
+- `lib/format.ts` gains `formatAvg`, `formatSG`, `formatHcp` and
+  `formatDistance`. The roster and onboarding handicap formatters are
+  gone; every handicap reads through `formatHcp`.
+- Team and player averages, penalties and putts on Roster, Stats and
+  Home use the shared formatters. A missing figure is an em dash.
+- TeamRank's two-decimal percent is a dot's position, not a figure, so
+  it stays. `formatPct` keeps its percent scale (61.4 reads 61%).
+
+### Why
+
+- One metric should read at one precision everywhere.
+
+### Verification
+
+- New `display-rounding.test.ts` (`.toFixed(` outside `lib/format.ts`
+  may only fall, 132 to 112 here); `format-number.test.ts` extended;
+  related tests for every changed file (214 files).
+
+## 2026-10-23 — Menu origin and the push dim (B16, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, B16)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the physics springs (smoothPhysics, snappy) wait on OQ-17;
+the sidebar fold stays as it is; device smoothness of the dim is
+unverified
+```
+
+### Changed
+
+- A menu grows from the corner nearest its trigger: from the bottom
+  when it opens upward. The right-click menu does the same.
+- On the phone a drill-in push dims the page beneath as a pushed screen
+  does (`--ch-push-dim`, `--ch-vt-push-dim`), and Back lifts it.
+
+### Why
+
+- A menu that opened upward grew from its top, away from the trigger,
+  and a route push left the page beneath at full brightness.
+
+### Verification
+
+- New `ui/__tests__/menu-origin.test.tsx`; the context menu, popup
+  layout and CSS guard tests (31 files); `clubhouse:css` 0 findings.

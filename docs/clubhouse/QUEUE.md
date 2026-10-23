@@ -349,6 +349,8 @@ its rows together and does not map them one to one.
 | aplus-b12 | Icons draw an absolute line weight (B12, stroke) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-18); size steps wait on CONS-4; no Bridge IDs or CH codes needed |
 | aplus-b11 | Cmd-comma Settings, N out of dialogs, arrow keys in the Messages rail and the Bell (B11, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-18); Cmd-1 to 9 waits on OQ-63; no Bridge IDs or CH codes needed |
 | aplus-b13 | One rank rule on the shown value; season in the team's zone (B13.2, B13.4) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-19); B13.1 and B13.3 held for the owner; no Bridge IDs or CH codes needed |
+| aplus-cons15 | One number formatter per metric (CONS-15) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-19); formatSG precision held for the owner; ratchet at 112; no Bridge IDs or CH codes needed |
+| aplus-b16 | Menu origin and the push dim (B16, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-20); physics springs wait on OQ-17; no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
