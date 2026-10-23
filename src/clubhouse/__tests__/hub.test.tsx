@@ -204,7 +204,7 @@ describe('Team Hub · player', () => {
     settle({ success: false, error: 'refused' });
     await expectCode('CH-10002', /Couldn’t acknowledge/);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Got it' })).toBeTruthy());
-    await user.click(within(code('CH-10002')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-10002')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(acknowledge).toHaveBeenCalledTimes(2));
     expect(code('CH-10409')).not.toBeNull();
     settle({ success: true });
@@ -284,7 +284,7 @@ describe('Team Hub · player', () => {
     const dinner = () => screen.getByRole('radiogroup', { name: 'Your reply for Team dinner' });
     await user.click(within(dinner()).getByRole('radio', { name: 'Going' }));
     await expectCode('CH-10001');
-    const retry = within(code('CH-10001')!).getByRole('button', { name: 'Retry' });
+    const retry = within(code('CH-10001')!).getByRole('button', { name: 'Try again' });
     await tab('Travel');
     await tab('Home');
     await user.click(within(dinner()).getByRole('radio', { name: 'Maybe' }));
@@ -310,7 +310,7 @@ describe('Team Hub · player', () => {
     show(PREVIEW_HUB_PLAYER, writes({ acknowledge }));
     await user.click(screen.getByRole('button', { name: 'Got it' }));
     await expectCode('CH-10002');
-    const retry = within(code('CH-10002')!).getByRole('button', { name: 'Retry' });
+    const retry = within(code('CH-10002')!).getByRole('button', { name: 'Try again' });
     await user.click(screen.getByRole('button', { name: 'Got it' }));
     await waitFor(() => expect(liveText('Acknowledged')).toHaveLength(1));
     await tab('Announcements');
@@ -831,7 +831,7 @@ describe('Team Hub · coach', () => {
     await expectCode('CH-10006', /Couldn’t save Carolina Fall Invitational/);
     expect(screen.getByText(/The trip is saved; its travelers didn’t update/)).toBeTruthy();
     expect(d.getByRole('button', { name: 'Update travelers' })).toBeTruthy();
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(setTravelers).toHaveBeenCalledTimes(2));
     expect(setTravelers).toHaveBeenLastCalledWith('e-cfi', { add: [], remove: ['priya'] });
     expect(w.planTrip).toHaveBeenCalledTimes(1);
@@ -1611,7 +1611,7 @@ describe('Team Hub · every write, by the button and by the failure toast’s Re
       expect(write).toHaveBeenCalledTimes(1);
       sc.notYet();
       hapticSpy.mockClear();
-      await user.click(screen.getByRole('button', { name: 'Retry' }));
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
       await waitFor(() => expect(write).toHaveBeenCalledTimes(2));
       expect(write.mock.calls[1]).toEqual(write.mock.calls[0]);
       if (sc.done) await screen.findByText(sc.done);
@@ -1642,7 +1642,7 @@ describe('Team Hub · every write, by the button and by the failure toast’s Re
     await user.upload(document.querySelector('.ch-hb-docs input[type="file"]') as HTMLInputElement, new File(['x'], 'Local rules.pdf', { type: 'application/pdf' }));
     await expectCode('CH-10008');
     expect(code('CH-10401')).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await expectCode('CH-10401', /Uploading/);
     expect((code('CH-10401') as HTMLButtonElement).disabled).toBe(true);
     release({ success: true });
@@ -2131,7 +2131,7 @@ describe('Team Hub · Attach from Documents in New announcement', () => {
     // Refused: the sheet and its files are still there.
     expect(dialogOpen()).toBe(true);
     expect(attached(dialog)).toEqual(['Remove Travel waiver', 'Remove Hotel confirmation']);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(post).toHaveBeenCalledTimes(2));
     expect(post.mock.calls[1]).toEqual(post.mock.calls[0]);
     await waitFor(() => expect(dialogOpen()).toBe(false));
@@ -2365,7 +2365,7 @@ describe('Team Hub · a post whose files did not attach (Q-82)', () => {
     const post = vi.fn().mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValue(attachFail);
     await compose(user, post, true);
     await expectCode('CH-10005');
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await expectCode('CH-10012', /without its files/);
     expect(post).toHaveBeenCalledTimes(2);
     expect(screen.queryByText('Posted “Waiver”')).toBeNull();

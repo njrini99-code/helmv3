@@ -19,6 +19,7 @@ import { CoachQueue } from './CoachQueue';
 import { TeamLegs } from './TeamLegs';
 import { useHomeDayRollover } from './use-day-rollover';
 import '../../styles/home.css';
+import { NoTeam } from '../../ui/NoTeam';
 
 /**
  * Coach Home (handoff: Coach Home v3). The coach's day at a glance: the week
@@ -134,23 +135,9 @@ function HomeFirstRun({ data, phone }: { data: ChCoachHome; phone: boolean }) {
 
 /** A coach with no active team: nothing to summarise yet, and one clear next step. */
 export function CoachHomeNoTeam() {
-  const settings = rebuiltHref('/golf/dashboard/settings?section=team', 'coach');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2307"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2307" coach body="Once your head coach adds you to the program, or you finish setting up your team, Home shows your week, rounds and leaderboard." />
     </main>
   );
 }

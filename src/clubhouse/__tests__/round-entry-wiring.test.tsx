@@ -236,7 +236,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     const user = renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11007')).toHaveTextContent("Couldn’t start your round at Finley GC"));
-    await user.click(toastAction('CH-11007', 'Retry')!);
+    await user.click(toastAction('CH-11007', 'Try again')!);
     await screen.findByTestId('tracking');
     expect(startCalls()).toHaveLength(2);
   });
@@ -246,7 +246,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     const user = renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11016')).toHaveTextContent('You already have a completed round for this course on this date'));
-    expect(toastAction('CH-11016', 'Retry')).toBeNull();
+    expect(toastAction('CH-11016', 'Try again')).toBeNull();
     await user.click(toastAction('CH-11016', 'Start anyway')!);
     await screen.findByTestId('tracking');
     expect(mocks.savePartialRound.mock.calls[1]![2]).toMatchObject({ confirmDuplicateCourse: true });
@@ -273,7 +273,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     const user = renderNew();
     await startQualifierRound(user);
     await waitFor(() => expect(code('CH-11014')).toHaveTextContent('Round 1 of this qualifier is not open to you now. Your next round is 2.'));
-    expect(toastAction('CH-11014', 'Retry')).toBeNull();
+    expect(toastAction('CH-11014', 'Try again')).toBeNull();
     expect(mocks.savePartialRound).not.toHaveBeenCalled();
   });
 
@@ -286,7 +286,7 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     const user = renderNew();
     await startQualifierRound(user);
     await waitFor(() => expect(code('CH-11015')).toHaveTextContent('You are not entered in this qualifier'));
-    await user.click(toastAction('CH-11015', 'Retry')!);
+    await user.click(toastAction('CH-11015', 'Try again')!);
     await screen.findByTestId('tracking');
   });
 
@@ -439,7 +439,7 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     await waitFor(() => expect(code('CH-11010')).toHaveTextContent('Couldn’t save your round at Finley GC'));
     expect(code('CH-11010')).toHaveTextContent('Something failed for real.');
     expect(mocks.router.push).not.toHaveBeenCalled();
-    await user.click(toastAction('CH-11010', 'Retry')!);
+    await user.click(toastAction('CH-11010', 'Try again')!);
     await waitFor(() => expect(mocks.router.push).toHaveBeenCalledWith('/golf/dashboard/rounds'));
     expect(saveCalls()).toHaveLength(2);
     expect(saveCalls().at(-1)![1]).toBe('round-1');
@@ -451,7 +451,7 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     mocks.savePartialRound.mockResolvedValueOnce({ success: false, error: 'Something failed for real' });
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
     await waitFor(() => expect(code('CH-11010')).not.toBeNull());
-    const oldRetry = toastAction('CH-11010', 'Retry')!;
+    const oldRetry = toastAction('CH-11010', 'Try again')!;
     let release: (v: unknown) => void = () => {};
     mocks.savePartialRound.mockReturnValueOnce(new Promise((r) => (release = r)));
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
@@ -519,7 +519,7 @@ describe('Round entry: Save for later and Discard from the Exit sheet (CH-11010,
     await user.click(within(code('CH-11506')!).getByRole('button', { name: /Save for later/ }));
     await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-11902"]').length).toBeGreaterThanOrEqual(2));
     expect(code('CH-11010')).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
     await user.click(screen.getAllByRole('button', { name: 'Reload' })[0]!);
     expect(reload).toHaveBeenCalled();
     expect(mocks.router.push).not.toHaveBeenCalled();
@@ -585,7 +585,7 @@ describe('Round entry: a submit the coach’s closed qualifier refuses (CH-11516
     // there now, until the discard has run again (a click on a button that has just been replaced does nothing).
     await waitFor(
       async () => {
-        const retry = toastAction('CH-11011', 'Retry');
+        const retry = toastAction('CH-11011', 'Try again');
         if (retry && mocks.deleteInProgressRound.mock.calls.length < 2) await user.click(retry);
         expect(mocks.deleteInProgressRound).toHaveBeenCalledTimes(2);
       },

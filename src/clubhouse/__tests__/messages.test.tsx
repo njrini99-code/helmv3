@@ -520,7 +520,7 @@ describe('Messages · validation, haptics, accessibility', () => {
     show();
     await expectCode('CH-7016', /Not sent/);
     await expectCode('CH-7017', /Couldn’t confirm this message sent\. Check before sending again\./);
-    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-7016') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(live.msgs.retryMessage).toHaveBeenCalledWith('f1');
   });
 

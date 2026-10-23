@@ -875,7 +875,7 @@ describe('Settings · saving', () => {
     expect(name).toHaveValue('Maya R');
     expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeEnabled();
     expect(await within(card('Profile')).findByText('Unsaved changes')).toBeTruthy();
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
     expect(saveProfile.mock.calls[1]).toEqual(saveProfile.mock.calls[0]);
     expect(await screen.findByText('Profile saved')).toBeTruthy();
@@ -890,7 +890,7 @@ describe('Settings · saving', () => {
     await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-8001');
     await user.type(name, 'eyes');
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(saveProfile).toHaveBeenCalledTimes(2));
     expect(saveProfile.mock.calls[1]![0]).toMatchObject({ fullName: 'Maya R' });
     await screen.findByText('Profile saved');
@@ -906,7 +906,7 @@ describe('Settings · saving', () => {
     await user.type(screen.getByLabelText('Full name'), 's');
     await user.click(within(card('Profile')).getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-8001');
-    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(within(card('Profile')).queryByText('Unsaved changes')).toBeNull());
     expect(within(card('Profile')).queryByRole('button', { name: 'Save changes' })).toBeNull();
     expect(writes.refresh).toHaveBeenCalledTimes(1);
@@ -916,7 +916,7 @@ describe('Settings · saving', () => {
     await user.click(within(card('Invite players')).getByRole('button', { name: 'Make a new code' }));
     await user.click(within(code('CH-8503') as HTMLElement).getByRole('button', { name: 'Make a new code' }));
     await expectCode('CH-8012');
-    await user.click(within(code('CH-8012') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8012') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await within(card('Invite players')).findByText('R4T8W2PL')).toBeTruthy();
     expect(within(card('Invite players')).queryByText('K7M2Q9XA')).toBeNull();
   });
@@ -927,7 +927,7 @@ describe('Settings · saving', () => {
     await user.click(screen.getByRole('switch', { name: 'Tasks by push' }));
     await expectCode('CH-8005');
     expect(screen.getByRole('switch', { name: 'Tasks by push' })).toBeChecked();
-    await user.click(within(code('CH-8005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-8005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(setDelivery).toHaveBeenCalledTimes(2));
     expect(setDelivery.mock.calls[1]).toEqual(setDelivery.mock.calls[0]);
     await waitFor(() => expect(screen.getByRole('switch', { name: 'Tasks by push' })).not.toBeChecked());

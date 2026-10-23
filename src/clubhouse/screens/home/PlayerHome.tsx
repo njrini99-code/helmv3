@@ -27,6 +27,7 @@ import { Week } from './Week';
 import { messageCoachHref, postRoundHref } from './player-links';
 import { useHomeDayRollover } from './use-day-rollover';
 import '../../styles/home.css';
+import { NoTeam } from '../../ui/NoTeam';
 
 /**
  * Player Home (design/handoff/Player - Home.html): the day, a sentence from
@@ -179,23 +180,9 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
 /** A player on no active team: nothing to show yet, and how that changes. */
 export function PlayerHomeNoTeam() {
   // Joining a team lives in Settings' Golf profile (CH-8302).
-  const settings = rebuiltHref('/golf/dashboard/settings?section=golf', 'player');
   return (
     <main className="ch-h-main">
-      <EmptyState
-        size="page"
-        code="CH-2313"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats."
-        action={
-          settings ? (
-            <Button variant="primary" href={settings}>
-              Open team settings
-            </Button>
-          ) : undefined
-        }
-      />
+      <NoTeam code="CH-2313" coach={false} body="Ask your coach for your team’s code or an invite. Once you join, Home shows your week, your rounds and your stats." />
     </main>
   );
 }

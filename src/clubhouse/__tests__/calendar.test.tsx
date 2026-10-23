@@ -348,7 +348,7 @@ describe('Calendar · saves that fail', () => {
     // Pressing Publish again, then the toast's Retry: the same event, so the same id.
     await user.click(screen.getByRole('button', { name: 'Publish event' }));
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(2));
-    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    const retries = await screen.findAllByRole('button', { name: 'Try again' });
     await user.click(retries[retries.length - 1]!);
     await waitFor(() => expect(a.createGolfEvent).toHaveBeenCalledTimes(3));
     const ids = () => a.createGolfEvent.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
@@ -656,7 +656,7 @@ describe('Calendar · saves that fail', () => {
     await user.type(d.getByPlaceholderText('Recruiting call'), 'Film');
     await user.click(d.getByRole('button', { name: 'Add busy time' }));
     await expectCode('CH-6006', /Couldn’t add your busy time/);
-    const retries = await screen.findAllByRole('button', { name: 'Retry' });
+    const retries = await screen.findAllByRole('button', { name: 'Try again' });
     await user.click(retries[retries.length - 1]!);
     await waitFor(() => expect(a.addCoachBlockedTime).toHaveBeenCalledTimes(2));
     const ids = () => a.addCoachBlockedTime.mock.calls.map((c) => (c[0] as { requestId?: string }).requestId);
@@ -1464,7 +1464,7 @@ describe('Calendar · the failure toast’s Retry', () => {
       expect(write).toHaveBeenCalledTimes(1);
       sc.notYet();
       hapticSpy.mockClear();
-      await user.click(screen.getByRole('button', { name: 'Retry' }));
+      await user.click(screen.getByRole('button', { name: 'Try again' }));
       await waitFor(() => expect(write).toHaveBeenCalledTimes(2));
       expect(write.mock.calls[1]).toEqual(write.mock.calls[0]);
       await screen.findByText(sc.done);

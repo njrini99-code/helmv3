@@ -6617,6 +6617,16 @@
       "fixture": "Shared gallery example"
     },
     {
+      "file": "src/clubhouse/ui/NoTeam.tsx",
+      "group": "ui",
+      "exports": [
+        "NoTeam"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/ui/Notices.tsx",
       "group": "ui",
       "exports": [

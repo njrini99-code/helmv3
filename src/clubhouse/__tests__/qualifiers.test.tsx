@@ -1782,7 +1782,7 @@ describe('Qualifiers · create and edit', () => {
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await expectCode('CH-09002', /Couldn’t save the qualifier.*Check the form and save again/);
     expect(code('CH-09902')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
   it('90513 editing: a player with a round stays entered; a changed squad and entrants are sent, an unchanged one is not', async () => {
@@ -2817,7 +2817,8 @@ describe('Qualifiers · the route (who reaches which address)', () => {
     vi.mocked(resolveClubhouseTeam).mockResolvedValue(null);
     for (const view of ['list', 'mine', 'new', 'edit', 'selection', 'detail'] as const) {
       const { unmount } = wrap((await route(view, QID)) as never);
-      expect([view, code('CH-09309')!.textContent]).toEqual([view, 'You aren’t on a team yet' + 'Qualifiers fill in once your team is set up.']);
+      // CONS-10: the one no-team state, with its one way on.
+      expect([view, code('CH-09309')!.textContent]).toEqual([view, 'You aren’t on a team yet' + 'Qualifiers fill in once your team is set up.' + 'Open team settings']);
       unmount();
     }
     vi.mocked(getGolfSessionProfile).mockResolvedValue({ coach: null, player: { id: 'p2' } } as never);
@@ -3168,7 +3169,7 @@ describe('Qualifiers · every write', () => {
       await toldOnce(sc);
       // The notice has no Retry of its own: the coach saves again, which is the same write.
       if (sc.notice) await sc.act(userEvent.setup());
-      else await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+      else await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
       await waitFor(() => expect(sc.write(c)).toHaveBeenCalledTimes(2));
       expect([sc.name, sc.write(c).mock.calls[1]]).toEqual([sc.name, sc.write(c).mock.calls[0]]);
       await screen.findByText(sc.done);

@@ -31,7 +31,7 @@ export interface ActionCopy {
    * nothing and ticks nothing, success or failure. Set it from `refine`, once the result is known.
    */
   quiet?: boolean;
-  /** `false` when trying again can't change the answer, so the failure toast has no action; a string names the action instead of "Retry". */
+  /** `false` when trying again can't change the answer, so the failure toast has no action; a string names the action instead of "Try again". */
   retry?: false | string;
   /**
    * Whether this action counts as offline, in place of `navigator.onLine` alone. A round screen passes the engine's
@@ -80,7 +80,7 @@ export function useAction<A extends unknown[], T>(
       if ((c.offline ?? isOffline)()) {
         // CH-1903: nothing is sent while offline; say so instead of spinning.
         haptic('error');
-        toast({ tone: 'error', title: `${c.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Retry', run: () => void run(...args) } });
+        toast({ tone: 'error', title: `${c.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Try again', run: () => void run(...args) } });
         return { success: false, error: 'offline' };
       }
       inFlight.current = true;
@@ -112,7 +112,7 @@ export function useAction<A extends unknown[], T>(
           tone: 'error',
           title: c.failed,
           body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Check your connection and try again.',
-          action: c.retry === false ? undefined : { label: c.retry ?? 'Retry', run: () => void run(...args) },
+          action: c.retry === false ? undefined : { label: c.retry ?? 'Try again', run: () => void run(...args) },
           code: c.code,
         });
       }

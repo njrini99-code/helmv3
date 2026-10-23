@@ -44,7 +44,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
         tone: 'error',
         title: `Couldn’t save your round${at}`,
         body: reasonText(reason) ?? 'Your shots are still on this device. Check your connection, then try again.',
-        action: { label: 'Retry', run },
+        action: { label: 'Try again', run },
         code: 'CH-11010',
       };
     case 'discard-round':
@@ -52,7 +52,7 @@ export function entryFailureToast(kind: EntryFailure, { course, reason, run }: E
         tone: 'error',
         title: `Couldn’t discard the round${at}`,
         body: reasonText(reason) ?? 'It is still saved. Try again, or keep playing.',
-        action: { label: 'Retry', run },
+        action: { label: 'Try again', run },
         code: 'CH-11011',
       };
     case 'round-updated':

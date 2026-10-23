@@ -805,7 +805,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(within(row('Downhill putts inside 6 ft')).getByRole('button', { name: 'Accept' })).toBeTruthy();
     expect(code('CH-13902')).toBeNull();
-    await u.click(within(code('CH-13004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13902', /Started · Downhill putts inside 6 ft/);
     expect(w.accept).toHaveBeenCalledTimes(2);
     expect(w.accept).toHaveBeenLastCalledWith('fa-ladder');
@@ -821,7 +821,7 @@ describe('CoachHelm proposals, on the player’s board', () => {
     await u.click(within(code('CH-13912') as HTMLElement).getByRole('button', { name: 'Dismiss notification' }));
     await expectCode('CH-13005', /Couldn’t decline Lag putting from 30 ft/);
     expect(within(row('Lag putting from 30 ft')).getByRole('button', { name: 'Decline' })).toBeTruthy();
-    await u.click(within(code('CH-13005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13902', /Declined · Lag putting from 30 ft/);
     expect(w.decline).toHaveBeenCalledTimes(2);
   });
@@ -992,7 +992,7 @@ describe('CoachHelm for the coach, on screen', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('button', { name: 'Assign as focus' })).toBeTruthy();
     expect(code('CH-13601')).toBeNull();
-    await u.click(within(code('CH-13001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13601', /Assigned as Jonah’s focus/);
     expect(w.assign).toHaveBeenCalledTimes(2);
   });
@@ -1101,7 +1101,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await expectCode('CH-13002', /Couldn’t dismiss the insight.*It’s still on the board/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
-    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-13901');
     expect(w.dismiss).toHaveBeenCalledTimes(2);
   });
@@ -1116,7 +1116,7 @@ describe('CoachHelm for the coach, on screen', () => {
     await u.click(await screen.findByRole('button', { name: 'Undo' }));
     await expectCode('CH-13003', /Couldn’t undo the dismissal.*It’s still dismissed/);
     expect(code('CH-13901')).not.toBeNull();
-    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await u.click(within(code('CH-13003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(code('CH-13901')).toBeNull());
     expect(document.querySelector('.ch-hl-focus')).not.toBeNull();
     expect(w.undo).toHaveBeenCalledTimes(2);

@@ -452,7 +452,7 @@ describe('Discarding an unfinished round', () => {
     await expectCode('CH-11001', /Couldn’t discard the round at Finley GC/);
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByText('In progress')).toBeTruthy();
-    await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(discard).toHaveBeenCalledTimes(2);
   });

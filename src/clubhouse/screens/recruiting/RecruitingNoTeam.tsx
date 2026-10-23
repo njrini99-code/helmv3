@@ -1,6 +1,5 @@
-import { Button } from '../../ui/Button';
-import { EmptyState } from '../../ui/States';
 import '../../styles/recruiting.css';
+import { NoTeam } from '../../ui/NoTeam';
 
 /**
  * A coach signed in with no team the page can resolve (CH-14306): the whole page says so, with the way out the
@@ -9,18 +8,7 @@ import '../../styles/recruiting.css';
 export function RecruitingNoTeam() {
   return (
     <main className="ch-rec-none">
-      <EmptyState
-        size="page"
-        code="CH-14306"
-        shape="rows"
-        title="You aren’t on a team yet"
-        body="Recruiting is your team’s list of prospects. Create or join a team, then add the golfers you’re following."
-        action={
-          <Button variant="primary" href="/golf/dashboard/settings?section=team">
-            Open team settings
-          </Button>
-        }
-      />
+      <NoTeam code="CH-14306" coach body="Recruiting is your team’s list of prospects. Create or join a team, then add the golfers you’re following." />
     </main>
   );
 }

@@ -142,7 +142,7 @@ describe('Shell · bell', () => {
       const [open, setOpen] = useState(true);
       return (
         <Modal open={open} onClose={() => setOpen(false)} title="Edit">
-          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Retry', run: retry }, code: 'CH-9999' })}>
+          <button type="button" onClick={() => toast({ tone: 'error', title: "Couldn't save", action: { label: 'Try again', run: retry }, code: 'CH-9999' })}>
             Save
           </button>
         </Modal>
@@ -159,7 +159,7 @@ describe('Shell · bell', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(dialog.contains(code('CH-9999'))).toBe(true));
     expect(dialog.querySelector('.ch-toasts')!.getAttribute('aria-live')).toBe('polite');
-    await user.click(within(dialog).getByRole('button', { name: 'Retry' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Try again' }));
     expect(retry).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await user.click(within(dialog).getByRole('button', { name: 'Close' }));
@@ -1342,7 +1342,7 @@ describe('Shell · behaviour contracts (P001)', () => {
     wrap(<Saver fn={fn} />);
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await expectCode('CH-8001', /Couldn't save your profile/);
-    await user.click(screen.getByRole('button', { name: 'Retry' }));
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
     await screen.findByText('Profile saved');
     expect(fn).toHaveBeenCalledTimes(2);
   });

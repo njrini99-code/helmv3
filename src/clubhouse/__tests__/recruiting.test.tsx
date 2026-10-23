@@ -653,7 +653,7 @@ describe('Recruiting · desktop', () => {
     expect(report).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ action: 'recruiting.stage' }));
     // Retry: the same move, through the same action.
     w.update.mockImplementation(() => ok());
-    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Committed'));
     expect(w.update).toHaveBeenCalledTimes(2);
     expect(w.update).toHaveBeenLastCalledWith('p-mason', { status: 'committed' });
@@ -666,7 +666,7 @@ describe('Recruiting · desktop', () => {
     wrap(PREVIEW_RECRUITING, w);
     await user.click(within(panel('Mason Reilly')).getByRole('radio', { name: 'Watched' }));
     await expectCode('CH-14003');
-    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.update).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Offered'));
     w.update.mockImplementation(() => Promise.reject(new Error('network down')));
@@ -688,7 +688,7 @@ describe('Recruiting · desktop', () => {
     expect(stageOf('Mason Reilly')).toBe('Offered');
     // Back online, Retry does it.
     online.mockRestore();
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(stageOf('Mason Reilly')).toBe('Committed'));
   });
 
@@ -752,7 +752,7 @@ describe('Recruiting · desktop', () => {
     expect(code('CH-14501')).not.toBeNull();
     expect(rowNames()).toHaveLength(8);
     w.remove.mockImplementation(() => ok());
-    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(rowNames()).toHaveLength(7));
     expect(w.remove).toHaveBeenCalledTimes(2);
   });
@@ -847,7 +847,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Wilmington');
     expect(rowNames()).toHaveLength(8);
     w.create.mockImplementation(() => ok({ id: 'new-2' }));
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(rowNames()).toHaveLength(9));
     expect(w.create).toHaveBeenCalledTimes(2);
     expect(w.create).toHaveBeenLastCalledWith(expect.objectContaining({ first_name: 'Ellie', hometown: 'Wilmington' }), expect.any(String));
@@ -929,7 +929,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Hometown' }) as HTMLInputElement).value).toBe('Raleigh');
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Charlotte, NC')).toBeTruthy();
     w.update.mockImplementation(() => ok());
-    await user.click(within(code('CH-14002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(within(panel('Mason Reilly')).getByText('Class of 2027 · Raleigh, NC')).toBeTruthy();
   });
@@ -1009,7 +1009,7 @@ describe('Recruiting · desktop', () => {
     w.documents.list.mockImplementation(() => ok(PREVIEW_DOCUMENTS['p-mason']!.slice(1).map((d) => ({ ...d }))));
     const slow = deferred<{ success: boolean }>();
     w.documents.remove.mockReturnValueOnce(slow.promise as never);
-    await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14006') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(code('CH-14405')?.textContent).toBe('Removing…');
     await act(async () => slow.resolve({ success: true }));
     await waitFor(() => expect(screen.queryByText('Fall tournament schedule.pdf')).toBeNull());
@@ -1063,7 +1063,7 @@ describe('Recruiting · desktop', () => {
     expect((within(dlg()).getByRole('textbox', { name: 'Title' }) as HTMLInputElement).value).toBe('Film notes');
     expect(w.documents.list).toHaveBeenCalledTimes(1);
     w.documents.upload.mockImplementation(() => ok({ id: 'd-x' }));
-    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.documents.upload).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());
     expect(w.documents.list).toHaveBeenCalledTimes(2);
@@ -1256,7 +1256,7 @@ describe('Recruiting · phone', () => {
     await expectCode('CH-14004', /Couldn’t delete Mason Reilly/);
     expect(detail()).not.toBeNull();
     w.remove.mockImplementation(() => ok());
-    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.remove).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(detail()).toBeNull());
     await waitFor(() => expect(document.querySelector('dialog[open]')).toBeNull());

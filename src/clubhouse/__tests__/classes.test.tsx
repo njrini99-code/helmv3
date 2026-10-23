@@ -1493,7 +1493,7 @@ describe('Classes, writes that fail', () => {
     expect(field('Course name').value).toBe('Global Environmental Change');
     expect(names()).toHaveLength(5);
     expect(w.sync).not.toHaveBeenCalled();
-    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(names()).toEqual(ORDER_WITH_GEOG));
     expect(save).toHaveBeenCalledTimes(2);
     expect(save.mock.calls[1]![0]).toEqual(save.mock.calls[0]![0]);
@@ -1515,7 +1515,7 @@ describe('Classes, writes that fail', () => {
     expect(w.save).toHaveBeenCalledTimes(1);
     expect(within(card(/^GEOG 110/)).getByText('Not on your calendar')).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
-    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(sync).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(within(card(/^GEOG 110/)).queryByText('Not on your calendar')).toBeNull());
     expect(document.querySelector('.ch-cl-sync')).toBeNull();
@@ -1628,7 +1628,7 @@ describe('Classes, writes that fail', () => {
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(names()).toContain('Probability and Statistics');
     expect(screen.getByRole('dialog', { name: 'Remove this class?' })).toBeTruthy();
-    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(names()).not.toContain('Probability and Statistics'));
     expect(remove).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -1773,7 +1773,7 @@ describe('Classes, delete all', () => {
     expect(names()).toHaveLength(5);
     expect(question()).toBeTruthy();
     expect(code('CH-12006')).toBeNull();
-    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
     expect(removeAll).toHaveBeenCalledTimes(2);
     expect(removeAll.mock.calls[1]![0]).toEqual(removeAll.mock.calls[0]![0]);
@@ -1801,7 +1801,7 @@ describe('Classes, delete all', () => {
     await expectCode('CH-12005', /Couldn’t delete your classes.*Nothing was deleted\. Check your connection and try again\./);
     expect(report).toHaveBeenCalled();
     expect(names()).toHaveLength(5);
-    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
   });
 
@@ -1825,7 +1825,7 @@ describe('Classes, delete all', () => {
     expect(within(card(/^ENGL 105/)).queryByText('Not on your calendar')).toBeNull();
     // The question stays, and counts what is left.
     expect(question().textContent).toContain('All 2 classes come off your schedule and your calendar');
-    await user.click(within(code('CH-12006') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12006') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await expectCode('CH-12301');
     // The Retry repeats the first attempt's classes: a class already gone is removed again harmlessly.
     expect(removeAll).toHaveBeenCalledTimes(2);
@@ -2017,7 +2017,7 @@ describe('Classes, import', () => {
     expect(screen.getByRole('dialog', { name: 'Review your schedule' })).toBeTruthy();
     expect(names()).toHaveLength(5);
     expect(w.sync).not.toHaveBeenCalled();
-    await user.click(within(code('CH-12004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await screen.findByRole('dialog', { name: 'Schedule imported' })).toBeTruthy();
     expect(importRows).toHaveBeenCalledTimes(2);
   });
@@ -2073,7 +2073,7 @@ describe('Classes, import', () => {
     ).toBeTruthy();
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('1 class is not on your calendar');
     broken = false;
-    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(document.querySelector('.ch-cl-sync')).toBeNull());
     expect(
       await inSheet().findByText("3 of 4 are on your calendar and repeat weekly until Dec 15. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
@@ -2168,7 +2168,7 @@ describe('Classes, offline and slow', () => {
     expect(within(sheet()).getByRole('button', { name: 'Save changes' })).toBeTruthy();
     expect(field('Room').value).toBe('121');
     line!.mockReturnValue(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.save).toHaveBeenCalledTimes(1));
   });
 
@@ -2561,7 +2561,7 @@ describe('Classes, review fixes on screen', () => {
     // Tapped again in the same sheet: the row the first attempt may have stored is the one this reaches.
     await submitForm(user);
     await waitFor(() => expect(save).toHaveBeenCalledTimes(2));
-    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-12001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(save).toHaveBeenCalledTimes(3));
     await waitFor(() => expect(names()).toEqual(ORDER_WITH_GEOG));
     const ids = save.mock.calls.map((c) => c[2]);

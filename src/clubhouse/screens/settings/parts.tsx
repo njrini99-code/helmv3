@@ -535,7 +535,7 @@ export function useInstantSave(surface: string) {
       title: op.failed,
       // A refusal says why; only a save that got no answer is told to check the connection.
       body: `It is back where it was. ${saveFailureBody(r.error)}`,
-      action: { label: 'Retry', run: () => void run(op) },
+      action: { label: 'Try again', run: () => void run(op) },
       code: op.code,
     });
     return false;

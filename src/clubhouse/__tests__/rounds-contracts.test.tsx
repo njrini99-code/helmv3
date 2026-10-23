@@ -177,7 +177,7 @@ describe('110702 writes refuse offline: nothing is sent, the error haptic fires,
     expect(w.discard).not.toHaveBeenCalled();
     expect(screen.getByText('In progress')).toBeTruthy();
     setOnline(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('No round in progress')).toBeTruthy());
     expect(w.discard).toHaveBeenCalledTimes(1);
   });
@@ -193,7 +193,7 @@ describe('110702 writes refuse offline: nothing is sent, the error haptic fires,
     expect(onStarted).not.toHaveBeenCalled();
     expect(dock()).toHaveTextContent('Finley GC · Blue · 18 holes · Par 72');
     setOnline(true);
-    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-1903') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-1'));
     expect(ports.start).toHaveBeenCalledTimes(1);
   });
@@ -319,7 +319,7 @@ describe('111201 a Start that fails keeps the setup as it was, until the round o
     expect(within(screen.getByRole('radiogroup', { name: 'Round type' })).getByRole('radio', { name: 'Qualifier' })).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByText('This counts as round 3 of 3 in Fall qualifier 2.')).toBeInTheDocument();
     expect(dock()).toHaveTextContent('Finley GC · Blue');
-    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-11007')!).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(onStarted).toHaveBeenCalledWith('r-3'));
     expect(start.mock.calls[1]![0]).toEqual(start.mock.calls[0]![0]);
     expect(start.mock.calls[0]![0]).toMatchObject({ type: 'qualifier', pick: { teeId: 'finley-blue' } });

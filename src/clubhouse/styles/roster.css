@@ -526,7 +526,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: inherit;
+  font: var(--ch-type-label-s);
   color: inherit;
   cursor: pointer;
 }

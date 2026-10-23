@@ -8,7 +8,6 @@ import { Modal } from '../../ui/Modal';
 import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { Slider } from '../../ui/Slider';
-import { EmptyState } from '../../ui/States';
 import {
   HANDICAP_OPTIONS,
   hoursLabel,
@@ -26,6 +25,7 @@ import {
 import { SAVE_COPY, useInvite } from './hooks';
 import { Card, Field, failedReads, ReadFailed, ReadsFailed, Row, SettingSwitch, useDraft, useReportDirty, useSaveAction, useWarnOnOpen } from './parts';
 import { StaffCards } from './Staff';
+import { NoTeam } from '../../ui/NoTeam';
 
 /** Team's reads that failed, for its one section notice (shared with TeamPhone). */
 export const teamReadsFailed = (data: ChSettingsData) =>
@@ -40,7 +40,7 @@ export function TeamSection({ data, writes }: { data: ChSettingsData; writes: Ch
   if (!data.teamId) {
     return (
       <div className="ch-surface ch-set-failed">
-        <EmptyState code="CH-8301" title="You aren’t on a team yet" body="Team settings appear once your program is set up and you’re on its staff." />
+        <NoTeam code="CH-8301" coach body="Team settings appear once your program is set up and you’re on its staff." action={false} inline />
       </div>
     );
   }

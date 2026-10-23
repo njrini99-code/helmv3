@@ -560,7 +560,7 @@ describe('Recruiting · film and file drop · the page', () => {
     await expectCode('CH-14005', /Couldn’t upload Swing, down the line.*The file didn’t finish sending/);
     expect(dlg()).not.toBeNull();
     w.documents.upload.mockImplementation(() => ok({ id: 'd-x' }));
-    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14005') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.documents.upload).toHaveBeenCalledTimes(2));
     const ids = w.documents.upload.mock.calls.map((c) => (c as unknown as [string, File, unknown, { uploadId: string }])[3].uploadId);
     expect(ids[0]).toMatch(UUID);
@@ -629,7 +629,7 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     wrap(w);
     await fillAndAdd(user, 'Ellie');
     await expectCode('CH-14001', /Couldn’t add Ellie/);
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(2));
     await user.click(within(dlg()).getByRole('button', { name: 'Add prospect' }));
     await waitFor(() => expect(w.create).toHaveBeenCalledTimes(3));
@@ -678,7 +678,7 @@ describe('Recruiting · an Add cannot add a prospect twice', () => {
     wrap(w);
     await fillAndAdd(user, 'Ellie');
     await expectCode('CH-14001');
-    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-14001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(dlg()).toBeNull());
     expect(screen.getAllByRole('row').filter((r) => /Ellie/.test(r.textContent ?? ''))).toHaveLength(1);
     expect(w.create).toHaveBeenCalledTimes(2);

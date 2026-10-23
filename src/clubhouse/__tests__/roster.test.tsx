@@ -151,7 +151,7 @@ describe('Roster · saves that fail', () => {
 
     actions.accept.mockClear();
     actions.accept.mockResolvedValue({ success: true });
-    await user.click(within(code('CH-3007') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3007') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.getByText('2 players added to Varsity')).toBeTruthy());
     expect(actions.accept.mock.calls.map((c) => c[0])).toEqual(['r2', 'r3']);
     expect(result.current.reqs).toEqual([]);
@@ -973,7 +973,7 @@ describe('Roster · availability (injured, away)', () => {
     expect(code('CH-3009')!.textContent).toMatch(/Nothing changed on the roster/);
     expect(metaOf('Jonah Okafor').textContent).toBe('Sophomore · Charlotte, NC');
     expect(hapticSpy).toHaveBeenCalledWith('error');
-    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3009') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(metaOf('Jonah Okafor').textContent).toBe('Injured · Sophomore · Charlotte, NC'));
     expect(await screen.findByText('Jonah Okafor marked injured')).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('success');
@@ -1511,7 +1511,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await openRemove(user);
     await user.click(screen.getByRole('button', { name: 'Remove player' }));
     await expectCode('CH-3001');
-    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3001') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.queryByRole('button', { name: `Actions for ${theo.name}` })).toBeNull());
     expect(actions.remove).toHaveBeenCalledTimes(2);
     expect((code('CH-3501') as HTMLDialogElement).hasAttribute('open')).toBe(false);
@@ -1525,12 +1525,12 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[0]!);
     await expectCode('CH-3002');
     await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
-    await user.click(within(code('CH-3002') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3002') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
     await user.click(within(region()).getByRole('button', { name: 'Decline' }));
     await expectCode('CH-3003');
     await waitFor(() => expect(requestNames()).toEqual(['Owen Park']));
-    await user.click(within(code('CH-3003') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3003') as HTMLElement).getByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Join requests' })).toBeNull());
     expect(actions.accept).toHaveBeenCalledTimes(2);
     expect(actions.reject).toHaveBeenCalledTimes(2);
@@ -1544,7 +1544,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     await user.type(noteField(), 'Lag putting drills');
     await user.tab();
     await expectCode('CH-3004');
-    await user.click(within(code('CH-3004') as HTMLElement).getByRole('button', { name: 'Retry' }));
+    await user.click(within(code('CH-3004') as HTMLElement).getByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('Note saved for Theo')).toBeTruthy();
     expect(actions.intent).toHaveBeenCalledTimes(2);
     await user.click(noteField());

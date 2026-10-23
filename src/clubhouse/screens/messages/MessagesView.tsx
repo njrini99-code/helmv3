@@ -1114,7 +1114,7 @@ export function Bubble({
               type="button"
               onClick={() => api.retry(m.id)}
             >
-              Retry
+              Try again
             </button>
             <button type="button" onClick={() => api.discard(m.id)}>
               Discard

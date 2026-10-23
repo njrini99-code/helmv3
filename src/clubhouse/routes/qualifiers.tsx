@@ -1,5 +1,5 @@
 import 'server-only';
-import { Lock, SearchX, Users } from 'lucide-react';
+import { Lock, SearchX } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { isUuid } from '@/lib/utils/uuid';
 import { loadQualifierDetail, loadQualifierForm, loadQualifierList, loadQualifierSelection } from '../data/qualifiers';
@@ -13,6 +13,7 @@ import { EmptyState } from '../ui/States';
 import { Button } from '../ui/Button';
 import { resolveClubhouseTeam } from './team';
 import '../styles/qualifiers.css';
+import { NoTeam } from '../ui/NoTeam';
 
 export type ChQView = 'list' | 'mine' | 'detail' | 'new' | 'edit' | 'selection';
 
@@ -71,13 +72,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 export function QualifiersNoTeam({ coach }: { coach: boolean }) {
   return (
     <Frame>
-      <EmptyState
-        size="page"
-        code="CH-09309"
-        icon={Users}
-        title="You aren’t on a team yet"
-        body={coach ? 'Qualifiers fill in once your team is set up.' : 'Your team’s qualifiers show here once a coach adds you to a team roster.'}
-      />
+      <NoTeam code="CH-09309" coach={coach} body={coach ? 'Qualifiers fill in once your team is set up.' : 'Your team’s qualifiers show here once a coach adds you to a team roster.'} />
     </Frame>
   );
 }
