@@ -36,6 +36,11 @@ type Fingerprintable = {
   exception?: { values?: Array<{ value?: string; mechanism?: { type?: string } }> };
 };
 
+type RoutedEvent = Fingerprintable & {
+  transaction?: string;
+  request?: { url?: string };
+};
+
 const SUPABASE_MECHANISM = 'auto.db.supabase.postgres';
 const PG_CODE = /^(PGRST\d{3}|[0-9A-Z]{5})$/;
 
@@ -146,4 +151,35 @@ export function fingerprintSupabaseAutoCapture<E extends Fingerprintable>(
     return { ...event, fingerprint: ['supabase-transport', kind] };
   }
   return event;
+}
+
+const READINESS_PROBE_PATH = '/api/health';
+
+function isReadinessProbeEvent(event: RoutedEvent): boolean {
+  if (/^(?:GET|HEAD) \/api\/health$/.test(event.transaction ?? '')) return true;
+  const url = event.request?.url;
+  if (!url) return false;
+  try {
+    return new URL(url, 'https://helm.invalid').pathname === READINESS_PROBE_PATH;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The readiness probe's own timed-out read, captured by the integration.
+ *
+ * /api/health bounds its read at 2.5s, catches the timeout, answers 503 and
+ * records a throttled degraded row in admin_events with `skipSentry: true` —
+ * "a single transient blip shouldn't page" was a deliberate choice there. The
+ * integration captured the same read anyway, once per attempt, so every slow
+ * Supabase window became a stack of JAVASCRIPT-NEXTJS-YY events from the probe
+ * alone (29 of the 31 on 2026-10-21; real pages raised 2), burying the page-level
+ * timeouts that share that issue.
+ *
+ * Timeouts only, and only on /api/health: a PostgREST error code there (the
+ * database answered no) and every other route's timeout still reach Sentry.
+ */
+export function isReadinessProbeTimeoutCapture(event: RoutedEvent): boolean {
+  return isSupabaseAutoCapture(event) && transportFailureKind(event) === 'timeout' && isReadinessProbeEvent(event);
 }

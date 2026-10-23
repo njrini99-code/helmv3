@@ -296,6 +296,22 @@ alongside (not duplicated here).
   `server_trace` context hold `upstream returned an HTML error page (HTTP
   <status>): <title>` instead (2026-10-22, /admin/errors/fae748c7: 6.8KB of
   markup with the egress IP). Only a string that starts as a page is replaced.
+- **The readiness probe's own Supabase timeouts are dropped.** `/api/health`
+  already records a slow database as a throttled `admin_events` degraded row
+  and a 503, and passes `skipSentry`, but the integration still raised its
+  query timeouts (JAVASCRIPT-NEXTJS-YY, 29 of the 31 on 2026-10-21; real
+  pages raised 2). `isReadinessProbeTimeoutCapture` drops an auto-captured
+  timeout whose transaction or URL is `/api/health`, in the server
+  `beforeSend` (`src/instrumentation.ts`). Every other route, PostgREST error
+  and abort still reports.
+- **The browser connectivity check pings `/api/ping`, not `/api/health`.**
+  `use-connection-status` sent a HEAD every 30s from every mounted instance,
+  and each one cost a proxy `getUser` plus readiness reads, so a slow
+  Supabase window showed online players "Unable to reach server". `/api/ping`
+  is a 204 liveness route with no database and no auth: `src/proxy.ts`
+  returns before `updateSession` for that exact path. `/api/health` stays the
+  readiness probe for `scripts/warm-edge.ts`, `StaleDeploymentRecoveryScript`
+  and the Sentry uptime monitor.
 
 ## Rollback
 
