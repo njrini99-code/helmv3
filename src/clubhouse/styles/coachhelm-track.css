@@ -61,7 +61,7 @@
   row-gap: 4px;
   align-items: center;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-htr-rung:first-child {
   border-top: 0;
@@ -128,7 +128,7 @@
   column-gap: 16px;
   row-gap: 2px;
   padding: 12px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-htr-fam:first-child {
   border-top: 0;

@@ -291,7 +291,7 @@
 }
 .ch-th-fig__src {
   padding-top: 10px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-12);
   color: var(--ch-text-tertiary);
 }
@@ -391,7 +391,7 @@
   min-height: 54px;
 }
 .ch-th-rank li + li {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-rank__n {
   width: 16px;
@@ -429,7 +429,7 @@ a.ch-th-rank__name::after {
   list-style: none;
 }
 .ch-th-reads li + li {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-reads__r {
   display: grid;
@@ -648,7 +648,7 @@ a.ch-th-reads__r:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-th-table tbody tr + tr > * {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-table .is-num {
   text-align: right;
@@ -816,7 +816,7 @@ a.ch-th-reads__r:focus-visible {
   font: var(--ch-type-15);
 }
 .ch-th-act__facts > div + div {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-th-act__facts dt {
   padding: 11px 0;
@@ -1078,8 +1078,8 @@ a.ch-th-reads__r:focus-visible {
   .ch-th--phone .ch-th-tiles,
   .ch-th-evp__body.is-phone .ch-th-tiles {
     display: block;
-    border-top: 1px solid var(--ch-border-hairline);
-    border-bottom: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+    border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-th--phone .ch-th-tile,
   .ch-th-evp__body.is-phone .ch-th-tile {
@@ -1097,7 +1097,7 @@ a.ch-th-reads__r:focus-visible {
   }
   .ch-th--phone .ch-th-tile + .ch-th-tile,
   .ch-th-evp__body.is-phone .ch-th-tile + .ch-th-tile {
-    border-top: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-th--phone .ch-th-tile__label,
   .ch-th-evp__body.is-phone .ch-th-tile__label {
@@ -1124,7 +1124,7 @@ a.ch-th-reads__r:focus-visible {
   }
   .ch-th-evp__body.is-phone .ch-th-fig--bare {
     padding: 16px 0 0;
-    border-top: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -1137,7 +1137,7 @@ a.ch-th-reads__r:focus-visible {
   .ch-th--phone .ch-th-act__note {
     margin: 4px 16px 0;
     padding: 12px 0 0;
-    border-top: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
     border-radius: 0;
     background: none;
   }

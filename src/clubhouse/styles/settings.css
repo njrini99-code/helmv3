@@ -224,7 +224,7 @@
   gap: 20px;
   min-height: 44px;
   padding-top: 14px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-set-stackbody > .ch-set-row:first-child,
 .ch-set-group > .ch-set-sub + .ch-set-row {
@@ -454,8 +454,8 @@
   display: flex;
   flex-direction: column;
   margin: 2px -20px 0;
-  border-top: 1px solid var(--ch-border-hairline);
-  border-bottom: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-set-matrix__row {
   display: grid;
@@ -464,7 +464,7 @@
   gap: 8px;
   min-height: 56px;
   padding: 8px 20px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-set-matrix.is-3 .ch-set-matrix__row {
   grid-template-columns: minmax(0, 1fr) 64px 64px 64px;
@@ -491,7 +491,7 @@
 }
 .ch-set-matrix__group {
   padding: 14px 20px 4px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-13-medium);
   line-height: 1;
   color: var(--ch-text-tertiary);
@@ -558,7 +558,7 @@
   flex-direction: column;
   gap: 22px;
   padding: 14px 0 4px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-set-stackbody > .ch-set-sliders:first-child {
   padding-top: 0;
@@ -579,7 +579,7 @@
   gap: 14px;
   min-height: 56px;
   padding: 8px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-set-rank__i:first-child {
   border-top: 0;
@@ -1840,7 +1840,7 @@
     touch-action: manipulation;
   }
   .ch-setm-act__btn {
-    border-top: 1px solid var(--ch-border-subtle);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
   }
   .ch-setm-act__btn.is-danger {
     color: var(--ch-danger-600);

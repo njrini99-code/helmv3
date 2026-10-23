@@ -1031,8 +1031,17 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 /* Increase Contrast (P001-D7): the engraved rules, hairlines and the champagne eyebrow gain definition, and glass is
    opaque. One block, so every surface on the tokens follows. */
+/* B3: on a Retina screen a separator is one device pixel, as iOS draws it (it was two or three). Increase Contrast
+   keeps the full pixel (below). */
+@media (min-resolution: 2dppx) {
+  [data-ui='clubhouse'] {
+    --ch-hairline-w: 0.5px;
+  }
+}
+
 @media (prefers-contrast: more) {
   [data-ui='clubhouse'] {
+    --ch-hairline-w: 1px;
     --ch-border-hairline: rgb(28 25 18 / 0.2);
     --ch-border-subtle: rgb(28 25 18 / 0.28);
     --ch-border-control: rgb(28 25 18 / 0.4);

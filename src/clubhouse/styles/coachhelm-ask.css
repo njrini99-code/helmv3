@@ -21,7 +21,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px 10px 24px;
-  border-bottom: 1px solid var(--ch-border-hairline);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-ask-top .ch-ask-tabs {
   order: 1;
@@ -132,7 +132,7 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  border-left: 1px solid var(--ch-border-hairline);
+  border-left: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: var(--ch-bg-page);
 }
 .ch-ask-plain {

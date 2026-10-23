@@ -546,7 +546,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 20px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
   background: #f4f2ea;
   font: var(--ch-type-caption);
@@ -631,7 +631,7 @@
   color: var(--ch-text-primary);
 }
 .ch-nine .is-par td {
-  border-bottom: 1px solid var(--ch-border-hairline);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-secondary);
 }
 .ch-nine b {

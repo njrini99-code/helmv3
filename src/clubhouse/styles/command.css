@@ -107,7 +107,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
-  border-bottom: 1px solid var(--ch-border-subtle);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-subtle);
   color: var(--ch-text-secondary);
 }
 .ch-cmd-field:focus-within {
@@ -184,7 +184,7 @@
   align-items: center;
   gap: 18px;
   padding: 10px 16px;
-  border-top: 1px solid var(--ch-border-subtle);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
   color: var(--ch-text-secondary);
   font: var(--ch-type-caption);
 }
@@ -241,7 +241,7 @@
   justify-content: space-between;
   gap: 12px;
   min-height: 34px;
-  border-bottom: 1px solid var(--ch-border-hairline);
+  border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-body);
 }
 .ch-cmd-row dt {

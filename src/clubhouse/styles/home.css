@@ -238,7 +238,7 @@
   gap: 12px;
   align-items: center;
   padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-h-agenda__txt {
   min-width: 0;
@@ -1518,7 +1518,7 @@
     list-style: none;
   }
   .ch-hm-list li + li {
-    border-top: 1px solid var(--ch-border-hairline);
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   }
   .ch-hm-rd {
     display: flex;

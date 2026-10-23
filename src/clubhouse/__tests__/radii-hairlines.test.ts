@@ -55,6 +55,18 @@ describe('radii and hairlines (B3)', () => {
     expect(raw).toEqual([]);
   });
 
+  it('a separator border is the hairline width, one device pixel on Retina and a full pixel under Increase Contrast', () => {
+    const raw: string[] = [];
+    for (const file of walk(join(ROOT, 'styles'), /\.css$/)) {
+      for (const m of css(basename(file)).matchAll(/border(?:-[a-z]+)*:\s*1px solid var\(--ch-border-(?:hairline|subtle)\)/g)) raw.push(`${basename(file)}: ${m[0]}`);
+    }
+    expect(raw).toEqual([]);
+    const tokens = css('tokens.css');
+    expect(tokens).toMatch(/@media \(min-resolution: 2dppx\) \{\s*\[data-ui='clubhouse'\] \{\s*--ch-hairline-w: 0\.5px;/);
+    const contrast = tokens.slice(tokens.indexOf('@media (prefers-contrast: more)'));
+    expect(contrast).toMatch(/--ch-hairline-w: 1px;/);
+  });
+
   it('the tokens hold the settled values', () => {
     const tokens = css('tokens.css');
     expect(tokens).toMatch(/--ch-radius-card: 16px;/);

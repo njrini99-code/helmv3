@@ -1143,7 +1143,7 @@
   gap: 8px;
   margin-top: 4px;
   padding-top: 6px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-df-cal.is-phone .ch-df-nav {
   width: 44px;

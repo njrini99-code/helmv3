@@ -377,7 +377,7 @@
 .ch-hl-ney__l li {
   max-width: 64ch;
   padding: 8px 0;
-  border-top: 1px solid var(--ch-border-subtle);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
 }
 .ch-hl-ney__l li b {
   font-weight: 600;
@@ -1614,7 +1614,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   grid-template-columns: 84px minmax(0, 1fr);
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-eng dt {
   padding-top: 4px;
@@ -1673,7 +1673,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   grid-template-columns: 112px minmax(0, 1fr);
   gap: 12px;
   padding: 8px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-audit__l dt {
   font: var(--ch-type-13-strong);
@@ -1693,7 +1693,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   flex-direction: column;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hl-cx__k {
   margin: 0;
@@ -1789,7 +1789,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 .ch-hl-later {
   margin: 0;
   padding: 12px 0 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-15);
   color: var(--ch-text-secondary);
 }
@@ -1827,7 +1827,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-cleared li {
   padding: 10px 0;
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
 }
@@ -1920,7 +1920,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   gap: 6px;
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--ch-border-subtle);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
 }
 .ch-hl-plan__player h4 {
   font: var(--ch-type-13-strong);

@@ -616,7 +616,7 @@
   padding: 8px 12px;
 }
 .ch-cl-over__r + .ch-cl-over__r {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-cl-over__r > span:nth-child(2) {
   flex: 1;
@@ -1112,7 +1112,7 @@
   padding: 10px 12px;
 }
 .ch-cl-rv__r + .ch-cl-rv__r {
-  border-top: 1px solid var(--ch-border-hairline);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-cl-rv__r.is-check {
   background: #fffbf2;
