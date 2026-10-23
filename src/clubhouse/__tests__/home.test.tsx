@@ -400,7 +400,7 @@ describe('Home · phone (v2, Coach - Home - Mobile.html)', () => {
 
   it('20101 20103 21901 the hero: date, greeting, brief, and Up next with its countdown and replies, opening the event in Calendar', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good morning, Maya' })).toBeTruthy();
     // The day card (phone concept board 1): the title opens the event.
     const next = document.querySelector('.ch-hm-day') as HTMLElement;
     expect(within(next).getByRole('link', { name: 'Short-game block' }).getAttribute('href')).toBe('/golf/dashboard/calendar?date=2026-10-14&event=a1');
@@ -893,7 +893,7 @@ describe('Home · which Home a viewer gets', () => {
     requestCache.coachTeam.mockResolvedValue('t-coach');
     const el = await visit();
     expect(el.type).toBe(CoachHome);
-    expect(el.props.data.greeting).toMatch(/, Maya\.$/);
+    expect(el.props.data.greeting).toMatch(/, Maya$/);
     flag.coach = false;
     const old = await visit();
     expect(old.type).not.toBe(CoachHome);
@@ -905,7 +905,7 @@ describe('Home · which Home a viewer gets', () => {
     requestCache.playerTeam.mockResolvedValue({ data: { team_id: 't-player' }, error: null });
     const el = await visit();
     expect(el.type).toBe(PlayerHome);
-    expect(el.props.data.greeting).toMatch(/, Theo\.$/);
+    expect(el.props.data.greeting).toMatch(/, Theo$/);
     flag.player = false;
     const old = await visit();
     expect(old.type).not.toBe(PlayerHome);

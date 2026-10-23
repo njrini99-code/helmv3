@@ -147,7 +147,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             {refreshing ? 'Updating…' : ''}
           </span>
           {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
-          <h1 id="ch-rd-title">Your rounds</h1>
+          <h1 id="ch-rd-title">Rounds</h1>
         </div>
         {/* One primary for one action: the idle card carries Start a round, so the head's New round is for when a round is
             in progress, or the check for one failed (that card is a notice with no Start). */}

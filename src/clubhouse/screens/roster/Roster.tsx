@@ -460,7 +460,7 @@ export function Roster({ data }: { data: ChRoster }) {
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your players</h1>
+          <h1 className="ch-display">Roster</h1>
           {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
           {!data.playersError && players.length > 0 && (
             <p>

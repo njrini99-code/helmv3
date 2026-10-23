@@ -417,7 +417,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
-    greeting: `${greeting}, ${coachFirst}.`,
+    greeting: `${greeting}, ${coachFirst}`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,

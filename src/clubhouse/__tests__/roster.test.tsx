@@ -335,7 +335,7 @@ describe('Roster · reads that fail', () => {
     wrap(roster({ requests: null as never, players: PREVIEW_ROSTER.players.map((p) => (p.id === 'jonah' ? broken : p)) }));
     expect(code('CH-3204')!.textContent).toMatch(/Join requests couldn’t be shown/);
     expect(code('CH-3205')!.textContent).toMatch(/The roster couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Your players' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Roster' })).toBeTruthy();
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
@@ -1182,7 +1182,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
 
   it('30101 Roster opens on the active players by average, with the team line, Needs a look and the join requests', () => {
     wrap(roster());
-    expect(screen.getByRole('heading', { level: 1, name: 'Your players' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Roster' })).toBeTruthy();
     expect(document.querySelector('.ch-rs-team__name')!.textContent).toBe('Varsity · Fall 2026');
     // The card's team strip has its own class: the header's avatar row (.ch-rs-team) never takes the strip's bar styles.
     expect(document.querySelector('.ch-rs-head .ch-rs-strip')).toBeNull();

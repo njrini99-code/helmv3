@@ -153,7 +153,7 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
     }));
 
   return {
-    greeting: `${greeting}, ${input.firstName}.`,
+    greeting: `${greeting}, ${input.firstName}`,
     todayLabel,
     clock: { tz, day },
     brief: roundsRes.error ? null : briefFor(full, legs?.rows ?? []),

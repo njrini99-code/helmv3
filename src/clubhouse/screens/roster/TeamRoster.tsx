@@ -76,7 +76,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           <span className="ch-rs-team">
             <span className="ch-rs-team__name">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
           </span>
-          <h1 className="ch-display">Your team.</h1>
+          <h1 className="ch-display">Roster</h1>
           {!data.playersError && players.length > 0 && (
             <p>
               <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} on the roster.

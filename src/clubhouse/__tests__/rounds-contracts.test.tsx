@@ -410,7 +410,7 @@ describe('111901 the library and the review are the phone build at phone width',
       expect(within(top).queryByRole('button', { name: /Back/ })).toBeNull();
       expect(within(top).queryByRole('link', { name: /Back/ })).toBeNull();
       expect(document.querySelector('.ch-rd.is-phone')).not.toBeNull();
-      expect(screen.getByRole('heading', { level: 1, name: 'Your rounds' })).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 1, name: 'Rounds' })).toBeTruthy();
     } finally {
       restore();
     }

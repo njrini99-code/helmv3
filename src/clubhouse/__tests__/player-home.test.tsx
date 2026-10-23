@@ -94,7 +94,7 @@ const stopNavigation = (e: Event) => e.preventDefault();
 describe('Player Home · desktop (Player - Home.html)', () => {
   it('20102 20103 the day, no brief line, Message coach to the coach’s thread; New round opens round entry', () => {
     show();
-    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo' })).toBeTruthy();
     // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
     expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
@@ -230,7 +230,7 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show(home({ scoring: { points: null as never, error: false } }));
     expect(code('CH-2217')).not.toBeNull();
-    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo' })).toBeTruthy();
     spy.mockRestore();
   });
 
@@ -354,7 +354,7 @@ describe('Player Home · the loader', () => {
     expect(roundsQueries[0]).toContainEqual(['in', ['player_id', ['p1']]]);
     expect(data.coachUserId).toBe('u-head');
     expect(data.handicap).toBe(2.1);
-    expect(data.greeting).toMatch(/, Theo\.$/);
+    expect(data.greeting).toMatch(/, Theo$/);
     // Oldest first: r3 (72), r2 (70), r1 (71), r0 (72).
     expect(data.scoring.points.map((p) => p.score)).toEqual([72, 70, 71, 72]);
     expect(data.latest.rounds).toHaveLength(3);

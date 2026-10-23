@@ -74,7 +74,7 @@ afterEach(() => {
 describe('112401 Rounds library, on screen', () => {
   it('110101 shows the round in progress: course, tees, type, holes, and the score through the holes played', () => {
     show(PREVIEW_ROUNDS);
-    expect(screen.getByRole('heading', { level: 1, name: 'Your rounds' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'Rounds' })).toBeTruthy();
     expect(screen.getByText('In progress')).toBeTruthy();
     expect(screen.getByText('Blue tees · Practice · 18 holes')).toBeTruthy();
     expect(document.querySelector('.ch-rd-unf__f > span')!.textContent).toBe('+1 through 3');
