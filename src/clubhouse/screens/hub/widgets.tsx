@@ -17,6 +17,7 @@ import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
 import { firstBusyDay, ledgerSorted, owedBy, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's Home, as widgets (owner, 2026-10-21: "don't center around RSVPs … more like widgets or cool interactive
@@ -25,7 +26,6 @@ import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts
  * read from what the page already loaded, and a read that failed says so in its tile, never as a zero.
  */
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function Tile({ id, title, aside, span, dark, className, children }: {
   id: string;

@@ -1,5 +1,6 @@
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isUuid } from '@/lib/utils/uuid';
+import { plural } from '../lib/plural';
 
 /*
  * The Stats round filter, shared by the team page and the player profile (desktop and phone).
@@ -332,7 +333,6 @@ export function rangeLabel(from: string | null, to: string | null, year: number)
 
 const windowPart = (f: ChFilter) => (f.window === 'last10' ? `last ${f.last}` : f.window === 'season' ? 'this season' : 'qualifying, this season');
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
 const HOLES_WORDS: Record<ChHoles, string> = { '18': '18-hole rounds', '9': '9-hole rounds', all: '18- and 9-hole rounds' };
 /** The rounds' length in a clause ("18-hole", "9-hole", "18- and 9-hole"), for a heading. */

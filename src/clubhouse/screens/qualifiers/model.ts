@@ -18,6 +18,7 @@
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
+import { plural } from '../../lib/plural';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -402,7 +403,6 @@ export function yearOf(d: string): string {
   return d.slice(0, 4);
 }
 
-export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** The form's lede, creating or editing. Its skeleton draws the same sentence, so the lines wrap alike. */
 export const FORM_LEDE = 'Players enter rounds from their app. The leaderboard builds as they sign.';
@@ -488,3 +488,5 @@ export function validateForm(v: ChQFormValues, opts: { minRounds?: number } = {}
   else if (!wholeIn(v.picks, 0, Number(v.squad))) out.push({ field: 'picks', text: 'Coach’s picks must be a whole number no bigger than the squad.', code: 'CH-09109' });
   return out;
 }
+
+export { plural };

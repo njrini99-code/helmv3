@@ -1,3 +1,4 @@
+import { plural } from './plural';
 /**
  * How sure a stat is, said once for every chart. Pure functions, no React: floors, standard errors, the tone of a change,
  * the Wilson interval of a make rate, a trailing mean, and a ranking that ties players who can't be told apart.
@@ -58,7 +59,6 @@ export function floorRate(kind: FloorKind, n: number, value: number | null): { v
   return state === 'early' ? { value, state, early: earlyTag(n, FLOORS[kind].unit) } : { value, state };
 }
 
-const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
 
 /** The tag on a muted value: "Early read · 6 rounds", or in the stat's own unit ("Early read · 24 holes"). */
 export function earlyTag(n: number, unit: string = 'round'): string {

@@ -16,6 +16,7 @@ import {
   type TrackRecord,
 } from '@/lib/coachhelm/v3/track-record/track-record';
 import type { LadderRung } from '@/lib/coachhelm/v3/support/ladder';
+import { plural } from '../lib/plural';
 
 export const COACH_TRACK_RECORD_HREF = '/golf/dashboard/coachhelm?view=track-record';
 export const COACH_BOARD_HREF = '/golf/dashboard/coachhelm';
@@ -91,7 +92,6 @@ export type ChTrackRecord =
       empty: boolean;
     };
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 function targetWords(target: RungTarget | null): string {
   if (!target) return 'No target set for this level';
