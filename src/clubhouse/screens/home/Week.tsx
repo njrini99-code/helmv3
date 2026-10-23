@@ -1,3 +1,5 @@
+'use client';
+
 import { CalendarDays, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -9,6 +11,8 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { TYPE_ICON } from '../calendar/type-icon';
 import { messagesPrefillHref } from '../messages/prefill';
 import { rebuiltHref } from '../../shell/nav';
+import { useChClock } from '../../lib/use-clock';
+import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
 
 /** What the dots under a day say to a screen reader. */
@@ -104,12 +108,14 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
 }
 
 function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType<typeof nextReplies> }) {
+  const clock = useChClock();
+  const detail = agendaDetail(r, clock);
   return (
     <div className={'ch-h-agenda__row' + (r.isNext ? ' is-next' : '') + (r.isCompetition ? ' is-event' : '') + (replies ? ' has-replies' : '')}>
-      <span className="ch-h-agenda__t ch-num">{r.timeLabel}</span>
+      <span className="ch-h-agenda__t ch-num">{agendaTime(r, clock)}</span>
       <div className="ch-h-agenda__txt">
         <div className="ch-h-agenda__a">{r.title}</div>
-        {r.detail && <div className="ch-h-agenda__b">{r.detail}</div>}
+        {detail && <div className="ch-h-agenda__b">{detail}</div>}
         {replies && <div className="ch-h-agenda__rsvp ch-num">{replies.line}</div>}
       </div>
       {r.isNext && <Badge tone="accent">Next</Badge>}

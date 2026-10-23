@@ -109,7 +109,11 @@ export type CoursePlan =
       thin: boolean;
       lines: CoursePlanLine[];
       coach: { title: string; lines: string[]; thinLine: string | null };
-      player: { title: string; lines: string[] };
+      /**
+       * The player's own copy (chs-21): the lines in "you" voice, the thin-history line in the same voice below six rounds,
+       * and a line for a plan with nothing in it (the coach's `none`), so the player never reads an empty plan.
+       */
+      player: { title: string; lines: string[]; thinLine: string | null; emptyLine: string | null };
     };
 
 /** Per-hole history on the course. */
@@ -371,7 +375,12 @@ export function buildCoursePlan(input: CoursePlanInput): CoursePlan {
     thin,
     lines,
     coach: { title: `Course plan: ${input.courseName} · from ${rounds} rounds here`, lines: lines.length ? lines.map((l) => l.coach) : [none], thinLine },
-    player: { title: `At ${input.courseName}`, lines: lines.map((l) => l.player) },
+    player: {
+      title: `At ${input.courseName}`,
+      lines: lines.map((l) => l.player),
+      thinLine: thin ? `From your ${rounds} rounds here, so take it as a reminder, not a read.` : null,
+      emptyLine: lines.length ? null : `Nothing here has cost you a stroke a round yet across your ${rounds} rounds.`,
+    },
   };
 }
 

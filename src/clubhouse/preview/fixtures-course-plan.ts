@@ -1,5 +1,5 @@
 import { buildCoursePlan, type CoursePlanCourse, type CoursePlanHole, type CoursePlanShot } from '@/lib/coachhelm/course-plan/build-plan';
-import type { ChCoursePlanReads } from '../screens/coachhelm/writes';
+import type { ChCoursePlanReads, ChMyCoursePlanReads } from '../screens/coachhelm/writes';
 
 /**
  * Course plan fixtures for the dev preview (Slice 7c): synthetic rounds run through the real builder, so the preview shows the
@@ -62,5 +62,21 @@ export function previewCoursePlanReads(state?: string): ChCoursePlanReads {
   return {
     courses: () => wait(state === 'courseplanfailed' ? { status: 'failed' as const } : { status: 'ok' as const, courses: state === 'courseplannone' ? [] : PREVIEW_COURSES }),
     plan: (_p, courseId) => wait({ status: 'ok' as const, plan: PREVIEW_PLANS[courseId as keyof typeof PREVIEW_PLANS] ?? { status: 'too_few' as const, courseName: 'This course', rounds: 0 } }),
+  };
+}
+
+/**
+ * The player's own course plan (chs-21) over the same plans, in their voice only, as `getMyCoursePlan` answers: `courseplan`
+ * answers both courses, `courseplannone` a player with no course at three rounds, `courseplanfailed` fails the read.
+ */
+export function previewMyCoursePlanReads(state?: string): ChMyCoursePlanReads {
+  return {
+    courses: () => wait(state === 'courseplanfailed' ? { status: 'failed' as const } : { status: 'ok' as const, courses: state === 'courseplannone' ? [] : PREVIEW_COURSES }),
+    plan: (courseId) => {
+      const plan = PREVIEW_PLANS[courseId as keyof typeof PREVIEW_PLANS];
+      if (!plan || plan.status === 'too_few') return wait({ status: 'ok' as const, plan: plan ?? { status: 'too_few' as const, courseName: 'This course', rounds: 0 } });
+      const { player } = plan;
+      return wait({ status: 'ok' as const, plan: { status: 'plan' as const, courseName: plan.courseName, rounds: plan.rounds, title: player.title, lines: player.lines, thinLine: player.thinLine, emptyLine: player.emptyLine } });
+    },
   };
 }

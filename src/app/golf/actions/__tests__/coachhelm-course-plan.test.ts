@@ -13,6 +13,9 @@ const state = vi.hoisted(() => ({
   flagOn: true,
   user: { id: 'user-1' } as { id: string } | null,
   coach: { id: 'coach-1' } as { id: string } | null,
+  player: { id: '11111111-1111-4111-8111-111111111111' } as { id: string } | null,
+  playerError: null as { code: string; message: string } | null,
+  eqFilters: [] as Array<{ table: string; column: string; value: unknown }>,
   staffTeams: ['team-1'] as string[],
   memberTeams: ['team-1'] as string[],
   rounds: [] as Array<Record<string, unknown>>,
@@ -42,6 +45,8 @@ function respond(table: string, range: [number, number] | null): { data: unknown
   switch (table) {
     case 'golf_coaches':
       return { data: state.coach, error: null };
+    case 'golf_players':
+      return state.playerError ? { data: null, error: state.playerError } : { data: state.player, error: null };
     case 'golf_team_members':
       return { data: state.memberTeams.map((team_id) => ({ team_id })), error: null };
     case 'golf_team_coach_staff':
@@ -63,7 +68,10 @@ function builder(table: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const b: any = {
     select: () => b,
-    eq: () => b,
+    eq: (column: string, value: unknown) => {
+      state.eqFilters.push({ table, column, value });
+      return b;
+    },
     order: () => b,
     limit: () => b,
     in: (_k: string, v: unknown[]) => {
@@ -87,7 +95,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-const { listCoursePlanCourses, getCoursePlan } = await import('../coachhelm-course-plan');
+const { listCoursePlanCourses, getCoursePlan, listMyCoursePlanCourses, getMyCoursePlan } = await import('../coachhelm-course-plan');
 
 function addRound(id: string, courseId: string | null, date: string, over: Record<number, number> = {}) {
   state.rounds.push({ id, course_id: courseId, course_name: courseId === COURSE ? 'Pine Hollow' : 'Elsewhere', round_date: date, holes_played: 18, total_score: 72, front_nine: 36, back_nine: 36, total_putts: 36 });
@@ -101,6 +109,9 @@ beforeEach(() => {
   state.flagOn = true;
   state.user = { id: 'user-1' };
   state.coach = { id: 'coach-1' };
+  state.player = { id: PLAYER };
+  state.playerError = null;
+  state.eqFilters = [];
   state.staffTeams = ['team-1'];
   state.memberTeams = ['team-1'];
   state.rounds = [];
@@ -115,7 +126,7 @@ beforeEach(() => {
 describe('course plan actions', () => {
   it('wraps both reads without the demo write guard, so the shared demo coach can open a plan', async () => {
     await import('../coachhelm-course-plan');
-    expect(state.wrapped.map((w) => w.name).sort()).toEqual(['getCoursePlan', 'listCoursePlanCourses']);
+    expect(state.wrapped.map((w) => w.name).sort()).toEqual(['getCoursePlan', 'getMyCoursePlan', 'listCoursePlanCourses', 'listMyCoursePlanCourses']);
     for (const w of state.wrapped) expect(w.meta.demoSafe).toBeUndefined();
   });
 
@@ -168,5 +179,59 @@ describe('course plan actions', () => {
   it('answers too_few for a course the player has not played', async () => {
     addRound('r1', OTHER_COURSE, '2026-09-01');
     expect(await getCoursePlan(PLAYER, COURSE)).toEqual({ status: 'ok', plan: { status: 'too_few', courseName: 'This course', rounds: 0 } });
+  });
+});
+
+describe("the player's own course plan (chs-21)", () => {
+  const SOMEONE_ELSE = '44444444-4444-4444-8444-444444444444';
+
+  it('reads nothing with the flag off', async () => {
+    state.flagOn = false;
+    expect(await listMyCoursePlanCourses()).toEqual({ status: 'not_available' });
+    expect(await getMyCoursePlan(COURSE)).toEqual({ status: 'not_available' });
+    expect(state.tables).toEqual([]);
+  });
+
+  it('takes the player from the session, never from the caller, and reads only their rounds', async () => {
+    state.player = { id: SOMEONE_ELSE };
+    addRound('r1', COURSE, '2026-09-01');
+    addRound('r2', COURSE, '2026-09-08');
+    addRound('r3', COURSE, '2026-09-15');
+    await listMyCoursePlanCourses();
+    expect(state.eqFilters).toContainEqual({ table: 'golf_players', column: 'user_id', value: 'user-1' });
+    const roundFilters = state.eqFilters.filter((f) => f.table === 'golf_rounds' && f.column === 'player_id');
+    expect(roundFilters.map((f) => f.value)).toEqual([SOMEONE_ELSE]);
+    // The coach check is never the way in for a player.
+    expect(state.tables).not.toContain('golf_team_coach_staff');
+    // The actions take no player id at all: an extra argument cannot point them at another player.
+    expect(listMyCoursePlanCourses.length).toBe(0);
+    expect(getMyCoursePlan.length).toBe(1);
+  });
+
+  it('refuses a signed-out caller and a user with no player row (a coach), and says failed when the lookup fails', async () => {
+    state.user = null;
+    expect(await listMyCoursePlanCourses()).toEqual({ status: 'forbidden' });
+    state.user = { id: 'user-1' };
+    state.player = null;
+    expect(await listMyCoursePlanCourses()).toEqual({ status: 'forbidden' });
+    expect(await getMyCoursePlan(COURSE)).toEqual({ status: 'forbidden' });
+    expect(state.tables).not.toContain('golf_rounds');
+    state.playerError = { code: '500', message: 'boom' };
+    expect(await listMyCoursePlanCourses()).toEqual({ status: 'failed' });
+    expect(state.logServerError).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers the player's lines in their voice, with the thin line, and none of the coach's copy", async () => {
+    addRound('r1', COURSE, '2026-09-01', { 4: 1, 11: 2 });
+    addRound('r2', COURSE, '2026-09-08', { 4: 2, 11: 1 });
+    addRound('r3', COURSE, '2026-09-15', { 4: 1, 11: 1 });
+    const res = await getMyCoursePlan(COURSE);
+    if (res.status !== 'ok' || res.plan.status !== 'plan') throw new Error('expected a plan');
+    expect(res.plan.title).toBe('At Pine Hollow');
+    expect(res.plan.lines[0]).toBe('4 and 11: aim at the left half off the tee. All 6 tee shots there missed right.');
+    expect(res.plan.thinLine).toBe('From your 3 rounds here, so take it as a reminder, not a read.');
+    expect(res.plan).not.toHaveProperty('coach');
+    expect(JSON.stringify(res)).not.toMatch(/Plan:|Course plan:/);
+    expect(await getMyCoursePlan('not-a-uuid')).toEqual({ status: 'forbidden' });
   });
 });

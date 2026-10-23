@@ -3,6 +3,7 @@
 import { Clock } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { haptic } from '../lib/haptics';
+import { useChClock } from '../lib/use-clock';
 import { formatTime, parseHm, parseTimeInput, timeSlots } from './date-time';
 import { PickerField } from './PickerHost';
 
@@ -30,27 +31,28 @@ export interface TimeFieldProps {
   'data-ch-code'?: string;
 }
 
-const HINT = 'Try 3p, 3:30 pm or 1530.';
+const HINT = { '12': 'Try 3p, 3:30 pm or 1530.', '24': 'Try 15:30, 1530 or 3:30 pm.' } as const;
 
 /**
- * A time as the calendar writes it ("3:30 PM"), typable on desktop and chosen from a list on both. In place of
- * `<input type="time">`: the value is `HH:mm`, and the list steps by quarter hours, snapping as it scrolls. A value off the grid
- * (a class at 3:05) shows as chosen and stays where it is until another is picked. The app has no 12 or 24-hour setting, so
- * times read in 12 hours, as the calendar's own do.
+ * A time as the calendar writes it ("3:30 PM", or "15:30" when the device reads 24 hours: Settings › Time format), typable
+ * on desktop and chosen from a list on both. In place of `<input type="time">`: the value is `HH:mm` whichever clock is
+ * shown, and the list steps by quarter hours, snapping as it scrolls. A value off the grid (a class at 3:05) shows as
+ * chosen and stays where it is until another is picked. Typing takes either clock whichever one is shown.
  */
 export function TimeField(props: TimeFieldProps) {
   const { value, min, max } = props;
   const step = props.stepMinutes ?? 15;
+  const clock = useChClock();
   return (
     <PickerField
       value={value}
       onChange={props.onChange}
       label={props.label}
       icon={Clock}
-      format={(v) => formatTime(v)}
+      format={(v) => formatTime(v, clock)}
       parse={(t) => parseTimeInput(t)}
       isMachine={(t) => /^\d{2}:\d{2}$/.test(t)}
-      hint={HINT}
+      hint={HINT[clock]}
       pickLabel="Pick a time"
       panelWidth={176}
       placeholder={props.placeholder ?? 'Pick a time'}
@@ -83,6 +85,7 @@ export function TimeList({
   onPick: (value: string) => void;
   onClear?: () => void;
 }) {
+  const clock = useChClock();
   const slots = timeSlots(step, value);
   const lo = parseHm(min);
   const hi = parseHm(max);
@@ -146,7 +149,7 @@ export function TimeList({
               onClick={() => onPick(s)}
               onFocus={() => setCursor(s)}
             >
-              {formatTime(s)}
+              {formatTime(s, clock)}
             </button>
           );
         })}

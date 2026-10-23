@@ -10,6 +10,7 @@ import { PageRefreshNotice } from '../../ui/RefreshNotice';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useChPhone } from '../../lib/use-phone';
+import { useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -108,6 +109,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
 
 /** Up next inside the week (Player - Home.html `pv-next`): type, when, where, and the countdown. */
 function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
+  const t = useChClockText();
   const ticking = useNow();
   const now = frozen ? new Date(frozen) : ticking;
   const when = whenLabel(e, now);
@@ -118,10 +120,10 @@ function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           Up next · {TYPE_LABEL[e.type]}
         </span>
-        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <span className="ch-ph-next__t">{e.title}</span>
-      <span className="ch-ph-next__m ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</span>
+      <span className="ch-ph-next__m ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</span>
       <MineBadge mine={e.mine} />
       {!e.allDay && <Countdown to={e.startIso} frozen={frozen} />}
       <LinkPending />

@@ -42,9 +42,12 @@ export default defineConfig({
   ),
   webServer: process.env.CH_BASE ? undefined : {
     command: './node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100',
-    url: `${baseURL}/clubhouse-preview/popup-lab`,
+    // Ready means "the server answers", not "the popup lab has compiled": a static file answers in about 50 ms once the
+    // server is up, while the popup lab's first request compiles the app (101 s on two cores, over 180 s on a CI runner on
+    // 2026-10-22, which timed this wait out). The setup file compiles the routes, with a timeout and retries of its own.
+    url: `${baseURL}/manifest.json`,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: 120_000,
     env: {
       NEXT_TELEMETRY_DISABLED: '1',
       HELM_DEV_KEEP_ROUTES: '1',

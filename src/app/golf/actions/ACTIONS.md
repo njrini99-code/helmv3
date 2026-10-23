@@ -144,7 +144,7 @@ that effect.
 - `recruit-documents.ts`: getRecruitDocuments, prepareRecruitDocumentUpload, completeRecruitDocumentUpload, deleteRecruitDocument, getRecruitDocumentUrl
 - `recruiting.ts`: getRecruits, createRecruit, updateRecruit, deleteRecruit
 - `roster.ts`: removePlayerFromTeam, getTeamPlayers
-- `team-management.ts`: createAnnouncement, invitePlayerToTeam, updatePlayerStatus
+- `team-management.ts`: createAnnouncement, invitePlayerToTeam, emailPlayerInvites, updatePlayerStatus
 - `team-switcher.constants.ts`: helpers/types (no server directive)
 - `team-switcher.ts`: setActiveTeam, listCoachTeams, getActiveTeamCookie, clearActiveTeam
 - `teams.ts`: validateGolfPlayerCanJoinTeam, joinGolfTeam, processGolfTeamInvitation, createTeam, updateTeam, regenerateJoinCode, createTeamJoinRequest, getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest, cancelJoinRequest, getPlayerJoinRequests, addSecondTeam, createStaffInvite, redeemStaffInvite, previewStaffInvite, listTeamCoachingStaff, listPendingAssistantCoaches, approvePendingAssistantCoach, declinePendingAssistantCoach
