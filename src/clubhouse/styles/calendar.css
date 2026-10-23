@@ -234,7 +234,7 @@
   box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-pp__trigger.is-on {
-  background: var(--ch-green-50);
+  background: var(--ch-selected-bg);
   box-shadow: 0 0 0 1px rgb(21 90 57 / 0.26);
 }
 .ch-pp__trigger:focus-visible {

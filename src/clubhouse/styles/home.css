@@ -491,7 +491,7 @@
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
 .ch-h-rail__item.is-on {
-  background: var(--ch-green-25);
+  background: var(--ch-selected-bg);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.9);
 }
 .ch-h-rail__item:focus-visible {

@@ -116,10 +116,10 @@
   transition-delay: var(--ch-dur-press-delay);
 }
 .ch-pill[aria-pressed='true'] {
-  background: #edf4ef;
-  color: var(--ch-green-700);
+  background: var(--ch-selected-pill-bg);
+  color: var(--ch-selected-ink);
   font-weight: 600;
-  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.28);
+  box-shadow: inset 0 0 0 1px var(--ch-selected-pill-ring);
 }
 
 /* Search */
@@ -1287,10 +1287,6 @@
    ground's own rule. */
 :where(html[data-fw-theme='dark']) .ch-seg__b {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.35);
-}
-html[data-fw-theme='dark'] .ch-pill[aria-pressed='true'] {
-  background: var(--ch-green-100);
-  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.3);
 }
 @media (hover: hover) {
   html[data-fw-theme='dark'] .ch-search__x:hover {

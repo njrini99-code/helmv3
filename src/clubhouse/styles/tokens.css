@@ -141,6 +141,11 @@
   --ch-bg-inset: var(--ch-ivory-150);
   --ch-bg-hover: var(--ch-ivory-50);
   --ch-bg-selected: var(--ch-green-50);
+  /* The selected state (CONS-22): a chosen row, a pressed pill, its ring and its ink. A chosen segment is the seg-on well. */
+  --ch-selected-bg: var(--ch-bg-selected);
+  --ch-selected-pill-bg: #edf4ef;
+  --ch-selected-pill-ring: rgb(21 90 57 / 0.28);
+  --ch-selected-ink: var(--ch-green-700);
   --ch-text-primary: var(--ch-ink-900);
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
@@ -753,6 +758,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;
   --ch-bg-selected: #16281d;
+  --ch-selected-pill-bg: var(--ch-green-100);
+  --ch-selected-pill-ring: rgb(107 187 140 / 0.3);
   --ch-text-on-accent: #f4eedd;
   --ch-accent: #23704a;
   --ch-accent-hover: #2a7d53;
