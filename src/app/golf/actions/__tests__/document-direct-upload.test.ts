@@ -104,4 +104,3 @@ describe('createGolfDocument: the object it records is in the team’s own folde
     }
   });
 });
-
