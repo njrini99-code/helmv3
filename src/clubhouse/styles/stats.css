@@ -5847,10 +5847,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
    and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
-.ch-st[data-canopy] .ch-znbig.is-good {
+.ch-st[data-canopy] .ch-znbig.is-gain {
   color: var(--ch-green-600);
 }
-.ch-st[data-canopy] .ch-znbig.is-bad {
+.ch-st[data-canopy] .ch-znbig.is-loss {
   color: var(--ch-warning-600);
 }
 .ch-st[data-canopy] .ch-zsvg {

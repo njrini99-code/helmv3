@@ -40,7 +40,7 @@ function WhatsNewRow({ it }: { it: ChWhatsNewItem }) {
       meta={
         <span className="ch-wn-meta">
           <span>
-            {it.player} · <span className={it.good ? 'ch-wn-what is-good' : 'ch-wn-what'}>{it.what}</span>
+            {it.player} · <span className={it.good ? 'ch-wn-what is-gain' : 'ch-wn-what'}>{it.what}</span>
           </span>
           {it.detail && <span className="ch-wn-detail">{it.detail}</span>}
         </span>

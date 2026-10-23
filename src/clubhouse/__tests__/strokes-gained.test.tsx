@@ -674,7 +674,7 @@ describe('player profile · desktop', () => {
     expect(rows.map((r) => r.querySelector('b')!.textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
     const read = document.querySelector('.ch-zn .ch-znbig')!;
     expect(read.textContent).toBe('−0.9');
-    expect(read.className).toContain('is-bad');
+    expect(read.className).toContain('is-loss');
     expect(document.querySelector('.ch-zn__read')!.textContent).toContain('Team −0.5');
     // Putting +0.2 is a gain even though the team is at −0.3, and a loss stays a loss when it beats the team.
     expect(rows[3]!.querySelector('.ch-lb__bar')!.className).toContain('is-gain');

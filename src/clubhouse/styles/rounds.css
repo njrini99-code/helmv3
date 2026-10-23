@@ -3032,10 +3032,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: var(--ch-type-15-medium);
   color: rgb(244 241 232 / 0.86);
 }
-.ch-rv .ch-znbig.is-good {
+.ch-rv .ch-znbig.is-gain {
   color: var(--ch-green-600);
 }
-.ch-rv .ch-znbig.is-bad {
+.ch-rv .ch-znbig.is-loss {
   color: var(--ch-warning-600);
 }
 .ch-rv .ch-rzsvg {
@@ -3529,10 +3529,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 
 /* the bands */
-.ch-rv .ch-znbig.is-good {
+.ch-rv .ch-znbig.is-gain {
   background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
 }
-.ch-rv .ch-znbig.is-bad {
+.ch-rv .ch-znbig.is-loss {
   background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
 }
 

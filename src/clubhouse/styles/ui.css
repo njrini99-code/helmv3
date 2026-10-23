@@ -1545,10 +1545,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   letter-spacing: 0;
   -webkit-text-fill-color: var(--ch-text-secondary);
 }
-.ch-znbig.is-good {
+.ch-znbig.is-gain {
   background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
 }
-.ch-znbig.is-bad {
+.ch-znbig.is-loss {
   background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
 }
 .ch-znlines {

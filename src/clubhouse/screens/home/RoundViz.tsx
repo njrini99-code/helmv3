@@ -26,7 +26,7 @@ export function PuttsViz({ putts }: { putts: number | null }) {
   if (putts == null) return null;
   return (
     <span className="ch-rviz ch-rviz--putts" aria-hidden="true">
-      <i className={putts <= 36 ? 'is-good' : 'is-over'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
+      <i className={putts <= 36 ? 'is-gain' : 'is-over'} style={{ width: `${Math.min(100, (putts / 40) * 100)}%` }} />
       <b style={{ left: '90%' }} />
     </span>
   );

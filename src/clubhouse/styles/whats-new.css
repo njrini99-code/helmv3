@@ -6,7 +6,7 @@
   /* A row's lines stop at a reading width (B2): on a wide screen they ran to about 130 characters. */
   max-width: var(--ch-measure-text);
 }
-.ch-wn-what.is-good {
+.ch-wn-what.is-gain {
   color: var(--ch-accent);
 }
 .ch-wn-detail {

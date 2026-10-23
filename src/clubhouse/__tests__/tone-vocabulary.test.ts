@@ -8,21 +8,16 @@ import { hits, ratchet, ROOT, walk } from './_scan';
  * their counts may only fall, toward none.
  */
 const ALLOW_TONE_WORDS: Record<string, number> = {
-  'screens/home/RoundViz.tsx': 1,
   'screens/rounds/parts.tsx': 1,
   'screens/stats/OverviewZones.tsx': 2,
   'screens/stats/PlayerStage.tsx': 3,
   'screens/stats/StatsTeamIslands.tsx': 4,
-  'screens/whats-new/WhatsNew.tsx': 1,
   'styles/coachhelm-dive.css': 2,
   'styles/coachhelm-profile.css': 6,
   'styles/coachhelm.css': 1,
-  'styles/home.css': 1,
   'styles/roster.css': 3,
   'styles/rounds.css': 7,
   'styles/stats.css': 19,
-  'styles/ui.css': 2,
-  'styles/whats-new.css': 1,
 };
 
 describe('one tone vocabulary (CONS-20)', () => {
