@@ -160,7 +160,7 @@ const RAW_FONT: Record<string, number> = {
   'styles/rounds-setup.css': 66,
   'styles/rounds-track.css': 101,
   'styles/rounds.css': 153,
-  'styles/settings.css': 70,
+  'styles/settings.css': 3,
   'styles/shell.css': 56,
   'styles/stats.css': 201,
   'styles/ui.css': 38,
