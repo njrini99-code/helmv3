@@ -97,3 +97,13 @@ describe('ink on the elevated surfaces (B4)', () => {
     }
   });
 });
+
+describe('the primary key at night (B21, X-6)', () => {
+  it('ivory words read at 4.5:1 or more on every stop of the face, and the face stands off the page at 3:1', () => {
+    const rule = /:where\(html\[data-fw-theme='dark'\]\) \.ch-btn--primary \{\s*background: linear-gradient\(180deg, (#[0-9a-f]{6}) 0%, (#[0-9a-f]{6}) 50%, #[0-9a-f]{6} 50%, (#[0-9a-f]{6}) 100%\)/.exec(css('ui.css'));
+    expect(rule).not.toBeNull();
+    const ivory = hex(token('ch-text-on-accent', 'dark'));
+    for (const stop of rule!.slice(1, 4)) expect(contrast(ivory, hex(stop!)), stop).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(hex(rule![2]!), hex(token('ch-bg-page', 'dark')))).toBeGreaterThanOrEqual(3);
+  });
+});

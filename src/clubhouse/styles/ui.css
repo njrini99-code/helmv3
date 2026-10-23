@@ -1027,6 +1027,14 @@ button.ch-feat {
    the toast and popover a raised surface above the page (the toast's ink ramp flips, so it can't stay ink-900), the
    tonal coins and badges deep tints with light inks, and the scorecard marks keep their shapes in night finishes, the
    double's solid tile turning ivory. White lit tops drop to a whisper; the focus ring's token turns light green itself. */
+/* B21 (X-6, 4.32.1): at night the primary key is a lighter Augusta face than the cards' green, so it stands off them
+   (3.2:1 against the page); ivory words read 5:1 at rest and 4.5:1 on the hover's top stop. The same sliding face. */
+:where(html[data-fw-theme='dark']) .ch-btn--primary {
+  background: linear-gradient(180deg, #2c7a52 0%, #25734d 50%, #25734d 50%, #1d613f 100%) 0 100% / 100% 200%;
+}
+html[data-fw-theme='dark'] .ch-btn--primary:active:not(:disabled) {
+  background: #17543a;
+}
 html[data-fw-theme='dark'] .ch-btn--primary:disabled:not([aria-busy='true']) {
   text-shadow: 0 1px 0 rgb(0 0 0 / 0.4);
 }
