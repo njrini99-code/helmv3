@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, Pencil, Plane, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubLedgerRow, ChHubRsvp, ChHubTask, ChHubTrip, ChRsvp, ChTeamHub } from '../../data/hub';
 import type { ChHubTab } from '../../lib/hub-tabs';
 import { initials } from '../../lib/format';
@@ -13,6 +13,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
+import { WeekStrip } from '../../ui/WeekStrip';
 import { EmptyState } from '../../ui/States';
 import { firstBusyDay, ledgerSorted, owedBy, type LedgerKey, type QueueItem, type TaskFigures } from './hub-summary';
 import { Acknowledgement, ReplyChoices, repliesLine, useTaskSave } from './parts';
@@ -259,18 +260,10 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
   const coach = role === 'coach';
   const days = week.days;
   const [sel, setSel] = useState(() => firstBusyDay(days));
-  const strip = useRef<HTMLDivElement>(null);
-  const pick = (i: number, focus = false) => {
+  const pick = (i: number) => {
     if (i < 0 || i >= days.length) return;
     if (i !== sel) haptic('select');
     setSel(i);
-    if (focus) strip.current?.querySelectorAll<HTMLButtonElement>('button')[i]?.focus();
-  };
-  const keys = (e: KeyboardEvent) => {
-    const to = e.key === 'ArrowRight' ? sel + 1 : e.key === 'ArrowLeft' ? sel - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? days.length - 1 : null;
-    if (to == null) return;
-    e.preventDefault();
-    pick(Math.max(0, Math.min(days.length - 1, to)), true);
   };
   const quiet = days.every((d) => !d.events.length && !d.trip);
   const day = days[Math.min(sel, days.length - 1)];
@@ -299,29 +292,20 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
         />
       ) : (
         <>
-          <div ref={strip} className="ch-hw-days" role="group" aria-label="Days this week">
-            {days.map((d, i) => (
-              <button
-                key={d.date}
-                type="button"
-                aria-pressed={i === sel}
-                tabIndex={i === sel ? 0 : -1}
-                className={i === 0 ? 'is-today' : undefined}
-                aria-label={`${i === 0 ? 'Today, ' : ''}${d.weekday} ${d.day}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`}
-                onClick={() => pick(i)}
-                onKeyDown={keys}
-              >
-                <small>{i === 0 ? 'Today' : d.weekday}</small>
-                <b className="ch-num">{d.day}</b>
-                <span className="ch-hw-days__dots" aria-hidden="true">
-                  {d.events.slice(0, 3).map((e) => (
-                    <i key={e.id} />
-                  ))}
-                  {d.trip && <i className="is-trip" />}
-                </span>
-              </button>
-            ))}
-          </div>
+          <WeekStrip
+            label="Days this week"
+            days={days.map((d, i) => ({
+              date: d.date,
+              top: i === 0 ? 'Today' : d.weekday,
+              num: d.day,
+              isToday: i === 0,
+              dots: d.events.length,
+              flag: d.trip ? 'trip' : undefined,
+              label: `${i === 0 ? 'Today, ' : ''}${d.weekday} ${d.day}: ${d.events.length ? plural(d.events.length, 'event') : 'nothing on'}${d.trip ? `, on the road (${d.trip})` : ''}`,
+            }))}
+            selected={day.date}
+            onSelect={(date) => pick(days.findIndex((d) => d.date === date))}
+          />
           <div className="ch-hw-agenda" aria-live="polite">
             {day.trip && (
               <p className="ch-hw-agenda__trip">

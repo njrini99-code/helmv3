@@ -3152,71 +3152,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-on-green-ink);
 }
 
-/* This week. */
-.ch-hw-days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
-}
-.ch-hw-days button {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  min-width: 0;
-  padding: 8px 0 9px;
-  border: 0;
-  border-radius: var(--ch-radius-md);
-  background: none;
-  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
-  color: var(--ch-text-primary);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-.ch-hw-days small {
-  font: var(--ch-type-12-medium);
-  color: var(--ch-text-secondary);
-}
-.ch-hw-days b {
-  font: var(--ch-type-17-strong);
-  line-height: 1.1;
-}
-.ch-hw-days__dots {
-  display: flex;
-  gap: 3px;
-  height: 5px;
-}
-.ch-hw-days__dots i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--ch-green-fill-600);
-}
-.ch-hw-days__dots i.is-trip {
-  background: var(--ch-champagne-500);
-}
-.ch-hw-days .is-today {
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-fill-600);
-}
-.ch-hw-days .is-today small {
-  font-weight: 600;
-  color: var(--ch-green-700);
-}
-.ch-hw-days button[aria-pressed='true'] {
-  background: var(--ch-green-800);
-  box-shadow: none;
-}
-.ch-hw-days button[aria-pressed='true'] small,
-.ch-hw-days button[aria-pressed='true'] b {
-  color: var(--ch-on-green-ink);
-}
-.ch-hw-days button[aria-pressed='true'] .ch-hw-days__dots i:not(.is-trip) {
-  background: var(--ch-on-green-ink);
-}
-@media (hover: hover) {
-  .ch-hw-days button[aria-pressed='false']:hover {
-    background: var(--ch-bg-hover);
-  }
-}
+/* This week: the days are ui/WeekStrip (B18, ui.css). */
 .ch-hw-agenda ol {
   margin: 0;
   padding: 0;
@@ -3910,9 +3846,6 @@ html[data-fw-theme='dark'] .ch-hw {
 html[data-fw-theme='dark'] .ch-hw--dark {
   box-shadow: var(--ch-elevation-feature);
 }
-html[data-fw-theme='dark'] .ch-hw-days button[aria-pressed='true'] {
-  background: var(--ch-green-fill-700);
-}
 
 /* Narrow desktop and tablet: two tiles a row stop fitting, so the bento is one column in rank order. */
 @container chhb (max-width: 900px) {
@@ -3971,7 +3904,6 @@ html[data-fw-theme='dark'] .ch-hw-days button[aria-pressed='true'] {
     height: 36px;
     text-align: center;
   }
-  .ch-hw-days small,
   .ch-hw-q__k,
   .ch-hw-led__n em,
   .ch-hw-meter__k,
@@ -3988,8 +3920,7 @@ html[data-fw-theme='dark'] .ch-hw-days button[aria-pressed='true'] {
     font-size: 12px;
     letter-spacing: 0;
   }
-  .ch-hw-pager button,
-  .ch-hw-days button {
+  .ch-hw-pager button {
     min-height: 44px;
   }
   .ch-hw-discs button {
