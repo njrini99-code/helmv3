@@ -4,7 +4,7 @@ import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
-import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 
@@ -189,7 +189,7 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
       {rows.map((r) => (
         <div key={r.par} className="ch-par3__t">
           <span className="ch-par3__l">Par {r.par}s</span>
-          <span className="ch-par3__v ch-num">{r.avg == null ? NO_DATA : r.avg.toFixed(2)}</span>
+          <span className="ch-par3__v ch-num">{formatFixed(r.avg, 2)}</span>
           {/* Against the Tour's average for the par when there is one (lower is better), so the colour says how it compares (F-54). */}
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}

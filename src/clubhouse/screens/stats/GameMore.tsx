@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { ChPuttBand } from '../../data/stats-common';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { changeInk, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatAvg, formatDistance, formatFixed, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { InlineNotice } from '../../ui/Notices';
 import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
@@ -17,7 +17,7 @@ import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type 
  */
 
 const pct = formatPct;
-const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
+const num = formatFixed;
 const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${v.toFixed(d)} ft`);
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
@@ -98,7 +98,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
           label="Scoring by round type"
           items={types.map(([l, avg, n]) => ({
             label: l,
-            value: avg == null ? NO_DATA : avg.toFixed(1),
+            value: formatAvg(avg),
             sub: n ? `${n} ${n === 1 ? 'round' : 'rounds'}` : 'No rounds',
             empty: n === 0,
             code: 'CH-5312',
@@ -113,7 +113,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
             { label: 'Most birdies in a row', value: String(s.mostBirdiesRow) },
             { label: 'Most pars in a row', value: String(s.mostParsRow) },
             { label: 'Longest no-3-putt streak', value: String(s.longestNo3PuttStreak), sub: 'holes' },
-            { label: 'Longest hole-out', value: s.longestHoleOut == null ? NO_DATA : `${s.longestHoleOut.toFixed(0)} yds`, empty: s.longestHoleOut == null, code: NOTHING },
+            { label: 'Longest hole-out', value: formatDistance(s.longestHoleOut), empty: s.longestHoleOut == null, code: NOTHING },
           ]}
         />
       </Panel>

@@ -27,7 +27,7 @@ import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
 import { InviteByEmail } from './InviteByEmail';
@@ -39,7 +39,7 @@ import { RosterPhone } from './RosterPhone';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Tooltip } from '../../ui/Tooltip';
 import { RosterSpread } from './RosterSpread';
-import { AVAILABILITY_WORD, availabilityLine, earlyNeed, formatHcp, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
+import { AVAILABILITY_WORD, availabilityLine, earlyNeed, rosterFailedParts, rosterPeek, rosterStandings, teamInSentence, type RosterStanding } from './format';
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
@@ -481,7 +481,7 @@ export function Roster({ data }: { data: ChRoster }) {
               {teamAvg != null && (
                 <>
                   {' '}
-                  Team average <span className="ch-num">{teamAvg.toFixed(1)}</span> over the season.
+                  Team average <span className="ch-num">{formatAvg(teamAvg)}</span> over the season.
                 </>
               )}
             </p>
@@ -976,7 +976,7 @@ function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): str
   const out = p.availability && p.availability !== 'available' ? `, ${p.availability}` : '';
   if (p.avg == null) return `${p.name}${out}`;
   const place = standing && standing.of > 1 ? `, ${standing.tied ? 'tied ' : ''}${standing.place} of ${standing.of}` : '';
-  return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}${out}`;
+  return `${p.name}, scoring average ${formatAvg(p.avg)}${place}${out}`;
 }
 
 /**

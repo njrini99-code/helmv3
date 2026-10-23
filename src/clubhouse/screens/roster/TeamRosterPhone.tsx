@@ -8,7 +8,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { formatHcp } from './format';
+import { formatHcp } from '../../lib/format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 
 /**

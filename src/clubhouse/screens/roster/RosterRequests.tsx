@@ -6,7 +6,7 @@ import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { formatHcp } from './format';
+import { formatHcp } from '../../lib/format';
 import type { ChJoinRequestsState } from './useJoinRequests';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 

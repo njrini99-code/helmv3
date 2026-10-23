@@ -7,11 +7,10 @@ import { EmptyState } from '../../ui/States';
 import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
-import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
-import { formatHcp } from '../roster/format';
 import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;

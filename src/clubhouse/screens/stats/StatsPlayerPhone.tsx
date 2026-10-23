@@ -16,12 +16,11 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { changeInk, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, halvesChange } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { formatHcp } from '../roster/format';
 import { FigureGauge, SgChangeChip } from './charts';
 import { sgLegRows, type SgLegRow } from './leg-rows';
 import { SgBars } from './SgBars';
@@ -274,7 +273,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         <div>
           <dt>Scoring avg</dt>
           <dd className="ch-num">{formatFixed(w.avg)}</dd>
-          <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${data.teamAvg.toFixed(1)}` : `${w.rounds} ${w.rounds === 1 ? 'round' : 'rounds'}`}</dd>
+          <dd className="ch-num">{data.viewer === 'coach' && data.teamAvg != null ? `Team ${formatAvg(data.teamAvg)}` : `${w.rounds} ${w.rounds === 1 ? 'round' : 'rounds'}`}</dd>
         </div>
         <div>
           <dt>SG / round</dt>

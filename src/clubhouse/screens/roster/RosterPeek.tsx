@@ -17,9 +17,9 @@ import { Segmented } from '../../ui/Segmented';
 import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
-import { AVAILABILITY_WORD, formatHcp, legsCaption, relativeAgo } from './format';
+import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {

@@ -56,6 +56,29 @@ export function formatPct(value: number | null | undefined, digits = 0): string 
   return `${value.toFixed(digits)}%`;
 }
 
+/** A scoring or stat average at one decimal (CONS-15): 72.4, and an em dash for no data. */
+export function formatAvg(value: number | null | undefined): string {
+  return formatFixed(value, 1);
+}
+
+/** Strokes gained, signed at two decimals (CONS-15): +0.84, −1.20, 0.00. */
+export function formatSG(value: number | null | undefined, digits = 2): string {
+  return formatSigned(value, digits);
+}
+
+/** Handicap index at one decimal; a plus handicap (better than scratch, stored below zero) is written +1.2 (CONS-15). */
+export function formatHcp(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value)) return NO_DATA;
+  const rounded = Number(value.toFixed(1));
+  return rounded < 0 ? `+${Math.abs(rounded).toFixed(1)}` : Math.abs(rounded).toFixed(1);
+}
+
+/** A distance in whole yards by default (CONS-15): 152 yds, 8.5 ft with `unit` and `digits`. */
+export function formatDistance(value: number | null | undefined, unit = 'yds', digits = 0): string {
+  if (value == null || Number.isNaN(value)) return NO_DATA;
+  return `${value.toFixed(digits)} ${unit}`;
+}
+
 export function formatFixed(value: number | null | undefined, digits = 1): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;
   return value.toFixed(digits);

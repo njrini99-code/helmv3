@@ -2,7 +2,7 @@
 
 import { useState, type KeyboardEvent, type PointerEvent } from 'react';
 import { EmptyState } from '../../ui/States';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatAvg, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { nearestIndex, readRound, stepIndex } from './scrub';
 
 export type StageRound = { label: string; course?: string; score: number; toPar: number | null; holes: number };
@@ -62,12 +62,12 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
         <dl className="ch-fm__facts">
           <div>
             <dt>Average</dt>
-            <dd className="ch-num">{avg.toFixed(1)}</dd>
+            <dd className="ch-num">{formatAvg(avg)}</dd>
           </div>
           {coach && teamAvg != null && (
             <div>
               <dt>Team</dt>
-              <dd className="ch-num">{teamAvg.toFixed(1)}</dd>
+              <dd className="ch-num">{formatAvg(teamAvg)}</dd>
             </div>
           )}
           <div>

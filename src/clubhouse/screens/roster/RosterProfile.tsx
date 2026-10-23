@@ -8,10 +8,10 @@ import { Button } from '../../ui/Button';
 import { FormLine } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
-import { changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
-import { AVAILABILITY_WORD, formatHcp, rowNote } from './format';
+import { AVAILABILITY_WORD, rowNote } from './format';
 
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,

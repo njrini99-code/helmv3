@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { changeVerdict, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
+import { changeVerdict, formatAvg, formatFixed, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
@@ -24,7 +24,7 @@ import { sgLegBars } from './leg-rows';
 
 type Stats = NonNullable<ChPlayerProfile['stats']>;
 
-const fixed = (v: number | null | undefined, d = 1) => (v == null || Number.isNaN(v) ? NO_DATA : v.toFixed(d));
+const fixed = formatFixed;
 const clamp = (v: number, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
 const pos = (v: number, lo: number, hi: number) => clamp(((v - lo) / (hi - lo)) * 100);
 
@@ -224,7 +224,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               {coach && data.teamAvg != null && w.avg != null && (
                 <span>
-                  Team <b>{data.teamAvg.toFixed(1)}</b> · {versusTeam(w.avg, data.teamAvg, true)}
+                  Team <b>{formatAvg(data.teamAvg)}</b> · {versusTeam(w.avg, data.teamAvg, true)}
                 </span>
               )}
             </div>
@@ -268,7 +268,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               {floorNote('Fairways hit')}
               {s?.penaltiesPerRound != null && (
                 <span>
-                  <b>{s.penaltiesPerRound.toFixed(1)}</b> penalty strokes a round
+                  <b>{formatFixed(s.penaltiesPerRound)}</b> penalty strokes a round
                 </span>
               )}
               {w.sgLegs.tee != null && (
@@ -311,7 +311,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                   <div className="l">
                     Penalty strokes<span>A round{penBench != null ? `. The Tour has ${penBench}.` : '.'}</span>
                   </div>
-                  <b className="ch-num">{s.penaltiesPerRound.toFixed(1)}</b>
+                  <b className="ch-num">{formatFixed(s.penaltiesPerRound)}</b>
                   <Track value={s.penaltiesPerRound} lo={0} hi={Math.max(1.2, (penBench ?? 0) * 2, s.penaltiesPerRound * 1.4)} bad={penBench != null && s.penaltiesPerRound > penBench} neutral={penBench == null} tour={penBench} />
                 </div>
               )}
@@ -501,11 +501,11 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
             <Big value={fixed(puttsYou)} />
             <div className="ch-znlines">
               <span>
-                putts a round{ref('Putts per round') != null && <> · <b>{refName} {ref('Putts per round')!.toFixed(1)}</b></>}
+                putts a round{ref('Putts per round') != null && <> · <b>{refName} {formatFixed(ref('Putts per round'))}</b></>}
               </span>
               {threePutts != null && (
                 <span>
-                  <b>{threePutts.toFixed(1)}</b> 3-putts a round
+                  <b>{formatFixed(threePutts)}</b> 3-putts a round
                 </span>
               )}
               {w.sgLegs.putting != null && (

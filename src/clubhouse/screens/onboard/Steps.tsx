@@ -32,6 +32,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Spinner } from '../../ui/Spinner';
 import { Tooltip } from '../../ui/Tooltip';
+import { formatHcp } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { AuthNotice } from '../auth/AuthNotice';
 import { greetingWord } from '../auth/scene-sky';
@@ -50,7 +51,6 @@ import {
   cleanState,
   codeAutoChecks,
   codeCanSubmit,
-  fmtHcp,
   gradYears,
   hcpWords,
   hometownProblem,
@@ -735,7 +735,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
           </div>
           <div className="ch-ox-hcp__row">
             <span className="ch-ox-hcp__val" data-none={none ? '' : undefined} data-plus={!none && n < 0 ? '' : undefined} aria-live="polite">
-              {none ? '—' : fmtHcp(n)}
+              {none ? '—' : formatHcp(n)}
             </span>
             <span className="ch-ox-hcp__desc">{hcpWords(none ? null : n)}</span>
             {!none && (
@@ -765,7 +765,7 @@ export function Game({ d, up, next, path, back, dir, phone }: StepProps) {
                 style={{ ['--ch-ox-p' as string]: `${pct}%` }}
                 onChange={(e) => set(Number(e.target.value))}
                 aria-labelledby="ch-ox-hcp-k"
-                aria-valuetext={fmtHcp(n)}
+                aria-valuetext={formatHcp(n)}
               />
               <div className="ch-ox-scale" aria-hidden="true">
                 {MARKS.map(([v, l]) => (
@@ -869,7 +869,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
   };
 
   const name = `${d.first} ${d.last}`.trim() || 'You';
-  const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${fmtHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
+  const meta = [d.grad ? classOf(d.grad, now) : null, d.hcp != null ? `${formatHcp(d.hcp)} index` : null, [d.city.trim(), d.state].filter(Boolean).join(', ') || null].filter(Boolean).join(' · ') || 'Player';
   return (
     <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title="Put a face to the name." sub="Teammates see this on the roster and in messages." onSubmit={() => void finish()}>
       <div className="ch-ox-body">
@@ -935,7 +935,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
                 <b>{name}</b>
                 <em>{meta}</em>
               </span>
-              <span className="ch-ox-prow__n">{d.hcp != null ? fmtHcp(d.hcp) : '—'}</span>
+              <span className="ch-ox-prow__n">{d.hcp != null ? formatHcp(d.hcp) : '—'}</span>
             </div>
           </div>
         </div>

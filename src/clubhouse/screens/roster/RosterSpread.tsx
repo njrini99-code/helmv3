@@ -2,6 +2,7 @@
 
 import { useMemo, type CSSProperties } from 'react';
 import { Avatar } from '../../ui/Avatar';
+import { formatAvg } from '../../lib/format';
 import type { ChRosterPlayer } from '../../data/roster';
 
 /**
@@ -40,13 +41,13 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
     <section className="ch-rs-sp" aria-labelledby="ch-rs-sp-h">
       <div className="ch-rs-sp__h">
         <h2 id="ch-rs-sp-h">Where the team sits</h2>
-        <p>Season scoring average, lower is better. Each coin is a player; the gold line is the team average{teamAvg != null ? `, ${teamAvg.toFixed(1)}` : ''}.</p>
+        <p>Season scoring average, lower is better. Each coin is a player; the gold line is the team average{teamAvg != null ? `, ${formatAvg(teamAvg)}` : ''}.</p>
       </div>
       <div className="ch-rs-sp__plot" style={{ height: height + 34 }}>
         {team != null && (
           <div className="ch-rs-sp__team" style={{ '--ch-sp-x': team, height: height + 6 } as CSSProperties}>
             <i />
-            <span>Team {teamAvg!.toFixed(1)}</span>
+            <span>Team {formatAvg(teamAvg)}</span>
           </div>
         )}
         {/* A pointer shortcut to the faces below, which carry every player for the keyboard and screen readers. */}
@@ -55,7 +56,7 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
             <li key={p.id} style={{ '--ch-sp-x': x, top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` } as CSSProperties}>
               <button type="button" tabIndex={-1} onClick={() => onOpen(p.id)}>
                 <Avatar name={p.name} size={COIN} />
-                <b className="ch-num">{p.avg!.toFixed(1)}</b>
+                <b className="ch-num">{formatAvg(p.avg)}</b>
                 <em>{p.firstName}</em>
               </button>
             </li>

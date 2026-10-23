@@ -17,7 +17,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
-import { formatPct, NO_DATA } from '../../lib/format';
+import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
 import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
@@ -29,7 +29,7 @@ import { readsLineParts, READS_FAILED } from './reads-line';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
-const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.toFixed(d));
+const num = formatFixed;
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
