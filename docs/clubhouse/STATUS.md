@@ -9,6 +9,41 @@ wins; the stale ones found by this audit are listed at the end. `PROGRESS.md`
 keeps the full history (gates, decisions, questions, data gaps, verification
 log). What is left, and who has it: [QUEUE.md](QUEUE.md).
 
+## Release plan (2026-10-23)
+
+Read-only check on 2026-10-23. Nothing below has been deployed, merged or
+applied; the owner said prepare only.
+
+- **Production** is Vercel `dpl_CeADrBdMKv2MkZMhfJRxRv6CBYAc` (2026-10-21
+  10:35 UTC, release `d0f467a73`), flag off. `main` (`a3aa9670f`) is 59
+  commits ahead and has not been built for production.
+- **Held list corrected.** Applied since this page last listed them (ledger
+  read 2026-10-23): `20260929120000`, `20260929200000`, `20260930140000`,
+  `20261008160000`, `20261016220000`, `20261017100000`, `20261017101000`,
+  `20261021110000`. Still unapplied: `20261001000000` (Q-120),
+  `20261017102000` (attendance privacy), `20261017110000` (null putts),
+  `20260930150000` (SG), the OD-01 chain (`20260924120000` → `140000` →
+  `20260925120000` → `20260928120000` → `20260928150000`), `20261017005000`
+  (after the deploy that carries #2276), `20261007100000`, `20261005120000`
+  and `20261007102000` (last). `20260928160000` stays OBSOLETE.
+- **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
+  Oct 21 build calling `golf_event_attendance_counts` before
+  `20261017102000` exists; the app falls back. Draft #2340 ignores it until
+  the apply; the apply change removes that ignore and
+  `src/lib/golf/attendance-counts-rpc.ts`, then runs `db:types`.
+- **Order.** Land #2330, #2340, #2332, #2339, #2337 (in that order). Hold
+  #2328, #2333, #2334 and #2338 (Next.js) until after the rollout; close
+  #2327 and regenerate types after the applies. Deploy `main` with the flag
+  off and record that deployment as the rollback target. Apply Q-120 and
+  attendance privacy, then on a separate day the null-putts, SG and OD-01
+  corrections. Then turn the flag on for one team, then a second, then
+  everyone.
+- **Canary order (owner, 2026-10-22):** Demo University Golf
+  (`6ecdd1a6-63fe-4beb-b094-00118f334163`) with the owner's iPhone pass,
+  then one real team the owner picks, for a full weekday, then every team.
+- **Baseline:** 0 of 110 rounds completed in the 14 days to 2026-10-23 have
+  no hole rows.
+
 ## Since the 2026-10-17 audit (2026-10-19)
 
 - **Production** serves `1e8a9fad8` (#2201, checked with `npm run
@@ -158,15 +193,20 @@ VoiceOver, dark-mode scan or real-account write pass.
 
 1. **Held features that the flag releases:** release conversation files (P007)
    and qualifier squad-size and entrant edits (P009), or give them their own
-   switch so the flag does not release them.
+   switch so the flag does not release them. **Decided 2026-10-22 (owner):**
+   the flag releases them; the canary watches them.
 2. **Q-120:** apply `20261001000000` (server-side version check on submit) or
-   keep holding with the app-side check.
+   keep holding with the app-side check. **Decided 2026-10-22 (owner):** apply
+   it, before the canary (not applied yet).
 3. **Settings desktop:** review the screen built from the design system.
 4. **Builds:** the turn-on criteria and `clubhouse:perf` need one production
    build; the owner said no builds on 2026-10-17. Decide when one is allowed.
 5. **Attendance privacy:** `golf_event_attendance`'s select policy lets a player
    read every teammate's reply on every team event through the API (Home shows
    counts only). Narrow it to the player's own rows, or accept it.
+   **Decided 2026-10-22 (owner):** narrow it: apply `20261017102000` before the
+   canary (not applied yet), accepting that a Fairway player's event People list
+   then shows only their own reply.
 6. **Folding sidebar motion:** the fold animates the sidebar's width (and the
    brand's margin, padding and word track) on the smooth spring, so the canvas
    reflows each frame. `clubhouse:css` flags it as new layout motion, which
