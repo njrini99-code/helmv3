@@ -4188,9 +4188,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: var(--ch-type-13-medium);
   line-height: 1;
 }
-.ch-rd .ch-rd-grp__h > .ch-num {
-  font-variant-numeric: tabular-nums;
-}
 .ch-rd .ch-rd-grp__h b {
   font-weight: 600;
   color: var(--ch-text-primary);
