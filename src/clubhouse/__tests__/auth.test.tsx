@@ -619,7 +619,7 @@ describe('the sign-in micro-motion', () => {
     render(<SignIn signIn={login} />);
     expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
     expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
-    expect(css()).toMatch(/\.ch-au-back:active \{\s*background:/);
+    expect(css()).toMatch(/\.ch-au-back:is\(:active, \[data-ch-pressed\]\) \{\s*background:/);
   });
 });
 
@@ -806,7 +806,7 @@ describe('the welcome', () => {
     fireEvent.click(go);
     fireEvent.click(go);
     fireEvent.keyDown(window, { key: 'Enter' });
-    expect(hapticSpy.mock.calls.filter(([k]) => k === 'commit')).toHaveLength(1);
+    expect(hapticSpy.mock.calls.filter(([k]) => k === 'success')).toHaveLength(1);
     // The fold's look lands a painted frame after the phase (AuthFrame), so the move starts on a calm frame.
     act(() => void vi.advanceTimersByTime(40));
     expect(container.querySelector('.ch-au')?.getAttribute('data-phase')).toBe('leaving');

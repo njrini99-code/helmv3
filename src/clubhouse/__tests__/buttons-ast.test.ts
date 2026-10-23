@@ -9,7 +9,7 @@ import { ROOT, walk } from './_scan';
  * sheet's one primary action; "Clear filters" and "Clear search" are a way back, never the primary. Read from the JSX
  * itself (a `<Button>` whose only text is the label), so a moved line or a reformatted prop still counts.
  */
-type Found = { file: string; label: string; variant: string | null; feel: string | null };
+type Found = { file: string; label: string; variant: string | null; feel: string | null; before: string };
 
 function buttons(): Found[] {
   const out: Found[] = [];
@@ -23,7 +23,10 @@ function buttons(): Found[] {
         const variant = init && ts.isStringLiteral(init) ? init.text : init ? init.getText(src) : null;
         const feelProp = node.openingElement.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === 'feel');
         const feel = feelProp && ts.isJsxAttribute(feelProp) ? (feelProp.initializer?.getText(src) ?? null) : null;
-        out.push({ file: relative(ROOT, file), label, variant, feel });
+        // What sits just above the key (its own line, or a comment among its props): where a silenced key says why.
+        const at = feelProp ? feelProp.getStart(src) : node.getStart(src);
+        const before = src.text.slice(Math.max(0, node.getStart(src) - 160), at);
+        out.push({ file: relative(ROOT, file), label, variant, feel, before });
       }
       ts.forEachChild(node, visit);
     };
@@ -51,7 +54,9 @@ describe('Button weight by role (CONS-5)', () => {
     expect(clear.filter((b) => b.variant === 'primary')).toEqual([]);
   });
 
-  it('a danger key never silences its warning (CONS-1)', () => {
-    expect(all.filter((b) => b.variant === 'danger' && b.feel === '{null}')).toEqual([]);
+  it('a danger key warns as it is pressed, unless the warning came with its question and it says so (CONS-1)', () => {
+    const silenced = all.filter((b) => b.variant === 'danger' && b.feel === '{null}');
+    expect(silenced.length).toBeGreaterThan(0);
+    expect(silenced.filter((b) => !/The warning came with the question/.test(b.before)).map((b) => `${b.file}: ${b.label}`)).toEqual([]);
   });
 });

@@ -941,7 +941,8 @@ export function ConfirmDelete({
           <Button variant="ghost" onClick={onCancel}>
             Keep it
           </Button>
-          <Button variant="danger" busy={pending} onClick={onConfirm}>
+          {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
+          <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
             {pending ? 'Deleting…' : 'Delete'}
           </Button>
         </>

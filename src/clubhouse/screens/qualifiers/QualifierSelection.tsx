@@ -461,6 +461,8 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
             </Button>
             <Button
               variant="danger"
+              // The warning came with the question (D-70): the yes is silent, and the result answers.
+              feel={null}
               disabled={remove.pending}
               onClick={() => {
                 if (removing) void remove.run(removing);

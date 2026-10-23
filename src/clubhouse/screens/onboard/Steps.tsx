@@ -1009,7 +1009,7 @@ export function Done({ d, finish, dir }: StepProps) {
       sub="Your member card is ready."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
+        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>
@@ -1052,7 +1052,7 @@ export function StaffDone({ d, finish, dir }: StepProps) {
       sub="Your head coach added you as an assistant coach. The roster, calendar and stats are ready for you."
     >
       <div className="ch-ox-act">
-        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="commit" onClick={() => finish('/golf/dashboard')}>
+        <Button variant="primary" size="lg" rightIcon={ArrowRight} feel="success" onClick={() => finish('/golf/dashboard')}>
           Go to your dashboard
         </Button>
       </div>

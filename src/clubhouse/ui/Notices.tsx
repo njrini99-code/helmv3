@@ -217,7 +217,7 @@ export function RouteErrorView({
             <p className="ch-empty-page__note">{retryCount === 1 ? 'Tried again once.' : `Tried again ${retryCount} times.`}</p>
           )}
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying} feel="commit">
+            <Button variant="primary" leftIcon={RotateCw} onClick={onRetry} busy={isRetrying}>
               {isRetrying ? 'Trying again…' : reload ? 'Reload' : 'Try again'}
             </Button>
             {homePath && (

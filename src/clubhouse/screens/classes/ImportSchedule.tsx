@@ -480,7 +480,8 @@ export function ImportSchedule({
             <Button variant="ghost" onClick={() => setRestarting(false)}>
               Keep reviewing
             </Button>
-            <Button variant="danger" onClick={startOver}>
+            {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
+            <Button variant="danger" feel={null} onClick={startOver}>
               Start over
             </Button>
           </>

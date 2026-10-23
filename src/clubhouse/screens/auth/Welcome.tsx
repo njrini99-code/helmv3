@@ -118,8 +118,9 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
   const proceed = useCallback(() => {
     if (started.current) return;
     started.current = true;
-    // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas.
-    haptic('commit');
+    // CH-15604, CH-15705: Continue (or Return) commits once and folds the course into the canvas; a finish, so it
+    // answers as one (CONS-25: commit is held for a sheet settling, a shot logged and pull-to-refresh).
+    haptic('success');
     // The sidebar's wordmark writes itself in once when the app opens from here (owner, 2026-10-16).
     markBrandWrite();
     setLeaving(true);
