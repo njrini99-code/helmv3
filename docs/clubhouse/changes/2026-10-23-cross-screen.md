@@ -70,3 +70,35 @@ Held items: none
 
 - New `retry-verb.test.ts` and `no-team.test.ts`; the tests find the
   failure key by its new name.
+
+## 2026-10-23 — One spinner, icon weight, one back link (CONS-24, B12, CONS-29)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-24, B12, CONS-29)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: B12's size steps wait on the CONS-4 icon-size answer; Round
+setup's band back, onboarding's back and two pagers wait on a visual
+decision
+```
+
+### Changed
+
+- One spinner: every busy ring was already `ui/Spinner`, so five local
+  spinners and their keyframes go.
+- Icons draw an absolute line: 1.5px up to 17, 1.75px to 22, 2px above,
+  so small icons are no longer hairlines beside 600-weight text.
+- One back link: CoachHelm's Track record, Monday brief and Brief, the
+  calendar panel and the course picker use `BackLink` (ChevronLeft 16,
+  focus offset 2), a link to the parent or a button inside a page.
+
+### Why
+
+- Five spinners, icon lines from 0.8 to 2px, and nine ways to go back.
+
+### Verification
+
+- New `one-spinner.test.ts`, `ui/__tests__/Icon.test.tsx` and
+  `one-back-link.test.ts` (which lists the held backs).
