@@ -309,6 +309,10 @@ its rows together and does not map them one to one.
 | aplus-a18 | Contrast: header eyebrow on the Ledger eyebrow ink, placeholders on their token, no-data marks on the tertiary ink, ScoreMark prints the em dash (A18) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-5); no Bridge IDs or CH codes needed |
 | aplus-a19 | Labelled spans and divs get a role (img, group, status), with a source scan (A19) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-5); no Bridge IDs or CH codes needed |
 | aplus-a27 | Track's disabled Next reads at 4.6:1 in light; phone and dark already pass, now pinned (A27) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-5); no Bridge IDs or CH codes needed |
+| aplus-a22 | Section switcher: the chevron and dot never glide in over the name after it was hidden (A22) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
+| aplus-a23 | Glyph subset: no U+2011, ▲/▼, decorative text arrows, prime or ≥; shared sign-out copy; apostrophe scan over every folder (A23) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
+| aplus-a24 | 390px: trip card dates and times hold together, Hub strip fade and snap, phone tabs scroll, Putts two lines, short SG labels (A24) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
+| aplus-a29 | Render must-fixes: Track distance words clear of the tee disc, no textarea grip on touch; KPI gauges held for the owner (A29) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

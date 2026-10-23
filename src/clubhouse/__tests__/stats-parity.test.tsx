@@ -891,7 +891,7 @@ describe('Game detail on the phone · the approach section', () => {
     await chip('Approach');
     const p = panel('Proximity against the Tour');
     const rows = [...p.querySelectorAll('li.ch-brow')];
-    expect(rows.map((r) => r.textContent)).toEqual(['50–12526′55 shots', '125–17540′72 shots', '175+Needs 107 shots']);
+    expect(rows.map((r) => r.textContent)).toEqual(['50–12526 ft55 shots', '125–17540 ft72 shots', '175+Needs 107 shots']);
     expect(code('CH-5316')).toBe(p.querySelector('.ch-brows'));
     // The line under the chart is a screen's; the rows say it on a phone.
     expect(p.querySelector('p.ch-gm-p__empty')).toBeNull();

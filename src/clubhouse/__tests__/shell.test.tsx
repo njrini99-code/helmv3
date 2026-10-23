@@ -347,7 +347,7 @@ describe('Shell · network', () => {
     expect(code('CH-1901')).toBeNull();
     setOnline(false);
     act(() => void window.dispatchEvent(new Event('offline')));
-    await expectCode('CH-1901', /You're offline/);
+    await expectCode('CH-1901', /You’re offline/);
     expect(hapticSpy).toHaveBeenCalledWith('warning');
     setOnline(true);
     act(() => void window.dispatchEvent(new Event('online')));
@@ -627,7 +627,7 @@ describe('Shell · navigation and accessibility', () => {
     }
   });
 
-  it('CH-1002 a sign-out that fails says you are still signed in, with Retry', async () => {
+  it('CH-1002 a sign-out that fails says so, in the same words as Settings, with Try again', async () => {
     const user = userEvent.setup();
     signOutSpy.mockReset();
     signOutSpy.mockRejectedValueOnce(new Error('network'));
@@ -635,7 +635,8 @@ describe('Shell · navigation and accessibility', () => {
     wrap(<PhoneNav pathname="/golf/dashboard" shell={shell} role="player" user={{ name: 'Theo Marchetti' }} />);
     await user.click(screen.getByRole('button', { name: 'Account' }));
     await user.click(await screen.findByRole('button', { name: 'Sign out' }));
-    await expectCode('CH-1002', /Couldn't sign out/);
+    await expectCode('CH-1002', /Couldn’t sign you out/);
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(hapticSpy).toHaveBeenCalledWith('error');
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy();
   });

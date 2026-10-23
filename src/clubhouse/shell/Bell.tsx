@@ -338,7 +338,7 @@ export function Bell() {
     return () => cancelAnimationFrame(frame);
   }, [phone, open, moving]);
 
-  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: "Couldn't mark your notifications read", code: 'CH-1001' });
+  const markAll = useAction('shell.markAllRead', api.markAll, { done: 'All notifications marked read', failed: 'Couldn’t mark your notifications read', code: 'CH-1001' });
 
   /** Marks items read where the coach cleared them (a swipe, a stack's ×): the feed restacks at once, the server follows. */
   const clearItems = (list: UnifiedNotificationItem[]) => {

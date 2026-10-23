@@ -341,8 +341,8 @@ export function EditShotSheet({
                 value={form.missDirection as 'left' | 'right' | null}
                 onChange={(v) => update({ missDirection: form.missDirection === v ? null : v })}
                 options={[
-                  { value: 'left', label: '← Left' },
-                  { value: 'right', label: 'Right →' },
+                  { value: 'left', label: 'Left' },
+                  { value: 'right', label: 'Right' },
                 ]}
               />
             </div>

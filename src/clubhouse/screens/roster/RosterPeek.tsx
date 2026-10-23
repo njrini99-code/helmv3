@@ -297,7 +297,7 @@ function HelmBlock({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }) {
         <HelmCounts p={p} helm={helm} />
         {href && (
           <Link className="ch-rs-peek__go" href={href} {...press(href)}>
-            View insights <span aria-hidden="true">→</span>
+            View insights <Icon icon={ArrowRight} size={14} />
           </Link>
         )}
       </div>
@@ -317,7 +317,7 @@ export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }
         <b id={`helm-${p.id}`}>CoachHelm</b>
         {href && (
           <Link href={href} className="ch-rsm-panel__link" {...press(href)}>
-            View insights <span aria-hidden="true">→</span>
+            View insights <Icon icon={ArrowRight} size={14} />
           </Link>
         )}
       </div>

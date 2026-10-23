@@ -2380,6 +2380,10 @@
   font: 600 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
+/* The up or down mark is an icon, not "▲"/"▼", which the font does not have (A23). */
+.ch-qf-move svg {
+  vertical-align: -0.1em;
+}
 .ch-qf-move.is-gain {
   color: var(--ch-chart-gain);
 }

@@ -22,7 +22,7 @@ describe('FigureGauge (A8.4)', () => {
   it('a value past the end fills only its half and says the end was passed', () => {
     render(<FigureGauge gauge={{ kind: 'par', toPar: 9 }} n={81} />);
     expect(pct(bar().style.width)).toBeLessThanOrEqual(50);
-    expect(document.querySelector('.ch-fg__end')!.textContent).toBe('≥+6');
+    expect(document.querySelector('.ch-fg__end')!.textContent).toBe('>+6');
   });
 
   it('a value inside the end is drawn to scale, with the end value labelled', () => {

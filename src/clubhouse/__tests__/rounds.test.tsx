@@ -218,8 +218,9 @@ describe('112401 Rounds library, on screen', () => {
 
   it('110107 CH-11302 rounds posted but no countable 18-hole round this season: the season card says how it fills; the round still lists', async () => {
     show(PREVIEW_ROUNDS_NO_SEASON);
-    // A non-breaking hyphen (U+2011), so the headline never breaks "18- / hole".
-    await expectCode('CH-11302', /Your season starts with your first 18\u2011hole round/);
+    // The headline never breaks "18- / hole": a plain hyphen in a no-wrap span, since the font has no U+2011 (A23).
+    await expectCode('CH-11302', /Your season starts with your first 18-hole round/);
+    expect(code('CH-11302')!.querySelector('.ch-nowrap')?.textContent).toBe('18-hole');
     const row = screen.getByRole('link', { name: 'Sep 9, Finley GC, 38 (+2)' });
     expect(within(row).getByText('Holes').nextSibling!.textContent).toBe('9');
     expect(screen.getByText('Since August 1')).toBeTruthy();

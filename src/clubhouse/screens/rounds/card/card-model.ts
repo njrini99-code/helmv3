@@ -53,6 +53,8 @@ export interface CardBand {
 
 export interface CardLeg {
   label: string;
+  /** The label on a phone, where the full one wraps and pushes its value off the row's baseline (A24). */
+  short: string;
   value: number | null;
 }
 
@@ -77,11 +79,11 @@ export interface CardModel {
   sg: { total: number | null; legs: CardLeg[] } | null;
 }
 
-const SG_LEGS: Array<[keyof Omit<NonNullable<ChRoundReview['strokesGained']>, 'total'>, string]> = [
-  ['tee', 'Off the tee'],
-  ['approach', 'Approach'],
-  ['around', 'Around green'],
-  ['putting', 'Putting'],
+const SG_LEGS: Array<[keyof Omit<NonNullable<ChRoundReview['strokesGained']>, 'total'>, string, string]> = [
+  ['tee', 'Off the tee', 'Off tee'],
+  ['approach', 'Approach', 'Approach'],
+  ['around', 'Around green', 'Around'],
+  ['putting', 'Putting', 'Putting'],
 ];
 
 /** True when the review has a hole-by-hole card to draw. A round posted as a total, or whose holes didn't load, has none. */
@@ -128,7 +130,7 @@ export function buildCard(r: ChRoundReview, who: CardWho = {}): CardModel {
   const scored = all.filter((h) => h.score != null).length;
   const parTotal = sumOf(all, 'par') ?? (r.score != null && r.toPar != null ? r.score - r.toPar : null);
   const sg = r.strokesGained
-    ? { total: r.strokesGained.total, legs: SG_LEGS.map(([k, label]) => ({ label, value: r.strokesGained![k] })) }
+    ? { total: r.strokesGained.total, legs: SG_LEGS.map(([k, label, short]) => ({ label, short, value: r.strokesGained![k] })) }
     : null;
   const date = `${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short' }).format(dateOf(r.date))} ${new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' }).format(dateOf(r.date))}`;
   return {

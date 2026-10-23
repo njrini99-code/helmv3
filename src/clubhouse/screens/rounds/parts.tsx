@@ -375,9 +375,16 @@ function SeasonFigures({ season }: { season: ChRoundsSeason }) {
             </span>
           </dd>
         )}
-        {/* A non-breaking hyphen: "two-" never ends a line on the phone (overnight polish, 2026-10-15). */}
+        {/* "two-putting" never breaks at its hyphen on the phone (overnight polish, 2026-10-15); a plain hyphen in a
+            no-wrap span, because the font has no non-breaking hyphen (A23). */}
         <dd className="ch-rd-fig__m">
-          {putts == null ? 'a round' : `a round · ${formatFixed(Math.abs(twoPutt - putts), 1)} ${putts <= twoPutt ? 'under' : 'over'} two‑putting`}
+          {putts == null ? (
+            'a round'
+          ) : (
+            <>
+              a round · {formatFixed(Math.abs(twoPutt - putts), 1)} {putts <= twoPutt ? 'under' : 'over'} <span className="ch-nowrap">two-putting</span>
+            </>
+          )}
         </dd>
       </div>
       <div className="ch-rd-fig">
@@ -405,8 +412,8 @@ export function SeasonCard({ season, phone = false }: { season: ChRoundsSeason; 
         <span className="ch-rd-k" id="ch-rd-season-k">
           Season scoring
         </span>
-        {/* A non-breaking hyphen (U+2011), so the line never breaks "18- / hole". */}
-        <b className="ch-rd-season__none">Your season starts with your first {'18\u2011hole'} round</b>
+        {/* "18-hole" never breaks at its hyphen: a plain hyphen in a no-wrap span, because the font has no U+2011 (A23). */}
+        <b className="ch-rd-season__none">Your season starts with your first <span className="ch-nowrap">18-hole</span> round</b>
         <span className="ch-rd-season__nonebody">Scoring average, best round, putts and greens fill in here from 18-hole rounds posted since August 1.</span>
       </section>
     );

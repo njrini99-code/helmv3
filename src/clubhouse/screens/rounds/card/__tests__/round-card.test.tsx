@@ -77,6 +77,13 @@ describe('RoundCard (page)', () => {
     expect(sg.getByText('Putting').nextElementSibling).toHaveTextContent('−0.9');
   });
 
+  it('on a phone the legs carry short labels, each with its full name for a screen reader (A24)', () => {
+    render(wrap(<RoundCard review={PREVIEW_REVIEW} phone just={false} settle={false} />));
+    const terms = [...document.querySelectorAll('.ch-rcard-sg dt')];
+    expect(terms.map((t) => t.querySelector('[aria-hidden="true"]')?.textContent ?? t.textContent)).toEqual(['Strokes gained', 'Off tee', 'Approach', 'Around', 'Putting']);
+    expect(terms.map((t) => t.querySelector('.ch-sr-only')?.textContent ?? t.textContent)).toEqual(['Strokes gained', 'Off the tee', 'Approach', 'Around green', 'Putting']);
+  });
+
   it('the quiet line shows only when the round was just posted; the card settles only when motion is on', () => {
     const { rerender } = render(wrap(<RoundCard review={PREVIEW_REVIEW} phone just={false} settle={false} />));
     expect(document.querySelector('[data-ch-code="CH-11924"]')).toBeNull();

@@ -228,6 +228,17 @@
   line-height: 1.5;
   resize: vertical;
 }
+/* A finger has no grip to drag: on a touch screen the field grows with what is typed instead (A29). */
+@media (pointer: coarse) {
+  .ch-textarea {
+    resize: none;
+  }
+  @supports (field-sizing: content) {
+    .ch-textarea {
+      field-sizing: content;
+    }
+  }
+}
 @media (hover: hover) {
   .ch-input:hover,
   .ch-textarea:hover {

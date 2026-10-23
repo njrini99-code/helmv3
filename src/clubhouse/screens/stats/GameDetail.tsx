@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
+import { ArrowRight, CircleDot, Crosshair, Flag, FlagTriangleRight, MoveUpRight, type LucideIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { gameSectionFromHash } from './legs';
@@ -70,7 +70,7 @@ function ReadsLine({ reads, area }: { reads: ChStatsReads | undefined; area: ChR
         <span>
           {parts.map((part, i) => (typeof part === 'number' ? <span key={i} className="ch-num">{part}</span> : part))}{' '}
           <span className="ch-gm__reads-go">
-            Deep dive <span aria-hidden="true">→</span>
+            Deep dive <Icon icon={ArrowRight} size={14} />
           </span>
         </span>
       </Link>
@@ -535,7 +535,7 @@ export function GameDetail({
             <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
-              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit={'′'} label="Yards to the pin" invert phone={phone} code="CH-5316" />
+              <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit=" ft" label="Yards to the pin" invert phone={phone} code="CH-5316" />
               {/* On a phone each band's own row says it ("Needs 10", with its shots); a screen says it in a line under the chart. */}
               {!phone && tourProx.some((b) => b.value == null) && (
                 <EmptyState
@@ -558,7 +558,7 @@ export function GameDetail({
           wide
           {...noteOf('Average finish in feet by the distance hit from; shorter is better. Counts greens found only, so it has no Tour tick.', 'Shorter is better. Greens found only.')}
         >
-          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit={'′'} label="Yards to the pin" invert phone={phone} none="No greens hit" />
+          <Ladder rows={proxBands.map(([band, value]) => ({ band, value, bench: null }))} unit=" ft" label="Yards to the pin" invert phone={phone} none="No greens hit" />
         </Panel>
         <Panel title="Where missed greens finish" note={hasMiss ? `Most misses finish ${missShort >= missLong ? 'short' : 'long'}. ${missShort >= missLong ? 'Taking one more club is the simplest change.' : 'Clubbing down is worth a look.'}` : undefined}>
           {hasMiss ? (

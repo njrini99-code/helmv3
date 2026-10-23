@@ -2494,7 +2494,10 @@ button.ch-rt-strip__h {
     letter-spacing: -0.05em;
     color: var(--ch-on-green-ink);
   }
+  /* The words take their own line under the figure: beside it, "yards to the pin" ran into the hole drawing's tee
+     disc at 390px (A29). */
   .ch-rt-hero__dist > em {
+    width: 100%;
     font: 400 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;

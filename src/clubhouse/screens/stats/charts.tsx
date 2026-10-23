@@ -54,13 +54,14 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
     const v = gauge.kind === 'sg' ? n : gauge.toPar;
     if (v == null) return null;
     const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
-    // The bar fills at most its own half (A8.4): a value past the end stops at it, and the end label says "≥".
+    // The bar fills at most its own half (A8.4): a value past the end stops at it, and the end label says so (">+3",
+    // "<−3"; ASCII, because the font has no "≥", A23).
     const clipped = Math.abs(v) > end;
     const w = pct((Math.min(Math.abs(v), end) / end) * 50);
     // Strokes gained above zero is good; a score above par is not; a value that shows as zero is neither.
     const tone = changeTone(v, gauge.kind !== 'sg', 1);
     const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
-    const endLabel = `${clipped ? '≥' : ''}${formatSigned(right ? end : -end, 0)}`;
+    const endLabel = `${clipped ? (right ? '>' : '<') : ''}${formatSigned(right ? end : -end, 0)}`;
     return (
       <span className="ch-fg__gauge" aria-hidden="true">
         <span className="ch-fg__track">
