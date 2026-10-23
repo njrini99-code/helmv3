@@ -103,3 +103,32 @@ Held items: none
 - `screens/stats/__tests__/honest-deltas.test.tsx`: 0.44 against 0.36 and
   72.04 against 71.96 read level; real gaps read ahead or behind, lower is
   better for scoring.
+
+
+## 2026-10-23 — Average to par is the window's weighted value (A6)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A6)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The player Overview's "to par a round" and the phone scoring gauge read the
+  window's own weighted `win.toPar` (per 18, a nine-hole round counts as
+  half), the same figure as the Stats hero. A round with no par is left out
+  instead of counting as 0; with none, the line is not drawn.
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-honest-numbers.md.
+
+### Verification
+
+- New `screens/stats/__tests__/overview-topar.test.tsx`: an 18-hole +4 and a
+  9-hole +1 make +3.3; the Overview prints `win.toPar`; a round with no par
+  does not pull it toward 0.

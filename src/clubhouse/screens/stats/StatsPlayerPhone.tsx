@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChStatsReads } from '../../data/stats-reads';
-import { basisWords, clearFilters, hasRange, isFiltered, per18, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -266,9 +266,8 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const formTone = formSignal === 'is-gain' ? ' ch-gain' : formSignal === 'is-loss' ? ' ch-loss' : '';
   const halves = half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`;
   const d = data.sgChange.delta;
-  // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
-  const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
-  const toPar = pars.length ? pars.reduce((a, b) => a + b, 0) / pars.length : null;
+  // The scoring average against par (owner, 2026-10-07: no bare numbers): the window's weighted value per 18 (A6), as the Overview shows it.
+  const toPar = w.toPar;
   return (
     <div className="ch-stm-overview">
       <dl className="ch-stm-figs is-three is-line">

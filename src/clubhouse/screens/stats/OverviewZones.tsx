@@ -83,7 +83,8 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         return { p, you: d.avgToPar, tour: tourAvg == null ? null : tourAvg - p };
       })
     : [];
-  const toParAvg = data.rounds.length ? data.rounds.reduce((a, r) => a + (r.toPar ?? 0) / (r.holes / 18), 0) / data.rounds.length : null;
+  // The window's own weighted to par a round, per 18 (A6): the same figure as the Stats hero, and a round with no par is left out, not 0.
+  const toParAvg = w.toPar;
 
   // 3 · off the tee
   const fwOpp = s?.fairwayOpportunities ?? 0;
