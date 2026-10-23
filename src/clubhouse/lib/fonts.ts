@@ -19,6 +19,8 @@ export const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['500'],
   display: 'swap',
+  // Only the desktop's key hints use it, so a phone never fetches it ahead of the page (B8).
+  preload: false,
   variable: '--ch-font-jetbrains',
 });
 

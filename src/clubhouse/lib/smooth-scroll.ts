@@ -4,7 +4,7 @@ import Lenis from 'lenis';
 import { useEffect } from 'react';
 import { CH_SCROLL_DUR } from './motion';
 import { useChReducedMotion } from './reduced-motion';
-import { chRailMoving } from './rail-fold';
+import { afterRailMove, chRailMoving } from './rail-fold';
 
 /**
  * Smooth scrolling for the desktop canvas (owner, 2026-10-06: "use smooth scroll all around"). Safari on the Mac moves a
@@ -81,6 +81,51 @@ export function chScrollsVertically(node: HTMLElement): boolean {
   return /(auto|scroll)/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight;
 }
 
+/**
+ * Lenis's frame loop, run only while something moves (B8): a wheel, a programmatic glide or a scroll wakes it, and it
+ * sleeps once Lenis has been still for two frames, so an idle page asks for no frames at all. `scrollTo` wakes it too,
+ * so a glide asked for while it sleeps still runs.
+ */
+export function chLenisIdleLoop(lenis: Pick<Lenis, 'raf' | 'isScrolling' | 'on' | 'scrollTo'>) {
+  let raf = 0;
+  let running = false;
+  let still = 0;
+  const loop = (time: number) => {
+    lenis.raf(time);
+    still = lenis.isScrolling ? 0 : still + 1;
+    if (still >= 2) {
+      running = false;
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  };
+  const wake = () => {
+    still = 0;
+    if (running) return;
+    running = true;
+    raf = requestAnimationFrame(loop);
+  };
+  const offScroll = lenis.on('scroll', wake);
+  const offVirtual = lenis.on('virtual-scroll', wake);
+  const scrollTo = lenis.scrollTo.bind(lenis);
+  lenis.scrollTo = ((...args: Parameters<Lenis['scrollTo']>) => {
+    wake();
+    return scrollTo(...args);
+  }) as Lenis['scrollTo'];
+  wake();
+  return {
+    wake,
+    stop: () => {
+      cancelAnimationFrame(raf);
+      running = false;
+      offScroll?.();
+      offVirtual?.();
+    },
+    /** Whether a frame is wanted (for tests). */
+    running: () => running,
+  };
+}
+
 /** Mount once, in the Clubhouse frame. */
 export function useCanvasSmoothScroll(): void {
   const reduced = useChReducedMotion();
@@ -88,8 +133,9 @@ export function useCanvasSmoothScroll(): void {
     if (reduced) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let raf = 0;
-    let height = 0;
+    let sizes: ResizeObserver | null = null;
+    let kids: MutationObserver | null = null;
+    let sleep = () => {};
 
     const start = () => {
       const wrapper = document.getElementById('ch-canvas');
@@ -119,24 +165,28 @@ export function useCanvasSmoothScroll(): void {
         },
       });
       current = lenis;
-      const loop = (time: number) => {
-        // The canvas grows as a page streams in or a route changes; the scroll limit follows it. Not while the sidebar
-        // folds: the page reflows on every frame of it, and the limit is read once it settles (lib/rail-fold.ts).
-        if (!chRailMoving() && wrapper.scrollHeight !== height) {
-          height = wrapper.scrollHeight;
-          lenis?.resize();
-        }
-        lenis?.raf(time);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
+      sleep = chLenisIdleLoop(lenis).stop;
+      // The canvas grows as a page streams in or a route changes; the scroll limit follows it, from a ResizeObserver on
+      // what the canvas holds, never a read every frame (B8). Not while the sidebar folds: the page reflows on every frame
+      // of it, and the limit is read once it settles (lib/rail-fold.ts).
+      const resize = () => (chRailMoving() ? afterRailMove(() => lenis?.resize()) : lenis?.resize());
+      sizes = new ResizeObserver(resize);
+      for (const child of Array.from(wrapper.children)) sizes.observe(child);
+      kids = new MutationObserver((records) => {
+        for (const r of records) for (const n of Array.from(r.addedNodes)) if (n instanceof Element) sizes?.observe(n);
+        resize();
+      });
+      kids.observe(wrapper, { childList: true });
     };
     const stop = () => {
-      cancelAnimationFrame(raf);
+      sleep();
+      sizes?.disconnect();
+      kids?.disconnect();
+      sizes = null;
+      kids = null;
       lenis?.destroy();
       lenis = null;
       current = null;
-      height = 0;
     };
     const sync = () => (desk.matches ? start() : stop());
     sync();
@@ -266,8 +316,8 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
     if (reduced || !wrapper) return;
     const desk = window.matchMedia(DESK);
     let lenis: Lenis | null = null;
-    let raf = 0;
-    let height = 0;
+    let sizes: ResizeObserver | null = null;
+    let sleep = () => {};
     const start = () => {
       if (lenis) return;
       const fromTrackpad = chTrackpadGesture();
@@ -286,22 +336,18 @@ export function usePanelSmoothScroll(ref: { current: HTMLElement | null }, { dur
         },
         prevent: (node) => node !== wrapper && !!node.closest('[data-lenis-prevent], dialog, [role="dialog"], [role="menu"], [role="listbox"]'),
       });
-      const loop = (time: number) => {
-        // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height.
-        if (wrapper.scrollHeight !== height) {
-          height = wrapper.scrollHeight;
-          lenis?.resize();
-        }
-        lenis?.raf(time);
-        raf = requestAnimationFrame(loop);
-      };
-      raf = requestAnimationFrame(loop);
+      sleep = chLenisIdleLoop(lenis).stop;
+      // Another panel (a class, an event) swaps in under the same wrapper: the limit follows its height (B8: observed,
+      // not read every frame).
+      sizes = new ResizeObserver(() => lenis?.resize());
+      for (const child of Array.from(wrapper.children)) sizes.observe(child);
     };
     const stop = () => {
-      cancelAnimationFrame(raf);
+      sleep();
+      sizes?.disconnect();
+      sizes = null;
       lenis?.destroy();
       lenis = null;
-      height = 0;
     };
     const sync = () => (desk.matches ? start() : stop());
     sync();

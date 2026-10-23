@@ -2929,3 +2929,9 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   background: color-mix(in srgb, var(--ch-green-fill-600) 12%, var(--ch-bg-surface));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-500) 22%, transparent);
 }
+
+/* B8: a long conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew. */
+.ch-ms-row.is-hit {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 60px;
+}
