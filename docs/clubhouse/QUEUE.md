@@ -147,6 +147,7 @@ its rows together and does not map them one to one.
 | mot-07 | Placeholder text on its own readable token in both themes | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
 | mot-08 | Text on 11 sizes (11 to 34px), nearest step, from approved before/after renders | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (type scale the owner approved 2026-10-23); no Bridge IDs or CH codes needed |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
+| doc-07 | A 12 or 24-hour time choice in Clubhouse Settings (D-76), kept on the device and followed by every Clubhouse time | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; Bridge items 80-89 and CH suffixes 80-89 on P008 and P003; uses CH-8980 (80780) |
 | doc-12 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-13 | Team stats print: the leg grid narrows on paper | Clubhouse parity & pages | done | #2281 | |
 | doc-23 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
@@ -156,6 +157,7 @@ its rows together and does not map them one to one.
 | doc-45 | Name the production rollback deployment in STATUS | docs | done | #2296 | |
 | doc-50 | Phone Roster and Team stats figures render directly, no digit rolling | Clubhouse fixes | done | #2282 (landed in #2314) | claude/clubhouse-no-digit-rolling |
 | doc-55 | Password reset email: the Clubhouse screens exist; applying the template to the auth project is an owner production setting | Clubhouse fixes | held | | |
+| doc-60 | Invite players by email from Roster (a new server action; no migration) | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; same window as doc-07; uses CH-3080 (30680), CH-3180 (30580), CH-3880 (31880), CH-3980 (30780) |
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |

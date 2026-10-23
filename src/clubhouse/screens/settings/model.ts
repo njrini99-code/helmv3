@@ -1,5 +1,6 @@
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
+import type { ChClock } from '../../lib/clock-cookie';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -159,6 +160,12 @@ export const DISTANCE_OPTIONS = [
   { value: 'yards', label: 'Yards' },
   { value: 'meters', label: 'Meters' },
 ] as const;
+
+/** How every time reads (the `ch_clock` cookie, lib/use-clock.tsx). Display only: times are stored in 24 hours, in the team's zone. */
+export const CLOCK_OPTIONS = [
+  { value: '12', label: '12-hour' },
+  { value: '24', label: '24-hour' },
+] as const satisfies ReadonlyArray<{ value: ChClock; label: string }>;
 
 export const TIMEZONE_OPTIONS = [
   { value: 'America/New_York', label: 'Eastern (ET)' },

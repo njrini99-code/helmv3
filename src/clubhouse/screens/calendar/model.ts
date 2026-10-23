@@ -1,4 +1,6 @@
 import { sunTimes, type LatLng } from '../../lib/sun';
+import type { ChClock } from '../../lib/clock-cookie';
+import { clockFromHour } from '../../lib/clock-format';
 import type { ChAvailability } from '../../data/availability';
 
 /**
@@ -244,32 +246,32 @@ export function monthCells(date: string): Array<{ date: string; out: boolean }> 
   return cells;
 }
 
-/** "3:30 PM", or "3:30" without the meridiem. */
-export function fmtHour(h: number, meridiem = true): string {
-  const hh = Math.floor(h);
-  const mm = Math.round((h - hh) * 60);
-  const h12 = ((hh + 11) % 12) + 1;
-  return `${h12}:${String(mm).padStart(2, '0')}${meridiem ? (hh < 12 ? ' AM' : ' PM') : ''}`;
+/**
+ * "3:30 PM", or "3:30" without the meridiem; "15:30" with the device's 24-hour clock (Settings › Time format), which has no
+ * meridiem to leave out. Every caller in a component passes `useChClock()`; the default is the app's 12-hour voice.
+ */
+export function fmtHour(h: number, meridiem = true, clock: ChClock = '12'): string {
+  return clockFromHour(h, clock, meridiem);
 }
 
-export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }): string {
+export function rangeLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end'> & { date?: string; span?: ChCalEvent['span'] }, clock: ChClock = '12'): string {
   // One day of a timed run over several days says which part of it this day holds.
   const s = e.span;
   if (!e.allDay && s?.start != null && s.end != null && e.date) {
-    if (e.date === s.from) return `From ${fmtHour(s.start)}`;
-    if (e.date === s.to) return `Until ${fmtHour(s.end)}`;
+    if (e.date === s.from) return `From ${fmtHour(s.start, true, clock)}`;
+    if (e.date === s.to) return `Until ${fmtHour(s.end, true, clock)}`;
     return 'All day';
   }
   if (e.allDay || e.start == null || e.end == null) return 'All day';
   const sameHalf = e.start < 12 === e.end < 12;
-  return `${fmtHour(e.start, !sameHalf)} – ${fmtHour(e.end)}`;
+  return `${fmtHour(e.start, !sameHalf, clock)} – ${fmtHour(e.end, true, clock)}`;
 }
 
 /** A list row's time: the start, or, on a later day of a timed run over several days, "All day" or "Until 4:30 PM". */
-export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true): string {
+export function startLabel(e: Pick<ChCalEvent, 'allDay' | 'start' | 'end' | 'date' | 'span'>, meridiem = true, clock: ChClock = '12'): string {
   if (e.allDay || e.start == null) return 'All day';
-  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e);
-  return fmtHour(e.start, meridiem);
+  if (e.span?.start != null && e.date !== e.span.from) return rangeLabel(e, clock);
+  return fmtHour(e.start, meridiem, clock);
 }
 
 export function dayLabel(date: string, today: string): string {
