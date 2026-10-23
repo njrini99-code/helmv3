@@ -556,6 +556,24 @@ describe('Roster · loading, haptics, accessibility', () => {
       for (const child of row.children) expect(['cell', 'columnheader']).toContain(child.getAttribute('role'));
   });
 
+  it('B10.5 a sortable header sorts by its column and says so (aria-sort), the same order as Sort players', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    const table = screen.getByRole('table', { name: 'Roster' });
+    const header = (name: string) => within(table).getByRole('columnheader', { name: new RegExp(`^${name}`) });
+    expect(header('Avg').getAttribute('aria-sort')).toBe('ascending');
+    expect(header('HCP').getAttribute('aria-sort')).toBe('none');
+    await user.click(within(header('HCP')).getByRole('button', { name: /HCP/ }));
+    expect(header('HCP').getAttribute('aria-sort')).toBe('ascending');
+    expect(header('Avg').getAttribute('aria-sort')).toBe('none');
+    expect(screen.getByRole('radio', { name: 'Handicap' }).getAttribute('aria-checked')).toBe('true');
+    const byHcp = [...PREVIEW_ROSTER.players].filter((p) => p.status === 'active').sort((a, b) => (a.handicap ?? 99) - (b.handicap ?? 99))[0]!;
+    expect(within(table).getAllByRole('row')[1]!.textContent).toContain(byHcp.name);
+    await user.click(within(header('Rounds')).getByRole('button', { name: /Rounds/ }));
+    expect(header('Rounds').getAttribute('aria-sort')).toBe('descending');
+  });
+
   it('CH-3802 a player card reads its status as a word; the dot is decoration, drawn only under All (P003-A3)', async () => {
     const user = userEvent.setup();
     wrap(roster());

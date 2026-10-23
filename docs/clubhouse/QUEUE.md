@@ -341,6 +341,7 @@ its rows together and does not map them one to one.
 | aplus-b5 | One line chart (ui/charts/Line): team trend, leg cards, form lines, Ask trend, Deep dive strip; Recharts gone (B5) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-15); RoundTrend held for the owner; no Bridge IDs or CH codes needed |
 | aplus-b8 | Lenis idles, mono face not preloaded, long lists skip off-screen rows (B8) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-16); no Bridge IDs or CH codes needed |
 | aplus-b7 | Rows arrive and leave in place (ui/ListPresence) on Hub, Roster requests, Bell, Messages; Swap eases its height (B7) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-16); rounds library held for the owner; no Bridge IDs or CH codes needed |
+| aplus-b10 | Failure copy without "reported", phone Today, sortable roster headers (B10.3 to B10.5) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); B10.1 and B10.2 wait on A25; no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

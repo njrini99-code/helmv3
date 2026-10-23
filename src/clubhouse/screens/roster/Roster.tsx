@@ -1,7 +1,7 @@
 'use client';
 
-import { Bandage, BarChart3, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, Bandage, BarChart3, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
@@ -43,14 +43,33 @@ import { AVAILABILITY_WORD, availabilityLine, earlyNeed, formatHcp, rosterFailed
 import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
+import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
 
-type Sort = 'avg' | 'hcp' | 'rounds' | 'name';
+/**
+ * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
+ * column sorted by says so (`aria-sort`, and an arrow the way it runs).
+ */
+function SortHeader({ k, sort, onSort, end = false, children }: { k: Sort; sort: Sort; onSort: (s: Sort) => void; end?: boolean; children: ReactNode }) {
+  const on = sort === k;
+  const dir = ROSTER_SORT_DIRECTION[k];
+  return (
+    <span role="columnheader" className={end ? 'r' : undefined} aria-sort={on ? dir : 'none'}>
+      <button type="button" className={'ch-rs-sorth' + (on ? ' is-on' : '')} onClick={() => onSort(k)}>
+        {children}
+        {/* The arrow's room is kept on every sortable header, so a right-aligned label doesn't move when it is chosen. */}
+        <span className="ch-rs-sorth__ar" aria-hidden="true">
+          <Icon icon={dir === 'ascending' ? ArrowUp : ArrowDown} size={12} />
+        </span>
+      </button>
+    </span>
+  );
+}
+
+type Sort = Extract<RosterSort, 'avg' | 'hcp' | 'rounds' | 'name'>;
 type Show = 'active' | 'inactive' | 'all';
 type View = 'faces' | 'list';
 const VIEW_KEY = 'ch-roster-view';
 
-const lastName = (n: string) => n.split(' ').slice(-1)[0] ?? n;
-const nullsLast = (a: number | null, b: number | null) => (a == null ? (b == null ? 0 : 1) : b == null ? -1 : a - b);
 /** A spreadsheet reads a cell that starts with = + - @ (or a tab or a return) as a formula. Players type their own names, so the export writes them as text (30502). */
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
@@ -192,15 +211,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = players.filter((p) => (show === 'all' || p.status === show) && p.name.toLowerCase().includes(needle));
-    return [...list].sort((a, b) =>
-      sortBy === 'name'
-        ? lastName(a.name).localeCompare(lastName(b.name))
-        : sortBy === 'avg'
-          ? nullsLast(a.avg, b.avg)
-          : sortBy === 'hcp'
-            ? nullsLast(a.handicap, b.handicap)
-            : b.rounds - a.rounds,
-    );
+    return sortRoster(list, sortBy);
   }, [players, q, show, sortBy]);
 
   const attn = players.filter((p) => p.attention && p.status === 'active');
@@ -620,6 +631,9 @@ export function Roster({ data }: { data: ChRoster }) {
                   openProfile={openProfile}
                   menuFor={menuFor}
                   bind={ctx.bind}
+                  sortBy={sortBy}
+                  onSort={setSort}
+                  sortableAvg={!data.statsError}
                   onShowEveryone={() => {
                     setQ('');
                     setShow('all');
@@ -655,6 +669,9 @@ function RosterList({
   menuFor,
   bind,
   onShowEveryone,
+  sortBy,
+  onSort,
+  sortableAvg,
 }: {
   rows: ChRosterPlayer[];
   standings: ReturnType<typeof rosterStandings>;
@@ -667,6 +684,10 @@ function RosterList({
   /** The right-click menu's handlers for a row (ui/ContextMenu.tsx). */
   bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
+  sortBy: Sort;
+  onSort: (s: Sort) => void;
+  /** Avg sorts nothing while season stats are missing (P003 #7), so its header is plain then. */
+  sortableAvg: boolean;
 }) {
   return (
     // B5: every row's form line on one range, so the same height is the same score down the table.
@@ -721,13 +742,27 @@ function RosterList({
         ) : (
           <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
             <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
-              <span role="columnheader">Player</span>
+              <SortHeader k="name" sort={sortBy} onSort={onSort}>
+                Player
+              </SortHeader>
               <span role="columnheader">Status</span>
               <span role="columnheader">Last 7 rounds</span>
-              <span role="columnheader" className="r">Avg</span>
-              <span role="columnheader" className="r">HCP</span>
+              {!sortableAvg ? (
+                <span role="columnheader" className="r">
+                  Avg
+                </span>
+              ) : (
+                <SortHeader k="avg" sort={sortBy} onSort={onSort} end>
+                  Avg
+                </SortHeader>
+              )}
+              <SortHeader k="hcp" sort={sortBy} onSort={onSort} end>
+                HCP
+              </SortHeader>
               <span role="columnheader" className="r">SG / rd</span>
-              <span role="columnheader" className="r">Rounds</span>
+              <SortHeader k="rounds" sort={sortBy} onSort={onSort} end>
+                Rounds
+              </SortHeader>
               <span role="columnheader">
                 <span className="ch-sr-only">Actions</span>
               </span>

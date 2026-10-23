@@ -516,6 +516,39 @@
   font: var(--ch-type-label-s);
   color: var(--ch-text-tertiary);
 }
+/* B10.5: a sortable header is a button in the header's own type; the column sorted by reads in ink with its arrow. */
+.ch-rs-sorth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--ch-radius-sm);
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.ch-rs-sorth.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-rs-sorth__ar {
+  display: inline-flex;
+  visibility: hidden;
+}
+.ch-rs-sorth.is-on .ch-rs-sorth__ar {
+  visibility: visible;
+}
+@media (hover: hover) {
+  .ch-rs-sorth:hover {
+    color: var(--ch-text-primary);
+  }
+}
+.ch-rs-sorth:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 1px;
+}
 .ch-rs-row .r {
   justify-self: end;
   text-align: right;
