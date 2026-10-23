@@ -492,4 +492,3 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
     </section>
   );
 }
-
