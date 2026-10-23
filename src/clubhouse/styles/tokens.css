@@ -860,7 +860,7 @@ html:has([data-ui='clubhouse']) {
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
    <html> and <body>, which carry Fairway's canvas. Where Clubhouse is on screen they take its own colour: the frame on
-   desktop, the page on a phone. The native launch colour (#F2E6D2, capacitor.config.ts) is Q-140. */
+   desktop, the page on a phone. The native launch colour is config/native-canvas.json (A15, Q-140): the phone page. */
 html:has([data-ui='clubhouse']),
 html:has([data-ui='clubhouse']) body {
   background: #0a331f;

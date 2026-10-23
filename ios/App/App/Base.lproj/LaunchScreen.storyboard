@@ -23,7 +23,7 @@
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
-                        <color key="backgroundColor" name="FwColorCanvas"/>
+                        <color key="backgroundColor" name="AppCanvas"/>
                         <constraints>
                             <constraint firstItem="snD-IY-ifK" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="con-top"/>
                             <constraint firstAttribute="bottom" secondItem="snD-IY-ifK" secondAttribute="bottom" id="con-bot"/>
@@ -39,8 +39,8 @@
     </scenes>
     <resources>
         <image name="Splash" width="2732" height="2732"/>
-        <namedColor name="FwColorCanvas">
-            <color red="0.94901960784313721" green="0.90196078431372551" blue="0.82352941176470584" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        <namedColor name="AppCanvas">
+            <color red="0.9294117647058824" green="0.9137254901960784" blue="0.8745098039215686" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
