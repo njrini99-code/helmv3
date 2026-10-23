@@ -410,7 +410,7 @@
   }
   .ch-hg-sec h2 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

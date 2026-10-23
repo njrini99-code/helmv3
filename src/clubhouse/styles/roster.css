@@ -1183,7 +1183,7 @@ a.ch-rs-peek__dev:focus-visible,
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1233,7 +1233,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-row__b b {
     overflow: hidden;
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1316,7 +1316,7 @@ a.ch-rs-peek__dev:focus-visible,
     margin: 8px 0 2px;
     font: var(--ch-type-28-strong);
     line-height: 1.1;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--ch-track-28);
     color: var(--ch-ledger-ink);
     font-variation-settings: 'wdth' 88;
     text-wrap: balance;
@@ -1393,7 +1393,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-panel__h b {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1487,7 +1487,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-rd__b b {
     overflow: hidden;
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1515,7 +1515,7 @@ a.ch-rs-peek__dev:focus-visible,
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1551,7 +1551,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-note .ch-rs-peek__l b {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1638,7 +1638,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-banner__b b {
     font: var(--ch-type-16-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-text-primary);
   }
   .ch-rsm-banner__b span {
@@ -1912,7 +1912,7 @@ a.ch-rs-peek__dev:focus-visible,
     font: 600 20px/1.2 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.022em;
+    letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
   .ch-rs[data-canopy] .ch-rs-req__head > span:last-child {

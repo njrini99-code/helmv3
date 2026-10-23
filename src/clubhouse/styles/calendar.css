@@ -51,7 +51,7 @@
 .ch-cal-title h1 {
   margin: 0;
   font: 600 34px/1 var(--ch-font-sans);
-  letter-spacing: -0.022em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 96;
 }
 .ch-cal-title__yr {
@@ -1268,7 +1268,7 @@
   margin: 0;
   font: var(--ch-type-display-s);
   font-size: calc(22 * var(--ch-type-k));
-  letter-spacing: -0.028em;
+  letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
@@ -1794,7 +1794,7 @@
   background: transparent;
   font: var(--ch-type-display-s);
   font-size: calc(22 * var(--ch-type-k));
-  letter-spacing: -0.028em;
+  letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   outline: none;
@@ -2367,7 +2367,7 @@
     font: var(--ch-type-20-strong);
     line-height: 1.1;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2560,7 +2560,7 @@
   }
   .ch-calm-ev__b b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
   }
   .ch-calm-ev__b span {
@@ -2753,7 +2753,7 @@
   .ch-calm .ch-ag__when b {
     font: var(--ch-type-20-strong);
     line-height: 1.1;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2814,7 +2814,7 @@
   }
   .ch-calm .ch-ag__a {
     font-size: calc(15 * var(--ch-type-k));
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
   }
   .ch-calm .ch-ag__now {
     margin: 4px 0;

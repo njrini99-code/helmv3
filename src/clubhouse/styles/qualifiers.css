@@ -1642,7 +1642,7 @@
   .ch-qf .ch-qf-card h3 {
     margin: 0;
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
   }
   /* Active and Concluded: each a section under the double rule, its qualifiers rows on seams; a row's press tint
      reaches 12px past the text on each side (CH-09601). */
@@ -1654,7 +1654,7 @@
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1720,7 +1720,7 @@
     margin: 2px 0 0;
     font: var(--ch-type-28-strong);
     line-height: 1.1;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
     overflow-wrap: anywhere;
@@ -1812,7 +1812,7 @@
   .ch-qfm .ch-qf-panel__head h2 {
     margin: 0;
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1925,7 +1925,7 @@
     max-width: 100%;
     overflow: hidden;
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -2130,7 +2130,7 @@
   .ch-qfs .ch-qf-panel__head h2 {
     margin: 0 0 3px;
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -3089,7 +3089,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 .ch-qf-board .ch-qf-who b {
   font-size: 17px;
   font-weight: 600;
-  letter-spacing: -0.014em;
+  letter-spacing: var(--ch-track-17);
 }
 .ch-qf-board .ch-qf-row:not([data-state]):not(.is-none) .ch-qf-who b {
   font-weight: 500;

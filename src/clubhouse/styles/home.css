@@ -1022,7 +1022,7 @@
   .ch-hm-next h2 {
     font: var(--ch-type-22-strong);
     line-height: 1.15;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-22);
     color: var(--ch-on-fill-100);
   }
   /* Two selectors deep so base.css's `.ch-root h2 { margin: 0 }` can't win the tie by loading last. */
@@ -1147,7 +1147,7 @@
   .ch-hm-sec__h h2 {
     font: var(--ch-type-17-strong);
     line-height: 1;
-    letter-spacing: -0.015em;
+    letter-spacing: var(--ch-track-17);
     color: var(--ch-ink-950);
   }
   /* The one-line note beside a section title (m-player-home.css .mp-meta). */
@@ -1725,7 +1725,7 @@
 .ch-cd b {
   font: 500 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-22);
   color: var(--ch-on-fill-100);
 }
 .ch-cd em {
@@ -1977,7 +1977,7 @@
   margin: 0;
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
@@ -2066,7 +2066,7 @@
 .ch-ph-leg__v > span {
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
@@ -3086,7 +3086,7 @@
   }
   .ch-hm-score b {
     font-size: 20px;
-    letter-spacing:-.03em;
+    letter-spacing: var(--ch-track-20);
   }
   .ch-hm-form {
     padding-top:18px;
@@ -3197,7 +3197,7 @@
   /* Section titles in the Ledger's phone heading (ui.css `.ch-sec__title`): the bold condensed sans in forest ink. */
   .ch-hm-sec__h h2 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

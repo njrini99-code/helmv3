@@ -66,7 +66,7 @@
   margin: 0;
   font: var(--ch-type-34-strong);
   line-height: 1.15;
-  letter-spacing: -0.036em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }
@@ -1334,7 +1334,7 @@
   margin: 0;
   font: var(--ch-type-display-s);
   font-size: calc(22 * var(--ch-type-k));
-  letter-spacing: -0.028em;
+  letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
   text-wrap: balance;
@@ -1679,7 +1679,7 @@
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
     line-height: 1.1;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1752,7 +1752,7 @@
   }
   .ch-msp .ch-ms-row__top b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
   }
   .ch-msp .ch-ms-row__top > span {
     font: var(--ch-type-13);
@@ -2151,7 +2151,7 @@
     margin: 0;
     font: var(--ch-type-20-strong);
     line-height: 1.1;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2237,7 +2237,7 @@
   .ch-msp-row__b b {
     overflow: hidden;
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -2489,7 +2489,7 @@
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
     line-height: 1.1;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2505,7 +2505,7 @@
   .ch-msp-ann .ch-ms-ann__task b,
   .ch-msp-ann .ch-ms-mem b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
   }
   .ch-msp-ann .ch-ms-mem {
     gap: 12px;
@@ -2541,7 +2541,7 @@
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
   }
 }

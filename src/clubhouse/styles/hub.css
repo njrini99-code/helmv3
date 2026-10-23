@@ -316,7 +316,7 @@
   margin: 2px 0 0;
   font: var(--ch-type-serif-l);
   font-size: calc(34 * var(--ch-type-k));
-  letter-spacing: -0.008em;
+  letter-spacing: var(--ch-track-34);
   text-wrap: balance;
 }
 .ch-hb-ann p {
@@ -579,7 +579,7 @@
   margin-top: 4px;
   font: var(--ch-type-22);
   line-height: 1.15;
-  letter-spacing: -0.004em;
+  letter-spacing: var(--ch-track-22);
 }
 .ch-hb-pass.is-big .ch-hb-pass__main > b {
   font-size: calc(34 * var(--ch-type-k));
@@ -1315,7 +1315,7 @@
   .ch-hb-card__h h2 {
     font: var(--ch-type-20-strong);
     line-height: 1.1;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1491,7 +1491,7 @@
   .ch-hb-list > .ch-hb-ann h3 {
     font: var(--ch-type-22-strong);
     line-height: 1.15;
-    letter-spacing: -0.028em;
+    letter-spacing: var(--ch-track-22);
     color: var(--ch-ledger-ink);
   }
   .ch-hb-list > .ch-hb-ann p {
@@ -1517,7 +1517,7 @@
     margin-top: 2px;
     font: var(--ch-type-20-strong);
     line-height: 1.15;
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1953,7 +1953,7 @@
   }
   .ch-hb[data-canopy] .ch-hb-pass__main > b {
     font: 600 22px/1.15 var(--ch-font-sans);
-    letter-spacing: -0.022em;
+    letter-spacing: var(--ch-track-22);
     color: var(--ch-ledger-ink);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-big .ch-hb-pass__main {

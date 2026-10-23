@@ -908,7 +908,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     max-width: 15em;
     font-size: calc(28 * var(--ch-type-k));
     line-height: 1.12;
-    letter-spacing: -0.024em;
+    letter-spacing: var(--ch-track-28);
   }
   .ch-ask-greet p {
     max-width: 34em;
@@ -959,7 +959,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   }
   .ch-ask-card b {
     font: var(--ch-type-16-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-16);
     color: var(--ch-green-700);
   }
   .ch-ask-card span {

@@ -1635,7 +1635,7 @@ button.ch-rt-strip__h {
   margin: 0;
   font: var(--ch-type-28-strong);
   line-height: 1.1;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--ch-track-28);
   color: var(--ch-on-green-ink);
   outline: none;
 }

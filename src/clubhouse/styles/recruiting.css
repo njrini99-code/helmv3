@@ -396,7 +396,7 @@
 }
 .ch-rec-panel__id h2 {
   font: 600 20px/1.2 var(--ch-font-sans);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-20);
   overflow-wrap: anywhere;
 }
 .ch-rec-panel__id span {
@@ -1029,7 +1029,7 @@
   }
   .ch-recm-row__b b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
@@ -1066,7 +1066,7 @@
   .ch-recm-hero b {
     font: var(--ch-type-28-strong);
     line-height: 1.1;
-    letter-spacing: -0.035em;
+    letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
     overflow-wrap: anywhere;
@@ -1205,7 +1205,7 @@
   .ch-recm-det .ch-rec-sec > h2,
   .ch-recm-det .ch-rec-sec__head h2 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1677,7 +1677,7 @@
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
     font: 600 20px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.022em;
+    letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {

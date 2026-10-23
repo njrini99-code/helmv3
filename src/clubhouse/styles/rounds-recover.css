@@ -27,7 +27,7 @@
   margin: 8px 0 0;
   font: var(--ch-type-34-strong);
   line-height: 1.05;
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 96;
 }
 .ch-rcv.is-phone .ch-rcv-h h1 {

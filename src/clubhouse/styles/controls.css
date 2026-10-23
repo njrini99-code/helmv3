@@ -422,7 +422,7 @@
 .ch-modal__titles h2 {
   margin: 0;
   font: var(--ch-type-17-strong);
-  letter-spacing: -0.018em;
+  letter-spacing: var(--ch-track-17);
 }
 .ch-modal__titles p {
   margin: 3px 0 0;
@@ -1364,7 +1364,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   }
   .ch-modal__titles h2 {
     font: 600 20px/1.25 var(--ch-font-sans);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-20);
   }
   .ch-modal__body {
     padding: 14px 24px 22px;

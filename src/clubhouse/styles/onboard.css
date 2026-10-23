@@ -552,7 +552,7 @@
 .ch-ox-card b {
   margin-top: 4px;
   font: 600 20px/1.15 var(--ch-font-sans);
-  letter-spacing: -0.025em;
+  letter-spacing: var(--ch-track-20);
   color: #f7f3e8;
 }
 .ch-ox-card p {
@@ -768,7 +768,7 @@
 }
 .ch-ox-team__n {
   font: 600 20px/1.15 var(--ch-font-sans);
-  letter-spacing: -0.025em;
+  letter-spacing: var(--ch-track-20);
   color: var(--ch-text-primary);
 }
 .ch-ox-team__m {
@@ -858,7 +858,7 @@
 }
 .ch-ox-tile b {
   font: 600 28px/1 var(--ch-font-sans);
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
@@ -1466,7 +1466,7 @@
   align-items: center;
   gap: 8px;
   font: 600 15px/1 var(--ch-font-sans);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-15);
 }
 .ch-ox-mc__brand img {
   width: 26px;
@@ -1530,7 +1530,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   font: 600 28px/1.05 var(--ch-font-sans);
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 96;
 }
 .ch-ox-mc__name[data-blank] {

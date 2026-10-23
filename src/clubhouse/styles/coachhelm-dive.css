@@ -313,7 +313,7 @@
 }
 .ch-hd-sec h3 {
   font: var(--ch-type-16-strong);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-16);
 }
 .ch-hd-sec__h > span {
   font: var(--ch-type-13-medium);
@@ -1015,7 +1015,7 @@
   }
   :is(.ch-hl.is-phone) .ch-hd-grp h3 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1095,7 +1095,7 @@
   }
   .ch-hd-sec h3 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

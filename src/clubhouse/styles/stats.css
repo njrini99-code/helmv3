@@ -231,7 +231,7 @@
   gap: 3px;
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
 }
 .ch-fg__v small {
@@ -693,7 +693,7 @@
 .ch-sgm__v {
   font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
 }
 .ch-sgm__svg {
@@ -1188,7 +1188,7 @@
   margin: 0;
   font: 500 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 88;
 }
 .ch-pf-hero__figs .ch-pf-hero__sub {
@@ -1484,7 +1484,7 @@
   margin: 0;
   font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
 }
 .ch-gm__figs .ch-gm__sub {
@@ -1544,7 +1544,7 @@
 .ch-par3__v {
   font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-28);
 }
 .ch-par3__to {
   font: 500 13px/1 var(--ch-font-sans);
@@ -2395,7 +2395,7 @@
     overflow: hidden;
     font: var(--ch-type-34);
     line-height: 1.05;
-    letter-spacing: -0.008em;
+    letter-spacing: var(--ch-track-34);
     font-variation-settings: normal;
     color: var(--ch-text-primary);
     text-wrap: balance;
@@ -3650,7 +3650,7 @@
   .ch-stm .ch-spm-head h1 {
     font: var(--ch-type-28-strong);
     line-height: 1.1;
-    letter-spacing: -0.032em;
+    letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -3687,7 +3687,7 @@
   .ch-stm .ch-stm-figs.is-three dd.is-words {
     font: 600 calc(16 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.015em;
+    letter-spacing: var(--ch-track-16);
   }
   /* The hole-coverage caption belongs to the figures: it sits just under their rule, its line held when empty, and
      that held line stands in for part of the gap to the first section. */
@@ -3744,7 +3744,7 @@
   }
   .ch-stm .ch-stm-panel__h h2 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -3785,7 +3785,7 @@
   }
   .ch-stm .ch-stm-row__b b {
     font: var(--ch-type-15-strong);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-15);
   }
   .ch-stm .ch-stm-row__v b {
     font: 600 17px/1.1 var(--ch-font-sans);
@@ -3860,7 +3860,7 @@
   }
   .ch-stm .ch-gd.is-phone .ch-gm__t h2 {
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -4748,7 +4748,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-tp__v {
   font: 500 34px / 1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }
@@ -6057,7 +6057,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-zmini > b {
   font: 600 28px/1 var(--ch-font-sans, inherit);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.04em;
+  letter-spacing: var(--ch-track-28);
   color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-zmini > b small {
@@ -6156,7 +6156,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t h2 {
   margin: 0 0 12px;
   font: 600 28px/1.1 var(--ch-font-sans);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-28);
   color: var(--ch-forest-800);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {

@@ -14,7 +14,7 @@
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14-medium);
   line-height: 1;
-  letter-spacing: -0.012em;
+  letter-spacing: var(--ch-track-14);
   white-space: nowrap;
   text-decoration: none;
   cursor: pointer;
@@ -48,7 +48,7 @@
   gap: 8px;
   border-radius: 12px;
   font-size: calc(15 * var(--ch-type-k));
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-15);
 }
 /* One green (owner, 2026-10-06: "it's not even the same green"): the primary action is the field green the sidebar
    selection, the canopy and the scoreboard use, its words in the warm on-green ink, engraved. A faint lift at the top
@@ -679,7 +679,7 @@
 .ch-sec__title {
   margin: 0;
   font: var(--ch-type-20-strong);
-  letter-spacing: -0.022em;
+  letter-spacing: var(--ch-track-20);
   color: var(--ch-ledger-ink);
 }
 .ch-sec__meta {
@@ -800,7 +800,7 @@
 .ch-lgr__title {
   overflow: hidden;
   font: var(--ch-type-15-strong);
-  letter-spacing: -0.012em;
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1016,7 +1016,7 @@ button.ch-feat {
   }
   .ch-sec__title {
     font-size: calc(20 * var(--ch-type-k));
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
   }
 }
@@ -1703,7 +1703,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   font: var(--ch-type-28-strong);
   line-height: 1.15;
   font-variation-settings: 'wdth' 96;
-  letter-spacing: -0.028em;
+  letter-spacing: var(--ch-track-28);
   color: var(--ch-ledger-ink);
 }
 .ch-es__body {

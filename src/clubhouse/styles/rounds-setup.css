@@ -53,7 +53,7 @@
   max-width: 30ch;
   font: var(--ch-type-28-strong);
   line-height: 1.08;
-  letter-spacing: -0.026em;
+  letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 96;
   text-wrap: balance;
   color: var(--ch-on-fill-100);
@@ -147,7 +147,7 @@
   margin: 0 0 4px;
   font: var(--ch-type-17-strong);
   line-height: 1.1;
-  letter-spacing: -0.015em;
+  letter-spacing: var(--ch-track-17);
 }
 .ch-rsu-card__h span {
   font: var(--ch-type-caption);
@@ -171,7 +171,7 @@
 .ch-rsu-course__band b {
   font: var(--ch-type-22-strong);
   line-height: 1.1;
-  letter-spacing: -0.025em;
+  letter-spacing: var(--ch-track-22);
 }
 .ch-rsu-course__band span {
   display: inline-flex;
@@ -802,7 +802,7 @@
   /* The material is every window's (controls.css); the picker's title is a size up, as Claude's search dialog's. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__titles h2 {
     font: 600 22px/1.2 var(--ch-font-sans);
-    letter-spacing: -0.012em;
+    letter-spacing: var(--ch-track-22);
   }
   /* Landscape (owner, 2026-10-16): wider than tall, the photo cards two to a row. */
   .ch-modal[data-ch-code='CH-11510'] .ch-modal__panel {
@@ -906,7 +906,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   white-space: nowrap;
   text-overflow: ellipsis;
   font: var(--ch-type-15-strong);
-  letter-spacing: -0.006em;
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-cpk__b span {
@@ -1708,7 +1708,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__empty b {
     margin: 0 0 4px;
     font: var(--ch-type-20-strong);
-    letter-spacing: -0.025em;
+    letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -1748,7 +1748,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band b {
     font: var(--ch-type-28-strong);
     line-height: 1.1;
-    letter-spacing: -0.028em;
+    letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2207,7 +2207,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 .ch-rsu-hc__sum dd {
   font: 600 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.035em;
+  letter-spacing: var(--ch-track-22);
   font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }

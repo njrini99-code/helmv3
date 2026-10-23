@@ -77,3 +77,33 @@ Held items: none
   −89 to +26px, from leading only (CoachHelm views and Hub checked by eye).
   `npx vitest run src/clubhouse`: 342 files, 5,618 passed. `clubhouse:css`
   0.
+
+## 2026-10-23 — Tracking onto the steps (B1, stage 3)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 6, B1)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- `type-roles.mjs --tracking` moved 132 negative `letter-spacing` values onto
+  their rule's step tracking (`var(--ch-track-<n>)`); 40 kinds of value
+  became the role set.
+- Left (76, ratcheted): positive tracking, which is deliberate on join
+  codes, initials and file badges; large figures off the steps; `inherit`;
+  and the sign-in pages.
+
+### Why
+
+- Text of one size had several trackings across screens.
+
+### Verification
+
+- WebKit on all 39 preview screens at 390 and 1280 against stage 2: no page
+  changed size (glyph spacing only). `npx vitest run src/clubhouse`: 5,618
+  passed.
