@@ -97,7 +97,7 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
   const id = useId();
   const reduced = useChReducedMotion();
   const list = useRef<HTMLDivElement | null>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; maxHeight: number; origin: string } | null>(null);
 
   useLayoutEffect(() => {
     const el = list.current;
@@ -113,7 +113,8 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
       const up = h > below && above > below;
       const maxHeight = up ? above : below;
       const top = Math.max(EDGE, up ? at.y - Math.min(h, maxHeight) : at.y);
-      setPos({ left, top, maxHeight });
+      // B16: it grows from the pointer's corner, the bottom one when it flipped up (and the right when pushed in from the edge).
+      setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${left < at.x - W / 2 ? 'right' : 'left'}` });
     };
     fit();
     window.addEventListener('resize', fit);
@@ -155,7 +156,7 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
       tabIndex={-1}
       className="ch-menu ch-popover ch-cmd-ctx"
       data-ui="clubhouse"
-      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, maxHeight: pos?.maxHeight, width: W, transformOrigin: 'top left' }}
+      style={{ left: pos?.left ?? -9999, top: pos?.top ?? 0, maxHeight: pos?.maxHeight, width: W, transformOrigin: pos?.origin ?? 'top left' }}
       initial={reduced ? { opacity: 0 } : CH_POP.initial}
       animate={reduced ? { opacity: 1 } : CH_POP.animate}
       exit={reduced ? { opacity: 0 } : CH_POP.exit}

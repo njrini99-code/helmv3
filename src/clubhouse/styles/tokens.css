@@ -975,6 +975,10 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-push: 260ms;
   --ch-ease-vt-push: cubic-bezier(0.22, 1, 0.36, 1);
   --ch-vt-parallax: -30%;
+  /* The dim on the page beneath a push (B16, CH-1618): PhoneScreen's scrim, and the same depth as a filter for a route
+     push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
+  --ch-push-dim: rgb(20 18 12 / 0.1);
+  --ch-vt-push-dim: brightness(0.9);
 }
 /* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
 @supports (transition-timing-function: linear(0, 1)) {

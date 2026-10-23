@@ -1480,7 +1480,7 @@ button.ch-more__row[disabled] {
     inset: 0;
     z-index: calc(var(--ch-z-sticky) + 5);
     display: block;
-    background: rgb(20 18 12 / 0.1);
+    background: var(--ch-push-dim);
     pointer-events: none;
   }
   /* A screen with another pushed over it dims the same way: in on the push's spring, back on the pop's ease-out. */
@@ -1488,7 +1488,7 @@ button.ch-more__row[disabled] {
     position: absolute;
     inset: 0;
     z-index: var(--ch-z-overlay);
-    background: rgb(20 18 12 / 0.1);
+    background: var(--ch-push-dim);
     opacity: 0;
     pointer-events: none;
     content: '';
@@ -1838,8 +1838,8 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
 }
 /* A drill-in pushes and Back pops (P1-1, P1-2; lib/nav-motion.ts sets data-ch-nav), as a pushed phone screen does
    (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
-   a parallax share, and Back plays it in reverse with the leaving page on top. Transform only. Phone only: desktop
-   keeps the crossfade. */
+   a parallax share and dims as a pushed screen's page does (B16, --ch-vt-push-dim), and Back plays it in reverse with
+   the leaving page on top. Transform and a filter on the snapshot, no layout. Phone only: desktop keeps the crossfade. */
 @keyframes ch-vt-push-in {
   from {
     transform: translateX(100%);
@@ -1848,11 +1848,13 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
 @keyframes ch-vt-push-out {
   to {
     transform: translateX(var(--ch-vt-parallax));
+    filter: var(--ch-vt-push-dim);
   }
 }
 @keyframes ch-vt-pop-in {
   from {
     transform: translateX(var(--ch-vt-parallax));
+    filter: var(--ch-vt-push-dim);
   }
 }
 @keyframes ch-vt-pop-out {
