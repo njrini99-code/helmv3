@@ -727,8 +727,11 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 
   --ch-bg-page: #111512;
   --ch-bg-surface: #1b201c;
-  --ch-bg-elevated: #1b201c;
-  --ch-bg-elevated-2: #1b201c;
+  /* B4: what floats lifts by lightness, as iOS's elevated base does (Gray6 and Gray5, tinted green): a sheet, a menu
+     or a popover sits visibly above the cards. The second step is for a layer on a layer, never under a text field
+     (the placeholder ink falls under 4.5:1 there). */
+  --ch-bg-elevated: #232925;
+  --ch-bg-elevated-2: #2b322d;
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;

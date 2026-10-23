@@ -87,3 +87,13 @@ describe("the Track's disabled button is readable (A27)", () => {
     expect(contrast(hex(token('ch-ink-500', 'dark')), hex(token('ch-ivory-200', 'dark')))).toBeGreaterThanOrEqual(4.5);
   });
 });
+
+describe('ink on the elevated surfaces (B4)', () => {
+  it('primary, secondary and tertiary ink read at 4.5:1 or more on both dark elevated steps', () => {
+    for (const bg of ['ch-bg-elevated', 'ch-bg-elevated-2']) {
+      for (const ink of ['ch-ink-900', 'ch-ink-700', 'ch-ink-600']) {
+        expect(contrast(hex(token(ink, 'dark')), hex(token(bg, 'dark'))), `${ink} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+});

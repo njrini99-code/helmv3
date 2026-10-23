@@ -91,8 +91,8 @@
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.12),
     inset 0 0 0 1px rgb(220 205 166 / 0.26);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
+  backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.7)) saturate(1.2);
 }
 .ch-brand img {
   flex: none;
@@ -4076,4 +4076,10 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
   .ch-sidebar__card {
     width: 180px;
   }
+}
+
+/* B4: in dark, More and the CoachHelm asks sheet lift above the page's cards (tokens.css --ch-bg-elevated). */
+:where(html[data-fw-theme='dark']) .ch-more,
+:where(html[data-fw-theme='dark']) .ch-asks__panel {
+  background: var(--ch-bg-elevated);
 }

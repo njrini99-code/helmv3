@@ -1315,7 +1315,7 @@ html[data-fw-theme='dark'] .ch-menu__sep {
   background: var(--ch-border-hairline);
 }
 :where(html[data-fw-theme='dark']) .ch-modal__panel {
-  background: var(--ch-sheet-bg);
+  background: var(--ch-bg-elevated);
 }
 html[data-fw-theme='dark'] .ch-modal__foot {
   border-top-color: var(--ch-border-hairline);
@@ -1379,7 +1379,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     background: rgb(0 0 0 / 0.5);
   }
   html[data-fw-theme='dark'] .ch-modal__panel {
-    background: rgb(32 32 30);
+    background: var(--ch-bg-elevated);
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.14),
       var(--ch-elevation-overlay);
