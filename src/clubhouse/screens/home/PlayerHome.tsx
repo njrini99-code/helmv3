@@ -100,7 +100,7 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
         </Button>
         {post && (
           <Button variant="primary" leftIcon={Plus} href={post}>
-            Start a round
+            New round
           </Button>
         )}
       </div>
@@ -161,7 +161,7 @@ function PlayerFirstRun({ data }: { data: ChPlayerHome }) {
         action={
           start ? (
             <Button variant="primary" leftIcon={Plus} href={start}>
-              Start a round
+              New round
             </Button>
           ) : undefined
         }

@@ -406,7 +406,7 @@ describe('Qualifiers · the loader', () => {
     expect(created).toMatchObject({ mode: 'create', id: null, playersError: false, squadLocked: false, minRounds: 1, initial: { name: '', rounds: '3', squad: '5', picks: '1', oneRoundAck: false } });
     expect([...created.initial.playerIds].sort()).toEqual(['p1', 'p3']);
     const { unmount } = wrap(<QualifierForm data={created} writes={fakeWrites()} />);
-    expect(screen.getByRole('heading', { level: 1, name: 'Create a qualifier' })).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 1, name: 'New qualifier' })).toBeTruthy();
     expect((screen.getByLabelText('Rounds') as HTMLInputElement).value).toBe('3');
     expect((screen.getByLabelText('Squad size') as HTMLInputElement).value).toBe('5');
     expect((screen.getByLabelText('Coach’s picks') as HTMLInputElement).value).toBe('1');
@@ -605,7 +605,7 @@ describe('Qualifiers · list', () => {
     expect(screen.getByRole('button', { name: /^Concluded\s*3$/ })).toBeTruthy();
     expect(screen.getByText('Rank players over counted rounds and pick who travels.')).toBeTruthy();
     expect([...document.querySelectorAll('.ch-qf-pill')].map((b) => b.textContent)).toEqual(['All5', 'Active2', 'Concluded3']);
-    expect(screen.getByRole('link', { name: 'Create qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
+    expect(screen.getByRole('link', { name: 'New qualifier' }).getAttribute('href')).toBe('/golf/dashboard/qualifiers/new');
     // The live one leads, with its leaders; the other active one is a card under Active.
     const hero = document.querySelector('.ch-qf-hero') as HTMLAnchorElement;
     expect(hero.getAttribute('href')).toBe(`/golf/dashboard/qualifiers/${data.items[0]!.id}`);
@@ -620,16 +620,16 @@ describe('Qualifiers · list', () => {
   it('CH-09301 a team with no qualifiers: the coach can create one, a player is told who does', () => {
     const { unmount } = wrap(<QualifiersList data={list('coach', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/No qualifiers yet/);
-    expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'Create qualifier' })).toBeTruthy();
-    // One primary per screen: the header's Create qualifier steps aside (D-71).
-    expect(screen.getAllByRole('link', { name: 'Create qualifier' })).toHaveLength(1);
+    expect(within(code('CH-09301') as HTMLElement).getByRole('link', { name: 'New qualifier' })).toBeTruthy();
+    // One primary per screen: the header's New qualifier steps aside (D-71).
+    expect(screen.getAllByRole('link', { name: 'New qualifier' })).toHaveLength(1);
     // The eyebrow is the name alone (the phone, whose bar names the page, hides it).
     expect(document.querySelector('.ch-qf-eyebrow')!.textContent).toBe('Qualifiers');
     expect(document.querySelector('.ch-qf-eyebrow')!.classList.contains('is-bare')).toBe(true);
     unmount();
     wrap(<QualifiersList data={list('player', 'all', { items: [] })} />);
     expect(code('CH-09301')!.textContent).toMatch(/Your coach’s qualifiers show here/);
-    expect(screen.queryByRole('link', { name: 'Create qualifier' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'New qualifier' })).toBeNull();
   });
 
   it('CH-09306 a player entered in nothing', () => {
@@ -763,7 +763,7 @@ describe('Qualifiers · one qualifier', () => {
 
   it('90808 a player never gets a coach control: not Create on the list, and not Manage selections, Edit, Close, Reopen, round-by-round or selections on a qualifier', () => {
     const on = wrap(<QualifiersList data={list('player')} />);
-    expect(screen.queryByRole('link', { name: 'Create qualifier' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'New qualifier' })).toBeNull();
     on.unmount();
     for (const name of ['live', 'completed', 'selected', 'upcoming'] as const) {
       const view = wrap(<QualifierDetail data={detail(name, 'player')} writes={fakeWrites()} live={false} />);
@@ -1859,7 +1859,7 @@ describe('Qualifiers · create and edit', () => {
     const f = form();
     wrap(<QualifierForm data={{ ...f, players: f.players.map((p, i) => (i === 0 ? { ...p, name: null as never } : p)) }} writes={fakeWrites()} />);
     expect(code('CH-09216')!.textContent).toMatch(/The qualifier form couldn’t be shown/);
-    expect(screen.getByRole('heading', { name: 'Create a qualifier' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'New qualifier' })).toBeTruthy();
     quiet.mockRestore();
   });
 

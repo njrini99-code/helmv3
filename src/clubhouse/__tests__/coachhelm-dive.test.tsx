@@ -835,7 +835,7 @@ describe('the Deep dive screen', () => {
   it('CH-13380 no round posted yet: the first-run page with one action', () => {
     show(diveLoad(PREVIEW_DIVE_NO_ROUNDS));
     expect(code('CH-13380')!.textContent).toMatch(/Your Deep dive starts with a round.*Post a round and the first reads follow/);
-    expect(within(code('CH-13380') as HTMLElement).getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(within(code('CH-13380') as HTMLElement).getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(code('CH-13381')).toBeNull();
     expect(screen.queryByRole('article')).toBeNull();
   });

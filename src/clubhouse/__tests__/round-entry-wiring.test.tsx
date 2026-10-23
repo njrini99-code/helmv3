@@ -189,12 +189,12 @@ describe('112401 Round entry: a start the engine refuses (CH-11514, CH-11007, CH
     expect(mocks.savePartialRound).toHaveBeenCalledTimes(1);
   });
 
-  it('CH-11514 Start a new round keeps that round and starts a separate one (confirmSeparateRound)', async () => {
+  it('CH-11514 New round keeps that round and starts a separate one (confirmSeparateRound)', async () => {
     mocks.savePartialRound.mockResolvedValueOnce(conflict);
     const user = renderNew();
     await startRound(user);
     await waitFor(() => expect(code('CH-11514')).toHaveAttribute('open'));
-    await user.click(within(code('CH-11514')!).getByRole('button', { name: /^Start a new round/ }));
+    await user.click(within(code('CH-11514')!).getByRole('button', { name: /^New round/ }));
     await screen.findByTestId('tracking');
     expect(mocks.savePartialRound).toHaveBeenCalledTimes(2);
     expect(mocks.savePartialRound.mock.calls[1]![2]).toMatchObject({ startIntent: true, confirmSeparateRound: true });

@@ -172,7 +172,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           action={
             newHref ? (
               <Button variant="primary" leftIcon={Plus} href={newHref}>
-                Start a round
+                New round
               </Button>
             ) : undefined
           }

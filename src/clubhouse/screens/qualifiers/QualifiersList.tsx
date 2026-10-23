@@ -86,7 +86,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
         {coach && (data.listError || data.items.length > 0) && (
           <div className="ch-qf-head__act">
             <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-              Create qualifier
+              New qualifier
             </Button>
           </div>
         )}
@@ -128,7 +128,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
             action={
               coach ? (
                 <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
-                  Create qualifier
+                  New qualifier
                 </Button>
               ) : undefined
             }

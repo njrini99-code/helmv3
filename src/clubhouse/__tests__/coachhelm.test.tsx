@@ -530,14 +530,14 @@ describe('CoachHelm for the player, on screen', () => {
     expect(document.querySelector('.ch-hl-focus')!.closest('[aria-live="polite"]')).not.toBeNull();
   });
 
-  it('CH-13301 no round posted yet: the first-run page names what will appear, and Start a round opens round entry', async () => {
+  it('CH-13301 no round posted yet: the first-run page names what will appear, and New round opens round entry', async () => {
     showPlayer(PREVIEW_HELM_PLAYER_NO_ROUNDS);
     await expectCode('CH-13301', /Post a round to start CoachHelm.*one thing to work on this week shows up here/);
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
-    // With no round posted the lede doesn't claim any, and Start a round has the Plus Home and Rounds use.
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    // With no round posted the lede doesn't claim any, and New round has the Plus Home and Rounds use.
     expect(screen.getByText('One thing to work on each week, from the rounds you post.')).toBeTruthy();
     expect(screen.queryByText(/based on the rounds you’ve posted/)).toBeNull();
-    expect(screen.getByRole('link', { name: 'Start a round' }).querySelector('svg.lucide-plus')).not.toBeNull();
+    expect(screen.getByRole('link', { name: 'New round' }).querySelector('svg.lucide-plus')).not.toBeNull();
     expect(screen.queryByRole('link', { name: 'Open Rounds' })).toBeNull();
     // Wave 7: with the rounds still to go known, the line names them.
     cleanup();

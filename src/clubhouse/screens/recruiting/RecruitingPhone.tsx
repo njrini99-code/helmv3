@@ -45,7 +45,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
         title="Recruiting"
         start
         // First run and a failed read have no add button on the boards: the page's own action is the way in.
-        action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="Add prospect" onClick={c.startAdd} /> : undefined}
+        action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="New prospect" onClick={c.startAdd} /> : undefined}
       />
       <div className="ch-recm-page" inert={c.open ? true : undefined}>
         {/* The top bar carries the page's heading; this is the board's large title. */}

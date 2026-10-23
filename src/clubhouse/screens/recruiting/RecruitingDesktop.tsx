@@ -35,7 +35,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         {/* One primary per screen: first run carries Add your first prospect in the page below. */}
         {(!nothing || c.error) && (
           <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
-            Add prospect
+            New prospect
           </Button>
         )}
       </header>

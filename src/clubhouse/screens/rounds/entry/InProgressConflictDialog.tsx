@@ -130,7 +130,7 @@ export function InProgressConflictDialog({
               onResume();
             }}
           />
-          <Opt icon={Plus} label="Start a new round" hint="Keeps that round. For a second round on a 36-hole day." disabled={busy} onClick={onStartSeparate} />
+          <Opt icon={Plus} label="New round" hint="Keeps that round. For a second round on a 36-hole day." disabled={busy} onClick={onStartSeparate} />
           <Opt icon={Trash2} tone="danger" label="Discard" hint="Deletes that round, then starts this one. You’ll be asked first." disabled={busy} onClick={() => setConfirming(true)} />
         </Opts>
       )}

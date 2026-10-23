@@ -92,14 +92,14 @@ beforeEach(() => {
 const stopNavigation = (e: Event) => e.preventDefault();
 
 describe('Player Home · desktop (Player - Home.html)', () => {
-  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; Start a round opens round entry', () => {
+  it('20102 20103 the day, no brief line, Message coach to the coach’s thread; New round opens round entry', () => {
     show();
     expect(screen.getByRole('heading', { level: 1, name: 'Good afternoon, Theo.' })).toBeTruthy();
     // Owner, 2026-10-06: the CoachHelm brief no longer sits under the greeting.
     expect(screen.queryByText(/Off the tee is gaining you 0\.8 strokes a round/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Message coach' }).getAttribute('href')).toBe('/golf/dashboard/messages?user=coach-maya');
     // Round entry is rebuilt for players (P011), so the button leads there.
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    expect(screen.getByRole('link', { name: 'New round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
   });
 
   it('20103 21807 Up next sits in the week with a countdown to the tee time', () => {
@@ -248,8 +248,8 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(welcome.textContent).toMatch(/Welcome to the team/);
     expect(document.querySelector('.ch-ph-next')).not.toBeNull();
     expect(screen.getByRole('heading', { name: 'This week' })).toBeTruthy();
-    // The head carries Start a round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
-    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    // The head carries New round, so the welcome keeps only Add classes; no "No rounds posted yet" twice over.
+    expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
     expect(within(welcome).getByRole('link', { name: 'Add classes' })).toBeTruthy();
     for (const c of ['CH-2302', 'CH-2310', 'CH-2311']) expect(code(c)).toBeNull();
   });
@@ -275,7 +275,7 @@ describe('Player Home · phone (Player - Home - Mobile.html)', () => {
     show(PREVIEW_PLAYER_HOME_NO_ROUNDS);
     expect(code('CH-2312')!.closest('.ch-hm-body')).not.toBeNull();
     expect(document.querySelector('.ch-hm-week')).not.toBeNull();
-    expect(screen.getAllByRole('link', { name: 'Start a round' })).toHaveLength(1);
+    expect(screen.getAllByRole('link', { name: 'New round' })).toHaveLength(1);
     for (const c of ['CH-2302', 'CH-2310']) expect(code(c)).toBeNull();
   });
 

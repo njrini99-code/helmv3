@@ -86,7 +86,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
           </Button>
           {post && (
             <Button size="lg" variant="primary" leftIcon={Plus} href={post}>
-              Start a round
+              New round
             </Button>
           )}
         </div>

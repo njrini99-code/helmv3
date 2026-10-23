@@ -130,7 +130,7 @@ export function UnfinishedCard({
           {startHref && (
             // CH-11703: Start a round, Continue and Post round are primary taps (light).
             <Link href={startHref} className="ch-rd-unf__cta" onClick={() => haptic('press')}>
-              Start a round
+              New round
               <Icon icon={ArrowRight} size={15} />
             </Link>
           )}

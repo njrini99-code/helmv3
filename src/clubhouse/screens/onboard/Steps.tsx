@@ -961,7 +961,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
 // ── Finished ─────────────────────────────────────────────────────────────────
 
 const NEXT_STEPS: Array<[typeof Flag, string, string, string]> = [
-  [Flag, 'Start your first round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
+  [Flag, 'New round', 'Scores feed your stats and CoachHelm', '/golf/dashboard/rounds/new'],
   [BookOpen, 'Add your class schedule', 'Flags travel conflicts early', '/golf/dashboard/classes'],
   [Bell, 'Turn on notifications', 'Pairings, tee times and team messages', '/golf/dashboard/settings?section=notifications'],
 ];

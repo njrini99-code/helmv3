@@ -169,7 +169,7 @@ const conflict = (over: Partial<Parameters<typeof InProgressConflictDialog>[0]> 
 });
 
 describe('Round already in progress', () => {
-  it('CH-11514 names the round and offers Resume, Start a new round and Discard, each calling back', async () => {
+  it('CH-11514 names the round and offers Resume, New round and Discard, each calling back', async () => {
     const user = userEvent.setup();
     const p = conflict();
     render(<InProgressConflictDialog {...p} />);
@@ -184,7 +184,7 @@ describe('Round already in progress', () => {
     await user.click(button(/^Resume/));
     expect(p.onResume).toHaveBeenCalledTimes(1);
     expect(ticks('press')).toBe(1);
-    await user.click(button(/^Start a new round/));
+    await user.click(button(/^New round/));
     expect(p.onStartSeparate).toHaveBeenCalledTimes(1);
     await user.click(button(/^Discard/));
     expect(p.onDiscard).not.toHaveBeenCalled();
@@ -241,7 +241,7 @@ describe('Round already in progress', () => {
     const user = userEvent.setup();
     const p = conflict({ busy: true });
     const { rerender } = render(<InProgressConflictDialog {...p} />);
-    for (const b of screen.getAllByRole('button', { name: /^(Resume|Start a new round|Discard)/ })) expect(b).toBeDisabled();
+    for (const b of screen.getAllByRole('button', { name: /^(Resume|New round|Discard)/ })) expect(b).toBeDisabled();
     await user.click(button('Close'));
     expect(p.onClose).not.toHaveBeenCalled();
     rerender(<InProgressConflictDialog {...p} busy={false} />);

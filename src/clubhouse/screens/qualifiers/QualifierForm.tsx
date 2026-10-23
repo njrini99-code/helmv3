@@ -258,8 +258,8 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       </div>
       <header className="ch-qf-head" data-canopy-head="">
         <div>
-          <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'New qualifier'}</span>
-          <h1>{editing ? data.name : 'Create a qualifier'}</h1>
+          <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'Qualifiers'}</span>
+          <h1>{editing ? data.name : 'New qualifier'}</h1>
           <p>{FORM_LEDE}</p>
         </div>
       </header>

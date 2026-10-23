@@ -97,10 +97,12 @@ describe('112401 Rounds library, on screen', () => {
     expect(screen.queryByRole('link', { name: /Sep 26, Finley GC/ })).toBeNull();
   });
 
-  it('CH-11304 one primary for one action: with no round in progress the idle card carries Start a round, so the head has no New round', () => {
+  it('CH-11304 one primary for one action: with no round in progress the idle card carries New round, so the head has none of its own', () => {
     show(PREVIEW_ROUNDS_IDLE);
-    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
-    expect(screen.getByRole('link', { name: /Start a round/ }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
+    const starts = screen.getAllByRole('link', { name: 'New round' });
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.closest('.ch-rd-unf')).not.toBeNull();
+    expect(starts[0]!.getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     cleanup();
     // The check for a round in progress failed: that card is a notice with no Start, so the head keeps New round.
     show(PREVIEW_ROUNDS_UNFINISHED_FAILED);
@@ -171,11 +173,12 @@ describe('112401 Rounds library, on screen', () => {
     expect(document.querySelectorAll('.ch-rd-strip.is-ghost span')).toHaveLength(18);
   });
 
-  it('CH-11301 nothing posted and nothing in progress: the first-run page, with Start a round (and no second New round)', async () => {
+  it('CH-11301 nothing posted and nothing in progress: the first-run page, with one New round', async () => {
     show(PREVIEW_ROUNDS_EMPTY);
     await expectCode('CH-11301', /No rounds yet.*Track your first round shot by shot/);
-    expect(screen.getByRole('link', { name: 'Start a round' }).getAttribute('href')).toBe('/golf/dashboard/rounds/new');
-    expect(screen.queryByRole('link', { name: 'New round' })).toBeNull();
+    const starts = screen.getAllByRole('link', { name: 'New round' });
+    expect(starts).toHaveLength(1);
+    expect(starts[0]!.getAttribute('href')).toBe('/golf/dashboard/rounds/new');
     expect(screen.queryByRole('searchbox')).toBeNull();
   });
 

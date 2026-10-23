@@ -231,9 +231,9 @@ describe('spacing the base reset can’t take away', () => {
 });
 
 describe('the hero on the phone (wave 7)', () => {
-  it('Start a round, the player’s own reply on Up next, and From your coach under the keys', () => {
+  it('New round, the player’s own reply on Up next, and From your coach under the keys', () => {
     show();
-    expect(screen.getByRole('link', { name: 'Start a round' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'New round' })).toBeTruthy();
     expect(screen.queryByRole('link', { name: 'Post a round' })).toBeNull();
     const next = screen.getByRole('link', { name: /Up next · Qualifier/ });
     expect(within(next).getByText('You’re going')).toBeTruthy();

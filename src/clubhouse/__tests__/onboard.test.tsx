@@ -244,10 +244,10 @@ describe('after the account (/golf/player)', () => {
     window.history.replaceState(null, '', '/');
   });
 
-  it('wave 10 the next steps say Start your first round, and Turn on notifications opens Settings on Notifications', async () => {
+  it('wave 10 the next steps say New round, and Turn on notifications opens Settings on Notifications', async () => {
     mount(makeWrites(), 'photo', AFTER);
     fireEvent.click(screen.getByRole('button', { name: /Finish setup/ }));
-    expect(await screen.findByRole('button', { name: /Start your first round/ })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: /New round/ })).toBeTruthy();
     expect(screen.queryByText(/Post your first round/)).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Turn on notifications/ }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith('/golf/dashboard/settings?section=notifications'), { timeout: 5000 });
