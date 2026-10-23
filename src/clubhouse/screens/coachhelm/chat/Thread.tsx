@@ -193,7 +193,7 @@ export function AskThread({ messages, busy, error, offline, phone, players, onAp
                 )}
                 {turn.blocks.map((b) => {
                   if (b.kind === 'text') return <AskProse key={b.key} text={b.text} lead={b.lead} playersByName={playersByName} />;
-                  if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} />;
+                  if (b.kind === 'evidence') return <AskEvidenceView key={b.key} envelope={b.envelope} roster={players} />;
                   if (b.kind === 'receipt') return <AskReceiptCard key={b.key} receipt={b.receipt} onAskAgain={onSend} />;
                   const focus = focusForProposal(turn.id, b.view);
                   return (

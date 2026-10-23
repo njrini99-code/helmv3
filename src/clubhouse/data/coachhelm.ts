@@ -347,7 +347,7 @@ async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map
 const LOOKUP_FAILED = /lookup failed/i;
 
 /**
- * Whether CoachHelm is on for this player, for the board and for the Game profile, Standing and Deep dive views alike
+ * Whether CoachHelm is on for this player, for the board and for the Standing and Deep dive views alike
  * (`isCoachHelmEnabledForPlayer`: the global switch, their coach's and their team's). A lookup that failed is `failed`, never
  * "off": the page says it did not load. `reason` is the coach's own words, when they gave some.
  */

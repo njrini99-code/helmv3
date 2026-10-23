@@ -1,6 +1,6 @@
 /* The player's Standing: every tracked stat against the Tour and the team. Spec docs/clubhouse/pages/P013-coachhelm/DESIGN.md */
 
-/* Where they stand, on the green feature card (the Game profile's own), with what is most to gain beside it */
+/* Where they stand, on the green feature card, with what is most to gain beside it */
 .ch-hs-hero {
   position: relative;
   display: grid;

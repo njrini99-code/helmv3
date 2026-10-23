@@ -128,7 +128,8 @@ its rows together and does not map them one to one.
 | chs-34 | "No reads yet" becomes a By player row | CoachHelm board UI | done | #2294 | |
 | chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | done | #2290 (landed in #2312) | claude/coachhelm-strokes-ladder |
-| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | open | | |
+| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
+| chs-39 | A coach's Ask answer that names a read links to the coach Player page | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
 | chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | done | #2303, #2306 (landed in #2310, #2312) | claude/coachhelm-coach-voice |
 | chs-43 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |

@@ -1,4 +1,4 @@
-/* The player's CoachHelm views (Game profile, Standing, Deep dive): what they share. Spec docs/clubhouse/pages/P013-coachhelm/DESIGN.md */
+/* The player's CoachHelm views (Standing, Deep dive): what they share. Spec docs/clubhouse/pages/P013-coachhelm/DESIGN.md */
 
 /* The sub-navigation: a radiogroup and a link on desktop, a row of chips that scrolls sideways on the phone. */
 .ch-hv-tabs {
@@ -261,16 +261,4 @@
 .ch-hv-role-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-}
-/* The Game profile's one line on what CoachHelm sees in this player's rounds, and the way to the Deep dive. */
-.ch-hv-seen b {
-  min-width: 0;
-}
-.ch-hv-seen__go {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
-  color: var(--ch-green-700);
 }

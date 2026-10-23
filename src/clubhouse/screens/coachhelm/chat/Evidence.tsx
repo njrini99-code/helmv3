@@ -2,21 +2,28 @@
 
 import Link from 'next/link';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { CircleAlert, Table2 } from 'lucide-react';
+import { ChevronRight, CircleAlert, Table2 } from 'lucide-react';
 import type { ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { evidenceBlocks, formatValue, type AskEvidence, type AskTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
+import { evidenceBlocks, formatValue, readAreaWord, type AskEvidence, type AskTable, type EvidenceTile } from '../../../data/coachhelm-chat-thread';
+import { coachReadHref } from '../../../data/coachhelm-views-shape';
 import { Avatar } from '../../../ui/Avatar';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
 import { afterRailMove } from '../../../lib/rail-fold';
 
-/** One tool's evidence, as the blocks its shape calls for. Drawn with Clubhouse pieces (the Stats charts depend on stats.css, which this page does not load). */
-export function AskEvidenceView({ envelope }: { envelope: ToolEnvelope }) {
+/** Who is on the coach's team: a read about anyone else is drawn, never linked. */
+type Roster = ReadonlyArray<{ id: string }>;
+
+/**
+ * One tool's evidence, as the blocks its shape calls for. Drawn with Clubhouse pieces (the Stats charts depend on stats.css, which this
+ * page does not load). `roster`: the coach's own players, so a read the answer names opens that player's Deep dive (CH-13914).
+ */
+export function AskEvidenceView({ envelope, roster = [] }: { envelope: ToolEnvelope; roster?: Roster }) {
   const blocks = evidenceBlocks(envelope);
   return (
     <div className="ch-th-evidence">
       {blocks.map((block, i) => (
-        <AskEvidenceBlock key={i} block={block} />
+        <AskEvidenceBlock key={i} block={block} roster={roster} />
       ))}
     </div>
   );
@@ -48,7 +55,7 @@ export function DataTable({ table }: { table: AskTable }) {
   );
 }
 
-export function AskEvidenceBlock({ block, bare = false }: { block: AskEvidence; bare?: boolean }) {
+export function AskEvidenceBlock({ block, bare = false, roster = [] }: { block: AskEvidence; bare?: boolean; roster?: Roster }) {
   if (block.kind === 'unavailable') {
     // A failed read is never "no data": it says it could not read this.
     return (
@@ -69,11 +76,11 @@ export function AskEvidenceBlock({ block, bare = false }: { block: AskEvidence; 
       </div>
     );
   }
-  return <Figure block={block} bare={bare} />;
+  return <Figure block={block} bare={bare} roster={roster} />;
 }
 
 /** The figure's chrome: a title, "View as table", the drawing, then the notes and the source. */
-function Figure({ block, bare }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' }>; bare: boolean }) {
+function Figure({ block, bare, roster }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' }>; bare: boolean; roster: Roster }) {
   const [asTable, setAsTable] = useState(false);
   // A table or a comparison is already a table: there is nothing to switch to.
   const isTable = block.kind === 'table' || block.kind === 'compare';
@@ -88,7 +95,7 @@ function Figure({ block, bare }: { block: Exclude<AskEvidence, { kind: 'unavaila
           </button>
         )}
       </div>
-      {isTable || asTable ? <DataTable table={block.table} /> : <Drawing block={block} />}
+      {isTable || asTable ? <DataTable table={block.table} /> : <Drawing block={block} roster={roster} />}
       {block.note && <p className="ch-th-fig__note">{block.note}</p>}
       {block.bench && <p className="ch-th-fig__note">{block.bench}</p>}
       {block.source && <p className="ch-th-fig__src">{block.source}</p>}
@@ -96,8 +103,10 @@ function Figure({ block, bare }: { block: Exclude<AskEvidence, { kind: 'unavaila
   );
 }
 
-function Drawing({ block }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' | 'table' | 'compare' }> }) {
+function Drawing({ block, roster }: { block: Exclude<AskEvidence, { kind: 'unavailable' | 'empty' | 'table' | 'compare' }>; roster: Roster }) {
   switch (block.kind) {
+    case 'reads':
+      return <Reads block={block} roster={roster} />;
     case 'bars':
       return (
         <div className="ch-th-bars" role="list" aria-label={block.title}>
@@ -147,6 +156,42 @@ function Drawing({ block }: { block: Exclude<AskEvidence, { kind: 'unavailable' 
     case 'trend':
       return <Trend block={block} />;
   }
+}
+
+/**
+ * The reads an answer names for one player (CH-13914): each opens that player's Deep dive on the coach Player page, on that read
+ * (`?view=deep-dive&player=&insight=`). Only for a player on the coach's own team; anyone else's reads are drawn as plain rows,
+ * never a link to a page that would only say "isn't on your team".
+ */
+function Reads({ block, roster }: { block: Extract<AskEvidence, { kind: 'reads' }>; roster: Roster }) {
+  return (
+    <ul className="ch-th-reads" aria-label={block.title} data-ch-code="CH-13914">
+      {block.rows.map((r) => {
+        const href = coachReadHref(block.playerId, r.id, roster);
+        const body = (
+          <>
+            <span className="ch-th-reads__b">
+              {r.category && <small>{readAreaWord(r.category)}</small>}
+              <b>{r.title}</b>
+            </span>
+            {r.value && <span className="ch-th-reads__v">{r.value}</span>}
+          </>
+        );
+        return (
+          <li key={r.id}>
+            {href ? (
+              <Link href={href} className="ch-th-reads__r">
+                {body}
+                <Icon icon={ChevronRight} size={15} />
+              </Link>
+            ) : (
+              <span className="ch-th-reads__r">{body}</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 export function Tiles({ tiles }: { tiles: EvidenceTile[] }) {
