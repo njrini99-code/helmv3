@@ -676,7 +676,7 @@ function ReactionChip({ api, messageId, r }: { api: ChMessagesApi; messageId: st
               <div className="ch-rx__list">
                 {people.map((p) => (
                   <div key={p.id} className="ch-rx__row">
-                    <Avatar name={p.name === "You" ? api.viewer.name : p.name} size={28} />
+                    <Avatar name={p.name === "You" ? api.viewer.name : p.name} size="sm" />
                     <span>{p.name}</span>
                   </div>
                 ))}
@@ -2127,7 +2127,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
             const done = added.includes(p.userId);
             return (
               <div key={p.userId} className="ch-pp__row">
-                <Avatar name={p.name} size={28} />
+                <Avatar name={p.name} size="sm" />
                 <span className="ch-pp__name">
                   <b>{p.name}</b>
                   <span>{p.subtitle}</span>
@@ -2197,7 +2197,7 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} size={64} ring />
+          <Avatar name={conv.title} size="xl" ring />
         )}
         <b>{conv.title}</b>
         <span>
@@ -2694,7 +2694,7 @@ function NewMessage({
                       className="ch-pp__row"
                       onClick={() => toggle(p.userId)}
                     >
-                      <Avatar name={p.name} size={28} />
+                      <Avatar name={p.name} size="sm" />
                       <span className="ch-pp__name">
                         <b>{p.name}</b>
                         <span>{p.subtitle}</span>

@@ -97,7 +97,7 @@ export function CoachPending({ programName, signOut = chSignOut, refresh, initia
         </p>
         <div className="ch-au-plate">
           <div className="ch-au-plate__row">
-            <Avatar name={program} size={40} />
+            <Avatar name={program} size="lg" />
             <div>
               <span className="ch-au-plate__k">Who approves</span>
               <b>Your head coach</b>

@@ -108,7 +108,7 @@ function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
         {coaches.map((c) => (
           <li key={c.id}>
             <div className="ch-rsm-row ch-rsm-row--static">
-              <Avatar name={c.name} size={40} />
+              <Avatar name={c.name} size="lg" />
               <span className="ch-rsm-row__b">
                 <b>{c.name}</b>
                 <span>{c.role}</span>
@@ -128,7 +128,7 @@ function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 function TeammateRow({ p }: { p: ChTeammate }) {
   return (
     <div className="ch-rsm-row ch-rsm-row--static">
-      <Avatar name={p.name} size={40} />
+      <Avatar name={p.name} size="lg" />
       <span className="ch-rsm-row__b">
         <b>{p.name}</b>
         <span>{teammateLine(p) || ' '}</span>

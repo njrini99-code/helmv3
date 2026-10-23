@@ -174,7 +174,7 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
         <span className="ch-hm-next__f">
           <span className="ch-hm-stack" aria-hidden="true">
             {people.slice(0, 5).map((n) => (
-              <Avatar key={n} name={n} size={24} />
+              <Avatar key={n} name={n} size="xs" />
             ))}
           </span>
           <span className="ch-hm-next__rsvp ch-num">

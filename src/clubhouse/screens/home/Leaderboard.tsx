@@ -78,7 +78,7 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
         {pos.label}
       </span>
       <span className="ch-h-lb__who" role="cell">
-        <Avatar name={p.name} size={28} />
+        <Avatar name={p.name} size="sm" />
         <span>
           {name}
           <span className="ch-h-lb__meta">

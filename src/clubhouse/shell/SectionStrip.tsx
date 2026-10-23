@@ -144,7 +144,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
                   sw.setAccountOpen(true);
                 }}
               >
-                <Avatar name={user.name} size={24} />
+                <Avatar name={user.name} size="xs" />
                 <span className="ch-strip__label">Account</span>
               </button>
             </>

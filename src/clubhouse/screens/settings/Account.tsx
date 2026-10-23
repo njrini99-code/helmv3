@@ -56,7 +56,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
             // A user-uploaded storage URL, shown as a plain image.
             <img src={photo} alt="" width={64} height={64} onError={() => setBroken(photo)} />
           ) : (
-            <Avatar name={name || 'You'} size={64} />
+            <Avatar name={name || 'You'} size="xl" />
           )}
         </span>
         <div className="ch-set-photo__txt">

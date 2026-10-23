@@ -61,7 +61,7 @@ export function RosterProfile({
   return (
     <article className="ch-rsm-prof">
       <section className="ch-rsm-hero">
-        <Avatar name={p.name} size={64} />
+        <Avatar name={p.name} size="xl" />
         <h2>{p.name}</h2>
         {identity && <p className="ch-rsm-hero__id">{identity}</p>}
         {place && <p className="ch-rsm-hero__m">{place}</p>}

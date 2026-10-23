@@ -174,7 +174,7 @@ function TeamCoaches({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
         <div key={c.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={c.name} size={40} />
+              <Avatar name={c.name} size="lg" />
               <span>
                 <b>{c.name}</b>
               </span>
@@ -236,7 +236,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
         <div key={p.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={p.name} size={40} />
+              <Avatar name={p.name} size="lg" />
               <span>
                 <b>{p.name}</b>
                 {p.isYou && <span className="ch-rs-who__m">You</span>}

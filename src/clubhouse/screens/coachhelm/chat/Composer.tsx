@@ -450,7 +450,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
                     ) : (
                       matches.map((p) => (
                         <Command.Item key={p.id} value={`player:${p.id}`} className="ch-ask-pick__row" onSelect={() => pick(p.name)}>
-                          <Avatar name={p.name} size={28} />
+                          <Avatar name={p.name} size="sm" />
                           <span className="ch-ask-pick__name">{p.name}</span>
                         </Command.Item>
                       ))

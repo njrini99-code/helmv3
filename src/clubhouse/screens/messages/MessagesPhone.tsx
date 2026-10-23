@@ -775,7 +775,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
 function PersonRow({ name, sub, you = false, onMessage, onRemove }: { name: string; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
   return (
     <div className="ch-msp-row">
-      <Avatar name={name} size={36} />
+      <Avatar name={name} size="md" />
       <span className="ch-msp-row__b">
         <b>
           {name}
@@ -1051,7 +1051,7 @@ function PhoneNewMessage({
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} size={40} />
+                    <Avatar name={p.name} size="lg" />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>

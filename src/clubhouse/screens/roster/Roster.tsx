@@ -526,7 +526,7 @@ export function Roster({ data }: { data: ChRoster }) {
           {attn.map((p) => (
             <PlayerPeek key={p.id} player={rosterPeek(p)}>
               <button type="button" className="ch-rs-attn__c" onClick={() => openSel(p.id)}>
-                <Avatar name={p.name} size={24} />
+                <Avatar name={p.name} size="xs" />
                 <b>{p.firstName}</b>
                 <span className={`ch-rs-attn__n is-${p.attention!.tone}`}>{p.attention!.text}</span>
               </button>
@@ -783,7 +783,7 @@ function RosterList({
                     onClick={() => openProfile(p.id)}
                     aria-label={`${p.name}. Open profile`}
                   >
-                    <Avatar name={p.name} size={40} />
+                    <Avatar name={p.name} size="lg" />
                     <span>
                       <b>{p.name}</b>
                       <RowMeta p={p} />

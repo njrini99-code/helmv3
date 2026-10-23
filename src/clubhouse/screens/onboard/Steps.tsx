@@ -929,7 +929,7 @@ export function Photo({ d, up, next, path, back, dir, phone, now }: StepProps) {
               {d.photoUrl ? (
                 <img className="ch-ox-av" src={d.photoUrl} alt="" />
               ) : (
-                <Avatar name={name} size={40} />
+                <Avatar name={name} size="lg" />
               )}
               <span style={{ minWidth: 0 }}>
                 <b>{name}</b>

@@ -150,7 +150,7 @@ function Offer({ preview, program, compact = false }: { preview: PreviewStaffInv
     return (
       <div className="ch-au-plate">
         <div className="ch-au-plate__row">
-          <Avatar name={program} size={40} />
+          <Avatar name={program} size="lg" />
           <div>
             <b>{roleLabel(preview.role)}</b>
             <span className="ch-au-plate__s">{[program, preview.teamName].filter(Boolean).join(' · ')}</span>
@@ -162,7 +162,7 @@ function Offer({ preview, program, compact = false }: { preview: PreviewStaffInv
   return (
     <div className="ch-au-plate">
       <div className="ch-au-plate__row">
-        <Avatar name={program} size={40} />
+        <Avatar name={program} size="lg" />
         <div>
           <span className="ch-au-plate__k">{preview.teamName ? 'Program and team' : 'Program'}</span>
           <b>{program}</b>

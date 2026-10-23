@@ -386,7 +386,7 @@ export function RosterPhoneRow({
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
         <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-          <Avatar name={p.name} size={40} />
+          <Avatar name={p.name} size="lg" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
             {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}

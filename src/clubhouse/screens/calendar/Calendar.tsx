@@ -362,7 +362,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
               const on = sel.includes(p.id);
               return (
                 <button key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
-                  <Avatar name={p.name} size={28} />
+                  <Avatar name={p.name} size="sm" />
                   <span className="ch-pp__name">
                     <b>{p.name}</b>
                     <span>{p.year ?? 'Player'}</span>

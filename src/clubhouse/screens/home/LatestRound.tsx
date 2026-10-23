@@ -125,7 +125,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                       <Icon icon={Flag} size={16} />
                     </span>
                   ) : (
-                    <Avatar name={r.playerName} size={36} />
+                    <Avatar name={r.playerName} size="md" />
                   )}
                   <div>
                     <div className="ch-h-round__name">{mine ? (r.meta.split(' · ')[0] ?? r.meta) : r.playerName}</div>
