@@ -689,7 +689,7 @@
 }
 
 /* Swap (owner 2026-10-07): the frame a content swap happens in. The leaving copy is lifted out of flow by the motion
-   library (popLayout) and fades over the arriving one, so the frame takes the new content's height at once. */
+   library (popLayout) and fades over the arriving one; the frame eases to the new content's height (B7, ui/Swap.tsx). */
 .ch-swap {
   position: relative;
   min-width: 0;

@@ -20,6 +20,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
 import { HUB_UPLOAD_ACCEPT } from './upload-rules';
 import type { ChHubWrites } from './writes';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -137,7 +138,7 @@ export function Announcement({
     </>
   );
   return (
-    <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
+    <PresenceRow as="article" className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
       {rank === 'older' && (
         <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
           {clk(a.when)}
@@ -207,7 +208,7 @@ export function Announcement({
         </p>
       )}
       {a.documentCount > 0 && files && <Attachments a={a} files={files} />}
-    </article>
+    </PresenceRow>
   );
 }
 
@@ -342,7 +343,7 @@ export function TripPass({
   ].filter((x): x is readonly [string, string] => !!x);
   return (
     // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
-    <article ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
+    <PresenceRow as="article" ref={pass} className={'ch-hb-pass' + (big ? ' is-big' : '') + (t.upcoming && !later ? ' is-next' : '')} aria-labelledby={`ch-hb-trip-${t.id}`}>
       <div className="ch-hb-pass__main">
         <div className="ch-hb-pass__top">
           <span className="ch-hb-eyebrow ch-num">
@@ -440,7 +441,7 @@ export function TripPass({
           )}
         </div>
       )}
-    </article>
+    </PresenceRow>
   );
 }
 
@@ -546,7 +547,7 @@ export function Tasks({
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
         <div className="ch-hb-tasks">
-          {data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}
+          <ListPresence>{data.rows.map((t) => <TaskRow key={t.id} t={t} coach={coach} d={isDone(t)} pending={isPending(t)} onToggle={onToggle} onDelete={onDelete} focus={focusTask === t.id} onFocused={onFocused} />)}</ListPresence>
           {data.total != null && data.total > data.rows.length && (
             // C-20: the list is capped; it says so rather than passing for every task.
             <p className="ch-hb-muted ch-num">
@@ -584,7 +585,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   focus?: boolean;
   onFocused?: () => void;
 }) {
-  const row = useRef<HTMLDivElement>(null);
+  const row = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
   // Lit from the first paint when a notification named this task; the wash fades once (or, with reduced motion, stays
   // still until the row is used).
@@ -606,7 +607,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   }, [lit, reduced]);
   const save = useTaskSave(d, onToggle);
   return (
-    <div
+    <PresenceRow as="div"
       ref={row}
       className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? (reduced ? ' is-focus-still' : ' is-focus') : '')}
       onPointerDown={lit && reduced ? () => setLit(false) : undefined}
@@ -641,7 +642,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           )}
         />
       )}
-    </div>
+    </PresenceRow>
   );
 }
 

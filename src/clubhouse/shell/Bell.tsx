@@ -34,6 +34,7 @@ import { ago, markLocallyRead, notificationKey } from './notification-stacks';
 import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
+import { ListPresence, PresenceRow } from '../ui/ListPresence';
 
 /**
  * The notifications bell: the same feed, badge and read state as the
@@ -455,30 +456,33 @@ export function Bell() {
         groups.map((g) => (
           <section key={g.bucket} aria-label={DAY_BUCKET_LABEL[g.bucket]}>
             <div className="ch-bellp__day">{DAY_BUCKET_LABEL[g.bucket]}</div>
-            {g.items.map((item) => {
-              const cat = CATEGORY[item.category] ?? CATEGORY.messages;
-              const unreadRow = isUnread(item);
-              return (
-                <button key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
-                  <span className="ch-bellp__ic">
-                    <Icon icon={cat.icon} size={15} />
-                  </span>
-                  <span className="ch-bellp__main">
-                    <span className="ch-bellp__top">
-                      <b>
-                        {unreadRow && <span className="ch-sr-only">Unread: </span>}
-                        {item.title}
-                      </b>
-                      <time className="ch-num" dateTime={item.created_at}>
-                        {ago(item.created_at)}
-                      </time>
+            {/* B7: a new notification opens in; one that goes closes up under the rest. */}
+            <ListPresence>
+              {g.items.map((item) => {
+                const cat = CATEGORY[item.category] ?? CATEGORY.messages;
+                const unreadRow = isUnread(item);
+                return (
+                  <PresenceRow as="button" key={`${item.source}:${item.id}`} type="button" className={'ch-bellp__row' + (unreadRow ? ' is-unread' : '')} onClick={() => openItem(item)}>
+                    <span className="ch-bellp__ic">
+                      <Icon icon={cat.icon} size={15} />
                     </span>
-                    {item.body && <span className="ch-bellp__txt">{item.body}</span>}
-                  </span>
-                  <span className="ch-bellp__dot" aria-hidden />
-                </button>
-              );
-            })}
+                    <span className="ch-bellp__main">
+                      <span className="ch-bellp__top">
+                        <b>
+                          {unreadRow && <span className="ch-sr-only">Unread: </span>}
+                          {item.title}
+                        </b>
+                        <time className="ch-num" dateTime={item.created_at}>
+                          {ago(item.created_at)}
+                        </time>
+                      </span>
+                      {item.body && <span className="ch-bellp__txt">{item.body}</span>}
+                    </span>
+                    <span className="ch-bellp__dot" aria-hidden />
+                  </PresenceRow>
+                );
+              })}
+            </ListPresence>
           </section>
         ))
       )}

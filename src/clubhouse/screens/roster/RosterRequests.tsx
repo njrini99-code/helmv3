@@ -8,6 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { formatHcp } from './format';
 import type { ChJoinRequestsState } from './useJoinRequests';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 
 /**
  * Join requests. The list and its actions live in useJoinRequests, so the
@@ -56,28 +57,31 @@ export function RosterRequests({
         </b>
         <span>Approving adds them to the roster and team chat.</span>
       </div>
-      {reqs.map((r) => (
-        <div key={r.id} className="ch-rs-req__row">
-          <Avatar name={r.name} size={32} />
-          <span className="ch-rs-req__who">
-            <b>{r.name}</b>
-            <span>
-              {r.meta}
-              {r.handicap != null && ` · HCP ${formatHcp(r.handicap)}`}
+      {/* B7: a decided request closes up and the rows below slide into its place. */}
+      <ListPresence>
+        {reqs.map((r) => (
+          <PresenceRow as="div" key={r.id} className="ch-rs-req__row">
+            <Avatar name={r.name} size={32} />
+            <span className="ch-rs-req__who">
+              <b>{r.name}</b>
+              <span>
+                {r.meta}
+                {r.handicap != null && ` · HCP ${formatHcp(r.handicap)}`}
+              </span>
             </span>
-          </span>
-          <div className="ch-rs-req__act">
-            {/* One decision at a time, as on the phone: a click while another is in flight would be refused with no word. */}
-            <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
-              Decline
-            </Button>
-            {/* Secondary, as on the phone (P003 #5): Invite players stays the screen's one primary. */}
-            <Button size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
-              Approve
-            </Button>
-          </div>
-        </div>
-      ))}
+            <div className="ch-rs-req__act">
+              {/* One decision at a time, as on the phone: a click while another is in flight would be refused with no word. */}
+              <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
+                Decline
+              </Button>
+              {/* Secondary, as on the phone (P003 #5): Invite players stays the screen's one primary. */}
+              <Button size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
+                Approve
+              </Button>
+            </div>
+          </PresenceRow>
+        ))}
+      </ListPresence>
     </section>
   );
 }

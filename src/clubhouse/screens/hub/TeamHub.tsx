@@ -31,6 +31,7 @@ import { LIVE_HUB_WRITES, type ChHubWrites } from './writes';
 import { useToast } from '../../ui/Toast';
 import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
+import { ListPresence } from '../../ui/ListPresence';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
 export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
@@ -685,7 +686,7 @@ export function TeamHub({
                 ) : !anns.length ? (
                   <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
-                  anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)
+                  <ListPresence>{anns.map((a, i) => <Announcement key={a.id} a={a} role={data.role} rank={i === 0 ? 'lead' : 'older'} acked={isAcked(a)} pending={ackPending(a)} onAck={onAck} onEdit={setEditing} onDelete={(x) => askDelete({ kind: 'ann', a: x })} files={attachments} />)}</ListPresence>
                 )}
                 {coach && !phone && anns.length > 0 && !data.announcements.error && <ReadMargin anns={anns} />}
               </div>
@@ -700,14 +701,14 @@ export function TeamHub({
                 ) : !tripRows.length ? (
                   <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (
-                  <>
-                    {nextTrip && <TripPass t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
+                  <ListPresence>
+                    {nextTrip && <TripPass key={nextTrip.id} t={nextTrip} big role={data.role} focus={tripToFocus === nextTrip.id} onFocused={tripFocused} {...tripActions} />}
                     {tripRows
                       .filter((t) => t !== nextTrip)
                       .map((t) => (
                         <TripPass key={t.id} t={t} later role={data.role} focus={tripToFocus === t.id} onFocused={tripFocused} {...tripActions} />
                       ))}
-                  </>
+                  </ListPresence>
                 )}
               </div>
             </SectionBoundary>

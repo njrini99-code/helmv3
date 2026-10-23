@@ -1156,7 +1156,8 @@ describe('Roster · availability (injured, away)', () => {
 /** P003 behaviour contracts with no catalog row (config/clubhouse/bridge-contracts.json, D-69). */
 describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/CONTRACT.md)', () => {
   const region = () => screen.getByRole('region', { name: 'Join requests' });
-  const requestNames = () => [...region().querySelectorAll('.ch-rs-req__who b')].map((b) => b.textContent);
+  // A decided request may still be closing up (B7, ui/ListPresence): it is marked leaving and hidden, so it is off the list.
+  const requestNames = () => [...region().querySelectorAll('.ch-rs-req__row:not([data-leaving]) .ch-rs-req__who b')].map((b) => b.textContent);
   const cardNames = () => [...document.querySelectorAll('.ch-rs-face__name')].map((n) => n.textContent);
   const noteField = () => screen.getByRole('textbox', { name: /Coach’s note/ }) as HTMLTextAreaElement;
   const member = (id: string, name: string) => ({ status: 'active', jersey_number: null, joined_at: null, player: { id, first_name: name, last_name: 'M' } });
@@ -1473,6 +1474,9 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     wrap(roster());
     await user.click(within(region()).getAllByRole('button', { name: 'Approve' })[1]!);
     expect(requestNames()).toEqual(['Grace Liu']);
+    // If it is still closing up, it is already out of reach: hidden from a screen reader and inert.
+    const closing = [...region().querySelectorAll('.ch-rs-req__row')].find((r) => r.textContent?.includes('Owen Park'));
+    if (closing) expect([closing.getAttribute('aria-hidden'), closing.hasAttribute('inert')]).toEqual(['true', true]);
     await act(async () => answer({ success: false, error: 'nope' }));
     await waitFor(() => expect(requestNames()).toEqual(['Grace Liu', 'Owen Park']));
     actions.remove.mockImplementation(() => new Promise(() => {}));

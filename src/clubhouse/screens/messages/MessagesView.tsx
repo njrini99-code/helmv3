@@ -112,6 +112,7 @@ export { fileSize } from "./files";
 import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
 import { Tooltip } from '../../ui/Tooltip';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
@@ -393,7 +394,9 @@ export function ConvRow({ api, c, avatarSize = 36 }: { api: ChMessagesApi; c: Ch
 
 function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesApi; c: ChConv; avatarSize: number; onOpen: () => void; bind: ContextMenuBind }) {
   return (
-    <button
+    // B7: the row itself arrives, leaves and moves (a conversation with a new message slides to the top of its day).
+    <PresenceRow
+      as="button"
       type="button"
       className={
         "ch-ms-row" +
@@ -453,7 +456,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
           )}
         </span>
       </span>
-    </button>
+    </PresenceRow>
   );
 }
 
@@ -554,9 +557,11 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 <section key={k} className="ch-ms-sec" aria-label={l}>
                   <div className="ch-ms-sec__l">{l}</div>
                   <div className="ch-ms-sec__card">
-                    {rows.map((c) => (
-                      <ConvRow key={c.id} api={api} c={c} />
-                    ))}
+                    <ListPresence>
+                      {rows.map((c) => (
+                        <ConvRow key={c.id} api={api} c={c} />
+                      ))}
+                    </ListPresence>
                   </div>
                 </section>
               );

@@ -96,6 +96,7 @@ import {
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useFocusMessage } from "./use-focus-message";
+import { ListPresence } from "../../ui/ListPresence";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -321,9 +322,11 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
               <section key={k} className="ch-ms-sec is-date" aria-label={l}>
                 <h2 className="ch-ms-sec__l">{l}</h2>
                 <div className="ch-ms-sec__card">
-                  {rows.map((c) => (
-                    <ConvRow key={c.id} api={api} c={c} avatarSize={44} />
-                  ))}
+                  <ListPresence>
+                    {rows.map((c) => (
+                      <ConvRow key={c.id} api={api} c={c} avatarSize={44} />
+                    ))}
+                  </ListPresence>
                 </div>
               </section>
             );

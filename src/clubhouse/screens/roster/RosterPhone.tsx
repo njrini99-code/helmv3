@@ -29,6 +29,7 @@ import { formatHcp, rosterFailedParts, rosterPeek, rowNote } from './format';
 import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
+import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 
 export type { PhoneSort } from './sort';
 
@@ -480,34 +481,37 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
       }
     >
       <div className="ch-rsm-reqs">
-        {jr.reqs.map((r) => (
-          <div key={r.id} className="ch-rsm-rq">
-            <div className="ch-rsm-rq__top">
-              <Avatar name={r.name} size={44} />
-              <span className="ch-rsm-rq__id">
-                <b>{r.name}</b>
-                <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
-              </span>
-              <span className="ch-rsm-rq__h">
-                <b className="ch-num">{formatHcp(r.handicap)}</b>
-                <span>hcp</span>
-              </span>
-            </div>
-            <div className="ch-rsm-rq__meta">
-              <Icon icon={Clock} size={13} />
-              Requested {r.requested}
-            </div>
-            <div className="ch-rsm-rq__act">
-              <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
-                Decline
-              </Button>
-              {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
-              <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
-                Approve
-              </Button>
-            </div>
-          </div>
-        ))}
+        {/* B7: a decided request closes up and the rows below slide into its place. */}
+        <ListPresence>
+          {jr.reqs.map((r) => (
+            <PresenceRow as="div" key={r.id} className="ch-rsm-rq">
+              <div className="ch-rsm-rq__top">
+                <Avatar name={r.name} size={44} />
+                <span className="ch-rsm-rq__id">
+                  <b>{r.name}</b>
+                  <span>{[r.classYear, r.gradYear ? `Class of ${r.gradYear}` : null].filter(Boolean).join(' · ')}</span>
+                </span>
+                <span className="ch-rsm-rq__h">
+                  <b className="ch-num">{formatHcp(r.handicap)}</b>
+                  <span>hcp</span>
+                </span>
+              </div>
+              <div className="ch-rsm-rq__meta">
+                <Icon icon={Clock} size={13} />
+                Requested {r.requested}
+              </div>
+              <div className="ch-rsm-rq__act">
+                <Button disabled={jr.busy != null} onClick={() => void jr.decide(r, false)}>
+                  Decline
+                </Button>
+                {/* Approve all is the sheet's one primary (P003 #5); each row's Approve is secondary. */}
+                <Button leftIcon={Check} disabled={jr.busy != null} feel={null} onClick={() => void jr.decide(r, true)}>
+                  Approve
+                </Button>
+              </div>
+            </PresenceRow>
+          ))}
+        </ListPresence>
         {data.joinCode && (
           <>
             <div className="ch-rsm-code">
