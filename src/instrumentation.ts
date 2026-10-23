@@ -25,7 +25,7 @@ import { observedUserFromHeaders } from '@/lib/observability/observed-user-from-
 import { resolveServerEnvironment } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
-import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
+import { fingerprintSupabaseAutoCapture, isReadinessProbeTimeoutCapture } from '@/lib/observability/supabase-error-grouping';
 
 const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA;
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN?.trim() || process.env.SENTRY_DSN?.trim();
@@ -291,6 +291,8 @@ function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEven
 }
 
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event, hint) => {
+  // Already recorded by the route itself (supabase-error-grouping.ts).
+  if (isReadinessProbeTimeoutCapture(event)) return null;
   if (event.request) {
     delete event.request.cookies;
     if (event.request.headers) {
