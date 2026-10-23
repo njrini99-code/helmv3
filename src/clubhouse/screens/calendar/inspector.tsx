@@ -32,14 +32,13 @@ import { Avatar } from '../../ui/Avatar';
 import { AVAILABILITY_WORD } from '../roster/format';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { Badge, type BadgeTone } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { PillGroup, Segmented, type SegOption } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { Tooltip } from '../../ui/Tooltip';
 import { normalise, useAction } from '../../lib/use-action';
 import { chReport, chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
@@ -466,13 +465,7 @@ export function EventDetail({ ctx, id, date }: { ctx: InspCtx; id: string; date:
               ? ([{ kind: 'separator' }, { label: 'Delete permanently', icon: Trash2, danger: true, onSelect: () => ctx.onDelete!(e) }] as const)
               : []),
           ]}
-          trigger={(p) => (
-            <Tooltip>
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label="More actions" {...p}>
-                <Icon icon={Ellipsis} size={15} />
-              </button>
-            </Tooltip>
-          )}
+          trigger={(p) => <IconButton icon={Ellipsis} size="sm" label="More actions" menu={p} />}
         />
       </div>
       <h2 className="ch-in__title" tabIndex={-1} style={e.cancelled ? { textDecoration: 'line-through' } : undefined}>

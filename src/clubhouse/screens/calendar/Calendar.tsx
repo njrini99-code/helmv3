@@ -30,7 +30,6 @@ import { CancelEvent, DeleteEvent, EventEditor, SubscribeSheet, type EditorSeed 
 import { BusySheet } from './extras';
 import { CalendarPhone } from './CalendarPhone';
 import { Modal } from '../../ui/Modal';
-import { Tooltip } from '../../ui/Tooltip';
 import { useChPhone } from '../../lib/use-phone';
 import { useChClock } from '../../lib/use-clock';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -844,13 +843,7 @@ export function Calendar({
           <Menu
             label="More calendar actions"
             items={moreItems}
-            trigger={(p) => (
-              <Tooltip>
-                <button type="button" className="ch-btn ch-btn--secondary ch-iconbtn" aria-label="More" {...p}>
-                  <Icon icon={Ellipsis} size={16} />
-                </button>
-              </Tooltip>
-            )}
+            trigger={(p) => <IconButton icon={Ellipsis} variant="secondary" label="More" menu={p} />}
           />
           {coach && (
             <Button variant="primary" leftIcon={Plus} kbd="N" onClick={() => setEditor({ event: null, date: view === 'day' ? anchor : undefined })}>

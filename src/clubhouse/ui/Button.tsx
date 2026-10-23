@@ -92,6 +92,7 @@ export function IconButton({
   className,
   shortcut,
   menu,
+  variant = 'ghost',
 }: {
   icon: LucideIcon;
   label: string;
@@ -103,6 +104,8 @@ export function IconButton({
   /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
   shortcut?: readonly string[];
   /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
+  /** Ghost by default; secondary where the key sits among a toolbar's raised keys (Calendar's More). */
+  variant?: 'ghost' | 'secondary';
   menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
 }) {
   return (
@@ -115,7 +118,7 @@ export function IconButton({
         aria-haspopup={menu?.['aria-haspopup']}
         aria-controls={menu?.['aria-controls']}
         disabled={disabled}
-        className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
+        className={['ch-btn', `ch-btn--${variant}`, 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
         onClick={() => {
           if (feel) haptic(feel);
           onClick?.();
