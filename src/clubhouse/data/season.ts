@@ -55,9 +55,19 @@ const ROUND_COLUMNS =
 export const TREND_LENGTH = 7;
 export const MIN_SG_ROUNDS = 3;
 
-export function seasonStartDate(now = new Date()): string {
-  const y = now.getMonth() >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-  return `${y}-08-01`;
+/** The zone a season turns in when the team's own isn't to hand: the one the rest of Clubhouse falls back to. */
+export const SEASON_DEFAULT_TZ = 'America/New_York';
+
+/**
+ * The season's first day: 1 August of this year from August on, else of last year, counted on the team's calendar (B13):
+ * `now`'s date in `tz`, not the server's (UTC on Vercel, which turned the season about four hours early for an Eastern
+ * team). The SQL readers still use CURRENT_DATE; moving them is C10, held.
+ */
+export function seasonStartDate(now = new Date(), tz: string = SEASON_DEFAULT_TZ): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric' }).formatToParts(now);
+  const year = Number(parts.find((x) => x.type === 'year')!.value);
+  const month = Number(parts.find((x) => x.type === 'month')!.value);
+  return `${month >= 8 ? year : year - 1}-08-01`;
 }
 
 /** How far back "Last 10" reads (Q-122): a rolling year, which always reaches the season start (1 August is never more than 365 days back). */

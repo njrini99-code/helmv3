@@ -165,7 +165,7 @@ export async function loadRoundsLibrary(input: { playerId: string; teamId: strin
   return {
     todayIso,
     rounds,
-    season: seasonFrom(rounds.list, seasonStartDate(now)),
+    season: seasonFrom(rounds.list, seasonStartDate(now, clock?.tz)),
     unfinished,
   };
 }

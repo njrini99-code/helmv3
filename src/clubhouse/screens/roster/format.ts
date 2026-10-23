@@ -1,6 +1,7 @@
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { formatSigned, MINUS, NO_DATA } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
+import { displayPlaces } from '../../lib/rank';
 
 /** Handicap index: a plus handicap (better than scratch) is written +0.8. */
 export function formatHcp(v: number | null): string {
@@ -70,18 +71,20 @@ export function rowNote(p: ChRosterPlayer, statsError: boolean): { text: string;
 /** Under this many rounds a player's average is an early read: no place on the team, no strip (P003 #3). */
 export const ROSTER_EARLY_FLOOR = 3;
 
-export type RosterStanding = { place: number; of: number };
+export type RosterStanding = { place: number; of: number; /** Another player shows the same average (B13). */ tied: boolean };
 
 /**
  * Where each player's scoring average sits on the team. Ranked among active players with an average and at least
  * the early floor of rounds, never among the rows a search or filter left on screen (P003 #2): searching "Jo" keeps
- * "4th of 7", and "All" doesn't rank inactive players. Ties share the better place.
+ * "4th of 7", and "All" doesn't rank inactive players. Places are taken on the average as shown, to a tenth, so two
+ * players shown at 74.3 share a place (B13, lib/rank.ts).
  */
 export function rosterStandings(players: ChRosterPlayer[]): { avgs: number[]; byId: Map<string, RosterStanding> } {
   const ranked = players.filter((p) => p.status === 'active' && p.avg != null && p.rounds >= ROSTER_EARLY_FLOOR);
   const avgs = ranked.map((p) => p.avg!);
   const byId = new Map<string, RosterStanding>();
-  for (const p of ranked) byId.set(p.id, { place: avgs.filter((v) => v < p.avg!).length + 1, of: avgs.length });
+  const places = displayPlaces(avgs);
+  ranked.forEach((p, i) => byId.set(p.id, { place: places[i]!.place, of: avgs.length, tied: places[i]!.tied }));
   return { avgs, byId };
 }
 

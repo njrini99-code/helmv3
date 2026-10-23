@@ -15,6 +15,7 @@ import { FormLine, FormRange } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
+import { displayPlaces, placeLabel } from '../../lib/rank';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -54,13 +55,9 @@ export function leaderPeek(p: ChLeaderRow, rounds: ChLatestRound[] = []): ChPlay
  * last) has no place yet: "—".
  */
 export function leaderPlaces(rows: Pick<ChLeaderRow, 'avg' | 'status'>[]): Array<{ label: string; place: number | null }> {
-  const key = (r: Pick<ChLeaderRow, 'avg'>) => Math.round(r.avg * 10);
-  return rows.map((r, i) => {
-    if (r.status === 'early') return { label: '—', place: null };
-    const first = rows.findIndex((o) => o.status !== 'early' && key(o) === key(r));
-    const tied = rows.some((o, j) => j !== i && o.status !== 'early' && key(o) === key(r));
-    return { label: `${tied ? 'T' : ''}${first + 1}`, place: first + 1 };
-  });
+  // The one rank rule (B13, lib/rank.ts): on the average as shown, to a tenth.
+  const places = displayPlaces(rows.map((r) => (r.status === 'early' ? null : r.avg)));
+  return places.map((p) => (p ? { label: placeLabel(p), place: p.place } : { label: '—', place: null }));
 }
 
 function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: number | null }; rounds?: ChLatestRound[] }) {

@@ -944,7 +944,7 @@ function FaceFigures({
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Scoring</span>
         <b className="ch-num">{formatFixed(p.avg)}</b>
-        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
+        <span className="ch-rs-fig__m">{standing && standing.of > 1 ? `${standing.tied ? `T${standing.place}` : ord(standing.place)} of ${standing.of}` : need ?? 'Avg'}</span>
         {p.avg != null && standing && standing.of > 1 && (
           <span className="ch-rs-strip" aria-hidden="true">
             {avgs.map((v, k) => (
@@ -975,7 +975,7 @@ function FaceFigures({
 function faceLabel(p: ChRosterPlayer, standing: RosterStanding | undefined): string {
   const out = p.availability && p.availability !== 'available' ? `, ${p.availability}` : '';
   if (p.avg == null) return `${p.name}${out}`;
-  const place = standing && standing.of > 1 ? `, ${standing.place} of ${standing.of}` : '';
+  const place = standing && standing.of > 1 ? `, ${standing.tied ? 'tied ' : ''}${standing.place} of ${standing.of}` : '';
   return `${p.name}, scoring average ${p.avg.toFixed(1)}${place}${out}`;
 }
 
