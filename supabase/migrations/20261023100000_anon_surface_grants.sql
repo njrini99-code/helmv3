@@ -1,10 +1,10 @@
--- DECLARATIVE: exempt grants only (graveyard tables lose their anon/authenticated grants; the public function default loses anon); mirrored in supabase/schemas/archive/95_grants.sql and supabase/schemas/functions/95_grants.sql
+-- DECLARATIVE: exempt grants only; mirrored in schemas/*/95_grants.sql
 -- STATUS: WRITTEN, HOLD, NOT APPLIED. Written 2026-10-23 from a read-only
 -- permissions review of Helm-Production. Grants only: no table, function body
 -- or row changes, so it does not depend on any Clubhouse function migration
 -- and can go in any slot of the HELD.md order. Owner applies.
 -- Apply: npm run db:apply --
--- supabase/migrations/20261023100000_graveyard_grants_and_function_default_anon.sql
+-- supabase/migrations/20261023100000_anon_surface_grants.sql
 -- Risk: LOW. Every grant removed here is already unusable or unused.
 --
 -- WHAT THE HELD FILES ALREADY COVER (not repeated here)
@@ -37,7 +37,7 @@
 --      to every new definer function, and the pgTAP guard
 --      supabase/tests/rls/anon_surface_guard.sql fails CI if one slips.
 --
--- ROLLBACK: supabase/rollbacks/20261023100000_graveyard_grants_and_function_default_anon.rollback.sql
+-- ROLLBACK: supabase/rollbacks/20261023100000_anon_surface_grants.rollback.sql
 -- ROLLBACK: (re-grants ALL on the 32 graveyard tables to authenticated and the
 -- ROLLBACK: 6 listed there to anon, and restores the anon function default)
 --
@@ -62,4 +62,4 @@ END
 $$;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE EXECUTE ON FUNCTIONS FROM anon;
+REVOKE EXECUTE ON FUNCTIONS FROM anon;

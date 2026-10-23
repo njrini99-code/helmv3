@@ -1,5 +1,5 @@
 -- pgTAP guard for the anonymous (publishable key) surface, written with
--- 20261023100000_graveyard_grants_and_function_default_anon.sql.
+-- 20261023100000_anon_surface_grants.sql.
 --
 -- Helm-Production on 2026-10-23: anon can execute zero SECURITY DEFINER
 -- functions in public (20260905100000 and the per-function REVOKE rule in
