@@ -117,8 +117,10 @@ its rows together and does not map them one to one.
 | chs-04 | Player Board shows 3 reads and 1 strength | CoachHelm board UI | done | #2215 | |
 | chs-11 | Verdict loop on focus areas (flag `coachhelm_verdicts_v1`, off) | CoachHelm engine | done | #2300 (landed in #2310) | claude/coachhelm-verdict-loop |
 | chs-13 | Correction chips under a read's audit (flag off) | CoachHelm board UI | done | #2291 | |
-| chs-22 | CoachHelm data-gap prompt; left alone by #2293. Confirm scope in the audit before claiming | CoachHelm board UI | open | | |
-| chs-23 | As chs-22 | CoachHelm board UI | open | | |
+| chs-22 | Clubhouse round entry: one-tap putt-miss prompt after a missed putt (Slice 8a, `coachhelm_data_gap_prompt_v1`) | CoachHelm board UI | in progress | #2333 | CoachHelm: fix it all thread, claude/coachhelm-round-prompts (P011: CH-11x60 to 69, Bridge items 60-69; P013: CH-13916 to CH-13919, kinds 0-8 suffixes 33-42, Bridge items 60-69) |
+| chs-23 | Clubhouse round entry: course-picker nudge and recovery-lie tap (Slice 8b, `coachhelm_data_prompts_v2`) | CoachHelm board UI | in progress | #2333 | CoachHelm: fix it all thread, claude/coachhelm-round-prompts (P011: CH-11x60 to 69, Bridge items 60-69; P013: CH-13916 to CH-13919, kinds 0-8 suffixes 33-42, Bridge items 60-69) |
+| chs-21 | Player copy of the Course plan (coach half in #2252, `coachhelm_course_plan_v1`) | CoachHelm board UI | in progress | #2333 | CoachHelm: fix it all thread, claude/coachhelm-round-prompts (P011: CH-11x60 to 69, Bridge items 60-69; P013: CH-13916 to CH-13919, kinds 0-8 suffixes 33-42, Bridge items 60-69) |
+| par-14 | As chs-21 | CoachHelm board UI | in progress | #2333 | CoachHelm: fix it all thread, claude/coachhelm-round-prompts (P011: CH-11x60 to 69, Bridge items 60-69; P013: CH-13916 to CH-13919, kinds 0-8 suffixes 33-42, Bridge items 60-69) |
 | chs-28 | Coach Monday brief, view and Monday 05:00 delivery (flag `coachhelm_monday_brief_v1`, production off) | CoachHelm engine | done | #2292 (landed in #2310) | claude/coachhelm-monday-brief |
 | chs-29 | CoachHelm side of coach parity (#2295) | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-30 | Round review: CoachHelm 30-second debrief | CoachHelm board UI | done | #2298 (landed in #2312) | claude/coachhelm-round-debrief |
@@ -128,14 +130,24 @@ its rows together and does not map them one to one.
 | chs-34 | "No reads yet" becomes a By player row | CoachHelm board UI | done | #2294 | |
 | chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | done | #2290 (landed in #2312) | claude/coachhelm-strokes-ladder |
-| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | open | | |
+| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
+| chs-39 | A coach's Ask answer that names a read links to the coach Player page | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
 | chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | done | #2303, #2306 (landed in #2310, #2312) | claude/coachhelm-coach-voice |
 | chs-43 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-44 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-56 | Team-grid leg figure opens Game detail (with par-12) | Clubhouse parity & pages | done | #2281 | |
 | chs-62 | Waits on a held migration (production rollout, per #2281) | Clubhouse parity & pages | held | | |
+| mot-01 | Desktop sidebar fold: the spring keeps its look, but resize readers and Lenis wait until it settles and the brand panel drops its blur while it moves | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-02 | Dialog backdrop is a solid wash on desktop too, never a live blur | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-03 | Tab bar and sidebar section switches swap at once (no fade-through dip); pushes, pops and other links keep their motion | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-04 | Back during a phone push reverses from where the push stood instead of waiting it out | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-05 | A sheet or dialog reopened while closing picks up from where it stood instead of snapping | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-06 | Font weights on four rungs (400 to 700) and the phone player name wraps instead of truncating | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-07 | Placeholder text on its own readable token in both themes | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-08 | Text on 11 sizes (11 to 34px), nearest step, from approved before/after renders | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (type scale the owner approved 2026-10-23); no Bridge IDs or CH codes needed |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
+| doc-07 | A 12 or 24-hour time choice in Clubhouse Settings (D-76), kept on the device and followed by every Clubhouse time | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; Bridge items 80-89 and CH suffixes 80-89 on P008 and P003; uses CH-8980 (80780) |
 | doc-12 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-13 | Team stats print: the leg grid narrows on paper | Clubhouse parity & pages | done | #2281 | |
 | doc-23 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
@@ -145,6 +157,7 @@ its rows together and does not map them one to one.
 | doc-45 | Name the production rollback deployment in STATUS | docs | done | #2296 | |
 | doc-50 | Phone Roster and Team stats figures render directly, no digit rolling | Clubhouse fixes | done | #2282 (landed in #2314) | claude/clubhouse-no-digit-rolling |
 | doc-55 | Password reset email: the Clubhouse screens exist; applying the template to the auth project is an owner production setting | Clubhouse fixes | held | | |
+| doc-60 | Invite players by email from Roster (a new server action; no migration) | Clubhouse parity & pages | in progress | #2334 | claude/project-thread-a106un; same window as doc-07; uses CH-3080 (30680), CH-3180 (30580), CH-3880 (31880), CH-3980 (30780) |
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |

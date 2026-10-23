@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { askSuggestionSub, type ChAskData, type ChAskSuggestion } from '../../../data/coachhelm-chat-shape';
 import { haptic } from '../../../lib/haptics';
+import { useChClockText } from '../../../lib/use-clock';
 import { Icon } from '../../../ui/Icon';
 
 function Greeting({ team, phone, children }: { team: string; phone: boolean; children?: ReactNode }) {
@@ -63,6 +64,7 @@ function Pills({ suggestions, onAsk }: { suggestions: ChAskSuggestion[]; onAsk: 
  * screen just above the composer the screen pins. What is new since the last visit is the Board's header line, not here.
  */
 export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData; phone: boolean; heroComposer: ReactNode; onAsk: (text: string) => void }) {
+  const t = useChClockText();
   if (phone) {
     const cards = data.suggestions.filter((s) => s.id !== 'week').slice(0, 3);
     return (
@@ -105,7 +107,7 @@ export function AskHome({ data, phone, heroComposer, onAsk }: { data: ChAskData;
       {data.pulse?.coverage && (
         <p className="ch-ask-cov">
           {data.pulse.coverage}
-          {data.pulse.asOfLabel ? ` As of ${data.pulse.asOfLabel}.` : ''}
+          {data.pulse.asOfLabel ? ` As of ${t(data.pulse.asOfLabel)}.` : ''}
         </p>
       )}
       {/* The findings block ("Since you were last here") moved to the Board's header line (design call D4); the greeting keeps

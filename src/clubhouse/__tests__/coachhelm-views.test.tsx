@@ -32,8 +32,8 @@ vi.mock('@/lib/coachhelm/v2/gate', () => ({ isCoachHelmEnabledForPlayer: vi.fn()
 const board = vi.hoisted(() => ({ player: vi.fn(), coach: vi.fn() }));
 vi.mock('../data/coachhelm', async (orig) => ({ ...(await orig<typeof import('../data/coachhelm')>()), loadPlayerCoachHelm: board.player, loadCoachCoachHelm: board.coach }));
 vi.mock('../data/coachhelm-chat', () => ({ loadAskCoachHelm: vi.fn() }));
-const profileRead = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock('../data/coachhelm-profile', () => ({ loadPlayerProfile: profileRead.load }));
+const gameRead = vi.hoisted(() => ({ load: vi.fn() }));
+vi.mock('../data/coachhelm-profile', () => ({ loadPlayerGame: gameRead.load }));
 const standingRead = vi.hoisted(() => ({ load: vi.fn() }));
 vi.mock('../data/coachhelm-standing', () => ({ loadPlayerStanding: standingRead.load }));
 const diveRead = vi.hoisted(() => ({ load: vi.fn() }));
@@ -47,11 +47,10 @@ import { ClubhouseCoachHelmRoute } from '../routes/coachhelm';
 import { CoachHelmSkeleton } from '../screens/coachhelm/CoachHelmSkeleton';
 import { PlayerBoard } from '../screens/coachhelm/PlayerBoard';
 import { DeepDive } from '../screens/coachhelm/views/DeepDive';
-import { Profile } from '../screens/coachhelm/views/Profile';
-import { DiveSkeleton, ProfileSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
+import { DiveSkeleton, StandingSkeleton } from '../screens/coachhelm/views/Skeletons';
 import { Standing } from '../screens/coachhelm/views/Standing';
 import { PREVIEW_HELM_PLAYER, PREVIEW_HELM_PLAYER_OFF } from '../preview/fixtures-coachhelm';
-import { diveLoad, PREVIEW_DIVE, PREVIEW_PROFILE, PREVIEW_PROFILE_EMPTY, PREVIEW_STANDING, profileLoad, standingLoad } from '../preview/fixtures-coachhelm-views';
+import { diveLoad, gameLoad, PREVIEW_DIVE, PREVIEW_GAME, PREVIEW_STANDING, standingLoad } from '../preview/fixtures-coachhelm-views';
 import { ToastProvider } from '../ui/Toast';
 
 const on = { userEnabled: true, teamEnabled: true, effectivelyEnabled: true, disabledReason: null, disabledBy: null } as const;
@@ -69,16 +68,16 @@ const wrap = (node: React.ReactNode) => (
     </ToastProvider>
   </LazyMotion>
 );
-type Gated = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; drill: string | null; insight?: string }> }>;
+type Gated = ReactElement<{ fallback: ReactElement; children: ReactElement<{ playerId: string; drill: string | null; insight?: string; at?: string }> }>;
 /** What the route's one Suspense draws once its async child has read: the screen, with the load it was handed. */
-const settle = async (el: ReactElement<{ children: ReactElement }>) => (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown; initialId?: string | null }>>)(el.props.children.props)) as ReactElement<{ load: unknown; initialId?: string | null }>;
+const settle = async (el: ReactElement<{ children: ReactElement }>) => (await (el.props.children.type as (p: unknown) => Promise<ReactElement<{ load: unknown; initialId?: string | null; game?: unknown; at?: string }>>)(el.props.children.props)) as ReactElement<{ load: unknown; initialId?: string | null; game?: unknown; at?: string }>;
 
 beforeEach(() => {
   phoneState.on = false;
   hapticSpy.mockClear();
   router.push.mockClear();
   logServer.mockClear();
-  profileRead.load.mockReset();
+  gameRead.load.mockReset();
   standingRead.load.mockReset();
   diveRead.load.mockReset();
   board.player.mockReset();
@@ -91,31 +90,38 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-/** Each of the player's views: its address, its screen, its skeleton and the one loader it calls. */
+/**
+ * Each of the player's views: its address, its screen, its skeleton and the one loader it calls (Standing also reads How you play,
+ * `also`). `profile` is Game profile's old address: Standing, opened at How you play (CH-13913).
+ */
 const VIEWS = [
-  { view: 'profile', name: 'Game profile', Screen: Profile, Skeleton: ProfileSkeleton, read: profileRead.load, ready: profileLoad(PREVIEW_PROFILE) },
-  { view: 'standing', name: 'Standing', Screen: Standing, Skeleton: StandingSkeleton, read: standingRead.load, ready: standingLoad(PREVIEW_STANDING) },
-  { view: 'deep-dive', name: 'Deep dive', Screen: DeepDive, Skeleton: DiveSkeleton, read: diveRead.load, ready: diveLoad(PREVIEW_DIVE) },
+  { view: 'standing', drill: 'standing', name: 'Standing', Screen: Standing, Skeleton: StandingSkeleton, read: standingRead.load, ready: standingLoad(PREVIEW_STANDING), also: gameRead.load, alsoReady: gameLoad(PREVIEW_GAME), at: undefined },
+  { view: 'profile', drill: 'standing', name: 'Game profile’s old address', Screen: Standing, Skeleton: StandingSkeleton, read: standingRead.load, ready: standingLoad(PREVIEW_STANDING), also: gameRead.load, alsoReady: gameLoad(PREVIEW_GAME), at: 'game' },
+  { view: 'deep-dive', drill: 'deep-dive', name: 'Deep dive', Screen: DeepDive, Skeleton: DiveSkeleton, read: diveRead.load, ready: diveLoad(PREVIEW_DIVE), also: null, alsoReady: null, at: undefined },
 ] as const;
-const allReads = () => VIEWS.map((v) => v.read);
+const allReads = () => [standingRead.load, gameRead.load, diveRead.load];
 
-describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same switch as the board', ({ view, Screen, Skeleton, read, ready }) => {
+describe.each(VIEWS)('?view=$view ($name): the player’s own, behind the same switch as the board', ({ view, drill, Screen, Skeleton, read, ready, also, alsoReady, at }) => {
   it('reads for the session’s player and nobody else, whatever the address says, inside the one Suspense (not keyed by view) that draws the view’s own skeleton', async () => {
     const el = (await ClubhouseCoachHelmRoute({ view, player: 'pl-someone-else' })) as Gated;
     // The boundary is the same one for every view, so a switch keeps the view on screen (dimmed by the tabs) instead of drawing a skeleton over it;
     // it is the hard load, with nothing to keep, that draws the view's own skeleton. The gate is read inside it, after the page is handed back.
     expect(el.key).toBeNull();
     expect(el.props.fallback.type).toBe(Skeleton);
-    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: view });
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill, at });
     expect(isCoachHelmEnabledForPlayer).not.toHaveBeenCalled();
     read.mockResolvedValue(ready);
+    also?.mockResolvedValue(alsoReady);
     const out = await settle(el);
     expect(isCoachHelmEnabledForPlayer).toHaveBeenCalledWith('pl-jonah');
     expect(read).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
     expect(read).toHaveBeenCalledTimes(1);
-    expect(allReads().filter((r) => r !== read).every((r) => r.mock.calls.length === 0)).toBe(true);
+    if (also) expect(also).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
+    expect(allReads().filter((r) => r !== read && r !== also).every((r) => r.mock.calls.length === 0)).toBe(true);
     expect(out.type).toBe(Screen);
     expect(out.props.load).toEqual(ready);
+    expect(out.props.game).toEqual(alsoReady ?? undefined);
+    expect(out.props.at).toBe(at);
   });
 
   it('CH-13304 CoachHelm off: the board’s own page, in the coach’s words, and nothing is read', async () => {
@@ -180,7 +186,7 @@ describe('CH-13981 ?insight= on the Deep dive', () => {
   it('is carried as a name to open, never as data to read: the loader still gets only the session’s player', async () => {
     diveRead.load.mockResolvedValue(diveLoad(PREVIEW_DIVE));
     const el = (await ClubhouseCoachHelmRoute({ view: 'deep-dive', insight: 'in-pen', player: 'pl-someone-else' })) as Open;
-    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'deep-dive', insight: 'in-pen' });
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'deep-dive', insight: 'in-pen', at: undefined });
     const out = await run(el);
     expect(diveRead.load).toHaveBeenCalledWith({ playerId: 'pl-jonah' });
     expect(out.props.initialId).toBe('in-pen');
@@ -196,26 +202,26 @@ describe('CH-13981 ?insight= on the Deep dive', () => {
   it('is ignored on every other view and on the board', async () => {
     standingRead.load.mockResolvedValue(standingLoad(PREVIEW_STANDING));
     const el = (await ClubhouseCoachHelmRoute({ view: 'standing', insight: 'in-pen' })) as Open;
-    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'standing' });
+    expect(el.props.children.props).toEqual({ playerId: 'pl-jonah', drill: 'standing', at: undefined });
   });
 });
 
 describe('CH-13930 the player’s sub-navigation', () => {
   const showBoard = (data = PREVIEW_HELM_PLAYER) => render(wrap(<PlayerBoard data={data} />));
 
-  it('Board, Game profile, Standing and Deep dive are one radiogroup of views of this page; Board is the current one', () => {
+  it('Board, Standing and Deep dive are one radiogroup of views of this page (Game profile folded into Standing); Board is the current one', () => {
     showBoard();
     const group = screen.getByRole('radiogroup', { name: 'CoachHelm view' });
     const radios = within(group).getAllByRole('radio');
-    expect(radios.map((r) => r.textContent)).toEqual(['Board', 'Game profile', 'Standing', 'Deep dive']);
-    expect(radios.map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false', 'false']);
+    expect(radios.map((r) => r.textContent)).toEqual(['Board', 'Standing', 'Deep dive']);
+    expect(radios.map((r) => r.getAttribute('aria-checked'))).toEqual(['true', 'false', 'false']);
     expect(code('CH-13930')).not.toBeNull();
   });
 
   it('choosing a view is a route change to its address, with the select haptic; choosing the current one does nothing', async () => {
     showBoard();
-    await userEvent.click(screen.getByRole('radio', { name: 'Game profile' }));
-    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=profile');
+    await userEvent.click(screen.getByRole('radio', { name: 'Standing' }));
+    expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=standing');
     await userEvent.click(screen.getByRole('radio', { name: 'Deep dive' }));
     expect(router.push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm?view=deep-dive');
     router.push.mockClear();
@@ -225,15 +231,15 @@ describe('CH-13930 the player’s sub-navigation', () => {
   });
 
   it('a tap moves the strip at once and marks the page busy until the view lands: the page stays, nothing blanks, and a view does the same (phone chips too)', async () => {
-    for (const where of ['board', 'profile'] as const) {
+    for (const where of ['board', 'deep-dive'] as const) {
       router.push.mockImplementationOnce(() => new Promise(() => {}));
-      render(wrap(where === 'board' ? <PlayerBoard data={PREVIEW_HELM_PLAYER} /> : <Profile load={profileLoad(PREVIEW_PROFILE)} />));
+      render(wrap(where === 'board' ? <PlayerBoard data={PREVIEW_HELM_PLAYER} /> : <DeepDive load={diveLoad(PREVIEW_DIVE)} />));
       const main = document.querySelector('main.ch-hl')!;
       expect(main.hasAttribute('aria-busy')).toBe(false);
       await userEvent.click(screen.getByRole('radio', { name: 'Standing' }));
       await waitFor(() => expect(main.getAttribute('aria-busy')).toBe('true'));
       expect(screen.getByRole('radio', { name: 'Standing' })).toHaveAttribute('aria-checked', 'true');
-      expect(screen.getByRole('radio', { name: where === 'board' ? 'Board' : 'Game profile' })).toHaveAttribute('aria-checked', 'false');
+      expect(screen.getByRole('radio', { name: where === 'board' ? 'Board' : 'Deep dive' })).toHaveAttribute('aria-checked', 'false');
       // The page is still drawn, not swapped for a skeleton, and the header (which stays crisp) is on it.
       expect(main.getAttribute('aria-label')).toBeNull();
       expect(screen.getByRole('heading', { level: 1, name: 'CoachHelm' })).toBeTruthy();
@@ -262,10 +268,10 @@ describe('CH-13930 the player’s sub-navigation', () => {
     expect(screen.queryByRole('radiogroup')).toBeNull();
     const row = screen.getByRole('group', { name: 'CoachHelm view' });
     const chips = within(row).getAllByRole('button');
-    expect(chips.map((c) => c.textContent)).toEqual(['Board', 'Game profile', 'Standing', 'Deep dive']);
-    expect(chips.map((c) => c.getAttribute('aria-current'))).toEqual(['true', null, null, null]);
+    expect(chips.map((c) => c.textContent)).toEqual(['Board', 'Standing', 'Deep dive']);
+    expect(chips.map((c) => c.getAttribute('aria-current'))).toEqual(['true', null, null]);
     expect(within(row).getByRole('link', { name: /Development/ }).getAttribute('href')).toBe('/golf/dashboard/stats?tab=dev');
-    await userEvent.click(chips[2]!);
+    await userEvent.click(chips[1]!);
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/coachhelm?view=standing');
   });
 
@@ -274,16 +280,5 @@ describe('CH-13930 the player’s sub-navigation', () => {
     expect(code('CH-13304')).not.toBeNull();
     expect(code('CH-13930')).toBeNull();
     expect(screen.queryByRole('radiogroup')).toBeNull();
-  });
-});
-
-describe('CoachHelm player views · empty', () => {
-  it('CH-13360 an empty Game profile lists every measure as the compact locked tiles, not a column of full cards', () => {
-    render(wrap(<Profile load={profileLoad(PREVIEW_PROFILE_EMPTY)} />));
-    expect(code('CH-13360')).not.toBeNull();
-    const grid = document.querySelector('#ch-hg-all')!.closest('section')!.querySelector('ol.ch-hg-grid')!;
-    expect(grid.classList.contains('is-locked')).toBe(true);
-    expect(grid.children.length).toBe(PREVIEW_PROFILE_EMPTY.measures.length);
-    expect(screen.getByRole('link', { name: /Start a round/ }).querySelector('svg.lucide-plus')).not.toBeNull();
   });
 });

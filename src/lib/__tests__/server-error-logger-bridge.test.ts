@@ -164,6 +164,25 @@ describe('server-error-logger bridge columns', () => {
     expect(rows).toEqual(['round_tracking', 'coachhelm_ai_engine']);
   });
 
+  it('collapses a gateway HTML page in metadata before it reaches either table or Sentry (fae748c7)', async () => {
+    const page = `<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->
+<head><title>supabase.co | 502: Bad gateway</title></head>
+<body><p>Cloudflare Ray ID: 9a1b</p><p>Your IP: 203.0.113.7</p></body></html>`;
+    await logServerError('pattern-miner.savePatterns db error', {
+      action: 'pattern-miner.savePatterns',
+      metadata: { dbError: { message: page } },
+    });
+    const collapsed = 'upstream returned an HTML error page (HTTP 502): supabase.co | 502: Bad gateway';
+    const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');
+    const errorLog = mocks.inserts.find((i) => i.table === 'error_logs');
+    expect(adminEvent?.row.metadata).toMatchObject({ metadata: { dbError: { message: collapsed } } });
+    expect(errorLog?.row.context).toMatchObject({ metadata: { dbError: { message: collapsed } } });
+    const sentryContext = mocks.scope.setContext.mock.calls.find(([name]) => name === 'server_trace')?.[1];
+    expect(sentryContext).toMatchObject({ metadata: { dbError: { message: collapsed } } });
+    expect(JSON.stringify([adminEvent?.row, errorLog?.row, sentryContext])).not.toContain('203.0.113.7');
+  });
+
   it('feature is null when neither feature nor featureArea is given', async () => {
     await logServerError('no-feature', { action: 'test.none' });
     const adminEvent = mocks.inserts.find((i) => i.table === 'admin_events');

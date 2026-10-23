@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { fetchAhead, prefetchAllowed, whenIdle } from '../../shell/use-prefetch-tabs';
 
 /**
- * A switch between views of the CoachHelm page (Board, Ask, Game profile, Standing, Deep dive), each its own address. The same
+ * A switch between views of the CoachHelm page (Board, Ask, Standing, Deep dive), each its own address. The same
  * pattern as Stats' window switch (F-55): the tap takes effect on the control at once (`shown`: the view being loaded, not the one
  * still on screen), the page stays as it is, marked busy (`pending`: the owner sets `aria-busy`, and coachhelm.css dims what is
  * changing), and the new view replaces it in one swap when the server has it. Nothing blanks and no skeleton is drawn for a

@@ -1,6 +1,7 @@
 'use client';
 
 import { TriangleAlert } from 'lucide-react';
+import { useChClockText } from '../../lib/use-clock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { checkKey, clashSummary, type ChTravelerClass, type ChTripWindow } from '../../data/hub-shape';
 import { Button } from '../../ui/Button';
@@ -88,6 +89,7 @@ const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
  * (CH-10212), or nobody chosen has a class during the trip (CH-10315). The region stays mounted so a change is announced.
  */
 export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; names: ReadonlyMap<string, string>; onRetry: () => void }) {
+  const clk = useChClockText();
   const summary = check.status === 'ready' ? clashSummary(check.classes, names) : null;
   const clashes = summary && summary.lines.length > 0 ? summary : null;
   const partial = check.status === 'ready' && check.partial;
@@ -104,7 +106,7 @@ export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; n
           <div>
             {clashes.lines.map((l) => (
               <p key={l.playerId}>
-                <b>{l.who}</b> {l.when}
+                <b>{l.who}</b> {clk(l.when)}
                 {l.more > 0 ? ` and ${l.more} more ${plural(l.more, 'class', 'classes')}` : ''}.
               </p>
             ))}

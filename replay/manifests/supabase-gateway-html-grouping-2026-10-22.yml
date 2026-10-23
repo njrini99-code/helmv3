@@ -1,0 +1,30 @@
+schema_version: 1
+replay_id: supabase-gateway-html-grouping-2026-10-22
+incident_id: JAVASCRIPT-NEXTJS-1D8
+feature_id: observability_sentry
+title: >-
+  A Cloudflare HTML error page returned for Supabase (502) became one Sentry
+  issue per event, titled "Error: <!DOCTYPE html>" and storing the page.
+  fingerprintSupabaseAutoCapture now groups it on ['supabase-gateway',
+  'http:<status>'] and keeps only the page title as the message.
+bad_version: fada94facdc4c615cbc7f88b4d0efea2f4cb5d96
+fixed_version: fbb972c2ccef55103453954e2200b2196cbb2297
+fixture:
+  - source: supabase-error-grouping.test.ts
+    target: src/lib/observability/__tests__/supabase-error-grouping.test.ts
+test_command: "./node_modules/.bin/vitest run src/lib/observability/__tests__/supabase-error-grouping.test.ts"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    A synthetic Cloudflare-style page with made-up Ray IDs and a TEST-NET
+    documentation IP (203.0.113.7); no production rows, PII, tokens or logs.
+source_incident_status: fixed
+created_at: "2026-10-22"
+notes: >-
+  On bad_version 2 tests fail by assertion (fingerprint undefined); the third
+  new test and the other 23 pass on both versions.

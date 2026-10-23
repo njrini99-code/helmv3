@@ -1,5 +1,6 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
+import { CH_CLOCK_COOKIE, parseChClock, type ChClock } from './clock-cookie';
 import { CH_PHONE_COOKIE } from './phone-cookie';
 import { CH_RAIL_COOKIE } from './rail-cookie';
 
@@ -30,4 +31,9 @@ export async function phoneHint(): Promise<boolean> {
 /** Whether this browser last folded the desktop sidebar to its icon rail (shell/RailToggle.tsx). */
 export async function railHint(): Promise<boolean> {
   return (await cookies()).get(CH_RAIL_COOKIE)?.value === '1';
+}
+
+/** The clock this browser last chose in Settings (use-clock.tsx), so a 24-hour device's first frame is already in 24 hours. */
+export async function clockHint(): Promise<ChClock> {
+  return parseChClock((await cookies()).get(CH_CLOCK_COOKIE)?.value);
 }

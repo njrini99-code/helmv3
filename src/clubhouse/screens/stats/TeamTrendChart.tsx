@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Area, AreaChart, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts';
 import { formatFixed } from '../../lib/format';
+import { afterRailMove } from '../../lib/rail-fold';
 
 type Day = { label: string; score: number | null };
 
@@ -23,11 +24,18 @@ export default function TeamTrendChart({ days, mean }: { days: Day[]; mean: numb
   useEffect(() => {
     const el = box.current;
     if (!el) return;
+    // While the sidebar folds the box changes size on every frame; the chart redraws once, at the size it settles on.
+    let latest: DOMRectReadOnly | null = null;
+    const apply = () => {
+      if (!latest) return;
+      const w = Math.round(latest.width);
+      const h = Math.round(latest.height);
+      setSize((s) => (s && s.w === w && s.h === h ? s : { w, h }));
+    };
     const ro = new ResizeObserver(([entry]) => {
       if (!entry) return;
-      const w = Math.round(entry.contentRect.width);
-      const h = Math.round(entry.contentRect.height);
-      setSize((s) => (s && s.w === w && s.h === h ? s : { w, h }));
+      latest = entry.contentRect;
+      afterRailMove(apply);
     });
     ro.observe(el);
     return () => ro.disconnect();

@@ -504,7 +504,18 @@ export type AskEvidence =
   | (EvBase & { kind: 'compare' })
   | (EvBase & { kind: 'legs'; rows: Array<{ label: string; value: number; display: string }>; takeaway: string })
   | (EvBase & { kind: 'tiles'; tiles: EvidenceTile[] })
+  | (EvBase & { kind: 'reads'; playerId: string; rows: AskRead[] })
   | (EvBase & { kind: 'table' });
+
+/** One read an answer names (the open-signals tool's list): its id, which the coach's Deep dive opens on, and what the row says. */
+export interface AskRead {
+  id: string;
+  title: string;
+  /** The area, as the engine stores it ("putting"). */
+  category: string | null;
+  /** The read's own value ("28%"), when it has one. */
+  value: string | null;
+}
 
 export interface EvidenceTile {
   label: string;
@@ -636,6 +647,31 @@ function measurementTable(ms: Measurement[], caption: string): AskTable {
   };
 }
 
+const textOf = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+
+/**
+ * The reads a tool names for one player (`get_player_insights`: `detail.player.player_id` and `detail.insights[].insight_id`), or
+ * null when the detail is not that shape. A row with no id or no title is left out: it could not be opened, or said.
+ */
+export function readsOf(detail: unknown): { playerId: string; rows: AskRead[] } | null {
+  if (!detail || typeof detail !== 'object') return null;
+  const d = detail as { player?: unknown; insights?: unknown };
+  const playerId = d.player && typeof d.player === 'object' ? textOf((d.player as { player_id?: unknown }).player_id) : null;
+  if (!playerId || !Array.isArray(d.insights)) return null;
+  const rows: AskRead[] = [];
+  for (const r of d.insights as unknown[]) {
+    if (!r || typeof r !== 'object') continue;
+    const o = r as Record<string, unknown>;
+    const id = textOf(o.insight_id);
+    const title = textOf(o.title);
+    if (id && title) rows.push({ id, title, category: textOf(o.category), value: textOf(o.value_display) });
+  }
+  return rows.length ? { playerId, rows } : null;
+}
+
+/** A read's area in words: "short_game" is "Short game". */
+export const readAreaWord = (c: string | null): string | null => (c ? (c.charAt(0).toUpperCase() + c.slice(1)).replace(/_/g, ' ') : null);
+
 /** One tool's output as the block this screen draws. The choice is made from the SHAPE of the evidence, never from what the model asked for. */
 export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
   // A failed read is never "no data": it is the honest "could not read this".
@@ -713,6 +749,21 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         table: measurementTable(ms, envelope.summary),
       });
     }
+  }
+
+  // The reads an answer names for one player: each opens that player's Deep dive on it, for a coach whose team the player is on.
+  const reads = blocks.length === 0 ? readsOf(envelope.detail) : null;
+  if (reads) {
+    blocks.push({
+      kind: 'reads',
+      title: envelope.summary,
+      source: null,
+      note: partialNote(envelope),
+      bench: null,
+      playerId: reads.playerId,
+      rows: reads.rows,
+      table: { caption: envelope.summary, columns: ['Read', 'Area', 'Value'], rows: reads.rows.map((r) => [r.title, readAreaWord(r.category) ?? NO_DATA, r.value ?? NO_DATA]) },
+    });
   }
 
   // Nothing above drew it (a tool whose output is a list of records, or a kind added later): its table, never nothing.
