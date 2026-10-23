@@ -575,7 +575,7 @@
 }
 /* On the green card: a champagne ring, as the sidebar's (the global green one is 1.25:1 here). */
 .ch-root .ch-sgt__end:focus-visible {
-  outline-color: var(--ch-champagne-300);
+  outline-color: var(--ch-border-focus-on-dark);
   outline-offset: 0;
 }
 @media (hover: hover) {
@@ -1332,7 +1332,7 @@
   }
 }
 .ch-tr__link:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -2653,7 +2653,7 @@
   transform: rotate(45deg);
 }
 .ch-gx-more > summary:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
   border-radius: var(--ch-radius-md);
 }
@@ -3323,7 +3323,7 @@
   transform: rotate(45deg);
 }
 .ch-gm-how > summary:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -5524,8 +5524,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   cursor: default;
 }
 .ch-st[data-canopy] .ch-fm__bars:focus-visible {
-  outline: 2px solid var(--ch-green-600);
-  outline-offset: 8px;
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-st[data-canopy] .ch-fm__head p.ch-fm__read {
@@ -5736,7 +5736,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 .ch-lb:focus-visible,
 .ch-stm-legs:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-st[data-canopy] .ch-lb__r.ch-sv-row {
@@ -5765,7 +5765,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
    offers Open round. Prefix .ch-sv-rt, .ch-sv-open. */
 .ch-sv-rt:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-stm-chart-hold.ch-sv-rt__hold {
@@ -6591,7 +6591,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-sv-pb:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-sv-pb__chart {
@@ -6825,7 +6825,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-sv-mix:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-sv-mix .is-eagle {
@@ -7061,7 +7061,7 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
 }
 .ch-sv-tr__plot:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: var(--ch-radius-md);
 }
 .ch-sv-tr__top {

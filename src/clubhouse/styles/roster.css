@@ -547,7 +547,7 @@
 }
 .ch-rs-sorth:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-rs-row .r {
   justify-self: end;
@@ -1013,8 +1013,8 @@ a.ch-rs-peek__dev:focus-visible,
 }
 .ch-rs-em__x:focus-visible {
   opacity: 1;
-  outline: 2px solid var(--ch-green-600);
-  outline-offset: 1px;
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-rs-em__in {
   flex: 1 1 140px;
@@ -2034,7 +2034,7 @@ a.ch-rs-peek__dev:focus-visible,
     transition-duration: var(--ch-dur-press);
   }
   .ch-rs[data-canopy] .ch-rs-face:focus-visible {
-    outline-offset: -3px;
+    outline-offset: -2px;
   }
   /* Owner, 2026-10-08: "more contrast and depth separating players". Each player is a raised white tile with room
      around it, so the roster reads as people, not a ruled sheet: a hairline ring, a close and a far shadow that lean

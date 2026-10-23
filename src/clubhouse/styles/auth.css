@@ -677,7 +677,7 @@
 }
 .ch-au-eye:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-au-err {
   margin-top: 16px;
@@ -1902,7 +1902,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
 }
 .ch-au-plate__swap:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 @media (hover: hover) {
   .ch-au-plate__swap:hover {

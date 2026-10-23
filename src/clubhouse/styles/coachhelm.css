@@ -467,7 +467,7 @@
 }
 .ch-hl-why:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
   border-radius: 4px;
 }
 .ch-hl-why__b {

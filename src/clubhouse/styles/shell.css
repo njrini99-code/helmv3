@@ -136,8 +136,8 @@
   }
 }
 .ch-nav__team--switch:focus-visible {
-  outline: 2px solid var(--ch-champagne-300);
-  outline-offset: 1px;
+  outline: 2px solid var(--ch-border-focus-on-dark);
+  outline-offset: 2px;
 }
 .ch-nav__team--switch[aria-busy='true'] {
   cursor: progress;
@@ -267,8 +267,8 @@
   }
 }
 .ch-navitem:focus-visible {
-  outline: 2px solid var(--ch-champagne-300);
-  outline-offset: 1px;
+  outline: 2px solid var(--ch-border-focus-on-dark);
+  outline-offset: 2px;
 }
 /* A tapped row takes the selected look on the first frame and the old one lets go of it (LinkPending). */
 .ch-navitem[aria-current='page'],
@@ -1309,11 +1309,11 @@ button.ch-more__row[disabled] {
   /* Keyboard focus on the green (CH-1806): the keys' focus shadow loses to the disc's own ring here, and its green would
      vanish on the hero anyway, so the bell takes a champagne ring 2px off the disc (the clear border's width), no shadow. */
   .ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 0;
   }
   .ch-root[data-phone-hero] .ch-topbar .ch-topbar__ask:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 0;
   }
   /* A full-page form hides the tab bar (usePhoneTabsHidden): its Cancel and submit are in the top bar. */
@@ -2119,7 +2119,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
    next-event card stays a light sheet. */
 .ch-navitem:focus-visible,
 .ch-root .ch-next:focus-visible {
-  outline-color: var(--ch-champagne-300);
+  outline-color: var(--ch-border-focus-on-dark);
 }
 .ch-nav__section {
   color: var(--ch-on-green-ink-muted);
@@ -2372,7 +2372,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   }
   /* Keyboard focus on the green bar: the global green ring would vanish into it (1.7:1), so champagne, as the bell's. */
   [data-ui='clubhouse'] .ch-pbar :is(.ch-pbar__back, .ch-pbar__icon, .ch-pbar__text):focus-visible {
-    outline-color: var(--ch-champagne-300);
+    outline-color: var(--ch-border-focus-on-dark);
   }
 }
 
@@ -3025,7 +3025,7 @@ html[data-fw-theme='dark'] .ch-offline {
   }
   /* Inset: the title row clips anything drawn outside it. */
   .ch-sw:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: -2px;
     border-radius: 8px;
   }
@@ -3159,7 +3159,7 @@ html[data-fw-theme='dark'] .ch-offline {
     color: var(--ch-frame);
   }
   .ch-strip__pill:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   /* The green bar's selected pill: one ivory plate that glides between pills (layoutId, the settle spring). */
@@ -3299,7 +3299,7 @@ html[data-fw-theme='dark'] .ch-offline {
     opacity: 0.5;
   }
   .ch-bst__all:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     border-radius: 8px;
   }
   .ch-bst__scroll {
@@ -3392,7 +3392,7 @@ html[data-fw-theme='dark'] .ch-offline {
     padding: 0;
   }
   .ch-bst-pill:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   .ch-bst-pile {
@@ -3426,7 +3426,7 @@ html[data-fw-theme='dark'] .ch-offline {
     -webkit-user-select: none;
   }
   .ch-bst-card:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   .ch-bst-card--still {
@@ -3819,7 +3819,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
     transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
   }
   .ch-railtoggle:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
 

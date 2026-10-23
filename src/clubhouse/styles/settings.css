@@ -1616,7 +1616,7 @@
   }
   .ch-setm-code .ch-setm-pill:focus-visible,
   .ch-setm-code .ch-setm-link:focus-visible {
-    outline-color: var(--ch-champagne-300);
+    outline-color: var(--ch-border-focus-on-dark);
   }
 
   /* In a sheet, grouped form rows are inset content, not floating cards. */

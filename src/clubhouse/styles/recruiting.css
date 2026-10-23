@@ -1547,7 +1547,7 @@
     }
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage:focus-visible {
-    outline-offset: -3px;
+    outline-offset: -2px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__dot {
     flex: none;
@@ -1788,7 +1788,7 @@
 }
 .ch-rec-cal__pick:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 /* In the framed page head the shell sets every p as the page's sentence; the calendar line stays the quieter caption. */
 @media (min-width: 821px) {

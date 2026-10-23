@@ -72,7 +72,7 @@
 .ch-root .ch-rt-bar__i:focus-visible,
 .ch-root .ch-rt-opt:focus-visible,
 .ch-root .ch-rt-xopt:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-rt-top__c {
@@ -366,8 +366,8 @@ button.ch-rt-strip__h {
   filter: drop-shadow(0 10px 18px rgb(11 58 37 / 0.25));
 }
 .ch-root .ch-rt-hero__map:focus-visible {
-  outline: 2px solid var(--ch-green-600);
-  outline-offset: 3px;
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-rt-hero__main {
   grid-column: 1;
@@ -1988,7 +1988,7 @@ button.ch-rt-strip__h {
 }
 .ch-root .ch-rtcv__back:focus-visible,
 .ch-root .ch-rtcv__nav button:focus-visible {
-  outline: 2px solid var(--ch-champagne-300);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: -2px;
 }
 .ch-rtcv__sheet {
@@ -2128,7 +2128,7 @@ button.ch-rt-strip__h {
   .ch-root .ch-rt-log__h:focus-visible,
   .ch-root .ch-rt-bar__i:focus-visible,
   .ch-root .ch-rt-hero__map:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   .ch-rt-top__c h1 {
@@ -2292,7 +2292,7 @@ button.ch-rt-strip__h {
     outline: none;
   }
   .ch-root .ch-rt-strip__h:focus-visible::before {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   /* The running total stays pinned at the strip's right edge while the holes scroll under it, behind a short fade

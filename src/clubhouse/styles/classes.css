@@ -348,7 +348,7 @@
 }
 .ch-cl-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .ch-cl-card__top {
   display: flex;
@@ -492,7 +492,7 @@
 }
 .ch-cl-add:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .ch-cl-add__plus {
   display: grid;
@@ -722,7 +722,7 @@
 }
 .ch-cl-daypick button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* A class's detail */
@@ -1166,7 +1166,7 @@
 }
 .ch-cl-rv__x:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-cl-ok {
   display: flex;

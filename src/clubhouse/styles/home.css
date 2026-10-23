@@ -496,7 +496,7 @@
 }
 .ch-h-rail__item:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-h-rail__who {
   display: flex;
@@ -3628,7 +3628,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     background: var(--ch-champagne-100);
   }
   .ch-root .ch-hm-day__act:focus-visible {
-    outline: 2px solid var(--ch-on-green-ink);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   /* The recap: the day's rounds as rows on the green, each opening its scorecard. */

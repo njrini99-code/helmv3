@@ -3584,7 +3584,7 @@ a.ch-qf-prounds__r.is-play:is(:active, [data-ch-pressed]) {
   transition-duration: var(--ch-dur-press);
 }
 a.ch-qf-prounds__r.is-play:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
 /* The list's way to the same round, under the live qualifier's card. */
@@ -3624,7 +3624,7 @@ button.ch-qf-prounds__r:is(:active, [data-ch-pressed]) {
   transition-duration: var(--ch-dur-press);
 }
 button.ch-qf-prounds__r:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
 button.ch-qf-prounds__r.is-open {

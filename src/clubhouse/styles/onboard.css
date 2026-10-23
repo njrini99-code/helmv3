@@ -543,7 +543,7 @@
 }
 .ch-ox-card:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 .ch-ox-card[aria-checked='true'] {
   background: var(--ch-green-raised-bg);
@@ -1181,7 +1181,7 @@
 }
 .ch-ox-drop:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 .ch-ox-drop[data-over] {
   background: conic-gradient(from 0deg, var(--ch-green-600), #7bc79a, var(--ch-green-600));

@@ -45,7 +45,7 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
 .ch-root .ch-rsu-band__back:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
 .ch-rsu-band h1 {
@@ -250,7 +250,7 @@
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.18);
 }
 .ch-rsu-qual:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-rsu-qual__ic {
@@ -353,7 +353,7 @@
 .ch-rsu-add:focus-visible,
 .ch-rsu-opt:focus-visible,
 .ch-rsu-sw button:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-rsu-opts {
@@ -549,8 +549,8 @@
 }
 .ch-rsu-yds input:focus-visible {
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.6),
-    0 0 0 4px rgb(28 25 18 / 0.06);
+    0 0 0 1px var(--ch-border-focus),
+    0 0 0 4px var(--ch-focus-halo);
 }
 .ch-rsu-yds input[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -657,8 +657,8 @@
 }
 .ch-rsu-search:focus-within {
   box-shadow:
-    0 0 0 1px rgb(28 25 18 / 0.6),
-    0 0 0 4px rgb(28 25 18 / 0.06);
+    0 0 0 1px var(--ch-border-focus),
+    0 0 0 4px var(--ch-focus-halo);
 }
 .ch-rsu-search input {
   all: unset;
@@ -786,8 +786,8 @@
   border-radius: var(--ch-radius-lg);
 }
 .ch-cpk:focus-visible {
-  outline: 2px solid var(--ch-green-600);
-  outline-offset: 4px;
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-cpk__card {
   display: flex;
@@ -1206,8 +1206,8 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   }
 }
 .ch-acs__photo:focus-within {
-  outline: 2px solid var(--ch-green-600);
-  outline-offset: 3px;
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
 }
 .ch-acs__photo-add {
   display: flex;
@@ -1255,7 +1255,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   text-decoration: underline;
 }
 .ch-acs__photo-remove:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
 }
 .ch-acs__photo-error {
@@ -1536,12 +1536,6 @@ html[data-fw-theme='dark'] .ch-rsu-yds input {
   box-shadow: 0 0 0 1px var(--ch-border-control);
 }
 html[data-fw-theme='dark'] .ch-rsu-in:focus,
-html[data-fw-theme='dark'] .ch-rsu-search:focus-within,
-html[data-fw-theme='dark'] .ch-rsu-yds input:focus-visible {
-  box-shadow:
-    0 0 0 1px var(--ch-border-focus),
-    0 0 0 4px var(--ch-focus-halo);
-}
 html[data-fw-theme='dark'] .ch-rsu-in[aria-invalid='true'],
 html[data-fw-theme='dark'] .ch-rsu-yds input[aria-invalid='true'] {
   box-shadow: 0 0 0 1.5px var(--ch-danger-600);
@@ -2241,8 +2235,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     }
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-par button:focus-visible {
-    outline: 2px solid #dccda6;
-    outline-offset: 1px;
+    outline: 2px solid var(--ch-border-focus-on-dark);
+    outline-offset: 2px;
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-yds {
     gap: 0;

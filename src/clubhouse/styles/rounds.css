@@ -206,7 +206,7 @@
 }
 .ch-rd-unf__cta:focus-visible,
 .ch-rd-unf__discard:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
 }
 .ch-rd-unf__discard {
@@ -1321,7 +1321,7 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-nine thead button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-rv-nine td.is-sel {
   background: #e3eee6;
@@ -1601,7 +1601,7 @@ a.ch-rd-sc:focus-visible {
   text-decoration: none;
 }
 .ch-rv-debrief__why:focus-visible {
-  outline: 2px solid var(--ch-hero-mint);
+  outline: 2px solid var(--ch-border-focus-on-dark);
   outline-offset: 2px;
   border-radius: var(--ch-radius-sm);
 }
@@ -2095,7 +2095,7 @@ a.ch-rd-sc:focus-visible {
     color: var(--ch-green-600);
   }
   .ch-rv.is-phone .ch-rv-debrief__why:focus-visible {
-    outline-color: var(--ch-green-600);
+    outline-color: var(--ch-border-focus);
   }
 
   /* Loading (CH-11401, CH-11406) in the phone's shapes: the intro, the feature card, the sections under the double rule
@@ -2559,7 +2559,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   text-shadow: none;
 }
 .ch-rv .ch-rv-nine thead button:focus-visible {
-  outline-color: var(--ch-champagne-300);
+  outline-color: var(--ch-border-focus-on-dark);
 }
 .ch-rv .ch-rv-nine .is-par td {
   color: var(--ch-on-green-ink-soft);

@@ -49,7 +49,9 @@ describe('CH-1815 every phone key reaches 44 by 44', () => {
 
   it('CH-1806 the hero bell shows keyboard focus as a champagne ring off the disc, with no shadow of its own', () => {
     const focus = withProp(shell, '.ch-root[data-phone-hero] .ch-topbar .ch-bell:focus-visible', 'outline');
-    expect(focus).toMatch(/outline:\s*2px solid var\(--ch-champagne-300\)/);
+    // The champagne ring is the on-dark focus token (CONS-36).
+    expect(focus).toMatch(/outline:\s*2px solid var\(--ch-border-focus-on-dark\)/);
+    expect(tokens).toMatch(/--ch-border-focus-on-dark:\s*var\(--ch-champagne-300\);/);
     expect(focus).toMatch(/outline-offset:\s*0/);
     expect(focus).not.toMatch(/box-shadow/);
   });

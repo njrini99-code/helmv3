@@ -55,7 +55,7 @@
 }
 .ch-seg__b:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-seg__b:disabled {
   color: var(--ch-ink-400);

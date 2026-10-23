@@ -146,7 +146,7 @@
 }
 .ch-cal-jump__d:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* Toolbar */
@@ -400,7 +400,7 @@
 }
 .ch-wk__day:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-wk__d {
   font: 500 12px/1 var(--ch-font-sans);
@@ -595,7 +595,7 @@
 }
 .ch-ev:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 /* P006-B3: a coach's event can be picked up and moved in 15-minute steps. The block held steps back, a dashed ghost
    shows where it would land, and an invitee's clash there lights amber. */

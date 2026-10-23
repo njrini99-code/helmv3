@@ -1850,7 +1850,7 @@
   /* The push focuses the name for VoiceOver; from a keyboard it shows a gilt ring that reads on the green (the page's
      green focus ring was a dark box here). */
   .ch-msp-who:focus-visible {
-    outline: 2px solid var(--ch-champagne-300);
+    outline: 2px solid var(--ch-border-focus-on-dark);
     outline-offset: 2px;
   }
   .ch-msp-who .ch-msp-mark {
@@ -2677,7 +2677,7 @@
   font: var(--ch-type-14);
 }
 .ch-ms-quote:disabled { cursor: default; opacity: 1; }
-.ch-ms-quote:focus-visible { outline: 2px solid var(--ch-green-500); outline-offset: 3px; }
+.ch-ms-quote:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }
 .ch-ms-quote b {
   font: var(--ch-type-13-strong);
   color: var(--ch-text-primary);
@@ -2876,7 +2876,7 @@ html[data-fw-theme='dark'] .ch-msp-thread .ch-ms-msg.is-mine.is-failed .ch-ms-bu
   background: color-mix(in srgb, var(--ch-green-fill-600) 7%, transparent);
 }
 .ch-ms-fold:focus-visible {
-  outline: 2px solid var(--ch-green-600);
+  outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
 .ch-ms-fold .ch-ms-grp {

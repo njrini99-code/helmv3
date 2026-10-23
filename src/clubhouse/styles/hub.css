@@ -260,7 +260,7 @@
 }
 .ch-hb-rsvp__a button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 .ch-hb-rsvp__c {
   display: flex;
@@ -1455,7 +1455,7 @@
     box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-champagne-300);
   }
   .ch-hb-ann.is-featured .ch-hb-iconbtn:focus-visible {
-    outline-color: var(--ch-champagne-300);
+    outline-color: var(--ch-border-focus-on-dark);
   }
   /* A title's figures (SerifText's spans) take the title's own sans. */
   .ch-hb-ann h3 > span,
@@ -2495,7 +2495,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-strip button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
   border-radius: 2px;
 }
 .ch-hb-strip .is-warn,
@@ -2623,7 +2623,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-ann__files-t:focus-visible,
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-ann__files-retry:focus-visible,
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-ann__file:focus-visible {
-    outline-color: var(--ch-champagne-300);
+    outline-color: var(--ch-border-focus-on-dark);
   }
   /* The author's coin keeps the day's neutral on the green in both themes (the night coin sank into the night green). */
   :where(html[data-fw-theme='dark']) .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-ann__h .ch-avatar {
@@ -2660,7 +2660,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     background: rgb(255 255 255 / 0.08);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-iconbtn:focus-visible {
-    outline-color: var(--ch-champagne-300);
+    outline-color: var(--ch-border-focus-on-dark);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-pass__f,
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-plan li {
@@ -2950,7 +2950,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-on-green-ink);
 }
 .ch-hw--dark :focus-visible {
-  outline-color: var(--ch-champagne-300);
+  outline-color: var(--ch-border-focus-on-dark);
 }
 .ch-hw--dark .ch-btn--primary {
   background: var(--ch-on-green-ink);
