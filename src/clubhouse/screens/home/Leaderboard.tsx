@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { ArrowRight, UserPlus } from 'lucide-react';
-import { Icon } from '../../ui/Icon';
 import { QUIET_DAYS } from './model';
 import type { ChCoachHome, ChLatestRound, ChLeaderRow } from '../../data/home';
 import { isOut } from '../../data/availability';
@@ -136,10 +135,9 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           )}
         </div>
         {rosterHref && (
-          <Link href={rosterHref} className="ch-btn ch-btn--ghost ch-btn--sm">
-            <span>Full roster</span>
-            <Icon icon={ArrowRight} size={14} />
-          </Link>
+          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={rosterHref}>
+            Full roster
+          </Button>
         )}
       </div>
 

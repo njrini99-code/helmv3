@@ -9,10 +9,10 @@ import { changeTone, formatFixed, formatPct, formatSigned, NO_DATA } from '../..
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, deltaWords, needsText } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
-import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { SideScroll } from '../../ui/SideScroll';
 import { EmptyState } from '../../ui/States';
+import { Button } from '../../ui/Button';
 
 /** A player's Game tab on Stats, on the same Last 10 the figures read; null when Stats isn't rebuilt for coaches. */
 export function legPlayerHref(id: string): string | null {
@@ -103,10 +103,9 @@ export function TeamLegs({ legs, covered = false }: { legs: ChTeamLegs; covered?
           </span>
         </div>
         {team && (
-          <Link href={team} className="ch-btn ch-btn--ghost ch-btn--sm">
-            <span>Team stats</span>
-            <Icon icon={ArrowRight} size={14} />
-          </Link>
+          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={team}>
+            Team stats
+          </Button>
         )}
       </div>
       <Notices legs={legs} covered={covered} />

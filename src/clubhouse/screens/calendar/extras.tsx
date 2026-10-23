@@ -9,7 +9,7 @@ import { attachDocumentToEvent, detachDocumentFromEvent, getEventDocuments } fro
 import { getDocuments } from '@/app/golf/actions/documents';
 import { serializeRecurrenceRule } from '@/lib/golf/recurrence';
 import { Badge } from '../../ui/Badge';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { DateField } from '../../ui/DateField';
 import { TimeField } from '../../ui/TimeField';
 import { Icon } from '../../ui/Icon';
@@ -19,7 +19,6 @@ import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Segmented';
 import { Skeleton } from '../../ui/States';
 import { useToast } from '../../ui/Toast';
-import { Tooltip } from '../../ui/Tooltip';
 import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
@@ -425,11 +424,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{[fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </a>
               {canEdit ? (
-                <Tooltip>
-                  <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Remove ${f.title}`} onClick={() => void detach(f)}>
-                    <Icon icon={X} size={14} />
-                  </button>
-                </Tooltip>
+                <IconButton icon={X} size="sm" label={`Remove ${f.title}`} onClick={() => void detach(f)} />
               ) : (
                 <span />
               )}
