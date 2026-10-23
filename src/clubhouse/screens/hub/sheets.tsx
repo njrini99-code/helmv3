@@ -200,10 +200,9 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
           ))}
         </ul>
       )}
-      <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-expanded={listing} aria-controls={listId} onClick={() => setListing((v) => !v)}>
-        <Icon icon={Paperclip} size={14} />
-        <span>Attach from Documents</span>
-      </button>
+      <Button size="sm" leftIcon={Paperclip} aria={{ expanded: listing, controls: listId }} onClick={() => setListing((v) => !v)}>
+        Attach from Documents
+      </Button>
       {listing && (
         <div className="ch-hb-dp" id={listId}>
           {folders.map((f) => (

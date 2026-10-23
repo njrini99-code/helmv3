@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarDays, MessageSquare } from 'lucide-react';
-import Link from 'next/link';
+import { Button } from '../../ui/Button';
 import type { ReactNode } from 'react';
 import type { ChAgendaRow, ChCoachHome, ChHomeEvent } from '../../data/home';
 import { Badge } from '../../ui/Badge';
@@ -120,10 +120,9 @@ function AgendaRow({ r, replies = null }: { r: ChAgendaRow; replies?: ReturnType
       </div>
       {r.isNext && <Badge tone="accent">Next</Badge>}
       {replies?.nudge && (
-        <Link href={replies.nudge.href} className="ch-btn ch-btn--ghost ch-btn--sm ch-h-agenda__nudge" aria-label={replies.nudge.aria}>
-          <Icon icon={MessageSquare} size={14} />
-          <span>{replies.nudge.label}</span>
-        </Link>
+        <Button variant="ghost" size="sm" leftIcon={MessageSquare} className="ch-h-agenda__nudge" href={replies.nudge.href} aria={{ label: replies.nudge.aria }}>
+          {replies.nudge.label}
+        </Button>
       )}
     </div>
   );

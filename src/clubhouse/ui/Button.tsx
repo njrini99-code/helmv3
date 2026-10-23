@@ -20,6 +20,10 @@ interface CommonProps {
   /** Haptic on press. Primary buttons tap lightly by default; others are silent. */
   feel?: ChHaptic | null;
   className?: string;
+  /** The states a key carries for assistive tech (CONS-2): a name that differs from its label, a disclosure it opens, a toggle's state. */
+  aria?: { label?: string; expanded?: boolean; controls?: string; pressed?: boolean };
+  /** A `data-ch-code` for the state this key starts (the CH- catalog). */
+  code?: string;
   children: ReactNode;
 }
 
@@ -35,7 +39,7 @@ type ButtonProps = CommonProps &
   });
 
 export function Button(props: ButtonProps) {
-  const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, children } = props;
+  const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, aria, code, children } = props;
   // A primary press confirms; a destructive one warns as it is pressed (CONS-1).
   const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : variant === 'danger' ? 'warning' : null) : props.feel;
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
@@ -55,7 +59,7 @@ export function Button(props: ButtonProps) {
   );
   if (props.href !== undefined) {
     return (
-      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} onClick={() => feel && haptic(feel)}>
+      <Link href={props.href} className={cls} aria-keyshortcuts={kbd} aria-label={aria?.label} data-ch-code={code} onClick={() => feel && haptic(feel)}>
         {inner}
       </Link>
     );
@@ -65,6 +69,11 @@ export function Button(props: ButtonProps) {
       type={props.type ?? 'button'}
       className={cls}
       aria-keyshortcuts={kbd}
+      aria-label={aria?.label}
+      aria-expanded={aria?.expanded}
+      aria-controls={aria?.controls}
+      aria-pressed={aria?.pressed}
+      data-ch-code={code}
       disabled={props.disabled || props.busy}
       aria-busy={props.busy || undefined}
       onClick={(e) => {

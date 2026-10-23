@@ -58,10 +58,9 @@ export function AskActionCard({
   const pills = proposal.affects.filter((a) => !proposal.facts.some((f) => f.value.includes(a.label)));
 
   const evidenceControl = !focus ? null : hasEvidence ? (
-    <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm ch-th-act__ev" aria-pressed={evidenceOpen} data-ch-code="CH-13851" onClick={() => onOpenEvidence(focus)}>
-      <span>{phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}</span>
-      {phone && <Icon icon={ArrowRight} size={14} />}
-    </button>
+    <Button size="sm" className="ch-th-act__ev" rightIcon={phone ? ArrowRight : undefined} aria={{ pressed: evidenceOpen }} code="CH-13851" onClick={() => onOpenEvidence(focus)}>
+      {phone ? `See ${firstName(who?.label ?? '')}’s numbers` : 'Evidence'}
+    </Button>
   ) : statsHref ? (
     <Button variant="secondary" size="sm" href={statsHref} className="ch-th-act__ev">
       {`See ${firstName(who?.label ?? '')}’s stats`}
