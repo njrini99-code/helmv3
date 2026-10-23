@@ -1,6 +1,7 @@
 import type { ChRankSample, ChTeamStats } from '../../data/stats-team';
 import { formatSigned } from '../../lib/format';
 import { earlyTag, needsText, POOLED_SD, rankWithTies, sampleState, standardError, type FloorKind, type SampleState, type SpreadKind } from '../../lib/stats-signal';
+import { shortName } from '../../lib/names';
 
 /** The figure the ranked dot plot ranks by: strokes gained in total or one leg, or the scoring average. */
 export type TeamRankMetric = 'sg' | 'tee' | 'approach' | 'around' | 'putting' | 'score';
@@ -50,11 +51,7 @@ export interface TeamRankRow {
   tied: boolean;
 }
 
-/** "Theo Marchetti" to "Theo M."; a single name stays as it is. */
-export function shortName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return parts.length < 2 ? name : `${parts[0]} ${parts[parts.length - 1]!.charAt(0)}.`;
-}
+export { shortName };
 
 function sampleOf(g: GridRow, def: MetricDef): ChRankSample | null {
   const s = g.spread;

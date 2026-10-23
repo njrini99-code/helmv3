@@ -22,6 +22,7 @@ import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
 import { loadAttendanceCounts, loadInvitedCounts, type ChAttendanceCounts } from './attendance-counts';
 import { confirmedLine, daysBetween, homeSubline, inviteDetail } from '../screens/home/model';
+import { firstName } from '../lib/names';
 
 export { classYearLabel, formStatus } from './season';
 export { homeClock } from './home-clock';
@@ -301,7 +302,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   // have: the timezone, the roster, the team chat and the week's events go together; the season's rounds follow the roster alone
   // (they used to wait for the events and their replies too); the newest rounds' cards follow the rounds.
   const clockRead = homeClock(supabase, input.teamId, now);
-  const firstName = input.coachName.trim().split(/\s+/)[0] || 'Coach';
+  const coachFirst = firstName(input.coachName) || 'Coach';
   type RosterPlayer = { id: string; first_name: string | null; last_name: string | null; graduation_year: number | null };
   const rosterRead = Promise.resolve(
     supabase.from('golf_team_members').select('availability, player:golf_players(id, first_name, last_name, graduation_year)').eq('team_id', input.teamId).eq('status', 'active'),
@@ -416,7 +417,7 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   const legs = form ? teamLegs({ full, players: roster, cache, bench, tour: teamRes.error || !teamRes.data ? null : tourForGender(teamRes.data.gender) }) : null;
 
   return {
-    greeting: `${greeting}, ${firstName}.`,
+    greeting: `${greeting}, ${coachFirst}.`,
     teamChatId: chatRes.error ? null : (chatRes.data?.[0]?.id ?? null),
     subline: homeSubline(rows, { roundsError, nextCompetition: wk.nextCompetition }),
     todayLabel,

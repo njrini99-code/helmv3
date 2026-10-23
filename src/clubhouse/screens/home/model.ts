@@ -2,6 +2,7 @@ import type { ChCoachHome } from '../../data/home';
 import type { ChPlayerHome } from '../../data/player-home';
 import type { ChForm } from '../../data/season';
 import { isOut, type ChAvailability } from '../../data/availability';
+import { firstName } from '../../lib/names';
 
 /**
  * Coach Home's derived copy, kept pure so it can be tested without a
@@ -19,9 +20,7 @@ export function daysBetween(from: string, to: string): number {
   return Math.round((t(to) - t(from)) / 86400000);
 }
 
-export function firstName(full: string): string {
-  return full.trim().split(/\s+/)[0] ?? full;
-}
+export { firstName };
 
 /**
  * "Practice green · 6 players", "Green 2 · Priya, Ava". Names only for up to

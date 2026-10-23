@@ -14571,6 +14571,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-selected-bg",
+          "value": "var(--ch-bg-selected)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-selected-pill-bg",
+          "value": "#edf4ef",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-selected-pill-ring",
+          "value": "rgb(21 90 57 / 0.28)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-selected-ink",
+          "value": "var(--ch-green-700)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-text-primary",
           "value": "var(--ch-ink-900)",
           "scope": "[data-ui='clubhouse']"
@@ -16456,6 +16476,16 @@
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-selected-pill-bg",
+          "value": "var(--ch-green-100)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-selected-pill-ring",
+          "value": "rgb(107 187 140 / 0.3)",
+          "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-text-on-accent",
           "value": "#f4eedd",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
@@ -17916,6 +17946,7 @@
       "classes": [
         "ch-lgr__lead",
         "ch-lgr__title",
+        "ch-lgr__txt",
         "ch-wn",
         "ch-wn-detail",
         "ch-wn-meta",

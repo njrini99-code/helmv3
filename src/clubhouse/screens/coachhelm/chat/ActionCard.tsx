@@ -9,8 +9,8 @@ import { askLinkHref } from '../../../data/coachhelm-chat-links';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { playerStatsHref } from './Prose';
+import { firstName } from '../../../lib/names';
 
-const firstName = (full: string) => full.trim().split(/\s+/)[0] ?? full;
 
 /**
  * The proposal a coach approves: what will be written, who is told, and what is not set, stated

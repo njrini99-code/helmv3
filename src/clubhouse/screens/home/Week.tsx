@@ -14,6 +14,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { useChClock } from '../../lib/use-clock';
 import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
+import { firstName } from '../../lib/names';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
@@ -21,7 +22,6 @@ export function dayLabel(count: number, competition: boolean): string {
   return competition ? `competition, ${events}` : events;
 }
 
-const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /**
  * The coach's Next row, second line (spec B §4): who is going and who hasn't replied, with one Nudge, only while the

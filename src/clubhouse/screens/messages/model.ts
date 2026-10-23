@@ -149,7 +149,7 @@ export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): C
   return convs.filter((c) => (filter === 'unread' ? c.unread > 0 : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
 }
 
-export const firstName = (name: string) => name.split(/\s+/)[0] ?? name;
+export { firstName } from '../../lib/names';
 
 /**
  * Where the "New" divider goes when a thread opens: the earliest of the last `unread` messages someone else sent. Null

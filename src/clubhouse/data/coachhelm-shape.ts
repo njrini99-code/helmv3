@@ -365,7 +365,7 @@ export function stanceOf(ins: ChInsight, assigned: ChHelmAssigned | null = ins.a
   return { cls: ins.priority, word: PRI_LABEL[ins.priority] };
 }
 
-export const firstName = (name: string) => name.trim().split(/\s+/)[0] || name;
+export { firstName } from '../lib/names';
 
 const PRI_WEIGHT: Record<ChHelmPri, number> = { high: 3, medium: 2, low: 1 };
 

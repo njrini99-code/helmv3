@@ -21,6 +21,7 @@ import { sunTimes, type LatLng } from '../../lib/sun';
 import { agendaDetail } from './agenda-clock';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { nudgeDraft } from './nudge-draft';
+import { firstName } from '../../lib/names';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the
@@ -49,7 +50,6 @@ export function dayPhase(next: ChHomeEvent | null, todays: ChHomeEvent[], rounds
 }
 
 const WEEKDAY = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'long' });
-const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /** Off-site events only: "Practice green" is not a place a maps app can find. A plain link, no maps API (D1-2). */
 const DIRECTIONS = new Set<ChHomeEvent['type']>(['qualifier', 'tournament', 'travel']);
