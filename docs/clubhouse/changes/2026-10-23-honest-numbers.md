@@ -153,9 +153,14 @@ Held items: none
   the show floor the row has no value and says what it needs ("Needs 10
   chances"); between the floors it keeps the value with "Early read · 12
   chances", untoned against the team or Tour.
+- Game detail's Fairways hit, Greens in regulation, Scrambling and Sand saves
+  figures follow the same floors (the fairway and green floors count the
+  window's rounds), and the section's lead sentence gives the counts instead
+  of a rate while under them.
 - The team's Greens in regulation and Scrambling cards follow the same
   floors: under them the card is empty with what it needs; an early read
-  says so on its second line.
+  takes the card's second line in place of the shared coverage line (still
+  drawn once under the cards). Neither has a change chip until it is steady.
 
 ### Why
 
@@ -167,6 +172,11 @@ Held items: none
   early read, 40 read plain; fairways count rounds, not chances.
 - `stats-team.test.tsx`: one round and six chances leave both cards empty
   with what they need.
+- New `screens/stats/__tests__/game-detail-floors.test.tsx`: one bunker
+  shot says "Needs 10 chances"; twelve are an untoned early read; forty are
+  toned against the Tour.
+- `stats-production-parity.test.ts`: a floored rate is a named, expected
+  difference from the Fairway page (as the strokes gained floor already was).
 
 ## 2026-10-23 — Roster team average pooled per round (A3)
 
@@ -181,10 +191,11 @@ Held items: none
 
 ### Changed
 
-- `loadRoster` returns `teamAvg`: every active player's scored round in the
-  season, pooled per round (a nine-hole round counts as half, per 18), the
-  same rule as the team scoring average on Stats. The Roster's "Team average
-  X over the season" line and the spread chart's team marker read it.
+- `loadRoster` returns `teamAvg`: every active player's 18-hole round in the
+  season, pooled per round. These are the rounds the players' own averages
+  read, and the rounds the Stats team scoring average reads by default. The
+  Roster's "Team average X over the season" line and the spread chart's team
+  marker read it.
 
 ### Why
 
@@ -229,3 +240,41 @@ Held items: none
   empty with what it needs and no leg totals.
 - `stats-filter-data.test.tsx`: three nine-hole rounds are under the floor,
   six read per 18.
+- `stats-production-parity.test.ts`: the team figure equals the Fairway
+  page's over the players at the floor.
+- Not changed: the weekly team strokes gained line under the headline still
+  reads every round with shots.
+
+## 2026-10-23 — Standing's "Refreshed" day and one-decimal strokes gained (A20)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A20)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- Standing's "Refreshed" date is the day in the team's time zone
+  (`golf_team_settings.timezone`, Eastern when it is missing or not a real
+  zone), read by `loadPlayerStanding` and formatted by `refreshedOn`.
+- Strokes gained and the signed deltas print to one decimal on Standing,
+  its "Where strokes go" ladder, and the shared `figure` the Deep dive and
+  coach brief use. Ahead, behind and level for them are decided on the one
+  decimal they print. A par scoring average keeps two decimals.
+
+### Why
+
+- A nightly refresh at 02:30 UTC read as the next day for a US team, and
+  Standing printed strokes gained to two decimals where every other screen
+  prints one.
+
+### Verification
+
+- New `coachhelm-standing-shape.test.ts`: 02:30 UTC on Oct 23 is Oct 22 in
+  Los Angeles; one-decimal labels; +0.44 against +0.36 is level.
+- `coachhelm-standing.test.tsx`: the preview's refresh reads Sep 29 on the
+  Eastern day; ladder and rows print one decimal.
