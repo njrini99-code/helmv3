@@ -314,6 +314,7 @@ its rows together and does not map them one to one.
 | aplus-a24 | 390px: trip card dates and times hold together, Hub strip fade and snap, phone tabs scroll, Putts two lines, short SG labels (A24) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
 | aplus-a29 | Render must-fixes: Track distance words clear of the tee disc, no textarea grip on touch; KPI gauges held for the owner (A29) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-6); no Bridge IDs or CH codes needed |
 | aplus-a26 | Week grid: busy blocks under the events they overlap, 22px minimum, narrow blocks keep only the title; side-by-side lanes held for the owner (A26) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-7); no Bridge IDs or CH codes needed |
+| aplus-a17 | Quiet refresh after a minute away or back online, never under a dialog, a field or a round; A15 held for an iOS build (A17) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-8); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
