@@ -87,6 +87,11 @@ const sharedIgnoreErrors = [
   // writes on PGRST202, so every save raised one auto-captured event for a write that landed (Sentry -196).
   // The `s\(` anchor keeps the live single-step helm_debug_record_trace_step paging. Delete with the apply.
   /Could not find the function public\.helm_debug_record_trace_steps\(/,
+  // Same shape: golf_event_attendance_counts comes with the HELD 20261017102000_golf_event_attendance_players_own_rows.sql.
+  // getEventRSVP (calendar-events.ts, Fairway's event drawer) and the Clubhouse readers (data/attendance-counts.ts)
+  // call it and keep the attendance-row totals on PGRST202 / 42883, so each drawer open raised one event for counts
+  // that showed correctly (Sentry -1D3). The `\(` anchor keys it to this one function. Delete with the apply.
+  /Could not find the function public\.golf_event_attendance_counts\(/,
   // A HELD column, the same way: golf_conversation_participants.hidden_at comes with the HELD
   // 20261008160000_golf_conversation_hidden_at.sql. conversation-hide.ts probes it and reads 42703 as
   // "not available yet", so each Clubhouse Messages load raised one event for a probe that worked (Sentry
