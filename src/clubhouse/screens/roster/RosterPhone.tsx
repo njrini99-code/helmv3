@@ -30,6 +30,7 @@ import { useRosterSort, type PhoneSort } from './sort';
 import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { TERMS } from '../../lib/glossary';
 
 export type { PhoneSort } from './sort';
 
@@ -405,7 +406,7 @@ export function RosterPhoneRow({
             <b className={`ch-num ${bySg ? changeTone(sg, false) : ''}`.trim()}>
               {rowFigure(bySg ? sg : p.avg, bySg)}
             </b>
-            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} hcp`}</span>
+            <span className="ch-num">{bySg ? 'SG / rd' : `${formatHcp(p.handicap)} ${TERMS.handicap.short}`}</span>
           </span>
         </button>
       </ViewTransition>
@@ -493,7 +494,7 @@ function RequestsSheet({ open, onClose, data, jr }: { open: boolean; onClose: ()
                 </span>
                 <span className="ch-rsm-rq__h">
                   <b className="ch-num">{formatHcp(r.handicap)}</b>
-                  <span>hcp</span>
+                  <span>{TERMS.handicap.short}</span>
                 </span>
               </div>
               <div className="ch-rsm-rq__meta">

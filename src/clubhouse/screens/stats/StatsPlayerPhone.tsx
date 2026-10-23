@@ -39,6 +39,7 @@ import { devProgress, devTitle, goalLine } from './dev-format';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useArrivalPainted } from '../../lib/use-painted';
+import { TERMS } from '../../lib/glossary';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -168,7 +169,7 @@ export function StatsPlayerPhone({
                 )}
               </>
             )}
-            {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} hcp`]
+            {[failed ? null : `${data.season.rounds} ${data.season.rounds === 1 ? 'round' : 'rounds'} this season`, data.handicap == null ? null : `${formatHcp(data.handicap)} ${TERMS.handicap.short}`]
               .filter(Boolean)
               .map((part, i, all) => (
                 <Fragment key={i}>

@@ -426,7 +426,7 @@ describe('Player roster · phone', () => {
     expect(rows.map((r) => r.querySelector('.ch-rsm-row__b b')!.textContent)).toEqual(['Luca Ferraro', 'Ava Lindqvist', 'Theo Marchetti', 'Jonah Okafor']);
     const theo = rows[2]!;
     expect(theo.querySelector('.ch-rsm-row__b > span')!.textContent).toBe('You · Senior');
-    expect(theo.querySelector('.ch-rsm-row__v')!.textContent).toBe('+0.8hcp');
+    expect(theo.querySelector('.ch-rsm-row__v')!.textContent).toBe('+0.8HCP');
     expect(list.textContent).not.toMatch(/Avg|SG|form|Improving|Steady|Slipping|Early read/i);
     await user.click(screen.getByText('Ava Lindqvist'));
     expect(screen.queryByRole('region')).toBeNull();

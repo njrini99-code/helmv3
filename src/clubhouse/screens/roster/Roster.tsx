@@ -44,6 +44,7 @@ import { StatusConfirm, statusCopy } from './RosterStatus';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
+import { TERMS } from '../../lib/glossary';
 
 /**
  * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
@@ -607,7 +608,7 @@ export function Roster({ data }: { data: ChRoster }) {
                 value={sortBy}
                 onChange={setSort}
                 options={[
-                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: 'Avg score' }]),
+                  ...(data.statsError ? [] : [{ value: 'avg' as const, label: TERMS.scoringAvg.short }]),
                   { value: 'hcp', label: 'Handicap' },
                   { value: 'rounds', label: 'Rounds' },
                   { value: 'name', label: 'Name' },

@@ -385,7 +385,7 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-st.is-desk')).toBeNull();
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Jonah Okafor' })).toBeTruthy();
-    expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 hcp');
+    expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 21 rounds this season · 3.9 HCP');
     const figs = document.querySelector('.ch-stm-figs')!;
     // The board's three (m-stats.jsx Player): the trend in words, green when scores come down, amber when they rise (F-54).
     expect([...figs.querySelectorAll('dt')].map((d) => d.textContent)).toEqual(['Scoring avg', 'SG / round', 'Scoring trend']);
@@ -1314,7 +1314,7 @@ describe('Stats player · a failed read is never drawn as zero', () => {
           <StatsPlayer data={profile!} coachId="c1" />
         </PhoneChromeProvider>,
       );
-      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 hcp');
+      expect(document.querySelector('.ch-spm-head p')!.textContent).toBe('Sophomore · 3.9 HCP');
       expect(code('CH-5201')).not.toBeNull();
       expect(code('CH-5305')).toBeNull();
       expect(code('CH-5308')).toBeNull();

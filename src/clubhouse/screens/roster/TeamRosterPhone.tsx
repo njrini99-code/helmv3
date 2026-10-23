@@ -10,6 +10,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../../lib/format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
+import { TERMS } from '../../lib/glossary';
 
 /**
  * The player's phone Roster: the coach's phone list (docs/clubhouse/phone/roster.md) as plain text. The top bar
@@ -134,7 +135,7 @@ function TeammateRow({ p }: { p: ChTeammate }) {
       </span>
       <span className="ch-rsm-row__v">
         <b className="ch-num">{formatHcp(p.handicap)}</b>
-        <span>hcp</span>
+        <span>{TERMS.handicap.short}</span>
       </span>
     </div>
   );
