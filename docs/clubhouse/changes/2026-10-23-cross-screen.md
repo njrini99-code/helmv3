@@ -38,3 +38,35 @@ titles) wait on the owner's A25 answer
   roster test that a header sorts and carries `aria-sort`.
 - WebKit: Today appears only away from today and takes no room; the
   roster headers sort, the arrow's room is kept so labels don't move.
+
+## 2026-10-23 — One retry verb, one "not on a team" state (CONS-6, CONS-10)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-6, CONS-10)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- A failure's action says "Try again" everywhere: the failure toasts'
+  default, the offline toast, Settings, round entry and a message that
+  did not send, as the notices already did.
+- Fifteen pages say "You aren't on a team yet" through `ui/NoTeam`: a
+  restricted page state with one icon, one title, the page's own body
+  and code, and one way on (Team settings for a coach, Golf profile for
+  a player). Stats, Qualifiers, CoachHelm and team rounds gain that way
+  on; the Team setting itself has none.
+
+### Why
+
+- "Retry" and "Try again" named the same act, and the no-team state was
+  drawn fifteen ways, some with no way forward.
+
+### Verification
+
+- New `retry-verb.test.ts` and `no-team.test.ts`; the tests find the
+  failure key by its new name.
