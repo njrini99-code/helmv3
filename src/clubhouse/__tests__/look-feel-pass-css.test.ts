@@ -44,6 +44,22 @@ describe('weights', () => {
   });
 });
 
+describe('the type scale (mot-08, owner-approved 2026-10-23)', () => {
+  it('every text size up to 36px sits on one of the 11 steps', () => {
+    const steps = [11, 12, 13, 14, 15, 16, 17, 20, 22, 28, 34];
+    const size = String.raw`(?:calc\(\s*([\d.]+)\s*\*\s*var\(--ch-type-k\)\s*\)|([\d.]+)px)`;
+    const decl = new RegExp(String.raw`(?:font-size:\s*|(?:^|[;{\s])(?:font|--ch-type-[a-z0-9-]+):\s*(?:(?:italic|normal|\d{3})\s+)*)` + size, 'gm');
+    const off: string[] = [];
+    for (const f of readdirSync(dir).filter((x) => x.endsWith('.css'))) {
+      for (const m of read(f).matchAll(decl)) {
+        const n = parseFloat(m[1] ?? m[2] ?? '');
+        if (n > 0 && n <= 36 && !steps.includes(n)) off.push(`${f}: ${m[0].trim()}`);
+      }
+    }
+    expect(off).toEqual([]);
+  });
+});
+
 describe('the phone player name', () => {
   it('wraps to two balanced lines instead of an ellipsis', () => {
     const stats = read('stats.css');
