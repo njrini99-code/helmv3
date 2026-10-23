@@ -39,7 +39,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(26);
+SELECT plan(32);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -55,6 +55,9 @@ DECLARE
   v_team_x    uuid := '00000000-0000-0000-0000-00000000d013';
   v_userp     uuid := '00000000-0000-0000-0000-00000000d014';
   v_player    uuid := '00000000-0000-0000-0000-00000000d015';
+  -- a teammate on team X: can read the round's shots, not their detail
+  v_usert     uuid := '00000000-0000-0000-0000-00000000d016';
+  v_teammate  uuid := '00000000-0000-0000-0000-00000000d017';
 
   -- org 1, team Y: a coach in the SAME organisation, different team
   v_userc_y   uuid := '00000000-0000-0000-0000-00000000d021';
@@ -82,14 +85,16 @@ BEGIN
     (v_userc_x, 'shotdetail-coach-x@helm.test', 'authenticated'),
     (v_userc_y, 'shotdetail-coach-y@helm.test', 'authenticated'),
     (v_userc_z, 'shotdetail-coach-z@helm.test', 'authenticated'),
-    (v_userp,   'shotdetail-player@helm.test',  'authenticated')
+    (v_userp,   'shotdetail-player@helm.test',  'authenticated'),
+    (v_usert,   'shotdetail-teammate@helm.test', 'authenticated')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.users (id, email, role) VALUES
     (v_userc_x, 'shotdetail-coach-x@helm.test', 'coach'),
     (v_userc_y, 'shotdetail-coach-y@helm.test', 'coach'),
     (v_userc_z, 'shotdetail-coach-z@helm.test', 'coach'),
-    (v_userp,   'shotdetail-player@helm.test',  'player')
+    (v_userp,   'shotdetail-player@helm.test',  'player'),
+    (v_usert,   'shotdetail-teammate@helm.test', 'player')
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.organizations (id, name, type) VALUES
@@ -104,7 +109,8 @@ BEGIN
   ON CONFLICT DO NOTHING;
 
   INSERT INTO public.golf_players (id, user_id) VALUES
-    (v_player, v_userp)
+    (v_player, v_userp),
+    (v_teammate, v_usert)
   ON CONFLICT DO NOTHING;
 
   -- golf_teams_org_gender_uidx is UNIQUE (organization_id, gender), so the two
@@ -121,9 +127,10 @@ BEGIN
     (v_team_z, v_coach_z, 'head_coach', true)
   ON CONFLICT DO NOTHING;
 
-  -- The player is on team X only.
+  -- The player is on team X only. So is the teammate.
   INSERT INTO public.golf_team_members (team_id, player_id, status) VALUES
-    (v_team_x, v_player, 'active')
+    (v_team_x, v_player, 'active'),
+    (v_team_x, v_teammate, 'active')
   ON CONFLICT DO NOTHING;
 
   -- The player-write assertions below exercise an in-progress round. Keep the
@@ -502,6 +509,120 @@ SELECT is(
      AND p.proname IN ('can_read_golf_shot_detail', 'owns_golf_shot')),
   false,
   'neither shot-detail RLS helper is executable by anon'
+);
+
+-- An active teammate passes the golf_shots readability check (same team) but
+-- not the coach/owner conjunct, so the shot is visible and its detail is not.
+-- This is the persona that tells "shot readable" apart from "detail readable".
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d016", "role": "authenticated"}';
+
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_shots
+   WHERE id = '00000000-0000-0000-0000-00000000d043'),
+  1,
+  'active teammate CAN read the shot row'
+);
+
+SELECT is(
+  (SELECT count(*)::int FROM public.putt_details
+   WHERE shot_id = '00000000-0000-0000-0000-00000000d043'),
+  0,
+  'active teammate CANNOT read its putt_details'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+-- ============================================================================
+-- 20261023110000 put a set-based fast branch in front of
+-- can_read_golf_shot_detail in both SELECT policies (a performance fix: the
+-- per-row helper made PostgREST's shot-detail embeds cost seconds per page).
+-- The fast branch must never grant a row the helper refuses, and the helper
+-- must stay as the fallback, so the policy is exactly the helper. Oracle: for
+-- every persona, the fixture rows visible under RLS are exactly the rows the
+-- helper allows.
+-- ============================================================================
+CREATE TEMP TABLE shot_detail_oracle (persona uuid, tbl text, shot_id uuid, via text);
+GRANT ALL ON shot_detail_oracle TO authenticated;
+
+DO $oracle$
+DECLARE
+  v_persona uuid;
+BEGIN
+  FOREACH v_persona IN ARRAY ARRAY[
+    '00000000-0000-0000-0000-00000000d011',
+    '00000000-0000-0000-0000-00000000d014',
+    '00000000-0000-0000-0000-00000000d016',
+    '00000000-0000-0000-0000-00000000d021',
+    '00000000-0000-0000-0000-00000000d031'
+  ]::uuid[] LOOP
+    PERFORM set_config('request.jwt.claims',
+      json_build_object('sub', v_persona::text, 'role', 'authenticated')::text, true);
+
+    INSERT INTO shot_detail_oracle
+    SELECT v_persona, 'putt', pd.shot_id, 'helper' FROM public.putt_details pd
+    WHERE pd.shot_id::text LIKE '00000000-0000-0000-0000-00000000d04_'
+      AND public.can_read_golf_shot_detail(pd.shot_id)
+    UNION ALL
+    SELECT v_persona, 'approach', am.shot_id, 'helper' FROM public.approach_miss_details am
+    WHERE am.shot_id::text LIKE '00000000-0000-0000-0000-00000000d04_'
+      AND public.can_read_golf_shot_detail(am.shot_id);
+
+    SET LOCAL role TO authenticated;
+    INSERT INTO shot_detail_oracle
+    SELECT v_persona, 'putt', pd.shot_id, 'rls' FROM public.putt_details pd
+    WHERE pd.shot_id::text LIKE '00000000-0000-0000-0000-00000000d04_'
+    UNION ALL
+    SELECT v_persona, 'approach', am.shot_id, 'rls' FROM public.approach_miss_details am
+    WHERE am.shot_id::text LIKE '00000000-0000-0000-0000-00000000d04_';
+    RESET role;
+  END LOOP;
+  PERFORM set_config('request.jwt.claims', NULL, true);
+END
+$oracle$;
+
+SELECT is(
+  (SELECT count(*)::int FROM (
+     (SELECT persona, tbl, shot_id FROM shot_detail_oracle WHERE via = 'rls'
+      EXCEPT ALL
+      SELECT persona, tbl, shot_id FROM shot_detail_oracle WHERE via = 'helper')
+     UNION ALL
+     (SELECT persona, tbl, shot_id FROM shot_detail_oracle WHERE via = 'helper'
+      EXCEPT ALL
+      SELECT persona, tbl, shot_id FROM shot_detail_oracle WHERE via = 'rls')
+   ) mismatch),
+  0,
+  'shot-detail SELECT policies grant exactly what can_read_golf_shot_detail grants, for every persona'
+);
+
+SELECT ok(
+  (SELECT count(*) FROM pg_policies
+   WHERE schemaname = 'public'
+     AND policyname IN ('putt_details_select', 'approach_miss_details_select')
+     AND qual LIKE '%golf_shot_detail_round_ids()%'
+     -- The fast branch is only exact when the shot and its hole share a
+     -- round; legacy cross-round rows must fall through to the helper.
+     AND qual LIKE '%(gh.round_id = gs.round_id)%'
+     AND qual LIKE '%OR can_read_golf_shot_detail(shot_id))') = 2,
+  'both shot-detail SELECT policies keep the same-round guard and can_read_golf_shot_detail as the fallback'
+);
+
+SELECT is(
+  (SELECT p.prosecdef AND p.provolatile = 's'
+          AND 'search_path=pg_catalog, public, pg_temp' = ANY (p.proconfig)
+   FROM pg_proc p
+   JOIN pg_namespace n ON n.oid = p.pronamespace
+   WHERE n.nspname = 'public' AND p.proname = 'golf_shot_detail_round_ids'),
+  true,
+  'golf_shot_detail_round_ids is STABLE SECURITY DEFINER with a pinned search_path'
+);
+
+SELECT ok(
+  has_function_privilege('authenticated', 'public.golf_shot_detail_round_ids()', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.golf_shot_detail_round_ids()', 'EXECUTE'),
+  'golf_shot_detail_round_ids is callable by authenticated and not by anon'
 );
 
 SELECT * FROM finish();
