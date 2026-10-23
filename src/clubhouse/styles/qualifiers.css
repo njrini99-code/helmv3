@@ -3092,7 +3092,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
 .ch-qf-board .ch-qf-plate.is-none {
   box-shadow: none;
   font-size: 17px;
-  color: var(--ch-ink-300);
+  color: var(--ch-text-tertiary);
 }
 /* the status: a word in its own ink, no box */
 .ch-qf-board .ch-badge {

@@ -440,7 +440,7 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
 function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['rounds']; role: 'coach' | 'player'; tour: ChPlayerProfile['tour']; holes: ChHoles }) {
   const baseline = sgBaseline(tour);
   return (
-    <div className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
+    <div role="group" className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
       {rounds.length === 0 ? (
         <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (

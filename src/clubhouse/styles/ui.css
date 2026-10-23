@@ -336,7 +336,8 @@
   box-shadow: var(--ch-board-double-shadow);
 }
 .ch-score--empty {
-  color: var(--ch-ink-300);
+  /* A hole not played reads at 4.5:1 (A18), still quieter than a score. */
+  color: var(--ch-text-tertiary);
 }
 
 .ch-toasts {

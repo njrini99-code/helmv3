@@ -533,7 +533,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
           {!r.countable && <span className="ch-rd-pill is-nc">Not counted</span>}
         </span>
       </span>
-      <span className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
+      <span role="group" className="ch-rd-sc__grid" aria-label={r.inn != null ? `Out ${r.out ?? NO_DATA}, in ${r.inn}, total ${r.score}` : `${r.holes} holes, total ${r.score}`}>
         {r.holes === 18 ? (
           <>
             <span>

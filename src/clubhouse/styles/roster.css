@@ -994,7 +994,7 @@ a.ch-rs-peek__dev:focus-visible,
   outline: none;
 }
 .ch-rs-em__in::placeholder {
-  color: var(--ch-ink-500);
+  color: var(--ch-text-placeholder);
 }
 .ch-rs-em__foot {
   display: flex;

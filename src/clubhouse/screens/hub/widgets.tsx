@@ -757,7 +757,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
                       <em className={'ch-num' + (t.status === 'overdue' ? ' is-warn' : '')}>{t.status === 'overdue' ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
                     </span>
                     {t.done && (
-                      <span className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
+                      <span role="img" className="ch-hw-mini" aria-label={`${t.done[0]} of ${t.done[1]} done`}>
                         <b className="ch-num">
                           {t.done[0]}/{t.done[1]}
                         </b>

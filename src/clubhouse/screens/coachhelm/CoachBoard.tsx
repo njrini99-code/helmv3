@@ -433,7 +433,7 @@ function SinceFromRead({ read }: { read: Promise<ChPulseResult> }) {
 /** CH-13405: the line on its way, at the line's own height, so the header does not move when it lands. */
 function SinceSkeleton() {
   return (
-    <div className="ch-hl-since is-loading" aria-busy="true" aria-label="Loading what’s new since you were last here" data-ch-code="CH-13405">
+    <div role="status" className="ch-hl-since is-loading" aria-busy="true" aria-label="Loading what’s new since you were last here" data-ch-code="CH-13405">
       <Skeleton width={196} height={13} />
     </div>
   );

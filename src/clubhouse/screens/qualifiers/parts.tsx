@@ -137,7 +137,7 @@ export function ThruDots({ played, total }: { played: number; total: number }) {
   const label = `${played} of ${total} ${total === 1 ? 'round' : 'rounds'}`;
   if (total > 8) {
     return (
-      <span className="ch-num" aria-label={label}>
+      <span role="img" className="ch-num" aria-label={label}>
         {played}/{total}
       </span>
     );

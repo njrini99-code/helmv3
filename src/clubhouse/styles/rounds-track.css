@@ -1078,7 +1078,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-bar__go:disabled {
   background: #e4e0d6;
-  color: #8a857a;
+  /* 4.6:1, readable on a sunny course and still plainly dimmer than Next (A27); #8a857a was 2.8:1. */
+  color: #66625a;
   box-shadow: none;
   opacity: 1;
 }

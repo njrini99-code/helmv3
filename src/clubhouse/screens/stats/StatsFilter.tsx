@@ -102,7 +102,7 @@ export function StatsFilter({
         <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
-          {chips.length > 0 && <span className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}
+          {chips.length > 0 && <span role="img" className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}
         </button>
         {chips.length > 0 && (
           <ul className="ch-sf__chips" aria-label="Active filters">

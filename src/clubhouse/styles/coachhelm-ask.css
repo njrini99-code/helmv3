@@ -515,7 +515,7 @@
   color: var(--ch-text-primary);
 }
 .ch-ask-cmp__ta::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-placeholder);
 }
 .ch-ask-cmp__bar {
   display: flex;
