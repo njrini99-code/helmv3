@@ -106,7 +106,7 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   if (error) {
     return (
       <Tile id="ch-hw-trip" title="Next trip" span={7}>
-        <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
       </Tile>
     );
   }
@@ -282,7 +282,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
   return (
     <Tile id="ch-hw-week" title="This week" span={span} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
-        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10201" title="This week didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : quiet || !day ? (
         <EmptyState
           compact
@@ -631,7 +631,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
   if (error) {
     return (
       <Tile id="ch-hw-post" title="Latest post" span={span}>
-        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
       </Tile>
     );
   }
@@ -720,7 +720,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
   return (
     <Tile id="ch-hw-tasks" title="Tasks" span={5} aside={!data.error && data.rows.length > 0 && <More onClick={onOpenTasks}>All tasks</More>}>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10203" title="Tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState
           compact
@@ -826,8 +826,8 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
   const down = failed.replies || failed.tasks;
   return (
     <Tile id="ch-hw-queue" title="Your queue" span={5} aside={!down && items.length > 0 && <span className={'ch-hw__k ch-num' + (left ? ' is-on' : '')}>{left === 0 ? 'All done' : `${left} to do`}</span>}>
-      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />}
-      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />}
+      {failed.replies && <RefreshNotice code="CH-10201" title="Your events didn’t load." body="Nothing was lost. Try again." covered={covered} />}
+      {failed.tasks && <RefreshNotice code="CH-10203" title="Your tasks didn’t load." body="Nothing was lost. Try again." covered={covered} />}
       {!items.length && !down ? (
         <EmptyState compact code="CH-10303" title="Nothing is asked of you" body="Replies, posts to acknowledge and tasks from your coaches land here." />
       ) : items.length > 0 && (
@@ -910,7 +910,7 @@ export function FilesTile({ data, opening, covered, onOpen, onOpenDocs }: {
   return (
     <Tile id="ch-hw-files" title="Files" span={5} aside={!data.error && files.length > 4 && <More onClick={onOpenDocs}>{`All ${files.length}`}</More>}>
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again." covered={covered} />
       ) : !files.length ? (
         <EmptyState compact code="CH-10304" title="No documents yet" body="Files your coaches share show here." />
       ) : (

@@ -33,7 +33,7 @@ function ByRound({ points, unit, digits, label, what, lowerIsBetter = false }: {
 /** A shot read that failed is said, not shown as none logged. */
 function Shots({ error, code, what, onRetry, children }: { error: boolean; code: string; what: string; onRetry?: () => void; children: ReactNode }) {
   if (!error) return <>{children}</>;
-  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />;
+  return <InlineNotice code={code} title={`${what} didn’t load.`} body="The rest of Game detail is correct. Try again." onRetry={onRetry} />;
 }
 
 export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra; onRetry?: () => void }) {

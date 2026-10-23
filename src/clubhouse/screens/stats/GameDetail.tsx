@@ -532,7 +532,7 @@ export function GameDetail({
           )}
         >
           {x.approachError ? (
-            <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again; the error has been reported." onRetry={onRetry} />
+            <InlineNotice code="CH-5210" title="Proximity against the Tour didn’t load." body="The rest of Game detail is correct. Try again." onRetry={onRetry} />
           ) : tourProx.length ? (
             <>
               <Ladder rows={tourProx.map((b) => ({ band: b.band, value: b.value, bench: b.bench, n: b.n, floor: b.floor }))} unit=" ft" label="Yards to the pin" invert phone={phone} code="CH-5316" />
@@ -680,7 +680,7 @@ export function GameDetail({
             'Amber dots are below the Tour. A band grades from 30 putts.',
           )}
         >
-          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again; the error has been reported." onRetry={onRetry} />}
+          {x.puttsError && <InlineNotice code="CH-5211" title="Putts past 20 feet didn’t load." body="The curve stops at 20 feet. Try again." onRetry={onRetry} />}
           <PuttBands bands={curve} compact={phone} />
         </Panel>
         <Panel title="How putts miss" wide>

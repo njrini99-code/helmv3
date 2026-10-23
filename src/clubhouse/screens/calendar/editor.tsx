@@ -1028,7 +1028,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
   return (
     <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
       {failed ? (
-        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
         <div style={{ display: 'grid', gap: 12 }} aria-busy="true" data-ch-code="CH-6402">
           <Skeleton height={44} />

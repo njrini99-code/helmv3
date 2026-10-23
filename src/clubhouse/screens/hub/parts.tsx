@@ -542,7 +542,7 @@ export function Tasks({
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10203" title={coach ? "Tasks didn’t load." : "Your tasks didn’t load."} body="Nothing was lost. Try again." covered={covered} />
       ) : !data.rows.length ? (
         <EmptyState compact code="CH-10303" title={coach ? 'No tasks assigned' : 'No tasks right now'} body={coach ? 'Assign a task and see who has done it.' : 'Tasks your coaches assign show here with their due date.'} />
       ) : (
@@ -717,7 +717,7 @@ export function Documents({
         </>
       )}
       {data.error ? (
-        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again." covered={covered} />
       ) : !data.folders.length ? (
         <EmptyState code="CH-10304" shape="rows" shapeCount={3} title="No documents yet" body={coach ? 'Files you share show here in folders.' : 'Files your coaches share show here.'} />
       ) : (

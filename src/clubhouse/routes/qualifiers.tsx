@@ -135,7 +135,7 @@ function SelectionDidNotLoad() {
       <RefreshNotice
         code="CH-09218"
         title="Selections didn’t load."
-        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again; the error has been reported."
+        body="They couldn’t be read, so none are shown rather than a wrong list. Anything already saved is still saved. Try again."
       />
     </Frame>
   );

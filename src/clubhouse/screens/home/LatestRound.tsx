@@ -95,7 +95,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
         <RefreshNotice
           code="CH-2202"
           title="Recent rounds didn’t load"
-          body="Posted rounds are safe. Try again; the error has been reported."
+          body="Posted rounds are safe. Try again."
           covered={covered}
         />
       ) : !r ? (

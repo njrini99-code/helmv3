@@ -266,7 +266,7 @@ export function ReadFailed({
   bare?: boolean;
   covered?: boolean;
 }) {
-  const notice = <InlineNotice code={code} title={`${what} didn’t load`} body="Nothing was changed. Reload to try again; the error has been reported." onRetry={onRetry} covered={covered} />;
+  const notice = <InlineNotice code={code} title={`${what} didn’t load`} body="Nothing was changed. Reload to try again." onRetry={onRetry} covered={covered} />;
   if (bare) return notice;
   if (title) {
     return (
@@ -360,7 +360,7 @@ export function useUnsavedGuard(dirty: boolean) {
 }
 
 /** A refusal the server gave no plain reason for (a constraint, a PostgREST code): still not the connection. */
-export const REFUSED_BODY = 'The server didn’t accept the change. The error has been reported.';
+export const REFUSED_BODY = 'The server didn’t accept the change.';
 const CONNECTION_BODY = 'Check your connection and try again.';
 
 /**

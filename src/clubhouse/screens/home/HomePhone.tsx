@@ -78,7 +78,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
             <FailedSec id="ch-hm-upnext-failed" title="Up next">
-              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+              <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
             </FailedSec>
           ) : (
             <Day phone={phone} rounds={rounds} now={now} today={today} onOpenRound={setOpen} />
@@ -97,7 +97,7 @@ export function HomePhone({ data, now: frozen }: { data: ChCoachHome; now?: stri
           </SectionBoundary>
         ) : data.latestRounds.error ? (
           <FailedSec id="ch-hm-form-failed" title="Team scoring">
-            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+            <RefreshNotice code="CH-2211" title="Team scoring didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
           </FailedSec>
         ) : null}
 
@@ -456,7 +456,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !data.rounds.length ? (
         <EmptyState compact code="CH-2302" icon={BarChart3} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (

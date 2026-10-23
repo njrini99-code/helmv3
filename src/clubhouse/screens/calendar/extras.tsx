@@ -403,7 +403,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
         )}
       </div>
       {failed ? (
-        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6207" title="Files didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !files ? (
         <div aria-busy="true" data-ch-code="CH-6403">
           <Skeleton height={36} />
@@ -536,7 +536,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       <div style={{ display: 'grid', gap: 12 }}>
         <SearchField value={q} onChange={setQ} placeholder="Find a document" label="Find a document" />
         {failed ? (
-          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+          <InlineNotice code="CH-6208" title="Documents didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
         ) : !docs ? (
           <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-6404">
             <Skeleton height={44} />

@@ -556,7 +556,7 @@ export function TeamHub({
         <RefreshNotice
           code="CH-10208"
           title="The team list didn’t load."
-          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again; the error has been reported."
+          body="Players can’t be chosen for a post, a trip or a task until it does; a post to the whole team still goes out. Try again."
         />
       )}
 
@@ -682,7 +682,7 @@ export function TeamHub({
               <div className={'ch-hb-list' + (anns.length ? ' is-edited' : '') + (coach && !phone && anns.length ? ' has-margin' : '')}>
                 {coach && <NewAnnouncementLine name={viewerName} onOpen={() => setCompose(true)} />}
                 {data.announcements.error ? (
-                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10206" title="Announcements didn’t load." body="Nothing was lost. Try again." covered={covered} />
                 ) : !anns.length ? (
                   <EmptyState code="CH-10307" shape="rows" shapeCount={3} title="No announcements yet" body={coach ? 'Post one and see who has read it.' : 'Posts from your coaches show here.'} />
                 ) : (
@@ -697,7 +697,7 @@ export function TeamHub({
             <SectionBoundary surface="hub.travel" label="Travel" code="CH-10205">
               <div className="ch-hb-travel">
                 {data.trips.error ? (
-                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again; the error has been reported." covered={covered} />
+                  <RefreshNotice code="CH-10207" title="Travel didn’t load." body="Trips are safe. Try again." covered={covered} />
                 ) : !tripRows.length ? (
                   <EmptyState code="CH-10308" shape="time" shapeCount={3} title="No trips planned" body={coach ? 'Plan a trip and players see the itinerary here.' : 'Trips your coaches plan show here with the bus time and hotel.'} />
                 ) : (

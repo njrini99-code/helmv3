@@ -101,7 +101,7 @@ export function RosterProfile({
         <InlineNotice
           code="CH-3202"
           title="Season stats didn’t load"
-          body="Averages, form and recent rounds are missing until the rounds load. The error has been reported."
+          body="Averages, form and recent rounds are missing until the rounds load."
         />
       ) : (
         <section className="ch-rsm-panel" aria-labelledby={`trend-${p.id}`}>

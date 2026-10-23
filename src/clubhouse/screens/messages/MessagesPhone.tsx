@@ -276,7 +276,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
         <InlineNotice
           code="CH-7201"
           title="Conversations didn’t load"
-          body="Your messages are safe. Try again; the error has been reported."
+          body="Your messages are safe. Try again."
           onRetry={api.refetchConvs}
         />
       ) : (api.convsLoading && !api.convs.length) || api.annLoading ? (
@@ -432,7 +432,7 @@ function PhoneThread({
               <InlineNotice
                 code="CH-7216"
                 title="This conversation may be out of date"
-                body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
+                body="It didn’t refresh. What’s here is what was last loaded. Try again."
                 onRetry={api.refetchMsgs}
               />
             )}
@@ -440,7 +440,7 @@ function PhoneThread({
               <InlineNotice
                 code="CH-7202"
                 title="This conversation didn’t load"
-                body="Nothing was lost. Try again; the error has been reported."
+                body="Nothing was lost. Try again."
                 onRetry={api.refetchMsgs}
               />
             ) : api.msgsLoading && !api.msgs.length ? (
@@ -679,7 +679,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                 }
               >
                 {api.membersError ? (
-                  <InlineNotice code="CH-7204" title="Members didn’t load" body="Try again; the error has been reported." onRetry={api.retryMembers} />
+                  <InlineNotice code="CH-7204" title="Members didn’t load" body="Try again." onRetry={api.retryMembers} />
                 ) : !api.members ? (
                   <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7405">
                     <Skeleton height={36} />
@@ -724,7 +724,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
             {(api.muteError || !api.mute || muted || (conv.group && !mine) || api.deleteConversation) && (
               <Panel>
                 {api.muteError ? (
-                  <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again; the error has been reported." onRetry={api.retryMute} />
+                  <InlineNotice code="CH-7208" title="The mute setting didn’t load" body="Try again." onRetry={api.retryMute} />
                 ) : !api.mute ? (
                   <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7407">
                     <Skeleton height={30} />
@@ -810,7 +810,7 @@ function FilesPanel({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
       action={files && files.length > 0 ? <span className="ch-msp-count ch-num">{files.length}</span> : undefined}
     >
       {failed ? (
-        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again; the error has been reported." onRetry={retry} />
+        <InlineNotice code="CH-7214" title="Files didn’t load" body="Your messages are safe. Try again." onRetry={retry} />
       ) : !files ? (
         <div className="ch-msp-pad" aria-busy="true" data-ch-code="CH-7409">
           <Skeleton height={36} />
@@ -1044,7 +1044,7 @@ function PhoneNewMessage({
           )}
           <h2 className="ch-ms-sec__l">{q ? "Results" : "People"}</h2>
           {api.directoryError ? (
-            <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again; the error has been reported." onRetry={api.retryDirectory} />
+            <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : (
             <div className="ch-msp-panel" role="listbox" aria-multiselectable={coach} aria-label="People">
               {people.map((p) => {

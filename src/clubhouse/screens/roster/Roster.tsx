@@ -501,7 +501,7 @@ export function Roster({ data }: { data: ChRoster }) {
         <InlineNotice
           code="CH-3202"
           title="Season stats didn’t load"
-          body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
+          body="The roster is complete, but averages, form and strokes gained are missing until the rounds load."
           onRetry={() => router.refresh()}
           covered={covered}
         />
@@ -526,7 +526,7 @@ export function Roster({ data }: { data: ChRoster }) {
         <InlineNotice
           code="CH-3201"
           title="The roster didn’t load"
-          body="Your players are safe. Try again; the error has been reported."
+          body="Your players are safe. Try again."
           onRetry={() => router.refresh()}
           covered={covered}
         />

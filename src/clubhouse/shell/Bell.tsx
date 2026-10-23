@@ -423,7 +423,7 @@ export function Bell() {
   const body = () => (
     <div className="ch-bellp__body">
       {listFailed ? (
-        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again; the error has been reported." onRetry={() => setAttempt((x) => x + 1)} />
+        <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (
         <div role="status" className="ch-bellp__skel" aria-busy="true" aria-label="Loading notifications" data-ch-code="CH-1401">
           {[0, 1, 2, 3].map((k) => (

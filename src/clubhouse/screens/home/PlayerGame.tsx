@@ -96,7 +96,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     <Segmented<`${Span}`> redraws size={phone ? 'md' : 'sm'} label="Rounds shown" value={`${n}`} onChange={(v) => setN(Number(v) as Span)} options={options} />
   );
   const body = data.scoring.error ? (
-    <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+    <RefreshNotice code="CH-2215" title="Your rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
   ) : shown.length < 2 ? (
     <EmptyState
       compact
@@ -331,7 +331,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
         </div>
       )}
       {legs.cacheError && (
-        <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing. The error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2216" title="Some of your figures didn’t load" body="Scores, greens and putts are right; scrambling is missing." covered={covered} />
       )}
       {/* Figures that did not load are not "nothing to break down": the notice above is the whole answer then (CH-2216). */}
       {!any ? (

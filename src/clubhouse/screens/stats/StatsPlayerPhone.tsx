@@ -195,7 +195,7 @@ export function StatsPlayerPhone({
       </div>
 
       {!filtered && w.rounds === 0 && !data.roundsError && <NineHint code="CH-5324" filter={data.filter} options={data.filterOptions} who={coach ? `${first} has` : 'You have'} />}
-      {failed && <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={onRetry} />}
+      {failed && <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again." onRetry={onRetry} />}
 
       {emptyFilter && <FilterEmpty code="CH-5320" onClear={() => onFilter(clearFilters(data.filter))} />}
 
@@ -214,7 +214,7 @@ export function StatsPlayerPhone({
         <>
       <SectionBoundary surface="stats.player.game" label="Game detail" code="CH-5205">
         {data.statsError ? (
-          <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again; the error has been reported." onRetry={onRetry} />
+          <InlineNotice code="CH-5202" title="Shot-level detail didn’t load." body="Scores and rounds are correct. Try again." onRetry={onRetry} />
         ) : data.stats && data.stats.roundsPlayed > 0 ? (
           <GameDetail s={data.stats} x={data.extra} bench={data.bench} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={onRetry} phone />
         ) : (
@@ -462,7 +462,7 @@ function Development({ data, coach, onAdd, onRetry }: { data: ChPlayerProfile; c
           </Button>
         )}
       </div>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={onRetry} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={onRetry} />}
       <h3 className="ch-spm-sub">
         Focus areas{' '}
         <span className="ch-num">

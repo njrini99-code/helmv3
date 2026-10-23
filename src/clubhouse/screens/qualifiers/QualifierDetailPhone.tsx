@@ -288,7 +288,7 @@ function Board({
         {data.entriesError ? (
           <InlineNotice code="CH-09203" title="The field didn’t load" body="Standings wait until the entrants load, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         ) : (
-          <InlineNotice code="CH-09204" title="Scores didn’t load" body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported." onRetry={refresh} retrying={refreshing} />
+          <InlineNotice code="CH-09204" title="Scores didn’t load" body="The field isn’t shown without its scores, so nobody reads a wrong order." onRetry={refresh} retrying={refreshing} />
         )}
       </section>
     );

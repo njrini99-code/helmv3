@@ -96,7 +96,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
         <InlineNotice
           code="CH-09201"
           title="The qualifiers didn’t load"
-          body="Nothing has changed. Try again; the error has been reported."
+          body="Nothing has changed. Try again."
           onRetry={refresh}
           retrying={refreshing}
         />

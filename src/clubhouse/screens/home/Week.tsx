@@ -60,7 +60,7 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
         <RefreshNotice
           code="CH-2201"
           title="This week’s schedule didn’t load"
-          body="Your events are safe. This is a display problem, and trying again usually clears it."
+          body="Your events are safe. Try again."
           covered={covered}
         />
       ) : (

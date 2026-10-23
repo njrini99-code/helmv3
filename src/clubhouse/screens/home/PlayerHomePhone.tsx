@@ -53,7 +53,7 @@ export function PlayerHomePhone({ data, now: frozen }: { data: ChPlayerHome; now
         <SectionBoundary surface="home.upNext" label="Up next" code="CH-2213">
           {data.week.error ? (
             // On the sheet, not in the green card: inside it the notice took the card's ivory ink and its words vanished.
-            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. This is a display problem, and trying again usually clears it." covered={covered} />
+            <RefreshNotice code="CH-2201" title="This week’s schedule didn’t load" body="Your events are safe. Try again." covered={covered} />
           ) : data.next ? (
             <UpNext e={data.next} now={now} kicker="Up next">
               {!data.next.allDay && <Countdown to={data.next.startIso} frozen={frozen} />}
@@ -181,7 +181,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
         )}
       </div>
       {data.error ? (
-        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again; the error has been reported." covered={covered} />
+        <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !r ? (
         <EmptyState compact code="CH-2302" icon={Flag} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
       ) : (

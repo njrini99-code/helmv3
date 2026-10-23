@@ -27,7 +27,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
     return (
       <section className="ch-ms-sec is-ann" aria-label="Announcements">
         <div className="ch-ms-sec__l">Announcements</div>
-        <InlineNotice code="CH-7206" title="Announcements didn’t load" body="Try again; the error has been reported." onRetry={api.refetchAnns} />
+        <InlineNotice code="CH-7206" title="Announcements didn’t load" body="Try again." onRetry={api.refetchAnns} />
       </section>
     );
   }

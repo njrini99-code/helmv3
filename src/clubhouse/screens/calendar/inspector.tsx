@@ -739,7 +739,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
         </div>
       </div>
       {loadError ? (
-        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again; the error has been reported." onRetry={() => setAttempt((a) => a + 1)} />
+        <InlineNotice code="CH-6209" title="Attendance didn’t load." body="Marks already saved are safe. Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !saved ? (
         <div className="ch-in__facts" aria-busy="true" data-ch-code="CH-6405">
           {e.people.slice(0, 5).map((p) => (

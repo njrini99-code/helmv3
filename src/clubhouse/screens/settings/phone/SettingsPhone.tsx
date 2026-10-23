@@ -278,7 +278,7 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
     : ['Player', data.teamName, hcp ? `HCP ${hcp}` : null].filter(Boolean).join(' · ');
   return (
     <>
-      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again; the error has been reported." onRetry={writes.refresh} />}
+      {everyReadFailed(data) && <InlineNotice code="CH-8214" title="Settings didn’t load" body="Nothing was changed. Try again." onRetry={writes.refresh} />}
       {/* A profile that didn't load opens Account, where the notice and Try again are. */}
       <button type="button" className="ch-setm-id" onClick={profile ? onProfile : () => onOpen('account')}>
         <span className={'ch-setm-coin' + (coach ? '' : ' is-player')} aria-hidden="true">

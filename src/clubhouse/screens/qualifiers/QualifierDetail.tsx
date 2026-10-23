@@ -398,7 +398,7 @@ function Leaderboard({
           <InlineNotice
             code="CH-09204"
             title="Scores didn’t load"
-            body="The field isn’t shown without its scores, so nobody reads a wrong order. The error has been reported."
+            body="The field isn’t shown without its scores, so nobody reads a wrong order."
             onRetry={refresh}
             retrying={refreshing}
           />

@@ -513,7 +513,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             <InlineNotice
               code="CH-7201"
               title="Conversations didn’t load"
-              body="Your messages are safe. Try again; the error has been reported."
+              body="Your messages are safe. Try again."
               onRetry={api.refetchConvs}
             />
           </div>
@@ -1759,7 +1759,7 @@ function Thread({
             <InlineNotice
               code="CH-7216"
               title="This conversation may be out of date"
-              body="It didn’t refresh. What’s here is what was last loaded. Try again; the error has been reported."
+              body="It didn’t refresh. What’s here is what was last loaded. Try again."
               onRetry={api.refetchMsgs}
             />
           )}
@@ -1767,7 +1767,7 @@ function Thread({
             <InlineNotice
               code="CH-7202"
               title="This conversation didn’t load"
-              body="Nothing was lost. Try again; the error has been reported."
+              body="Nothing was lost. Try again."
               onRetry={api.refetchMsgs}
             />
           ) : api.msgsLoading && !api.msgs.length ? (
@@ -2105,7 +2105,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
         <InlineNotice
           code="CH-7215"
           title="The team list didn’t load"
-          body="Try again; the error has been reported."
+          body="Try again."
           onRetry={() => setAttempt((n) => n + 1)}
         />
       ) : !people ? (
@@ -2230,7 +2230,7 @@ function Details({
             <InlineNotice
               code="CH-7204"
               title="Members didn’t load"
-              body="Try again; the error has been reported."
+              body="Try again."
               onRetry={api.retryMembers}
             />
           ) : !api.members ? (
@@ -2312,7 +2312,7 @@ function FilesSection({ api, conv }: { api: ChMessagesApi; conv: ChConv }) {
         <InlineNotice
           code="CH-7214"
           title="Files didn’t load"
-          body="Your messages are safe. Try again; the error has been reported."
+          body="Your messages are safe. Try again."
           onRetry={retry}
         />
       ) : !files ? (
@@ -2366,7 +2366,7 @@ function MuteControl({ api }: { api: ChMessagesApi }) {
         <InlineNotice
           code="CH-7208"
           title="The mute setting didn’t load"
-          body="Try again; the error has been reported."
+          body="Try again."
           onRetry={api.retryMute}
         />
       ) : !m ? (
@@ -2670,7 +2670,7 @@ function NewMessage({
               <InlineNotice
                 code="CH-7205"
                 title="Your team list didn’t load"
-                body="Try again; the error has been reported."
+                body="Try again."
                 onRetry={api.retryDirectory}
               />
             ) : (

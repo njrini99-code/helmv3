@@ -673,7 +673,7 @@ export function Calendar({
         <InlineNotice
           code="CH-6212"
           title="Your team’s timezone didn’t load."
-          body={`Times are shown in ${data.zoneLabel} until it does. Try again; the error has been reported.`}
+          body={`Times are shown in ${data.zoneLabel} until it does. Try again.`}
           onRetry={refresh}
         />
       )}
@@ -681,18 +681,18 @@ export function Calendar({
         <InlineNotice
           code="CH-6213"
           title="The roster didn’t load."
-          body="Events are complete, but players can’t be invited or picked until it does. Try again; the error has been reported."
+          body="Events are complete, but players can’t be invited or picked until it does. Try again."
           onRetry={refresh}
         />
       )}
       {data.busyError && !covered && (
-        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again; the error has been reported." onRetry={refresh} />
+        <InlineNotice code="CH-6202" title="Your busy time didn’t load." body="Team events are complete, but your own blocks aren’t shown. Try again." onRetry={refresh} />
       )}
       {data.classesError && !covered && (
         <InlineNotice
           code="CH-6203"
           title={coach ? "Class schedules didn’t load." : "Your classes didn’t load."}
-          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again; the error has been reported.' : 'Team events are complete. Try again; the error has been reported.'}
+          body={coach ? 'Team events are complete, but class overlaps may be missing. Try again.' : 'Team events are complete. Try again.'}
           onRetry={refresh}
         />
       )}
@@ -779,7 +779,7 @@ export function Calendar({
           flagged={flagged}
           selId={selId}
           notices={notices}
-          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} /> : null}
+          eventsNotice={data.eventsError ? <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} /> : null}
           onView={go}
           onStep={step}
           onOpen={open}
@@ -904,7 +904,7 @@ export function Calendar({
       {notices}
       {data.eventsError ? (
         <div className="ch-cal-surface">
-          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again; the error has been reported." onRetry={refresh} covered={covered} />
+          <InlineNotice code="CH-6201" title="The calendar didn’t load." body="Nothing was changed. Try again." onRetry={refresh} covered={covered} />
         </div>
       ) : (
         <div className="ch-cal-body">

@@ -339,7 +339,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
           </div>
         )}
         {data.roundsError && (
-          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again; the error has been reported." onRetry={() => router.refresh()} />
+          <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again." onRetry={() => router.refresh()} />
         )}
 
         {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
@@ -360,7 +360,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
                   <InlineNotice
                     code="CH-5202"
                     title="Shot-level detail didn’t load."
-                    body="Scores and rounds above are correct. Try again; the error has been reported."
+                    body="Scores and rounds above are correct. Try again."
                     onRetry={() => router.refresh()}
                   />
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
@@ -537,7 +537,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
   const waiting = data.focusAreas.filter((f) => f.status === 'proposed').length;
   return (
     <>
-      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again; the error has been reported." onRetry={() => router.refresh()} />}
+      {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={() => router.refresh()} />}
       <Zones>
         <Zone
           n={1}

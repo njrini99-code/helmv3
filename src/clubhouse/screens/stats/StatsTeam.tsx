@@ -84,7 +84,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             tone="danger"
             code="CH-4201"
             title="Team rounds didn’t load"
-            body="Every figure would be incomplete, so none is shown. The error has been reported."
+            body="Every figure would be incomplete, so none is shown."
           />
         )}
         <PageRefreshNotice parts={failed} />
@@ -163,7 +163,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
         <RetryNotice
           code="CH-4202"
           title="Some team figures didn’t load"
-          body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported."
+          body="Scoring is correct; greens, putts and scrambling are missing."
           covered={covered}
         />
       )}
@@ -198,7 +198,7 @@ function TeamFigures({ figures, cacheError, covered, against }: { figures: ChTea
 }
 
 function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putting']; failed: boolean; covered: boolean }) {
-  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
+  if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!putting)
     return (
       <div className="ch-st-card">
@@ -244,7 +244,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
         ))
       )}
       {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
-      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again; the error has been reported." covered={covered} />}
+      {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again." covered={covered} />}
     </section>
   );
 }

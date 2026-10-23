@@ -104,7 +104,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
             tone="danger"
             code="CH-4201"
             title="Team rounds didn’t load"
-            body="Every figure would be incomplete, so none is shown. The error has been reported."
+            body="Every figure would be incomplete, so none is shown."
           />
         )}
         <PageRefreshNotice parts={failed} />
@@ -130,7 +130,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
             <>
               <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                 {data.cacheError && (
-                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing. The error has been reported." covered={covered} />
+                  <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />
                 )}
                 <Hero figures={data.figures} />
                 {/* The trend reads the hero, so it sits right under it; it crashes on its own. */}
@@ -460,7 +460,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
 
 /** Make rate by distance: a bar per band, the Tour rate as a mark, a band under it in amber. */
 function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
-  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again; the error has been reported." covered={covered} />;
+  if (data.puttsError) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!data.putting) return <EmptyState compact code="CH-4306" title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />;
   const bands = data.putting.bands.slice(0, 5);
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);

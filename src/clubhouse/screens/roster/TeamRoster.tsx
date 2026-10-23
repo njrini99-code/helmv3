@@ -92,7 +92,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
         <InlineNotice
           code="CH-3210"
           title="The roster didn’t load"
-          body="Your team is safe. Try again; the error has been reported."
+          body="Your team is safe. Try again."
           onRetry={() => router.refresh()}
         />
       ) : players.length === 0 ? (

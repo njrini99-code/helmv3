@@ -186,7 +186,7 @@ export function RosterPhone({
           <InlineNotice
             code="CH-3202"
             title="Season stats didn’t load"
-            body="The roster is complete, but averages, form and strokes gained are missing until the rounds load. The error has been reported."
+            body="The roster is complete, but averages, form and strokes gained are missing until the rounds load."
             onRetry={onRetry}
             covered={covered}
           />
@@ -196,7 +196,7 @@ export function RosterPhone({
           <InlineNotice
             code="CH-3201"
             title="The roster didn’t load"
-            body="Your players are safe. Try again; the error has been reported."
+            body="Your players are safe. Try again."
             onRetry={onRetry}
             covered={covered}
           />
@@ -427,7 +427,7 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
       <InlineNotice
         code="CH-3203"
         title="Join requests didn’t load"
-        body="Pending requests are safe. Try again; the error has been reported."
+        body="Pending requests are safe. Try again."
         onRetry={onRetry}
         covered={covered}
       />

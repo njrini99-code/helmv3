@@ -86,7 +86,7 @@ function PlayerPicks({
   /** The group's id: a refused save moves focus to its first player. */
   id?: string;
 }) {
-  if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again; the error has been reported." />;
+  if (players.length === 0 && error) return <RefreshNotice code="CH-10208" title="The team list didn’t load." body="Players can’t be chosen until it does. Try again." />;
   if (players.length === 0)
     return (
       <span className="ch-field__help" data-ch-code="CH-10310">
