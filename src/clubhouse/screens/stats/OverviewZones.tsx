@@ -199,7 +199,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         )}
         {withValue(sgTrend).length >= 3 && (
           <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
-            <RoundTrend rounds={sgTrend} kind="sg" size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
+            <RoundTrend rounds={sgTrend} kind="sg" tour={data.tour} size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
           </Vis>
         )}
       </Zone>
@@ -581,10 +581,12 @@ function ParDots({ rows }: { rows: Array<{ p: 3 | 4 | 5; you: number | null; tou
 }
 
 /** A green seen from above, its four edges thickened by the share of missed approaches that finish there. */
-function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
+export function GreenDiagram({ short, long, left, right, gir }: { short: number; long: number; left: number; right: number; gir: number | null }) {
   const stroke = (v: number) => 5 + (v / 100) * 28;
   const worst = Math.max(short, long, left, right);
   const tone = (v: number) => (v === worst ? 'var(--ch-warning-600)' : 'var(--ch-champagne-500)');
+  // The side most misses finish on is the one in bold, by the same test as its colour, never "Short" by default (A8.6).
+  const lab = (v: number) => (v === worst ? { fontSize: 15, fontWeight: 700, fill: tone(v) } : { fontSize: 13, fontWeight: 600, fill: 'var(--ch-text-secondary)' });
   return (
     <svg className="ch-zsvg ch-zgreen" viewBox="0 0 340 250" role="img" aria-label={`Missed greens: ${short} percent short, ${long} long, ${left} left, ${right} right`}>
       <g transform="translate(20,6)">
@@ -602,10 +604,10 @@ function GreenDiagram({ short, long, left, right, gir }: { short: number; long: 
         <path d="M 96 50.6 A 84 84 0 0 1 204 50.6" fill="none" stroke={tone(long)} strokeWidth={stroke(long)} />
         <path d="M 85.6 169 A 84 84 0 0 1 85.6 61" fill="none" stroke={tone(left)} strokeWidth={stroke(left)} />
         <path d="M 214.4 61 A 84 84 0 0 1 214.4 169" fill="none" stroke={tone(right)} strokeWidth={stroke(right)} />
-        <text x={150} y={232} textAnchor="middle" fontSize={15} fontWeight={700} fill={tone(short)}>Short {short}%</text>
-        <text x={150} y={24} textAnchor="middle" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Long {long}%</text>
-        <text x={62} y={119} textAnchor="end" fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Left {left}%</text>
-        <text x={238} y={119} fontSize={13} fontWeight={600} fill="var(--ch-text-secondary)">Right {right}%</text>
+        <text x={150} y={232} textAnchor="middle" {...lab(short)}>Short {short}%</text>
+        <text x={150} y={24} textAnchor="middle" {...lab(long)}>Long {long}%</text>
+        <text x={62} y={119} textAnchor="end" {...lab(left)}>Left {left}%</text>
+        <text x={238} y={119} {...lab(right)}>Right {right}%</text>
       </g>
     </svg>
   );

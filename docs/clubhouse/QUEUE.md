@@ -296,6 +296,7 @@ its rows together and does not map them one to one.
 | aplus-a3 | Roster team average pooled per round, not a mean of player means (A3) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
 | aplus-a4 | Team SG headline and leg totals obey the 3-round floor (A4) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
 | aplus-a20 | Standing “Refreshed” date in the team’s time zone; SG to one decimal (A20) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a8 | Chart defects (A8, 11 parts): Ask trend better-is-up with round ticks; SG tick decimals; women's Tour zero label; gauge stays in its half with its end labelled; putts lower is better; green's bold side is the worst; month spark per 18; ring early fill under 10 putts; tabular tick numbers; team phone mean weighted; par line only for one par, dead ScoreLine removed | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-2); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

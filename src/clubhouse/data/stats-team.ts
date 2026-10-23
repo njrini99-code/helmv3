@@ -88,7 +88,7 @@ export interface ChRankSpread {
 }
 
 export type ChGauge =
-  | { kind: 'sg' }
+  | { kind: 'sg'; tour?: ChSgTour }
   | { kind: 'par'; toPar: number | null }
   | { kind: 'rate'; ref?: number | null; refLabel?: string }
   | { kind: 'putts' }
@@ -116,7 +116,7 @@ export interface ChTeamStats {
   figures: ChFigure[];
   weeks: string[];
   /** The phone's scoring trend (m-stats.jsx: "Team avg · 10 rounds"): the team's average on each of its last ten round days, oldest first. */
-  days: Array<{ label: string; score: number | null }>;
+  days: Array<{ label: string; score: number | null; n?: number }>;
   /** Weekly averages, and the window's own mean (strokes gained per round, scoring average), which is what the headline and the sort read. */
   team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null };
   players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null }>;
@@ -314,7 +314,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
       state: sgTotal == null ? 'empty' : sgDelta.delta == null && sgDelta.context ? 'no-comparison' : undefined,
       // Always drawn, so the card is as tall as its loading skeleton (CH-4401).
       note: `${baseline.vs}${sgNow.length && sgDelta.context ? ` · ${sgNow.length} ${sgNow.length === 1 ? 'round' : 'rounds'} with shots` : ''}`,
-      gauge: { kind: 'sg' },
+      gauge: { kind: 'sg', tour },
     },
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
@@ -385,7 +385,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     days: [...new Set(windowRounds.map((r) => r.round_date))]
       .sort()
       .slice(-10)
-      .map((d) => ({ label: shortDate(d), score: avgOf(windowRounds.filter((r) => r.round_date === d), (r) => r.total_score) })),
+      .map((d) => {
+        const on = windowRounds.filter((r) => r.round_date === d);
+        // `n`: the whole rounds the day's average rests on, so the phone's mean weighs a day of six rounds above a day of one (A8.10).
+        return { label: shortDate(d), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
+      }),
     team: {
       sg: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), (r) => r.strokes_gained_total)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),

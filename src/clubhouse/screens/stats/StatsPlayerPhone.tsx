@@ -299,7 +299,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           the Tour's zero. The trend is already words. */}
       <div className="ch-stm-gauges" aria-hidden="true">
         <span>{w.avg != null && toPar != null && <FigureGauge gauge={{ kind: 'par', toPar }} n={w.avg} />}</span>
-        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg' }} n={w.sgPerRound} />}</span>
+        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg', tour: data.tour }} n={w.sgPerRound} />}</span>
         <span />
       </div>
       <div className="ch-stm-overview__meta">
@@ -387,7 +387,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
             <h2 id="ch-spm-sgtrend">Strokes gained by round</h2>
             <span className="ch-num">Per 18 holes</span>
           </div>
-          <RoundTrend rounds={sgRounds} kind="sg" openHref={openHref} label="Strokes gained in each round of the window." />
+          <RoundTrend rounds={sgRounds} kind="sg" tour={data.tour} openHref={openHref} label="Strokes gained in each round of the window." />
         </section>
       )}
     </>

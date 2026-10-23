@@ -480,7 +480,11 @@ function SeasonStage({ ribbon, avg, phone }: { ribbon: ChRoundsSeason['ribbon'];
  * figures beside it say the rest. Skipped for fewer than two rounds with a par to read against.
  */
 export function MonthSpark({ rounds }: { rounds: ChLibraryRound[] }) {
-  const pts = rounds.filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null).reverse();
+  // Per 18 holes (A8.7): a nine-hole +2 is a +4 round, so a month of nines does not read as a month of great rounds.
+  const pts = rounds
+    .filter((r): r is ChLibraryRound & { toPar: number } => r.toPar != null)
+    .map((r) => ({ id: r.id, toPar: r.holes > 0 ? (r.toPar * 18) / r.holes : r.toPar }))
+    .reverse();
   if (pts.length < 2) return null;
   const lo = Math.min(...pts.map((r) => r.toPar));
   const hi = Math.max(...pts.map((r) => r.toPar));

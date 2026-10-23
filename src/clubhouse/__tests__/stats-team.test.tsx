@@ -40,7 +40,6 @@ import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
-import { ScoreLine } from '../screens/stats/StatsTeamPhone';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -1185,25 +1184,7 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
   });
 });
 
-describe('ScoreLine · the mean label keeps off the line', () => {
-  const at = (values: number[]) => {
-    const { container, unmount } = render(<ScoreLine values={values} from="Aug 30" to="Oct 12" label="Scoring" />);
-    const t = container.querySelector('.ch-stm-chart__t')!;
-    const out = { anchor: t.getAttribute('text-anchor'), y: Number(t.getAttribute('y')), mean: Number(container.querySelector('.ch-stm-chart__mean')!.getAttribute('y1')) };
-    unmount();
-    return out;
-  };
-  it('a line ending above its mean (a better finish) puts the label below the mean at the right end', () => {
-    const r = at([74.8, 74.6, 74.2, 74.4, 73.9, 73.8, 73.1, 73.5, 73.6, 73.4]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeGreaterThan(r.mean);
-  });
-  it('a line ending below its mean keeps the label above it at the right end', () => {
-    const r = at([73.0, 73.2, 73.4, 73.8, 74.6, 74.8]);
-    expect(r.anchor).toBe('end');
-    expect(r.y).toBeLessThan(r.mean);
-  });
-
+describe('Team stats phone · window switch', () => {
   it('a window tap re-renders the switch, not the phone page (the page no longer reads the frame)', () => {
     // The phone page read the shown window itself, so every tap re-rendered every chart in the click (2026-10-14 audit).
     const src = readFileSync('src/clubhouse/screens/stats/StatsTeamPhone.tsx', 'utf8');

@@ -26,8 +26,8 @@ const NOTHING = 'CH-5317';
 const LINE = 'CH-5314';
 
 /** A per-round line needs two rounds with the figure; with fewer it says what it needs. */
-function ByRound({ points, unit, digits, label, what }: { points: Array<{ label: string; value: number }>; unit: string; digits: number; label: string; what: string }) {
-  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
+function ByRound({ points, unit, digits, label, what, lowerIsBetter = false }: { points: Array<{ label: string; value: number }>; unit: string; digits: number; label: string; what: string; lowerIsBetter?: boolean }) {
+  return points.length >= 2 ? <RoundLine points={points} unit={unit} digits={digits} label={label} lowerIsBetter={lowerIsBetter} /> : <Empty code={LINE}>A line needs two rounds with {what}; this window has {points.length}.</Empty>;
 }
 
 /** A shot read that failed is said, not shown as none logged. */
@@ -456,7 +456,7 @@ export function PuttingMore({ s, x, sixBands }: { s: GolfStats; x: ChProfileExtr
         )}
       </Panel>
       <Panel title="Putts by round" wide>
-        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" />
+        <ByRound points={x.series.putts} unit="" digits={0} label="Putts by round" what="putts" lowerIsBetter />
       </Panel>
     </>
   );

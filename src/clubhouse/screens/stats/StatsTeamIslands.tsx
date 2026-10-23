@@ -486,13 +486,13 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {ticks.map((t) => (
                 <g key={t}>
                   <line x1={padL} x2={w - padR} y1={y(t)} y2={y(t)} stroke="var(--ch-ivory-200)" strokeOpacity={0.7} />
-                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick">
+                  <text x={padL - 8} y={y(t) + 4} textAnchor="end" className="ch-tick ch-num">
                     {isSg ? formatSigned(t, Number.isInteger(t) ? 0 : 1) : t}
                   </text>
                 </g>
               ))}
               {data.weeks.map((wk, i) => (
-                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick">
+                <text key={wk + i} x={x(i)} y={h - 8} textAnchor="middle" className="ch-tick ch-num">
                   {wk}
                 </text>
               ))}
@@ -506,7 +506,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {yRef != null && (
                 <g aria-hidden="true">
                   <line x1={padL} x2={w - padR} y1={yRef} y2={yRef} stroke="var(--ch-champagne-500)" strokeDasharray="4 4" />
-                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-sgt__reflab">
+                  <text x={refLabelLeft ? padL : w - padR} y={yRef - 7} textAnchor={refLabelLeft ? 'start' : 'end'} className="ch-tick ch-num ch-sgt__reflab">
                     {isSg ? baseline.noun.charAt(0).toUpperCase() + baseline.noun.slice(1) : 'Par'}
                   </text>
                 </g>

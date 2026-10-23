@@ -307,6 +307,16 @@
   color: var(--ch-text-tertiary);
   white-space: nowrap;
 }
+/* The gauge's end value, under the end of the half the bar fills (A8.4); anchored inside the gauge so it never overruns it. */
+.ch-fg__gauge em.ch-fg__end {
+  transform: none;
+}
+.ch-fg__gauge em.ch-fg__end.is-right {
+  right: 0;
+}
+.ch-fg__gauge em.ch-fg__end.is-left {
+  left: 0;
+}
 /* Birdies: holes out of 18, the part hole filled to its fraction. */
 .ch-fg__gauge--holes {
   display: grid;
