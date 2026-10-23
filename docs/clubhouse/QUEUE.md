@@ -325,6 +325,13 @@ its rows together and does not map them one to one.
 | aplus-cons30 | One eyebrow role, 13/500 with no tracking (CONS-30) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 | aplus-b2 | Spacing scale and reading widths; six stylesheets migrated behind a guard; What's new measure (B2) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
 | aplus-cons39 | Ratchet on local tabular-figure declarations (CONS-39) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-11); no Bridge IDs or CH codes needed |
+| aplus-b3 | Card and sheet radius tokens, device hairlines, raw radii onto tokens; radii guard (B3) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-cons4 | Button sm and lg corners on the radius scale (CONS-4) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-cons32 | Phone cards on the card radius; Surface foot on the inset (CONS-32) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-b4 | Elevated surfaces at night, glass blur from the token, edge fade, raw-shadow ratchet (B4) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-cons35 | z-index ladder; skip links above a toast; literals ratcheted (CONS-35) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-b21 | Dark primary key on a lighter face (B21, X-6) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
+| aplus-b15 | Chart ink under Increase Contrast (B15) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
