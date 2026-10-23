@@ -2017,6 +2017,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   stop-color: var(--ch-line-ink);
   stop-opacity: 0;
 }
+.ch-line__wash.is-flat {
+  fill: var(--ch-line-ink);
+  opacity: 0.08;
+}
 .ch-line__guide {
   stroke: var(--ch-border-strong);
   stroke-width: 1;

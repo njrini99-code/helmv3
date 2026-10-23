@@ -60,4 +60,20 @@ describe('ui/charts/Line options (B5)', () => {
     expect(container.querySelector('.ch-line__ref.is-dashed')).not.toBeNull();
     expect(container.querySelector('.ch-line__wash')!.getAttribute('d')!.match(/Z/g)).toHaveLength(2);
   });
+
+  it('inside a control (interactive={false}) it is hidden and unfocusable, and a baseline wash closes on the baseline', () => {
+    const { container } = render(
+      <Line label="Putting." interactive={false} ends={false} axis={false} wash="baseline" baseline={{ value: 0 }} domain={[-1.5, 1]} width={206} height={72} points={[{ x: '1', y: -0.4 }, { x: '2', y: 0.2 }]} />,
+    );
+    const root = container.querySelector('.ch-line')!;
+    expect(root.getAttribute('aria-hidden')).toBe('true');
+    expect(root.hasAttribute('tabindex')).toBe(false);
+    expect(container.querySelector('[role="img"]')).toBeNull();
+    expect(container.querySelectorAll('.ch-line__t')).toHaveLength(0);
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe('0 0 206 72');
+    const zero = container.querySelector('.ch-line__ref')!.getAttribute('y1');
+    const wash = container.querySelector('.ch-line__wash.is-flat')!.getAttribute('d')!;
+    expect(wash.startsWith(`M`)).toBe(true);
+    expect(wash).toContain(`,${Number(zero).toFixed(1)} Z`);
+  });
 });

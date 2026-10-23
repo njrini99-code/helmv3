@@ -21,6 +21,8 @@ export interface ChLinePoint {
 /** Room for the value ticks at the left; without them the line runs nearly edge to edge. */
 const PAD_AXIS = { l: 34, r: 14, t: 14, b: 24 } as const;
 const PAD_BARE = { l: 4, r: 4, t: 10, b: 22 } as const;
+/** Bare with no end labels (a small multiple inside a card). */
+const PAD_MINI = { l: 4, r: 4, t: 8, b: 8 } as const;
 
 /** A few round ticks that cover [lo, hi]: a step of 0.5, 1, 2, 5, 10 or 20, so the labels are plain numbers. */
 export function lineTicks(lo: number, hi: number, want = 3): number[] {
@@ -79,6 +81,9 @@ export function Line({
   marks = 'all',
   wash = false,
   readAt = 'line',
+  ends = true,
+  interactive = true,
+  width,
   height,
   className,
 }: {
@@ -102,16 +107,22 @@ export function Line({
   axis?: boolean;
   /** Every point drawn, or only the newest (a dense line). */
   marks?: 'all' | 'last';
-  /** A faint fill under the line, toward the worse edge. */
-  wash?: boolean;
+  /** A faint fill under the line, toward the worse edge; or, with `'baseline'`, between the line and the baseline. */
+  wash?: boolean | 'baseline';
   /** Where a point reads: a line above the plot, or a tip over its top corner (where the page has no room for a line). */
   readAt?: 'line' | 'tip';
-  /** The plot's height in its own units (its width is 340 on a phone, 680 on a desktop); the chart scales to fit. */
+  /** The first and last points' names under the plot. */
+  ends?: boolean;
+  /** Off where the chart sits inside a control (a leg card is a button): no readout, no focus, hidden from a screen reader. */
+  interactive?: boolean;
+  /** The plot's width in its own units: 340 on a phone, 680 on a desktop, or about its drawn width for a small multiple. */
+  width?: number;
+  /** The plot's height in its own units; the chart scales to fit its width. */
   height?: number;
   className?: string;
 }) {
-  const PAD = axis ? PAD_AXIS : PAD_BARE;
-  const W = size === 'phone' ? 340 : 680;
+  const PAD = axis ? PAD_AXIS : ends ? PAD_BARE : PAD_MINI;
+  const W = width ?? (size === 'phone' ? 340 : 680);
   const H = height ?? (size === 'phone' ? 168 : 184);
   const plotW = W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
@@ -124,12 +135,13 @@ export function Line({
   const ticks = axis ? lineTicks(dom[0], dom[1]) : [];
   const newest = values.reduce<number>((at, v, i) => (v != null ? i : at), -1);
   const path = linePath(values, x, y);
-  // The wash closes each segment down to the worse edge of the plot (the bottom, since better is up).
+  // The wash closes each segment down to the worse edge of the plot (the bottom, since better is up), or to the baseline.
+  const floor = wash === 'baseline' && baseline ? y(baseline.value).toFixed(1) : String(PAD.t + plotH);
   const washPath = wash
     ? path.replace(/M([\d.]+),([\d.]+)((?: L[\d.]+,[\d.]+)*)/g, (_m, x0, y0, rest: string) => {
         const pts = rest.trim() ? rest.trim().split(' L').filter(Boolean) : [];
         const xEnd = pts.length ? pts[pts.length - 1]!.split(',')[0] : x0;
-        return `M${x0},${PAD.t + plotH} L${x0},${y0}${rest} L${xEnd},${PAD.t + plotH} Z`;
+        return `M${x0},${floor} L${x0},${y0}${rest} L${xEnd},${floor} Z`;
       })
     : '';
   const read = (i: number | null) => (i == null ? null : readout ? readout(i) : `${points[i]!.x} · ${points[i]!.y == null ? 'No figure' : format(points[i]!.y!)}`);
@@ -143,6 +155,75 @@ export function Line({
 
   const washId = `ch-line-wash-${useId().replace(/:/g, '')}`;
   const shown = read(pin.active);
+  const plot = (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="ch-line__svg"
+      focusable="false"
+      {...(interactive ? { role: 'img', 'aria-label': label, ...pin.area } : { 'aria-hidden': true })}
+    >
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-line__grid" />
+          <text x={PAD.l - 6} y={y(t) + 3.5} textAnchor="end" className="ch-line__t">
+            {format(t)}
+          </text>
+        </g>
+      ))}
+      {baseline && (
+        <g>
+          <line x1={PAD.l} x2={W - PAD.r} y1={y(baseline.value)} y2={y(baseline.value)} className={'ch-line__ref' + (baseline.dashed ? ' is-dashed' : '')} />
+          {baseline.label && (
+            <text x={W - PAD.r} y={y(baseline.value) - 4} textAnchor="end" className="ch-line__t">
+              {baseline.label}
+            </text>
+          )}
+        </g>
+      )}
+      {wash === 'baseline' && baseline ? (
+        <path d={washPath} className="ch-line__wash is-flat" />
+      ) : wash && (
+        <>
+          <defs>
+            <linearGradient id={washId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className="ch-line__wash-top" />
+              <stop offset="1" className="ch-line__wash-end" />
+            </linearGradient>
+          </defs>
+          <path d={washPath} className="ch-line__wash" fill={`url(#${washId})`} />
+        </>
+      )}
+      {pin.active != null && <line x1={x(pin.active)} x2={x(pin.active)} y1={PAD.t - 4} y2={H - PAD.b} className="ch-line__guide" />}
+      <path d={path} className="ch-line__path" fill="none" />
+      {points.map((p, i) =>
+        p.y == null || (marks === 'last' && i !== newest && i !== pin.active) ? null : (
+          <circle
+            key={`${p.x}-${i}`}
+            cx={x(i)}
+            cy={y(p.y)}
+            r={i === pin.active ? 5 : 3}
+            className={'ch-line__dot' + (early ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
+          />
+        ),
+      )}
+      {ends && n > 0 && (
+        <>
+          <text x={PAD.l} y={H - 6} className="ch-line__t">
+            {points[0]!.x}
+          </text>
+          <text x={W - PAD.r} y={H - 6} textAnchor="end" className="ch-line__t">
+            {points[n - 1]!.x}
+          </text>
+        </>
+      )}
+    </svg>
+  );
+  if (!interactive)
+    return (
+      <div className={'ch-line' + (className ? ` ${className}` : '')} aria-hidden="true">
+        {plot}
+      </div>
+    );
   return (
     <div
       className={'ch-line' + (className ? ` ${className}` : '')}
@@ -166,60 +247,7 @@ export function Line({
       <p className="ch-sr-only" aria-live="polite">
         {read(pin.pinned)}
       </p>
-      <svg viewBox={`0 0 ${W} ${H}`} className="ch-line__svg" role="img" aria-label={label} focusable="false" {...pin.area}>
-        {ticks.map((t) => (
-          <g key={t}>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(t)} y2={y(t)} className="ch-line__grid" />
-            <text x={PAD.l - 6} y={y(t) + 3.5} textAnchor="end" className="ch-line__t">
-              {format(t)}
-            </text>
-          </g>
-        ))}
-        {baseline && (
-          <g>
-            <line x1={PAD.l} x2={W - PAD.r} y1={y(baseline.value)} y2={y(baseline.value)} className={'ch-line__ref' + (baseline.dashed ? ' is-dashed' : '')} />
-            {baseline.label && (
-              <text x={W - PAD.r} y={y(baseline.value) - 4} textAnchor="end" className="ch-line__t">
-                {baseline.label}
-              </text>
-            )}
-          </g>
-        )}
-        {wash && (
-          <>
-            <defs>
-              <linearGradient id={washId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" className="ch-line__wash-top" />
-                <stop offset="1" className="ch-line__wash-end" />
-              </linearGradient>
-            </defs>
-            <path d={washPath} className="ch-line__wash" fill={`url(#${washId})`} />
-          </>
-        )}
-        {pin.active != null && <line x1={x(pin.active)} x2={x(pin.active)} y1={PAD.t - 4} y2={H - PAD.b} className="ch-line__guide" />}
-        <path d={path} className="ch-line__path" fill="none" />
-        {points.map((p, i) =>
-          p.y == null || (marks === 'last' && i !== newest && i !== pin.active) ? null : (
-            <circle
-              key={`${p.x}-${i}`}
-              cx={x(i)}
-              cy={y(p.y)}
-              r={i === pin.active ? 5 : 3}
-              className={'ch-line__dot' + (early ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
-            />
-          ),
-        )}
-        {n > 0 && (
-          <>
-            <text x={PAD.l} y={H - 6} className="ch-line__t">
-              {points[0]!.x}
-            </text>
-            <text x={W - PAD.r} y={H - 6} textAnchor="end" className="ch-line__t">
-              {points[n - 1]!.x}
-            </text>
-          </>
-        )}
-      </svg>
+      {plot}
     </div>
   );
 }

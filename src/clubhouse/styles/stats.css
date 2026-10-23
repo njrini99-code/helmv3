@@ -696,10 +696,18 @@
   letter-spacing: var(--ch-track-28);
   font-variation-settings: 'wdth' 88;
 }
-.ch-sgm__svg {
-  display: block;
-  width: 100%;
-  height: 72px;
+/* B5: the leg's line on ui/charts/Line, in the tone of the window's mean (neutral when it rounds to zero). */
+.ch-sgm__line {
+  --ch-line-ink: var(--ch-ink-400);
+}
+.ch-sgm__line.is-gain {
+  --ch-line-ink: var(--ch-chart-gain);
+}
+.ch-sgm__line.is-loss {
+  --ch-line-ink: var(--ch-chart-loss);
+}
+.ch-sgm__line .ch-line__path {
+  stroke-width: 1.75;
 }
 .ch-sgm__n {
   font: var(--ch-type-caption);

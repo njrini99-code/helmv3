@@ -34,6 +34,7 @@ import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
+import { Line } from '../../ui/charts/Line';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 /*
@@ -653,19 +654,11 @@ function LegTrend({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const w = 260;
-  const h = 92;
-  const pad = 10;
   const vals = data.filter((v): v is number => v != null);
-  const { lo, hi } = scale;
-  const x = (i: number) => (data.length <= 1 ? w / 2 : pad + (i * (w - pad * 2)) / (data.length - 1));
-  const y = (v: number) => pad + ((hi - v) / (hi - lo)) * (h - pad * 2);
   const a = firstValue(data);
   const b = lastValue(data);
   // The headline is the window's mean per round, not the latest week's value; the line and its dot still end on the latest week.
   const meanTone = changeTone(mean, false, 1);
-  const tone = meanTone === 'is-gain' ? 'var(--ch-chart-gain)' : meanTone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-ink-400)';
-  const d = gappedPath(data, x, y);
   // The newer half of the weeks against the older half, worded only past its standard error (A1), never first against last.
   const ch = a && b && a.i !== b.i ? halvesChange(vals, 'sg') : null;
   const chWords = ch == null ? null : deltaTone(ch.delta, ch.se, false) === '' ? 'No clear change' : `${ch.delta > 0 ? 'Up' : 'Down'} ${Math.abs(ch.delta).toFixed(1)} a round, newer half vs older half`;
@@ -675,13 +668,21 @@ function LegTrend({
         <span className="ch-sgm__l">{leg}</span>
         <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
       </span>
-      <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="ch-sgm__svg" aria-hidden="true">
-        <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="var(--ch-champagne-500)" strokeDasharray="3 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />
-        {/* The area to the baseline spans the weeks that have a value, never the empty edges. */}
-        {d && a && b && <path d={`${d} L${x(b.i)},${y(0)} L${x(a.i)},${y(0)} Z`} fill={tone} opacity={0.08} />}
-        {d && <path d={`${d}`} fill="none" stroke={tone} strokeWidth={1.75} strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
-        {b && <circle cx={x(b.i)} cy={y(b.v)} r={3.5} fill="var(--ch-ivory-25)" stroke={tone} strokeWidth={1.75} vectorEffect="non-scaling-stroke" />}
-      </svg>
+      {/* The one line chart (B5), inside the card's button: the four legs share `scale`, the wash runs to zero. */}
+      <Line
+        className={'ch-sgm__line' + (meanTone ? ` ${meanTone}` : '')}
+        interactive={false}
+        label={`${leg} strokes gained by week.`}
+        points={data.map((v, i) => ({ x: String(i + 1), y: v }))}
+        domain={[scale.lo, scale.hi]}
+        baseline={{ value: 0, dashed: true }}
+        axis={false}
+        ends={false}
+        marks="last"
+        wash="baseline"
+        width={206}
+        height={72}
+      />
       <span className="ch-sgm__n">{chWords ?? (!b ? 'No strokes gained yet' : a && a.i !== b.i ? 'Two weeks so far' : 'One week so far')}</span>
     </button>
   );
