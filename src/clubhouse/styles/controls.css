@@ -449,7 +449,7 @@
 .ch-btn--danger {
   color: var(--ch-danger-ink);
   background: linear-gradient(180deg, var(--ch-danger-fill-top), var(--ch-danger-fill-bottom));
-  box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
+  box-shadow: var(--ch-danger-elevation);
 }
 /* CONS-1: lighter under the pointer, deeper while pressed (the press controller scales it); disabled is the shared .42. */
 @media (hover: hover) {

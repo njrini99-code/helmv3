@@ -1,7 +1,6 @@
 'use client';
 
 import { ChartColumn, ChevronRight, Medal, Users } from 'lucide-react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useMemo, type CSSProperties } from 'react';
 import type { ChFigure, ChLeg, ChTeamStats } from '../../data/stats-team';
@@ -28,6 +27,8 @@ import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty
 import { holeCoverage } from '../../data/round-scope';
 import { nineRoundsInWindow } from '../../data/stats-filter';
 import { EarlyRead, NineHint } from './StatsFilter';
+// The one line chart (B5): light and drawn on the server, so it paints with the page; no chunk of its own.
+import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
@@ -36,9 +37,6 @@ type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
 export type ChLegPick = 'total' | ChLeg;
 
-// Recharts loads on its own chunk after the page has painted, and never on desktop (this module is imported there too).
-// The page holds the chart's box and its accessible summary, so nothing waits on it or moves when it lands.
-const TeamTrendChart = dynamic(() => import('./TeamTrendChart'), { ssr: false, loading: () => null });
 
 const legIndex = (leg: ChLegPick) => (leg === 'total' ? -1 : LEGS_LIST.indexOf(leg));
 
@@ -244,12 +242,12 @@ function Trend({ data }: { data: ChTeamStats }) {
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">
       {head}
-      <div
-        className="ch-stm-plot"
-        role="img"
-        aria-label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading} Lower scores sit higher.`}
-      >
-        <TeamTrendChart days={days} mean={mean} />
+      <div className="ch-stm-plot">
+        <TeamTrendChart
+          days={days}
+          mean={mean}
+          label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading} Lower scores sit higher.`}
+        />
       </div>
       <p className="ch-stm-note">
         <span>Lower is better. {reading}</span>

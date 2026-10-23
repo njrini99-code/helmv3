@@ -95,6 +95,8 @@
   --ch-danger-hover: #c84d40;
   --ch-danger-press: #962f25;
   --ch-danger-ink: #fff;
+  /* The danger key's ring, top light and red cast (CONS-1). */
+  --ch-danger-elevation: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
   --ch-info-600: #2d5c77;
   --ch-info-100: #e6eef3;
   /* Scoring. Red means under par, and nothing else. */

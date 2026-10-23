@@ -1941,3 +1941,95 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
     mask-image: none;
   }
 }
+
+/* The one line chart (ui/charts/Line.tsx, B5): better is up, a missing value is a gap, ticks in tabular figures. The line
+   takes --ch-line-ink (the ink by default; a screen sets the gain green). A point reads in a line above the plot or a tip
+   over its top corner. */
+.ch-line {
+  position: relative;
+  --ch-line-ink: var(--ch-text-primary);
+}
+.ch-line:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 4px;
+  border-radius: var(--ch-radius-md);
+}
+.ch-line__read {
+  min-height: 22px;
+  margin: 0;
+  font: var(--ch-type-13);
+  font-variant-numeric: tabular-nums;
+  color: var(--ch-text-secondary);
+}
+.ch-line__read.is-on {
+  color: var(--ch-text-primary);
+}
+.ch-line__tip {
+  position: absolute;
+  top: 0;
+  left: 4px;
+  z-index: 1;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ink-900);
+  color: var(--ch-bg-surface);
+  font: var(--ch-type-12-medium);
+  box-shadow: var(--ch-elevation-overlay);
+  pointer-events: none;
+}
+.ch-line__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-line__grid {
+  stroke: var(--ch-border-hairline);
+  stroke-width: 1;
+}
+.ch-line__ref {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-line__ref.is-dashed {
+  stroke-dasharray: 3 4;
+}
+.ch-line__t {
+  font: 500 11px/1 var(--ch-font-sans);
+  font-variant-numeric: tabular-nums;
+  fill: var(--ch-text-tertiary);
+}
+.ch-line__path {
+  stroke: var(--ch-line-ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ch-line__wash-top {
+  stop-color: var(--ch-line-ink);
+  stop-opacity: 0.16;
+}
+.ch-line__wash-end {
+  stop-color: var(--ch-line-ink);
+  stop-opacity: 0;
+}
+.ch-line__guide {
+  stroke: var(--ch-border-strong);
+  stroke-width: 1;
+}
+.ch-line__dot {
+  fill: var(--ch-line-ink);
+  stroke: var(--ch-bg-surface);
+  stroke-width: 1.5;
+}
+.ch-line__dot.is-hollow {
+  fill: var(--ch-bg-surface);
+  stroke: var(--ch-line-ink);
+}
+.ch-line__dot.is-active {
+  stroke-width: 2;
+}

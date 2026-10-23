@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { hapticScrub } from '../../lib/haptics';
 import { useChartPin } from '../../lib/use-chart-pin';
 
@@ -141,6 +141,7 @@ export function Line({
     last.current = pin.active;
   }, [pin.active]);
 
+  const washId = `ch-line-wash-${useId().replace(/:/g, '')}`;
   const shown = read(pin.active);
   return (
     <div
@@ -184,7 +185,17 @@ export function Line({
             )}
           </g>
         )}
-        {wash && <path d={washPath} className="ch-line__wash" />}
+        {wash && (
+          <>
+            <defs>
+              <linearGradient id={washId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" className="ch-line__wash-top" />
+                <stop offset="1" className="ch-line__wash-end" />
+              </linearGradient>
+            </defs>
+            <path d={washPath} className="ch-line__wash" fill={`url(#${washId})`} />
+          </>
+        )}
         {pin.active != null && <line x1={x(pin.active)} x2={x(pin.active)} y1={PAD.t - 4} y2={H - PAD.b} className="ch-line__guide" />}
         <path d={path} className="ch-line__path" fill="none" />
         {points.map((p, i) =>
