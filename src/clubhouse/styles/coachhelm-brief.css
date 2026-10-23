@@ -1,26 +1,6 @@
 /* The coach's CoachHelm Monday brief (P013 `?view=monday-brief`, flag coachhelm_monday_brief_v1; CoachHelm task chs-28,
    supercharge 04 §4 and Layout 1). Up to five rows, each one line of who and what, its ladder word and strokes, one action. */
 
-.ch-hmb-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  justify-self: start;
-  min-height: 32px;
-  color: var(--ch-green-700);
-  font: var(--ch-type-14-medium);
-  line-height: 1;
-  text-decoration: none;
-}
-.ch-hmb-back:hover {
-  text-decoration: underline;
-}
-.ch-hmb-back:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
-}
-
 .ch-hmb-body {
   display: grid;
   gap: 16px;

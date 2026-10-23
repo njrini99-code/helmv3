@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, ChevronLeft, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
+import { ArrowRight, Clock, FileText, Lock, Paperclip, Plane, Repeat, Text, Trash2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getItineraryForEvent } from '@/app/golf/actions/travel';
@@ -27,6 +27,7 @@ import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
 import type { ChNow } from './views';
+import { BackLink } from '../../ui/Section';
 
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 const fromHHMM = (v: string) => {
@@ -65,9 +66,9 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
   );
   return (
     <div className="ch-in">
-      <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onBack}>
+      <BackLink className="ch-in__up" onClick={onBack}>
         Today
-      </Button>
+      </BackLink>
       <div className="ch-in__plate" data-tone="champagne">
         <div className="ch-in__kick">
           <Badge tone="neutral">

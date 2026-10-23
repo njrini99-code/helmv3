@@ -2,26 +2,6 @@
    docs/clubhouse/pages/P013-coachhelm/CONTRACT.md and supercharge 02 §9, 03 §7.3. Words and counts; the bar is the same count drawn,
    with the target as a thin line. */
 
-.ch-htr-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  justify-self: start;
-  min-height: 32px;
-  color: var(--ch-green-700);
-  font: var(--ch-type-14-medium);
-  line-height: 1;
-  text-decoration: none;
-}
-.ch-htr-back:hover {
-  text-decoration: underline;
-}
-.ch-htr-back:focus-visible {
-  outline: 2px solid var(--ch-border-focus);
-  outline-offset: 2px;
-  border-radius: var(--ch-radius-xs);
-}
-
 .ch-htr-body {
   display: grid;
   gap: 16px;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, Flag, Plus, Search } from 'lucide-react';
+import { Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
@@ -9,6 +9,7 @@ import { InlineNotice } from '../../../ui/Notices';
 import { Modal } from '../../../ui/Modal';
 import { TeeSwatch } from '../parts';
 import { groupCourses, type ChResult, type ChSetupCourse, type ChSetupPorts, type ChSetupTee } from './shape';
+import { BackLink } from '../../../ui/Section';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; data: T } | { state: 'failed'; error: string };
 
@@ -206,10 +207,7 @@ function TeeList({ course, listTees, onBack, onPick, canAdd }: { course: ChSetup
   const longest = Math.max(1, ...tees.map((t) => t.yards ?? 0));
   return (
     <div className="ch-rsu-pick">
-      <button type="button" className="ch-rsu-back" onClick={onBack}>
-        <Icon icon={ChevronLeft} size={16} />
-        Courses
-      </button>
+      <BackLink onClick={onBack}>Courses</BackLink>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
         // The tees on their way: a quiet space the height of a tee, no shimmer (owner, 2026-10-16). Usually never seen,

@@ -1251,9 +1251,8 @@
   gap: 18px;
   padding: 20px 20px 18px;
 }
-.ch-in__back {
-  align-self: flex-start;
-  margin: -6px 0 -6px -8px;
+.ch-in__up {
+  margin: -4px 0 -4px -4px;
 }
 .ch-in__kick {
   display: flex;
@@ -2834,7 +2833,7 @@
     right: 0;
   }
   /* The detail panel in a sheet: the sheet's own title and close stand in for the panel's. */
-  .ch-calm-sheet[data-kind='event'] .ch-in__back,
+  .ch-calm-sheet[data-kind='event'] .ch-in__up,
   .ch-calm-sheet[data-kind='event'] .ch-in__title {
     display: none;
   }

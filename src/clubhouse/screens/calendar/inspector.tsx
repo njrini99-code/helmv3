@@ -3,7 +3,6 @@
 import {
   ArrowRight,
   CalendarCheck,
-  ChevronLeft,
   ChevronRight,
   CircleX,
   ClipboardCheck,
@@ -68,6 +67,7 @@ import type { ChNow } from './views';
 import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
+import { BackLink } from '../../ui/Section';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -120,9 +120,9 @@ const plateTone = (t: ChCalType) => (t === 'practice' ? 'green' : isMajor(t) ? '
 
 function Back({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button className="ch-in__back" size="sm" variant="ghost" leftIcon={ChevronLeft} onClick={onClick}>
+    <BackLink className="ch-in__up" onClick={onClick}>
       {label}
-    </Button>
+    </BackLink>
   );
 }
 

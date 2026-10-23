@@ -667,6 +667,10 @@
 .ch-backlink {
   display: inline-flex;
   align-self: flex-start;
+  justify-self: start;
+  border: 0;
+  background: none;
+  cursor: pointer;
   align-items: center;
   gap: 4px;
   margin: 0 0 0 -4px;
@@ -685,7 +689,7 @@
 }
 .ch-backlink:focus-visible {
   outline: 2px solid var(--ch-border-focus);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 
 /* Swap (owner 2026-10-07): the frame a content swap happens in. The leaving copy is lifted out of flow by the motion
