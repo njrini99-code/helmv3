@@ -9,7 +9,7 @@ import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChStatsReads } from '../../data/stats-reads';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { Icon } from '../../ui/Icon';
@@ -233,15 +233,11 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.prev, data.filter)} aria-label="Previous player" scroll={false}>
-                  <Icon icon={ChevronLeft} size={15} />
-                </Link>
+                <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
                 <span className="ch-num">
                   {data.nav.index} of {data.nav.total}
                 </span>
-                <Link className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" href={href(data.nav.next, data.filter)} aria-label="Next player" scroll={false}>
-                  <Icon icon={ChevronRight} size={15} />
-                </Link>
+                <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
               </div>
             )}
           </div>

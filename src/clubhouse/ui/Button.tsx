@@ -93,6 +93,8 @@ export function IconButton({
   shortcut,
   menu,
   variant = 'ghost',
+  href,
+  scroll,
 }: {
   icon: LucideIcon;
   label: string;
@@ -104,10 +106,22 @@ export function IconButton({
   /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
   shortcut?: readonly string[];
   /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
+  /** A link that looks like the key (Stats' previous and next player); `scroll` as next/link takes it. */
+  href?: string;
+  scroll?: boolean;
   /** Ghost by default; secondary where the key sits among a toolbar's raised keys (Calendar's More). */
   variant?: 'ghost' | 'secondary';
   menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
 }) {
+  const cls = ['ch-btn', `ch-btn--${variant}`, 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
+  if (href !== undefined)
+    return (
+      <Tooltip label={label} shortcut={shortcut}>
+        <Link href={href} scroll={scroll} className={cls} aria-label={label} onClick={() => feel && haptic(feel)}>
+          <Icon icon={icon} size={size === 'sm' ? 15 : 16} />
+        </Link>
+      </Tooltip>
+    );
   return (
     <Tooltip label={label} shortcut={shortcut} ariaKeys={shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined}>
       <button
@@ -118,7 +132,7 @@ export function IconButton({
         aria-haspopup={menu?.['aria-haspopup']}
         aria-controls={menu?.['aria-controls']}
         disabled={disabled}
-        className={['ch-btn', `ch-btn--${variant}`, 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
+        className={cls}
         onClick={() => {
           if (feel) haptic(feel);
           onClick?.();
