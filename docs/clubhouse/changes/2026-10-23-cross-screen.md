@@ -307,3 +307,39 @@ Segmented-to-pills on What's new
 - New `ui/__tests__/Segmented.test.tsx`, `ui/__tests__/Avatar.test.tsx`,
   `tone-vocabulary.test.ts` and `selected-state.test.ts`; Stats, Home,
   CoachHelm and round setup tests; `clubhouse:css` 0 findings.
+
+## 2026-10-23 — Screen gaps (B14, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, B14)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: "— SG" (the pinned no-data dash), "No reads yet" (CoachHelm's
+noun), Messages' one-item row menu and the Hub's "Coach view" label
+(both recorded decisions), and the owner calls B14 names
+```
+
+### Changed
+
+- Stats on the phone: a round row opens its review, as the desktop
+  table's do.
+- Stats: "margin of error" replaces "how sure a figure is" on the legs
+  and TeamRank.
+- The round review's greens figure no longer paints green whatever it
+  is: with nothing to read it against it takes no tone.
+- Onboarding drops the name from a question when there is none, rather
+  than say "there".
+- Settings on the phone says Add photo with no photo, as the desktop
+  does, not Change photo.
+
+### Why
+
+- Small per-screen gaps from the screen audits.
+
+### Verification
+
+- New tests in `stats-player.test.tsx`, `rounds-contracts.test.tsx`,
+  `onboard.test.tsx` and `settings.test.tsx`; Stats and round review
+  tests.
