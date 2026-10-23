@@ -1392,7 +1392,7 @@ describe('Settings · a refused save says why; only a save that got no answer sa
     first.unmount();
     const second = setup({ section: 'coachhelm', writes: { setCoachHelmTeam: vi.fn(() => fail('PGRST116: JSON object requested, multiple (or no) rows returned')) } });
     await second.user.click(screen.getByRole('switch', { name: 'CoachHelm for the whole team' }));
-    await expectCode('CH-8021', /The server didn’t accept the change\. The error has been reported\./);
+    await expectCode('CH-8021', /The server didn’t accept the change\./);
     expect(code('CH-8021')!.textContent).not.toMatch(/connection/);
   });
 

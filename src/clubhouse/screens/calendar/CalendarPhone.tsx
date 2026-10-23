@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Rss, TriangleAlert } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Plus, Rss, TriangleAlert } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChCalendarData } from '../../data/calendar';
 import { Badge } from '../../ui/Badge';
@@ -15,7 +15,7 @@ import { haptic } from '../../lib/haptics';
 import { useChClock } from '../../lib/use-clock';
 import { EventPeek } from './peek';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { addDays, dayNum, dowOf, fmtHour, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
+import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
 
@@ -75,6 +75,12 @@ export function CalendarPhone({
   const viewerId = coach ? null : data.viewerPlayerId;
   const pv = phoneViewOf(view);
   const setPv = (v: ChCalPhoneView) => onView(desktopViewOf(v), anchor);
+  // B10.4: away from today (another day, or another month on Month), a Today key brings the page back, as on desktop.
+  const away = pv === 'month' ? monthKey(anchor) !== monthKey(now.date) : anchor !== now.date;
+  const goToday = () => {
+    haptic('select');
+    onView(view, now.date);
+  };
 
   return (
     <main className="ch-calm" aria-label="Calendar">
@@ -89,6 +95,12 @@ export function CalendarPhone({
         <span className="ch-intro__eyebrow ch-num">
           {yearOf(anchor)} · {data.zoneLabel}
         </span>
+        {/* On the eyebrow's line at the right, so it takes no room when it comes and goes. */}
+        {away && (
+          <Button size="sm" variant="ghost" className="ch-calm-today" leftIcon={CalendarCheck} onClick={goToday} feel={null}>
+            Today
+          </Button>
+        )}
         <span className="ch-intro__row">
           <h2 className="ch-intro__title ch-calm-title">{monthName(anchor)}</h2>
           <span className="ch-intro__action">

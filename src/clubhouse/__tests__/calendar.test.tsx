@@ -1013,6 +1013,24 @@ describe('Calendar · phone (v2, Coach - Calendar - Mobile.html)', () => {
     expect(screen.getByRole('button', { name: /^Travel briefing/ })).toBeTruthy();
   });
 
+  it('B10.4 away from today, a Today key brings the phone back; on today it is not there', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 2:40 PM Wed 14 October in New York, the day the page opens on.
+      vi.setSystemTime(new Date('2026-10-14T18:40:00Z'));
+      const user = userEvent.setup();
+      wrap(cal());
+      expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
+      const strip = screen.getByRole('list', { name: 'This week' });
+      await user.click(within(strip).getByRole('button', { name: /^Thu 15/ }));
+      await user.click(screen.getByRole('button', { name: 'Today' }));
+      expect(live('.ch-calm-dayk')!.textContent).toMatch(/Wed 14 October/);
+      expect(screen.queryByRole('button', { name: 'Today' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('61901 Day: once the day is behind us the now line closes the agenda, and with events still to come it sits before them', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     try {

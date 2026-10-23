@@ -2256,6 +2256,15 @@
   .ch-calm-head .ch-intro__row {
     align-items: center;
   }
+  /* B10.4: Today, when the page is away from it, at the right of the year's line; out of flow, so nothing moves. */
+  .ch-calm-head {
+    position: relative;
+  }
+  .ch-calm-today {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
 
   /* The week: flush on the parchment. The chosen day is one green plate under the strip that glides to the day you tap
      (CH-6606), the day's ink turning as it arrives; today keeps a green numeral. */
