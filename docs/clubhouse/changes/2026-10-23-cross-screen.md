@@ -343,3 +343,36 @@ noun), Messages' one-item row menu and the Hub's "Coach view" label
 - New tests in `stats-player.test.tsx`, `rounds-contracts.test.tsx`,
   `onboard.test.tsx` and `settings.test.tsx`; Stats and round review
   tests.
+
+## 2026-10-23 — Small mismatches and one name module (B22, CONS-17)
+
+```text
+Design package: none (Clubhouse A+ handoff, B22, CONS-17)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the qualifier board's leader weight (its recorded rule:
+"the leader and the cut carried by weight and a rule"); Track's played
+chips, Holed / ace and Messages' section gaps; compound first names
+```
+
+### Changed
+
+- What's new: a row's time sits on its title's first line when the
+  title wraps.
+- `lib/names.ts` (`firstName`, `shortName`, `initials`) replaces nine
+  local helpers; their modules re-export it.
+- The Rounds discard key and Continue already share a height and corner
+  in the current CSS; nothing changed there.
+
+### Why
+
+- A centred time on a wrapped title read as belonging to no line, and
+  nine helpers shortened names three ways.
+
+### Verification
+
+- New `screens/whats-new/__tests__/time-first-line.test.ts` and
+  `lib/__tests__/names.test.ts` (with the guard that names shorten only
+  in `lib/names`); Home, Hub, Messages and CoachHelm tests.
