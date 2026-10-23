@@ -35,7 +35,9 @@
 --      or the hole's round is own or coached, or admin;
 --   B: the hole's round belongs to my player, or to a player on a team in
 --      an organization I coach in (any membership status).
---   golf_shot_detail_round_ids() is exactly the rounds satisfying B.
+--   golf_shot_detail_round_ids() is the rounds satisfying B that are also
+--   readable to me (golf_readable_round_ids()), so calling it directly
+--   reveals no round id the caller could not already read.
 --   When the shot and its hole share round r, the fast branch needs the
 --   shot visible to me (A for r) and r in B, so it grants nothing the
 --   function would refuse. Every other row still goes to the function. The
@@ -106,35 +108,44 @@ BEGIN
   -- can_read_golf_shot_detail (the hole round's player is mine, or is on a
   -- team in an organization I coach in). Change both together;
   -- golf_shot_detail_visibility.sql fails if they disagree for its
-  -- personas.
+  -- personas. It is limited to rounds the caller can already read, because
+  -- PostgREST exposes it as an RPC: B alone would list round ids of an
+  -- organization's players to a coach who does not staff their team.
   CREATE OR REPLACE FUNCTION public.golf_shot_detail_round_ids()
   RETURNS SETOF uuid
   LANGUAGE sql
   STABLE
-  SECURITY DEFINER
+  -- Unindented on purpose: the semgrep search_path rule only pairs a
+  -- SECURITY DEFINER line with its SET search_path when the line starts
+  -- with it.
+SECURITY DEFINER
   SET search_path = pg_catalog, public, pg_temp
   AS $function$
     SELECT gr.id
     FROM public.golf_rounds gr
-    WHERE gr.player_id IN (
-            SELECT gp.id
-            FROM public.golf_players gp
-            WHERE gp.user_id = (SELECT auth.uid())
-          )
-       OR gr.player_id IN (
-            SELECT gtm.player_id
-            FROM public.golf_team_members gtm
-            JOIN public.golf_teams gt ON gt.id = gtm.team_id
-            JOIN public.golf_coaches gc
-              ON gc.organization_id = gt.organization_id
-            WHERE gc.user_id = (SELECT auth.uid())
-          );
+    WHERE gr.id IN (SELECT public.golf_readable_round_ids())
+      AND (
+        gr.player_id IN (
+          SELECT gp.id
+          FROM public.golf_players gp
+          WHERE gp.user_id = (SELECT auth.uid())
+        )
+        OR gr.player_id IN (
+          SELECT gtm.player_id
+          FROM public.golf_team_members gtm
+          JOIN public.golf_teams gt ON gt.id = gtm.team_id
+          JOIN public.golf_coaches gc
+            ON gc.organization_id = gt.organization_id
+          WHERE gc.user_id = (SELECT auth.uid())
+        )
+      );
   $function$;
 
   COMMENT ON FUNCTION public.golf_shot_detail_round_ids() IS
-    'Rounds whose shot details I may read on the coach/owner side '
-    '(conjunct B of can_read_golf_shot_detail). Used once per statement '
-    'by the putt_details and approach_miss_details SELECT policies.';
+    'Readable rounds whose shot details I may read on the coach/owner '
+    'side (conjunct B of can_read_golf_shot_detail). Used once per '
+    'statement by the putt_details and approach_miss_details SELECT '
+    'policies.';
 
   REVOKE ALL ON FUNCTION public.golf_shot_detail_round_ids()
     FROM public, anon;

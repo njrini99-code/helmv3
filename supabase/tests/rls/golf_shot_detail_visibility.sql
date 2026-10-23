@@ -39,7 +39,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(32);
+SELECT plan(34);
 
 -- ============================================================================
 -- Seed as service_role (RLS bypassed for setup).
@@ -618,6 +618,38 @@ SELECT is(
   true,
   'golf_shot_detail_round_ids is STABLE SECURITY DEFINER with a pinned search_path'
 );
+
+-- golf_shot_detail_round_ids() is exposed as an RPC, so calling it directly
+-- must not list a round the caller cannot read. The same-org coach who does
+-- not staff team X satisfies the coach/owner conjunct for the player's
+-- round, but cannot read that round.
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d021", "role": "authenticated"}';
+
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_shot_detail_round_ids() r
+   WHERE r = '00000000-0000-0000-0000-00000000d041'),
+  0,
+  'golf_shot_detail_round_ids hides a round the same-org non-staffing coach cannot read'
+);
+
+RESET role;
+RESET request.jwt.claims;
+
+SET LOCAL role TO authenticated;
+SET LOCAL request.jwt.claims TO
+  '{"sub": "00000000-0000-0000-0000-00000000d011", "role": "authenticated"}';
+
+SELECT is(
+  (SELECT count(*)::int FROM public.golf_shot_detail_round_ids() r
+   WHERE r = '00000000-0000-0000-0000-00000000d041'),
+  1,
+  'golf_shot_detail_round_ids lists the round for the coach who staffs its team'
+);
+
+RESET role;
+RESET request.jwt.claims;
 
 SELECT ok(
   has_function_privilege('authenticated', 'public.golf_shot_detail_round_ids()', 'EXECUTE')
