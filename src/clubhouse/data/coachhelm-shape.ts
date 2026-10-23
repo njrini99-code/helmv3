@@ -201,6 +201,8 @@ export interface ChPlayerHelm {
   missing?: ChBoardMissing;
   /** Reads the recheck found cleared, one line each (04 example 5; `coachhelm_recheck_v1`). Absent with the flag off or none. */
   cleared?: string[];
+  /** The player may ask for their own course plan (chs-21, `coachhelm_course_plan_v1`, off). Absent: not offered. */
+  coursePlan?: boolean;
 }
 
 export type ChPulseIcon = 'calendar-x' | 'trending-up' | 'trending-down' | 'rsvp' | 'practice' | 'focus' | 'tasks' | 'roster' | 'flag';

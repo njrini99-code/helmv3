@@ -404,6 +404,8 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   };
 
   if (threw) return done(failed);
+  // chs-21: the player's own course plan is offered on the board while `coachhelm_course_plan_v1` is on; it reads on request.
+  const plan = isCoursePlanEnabled() ? { coursePlan: true as const } : {};
   const team = await teamRead;
   // Without the team there is no telling what was proposed: the page says so, never "nothing proposed".
   const proposalsOf = async (insights: ReadonlyArray<{ id: string; title: string }>): Promise<ChPlayerHelm['proposals']> =>
@@ -413,14 +415,14 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
     const [visible, dismissed] = await Promise.all([loadVisible(supabase, [input.playerId]), loadPlayerDismissed(supabase, input.playerId)]);
     if (visible.error || dismissed.error || visible.rows.some((r) => !dismissed.ids.has(r.id))) return done(failed);
     const [proposals, rounds, toGo] = await Promise.all([proposalsOf([]), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
-    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo });
+    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo, ...plan });
   }
 
   // A card that states no finding ("no clear preference", "Scoring by par type") is not drawn on the player's board: it has nothing to work on.
   const drawn = feed.filter((i) => kindOf(i, team.tour) !== 'note');
   if (drawn.length === 0) {
     const [proposals, rounds, toGo] = await Promise.all([proposalsOf(feed), countCountableRounds(supabase, input.playerId), roundsToGo(supabase, input.playerId)]);
-    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo });
+    return done({ off: null, proposals, insights: { list: [], error: false }, rounds, roundsToGo: toGo, ...plan });
   }
 
   // The engine's states, each behind its flag (surfaces A): with every flag off `shaped.kept` is `drawn` and nothing is added.
@@ -459,7 +461,7 @@ export async function loadPlayerCoachHelm(input: { playerId: string }): Promise<
   const missing = boardMissing({ drills: drills.error, assigned: assigned.error, newest: newest.error, tour: team.error || team.tourError });
   const board = partitionInsights(list);
   const shown = [board.focus, ...board.also, ...board.working].flatMap((i) => (i ? [i.id] : []));
-  return done({ off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}) }, shown);
+  return done({ off: null, proposals, insights: { list, error: false }, rounds: null, ...(missing ? { missing } : {}), ...(shaped.cleared.length > 0 ? { cleared: shaped.cleared } : {}), ...plan }, shown);
 }
 
 /**
