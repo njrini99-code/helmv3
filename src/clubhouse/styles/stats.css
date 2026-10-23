@@ -232,7 +232,7 @@
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-fg__v small {
   margin-left: 2px;
@@ -694,7 +694,7 @@
   font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-sgm__svg {
   display: block;
@@ -1189,7 +1189,7 @@
   font: 500 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-pf-hero__figs .ch-pf-hero__sub {
   font: var(--ch-type-caption);
@@ -1485,7 +1485,7 @@
   font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-gm__figs .ch-gm__sub {
   font: var(--ch-type-caption);
@@ -4651,7 +4651,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 .ch-st[data-canopy] .ch-sgt__n {
   font: 500 clamp(64px, 7vw, 96px) / 0.94 var(--ch-font-sans);
   letter-spacing: -0.055em;
-  font-variation-settings: 'wdth' 90;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }
 .ch-st[data-canopy] .ch-sgt__chg {
@@ -4738,7 +4738,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   font: 500 34px / 1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.045em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }
 .ch-st[data-canopy] .ch-tp__v small {

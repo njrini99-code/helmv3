@@ -56,8 +56,8 @@
 }
 .ch-cl-h h1 {
   margin: 8px 0 0;
-  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-hero);
+  letter-spacing: var(--ch-track-hero);
 }
 .ch-cl-h__a {
   display: flex;
@@ -2084,7 +2084,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
      hold "Pinehurst" whole (it broke "Pinehur / st"), at the size it was. */
   .ch-cl.is-phone .ch-cl-tthead__days i {
     padding-inline: 3px;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
   }
 }
 /* D5: Animations off stills the sync spinner. D9: "This week" and "Today" no longer collide on the term line. */

@@ -32,8 +32,8 @@
   min-width: 0;
 }
 .ch-qf-head h1 {
-  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-hero);
+  letter-spacing: var(--ch-track-hero);
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
 }
@@ -475,7 +475,7 @@
   margin: 4px 0 0;
   font: 500 22px/1.1 var(--ch-font-sans);
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-text-primary);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -2328,7 +2328,7 @@
   box-shadow: inset 0 0 0 1px var(--ch-ink-rule), var(--ch-elevation-control);
   font: 600 17px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
-  font-variation-settings: 'wdth' 86;
+  font-variation-settings: 'wdth' 88;
   letter-spacing: -0.01em;
   color: var(--ch-text-primary);
 }
@@ -2514,7 +2514,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
     box-shadow: none;
     font: 600 17px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    font-variation-settings: 'wdth' 86;
+    font-variation-settings: 'wdth' 88;
     color: var(--ch-on-green-ink);
   }
   .ch-qf-hero .ch-qf-lead .ch-qf-plate.is-under {

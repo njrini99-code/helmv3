@@ -2430,7 +2430,7 @@ button.ch-rt-strip__h {
     border-radius: 0;
     font: 600 64px/0.86 var(--ch-font-sans);
     font-stretch: 80%;
-    font-variation-settings: 'wdth' 80;
+    font-variation-settings: 'wdth' 88;
     letter-spacing: -0.06em;
     font-variant-numeric: tabular-nums;
     color: var(--ch-on-green-ink);
@@ -2490,7 +2490,7 @@ button.ch-rt-strip__h {
     font: 600 52px/0.95 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;
-    font-variation-settings: 'wdth' 86;
+    font-variation-settings: 'wdth' 88;
     letter-spacing: -0.05em;
     color: var(--ch-on-green-ink);
   }

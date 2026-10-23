@@ -1724,7 +1724,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band b {
     font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.028em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band span {
@@ -2131,7 +2131,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   }
   .ch-rsu-course__band b {
     font-size: calc(28 * var(--ch-type-k));
-    font-variation-settings: 'wdth' 94;
+    font-variation-settings: 'wdth' 96;
   }
 }
 .ch-rsu-course__ic {
@@ -2182,7 +2182,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   font: 600 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ledger-ink);
 }
 .ch-rsu-nine__h {

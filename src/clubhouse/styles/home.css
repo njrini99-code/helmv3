@@ -334,7 +334,7 @@
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-text-primary);
 }
 .ch-h-topar {
@@ -1347,7 +1347,7 @@
     font-variant-numeric: tabular-nums;
     /* -0.035em, not tighter: the decimal point touched the 3 ("73.4" read "734"); the hero figures share it. */
     letter-spacing: -0.035em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
     color: var(--ch-text-primary);
   }
   .ch-hm-delta {
@@ -1956,7 +1956,7 @@
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
 .ch-ph-figs dd.is-gain {
@@ -2043,7 +2043,7 @@
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.026em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-ink-950);
 }
 .ch-ph-leg__v em {
@@ -2883,7 +2883,7 @@
   .ch-hm-form__top em {
     color:var(--ch-ledger-eyebrow);
     font-size: calc(11 * var(--ch-type-k));
-    letter-spacing:.12em;
+    letter-spacing: var(--ch-track-11);
   }
   .ch-hm-form__top b {
     color:var(--ch-ink-900);

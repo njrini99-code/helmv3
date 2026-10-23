@@ -64,7 +64,8 @@
 }
 .ch-hero[data-tone='scorecard'] .ch-hero__title {
   font-size: calc(34 * var(--ch-type-k));
-  letter-spacing: 0.01em;
+  /* Large display text closes in, never opens (B1). */
+  letter-spacing: var(--ch-track-34);
 }
 
 /* Engraved topographic: framed, with a faint contour in the far corner that fades out before the title. */
@@ -99,7 +100,7 @@
 }
 .ch-hero[data-tone='board'] .ch-hero__title {
   font-size: calc(28 * var(--ch-type-k));
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ch-track-28);
 }
 .ch-hero__figs {
   display: flex;

@@ -228,6 +228,61 @@
   --ch-type-figure-l: 500 calc(40 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-type-mono: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-mono);
 
+  /* B1: one role per type step (mot-08's 11 sizes), each a whole `font` with its own leading, a 600 `-strong` form and a
+     tracking. Instrument Sans has no optical-size axis, so small steps open slightly and large ones close in. A rule
+     sets `font: var(--ch-type-<n>)` and `letter-spacing: var(--ch-track-<n>)`; look-feel-pass-css.test.ts ratchets the
+     raw shorthands left. */
+  --ch-type-11: 400 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-11-strong: 600 calc(11 * var(--ch-type-k))/calc(13 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-11: 0.01em;
+  --ch-type-12: 400 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-12-strong: 600 calc(12 * var(--ch-type-k))/calc(16 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-12: 0;
+  --ch-type-13: 400 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-13-strong: 600 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-13: 0;
+  --ch-type-14: 400 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-14-strong: 600 calc(14 * var(--ch-type-k))/calc(19 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-14: 0;
+  --ch-type-15: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-15-strong: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-15: -0.01em;
+  --ch-type-16: 400 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-16-strong: 600 calc(16 * var(--ch-type-k))/calc(21 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-16: -0.01em;
+  --ch-type-17: 400 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-17-strong: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-17: -0.01em;
+  --ch-type-20: 400 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-20-strong: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-20: -0.02em;
+  --ch-type-22: 400 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-22-strong: 600 calc(22 * var(--ch-type-k))/calc(28 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-22: -0.02em;
+  --ch-type-28: 400 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-28-strong: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-28: -0.03em;
+  --ch-type-34: 400 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-34-strong: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-track-34: -0.03em;
+  /* A single-line label (a pill, a tab, a figure's caption on one line) takes this leading in place of its step's. */
+  --ch-lead-tight: 1.1;
+  /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
+  --ch-wdth-display: 'wdth' 96;
+  --ch-wdth-dense: 'wdth' 88;
+  /* Named roles. The large title (34, wdth 88, 600); the bar title, pushed and at a tab's root alike (17/600, as iOS);
+     the desktop hero (52, every section including Rounds); the section header; the card title. */
+  --ch-type-large-title: var(--ch-type-34-strong);
+  --ch-track-large-title: -0.038em;
+  --ch-type-bar-title: var(--ch-type-17-strong);
+  --ch-track-bar-title: var(--ch-track-17);
+  --ch-type-hero: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans);
+  --ch-track-hero: -0.01em;
+  --ch-type-section: var(--ch-type-20-strong);
+  --ch-track-section: var(--ch-track-20);
+  --ch-type-card-title: var(--ch-type-17-strong);
+  --ch-track-card-title: var(--ch-track-17);
+
   /* Space and layout */
   --ch-gutter: 40px;
   /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still

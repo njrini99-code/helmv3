@@ -32,8 +32,9 @@
 .ch-rd-h h1,
 .ch-rd-h h2 {
   margin: 8px 0 0;
-  font: 400 calc(50 * var(--ch-type-k))/1.02 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  /* The desktop hero, as every other section's (B1: it was 50, the only one off 52). */
+  font: var(--ch-type-hero);
+  letter-spacing: var(--ch-track-hero);
 }
 
 /* The hero: the round in progress beside the season */
@@ -260,7 +261,7 @@
 
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.05em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-rd-season__big em {
   font: 500 13px/1 var(--ch-font-sans);
@@ -1162,7 +1163,7 @@ a.ch-rd-sc:focus-visible {
   font: 500 34px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.04em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-rv-sg__tot em {
   font: var(--ch-type-caption);
@@ -1953,7 +1954,7 @@ a.ch-rd-sc:focus-visible {
 .ch-rv.is-phone .ch-rv-hero h2 {
     font: 600 calc(28 * var(--ch-type-k))/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
   }
   .ch-rv.is-phone .ch-rv-hero__s b {
     font-weight: 600;
@@ -3738,7 +3739,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: 600 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-rd .ch-rd-fig dt {
   font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
@@ -3829,7 +3830,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     font: 600 58px/0.92 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.035em;
-    font-variation-settings: 'wdth' 90;
+    font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-season__big::after {
     width: 36px;
@@ -4120,13 +4121,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font: 600 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.035em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-rd.is-phone .ch-rd-unf:not(.is-idle) .ch-rd-unf__f b {
   font: 600 22px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
 }
 .ch-rd .ch-rd-unf__cta svg {
   transition: transform var(--ch-dur-quick) var(--ch-ease);
@@ -4201,7 +4202,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     font: 600 28px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
-    font-variation-settings: 'wdth' 90;
+    font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-sc__date em {
     font: 500 12px/1 var(--ch-font-sans);
@@ -4241,7 +4242,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-sc__grid b {
     font-size: 17px;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-meter__t {
     height: 6px;
@@ -4265,7 +4266,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     font: 600 28px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.035em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 88;
   }
   .ch-rd[data-canopy] .ch-rd-sc__s.is-under {
     border-radius: var(--ch-radius-lg);

@@ -329,7 +329,7 @@
 .ch-next__t {
   font: 600 15px/1.2 var(--ch-font-sans);
   letter-spacing: -0.02em;
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   color: var(--ch-forest-800);
 }
 .ch-next__m {
@@ -1141,8 +1141,9 @@ button.ch-more__row[disabled] {
     flex: 1;
     min-width: 0;
     overflow: hidden;
-    font: 600 calc(17 * var(--ch-type-k))/1.1 var(--ch-font-sans);
-    letter-spacing: -0.01em;
+    font: var(--ch-type-bar-title);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-bar-title);
     color: var(--ch-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1386,10 +1387,12 @@ button.ch-more__row[disabled] {
     margin: 0;
     overflow: hidden;
     transform: translateX(-50%);
-    font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
-    /* Its own tracking, not the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and
-       the two must match to the pixel. */
-    letter-spacing: -0.025em;
+    /* The bar title, pushed or at a tab's root: 17/600, as iOS draws both (B1; it was 16 pushed). Its own tracking, not
+       the app's global h1 rule: the shell's stand-in draws the title as plain text (CH-1402), and the two must match to
+       the pixel. */
+    font: var(--ch-type-bar-title);
+    line-height: var(--ch-lead-tight);
+    letter-spacing: var(--ch-track-bar-title);
     color: var(--ch-text-primary);
     white-space: nowrap;
   }
@@ -1402,8 +1405,6 @@ button.ch-more__row[disabled] {
     flex: 1;
     max-width: none;
     transform: none;
-    font-size: calc(17 * var(--ch-type-k));
-    letter-spacing: -0.01em;
   }
   .ch-pbar__lead {
     display: flex;
@@ -2229,8 +2230,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 }
 .ch-hero__title {
   margin: 2px 0;
-  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
-  letter-spacing: -0.01em;
+  font: var(--ch-type-hero);
+  letter-spacing: var(--ch-track-hero);
   color: var(--ch-text-primary);
 }
 .ch-hero__line {
