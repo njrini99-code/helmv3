@@ -14,6 +14,7 @@ import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { Nine } from '../../ui/Nine';
 import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
 import { withPointSpan } from '../../ui/point-span';
 import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
@@ -394,24 +395,20 @@ export function WeekStrip({ days, note, children }: { days: ChCoachHome['week'][
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
       </div>
-      <ol className="ch-hm-week">
-        {days.map((d) => (
-          <li key={d.date} className={(d.isToday ? 'is-today' : '') + (d.hasCompetition ? ' is-major' : '')} aria-current={d.isToday ? 'date' : undefined}>
-            <Link href={`${CALENDAR}?view=day&date=${d.date}`} className="ch-hm-week__d">
-              <em aria-hidden="true">{d.weekday.slice(0, 1)}</em>
-              <b className="ch-num" aria-hidden="true">
-                {d.dayOfMonth}
-              </b>
-              <span aria-hidden="true">{d.hasCompetition ? <Icon icon={TYPE_ICON[d.competitionType ?? 'tournament']} size={11} /> : Array.from({ length: Math.min(3, d.eventCount) }, (_, j) => <i key={j} />)}</span>
-              <span className="ch-sr-only">
-                {d.weekday} {d.dayOfMonth}
-                {d.isToday ? ', today' : ''}
-                {d.hasCompetition ? ', competition' : ''}, {d.eventCount} {d.eventCount === 1 ? 'event' : 'events'}
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ol>
+      <DayStrip
+        label="This week"
+        className="ch-hm-week"
+        days={days.map((d) => ({
+          date: d.date,
+          top: d.weekday.slice(0, 1),
+          num: d.dayOfMonth,
+          isToday: d.isToday,
+          dots: d.eventCount,
+          mark: d.hasCompetition ? TYPE_ICON[d.competitionType ?? 'tournament'] : undefined,
+          label: `${d.weekday} ${d.dayOfMonth}${d.isToday ? ', today' : ''}${d.hasCompetition ? ', competition' : ''}, ${d.eventCount} ${d.eventCount === 1 ? 'event' : 'events'}`,
+          href: `${CALENDAR}?view=day&date=${d.date}`,
+        }))}
+      />
       {note && (
         <p className="ch-hm-week__n">
           <b>{note.weekday}</b> {note.title}
