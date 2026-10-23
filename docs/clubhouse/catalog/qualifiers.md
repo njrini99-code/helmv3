@@ -77,7 +77,7 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09201 | The qualifiers don't load | "The qualifiers didn't load" + Try again, never "No qualifiers yet". The head stays, Create qualifier with it, and its counts read "— active · — concluded" | `InlineNotice` | qualifiers.test › CH-09201 |
+| CH-09201 | The qualifiers don't load | "The qualifiers didn't load" + Try again, never "No qualifiers yet". The head stays, New qualifier with it, and its counts read "— active · — concluded" | `InlineNotice` | qualifiers.test › CH-09201 |
 | CH-09202 | Entries or rounds don't load on the list | "Standings didn’t load." The cards and the hero stay; leaders and "You're T3" are left out, not zeroed, and neither "You aren’t entered" nor "no rounds in yet" is said | `InlineNotice` | qualifiers.test › CH-09202 |
 | CH-09203 | A qualifier's entrants don't load | "The field didn’t load." in the leaderboard; entrants read "—" | `InlineNotice` | qualifiers.test › CH-09203 |
 | CH-09204 | A qualifier's rounds don't load | "Scores didn’t load." The field is never shown without its scores; round-by-round is hidden | `InlineNotice` | qualifiers.test › CH-09204 |
@@ -105,7 +105,7 @@ Every save goes through `useAction`, so these belong to the shell:
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-09301 | The team has no qualifiers | The page empty state (v2 medallion): Coach: "No qualifiers yet" + "Set up a qualifier to rank players across counted rounds and pick your lineup." + Create qualifier (v2 copy). Player: "No qualifiers yet" + "Your coach’s qualifiers show here once they’re set up." | `EmptyState` | qualifiers.test › CH-09301 |
+| CH-09301 | The team has no qualifiers | The page empty state (v2 medallion): Coach: "No qualifiers yet" + "Set up a qualifier to rank players across counted rounds and pick your lineup." + New qualifier (v2 copy). Player: "No qualifiers yet" + "Your coach’s qualifiers show here once they’re set up." | `EmptyState` | qualifiers.test › CH-09301 |
 | CH-09302 | Search or filter matches nothing | "No qualifiers match your filters." + Clear filters | `EmptyState` | qualifiers.test › CH-09302 |
 | CH-09303 | Nothing has concluded yet | "No concluded qualifiers yet." under Concluded | `EmptyState` | qualifiers.test › CH-09303 |
 | CH-09304 | No round is in yet | "Awaiting first round." + "7 players entered. Standings appear once a player submits a round." | `EmptyState` | qualifiers.test › CH-09304 |

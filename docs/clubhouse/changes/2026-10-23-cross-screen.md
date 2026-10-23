@@ -408,3 +408,45 @@ ternaries (168) and the off-glossary words are ratcheted
 
 - New `lib/__tests__/plural.test.ts` and `lib/__tests__/glossary.test.ts`
   (each with its ratchet); related tests for every changed file.
+
+## 2026-10-23 — Focus ring, icons and create copy (CONS-36, CONS-19, CONS-38)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-36, CONS-19, CONS-38)
+PR/commit: #2361
+Contract IDs: none new; the meanings of 110105, 111703 and the CH-11301,
+CH-11304, CH-13301, CH-13370, CH-13380, CH-09201, CH-09301 and CH-14904
+rows name the new controls (registry sync)
+Actions: none
+Data impact: none
+Held items: the hero bar's tight rings and the menu rows' inset
+(ratcheted); chevron and close sizes (with CONS-4); the in-flow commits
+"Create qualifier" and "Start round"
+```
+
+### Changed
+
+- One focus ring: every `:focus-visible` and `:focus-within` rule draws
+  in `--ch-border-focus`, or `--ch-border-focus-on-dark` (champagne-300)
+  on the hero green and dark plates, 2px out or 2px in. Round setup's
+  ink ring is the field focus ring. A guard ratchets what is left (9).
+- One icon per meaning: ChartColumn, RefreshCw, MoreHorizontal,
+  ExternalLink, SquareArrowOutUpRight, Share2 and PenLine become
+  BarChart3, RotateCw, Ellipsis, ArrowUpRight, Share and Pencil, and
+  ESLint keeps the old ones out of `src/clubhouse`.
+- "New" for what is authored: New round (was Start a round, Start a new
+  round, Start your first round), New qualifier (was Create a qualifier
+  on the list and the new form's title), New prospect (was Add prospect;
+  the desktop form commits with Add, as the phone sheet does).
+
+### Why
+
+- Rings in six colours and seven offsets, two icons for one meaning,
+  and three verbs for making a thing.
+
+### Verification
+
+- New `focus-ring.test.ts` and `create-copy.test.ts`; the ESLint rule
+  probed with a restricted import; the CSS tests (46 files), related
+  tests and the copy tests of Rounds, Home, CoachHelm, Onboarding,
+  Qualifiers and Recruiting; `docs:check` and the registry sync clean.
