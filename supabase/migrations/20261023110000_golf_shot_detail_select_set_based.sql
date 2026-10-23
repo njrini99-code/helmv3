@@ -59,7 +59,7 @@
 -- VERIFY: select 1 from pg_policies where schemaname = 'public' and tablename = 'approach_miss_details' and policyname = 'approach_miss_details_select' and qual like '%golf_shot_detail_round_ids()%' and qual like '%can_read_golf_shot_detail(shot_id)%';
 -- VERIFY: select 1 from pg_proc where oid = 'public.can_read_golf_shot_detail(uuid)'::regprocedure and procost = 10000;
 
-BEGIN;
+-- No BEGIN/COMMIT: the migration tool runs each file in one transaction.
 
 -- Pre-flight: refuse to run against SELECT policies other than the ones this
 -- file was written for (production, read 2026-10-23).
@@ -138,5 +138,3 @@ USING (
   ) IN (SELECT public.golf_shot_detail_round_ids())
   OR public.can_read_golf_shot_detail(shot_id)
 );
-
-COMMIT;
