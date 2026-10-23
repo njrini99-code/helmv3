@@ -702,7 +702,7 @@
 /* The class card (P006): a slate band naming the slot, then a row a player. Colour from the class slate, not ivory. */
 .ch-cg {
   position: fixed;
-  z-index: 60;
+  z-index: var(--ch-z-popover);
   display: flex;
   flex-direction: column;
   overflow: hidden;

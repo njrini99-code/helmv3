@@ -47,7 +47,7 @@
   position: fixed;
   top: 12px;
   left: 12px;
-  z-index: 100;
+  z-index: var(--ch-z-skip);
   padding: 8px 14px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
@@ -1459,7 +1459,7 @@ button.ch-more__row[disabled] {
   .ch-pscreen {
     position: fixed;
     inset: 0;
-    z-index: calc(var(--ch-z-sticky) + 10);
+    z-index: var(--ch-z-dock);
     display: flex;
     flex-direction: column;
     background: var(--ch-bg-page);
@@ -1944,7 +1944,7 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 .ch-lp__bar {
   position: fixed;
   inset: 0 0 auto 0;
-  z-index: 60;
+  z-index: var(--ch-z-popover);
   height: 2px;
   overflow: hidden;
   pointer-events: none;
