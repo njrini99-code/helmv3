@@ -20,7 +20,15 @@ describe('one sheet grab and radius (CONS-23)', () => {
   it('every handle in the markup is the one grab', () => {
     const tsx = walk(ROOT, /\.tsx$/).filter((f) => !f.includes('__tests__'));
     expect(hits(/className="[^"]*(?:__grab|-grab)\b[^"]*"/, tsx).filter((h) => !/className="ch-grab(?: ch-grab--hit)?"/.test(h.text))).toEqual([]);
-    const sheets = ['ui/Modal.tsx', 'shell/AccountSheet.tsx', 'shell/AskSheetBody.tsx', 'shell/Bell.tsx', 'screens/recruiting/RecSheet.tsx', 'screens/settings/phone/sheets.tsx', 'screens/rounds/track/CourseView.tsx'];
+    const sheets = ['ui/Modal.tsx', 'shell/AccountSheet.tsx', 'shell/AskSheetBody.tsx', 'shell/Bell.tsx', 'ui/FormSheet.tsx', 'screens/rounds/track/CourseView.tsx'];
     for (const f of sheets) expect(code(join(ROOT, f)), f).toMatch(/className="ch-grab/);
+  });
+
+  it('Settings and Recruiting build their sheets on the one FormSheet', () => {
+    for (const f of ['screens/settings/phone/sheets.tsx', 'screens/recruiting/RecSheet.tsx']) {
+      const src = code(join(ROOT, f));
+      expect(src, f).toMatch(/from '(?:\.\.\/)+ui\/FormSheet'/);
+      expect(src, f).not.toMatch(/<dialog\b/);
+    }
   });
 });

@@ -1954,7 +1954,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await waitFor(() => expect(sheetOf('CH-8509')).toBeNull());
       expect(within(dialog('Profile')).getByLabelText('Full name')).toHaveValue('Maya Reyes Jr');
       // Swiping the sheet down asks too, and puts the sheet back where it was.
-      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      await dragSheet(sheet.querySelector('.ch-fsheet-bar') as HTMLElement, 120);
       await waitFor(() => expect(sheetOf('CH-8509')).not.toBeNull());
       expect((sheet.closest('dialog') as HTMLElement).style.translate).toBe('');
       // Discard: closed, nothing sent, and it opens again as saved.
@@ -2032,7 +2032,7 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(code('CH-8402')).not.toBeNull();
       // Nothing closes it meanwhile: not Cancel, not a swipe (which springs back), and no discard question.
       await user.click(within(sheet).getByRole('button', { name: 'Cancel' }));
-      await dragSheet(sheet.querySelector('.ch-setm-bar') as HTMLElement, 120);
+      await dragSheet(sheet.querySelector('.ch-fsheet-bar') as HTMLElement, 120);
       expect(sheet.hasAttribute('open')).toBe(true);
       expect(sheet.style.translate).toBe('');
       expect(sheetOf('CH-8509')).toBeNull();

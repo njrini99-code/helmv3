@@ -11,9 +11,8 @@ import { ROOT, walk } from './_scan';
 const SHEETS: Array<[file: string, selector: string]> = [
   ['controls.css', '.ch-modal__panel'],
   ['auth.css', '.ch-au-panel'],
-  ['recruiting.css', '.ch-rec-sheet'],
+  ['controls.css', '.ch-fsheet'],
   ['rounds-track.css', '.ch-rtcv__sheet'],
-  ['settings.css', '.ch-setm-sheet'],
   ['shell.css', '.ch-more'],
   ['shell.css', '.ch-asks__panel'],
 ];
