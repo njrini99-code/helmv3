@@ -358,6 +358,7 @@ its rows together and does not map them one to one.
 | aplus-cons14-18 | One plural rule; the golf glossary (CONS-14, CONS-18) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-22); ternaries and off-glossary words ratcheted; owner words held; no Bridge IDs or CH codes needed |
 | aplus-cons36-19-38 | One focus ring, one icon per meaning, New for what is authored (CONS-36, CONS-19, CONS-38) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17/18); in-flow commits held for the owner; no new Bridge IDs or CH codes |
 | aplus-cons26 | Page titles are their nav labels (CONS-26, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); Qualifiers' name held for the owner; no Bridge IDs or CH codes needed |
+| aplus-cons11 | Honest empty states, with an AST ratchet (CONS-11, partial) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-17); 71 legacy empties ratcheted; no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

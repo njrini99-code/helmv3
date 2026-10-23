@@ -477,3 +477,31 @@ Held items: Qualifiers' title against its nav ("Lineups" or
 ### Verification
 
 - New `page-titles.test.ts`; Home, Roster and Rounds tests.
+
+## 2026-10-23 — Honest empty states (CONS-11, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-11)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the other 71 legacy section empties and 30 hand-rolled empty
+class uses, ratcheted
+```
+
+### Changed
+
+- An `EmptyState` names its `kind`, draws a `shape`, or is a page; the
+  legacy section form is ratcheted per file by an AST check.
+- Stats' section filter empties are `kind="filtered"`.
+- On the phone, Home's and the player's "No rounds posted yet this
+  season" are the shaped rows with the Flag, as on the desktop.
+
+### Why
+
+- One state drawn three ways read as three states.
+
+### Verification
+
+- New `empty-honest.test.ts`; Stats filter and Home tests.

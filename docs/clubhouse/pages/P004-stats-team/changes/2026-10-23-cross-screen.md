@@ -69,3 +69,26 @@ Held items: none
 ### Verification
 
 - See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+## 2026-10-23 — Honest empty states (CONS-11)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-11)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- A filter that matches nothing in a section says it is filtered.
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+### Verification
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.
