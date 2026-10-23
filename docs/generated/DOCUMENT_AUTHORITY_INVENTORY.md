@@ -779,6 +779,7 @@ them would bury everything above.
 | `docs/clubhouse/catalog/shell.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-player.md` | current | - | - | - | - |
 | `docs/clubhouse/catalog/stats-team.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-10-22-clock-preference.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-22-motion-apple-bar.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
@@ -832,8 +833,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/WIRING.md` | current | - | - | - | 2 |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-22-edge-swipe-cleanup.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-22-motion-apple-bar.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -841,12 +844,14 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-10-22-invite-by-email.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
@@ -871,6 +876,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
@@ -878,6 +884,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
@@ -885,6 +892,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
@@ -892,12 +900,14 @@ them would bury everything above.
 | `docs/clubhouse/pages/P009-qualifiers/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-22-look-and-feel-pass.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P010-hub/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CONTRACT.md` | current | - | - | yes | - |
@@ -912,6 +922,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
@@ -920,6 +931,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/WIRING.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-motion-apple-bar.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-standing-how-you-play-ask-reads.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-22-time-format.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-10-23-type-scale.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |

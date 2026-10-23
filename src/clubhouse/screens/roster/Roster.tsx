@@ -30,6 +30,7 @@ import { chTrail } from '../../lib/track';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
+import { InviteByEmail } from './InviteByEmail';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
@@ -377,6 +378,7 @@ export function Roster({ data }: { data: ChRoster }) {
         teamName={teamRef}
         code={data.joinCode}
         codeFailed={data.teamError}
+        emailInvites={data.emailInvites === true}
         onRetry={() => router.refresh()}
       />
       <Modal
@@ -794,6 +796,7 @@ function InviteModal({
   teamName,
   code,
   codeFailed,
+  emailInvites,
   onRetry,
 }: {
   open: boolean;
@@ -801,6 +804,8 @@ function InviteModal({
   teamName: string;
   code: string | null;
   codeFailed: boolean;
+  /** An invite email can go out now (ChRoster.emailInvites). */
+  emailInvites: boolean;
   onRetry: () => void;
 }) {
   const copy = useCopyText();
@@ -851,6 +856,7 @@ function InviteModal({
               <span className="ch-field__help">Players who open it join right away, after making an account if they need one.</span>
             </div>
           )}
+          <InviteByEmail enabled={emailInvites} />
         </div>
       ) : codeFailed ? (
         <InlineNotice

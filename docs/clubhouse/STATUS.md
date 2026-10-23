@@ -96,9 +96,9 @@ VoiceOver, dark-mode scan or real-account write pass.
 | P004 Stats (team) | Ready with caveats | No phone browser capture. Fixed 2026-10-17: whoever the dashboard draws as a player now goes to their Stats instead of "not rebuilt" |
 | P005 Stats (player) | Ready with caveats | Focus-area write untested in a real session; strokes-gained figures wait on the held fix (data quality, not a blocker) |
 | P006 Calendar | Ready with caveats | No device pass. Retry after a lost reply is safe for events and series (C-17) and busy time (fixed 2026-10-17) |
-| P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); the Messages E2E signs in to production and waits for the owner |
+| P007 Messages | Ready with caveats | Conversation files is a HELD feature that turns on with the flag (decision 1); its migrations are in (`20261001130000` applied 2026-10-03, `20261008160000` applied 2026-10-21); the Messages E2E signs in to production and waits for the owner |
 | P008 Settings | Ready with caveats | Desktop built from the system with no handoff screen, never owner-reviewed (decision 3). Fixed 2026-10-17: a refused save says why; Back over any edit sheet with edits asks first and keeps Settings; the priority order after a failed save; one read per table; warning ticks on destructive confirms |
-| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); held `20260929200000` (coach reasoning coach-only, D-35; the app already reads it coach-only). Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
+| P009 Qualifiers | Not ready | Squad-size and entrant edits are HELD and turn on with the flag (decision 1); `20260929200000` (coach reasoning coach-only, D-35) was applied 2026-10-21 and the app reads it coach-only. Fixed 2026-10-17: a coach on `/my-qualifiers` goes to Qualifiers |
 | P010 Team Hub | Ready with caveats | No device pass. Fixed 2026-10-17: a failed roster read says so with Try again (CH-10208); the dark scan passes |
 | P011 Rounds | Not ready | Q-120 decision (decision 2); the owner's device pass (airplane mode, kill the app, Recover); 1 contract without a test (111809, was 11 on 10-17); the round E2E runs only against a local stack, in CI only once draft #2208 lands |
 | P012 Classes | Ready with caveats | Import and calendar writes never run live. The retried import after a lost answer and the duplicate rows in one import were already fixed in code and tested (#2148, 2026-10-06; the audit read a stale VERIFY note, corrected 2026-10-20); two imports in flight at once are closed by a locked database function (held `20261021110000`; until it is applied the import keeps its read before the insert, so two at once could still both insert) |
@@ -125,9 +125,9 @@ VoiceOver, dark-mode scan or real-account write pass.
   turning the flag on releases them. Their plans
   (`docs/clubhouse/held/features/`) say they wait for the owner's explicit
   release.
-- **Held migrations Clubhouse needs (apply order):** `20261016220000` (after
-  #2201), `20261008160000` then `db:types`, `20260929200000` then
-  `20261007100000` (that order), `20261017100000`–`20261017102000` (with the
+- **Held migrations Clubhouse needs (apply order; `20261008160000` and
+  `20260929200000` were applied 2026-10-21, see HELD.md):** `20261016220000`
+  (after #2201), `20261007100000`, `20261017100000`–`20261017102000` (with the
   app change), `20261001000000` (Q-120), `20260930140000` (check the project
   Storage limit is at least 100 MB first), `20260930150000`, then the OD-01
   chain in one session (`20260924120000` → `140000` → `20260925120000` →
@@ -177,9 +177,8 @@ VoiceOver, dark-mode scan or real-account write pass.
    Recommendation: keep the spring; measure on the first allowed build.
 7. Decided 2026-10-21 (owner, via the coordinator): keep white cards and
    Instrument Sans in Clubhouse; the brand doc follows the product
-   (`memory/brand/clubhouse-ui.md`). Also open: `20260929200000` (qualifier
-   privacy); making `clubhouse-quality` required; held
-   migration timing for the stats chain, the strokes-gained fix and Messages
+   (`memory/brand/clubhouse-ui.md`). Also open: making `clubhouse-quality`
+   required; held migration timing for the stats chain, the strokes-gained fix and Messages
    delete; roster availability; Player CoachHelm Ask; the iOS items; open PRs
    #2096, #2091, #2073, #2048, #2105, #2177, #2193, #2200.
 

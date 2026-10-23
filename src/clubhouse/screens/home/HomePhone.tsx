@@ -19,6 +19,7 @@ import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/forma
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import { useChClock, useChClockText } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
@@ -137,13 +138,14 @@ function Day({ phone, rounds, now, today, onOpenRound }: DayProps & { phone: ChC
 function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { data: ChCoachHome; quiet: boolean }) {
   const { phone } = data;
   const place = useLightPlace();
+  const clock = useChClock();
   if (data.week.error || !phone.today.length) return <Today list={phone.today} now={now} failed={data.week.error} quiet={quiet} />;
   const phase = dayPhase(phone.next, phone.today, rounds, now, today);
   const card = phase?.kind === 'event' ? phase.e : null;
   const later = data.week.agenda.find((a) => a.when === 'later' && a.id !== card?.id);
   return (
     <>
-      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place), ...competitionExtra(later)]} />
+      <LaterToday todays={phone.today} cardId={card?.id ?? null} now={now} extras={[...sunsetExtra(today, now, place, clock), ...competitionExtra(later, clock)]} />
       {!data.latestRounds.error && <SinceYouLooked rounds={rounds} event={card} onOpenRound={onOpenRound} />}
     </>
   );
@@ -152,6 +154,7 @@ function Later({ data, rounds, now, today, quiet, onOpenRound }: DayProps & { da
 
 /** `children`: what closes the card (the player's countdown). `kicker`: the player's "Up next · Qualifier" (the coach's card names the type alone). */
 export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date | null; children?: ReactNode; kicker?: string }) {
+  const t = useChClockText();
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
@@ -161,10 +164,10 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
           <Icon icon={TYPE_ICON[e.type]} size={13} />
           {kicker ? `${kicker} · ${TYPE_LABEL[e.type]}` : TYPE_LABEL[e.type]}
         </span>
-        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{when.text}</span>
+        <span className={'ch-hm-next__when ch-num' + (when.soon ? ' is-soon' : '')}>{t(when.text)}</span>
       </span>
       <h2>{e.title}</h2>
-      <p className="ch-num">{[e.rangeLabel, e.location].filter(Boolean).join(' · ')}</p>
+      <p className="ch-num">{[t(e.rangeLabel), e.location].filter(Boolean).join(' · ')}</p>
       {e.invitees && people.length > 0 && (
         <span className="ch-hm-next__f">
           <span className="ch-hm-stack" aria-hidden="true">
@@ -238,6 +241,7 @@ function NoEvents() {
  * steps back, so it never looks disabled.
  */
 export function Today({ list, now, failed, quiet, canPlan = true, inline = false }: { list: ChHomeEvent[]; now: Date | null; failed: boolean; quiet: boolean; canPlan?: boolean; inline?: boolean }) {
+  const t12 = useChClockText();
   if (failed) return null;
   const t = now?.getTime();
   const rows = list.map((e) => {
@@ -265,7 +269,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
         return (
           <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
             <Link href={eventHref(e)} className="ch-hm-tl__a">
-              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : e.startLabel.replace(/\s?[AP]M$/, '')}</span>
+              <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
               <span className="ch-hm-tl__rail" aria-hidden="true">
                 <i className={`is-${e.type}`} />
               </span>
