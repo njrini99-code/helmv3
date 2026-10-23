@@ -121,6 +121,9 @@ export const PREVIEW_ROSTER_HELM_FAILED: ChRoster = { ...PREVIEW_ROSTER, helm: {
 /** `?state=helm-off`: CoachHelm is off for this coach, so the panel draws no CoachHelm block. */
 export const PREVIEW_ROSTER_HELM_OFF: ChRoster = { ...PREVIEW_ROSTER, helm: { status: 'off' } };
 
+/** `?state=invite-email&invite=1`: email invites are on, so the invite sheet offers "Email them" (CH-3080, CH-3180, CH-3880); without it the sheet says email is off (CH-3980). */
+export const PREVIEW_ROSTER_EMAIL_INVITES: ChRoster = { ...PREVIEW_ROSTER, emailInvites: true };
+
 /** The player's Roster (Theo's): the coaches, then the active players only, as loadPlayerRoster returns them (name, class, handicap). */
 export const PREVIEW_PLAYER_ROSTER: ChPlayerRoster = {
   teamName: PREVIEW_ROSTER.teamName,

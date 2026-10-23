@@ -198,6 +198,21 @@ too, not "off".
 - Not yet: a measured touch-target pass (the pills, the insight rows) and a pass
   on a real iPhone (haptics felt, the sideways row with the tab bar).
 
+### Course plan (player; draft, no owner board)
+
+- `coachhelm_course_plan_v1`, off in production. One flush section at the
+  foot of the player's Board (under the empty state when there are no reads),
+  "Course plan" (CH-13916), a one-line note and a small Pick a course button.
+- Pick a course turns into a row of course chips that wraps (name, then the
+  round count in tabular numbers); each chip is 44px tall and ticks the
+  select haptic (CH-13733). The picked chip is pressed.
+- The plan (CH-13917): "At" and the course name, up to three lines as a plain list, then
+  the thin-history line below six rounds in the muted caption. No coach copy,
+  no club names.
+- No course with three rounds, or too few on the picked one: one muted line
+  (CH-13333). A failed read: "Your course plan didn't load. Nothing was
+  changed." with Try again (CH-13233).
+
 ### Track record (coach, `?view=track-record`; draft, no owner board)
 
 - A pushed screen's bar: back to CoachHelm, "Track record" as the title.

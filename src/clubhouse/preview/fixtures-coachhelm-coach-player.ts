@@ -1,7 +1,7 @@
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { toChInsight } from '../data/coachhelm-map';
 import { themesByCategory, toChDeepInsight, type ChDeepDive } from '../data/coachhelm-dive-shape';
-import { toChProfile, type ChProfile } from '../data/coachhelm-profile-shape';
+import { toChGame, type ChGame } from '../data/coachhelm-profile-shape';
 import { toChStanding, type ChStanding } from '../data/coachhelm-standing-shape';
 import { coachHeadLine, type ChViewVoice } from '../data/coachhelm-views-shape';
 import { speak, type ChViewer } from '../data/coachhelm-voice';
@@ -19,7 +19,8 @@ const VIEWER: Extract<ChViewer, { role: 'coach' }> = { role: 'coach', first: 'Jo
 /** Who the coach's views are about: the header's name and its one line (class, newest round). */
 export const PREVIEW_COACH_VOICE: ChViewVoice = { role: 'coach', playerId: 'pl-jonah', name: 'Jonah Okafor', first: 'Jonah', line: coachHeadLine('Junior', '2026-09-28', VIEWS_NOW) };
 
-export const PREVIEW_COACH_PROFILE: ChProfile = { ...toChProfile(genome(FULL_VECTOR), VIEWS_NOW, VIEWER), seen: { costing: 3, working: 1, error: false } };
+/** How Jonah plays, on the coach's Standing (the coach's Game profile, folded in). */
+export const PREVIEW_COACH_GAME: ChGame = toChGame(genome(FULL_VECTOR), VIEWS_NOW, VIEWER);
 
 /** Standing with the open reads on two of its stats (the rows that carry "Open the read"). */
 export const PREVIEW_COACH_STANDING: ChStanding = { ...toChStanding(STANDING_ROWS, BASELINE, LADDER_READS, VIEWER), reads: { penalty_rate_per_round: 'in-pen', big_number_rate: 'in-dbl' } };

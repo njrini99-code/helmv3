@@ -1,11 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
 import { updateRoundType } from '@/app/golf/actions/round-type';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useContinueRoundSession, type ContinueRoundSessionProps } from '@/lib/golf/round-session/use-continue-round-session';
 import { normalizeStartHole } from '@/lib/golf/round-session/play-order';
+import { useChCourseNudge } from './CourseNudge';
 import { useRoundPorts } from './ports';
 import { useAction } from '../../../lib/use-action';
 import { QualifierRoundSheet } from './QualifierRoundSheet';
@@ -27,6 +29,10 @@ export interface ContinueRoundProps extends ContinueRoundSessionProps {
   qualifierRoundNumberUnavailableReason?: string;
   /** The qualifiers the round's type can change to, read by the route (`loadRoundTypeOptions`). */
   roundTypeOptions?: ChRoundTypeOptions;
+  /** CoachHelm Slice 8a: the player's open putt-miss asks, read by the route; absent with the flag off (CH-11960). */
+  dataGapAsks?: readonly DataGapAsk[];
+  /** CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): the recovery tap and the course nudge (CH-11961, CH-11962). */
+  dataPromptsV2?: boolean;
 }
 
 const NO_OPTIONS: ChRoundTypeOptions = { qualifiers: [], readFailed: false };
@@ -38,7 +44,7 @@ const NO_OPTIONS: ChRoundTypeOptions = { qualifiers: [], readFailed: false };
  * the round (CH-11512), a round changed on another device (CH-11902), the failures of a save or discard, a closed
  * qualifier (CH-11516), and a legacy qualifier round that must be numbered before it can be submitted (CH-11518).
  */
-export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRoundNumberUnavailableReason, roundTypeOptions = NO_OPTIONS, ...props }: ContinueRoundProps) {
+export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRoundNumberUnavailableReason, roundTypeOptions = NO_OPTIONS, dataGapAsks, dataPromptsV2 = false, ...props }: ContinueRoundProps) {
   const router = useRouter();
   const { ports, capture } = useRoundPorts();
   const connection = useConnectionStatus();
@@ -107,6 +113,16 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
     (result, c) => (result.success ? c : { ...c, hint: roundTypeFailure(result.error) ?? c.hint }),
   );
 
+  // The course nudge (Slice 8b): null when the round already has a course. A pick rides the engine's next write.
+  const { linkedCourseIdRef } = engine;
+  const linkRoundCourse = useCallback(
+    (courseId: string) => {
+      linkedCourseIdRef.current = courseId;
+    },
+    [linkedCourseIdRef],
+  );
+  const courseNudge = useChCourseNudge({ enabled: dataPromptsV2, hasCourse: !!props.setupData.courseId, courseName: props.setupData.courseName, onLink: linkRoundCourse });
+
   const session: ChRoundSession = {
     round: trackingRound(props.setupData),
     heading: roundHeading(props.setupData),
@@ -148,6 +164,9 @@ export function ContinueRound({ qualifierRoundNumberOptions = [], qualifierRound
     restoreEpoch: engine.restoreEpoch,
     discardRecovery: engine.handleDiscardRecovery,
     closeRecovery: () => engine.setShowRecoveryDialog(false),
+    dataGapAsks,
+    recoveryPrompt: dataPromptsV2,
+    courseNudge,
   };
 
   return (

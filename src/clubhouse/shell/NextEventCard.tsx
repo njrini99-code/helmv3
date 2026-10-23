@@ -1,12 +1,17 @@
+'use client';
+
 import Link from 'next/link';
 import type { ChNextEvent } from '../data/shell';
+import { useChClockText } from '../lib/use-clock';
 import { Badge } from '../ui/Badge';
 
 /** The sidebar’s next-event card: when, what, and, for an event that asks for replies, how many invitees have said yes. */
 export function NextEventCard({ event }: { event: ChNextEvent }) {
+  const t = useChClockText();
   const r = event.ready;
+  const meta = t(event.metaLabel);
   return (
-    <Link href={`/golf/dashboard/calendar?event=${event.id}`} className="ch-next" title={event.metaLabel}>
+    <Link href={`/golf/dashboard/calendar?event=${event.id}`} className="ch-next" title={meta}>
       <span className="ch-next__k">
         <span>Next event</span>
         <span>{event.whenLabel}</span>
@@ -24,7 +29,7 @@ export function NextEventCard({ event }: { event: ChNextEvent }) {
           </span>
         </>
       ) : (
-        <span className="ch-next__m">{event.metaLabel}</span>
+        <span className="ch-next__m">{meta}</span>
       )}
     </Link>
   );

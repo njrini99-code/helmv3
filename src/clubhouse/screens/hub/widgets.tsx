@@ -8,6 +8,7 @@ import type { ChHubTab } from '../../lib/hub-tabs';
 import { initials } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import type { ServerResult } from '../../lib/use-action';
+import { useChClockText } from '../../lib/use-clock';
 import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -90,6 +91,7 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   onOpenTravel: () => void;
 }) {
   const [at, setAt] = useState(0);
+  const clk = useChClockText();
   const coach = role === 'coach';
   if (error) {
     return (
@@ -107,9 +109,9 @@ export function TripTile({ trips, role, days, error, covered, onEdit, onPlan, on
   if (t) {
     const word = t.inDays != null ? countLabel(t.inDays) : null;
     const stops = [
-      { k: 'Leaves', v: t.depart ?? t.dates, s: t.from },
+      { k: 'Leaves', v: clk(t.depart ?? t.dates), s: t.from },
       { k: 'Stays', v: t.hotel ?? 'Hotel not set', s: t.destination },
-      { k: 'Home', v: t.back ?? 'Not set', s: null },
+      { k: 'Home', v: clk(t.back ?? 'Not set'), s: null },
     ];
     const names = t.travelers ?? [];
     return (
@@ -242,6 +244,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
   covered: boolean;
   span?: number;
 }) {
+  const clk = useChClockText();
   const coach = role === 'coach';
   const days = week.days;
   const [sel, setSel] = useState(() => firstBusyDay(days));
@@ -325,7 +328,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                   const r = rsvpFor(e.id);
                   return (
                     <li key={e.id} className={!coach && r ? 'has-reply' : undefined}>
-                      <time className="ch-num">{e.time}</time>
+                      <time className="ch-num">{clk(e.time)}</time>
                       <Link href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
                         <b>
                           {e.title}
@@ -360,7 +363,7 @@ export function WeekTile({ week, role, rsvps, replies, isPending, onReply, cover
                         {d.weekday} {d.day}
                       </time>
                       <b>{e.title}</b>
-                      <em className="ch-num">{e.time}</em>
+                      <em className="ch-num">{clk(e.time)}</em>
                     </button>
                   </li>
                 ))}
@@ -610,6 +613,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
   onAck: (a: ChHubAnnouncement) => Promise<ServerResult>;
   onOpenPosts: () => void;
 }) {
+  const clk = useChClockText();
   const coach = role === 'coach';
   const [who, setWho] = useState<string | null>(null);
   const span = coach ? 4 : 5;
@@ -631,7 +635,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
   const left = Math.max(0, a.recipients - a.ackCount);
   const names = a.notAcked ?? null;
   return (
-    <Tile id="ch-hw-post" title="Latest post" span={span} aside={<span className="ch-hw__k ch-num">{a.when}</span>}>
+    <Tile id="ch-hw-post" title="Latest post" span={span} aside={<span className="ch-hw__k ch-num">{clk(a.when)}</span>}>
       <div className="ch-hw-post">
         <b className="ch-hw-post__t">{a.title}</b>
         <span className="ch-hw-post__by">
@@ -806,6 +810,7 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
   onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult>;
 }) {
   const [all, setAll] = useState(false);
+  const clk = useChClockText();
   // A failed part says so in its own words; a failed announcements read is the post tile's to say.
   const down = failed.replies || failed.tasks;
   return (
@@ -829,7 +834,7 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
                       {q.r.title}
                       {q.r.mandatory && <span className="ch-hb-req">Required</span>}
                     </b>
-                    <span className="ch-num">{q.r.meta}</span>
+                    <span className="ch-num">{clk(q.r.meta)}</span>
                   </span>
                   <ReplyChoices r={q.r} mine={mine} pending={isPending(q.r)} onReply={onReply} />
                 </li>
@@ -840,7 +845,7 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
               return (
                 <li key={q.key} className={done ? 'is-done' : undefined}>
                   <span className="ch-hw-q__b">
-                    <span className="ch-hw-q__k">Acknowledge · {q.a.when}</span>
+                    <span className="ch-hw-q__k">Acknowledge · {clk(q.a.when)}</span>
                     <b>{q.a.title}</b>
                     <span>{q.a.by}</span>
                   </span>

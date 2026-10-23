@@ -390,7 +390,6 @@ export async function measurePages(opts) {
               }
             : {
                 'coachhelm board': '/golf/dashboard/coachhelm',
-                'coachhelm profile': '/golf/dashboard/coachhelm?view=profile',
                 'coachhelm standing': '/golf/dashboard/coachhelm?view=standing',
                 'coachhelm deep-dive': '/golf/dashboard/coachhelm?view=deep-dive',
                 'rounds library': '/golf/dashboard/rounds',
@@ -450,7 +449,7 @@ export async function measurePages(opts) {
 
         // ── view switches on a settled CoachHelm page: the strip, then what the page showed ──
         if (wants('coachhelm') || wants('switch')) {
-          const steps = role === 'coach' ? ['Ask', 'Board'] : ['Game profile', 'Standing', 'Deep dive', 'Board'];
+          const steps = role === 'coach' ? ['Ask', 'Board'] : ['Standing', 'Deep dive', 'Board'];
           for (let i = 0; i < runsN; i++) {
             const { ctx, page } = await openPage(browser, base, stateFile, viewport, problems);
             try {

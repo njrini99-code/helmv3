@@ -1,5 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
+import { dataGapAsksForShotEntry } from '@/lib/coachhelm/data-gap/load-asks';
+import { dataPromptsV2ForShotEntry } from '@/lib/golf/data-prompts/flag';
 import { chLogServer } from '../lib/track-server';
 import { ContinueRound, type ContinueRoundProps } from '../screens/rounds/entry/ContinueRound';
 import type { ChRoundTypeOptions, ChQualifierOption } from '../screens/rounds/entry/round-type';
@@ -64,9 +66,15 @@ export async function loadRoundTypeOptions(input: { playerId: string; roundId: s
  * The page has already loaded and checked the round (its owner, that it is still in progress, its holes, shots and
  * course yardages, the qualifier round numbers left to choose), and hands over what the engine needs, so the loader
  * exists once and both UIs read the same round. This route adds the one read only Clubhouse draws here: the qualifiers
- * the live round's type can change to (the round-type sheet, CH-11521).
+ * the live round's type can change to (the round-type sheet, CH-11521), and CoachHelm's one-tap data prompts, the two
+ * reads the Fairway page makes (the putt-miss asks, CH-11960, and `coachhelm_data_prompts_v2` for the recovery tap and the
+ * course nudge, CH-11961 and CH-11962). With the flags off they read nothing, and neither throws.
  */
-export async function ClubhouseContinueRoundRoute(props: Omit<ContinueRoundProps, 'roundTypeOptions'>) {
-  const roundTypeOptions = await loadRoundTypeOptions({ playerId: props.playerId, roundId: props.roundId });
-  return <ContinueRound {...props} roundTypeOptions={roundTypeOptions} />;
+export async function ClubhouseContinueRoundRoute(props: Omit<ContinueRoundProps, 'roundTypeOptions' | 'dataGapAsks' | 'dataPromptsV2'>) {
+  const [roundTypeOptions, dataGapAsks, dataPromptsV2] = await Promise.all([
+    loadRoundTypeOptions({ playerId: props.playerId, roundId: props.roundId }),
+    dataGapAsksForShotEntry(props.playerId),
+    dataPromptsV2ForShotEntry(props.playerId),
+  ]);
+  return <ContinueRound {...props} roundTypeOptions={roundTypeOptions} dataGapAsks={dataGapAsks} dataPromptsV2={dataPromptsV2} />;
 }

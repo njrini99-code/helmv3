@@ -71,14 +71,14 @@ function RowsSkeleton({ rows, avatar }: { rows: number; avatar: number }) {
 }
 
 /**
- * The view strip (the player's Board, Game profile, Standing and Deep dive; the coach's Board and Ask) in the place and at the
+ * The view strip (the player's Board, Standing and Deep dive; the coach's Board and Ask) in the place and at the
  * height the page draws it: the radiogroup's 38px on desktop, the phone's 44px (the 36px chips or segments and the room their tap
  * area keeps). Without it the strip arrived with the page and pushed everything below it down.
  */
 function StripSkeleton({ coach, phone }: { coach: boolean; phone: boolean }) {
   return (
     <div className="ch-hl-sk__tabs" style={{ height: phone ? 44 : 38 }}>
-      <Skeleton width={phone ? '100%' : coach ? 150 : 380} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
+      <Skeleton width={phone ? '100%' : coach ? 150 : 249} height={phone ? 36 : 38} radius={phone ? 18 : 12} />
     </div>
   );
 }

@@ -145,8 +145,8 @@ const client = {
   rpc: async () => ({ data: null, error: null }),
 };
 vi.mock('@/lib/supabase/server', () => ({ createClient: async () => client }));
-// The Clubhouse branch reads the phone-layout cookie (F-36); outside a request there is no cookie store.
-vi.mock('@/clubhouse/lib/phone-hint', () => ({ phoneHint: async () => false, railHint: async () => false }));
+// The Clubhouse branch reads the phone-layout, rail and clock cookies (F-36); outside a request there is no cookie store.
+vi.mock('@/clubhouse/lib/phone-hint', () => ({ phoneHint: async () => false, railHint: async () => false, clockHint: async () => '12' }));
 
 // --- helpers -----------------------------------------------------------------
 const ONBOARDED_COACH = {

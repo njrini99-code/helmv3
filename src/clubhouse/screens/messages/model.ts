@@ -6,6 +6,7 @@
  */
 
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
+import type { ChClock } from '../../lib/clock-cookie';
 
 export interface ChPerson {
   userId: string;
@@ -80,15 +81,15 @@ function parts(iso: string, timeZone: string) {
 }
 const dayDiff = (a: string, b: string) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 86400000);
 
-export function clock(iso: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+export function clock(iso: string, timeZone: string, hours: ChClock = '12'): string {
+  return new Intl.DateTimeFormat('en-US', { timeZone, hour: hours === '24' ? '2-digit' : 'numeric', minute: '2-digit', ...(hours === '24' ? { hourCycle: 'h23' as const } : {}) }).format(new Date(iso));
 }
 
 /** Rail time: "2:31 PM", "Yesterday", "Sat", "Oct 8". */
-export function railTime(iso: string | null, now: string, timeZone: string): string {
+export function railTime(iso: string | null, now: string, timeZone: string, hours: ChClock = '12'): string {
   if (!iso) return '';
   const d = dayDiff(parts(now, timeZone), parts(iso, timeZone));
-  if (d <= 0) return clock(iso, timeZone);
+  if (d <= 0) return clock(iso, timeZone, hours);
   if (d === 1) return 'Yesterday';
   if (d < 7) return new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(new Date(iso));
   return new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric' }).format(new Date(iso));

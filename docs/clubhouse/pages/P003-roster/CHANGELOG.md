@@ -14,17 +14,20 @@ Held items:     supabase/migrations/20261022090000_golf_player_availability_coac
 
 ### Added
 
-- Under the Availability control, an injured or away player has a Why field (280 characters, saved on
-  leaving the field, "Only coaches on this team see this"). It lives in its own table whose policies admit
-  only a coach of the team, because teammates can read every column of `golf_team_members`.
-- `loadRoster` reads the notes beside its other reads and reports `availabilityCoachNotes`. A missing
-  table (`42P01` / `PGRST205`) reads as false without logging; any other failure is logged and also
-  hides the field, so a blank field never saves over a note that could not be read.
+- Under the Availability control, an injured or away player has a Why field (280
+  characters, saved on leaving the field, "Only coaches on this team see this").
+  It lives in its own table whose policies admit only a coach of the team,
+  because teammates can read every column of `golf_team_members`.
+- `loadRoster` reads the notes beside its other reads and reports
+  `availabilityCoachNotes`. A missing table (`42P01` / `PGRST205`) reads as
+  false without logging; any other failure is logged and also hides the field,
+  so a blank field never saves over a note that could not be read.
 
 ### Not changed
 
-- `setPlayerAvailability` still refuses a note, `availability_note` is still never selected, and players
-  still do not see availability. Marking a player available leaves the saved note in place.
+- `setPlayerAvailability` still refuses a note, `availability_note` is still
+  never selected, and players still do not see availability. Marking a player
+  available leaves the saved note in place.
 
 ## 2026-10-21 — Phone Roster figures no longer roll
 
