@@ -1,6 +1,6 @@
 'use client';
 
-import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, MoreHorizontal, Pencil, Plane, Trash2, Upload } from 'lucide-react';
+import { Bus, Check, ChevronDown, Download, FileSpreadsheet, FileText, FileType, Folder, Image as ImageIcon, Megaphone, Ellipsis, Pencil, Plane, Trash2, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent } from 'react';
 import type { ChHubAnnouncement, ChHubFile, ChHubRsvp, ChHubTask, ChHubTrip, ChHubUpdate, ChRsvp, ChTeamHub } from '../../data/hub';
@@ -173,7 +173,7 @@ export function Announcement({
             trigger={(p) => (
               <Tooltip>
                 <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
-                  <Icon icon={MoreHorizontal} size={16} />
+                  <Icon icon={Ellipsis} size={16} />
                 </button>
               </Tooltip>
             )}
@@ -361,7 +361,7 @@ export function TripPass({
               trigger={(p) => (
                 <Tooltip>
                   <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
-                    <Icon icon={MoreHorizontal} size={16} />
+                    <Icon icon={Ellipsis} size={16} />
                   </button>
                 </Tooltip>
               )}
@@ -636,7 +636,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           trigger={(p) => (
             <Tooltip>
               <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
-                <Icon icon={MoreHorizontal} size={16} />
+                <Icon icon={Ellipsis} size={16} />
               </button>
             </Tooltip>
           )}
@@ -752,7 +752,7 @@ export function Documents({
                       trigger={(p) => (
                         <Tooltip>
                           <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
-                            <Icon icon={MoreHorizontal} size={16} />
+                            <Icon icon={Ellipsis} size={16} />
                           </button>
                         </Tooltip>
                       )}

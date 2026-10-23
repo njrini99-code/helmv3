@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ChartColumn, Users } from 'lucide-react';
+import { BarChart3, Users } from 'lucide-react';
 import { renderToString } from 'react-dom/server';
 import { StrictMode, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -145,7 +145,7 @@ describe('CH-1211 a page whose one read failed is the page empty in the danger t
     const html = renderToString(failed({ code: 'CH-4201' }));
     expect(html).toContain('role="alert"');
     expect(html).toContain('Try again');
-    render(<EmptyState size="page" code="CH-4301" icon={ChartColumn} title="No 18-hole rounds in this window yet" />);
+    render(<EmptyState size="page" code="CH-4301" icon={BarChart3} title="No 18-hole rounds in this window yet" />);
     const quiet = document.querySelector('[data-ch-code="CH-4301"]')!;
     expect(quiet.className).toBe('ch-empty-page');
     expect(quiet.getAttribute('role')).toBeNull();

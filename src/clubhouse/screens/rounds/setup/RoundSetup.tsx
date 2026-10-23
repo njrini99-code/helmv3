@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ChartColumn, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
+import { ArrowRight, BarChart3, ChevronLeft, MapPin, Medal, Search } from 'lucide-react';
 import type { ChRoundType } from '../../../data/rounds-shape';
 import { haptic } from '../../../lib/haptics';
 import { roving } from '../../../ui/use-roving';
@@ -393,7 +393,7 @@ export function RoundSetup({ ports, qualifiers, today, backHref, onStarted, pres
           </section>
 
           <p className="ch-rsu-note">
-            <Icon icon={ChartColumn} size={15} />
+            <Icon icon={BarChart3} size={15} />
             <span>
               <b>Tracked on every shot:</b> driving, approach proximity, putting, scrambling and penalties. Use your rangefinder for accurate distances.
             </span>

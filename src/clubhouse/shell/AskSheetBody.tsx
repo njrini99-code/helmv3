@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp, Eye, SquareArrowOutUpRight, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, ArrowUpRight, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
@@ -169,7 +169,7 @@ export default function AskSheetBody({
               </SectionBoundary>
               <Link className="ch-asks__open" href={chat.conversationId ? conversationHref(chat.conversationId) : COACHHELM_HREF.ask} onClick={onClose}>
                 Open in CoachHelm
-                <Icon icon={SquareArrowOutUpRight} size={13} />
+                <Icon icon={ArrowUpRight} size={13} />
               </Link>
             </div>
           </div>

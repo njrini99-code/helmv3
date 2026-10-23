@@ -1,6 +1,6 @@
 'use client';
 
-import { PenLine } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useId, type ReactNode } from 'react';
 import type { ChPlayerHome, ChPlayerLeg, ChScoringPoint } from '../../data/player-home';
 import { EmptyState } from '../../ui/States';
@@ -123,7 +123,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   );
   const note = !data.scoring.error && shown.length >= 5 && (
     <p className="ch-ph-note">
-      <Icon icon={PenLine} size={14} />
+      <Icon icon={Pencil} size={14} />
       {scoringNote(shown)}
     </p>
   );

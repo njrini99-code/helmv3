@@ -14796,6 +14796,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-border-focus-on-dark",
+          "value": "var(--ch-champagne-300)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-green-ring",
           "value": "rgb(21 90 57 / 0.28)",
           "scope": "[data-ui='clubhouse']"

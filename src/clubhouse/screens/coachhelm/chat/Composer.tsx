@@ -1,7 +1,7 @@
 'use client';
 
 import { Command, useCommandState } from 'cmdk';
-import { ArrowUp, AtSign, CalendarDays, ChartColumn, Plus, Square } from 'lucide-react';
+import { ArrowUp, AtSign, CalendarDays, BarChart3, Plus, Square } from 'lucide-react';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import {
   ASK_RANGES,
@@ -462,7 +462,7 @@ export function AskComposer({ variant, phone, players, busy, failed, blocked, on
                     {stats.map((s) => (
                       <Command.Item key={s.id} value={`stat:${s.id}`} className="ch-ask-pick__row" onSelect={() => pick(s.label)}>
                         <span className="ch-ask-pick__mark" aria-hidden="true">
-                          <Icon icon={ChartColumn} size={15} />
+                          <Icon icon={BarChart3} size={15} />
                         </span>
                         <span className="ch-ask-pick__name">{s.label}</span>
                       </Command.Item>

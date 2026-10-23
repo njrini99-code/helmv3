@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, ExternalLink, KeyRound, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
+import { Camera, ArrowUpRight, KeyRound, LifeBuoy, LogOut, Trash2, UserRound } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
@@ -243,13 +243,13 @@ function HelpCard() {
           </span>
         </button>
         <a className="ch-set-link" href="/privacy" target="_blank" rel="noreferrer">
-          <Icon icon={ExternalLink} size={16} />
+          <Icon icon={ArrowUpRight} size={16} />
           <span>
             <b>Privacy policy</b>
           </span>
         </a>
         <a className="ch-set-link" href="/terms" target="_blank" rel="noreferrer">
-          <Icon icon={ExternalLink} size={16} />
+          <Icon icon={ArrowUpRight} size={16} />
           <span>
             <b>Terms of service</b>
           </span>

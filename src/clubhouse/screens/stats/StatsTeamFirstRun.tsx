@@ -1,6 +1,6 @@
 'use client';
 
-import { ChartColumn, UserPlus, Users } from 'lucide-react';
+import { BarChart3, UserPlus, Users } from 'lucide-react';
 import { rebuiltHref } from '../../shell/nav';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -19,7 +19,7 @@ export function StatsTeamFirstRun({ invite = false }: { invite?: boolean }) {
     <EmptyState
       size="page"
       code="CH-4310"
-      icon={ChartColumn}
+      icon={BarChart3}
       title="No stats yet"
       body="Team and player stats fill in as players post rounds this season."
       action={

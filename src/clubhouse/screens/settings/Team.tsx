@@ -1,7 +1,7 @@
 'use client';
 
 import { CourseLocationCard } from './course-location';
-import { Check, Copy, Link2, RefreshCw, Share2 } from 'lucide-react';
+import { Check, Copy, Link2, RotateCw, Share } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '../../ui/Button';
 import { Modal } from '../../ui/Modal';
@@ -122,14 +122,14 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
             {copied === 'link' ? 'Copied' : 'Copy link'}
           </Button>
           {canShare && (
-            <Button size="sm" leftIcon={Share2} onClick={() => void share()}>
+            <Button size="sm" leftIcon={Share} onClick={() => void share()}>
               Share
             </Button>
           )}
         </div>
       </div>
       <Row label="New code" help="Stops the current code from working right away. Anyone mid-join will need the new one.">
-        <Button size="sm" variant="secondary" leftIcon={RefreshCw} busy={regen.pending} onClick={() => setConfirm(true)}>
+        <Button size="sm" variant="secondary" leftIcon={RotateCw} busy={regen.pending} onClick={() => setConfirm(true)}>
           {regen.pending ? 'Making…' : 'Make a new code'}
         </Button>
       </Row>
@@ -137,7 +137,7 @@ function InviteCard({ code: initial, writes }: { code: string; writes: ChSetting
         open={confirm}
         code="CH-8503"
         onClose={() => setConfirm(false)}
-        icon={RefreshCw}
+        icon={RotateCw}
         title="Replace your team code?"
         description={`${code} stops working as soon as the new code is made. Share the new one with anyone who hasn’t joined yet.`}
         footer={

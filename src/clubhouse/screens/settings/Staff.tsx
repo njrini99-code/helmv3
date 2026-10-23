@@ -1,6 +1,6 @@
 'use client';
 
-import { Copy, Link2, Share2, UserMinus, UserPlus } from 'lucide-react';
+import { Copy, Link2, Share, UserMinus, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Badge } from '../../ui/Badge';
 import { Button } from '../../ui/Button';
@@ -119,7 +119,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
                   Copy staff invite link
                 </Button>
                 {invite.canShare && (
-                  <Button size="sm" leftIcon={Share2} onClick={() => void invite.share()}>
+                  <Button size="sm" leftIcon={Share} onClick={() => void invite.share()}>
                     Share
                   </Button>
                 )}
