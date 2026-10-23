@@ -537,3 +537,33 @@ stale entry too); 93 plural ternary lines
   recruiting tests; related tests for the plural files (231 files); a
   new `roster-spread-axis.test.tsx`; WebKit shots (P002, P003, P008,
   P009, P011, P013, P014, after).
+
+## 2026-10-23 — More keys on ui/Button (CONS-2)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the remaining raw keys (auth submits with refs, the bell,
+the top bar, the Ask sheet, round setup and track keys), ratcheted
+```
+
+### Changed
+
+- `IconButton` can be a link (`href`); Stats' previous and next player
+  use it.
+- `Button` carries `aria` (label, expanded, controls, pressed) and a CH
+  `code`.
+- Home's Full roster, Team stats and Nudge, a calendar file's Remove,
+  the evidence panel's close, the course nudge, the Hub's Attach from
+  Documents and Ask's Evidence are `ui/Button`.
+
+### Why
+
+- Weight, size, icons, busy and the haptic come from one place.
+
+### Verification
+
+- `buttons.test.ts` (lowered allowlist); related tests (185 files).
