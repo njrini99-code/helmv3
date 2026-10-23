@@ -4,7 +4,7 @@
 -- or row changes, so it does not depend on any Clubhouse function migration
 -- and can go in any slot of the HELD.md order. Owner applies.
 -- Apply: npm run db:apply --
--- supabase/migrations/20261023100000_anon_surface_grants.sql
+-- supabase/migrations/20261023130000_anon_surface_grants.sql
 -- Risk: LOW. Every grant removed here is already unusable or unused.
 --
 -- WHAT THE HELD FILES ALREADY COVER (not repeated here)
@@ -37,7 +37,7 @@
 --      to every new definer function, and the pgTAP guard
 --      supabase/tests/rls/anon_surface_guard.sql fails CI if one slips.
 --
--- ROLLBACK: supabase/rollbacks/20261023100000_anon_surface_grants.rollback.sql
+-- ROLLBACK: supabase/rollbacks/20261023130000_anon_surface_grants.rollback.sql
 -- ROLLBACK: (re-grants ALL on the 32 graveyard tables to authenticated and the
 -- ROLLBACK: 6 listed there to anon, and restores the anon function default)
 --

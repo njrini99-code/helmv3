@@ -1,5 +1,5 @@
 -- ROLLBACK CAPTURE for
--- supabase/migrations/20261023100000_anon_surface_grants.sql
+-- supabase/migrations/20261023130000_anon_surface_grants.sql
 -- Captured from Helm-Production pg_class.relacl on 2026-10-23 (read-only).
 -- Restores the exact anon/authenticated grants the migration removes.
 

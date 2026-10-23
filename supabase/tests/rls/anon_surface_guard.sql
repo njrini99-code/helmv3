@@ -1,12 +1,12 @@
 -- pgTAP guard for the anonymous (publishable key) surface, written with
--- 20261023100000_anon_surface_grants.sql.
+-- 20261023130000_anon_surface_grants.sql.
 --
 -- Helm-Production on 2026-10-23: anon can execute zero SECURITY DEFINER
 -- functions in public (20260905100000 and the per-function REVOKE rule in
 -- .claude/rules/database.md got it there). New functions still inherit
 -- Postgres's built-in PUBLIC EXECUTE, so the only thing that keeps the count
 -- at zero is each migration remembering its REVOKE. This suite fails the
--- moment one forgets. It also pins the two grant cleanups of 20261023100000.
+-- moment one forgets. It also pins the two grant cleanups of 20261023130000.
 
 BEGIN;
 \ir _helpers.sql
