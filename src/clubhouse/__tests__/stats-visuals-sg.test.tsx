@@ -70,12 +70,12 @@ describe('LegBars: read, pin, keys', () => {
 
   it('rests on a hint, reads a leg under the pointer, and does not announce a hover', () => {
     show();
-    expect(read()).toBe('Select a leg to see how sure its figure is.');
+    expect(read()).toBe('Select a leg to see its margin of error.');
     fireEvent.pointerEnter(row(1), { pointerType: 'mouse' });
     expect(read()).toMatch(/^Approach · [+−]\d\.\d a round · 10 rounds · likely range/);
     expect(live()).toBe('');
     fireEvent.pointerLeave(row(1), { pointerType: 'mouse' });
-    expect(read()).toBe('Select a leg to see how sure its figure is.');
+    expect(read()).toBe('Select a leg to see its margin of error.');
   });
 
   it('pins a leg on a tap and announces it; Esc lets go', () => {

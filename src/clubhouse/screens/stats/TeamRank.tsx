@@ -108,7 +108,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
       >
         <div className="ch-sv-tr__top">
           <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
-            {shown ?? (phone ? 'Tap a player to read them; tap again to open.' : 'Select a player to read how sure their figure is; select again to open them.')}
+            {shown ?? (phone ? 'Tap a player to see their margin of error; tap again to open them.' : 'Select a player to see their margin of error; select again to open them.')}
           </p>
           {pin.pinned != null && (
             <Link href={href(pin.pinned)} className="ch-sv-open" data-ch-press="">

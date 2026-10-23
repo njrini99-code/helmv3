@@ -427,6 +427,13 @@ describe('111901 the library and the review are the phone build at phone width',
     }
   });
 
+  it('B14 the review\'s greens figure takes no tone: hitting greens has no good or bad without a mark to read it against', () => {
+    inFrame(<RoundReview review={PREVIEW_REVIEW} />);
+    const zone = screen.getByRole('region', { name: /Tee to green/ }).querySelector('.ch-znbig');
+    expect(zone).toBeTruthy();
+    expect(zone!.className).not.toMatch(/\bis-(good|bad)\b/);
+  });
+
   it('111901 the review: the top bar is Round with ‹ Rounds for a player and ‹ Stats for a coach', () => {
     const restore = phoneWidth(true);
     try {

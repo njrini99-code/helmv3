@@ -694,7 +694,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
               read={
                 r.greens ? (
                   <>
-                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" tone="good" />
+                    <ZoneBig value={pct(r.greens.hit, r.greens.of)} unit="" />
                     <div className="ch-znlines">
                       <span>
                         <b>
