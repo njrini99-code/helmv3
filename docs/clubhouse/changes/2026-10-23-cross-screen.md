@@ -450,3 +450,30 @@ Held items: the hero bar's tight rings and the menu rows' inset
   probed with a restricted import; the CSS tests (46 files), related
   tests and the copy tests of Rounds, Home, CoachHelm, Onboarding,
   Qualifiers and Recruiting; `docs:check` and the registry sync clean.
+
+## 2026-10-23 — Page titles are their nav labels (CONS-26, partial)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-26)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: Qualifiers' title against its nav ("Lineups" or
+"Qualifiers"), for the owner
+```
+
+### Changed
+
+- Roster's title is Roster for a coach and a player (was "Your players"
+  and "Your team."); the Rounds library's is Rounds (was "Your
+  rounds").
+- Home's greeting drops its full stop ("Good morning, Maya").
+
+### Why
+
+- A page should be called what the nav calls it.
+
+### Verification
+
+- New `page-titles.test.ts`; Home, Roster and Rounds tests.

@@ -1075,6 +1075,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/VERIFY.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/WIRING.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-10-23-cross-screen.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-23-motion-touch.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-23-one-sheet.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-10-23-radii-elevation.md` | current | - | - | - | - |
