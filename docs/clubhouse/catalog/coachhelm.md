@@ -157,6 +157,7 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13253 | Ask: A confirmed action failed or only partly completed | The receipt says it was not completed and why; Ask again asks CoachHelm to propose it again | `ActionCard` (receipt) | coachhelm-thread-ui.test › CH-13253 |
 | CH-13254 | Ask: The conversation moved past a card that was never answered | No buttons; the card says nothing was created | `ActionCard` | coachhelm-thread-ui.test › CH-13254 |
 | CH-13255 | Ask: The evidence panel is opened for a player the conversation has nothing on | It says so, never an empty panel | `EvidencePanel` | coachhelm-thread-ui.test › CH-13255 |
+| CH-13233 | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws | In the Course plan section: "Your course plan didn’t load. Nothing was changed." + Try again, which asks the same read again; never "no course" | `MyCoursePlan` | my-course-plan.test › offers Try again |
 
 ## 133xx Empty
 
@@ -196,6 +197,7 @@ restoring it) are inside the action, so a toast's Retry completes them.
 | CH-13323 | Ask: No chats yet | "No chats yet" with New chat, not a search box over nothing (desktop panel and phone drawer) | `History` | coachhelm-ask.test › CH-13323 |
 | CH-13324 | Ask: A chat search with no match | Search chats filters by title, and no match says so | `History` | coachhelm-ask.test › CH-13324 |
 | CH-13350 | Ask: A read tool found nothing recorded | The evidence says nothing is recorded for it, distinct from a failed read (CH-13250) | `Evidence` | coachhelm-thread-ui.test › CH-13350 |
+| CH-13333 | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) | "No course has three of your rounds on it yet. A plan needs three rounds on one course, with the course picked when you start the round." (or "You have 2 countable rounds at Pine Hollow. A plan needs three.") | `MyCoursePlan`, `PlanLines` | my-course-plan.test › says so when no course has three rounds |
 
 ## 134xx Loading
 
@@ -242,6 +244,7 @@ in place.
 | CH-13780 | Deep dive: a read in the list, or a round or a plan under it, is tapped | Selection (the select haptic) for a read, a round's review link and the plan link | `Item`, `RoundRow`, `Plan` in `DeepDive` | coachhelm-dive.test › CH-13780 |
 | CH-13721 | Ask: An opener pill or shortcut card is tapped | The select haptic, and the question is sent | `Home` | coachhelm-ask.test › CH-13721 |
 | CH-13752 | Ask: A follow-up is tapped | The select haptic; follow-ups show on the last answer only, and not while it works | `Thread` | coachhelm-thread-ui.test › CH-13752 |
+| CH-13733 | Player: a course is picked in their Course plan (chs-21) | Selection | `MyCoursePlan` | my-course-plan.test |
 
 ## 138xx Accessibility
 
@@ -341,3 +344,5 @@ in place.
 | CH-13997 | Brief: a read it is made from failed | The didn't-load notice, never an empty brief | `CoachBrief`, `loadCoachBrief` | coachhelm-coach-brief.test › CH-13997 |
 | CH-13998 | /intelligence and its old sub-links | With the flag on: Signals on This week, patterns on Team patterns, Players on Working on, Effectiveness on the track record; `?player=` the board on that player, `view=chat` Ask. Off: the board | `intelligence/layout.tsx`, `intelligenceTarget` | alias.test › CH-13998 |
 | CH-13995 | Coach: Team patterns (flag `coachhelm_team_pattern_v1`) | Under the program pulse, up to four rows: a read shared by at least 3 players and 30% of the players with enough rounds, each at Likely or above, with how many players, the team strokes a round at stake and the practice block; a row opens to each player's number and ladder word. A counted line says how many more reads are shared by too few players. No row: "No read is shared by enough players to call a team pattern." Off, or a failed read: no card. Coach only | `TeamPatterns` in `CoachBoard`, `toChTeamPatterns` | coachhelm-team-pattern.test › draws the rows |
+| CH-13916 | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on | A flush section at the foot of the Board's side column (under the board's empty state when there are no reads): "Course plan", "A plan from your own rounds on a course you’ve played three times or more." and Pick a course (secondary). Nothing is read until it is tapped; then their courses with three or more rounds, as chips. The reads take no player id: the server reads the signed-in player's own `golf_players` row (a coach, or a user with no player row, is refused). Read only | `MyCoursePlan`, `listMyCoursePlanCourses`, `getMyCoursePlan`, `loadPlayerCoachHelm` (`coursePlan`) | my-course-plan.test; coachhelm-course-plan.test (actions) |
+| CH-13917 | Player: the plan for the course they picked | "At Pine Hollow", up to three lines in their voice ("4 and 11: aim at the left half off the tee. All 6 tee shots there missed right."), or "Nothing here has cost you a stroke a round yet across your 3 rounds.", and below six rounds "From your 3 rounds here, so take it as a reminder, not a read." Never the coach's copy (no "Plan:" lines, no Copy), no ladder word, never a club | `PlanLines` in `MyCoursePlan`, `buildCoursePlan` (`player`) | my-course-plan.test; build-plan.test |

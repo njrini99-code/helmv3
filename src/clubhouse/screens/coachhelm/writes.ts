@@ -5,7 +5,7 @@ import { dismissInsight, reactivateInsight } from '@/app/golf/actions/insights-f
 import { recordCoachHelmCorrection } from '@/app/golf/actions/coachhelm-corrections';
 import { refreshTeamAnalysisAsCoach } from '@/app/golf/actions/insights-coachhelm';
 import type { CorrectionInput, CorrectionResult } from '@/lib/coachhelm/v3/corrections/input';
-import { getCoursePlan, listCoursePlanCourses, type CoursePlanCoursesResult, type CoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
+import { getCoursePlan, getMyCoursePlan, listCoursePlanCourses, listMyCoursePlanCourses, type CoursePlanCoursesResult, type CoursePlanResult, type MyCoursePlanResult } from '@/app/golf/actions/coachhelm-course-plan';
 import type { ChHelmLifecycle } from '../../data/coachhelm-shape';
 import type { ServerResult } from '../../lib/use-action';
 
@@ -66,6 +66,20 @@ export interface ChCoursePlanReads {
 export const LIVE_COURSE_PLAN_READS: ChCoursePlanReads = {
   courses: (playerId) => listCoursePlanCourses(playerId),
   plan: (playerId, courseId) => getCoursePlan(playerId, courseId),
+};
+
+/**
+ * The player's own course plan (chs-21): the same two reads for the signed-in player. They take no player id: the server
+ * reads the session's own player, so the page can never ask for someone else's. Preview and tests pass their own.
+ */
+export interface ChMyCoursePlanReads {
+  courses(): Promise<CoursePlanCoursesResult>;
+  plan(courseId: string): Promise<MyCoursePlanResult>;
+}
+
+export const LIVE_MY_COURSE_PLAN_READS: ChMyCoursePlanReads = {
+  courses: () => listMyCoursePlanCourses(),
+  plan: (courseId) => getMyCoursePlan(courseId),
 };
 
 /**

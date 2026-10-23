@@ -166,6 +166,7 @@ filter, so it has no filtered empty state.
 | 130433 | CH-13311 | `COACH_PLAYER_PAGE_PLAYER_NOT_ON_THE` | Coach player page, player not on the team: the id in the address is not a player on this coach's team (not an id, not on the team, on another team the coach staffs, or no longer active) |
 | 130434 | CH-13313 | `COACH_PLAYER_PAGE_COACHHELM_OFF_FOR_THE` | Coach player page, CoachHelm off for the player: it is off for that player's team |
 | 130435 | CH-13374 | `STANDING_A_PART_OF_THE_ROUND_ON` | Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with) |
+| 130460 | CH-13333 | `PLAYER_NO_COURSE_HAS_THREE_OF_THEIR` | Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21) |
 
 ## 05 — Validation
 
@@ -236,6 +237,7 @@ the whole change again, follow-ups included (131401).
 | 130642 | CH-13007 | `RECHECK_RATE_LIMITED` | Re-check rate-limited |
 | 130643 | CH-13273 | `STANDING_THE_OPEN_READS_BEHIND_WHERE_STROKES` | Standing: the open reads behind Where strokes go don't load |
 | 130644 | CH-13006 | `RECHECK_FAILS` | Re-check fails or is offline |
+| 130660 | CH-13233 | `PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD` | Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws |
 
 ## 07 — Network / offline
 
@@ -309,6 +311,8 @@ its own.
 | 130760 | CH-13913 | `PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS` | Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37) |
 | 130761 | CH-13914 | `ASK_AN_ANSWER_NAMES_A_PLAYERS_READS` | Ask (coach): an answer names a player's reads (chs-39) |
 | 130762 | CH-13915 | `STANDING_HOW_YOU_PLAY` | Standing: How you play (chs-37) |
+| 130763 | CH-13916 | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
+| 130764 | CH-13917 | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | Player: the plan for the course they picked |
 | 130780 | CH-13983 | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
 | 130781 | CH-13984 | `BRIEF_THIS_WEEKS_OPEN_READS` | Brief: this week's open reads |
 | 130782 | CH-13985 | `BRIEF_WHAT_PLAYERS_ARE_WORKING_ON` | Brief: what players are working on |
@@ -478,6 +482,7 @@ On the v2 grammar (D-70): selection for choosing a player or an insight
 | 131706 | CH-13752 | `ASK_A_FOLLOW_UP_IS_TAPPED` | Ask: A follow-up is tapped |
 | 131707 | CH-13780 | `DEEP_DIVE_A_READ_IN_THE_LIST` | Deep dive: a read in the list, or a round or a plan under it, is tapped |
 | 131708 | CH-13705 | `RECHECK_TAPPED` | Re-check tapped |
+| 131760 | CH-13733 | `PLAYER_A_COURSE_IS_PICKED_IN_THEIR` | Player: a course is picked in their Course plan (chs-21) |
 
 From the shell (P001): 11701 CH-1701, 11702 CH-1702, 11703 CH-1703,
 11704 CH-1704, 11705 CH-1705, 11706 CH-1706, 11707 CH-1707, 11708 CH-1708,
