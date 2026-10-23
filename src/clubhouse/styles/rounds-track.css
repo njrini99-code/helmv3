@@ -2630,7 +2630,7 @@ button.ch-rt-strip__h {
     display: flex;
     flex-direction: column;
     padding: 14px 14px 12px;
-    border-radius: 26px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
     box-shadow:
@@ -2838,7 +2838,7 @@ button.ch-rt-strip__h {
 
   /* A holed hole: its shots on the same ivory card. */
   .ch-rt-panel.ch-rt-review {
-    border-radius: 26px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
     box-shadow: var(--ch-elevation-feature);

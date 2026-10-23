@@ -3434,7 +3434,7 @@ html[data-fw-theme='dark'] .ch-offline {
     width: 100%;
     padding: 12px 15px 14px;
     border: 0;
-    border-radius: 22px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-sheet-bg);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.55), var(--ch-elevation-glass-card);
     color: var(--ch-text-primary);
@@ -3529,7 +3529,7 @@ html[data-fw-theme='dark'] .ch-offline {
     align-items: center;
     justify-content: flex-end;
     padding-right: 22px;
-    border-radius: 22px;
+    border-radius: var(--ch-radius-card);
     color: var(--ch-champagne-300);
     font: 600 calc(14 * var(--ch-type-k)) var(--ch-font-sans);
     pointer-events: none;
@@ -3538,7 +3538,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-shell {
     position: absolute;
     inset: 0;
-    border-radius: 22px;
+    border-radius: var(--ch-radius-card);
     background: color-mix(in oklab, var(--ch-sheet-bg) 74%, var(--ch-frame));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), var(--ch-elevation-glass-edge);
     transform-origin: 50% 100%;

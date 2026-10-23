@@ -2104,7 +2104,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px;
-    border-radius: 18px;
+    border-radius: var(--ch-radius-card);
     background: var(--ch-sheet-bg);
     box-shadow: var(--ch-sheet-shadow);
   }

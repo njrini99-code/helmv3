@@ -38,7 +38,7 @@
   height: 30px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 6px;
-  border-radius: 8px;
+  border-radius: var(--ch-radius-sm);
   font-size: calc(13 * var(--ch-type-k));
 }
 .ch-btn--lg {
@@ -46,7 +46,7 @@
   height: 44px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 8px;
-  border-radius: 12px;
+  border-radius: var(--ch-radius-lg);
   font-size: calc(15 * var(--ch-type-k));
   letter-spacing: var(--ch-track-15);
 }
@@ -548,7 +548,7 @@
   padding: 12px 20px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
-  background: #f4f2ea;
+  background: var(--ch-bg-inset);
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
