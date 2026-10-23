@@ -42,9 +42,11 @@ dismiss it.
 Page ID:            P013
 Page Name:          CoachHelm
 Route:              /golf/dashboard/coachhelm (coach and player);
-                    a player's ?view=profile|standing|deep-dive are their own
-                    Game profile, Standing and Deep dive (?insight=<id> opens
-                    the Deep dive on a read), ?view=development goes to
+                    a player's ?view=standing|deep-dive are their own
+                    Standing and Deep dive (?insight=<id> opens the Deep
+                    dive on a read), ?view=profile (the Game profile's old
+                    address) opens Standing at How you play,
+                    ?view=development goes to
                     Stats' Development, ?view=insights and no view draw the
                     board; ?view=ask is the coach's Ask (off when CoachHelm
                     is off); ?player=<id> opens a coach's board on that
@@ -80,11 +82,12 @@ Decline it (Q-77). Coach: Assign as focus.
 ### Secondary actions
 
 Player: open another insight into the focus card, open Why we think this, try a
-failed proposals read again, and move between the Board, Game profile, Standing
-and Deep dive (their own data, read only) or on to Stats' Development. Coach:
+failed proposals read again, and move between the Board, Standing and Deep
+dive (their own data, read only) or on to Stats' Development. Coach:
 choose another player, Dismiss an insight and Undo it, open Roster, and open
-CoachHelm settings; open one player's Deep dive, Standing and Game profile
-(`?view=…&player=`, spec A, 2026-10-21), the player's own views in the coach's
+CoachHelm settings; open one player's Deep dive and Standing
+(`?view=…&player=`, spec A, 2026-10-21), also from a read an Ask answer names
+(chs-39), the player's own views in the coach's
 words, with the board's Assign as focus, Dismiss and Undo under each read of
 the Deep dive and Message after them. Both: try a failed section again.
 
@@ -100,11 +103,11 @@ the Deep dive and Message after them. Both: try a failed section again.
 3. The header: the role, "CoachHelm", and for a coach how many players have an
    open signal (the board draws one card per player, so it counts players, never
    the rows behind them).
-4. The player's views, each on a green card then white ones: the Game profile
-   (the shape of their game, then each measure), Standing (where they stand
-   against the Tour and the team, then each stat) and the Deep dive (the list of
-   reads, then one read in full with its evidence, trend and rounds). A coach
-   opens the same three for one player of their team, under that player's
+4. The player's views, each on a green card then white ones: Standing (where
+   they stand against the Tour and the team, then each stat, then How you
+   play: the shape of their game and the measures Standing has no row for) and
+   the Deep dive (the list of reads, then one read in full with its evidence,
+   trend and rounds). A coach opens the same two for one player of their team, under that player's
    header (the name, the class and the newest round).
 
 ### User should notice first

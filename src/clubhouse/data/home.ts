@@ -53,6 +53,8 @@ export interface ChAgendaRow {
   id: string;
   /** "3:30" or "All day", or a weekday ("Thu") for rows after today. */
   timeLabel: string;
+  /** The start as 24-hour "15:30" in the team's zone (absent for an all-day event), for a device that reads times in 24 hours: the 12-hour label has dropped its AM or PM. */
+  hm?: string;
   title: string;
   detail: string | null;
   isNext: boolean;
@@ -603,6 +605,8 @@ export async function loadHomeWeek(
 
   const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
   const clock = (iso: string) => timeFmt.format(new Date(iso)).replace(/\s?[AP]M$/, '');
+  const hmFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' });
+  const clockHm = (iso: string) => hmFmt.format(new Date(iso));
   const todays = events.filter((e) => runsOn(e, today));
   const later = events.filter((e) => e.localDate > today && e.localDate <= weekEnd && COMPETITION_TYPES.has(e.event_type));
   const nextId = todays.find(notOver)?.id;
@@ -660,6 +664,7 @@ export async function loadHomeWeek(
     ...todays.map((e) => ({
       id: e.id,
       timeLabel: e.all_day ? 'All day' : clock(e.start_time),
+      ...(e.all_day ? {} : { hm: clockHm(e.start_time) }),
       title: e.title,
       detail: inviteDetail({ location: e.location, title: e.title, invitees: invitedOf(e.id), names }),
       isNext: e.id === nextId,
@@ -669,6 +674,7 @@ export async function loadHomeWeek(
     ...later.map((e) => ({
       id: e.id,
       timeLabel: WEEKDAYS[weekdayIndexMonFirst(e.localDate)] ?? '',
+      ...(e.all_day ? {} : { hm: clockHm(e.start_time) }),
       title: e.title,
       detail:
         // "5 of 6 going" only for an event that asks for replies (owner, 2026-10-08); otherwise where it is.

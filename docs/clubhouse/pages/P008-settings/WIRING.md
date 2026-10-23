@@ -108,6 +108,7 @@ push on this device, sign out, copy and Report a problem check nothing first.
 | ACT-P008-SAVE-PHILOSOPHY | Priorities, sensitivity, sliders, alerts, delivery, windows, display | `change` (ordered queue, sliders wait 600ms) | `writes.savePhilosophy` (update, zero rows a failure; or create the row on the first save) | golf_coach_philosophy | fails 80622 · saving 80303 · waiting slider 81206 · kept 81204 · refused 80808 |
 | ACT-P008-SET-ANIMATIONS | Preferences › Animations | `updatePreferences` | `useAppearancePreferences` | this device's storage | motion 81608 |
 | ACT-P008-SET-HAPTICS | Preferences › Haptics (app) | `setHapticsEnabled` | `haptics-pref` | this device's storage | tick 81707 |
+| ACT-P008-SET-CLOCK | Preferences › Time format (12-hour, 24-hour; the phone's picker row) | `setClock` (`useDevicePrefs` → `ChClockProvider`) | cookie `ch_clock` (read by `clockHint` for the first frame) and `localStorage` `ch_clock` (other tabs); no server write | this device | every Clubhouse time redraws at once 80780 |
 | ACT-P008-REPORT-PROBLEM | Help and legal › Report a problem | `report` | Sentry feedback, else mail | none | falls back to email 81001 |
 | ACT-P008-SIGN-OUT | Session › Sign out | `writes.signOut` | `writes.signOut` (push teardown, active team, session) | Supabase Auth | fails 80624 |
 | ACT-P008-DELETE-ACCOUNT | Session › Delete account | `del.run` (`settings.deleteAccount`) | `DELETE /api/account/delete`, then `cleanupAfterDelete` | the account and its rows | confirm 81101 · lands 80903 · fails 80623 · Retry 81402 |

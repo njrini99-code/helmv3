@@ -27,6 +27,7 @@ import {
   type ChTeamEvent,
   type ChTerm,
 } from '../../data/classes-shape';
+import { useChClock } from '../../lib/use-clock';
 
 /** Minutes from "HH:MM". */
 const minutesOf = (t: string | null | undefined): number | null => {
@@ -229,6 +230,7 @@ export function ClassCard({
   /** The days a team event this week meets a class: the green band runs down the whole list on those days. */
   teamDays?: ReadonlySet<string>;
 }) {
+  const hours = useChClock();
   const flexible = isFlexible(c);
   const noDays = hasNoDays(c);
   const noTime = hasNoTime(c);
@@ -237,7 +239,7 @@ export function ClassCard({
   const strip = days;
   const clash = new Set(overlaps.map((x) => dayToken(x.date)));
   const share = lengthShare(c);
-  const range = timeRange(c.start, c.end);
+  const range = timeRange(c.start, c.end, hours);
   const when = flexible ? (noTime ? `${daysLabel(c.days)}, no time set` : 'no fixed meeting') : `${daysLabel(c.days)} ${range}`;
   const overlap = conflictFlag(overlaps);
   return (
@@ -272,7 +274,7 @@ export function ClassCard({
             return (
               <span key={d} className={(on ? 'is-on' : '') + (d === today ? ' is-today' : '') + (on && clash.has(d) ? ' is-clash' : '') + (teamDays?.has(d) ? ' is-team' : '')}>
                 <em>{DAY_LETTER[d]}</em>
-                {on && <b className="ch-num">{clockLabel(c.start)}</b>}
+                {on && <b className="ch-num">{clockLabel(c.start, hours)}</b>}
                 {on && <i className="ch-cl-tt__bar" style={{ ['--ch-cl-len' as string]: share }} />}
               </span>
             );
@@ -331,6 +333,7 @@ export function AddTile({ onAdd }: { onAdd: () => void }) {
 
 /** This week's team events that meet a class (classes.jsx `Travel`, for any team event, not only a trip). */
 export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChConflictGroup[]; error: boolean; onRetry: () => void }) {
+  const hours = useChClock();
   if (error) {
     return (
       <InlineNotice
@@ -365,7 +368,7 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
             <span className="ch-cl-over__e">
               <b>{eventLabel(g.event)}</b>
               <em className="ch-num">
-                {longDay(g.date)} · {eventWhen(g.event, g.date)}
+                {longDay(g.date)} · {eventWhen(g.event, g.date, hours)}
                 {g.event.where ? ` · ${g.event.where}` : ''}
               </em>
             </span>
@@ -377,7 +380,7 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
                   <span>
                     <b>{c.code || c.name}</b>
                     <em className="ch-num">
-                      {DAY_SHORT[dayToken(g.date)]} {timeRange(c.start, c.end)}
+                      {DAY_SHORT[dayToken(g.date)]} {timeRange(c.start, c.end, hours)}
                     </em>
                   </span>
                   <span className="ch-cl-flag">Overlap</span>
@@ -439,6 +442,7 @@ export function SyncStatus({ failed, syncing, onRetry }: { failed: number; synci
  * With nothing today it names the next day that has a class, so the list never just says "nothing".
  */
 export function TodayClasses({ classes, term, todayIso, onOpen }: { classes: readonly ChClass[]; term: ChTerm; todayIso: string; onOpen: (c: ChClass) => void }) {
+  const hours = useChClock();
   const meeting = (iso: string) =>
     classes.filter((c) => inTerm(c, term) && !hasNoDays(c) && c.days.includes(dayToken(iso))).sort((a, b) => (a.start ?? '99').localeCompare(b.start ?? '99'));
   const today = meeting(todayIso);
@@ -461,7 +465,7 @@ export function TodayClasses({ classes, term, todayIso, onOpen }: { classes: rea
           {rows.map((c) => (
             <li key={c.id}>
               <button type="button" className={`ch-cl-today__row ch-cl-t-${c.tone}`} onClick={() => onOpen(c)}>
-                <span className="ch-cl-today__t ch-num">{timeRange(c.start, c.end) ?? 'No time set'}</span>
+                <span className="ch-cl-today__t ch-num">{timeRange(c.start, c.end, hours) ?? 'No time set'}</span>
                 <span className="ch-cl-today__n">{c.name}</span>
                 <span className="ch-cl-today__m">{[c.location, c.code].filter(Boolean).join(' · ')}</span>
               </button>
