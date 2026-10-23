@@ -1,6 +1,6 @@
 -- One round-totals write per round save, not one per hole row.
--- WRITTEN, NOT APPLIED: held in supabase/migrations/HELD.md until the owner
--- applies it.
+-- STATUS: WRITTEN — HOLD — NOT APPLIED. Awaits the owner's approval to apply
+-- (supabase/migrations/HELD.md).
 --
 -- WHY (read-only production stats, 2026-10-23): 140 new golf_rounds rows took
 -- 154,311 row updates, about 1,100 per round. The app is not writing that
@@ -115,6 +115,15 @@ DECLARE
   shots_anchor text;
   found_count int := 0;
 BEGIN
+  -- Both RPCs must exist, or neither is patched.
+  IF (SELECT count(DISTINCT p.proname)
+      FROM pg_proc p
+      JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname = 'public'
+        AND p.proname IN ('save_partial_round_atomic', 'submit_round_atomic')) <> 2 THEN
+    RAISE EXCEPTION 'save_partial_round_atomic and submit_round_atomic must both exist; refusing the defer_round_totals patch';
+  END IF;
+
   FOR fn IN
     SELECT p.oid, p.proname, pg_get_function_identity_arguments(p.oid) AS args
     FROM pg_proc p
