@@ -22,6 +22,7 @@ import {
   calculateStrokesGainedForShot,
   getStrokesGainedCategory,
   getPenaltyCategory,
+  hasPenaltyRowBetween,
   isBlockedFinish,
   withRecoveryStart,
   type RawShot,
@@ -95,7 +96,8 @@ export function withNextShotEnd<T extends RawShot>(shot: T, shots: readonly T[])
   }
   if (!next) return isBlockedFinish(shot, shot.lie_after) ? { ...shot, lie_after: 'recovery' } : shot;
   let lieAfter = next.shot_type === 'putting' ? 'green' : next.lie_before;
-  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)) lieAfter = 'recovery';
+  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)
+      && !hasPenaltyRowBetween(shot, next, shots)) lieAfter = 'recovery';
   return {
     ...shot,
     lie_after: lieAfter,

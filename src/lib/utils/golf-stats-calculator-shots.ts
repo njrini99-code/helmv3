@@ -963,7 +963,8 @@ export function withNextShotStart(shot: RawShot, holeShots: readonly RawShot[]):
     return isBlockedFinish(shot, shot.lie_after) ? { ...shot, lie_after: 'recovery' } : shot;
   }
   let lieAfter = next.shot_type === 'putting' ? 'green' : next.lie_before;
-  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)) lieAfter = 'recovery';
+  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)
+      && !hasPenaltyRowBetween(shot, next, holeShots)) lieAfter = 'recovery';
   return {
     ...shot,
     lie_after: lieAfter,
@@ -997,6 +998,24 @@ function nextShotStart(shot: RawShot, holeShots: readonly RawShot[]): RawShot | 
   return next;
 }
 
+/**
+ * A penalty row sits between two shots of the same hole. An unplayable or other
+ * penalty drop after a shot the player marked blocked moves the ball, so the
+ * next shot is no longer the punch-out the tap described: the recovery start
+ * and the blocked shot's recovery end both drop away (SQL: the penalty clause
+ * of rc and nb in 20261023170000).
+ * @internal - exported for the round-review mirror and tests
+ */
+export function hasPenaltyRowBetween(
+  from: RawShot,
+  to: RawShot,
+  holeShots: readonly RawShot[],
+): boolean {
+  return holeShots.some((m) => m.hole_number === from.hole_number
+    && m.shot_number > from.shot_number && m.shot_number < to.shot_number
+    && isPenaltyRow(m));
+}
+
 /** The player marked this shot's finish as blocked, and the ball sits in a lie
  *  the recovery tap is asked about.
  *  @internal - exported for the round-review mirror and tests */
@@ -1013,7 +1032,8 @@ export function isBlockedFinish(shot: RawShot, lie: string | null | undefined): 
  * of the rough/'other' curve, so the punch-out is judged against a punch-out
  * and the shot that put the ball behind the tree carries the cost. Its
  * partner is the 'recovery' end that withNextShotStart gives the blocked
- * shot, so each hole still telescopes. Mirrors rc.from_blocked in
+ * shot, so each hole still telescopes. A penalty drop in between clears the
+ * tap (hasPenaltyRowBetween). Mirrors rc.from_blocked in
  * recalculate_/calculate_round_strokes_gained (migration 20261023170000).
  *
  * @internal - exported for testing
@@ -1024,7 +1044,9 @@ export function withRecoveryStart<T extends RawShot>(shot: T, holeShots: readonl
   for (const p of holeShots) {
     if (p.hole_number !== shot.hole_number || p.shot_number >= shot.shot_number) continue;
     if (p.lie_after_recovery !== true || isPenaltyRow(p)) continue;
-    if (nextShotStart(p, holeShots)?.id === shot.id) return { ...shot, lie_before: 'recovery' };
+    if (nextShotStart(p, holeShots)?.id === shot.id && !hasPenaltyRowBetween(p, shot, holeShots)) {
+      return { ...shot, lie_before: 'recovery' };
+    }
   }
   return shot;
 }

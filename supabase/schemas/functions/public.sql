@@ -572,7 +572,10 @@ BEGIN
         WHEN nx.distance_to_hole_before IS NOT NULL THEN
           CASE WHEN nx.shot_type='putting' THEN 'green'
             WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
-                 AND sg_normalize_lie(nx.lie_before) IN ('rough','other') THEN 'recovery'
+                 AND sg_normalize_lie(nx.lie_before) IN ('rough','other')
+                 AND NOT EXISTS (SELECT 1 FROM golf_shots pm WHERE pm.hole_id = gs.hole_id
+                   AND pm.shot_number > gs.shot_number AND pm.shot_number < nx.shot_number
+                   AND COALESCE(pm.is_penalty, FALSE)) THEN 'recovery'
             ELSE sg_normalize_lie(nx.lie_before) END
         WHEN gs.lie_after IS NOT NULL THEN
           CASE WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
@@ -583,7 +586,7 @@ BEGIN
       org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
     FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
     LEFT JOIN LATERAL (
-      SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+      SELECT n.shot_number, n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
       FROM golf_shots n
       WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
         AND NOT COALESCE(n.is_penalty, FALSE)
@@ -604,9 +607,9 @@ BEGIN
         AND NOT EXISTS (
           SELECT 1 FROM golf_shots m
           WHERE m.hole_id = gs.hole_id AND m.shot_number > p.shot_number AND m.shot_number < gs.shot_number
-            AND NOT COALESCE(m.is_penalty, FALSE)
-            AND m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
-            AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))
+            AND (COALESCE(m.is_penalty, FALSE) OR (
+              m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
+              AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))))
       LIMIT 1
     ) rc ON TRUE
     LEFT JOIN LATERAL (
@@ -7545,7 +7548,10 @@ BEGIN
           WHEN nx.distance_to_hole_before IS NOT NULL THEN
             CASE WHEN nx.shot_type='putting' THEN 'green'
               WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
-                   AND sg_normalize_lie(nx.lie_before) IN ('rough','other') THEN 'recovery'
+                   AND sg_normalize_lie(nx.lie_before) IN ('rough','other')
+                   AND NOT EXISTS (SELECT 1 FROM golf_shots pm WHERE pm.hole_id = gs.hole_id
+                     AND pm.shot_number > gs.shot_number AND pm.shot_number < nx.shot_number
+                     AND COALESCE(pm.is_penalty, FALSE)) THEN 'recovery'
               ELSE sg_normalize_lie(nx.lie_before) END
           WHEN gs.lie_after IS NOT NULL THEN
             CASE WHEN gs.lie_after_recovery IS TRUE AND NOT COALESCE(gs.is_penalty, FALSE)
@@ -7556,7 +7562,7 @@ BEGIN
         org.has_origin AS org_found, org.lie_norm AS org_lie_norm, org.dist_yards AS org_dist_yards
       FROM golf_shots gs JOIN golf_holes gh ON gh.id=gs.hole_id
       LEFT JOIN LATERAL (
-        SELECT n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
+        SELECT n.shot_number, n.shot_type, n.lie_before, n.distance_to_hole_before, n.distance_unit_before
         FROM golf_shots n
         WHERE n.hole_id = gs.hole_id AND n.shot_number > gs.shot_number
           AND NOT COALESCE(n.is_penalty, FALSE)
@@ -7577,9 +7583,9 @@ BEGIN
           AND NOT EXISTS (
             SELECT 1 FROM golf_shots m
             WHERE m.hole_id = gs.hole_id AND m.shot_number > p.shot_number AND m.shot_number < gs.shot_number
-              AND NOT COALESCE(m.is_penalty, FALSE)
-              AND m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
-              AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))
+              AND (COALESCE(m.is_penalty, FALSE) OR (
+                m.distance_to_hole_before IS NOT NULL AND m.distance_to_hole_before > 0
+                AND (m.lie_before IS NOT NULL OR m.shot_type = 'putting'))))
         LIMIT 1
       ) rc ON TRUE
       -- where a penalty was earned: the nearest preceding non-penalty shot, else

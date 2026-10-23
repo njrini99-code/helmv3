@@ -60,7 +60,7 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
     expect(withNextShotStart(hole[0]!, hole).lie_after).toBe('recovery');
   });
 
-  it('skips a penalty row between the drive and the next shot', () => {
+  it('a penalty drop between the drive and the next shot clears the tap', () => {
     const hole = blockedHole(true);
     const withPenalty: RawShot[] = [
       hole[0]!,
@@ -68,9 +68,17 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
         lie_before: 'other', distance_to_hole_before: 150, lie_after_recovery: true }),
       ...hole.slice(1).map((s) => ({ ...s, shot_number: s.shot_number + 1 })),
     ];
-    // A penalty row's own flag never makes a recovery; the drive's still does.
-    expect(withRecoveryStart(withPenalty[2]!, withPenalty).lie_before).toBe('recovery');
+    // An unplayable drop moved the ball: the shot after it is priced from its
+    // own lie, and the drive ends there. A penalty row's own flag never counts.
+    expect(withRecoveryStart(withPenalty[2]!, withPenalty).lie_before).toBe('other');
+    expect(withNextShotStart(withPenalty[0]!, withPenalty).lie_after).toBe('other');
     expect(withRecoveryStart(withPenalty[1]!, withPenalty).lie_before).toBe('other');
+    const reviewed = attachShotStrokesGained(withPenalty);
+    const engine = perShotSg(withPenalty);
+    // The penalty row itself is priced by each path's own penalty rule; compare the shots.
+    reviewed.forEach((s, i) => {
+      if (i !== 1) expect(s.sg).toBeCloseTo(engine[i]!, 6);
+    });
   });
 
   it('round review per-shot SG agrees with the Stats engine', () => {
