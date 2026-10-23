@@ -91,6 +91,7 @@ export function IconButton({
   disabled,
   className,
   shortcut,
+  menu,
 }: {
   icon: LucideIcon;
   label: string;
@@ -101,17 +102,24 @@ export function IconButton({
   className?: string;
   /** The key that does the same, one string per key cap ("N", or "⌘" then "\\"). */
   shortcut?: readonly string[];
+  /** A menu's trigger props (ui/Menu's `trigger`): the key opens that menu (CONS-2). */
+  menu?: { ref: (el: HTMLButtonElement | null) => void; onClick: () => void; 'aria-expanded': boolean; 'aria-haspopup': 'menu'; 'aria-controls': string };
 }) {
   return (
     <Tooltip label={label} shortcut={shortcut} ariaKeys={shortcut?.length === 1 && shortcut[0]!.length === 1 ? shortcut[0] : undefined}>
       <button
+        ref={menu?.ref}
         type="button"
         aria-label={label}
+        aria-expanded={menu?.['aria-expanded']}
+        aria-haspopup={menu?.['aria-haspopup']}
+        aria-controls={menu?.['aria-controls']}
         disabled={disabled}
         className={['ch-btn', 'ch-btn--ghost', 'ch-iconbtn', size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ')}
         onClick={() => {
           if (feel) haptic(feel);
           onClick?.();
+          menu?.onClick();
         }}
       >
         <Icon icon={icon} size={size === 'sm' ? 15 : 16} />

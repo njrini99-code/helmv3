@@ -26,8 +26,6 @@ const ALLOW: Record<string, number> = {
   'screens/hub/sheets.tsx': 1,
   'screens/messages/MessagesPhone.tsx': 1,
   'screens/messages/MessagesView.tsx': 5,
-  'screens/recruiting/RecruitingDesktop.tsx': 1,
-  'screens/roster/Roster.tsx': 1,
   'screens/rounds/entry/CourseNudge.tsx': 1,
   'screens/rounds/setup/AddCourseSheet.tsx': 3,
   'screens/rounds/setup/CoursePicker.tsx': 1,
@@ -67,6 +65,9 @@ describe('every button is ui/Button (CONS-2)', () => {
     const now = rawButtons();
     const grew = Object.entries(now).filter(([f, n]) => n > (ALLOW[f] ?? 0)).map(([f, n]) => `${f}: ${n} (allowed ${ALLOW[f] ?? 0})`);
     expect(grew).toEqual([]);
+    // A file that is down to none leaves the list, so the count can't creep back.
+    const stale = Object.keys(ALLOW).filter((f) => !now[f]);
+    expect(stale).toEqual([]);
   });
 
   it('rounds/track keeps only the keys Button cannot take yet', () => {

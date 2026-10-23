@@ -2,8 +2,7 @@
 
 import { Ellipsis, Plus, SearchX, Trash2 } from 'lucide-react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
-import { Button } from '../../ui/Button';
-import { Icon } from '../../ui/Icon';
+import { Button, IconButton } from '../../ui/Button';
 import { Menu } from '../../ui/Menu';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -11,7 +10,6 @@ import { Segmented } from '../../ui/Segmented';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Swap } from '../../ui/Swap';
 import { EmptyState } from '../../ui/States';
-import { Tooltip } from '../../ui/Tooltip';
 import type { RecCtx } from './ctx';
 import { Documents } from './Documents';
 import { CalendarLine, CommitRule, ContactSection, MetaLine, NextStepPlate, NextStepSection, NextStepSrPrefix, NotesSection, ProspectAvatar, StageChip, isStrong } from './parts';
@@ -203,13 +201,7 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
             label={`More for ${p.name}`}
             align="end"
             items={[{ label: 'Delete prospect', icon: Trash2, danger: true, onSelect: () => c.askDelete(p) }]}
-            trigger={(t) => (
-              <Tooltip>
-                <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`More for ${p.name}`} {...t}>
-                  <Icon icon={Ellipsis} size={18} />
-                </button>
-              </Tooltip>
-            )}
+            trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`More for ${p.name}`} menu={t} />}
           />
         </div>
         <div className="ch-rec-stage" data-ch-code="CH-14803">

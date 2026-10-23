@@ -8,7 +8,7 @@ import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import { setPlayerAvailability, updatePlayerStatus } from '@/app/golf/actions/team-management';
 import type { ChAvailability, ChRoster, ChRosterPlayer } from '../../data/roster';
 import { Avatar } from '../../ui/Avatar';
-import { Button } from '../../ui/Button';
+import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
@@ -809,13 +809,7 @@ function RosterList({
                   <Menu
                     label={`Actions for ${p.name}`}
                     items={menuFor(p)}
-                    trigger={(t) => (
-                      <Tooltip>
-                        <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm" aria-label={`Actions for ${p.name}`} {...t}>
-                          <Icon icon={Ellipsis} size={15} />
-                        </button>
-                      </Tooltip>
-                    )}
+                    trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`Actions for ${p.name}`} menu={t} />}
                   />
                 </span>
               </div>
