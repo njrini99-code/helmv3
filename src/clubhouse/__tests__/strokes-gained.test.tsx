@@ -291,7 +291,7 @@ describe('team stats · desktop', () => {
       // Green or amber only when the change clears its standard error, by the figure's own direction (lower scores and fewer
       // putts improved when they fell); otherwise neutral (stats visuals Q4).
       const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
-      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(t === 'is-gain' ? 'is-good' : t === 'is-loss' ? 'is-bad' : 'is-flat');
+      expect(c.querySelector('.ch-tp__svg')!.getAttribute('class'), f.label).toContain(t === 'is-gain' || t === 'is-loss' ? t : 'is-flat');
       expect(c.querySelector('.ch-tp__svg')!.getAttribute('aria-hidden')).toBe('true');
     }
   });
@@ -632,7 +632,7 @@ describe('player profile · desktop', () => {
     showPlayer(player({ sgChange: { ...PREVIEW_PLAYER.sgChange, se: 0.9 } }));
     hero = [...document.querySelectorAll('.ch-pf-hero__figs > div')].find((d) => d.querySelector('dt')!.textContent === 'SG / round')!;
     chip = hero.querySelector('.ch-delta')!;
-    expect(chip.className).toContain('is-bad');
+    expect(chip.className).toContain('is-loss');
     expect(hero.querySelector('.ch-sgchg')!.lastElementChild!.textContent).toBe('Worse than previous 10');
   });
 

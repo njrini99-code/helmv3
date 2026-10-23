@@ -805,7 +805,7 @@ describe('Overview · the zones', () => {
     const rows = [...document.querySelectorAll('.ch-zrow')];
     const near = rows.find((r) => r.textContent?.startsWith('50–125 yds'))!;
     expect(near.textContent).toContain('26 ft');
-    expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-bad');
+    expect(near.querySelector('.ch-ztrack__fill')!.className).toContain('is-loss');
     expect(near.querySelector('.ch-ztrack__tick.is-tour')).not.toBeNull();
   });
 

@@ -96,8 +96,8 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
 }
 
 /** The chip class for a change's tone (stats-signal `deltaTone`): green better, amber worse, neutral ink when it is no clear change. */
-export function deltaClass(tone: DeltaTone): 'is-good' | 'is-bad' | 'is-flat' {
-  return tone === 'is-gain' ? 'is-good' : tone === 'is-loss' ? 'is-bad' : 'is-flat';
+export function deltaClass(tone: DeltaTone): 'is-gain' | 'is-loss' | 'is-flat' {
+  return tone === 'is-gain' ? 'is-gain' : tone === 'is-loss' ? 'is-loss' : 'is-flat';
 }
 
 /**

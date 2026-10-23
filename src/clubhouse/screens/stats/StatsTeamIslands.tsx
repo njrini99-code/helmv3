@@ -371,7 +371,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               </span>
             )}
             {lead?.delta != null && (
-              <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' ? 'is-good' : leadTone === 'is-loss' ? 'is-bad' : 'is-flat'}`}>
+              <span className={`ch-sgt__chg ch-num ${leadTone === 'is-gain' || leadTone === 'is-loss' ? leadTone : 'is-flat'}`}>
                 <Icon icon={leadTone === '' ? Minus : lead.delta > 0 ? ArrowUpRight : ArrowDownRight} size={16} />
                 {formatSigned(lead.delta, lead.digits)}
                 <em>{deltaWords(lead.delta, leadTone, lead.context || 'vs previous 10')}</em>

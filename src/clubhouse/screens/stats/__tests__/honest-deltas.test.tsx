@@ -25,11 +25,11 @@ describe('SgChangeChip', () => {
   });
 
   it('is amber or green, and says worse or better, once the change clears it', () => {
-    expect(chip(0.9).querySelector('.ch-delta')!.className).toContain('is-bad');
+    expect(chip(0.9).querySelector('.ch-delta')!.className).toContain('is-loss');
     expect(chip(0.9).lastElementChild!.textContent).toBe('Worse than previous 10');
     cleanup();
     const up = chip(0.9, 1.3);
-    expect(up.querySelector('.ch-delta')!.className).toContain('is-good');
+    expect(up.querySelector('.ch-delta')!.className).toContain('is-gain');
     expect(up.lastElementChild!.textContent).toBe('Better than previous 10');
   });
 

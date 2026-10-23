@@ -64,7 +64,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
       mean != null && prevMean != null ? (
         <span className="ch-ph-viz ch-ph-viz--avg" aria-hidden="true">
           <i className="is-was" style={{ left: `${at(prevMean)}%` }} />
-          <i className={'is-now ' + (mean <= prevMean ? 'is-better' : 'is-worse')} style={{ left: `${at(mean)}%` }} />
+          <i className={'is-now ' + (mean <= prevMean ? 'is-gain' : 'is-loss')} style={{ left: `${at(mean)}%` }} />
           <b style={{ left: `${Math.min(at(mean), at(prevMean))}%`, width: `${Math.abs(at(mean) - at(prevMean))}%` }} />
         </span>
       ) : null,

@@ -550,7 +550,7 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-trend {
   --ch-line-ink: var(--ch-green-600);
 }
-.ch-th-trend.is-worse {
+.ch-th-trend.is-loss {
   --ch-line-ink: var(--ch-chart-loss);
 }
 .ch-th-trend .ch-line__path {

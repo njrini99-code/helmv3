@@ -277,7 +277,7 @@ export function Trend({ block }: { block: Extract<AskEvidence, { kind: 'trend' }
   return (
     <div ref={box} className="ch-th-trendbox">
       <Line
-        className={'ch-th-trend' + (worse ? ' is-worse' : '')}
+        className={'ch-th-trend' + (worse ? ' is-loss' : '')}
         label={label}
         points={block.points.map((p) => ({ x: p.label, y: p.value }))}
         lowerIsBetter={down}

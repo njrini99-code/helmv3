@@ -1852,10 +1852,10 @@
   height: 10px;
   box-shadow: 0 0 0 2px var(--ch-sheet-bg);
 }
-.ch-ph-viz--avg i.is-better {
-  background: var(--ch-green-fill-600);
+.ch-ph-viz--avg i.is-gain {
+  background: var(--ch-chart-gain);
 }
-.ch-ph-viz--avg i.is-worse {
+.ch-ph-viz--avg i.is-loss {
   background: var(--ch-chart-loss);
 }
 .ch-ph-viz--avg b {

@@ -37,7 +37,7 @@ function Track({ value, lo = 0, hi = 100, team, tour, bad = false, neutral = fal
   const b = pos(value, lo, hi);
   return (
     <div className="ch-ztrack" aria-hidden="true">
-      <i className={'ch-ztrack__fill' + (neutral ? ' is-neutral' : bad ? ' is-bad' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
+      <i className={'ch-ztrack__fill' + (neutral ? ' is-neutral' : bad ? ' is-loss' : '')} style={{ '--ch-z-a': Math.min(a, b) / 100, '--ch-z-w': Math.abs(b - a) / 100 } as CSSProperties} />
       {team != null && <u className="ch-ztrack__tick is-team" style={{ '--ch-z-x': pos(team, lo, hi) } as CSSProperties} />}
       {tour != null && <u className="ch-ztrack__tick is-tour" style={{ '--ch-z-x': pos(tour, lo, hi) } as CSSProperties} />}
     </div>
