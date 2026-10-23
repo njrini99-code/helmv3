@@ -56,4 +56,21 @@ describe('elevation tokens (B4)', () => {
     }
     expect(raw).toEqual([]);
   });
+
+  it('raw shadows only fall (B4: they move onto the elevation levels screen by screen, with shots)', () => {
+    let raw = 0;
+    for (const file of walk(join(ROOT, 'styles'), /\.css$/)) {
+      if (file.endsWith('tokens.css')) continue;
+      for (const m of css(basename(file)).matchAll(/box-shadow:\s*([^;]+);/g)) {
+        const v = m[1]!.trim();
+        if (!v.includes('var(') && v !== 'none' && v !== 'inherit') raw += 1;
+      }
+    }
+    expect(raw).toBeLessThanOrEqual(352);
+  });
+
+  it('a phone scroller fades over the edge-fade token', () => {
+    expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
+    expect(css('ui.css')).toMatch(/@media \(max-width: 820px\) \{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
+  });
 });

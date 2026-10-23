@@ -417,6 +417,8 @@
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;
   --ch-radius-sheet: 20px;
+  /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
+  --ch-edge-fade: 28px;
   /* B3: the width of a separator. One device pixel on a Retina screen is set further down (min-resolution). */
   --ch-hairline-w: 1px;
 

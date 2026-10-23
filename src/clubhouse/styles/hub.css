@@ -2809,7 +2809,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
     gap: 18px;
     /* A clipped figure fades over 28px, not 14, so the edge reads as more to scroll to, and the row settles on a
        figure, not half of one (A24). */
-    --ch-hs-fade: 28px;
+    --ch-hs-fade: var(--ch-edge-fade);
     scroll-snap-type: x proximity;
     scroll-padding-inline: var(--ch-page-gutter);
   }
