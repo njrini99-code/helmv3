@@ -152,8 +152,8 @@ export interface ChReadCount {
 
 /**
  * The one count of what CoachHelm sees in a player's reads: the current findings ("costing strokes") and the current strengths
- * ("working"); a note and an out-of-date read are neither. The coach's Game profile line, Game detail's line per section (P005) and
- * the roster's CoachHelm block (P003) all count with this, so they never disagree.
+ * ("working"); a note and an out-of-date read are neither. Game detail's line per section (P005) and the roster's CoachHelm block
+ * (P003) both count with this, so they never disagree.
  */
 export function countReads(rows: ReadonlyArray<ClassifiableInsight>, tour: ChTourBaseline | null, newestRound: string | null): ChReadCount {
   let costing = 0;

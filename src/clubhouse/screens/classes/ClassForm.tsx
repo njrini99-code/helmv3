@@ -29,6 +29,7 @@ import {
   type ChTerm,
   type ChWeek,
 } from '../../data/classes-shape';
+import { useChClock } from '../../lib/use-clock';
 import { haptic } from '../../lib/haptics';
 import { useChPhone } from '../../lib/use-phone';
 import { Button } from '../../ui/Button';
@@ -66,6 +67,7 @@ export function ClassForm({
   onClose: () => void;
 }) {
   const uid = useId();
+  const hours = useChClock();
   const id = (f: string) => `${uid}-${f}`;
   const phone = useChPhone();
   const [was, setWas] = useState(false);
@@ -282,7 +284,7 @@ export function ClassForm({
                 <b>Overlaps the team</b>
                 {team
                   .slice(0, 2)
-                  .map((x) => `${eventLabel(x.event)} on ${DAY_SHORT[dayToken(x.date)]}, ${eventWhen(x.event, x.date)}`)
+                  .map((x) => `${eventLabel(x.event)} on ${DAY_SHORT[dayToken(x.date)]}, ${eventWhen(x.event, x.date, hours)}`)
                   .join('; ')}
                 {team.length > 2 ? ` and ${team.length - 2} more` : ''}. This week. Your coach can see your classes.
               </span>

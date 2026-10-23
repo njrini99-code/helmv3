@@ -5134,6 +5134,34 @@ $$;
 
 ALTER FUNCTION "public"."golf_readable_round_ids"() OWNER TO "postgres";
 
+CREATE OR REPLACE FUNCTION "public"."golf_shot_detail_round_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog', 'public', 'pg_temp'
+    AS $$
+    SELECT gr.id
+    FROM public.golf_rounds gr
+    WHERE gr.id IN (SELECT public.golf_readable_round_ids())
+      AND (
+        gr.player_id IN (
+          SELECT gp.id
+          FROM public.golf_players gp
+          WHERE gp.user_id = (SELECT auth.uid())
+        )
+        OR gr.player_id IN (
+          SELECT gtm.player_id
+          FROM public.golf_team_members gtm
+          JOIN public.golf_teams gt ON gt.id = gtm.team_id
+          JOIN public.golf_coaches gc
+            ON gc.organization_id = gt.organization_id
+          WHERE gc.user_id = (SELECT auth.uid())
+        )
+      );
+$$;
+
+ALTER FUNCTION "public"."golf_shot_detail_round_ids"() OWNER TO "postgres";
+
+COMMENT ON FUNCTION "public"."golf_shot_detail_round_ids"() IS 'Readable rounds whose shot details I may read on the coach/owner side (conjunct B of can_read_golf_shot_detail). Used once per statement by the putt_details and approach_miss_details SELECT policies.';
+
 CREATE OR REPLACE FUNCTION "public"."golf_recruit_documents_assert_same_team"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'

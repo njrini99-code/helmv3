@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Check, CloudOff, Smartphone, Table2, X } from 'lucide-react';
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import { useShotTracking, type ShotTrackingPorts, type ShotTrackingProps } from '@/hooks/golf/use-shot-tracking';
 import type { ShotRecord } from '@/lib/types/golf';
+import type { DataGapAsk } from '@/lib/coachhelm/data-gap/asks';
+import { isRoundStartMoment } from '@/lib/golf/data-prompts/recovery';
 import { frontierIndex } from '@/lib/golf/round-session/play-order';
 import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { ChRoundType, ChTeeColor } from '../../../data/rounds-shape';
@@ -15,11 +17,13 @@ import { ScoreMark } from '../../../ui/ScoreMark';
 import { Spinner } from '../../../ui/Spinner';
 import { TeeSwatch, TYPE_LABEL } from '../parts';
 import { CourseView } from './CourseView';
+import { PuttMissPrompt, RecoveryPrompt } from './DataPrompts';
 import { HoleReview } from './HoleReview';
 import { heroDistance, scoreName, shotKind } from './labels';
 import { HoleMap, ShotLog, TrackStrip } from './parts';
 import { EditShotSheet, PenaltySheet, UnsavedSheet } from './sheets';
 import { ShotEntry } from './ShotEntry';
+import { useChPuttPrompt, useChRecoveryPrompt } from './use-data-prompts';
 import { useWakeLock } from './use-wake-lock';
 import '../../../styles/rounds-track.css';
 
@@ -39,6 +43,15 @@ export type RoundTrackingProps = ShotTrackingProps & {
   holeShots?: (index: number) => ShotRecord[] | null;
   /** Opens the finished round to post it, once every hole is in (CH-11910). Drawn as the shot review's footer action. */
   onReviewRound?: () => void;
+  /**
+   * CoachHelm Slice 8a (`coachhelm_data_gap_prompt_v1`): the player's open putt-miss asks (`loadDataGapAsks`). Absent or
+   * empty (the flag off), nothing is asked (CH-11960).
+   */
+  dataGapAsks?: readonly DataGapAsk[];
+  /** CoachHelm Slice 8b (`coachhelm_data_prompts_v2`): ask after a tee shot into the rough or an 'other' lie (CH-11961). */
+  recoveryPrompt?: boolean;
+  /** Drawn first in the entry card at the round's start only (first hole in play order, no shot yet): the course nudge, CH-11962. */
+  startPrompt?: ReactNode;
 };
 
 // CH-11706: going to another hole is a selection tick. Module-level, so the
@@ -66,8 +79,12 @@ const SAVE_WORDS = {
  * scorecard and submitting (see `round-sheets.tsx`).
  */
 export function RoundTracking(props: RoundTrackingProps) {
-  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1 } = props;
+  const { round, holes, currentHoleIndex, onExit, onNavigateToHole, onOpenScorecard, onAutoSave, statusSlot, holeShots, onReviewRound, startHole = 1, dataGapAsks, recoveryPrompt = false, startPrompt } = props;
   const t = useShotTracking(props, PORTS);
+  // The one-tap data prompts (CoachHelm Slice 8a, 8b): their session state lives here, beside the engine, so it survives the
+  // entry's re-key on every shot and the move between holes. Each is null when it has nothing to ask.
+  const puttAsk = useChPuttPrompt({ asks: dataGapAsks, holeNumber: t.currentHole?.number, shotHistory: t.shotHistory, onTag: t.handleTagPuttMiss });
+  const recoveryAsk = useChRecoveryPrompt({ enabled: recoveryPrompt, holeNumber: t.currentHole?.number, shotHistory: t.shotHistory, onTag: t.handleTagRecovery });
   const editOpen = !!(t.showEditModal && t.editingShot && t.editFormData);
   const [lastEdit, setLastEdit] = useState<{ shot: NonNullable<typeof t.editingShot>; form: NonNullable<typeof t.editFormData> } | null>(null);
   if (editOpen && (lastEdit?.shot !== t.editingShot || lastEdit?.form !== t.editFormData)) setLastEdit({ shot: t.editingShot!, form: t.editFormData! });
@@ -139,6 +156,15 @@ export function RoundTracking(props: RoundTrackingProps) {
   // "Round saved": the hole's own save is the truth then. Device, syncing and retrying still agree with it, so they stay.
   const saveState = heldSaved === 'saved' && t.holeCheckpointStatus !== 'idle' ? 'idle' : heldSaved;
   const meta = [round.teeLabel && `${round.teeLabel} tees`, round.type && TYPE_LABEL[round.type]].filter(Boolean).join(' · ');
+  const atStart = !!startPrompt && isRoundStartMoment({ holeScores: holes.map((h) => h.score), currentHoleIndex, startHole, shotCount: t.shotHistory.length });
+  const prompts =
+    puttAsk || recoveryAsk || atStart ? (
+      <>
+        {atStart && startPrompt}
+        {puttAsk && <PuttMissPrompt prompt={puttAsk} pref={distancePref} />}
+        {recoveryAsk && <RecoveryPrompt prompt={recoveryAsk} />}
+      </>
+    ) : undefined;
 
   return (
     <div className="ch-rt-q">
@@ -300,6 +326,7 @@ export function RoundTracking(props: RoundTrackingProps) {
               onUndoLastShot={t.handleUndoLastShot}
               tapIn={t.tapIn}
               onTapIn={t.handleTapIn}
+              prompts={prompts}
             />
           )}
         </div>

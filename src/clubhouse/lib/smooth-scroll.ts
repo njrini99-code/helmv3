@@ -4,6 +4,7 @@ import Lenis from 'lenis';
 import { useEffect } from 'react';
 import { CH_SCROLL_DUR } from './motion';
 import { useChReducedMotion } from './reduced-motion';
+import { chRailMoving } from './rail-fold';
 
 /**
  * Smooth scrolling for the desktop canvas (owner, 2026-10-06: "use smooth scroll all around"). Safari on the Mac moves a
@@ -119,8 +120,9 @@ export function useCanvasSmoothScroll(): void {
       });
       current = lenis;
       const loop = (time: number) => {
-        // The canvas grows as a page streams in or a route changes; the scroll limit follows it.
-        if (wrapper.scrollHeight !== height) {
+        // The canvas grows as a page streams in or a route changes; the scroll limit follows it. Not while the sidebar
+        // folds: the page reflows on every frame of it, and the limit is read once it settles (lib/rail-fold.ts).
+        if (!chRailMoving() && wrapper.scrollHeight !== height) {
           height = wrapper.scrollHeight;
           lenis?.resize();
         }

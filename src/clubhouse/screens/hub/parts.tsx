@@ -14,6 +14,7 @@ import { haptic } from '../../lib/haptics';
 import { normalise, useAction, type ActionCopy, type ActionResult, type ServerResult } from '../../lib/use-action';
 import { SerifText } from '../../ui/SerifText';
 import { Tooltip } from '../../ui/Tooltip';
+import { useChClockText } from '../../lib/use-clock';
 import { useChPhone } from '../../lib/use-phone';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { radioKeys, rovingRadios } from './radio';
@@ -117,6 +118,7 @@ export function Announcement({
   /** Lists and opens the post's attachments; without it the count is plain text (a preview set with no read). */
   files?: ChHubAttachments;
 }) {
+  const clk = useChClockText();
   const coach = role === 'coach';
   const pct = a.recipients ? Math.round((a.ackCount / a.recipients) * 100) : 0;
   const phone = useChPhone();
@@ -138,7 +140,7 @@ export function Announcement({
     <article className={'ch-hb-ann' + (featured ? ' is-featured' : '') + (rank ? ` is-${rank}` : '')} aria-labelledby={`ch-hb-ann-${a.id}`} data-ann={a.id}>
       {rank === 'older' && (
         <span className="ch-hb-ann__margin ch-num" aria-hidden="true">
-          {a.when}
+          {clk(a.when)}
         </span>
       )}
       {featured && <span className="ch-hb-eyebrow">{coach ? 'Latest' : a.needAck && !acked ? 'Needs your acknowledgement' : 'Latest from your coaches'}</span>}
@@ -157,7 +159,7 @@ export function Announcement({
         <Avatar name={a.by} size={32} />
         <div>
           <b>{a.by}</b>
-          <span className="ch-num">{[a.byRole, a.when].filter(Boolean).join(' · ')}</span>
+          <span className="ch-num">{[a.byRole, clk(a.when)].filter(Boolean).join(' · ')}</span>
         </div>
         {coach && (
           <Menu
@@ -322,6 +324,7 @@ export function TripPass({
   focus?: boolean;
   onFocused?: () => void;
 }) {
+  const clk = useChClockText();
   const pass = useRef<HTMLElement>(null);
   const reduced = useChReducedMotion();
   const scrolled = useRef(false);
@@ -333,9 +336,9 @@ export function TripPass({
   }, [focus, reduced, onFocused]);
   const manage = role === 'coach' && (onEdit || onDelete);
   const plan = [
-    t.depart && ([t.depart, `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
+    t.depart && ([clk(t.depart), `${TRANSPORT[t.transport ?? ''] ?? 'Leave'}${t.from ? ` from ${t.from}` : ''}`] as const),
     t.hotel && (['Stay', t.hotel] as const),
-    t.back && ([t.back, 'Home'] as const),
+    t.back && ([clk(t.back), 'Home'] as const),
   ].filter((x): x is readonly [string, string] => !!x);
   return (
     // P010-A1: the next trip is the page's one paper object (hub.css `.is-next`); the trips after it stay flat rows.
@@ -373,7 +376,7 @@ export function TripPass({
           {!(big && t.depart) && (
             <div>
               <dt>Departs</dt>
-              <dd className="ch-num">{t.depart ?? 'To be set'}</dd>
+              <dd className="ch-num">{t.depart ? clk(t.depart) : 'To be set'}</dd>
             </div>
           )}
           {!(big && t.hotel) && (
@@ -482,6 +485,7 @@ export function Updates({ data, covered = false, read, onOpen }: {
 }
 
 function UpdateBody({ n }: { n: ChHubUpdate }) {
+  const clk = useChClockText();
   return (
     <>
       <span className="ch-hb-feed__b">
@@ -491,7 +495,7 @@ function UpdateBody({ n }: { n: ChHubUpdate }) {
         </b>
         {n.body && <span>{n.body}</span>}
       </span>
-      <em className="ch-num">{n.when}</em>
+      <em className="ch-num">{clk(n.when)}</em>
     </>
   );
 }

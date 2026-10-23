@@ -634,8 +634,8 @@ describe('the Standing screen', () => {
     show();
     expect(screen.queryByRole('button', { name: /Assign|Dismiss|Accept|Decline|Save/ })).toBeNull();
     const next = screen.getByRole('heading', { name: 'Keep reading' }).closest('aside') as HTMLElement;
-    expect(within(next).getByRole('link', { name: /Game profile/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=profile');
-    expect(within(next).getByRole('link', { name: /Deep dive/ }).getAttribute('href')).toBe('/golf/dashboard/coachhelm?view=deep-dive');
+    // How you play is on this page now (Game profile folded in), so the one way on is the Deep dive.
+    expect(within(next).getAllByRole('link').map((l) => l.getAttribute('href'))).toEqual(['/golf/dashboard/coachhelm?view=deep-dive']);
   });
 
   it('on the phone it is its own layout: the same page under the top bar, the views as chips', () => {
