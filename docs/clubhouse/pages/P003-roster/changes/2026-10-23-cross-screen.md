@@ -116,3 +116,27 @@ Held items: none
 ### Verification
 
 - See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+## 2026-10-23 — Icon keys and the spread's axis (CONS-2)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- A row's menu key is the shared IconButton.
+- The spread's axis leaves out the tick under the team pill.
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+### Verification
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.

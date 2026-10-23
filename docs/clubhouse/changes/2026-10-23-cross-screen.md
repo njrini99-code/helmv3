@@ -505,3 +505,35 @@ class uses, ratcheted
 ### Verification
 
 - New `empty-honest.test.ts`; Stats filter and Home tests.
+
+## 2026-10-23 — Icon keys, plurals and the spread's axis (CONS-2, CONS-14)
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2, CONS-14)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the other raw ch-btn sites (ratcheted, now failing on a
+stale entry too); 93 plural ternary lines
+```
+
+### Changed
+
+- `IconButton` opens a menu (it takes ui/Menu's trigger props) and has a
+  secondary variant. Roster's and Recruiting's row menus, Calendar's
+  More and the event panel's More use it.
+- 83 inline `n === 1 ? … : …s` ternaries use `plural()`.
+- Roster's spread leaves out the axis tick under the team pill, which
+  showed through it.
+
+### Why
+
+- Four hand-built icon keys, and plurals spelled out file by file.
+
+### Verification
+
+- `buttons.test.ts` (with the new stale check), calendar, roster and
+  recruiting tests; related tests for the plural files (231 files); a
+  new `roster-spread-axis.test.tsx`; WebKit shots (P002, P003, P008,
+  P009, P011, P013, P014, after).
