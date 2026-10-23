@@ -127,6 +127,8 @@ export interface ChTeamStats {
     legs: Array<number | null>;
     total: number | null;
     change: number | null;
+    /** The standard error of `change` (the two halves' per-18 spreads combined); the grid paints the change only past it (A1). */
+    changeSe?: number | null;
     /** Scoring average over the window's rounds, per 18 holes (the phone's player list). */
     avg: number | null;
     /**
@@ -411,6 +413,7 @@ export function teamGrid(players: Array<{ id: string; first_name: string | null;
       const half = Math.floor(sgMine.length / 2);
       const sgOf = (r: ChRound) => r.strokes_gained_total;
       const change = effectiveCount(sgMine, sgOf) >= 4 ? (weightedMean(sgMine.slice(sgMine.length - half), sgOf) ?? 0) - (weightedMean(sgMine.slice(0, half), sgOf) ?? 0) : null;
+      const changeSe = change == null ? null : windowChangeSe(sgMine.slice(sgMine.length - half), sgMine.slice(0, half), sgOf, 'sg');
       // The ranked dot plot's whiskers: each figure's own round values from the rounds it reads (no new read).
       const sample = (rs: ChRound[], pick: (r: ChRound) => number | null, kind: SpreadKind): ChRankSample => {
         const v = roundValues(rs, pick);
@@ -426,7 +429,7 @@ export function teamGrid(players: Array<{ id: string; first_name: string | null;
       const last = newest
         ? { score: newest.total_score as number, toPar: newest.score_to_par, label: [newest.course_name, shortDate(newest.round_date)].filter(Boolean).join(' \u00b7 ') }
         : null;
-      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, avg: s.avg, spread, last };
+      return { id: p.id, name: fullName(p), rounds: mine.length, legs, total: s.sgPerRound, change, changeSe, avg: s.avg, spread, last };
     })
     .filter((g) => g.rounds > 0);
 }

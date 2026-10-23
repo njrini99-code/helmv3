@@ -122,15 +122,16 @@ export function changeSe(
 /**
  * A short run of scores (oldest first) split in half: the newer half's mean less the older half's, and that change's standard
  * error. The split is the form line's and `summarizeWindow`'s own (`formChange`): with an odd count the middle score is in
- * neither half. Null under three scores.
+ * neither half. Null under three scores. `kind` names the pooled spread a short half falls back on (score by default; null for a
+ * figure with none, whose change then has a standard error only once each half has five values).
  */
-export function halvesChange(trend: number[]): { delta: number; se: number | null } | null {
+export function halvesChange(trend: number[], kind: SpreadKind | null = 'score'): { delta: number; se: number | null } | null {
   if (trend.length < 3) return null;
   const half = Math.floor(trend.length / 2);
   const newer = trend.slice(trend.length - half);
   const older = trend.slice(0, half);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  return { delta: m(newer) - m(older), se: changeSe(newer, older, 'score') };
+  return { delta: m(newer) - m(older), se: changeSe(newer, older, kind) };
 }
 
 export type DeltaTone = '' | 'is-gain' | 'is-loss';

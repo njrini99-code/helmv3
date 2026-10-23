@@ -159,14 +159,14 @@ its rows together and does not map them one to one.
 | doc-61 | Classes: two imports at once save a class once (held migration) | Clubhouse fixes | held | #2289 (draft, parked) | claude/clubhouse-classes-import-race |
 | doc-62 | Record the brand decision (white cards, Instrument Sans) in STATUS | docs | done | #2284 | claude/clubhouse-audit-polish |
 | new-01 | Preview player self page uses the player shell | Clubhouse fixes | done | #2284 | claude/clubhouse-audit-polish |
-| aplus-a2 | Values that round to zero get no gain or loss tone, on every screen (A2) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a1 | One change-signal rule: halves plus standard error, never first vs last (A1) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a5 | Ahead of or behind the team decided on the shown values (A5) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a6 | Average to par uses the window's weighted value (A6) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a7 | Rate floors on Fairways, GIR, Scrambling and Sand saves (A7) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a3 | Roster team average pooled per round, not a mean of player means (A3) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a4 | Team SG headline and leg totals obey the 3-round floor (A4) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
-| aplus-a20 | Standing “Refreshed” date in the team’s time zone; SG to one decimal (A20) | Clubhouse A+ | in progress | | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a2 | Values that round to zero get no gain or loss tone, on every screen (A2) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a1 | One change-signal rule: halves plus standard error, never first vs last (A1) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a5 | Ahead of or behind the team decided on the shown values (A5) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a6 | Average to par uses the window's weighted value (A6) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a7 | Rate floors on Fairways, GIR, Scrambling and Sand saves (A7) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a3 | Roster team average pooled per round, not a mean of player means (A3) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a4 | Team SG headline and leg totals obey the 3-round floor (A4) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
+| aplus-a20 | Standing “Refreshed” date in the team’s time zone; SG to one decimal (A20) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

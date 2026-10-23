@@ -343,20 +343,42 @@ describe('team stats · desktop', () => {
     expect(document.querySelector('.ch-sgt__team b')!.textContent).toBe('−0.5');
   });
 
-  it('a change reads as a change: "up about 1.0 a round since Aug 30", not a level the team has gained', async () => {
+  it('A1: a change is the newer half of the weeks against the older half, said only past its standard error, never first vs last', async () => {
     const user = userEvent.setup();
     showTeam(team());
     const note = () => document.querySelector('.ch-sgt > .ch-note')!.textContent!;
-    expect(note()).toBe('The team’s strokes gained are up about 1.0 a round since Aug 30, a weekly average from −1.0 to 0.0.');
-    expect(note()).not.toMatch(/has gained|has lost/);
-    // A player: Jonah went 0.8 to −0.9.
+    // The fixture's first and last weeks differ by 1.0 (−1.0 to 0.0), but its halves sit inside their standard error.
+    expect(note()).toBe('No clear change in the team’s strokes gained across this window.');
+    expect(note()).not.toMatch(/since|has gained|has lost/);
+    // A player: Jonah went 0.8 to −0.9 from first week to last, which is noise across his halves.
     await user.click(screen.getByRole('button', { name: /Jonah/ }));
-    expect(note()).toBe('Jonah’s strokes gained are down about 1.7 a round since Aug 30, a weekly average from +0.8 to −0.9.');
+    expect(note()).toBe('No clear change in Jonah’s strokes gained across this window.');
+    // The four leg cards say the same kind of thing and never "across the window" from two end points.
+    for (const n of document.querySelectorAll('.ch-sgm__n')) expect(n.textContent).not.toMatch(/across the window|since/);
   });
 
-  it('a flat line is flat, not a change', () => {
+  it('A1: a change past its standard error is worded as one, from the halves', () => {
+    showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [-3, -3, -3, 0, 3, 3, 3] } }));
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are up 6.0 a round, newer half vs older half.');
+  });
+
+  it('a flat line is no clear change, not a change', () => {
     showTeam(team({ team: { ...PREVIEW_TEAM_STATS.team, sg: [0.1, 0.1, 0.0, 0.1, 0.1, 0.0, 0.1] } }));
-    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('The team’s strokes gained are flat since Aug 30.');
+    expect(document.querySelector('.ch-sgt > .ch-note')!.textContent).toBe('No clear change in the team’s strokes gained across this window.');
+  });
+
+  it('A1: the grid paints a player\'s change, with an arrow, only past its standard error', () => {
+    const grid = PREVIEW_TEAM_STATS.grid.map((g, i) => (i === 0 ? { ...g, change: 0.3, changeSe: 0.5 } : i === 1 ? { ...g, change: 1.2, changeSe: 0.4 } : g));
+    showTeam(team({ grid }));
+    const cellOf = (name: string) =>
+      [...document.querySelectorAll('.ch-lg__ch')].find((c) => c.closest('[role="row"]')?.textContent?.includes(name.split(' ')[0]!)) as HTMLElement;
+    const quiet = cellOf(PREVIEW_TEAM_STATS.grid[0]!.name);
+    expect(quiet.className).not.toMatch(/ch-gain|ch-loss/);
+    expect(quiet.querySelector('svg')).toBeNull();
+    expect(quiet.getAttribute('title')).toBe('No clear change');
+    const clear = cellOf(PREVIEW_TEAM_STATS.grid[1]!.name);
+    expect(clear.className).toContain('ch-gain');
+    expect(clear.querySelector('svg')).not.toBeNull();
   });
 
   it('the trend says what the dashed line is: the Tour baseline, or the women’s; the list is the window average', () => {

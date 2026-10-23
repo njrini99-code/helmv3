@@ -7,7 +7,7 @@ trend words agree with the data they are drawn from.
 
 ```text
 Design package: none (Clubhouse A+ handoff, section 5, A2)
-PR/commit: branch agent/clubhouse-aplus-wp1
+PR/commit: #2356
 Contract IDs: none
 Actions: none
 Data impact: none
@@ -38,3 +38,75 @@ Held items: none
   untoned in all three forms; `sgTint` keeps zero apart from no data.
 - `__tests__/no-raw-sign-tone.test.ts`: no screen, shell or ui file tests a
   sign to pick a gain or loss tone (bar geometry may still test the sign).
+
+## 2026-10-23 — One change-signal rule (A1)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A1)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- Every trend claim compares the newer half of the window with the older
+  half (`halvesChange`) and words it as a change only past its standard
+  error (`deltaTone`). Otherwise it says "No clear change". This covers the
+  team trend note, the four leg cards, the phone team trend, Home's leg
+  sparks and the phone player's scoring cell.
+- The team grid's Trend column carries the change's standard error and
+  paints it, with an arrow, only past it; otherwise neutral, no arrow, and
+  "No clear change" on hover.
+- The four leg cards share one scale, so the same height is the same strokes.
+- The phone scoring cell's headline is "No clear change" when the change is
+  inside its error, never "2.1 higher" beside "No clear change".
+
+### Why
+
+- Screens told a coach "up about 0.8 a round since Aug 30" from two end
+  points, while other cells on the same data said "No clear change".
+
+### Verification
+
+- `strokes-gained.test.tsx`: the team and player notes from the halves,
+  a real change worded as one, and the grid cell toned only past its error.
+- `stats-player.test.tsx`, `stats-team.test.tsx`: the phone cell and trend.
+
+## 2026-10-23 — One change-signal rule (A1)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A1)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- Every trend claim compares the newer half of the window with the older
+  half (`halvesChange`) and words it as a change only past its standard
+  error (`deltaTone`). Otherwise it says "No clear change". This covers the
+  team trend note, the four leg cards, the phone team trend, Home's leg
+  sparks and the phone player's scoring cell.
+- The team grid's Trend column carries the change's standard error and
+  paints it, with an arrow, only past it; otherwise neutral, no arrow, and
+  "No clear change" on hover.
+- The four leg cards share one scale, so the same height is the same strokes.
+- The phone scoring cell's headline is "No clear change" when the change is
+  inside its error, never "2.1 higher" beside "No clear change".
+
+### Why
+
+- Screens told a coach "up about 0.8 a round since Aug 30" from two end
+  points, while other cells on the same data said "No clear change".
+
+### Verification
+
+- `strokes-gained.test.tsx`: the team and player notes from the halves,
+  a real change worded as one, and the grid cell toned only past its error.
+- `stats-player.test.tsx`, `stats-team.test.tsx`: the phone cell and trend.

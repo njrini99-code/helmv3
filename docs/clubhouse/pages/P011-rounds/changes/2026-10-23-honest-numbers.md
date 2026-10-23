@@ -4,7 +4,7 @@
 
 ```text
 Design package: none (Clubhouse A+ handoff, section 5, A2)
-PR/commit: branch agent/clubhouse-aplus-wp1
+PR/commit: #2356
 Contract IDs: none
 Actions: none
 Data impact: none

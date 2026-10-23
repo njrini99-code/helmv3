@@ -8,7 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { changeSe, deltaTone, deltaWords } from '../../lib/stats-signal';
+import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { formatHcp } from '../roster/format';
@@ -403,12 +403,11 @@ function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: 
   const hi = Math.max(...data) + span * 0.18;
   const x = (i: number) => (i * w) / (data.length - 1);
   const y = (v: number) => pad + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - pad * 2);
-  const ch = data[data.length - 1]! - data[0]!;
-  const good = lowerIsBetter ? ch < -0.2 : ch > 0.2;
-  const bad = lowerIsBetter ? ch > 0.2 : ch < -0.2;
+  // The newer half of the rounds against the older half, past its standard error (A1): never the first round against the last.
+  const ch = halvesChange(data, null);
   const mean = data.reduce((a, b) => a + b, 0) / data.length;
-  const tone = good ? 'is-gain' : bad ? 'is-loss' : '';
-  const word = good ? 'Improving' : bad ? 'Slipping' : 'Steady';
+  const tone = ch ? deltaTone(ch.delta, ch.se, lowerIsBetter) : '';
+  const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'Steady';
   const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
   const line = monotonePath(pts);
   const last = pts[pts.length - 1]!;

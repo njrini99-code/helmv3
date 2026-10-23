@@ -14,7 +14,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
 import { tabListKeys } from '../../lib/tabs';
@@ -227,8 +227,12 @@ function Trend({ data }: { data: ChTeamStats }) {
         </p>
       </section>
     );
-  const change = known[known.length - 1]!.score - known[0]!.score;
-  const reading = Math.abs(change) < 0.2 ? 'Flat across the window.' : `${change < 0 ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} strokes since ${known[0]!.label}.`;
+  // The newer half of the round days against the older half, worded as a change only past its standard error (A1).
+  const change = halvesChange(known.map((d) => d.score), 'score');
+  const reading =
+    change == null || deltaTone(change.delta, change.se, true) === ''
+      ? 'No clear change across the window.'
+      : `${change.delta < 0 ? 'Down' : 'Up'} ${Math.abs(change.delta).toFixed(1)} strokes a round, newer half vs older half.`;
   const mean = known.reduce((a, d) => a + d.score, 0) / known.length;
   return (
     <section className="ch-stm-trend" aria-labelledby="ch-stm-trend">

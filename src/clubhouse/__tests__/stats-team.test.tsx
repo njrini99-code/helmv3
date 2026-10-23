@@ -575,7 +575,9 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     // The trend sits right under the hero, before the round's other figures.
     const order = [...document.querySelectorAll('.ch-stm-hero, .ch-stm-trend, section[aria-labelledby="ch-stm-round"]')];
     expect(order.map((el) => el.className.split(' ')[0])).toEqual(['ch-stm-hero', 'ch-stm-trend', 'ch-stm-panel']);
-    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 1\.4 strokes since Aug 30/ })).toBeTruthy();
+    // One change rule (A1): the newer half of the days against the older half, past its standard error, never first against last.
+    expect(screen.getByRole('img', { name: /Team scoring average by round day, from 74\.8 to 73\.4\. Down 0\.9 strokes a round, newer half vs older half\./ })).toBeTruthy();
+    expect(document.querySelector('.ch-stm-trend')!.textContent).not.toMatch(/since/);
     expect(screen.getByText('2 legs are losing strokes: Approach, Putting.')).toBeTruthy();
     // Sentence case, never tracked: the context line is the team, its active players and its sample.
     expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');

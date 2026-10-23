@@ -259,7 +259,6 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const w = data.win;
   const sgTone = ' ' + changeInk(w.sgPerRound);
   const form = w.formChange;
-  const flat = form != null && Math.abs(form) < 0.05;
   // The rounds in each half of the trend the change compares (summarizeWindow's own split).
   const half = Math.floor(w.trend.length / 2);
   // Coloured only when the change clears its standard error (Q4): three scores a half rarely do, so it mostly reads as no clear change.
@@ -289,9 +288,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         <div>
           <dt>Scoring trend</dt>
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          {/* A change inside its standard error is no change (A1): the headline says so instead of "2.1 higher", and the sub-line
+              names the halves it compared, so the cell never says a number and "No clear change" at once. */}
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : formSignal === '' ? 'No clear change' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
           <dd>
-            {form != null && formSignal === '' && <span className="ch-stm-figs__clear">No clear change</span>}
             {form == null ? 'After three rounds' : halves}
           </dd>
         </div>
