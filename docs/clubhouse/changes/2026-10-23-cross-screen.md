@@ -567,3 +567,33 @@ the top bar, the Ask sheet, round setup and track keys), ratcheted
 ### Verification
 
 - `buttons.test.ts` (lowered allowlist); related tests (185 files).
+
+## 2026-10-23 — Rounding, tones and selected plates, continued
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-15, CONS-20, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the CSV export, CSS geometry and color-mix percentages keep
+.toFixed; tone words left in Stats and CoachHelm, ratcheted
+```
+
+### Changed
+
+- Stats, CoachHelm settings and Ask's elapsed seconds round through
+  `lib/format` (`.toFixed` ratchet 112 → 84). The shown text is unchanged.
+- Twenty selected paints use the selected tokens; a solid chosen plate
+  uses `--ch-selected-strong` (ratchet 75 → 55).
+- The zone's big read, What's new's good line and the putts bar use
+  `is-gain` and `is-loss`.
+
+### Why
+
+- One rounding rule, one tone vocabulary and one selected look.
+
+### Verification
+
+- `display-rounding`, `selected-state`, `tone-vocabulary` and
+  `strokes-gained` tests; related tests (32 files).
