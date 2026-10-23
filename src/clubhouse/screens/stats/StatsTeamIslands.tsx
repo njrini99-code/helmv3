@@ -25,7 +25,7 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
-import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
@@ -268,9 +268,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
   const good = (v: number) => (isSg ? v >= 0 : par != null && v <= par);
-  const fmt = (v: number) => (isSg ? formatSigned(v) : v.toFixed(1));
+  const fmt = (v: number) => (isSg ? formatSigned(v) : formatFixed(v));
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
-  const fmtEnd = (v: number) => (isSg ? formatSigned(v) : v.toFixed(0));
+  const fmtEnd = (v: number) => (isSg ? formatSigned(v) : formatFixed(v, 0));
   const sel = lines.find((l) => l.p.id === focus);
   // CH-4601: the player the pointer or the keyboard rests on comes forward without being chosen; a press chooses them
   // (focus, which the note, the legend and the grid follow). Their line turns green and is drawn again over the others,
@@ -298,7 +298,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
     const h = halvesChange(weeks.filter((v): v is number => v != null), isSg ? 'sg' : 'score');
     if (!h) return null;
     if (deltaTone(h.delta, h.se, !isSg) === '') return `No clear change in ${subject} across this window.`;
-    const by = `${Math.abs(h.delta).toFixed(1)} ${isSg ? 'a round' : 'strokes a round'}`;
+    const by = `${formatFixed(Math.abs(h.delta))} ${isSg ? 'a round' : 'strokes a round'}`;
     return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, newer half vs older half.`;
   };
   const note = (() => {
@@ -327,7 +327,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   // The headline: the window's own figure (strokes gained or scoring average) and how it moved against the previous window.
   const lead = data.figures.find((x) => x.key === (isSg ? 'sg' : 'score'));
   const leadValue = lead?.value ?? null;
-  const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : leadValue.toFixed(lead!.digits);
+  const leadText = leadValue == null ? NO_DATA : isSg ? formatSigned(leadValue, lead!.digits) : formatFixed(leadValue, lead!.digits);
   // Coloured only when the change clears its standard error (Q4); otherwise neutral ink and "No clear change", the number kept.
   const leadTone = lead ? deltaTone(lead.delta, lead.se, lead.lowerIsBetter) : '';
   const uid = useId().replace(/:/g, '');
@@ -662,7 +662,7 @@ function LegTrend({
   const meanTone = changeTone(mean, false, 1);
   // The newer half of the weeks against the older half, worded only past its standard error (A1), never first against last.
   const ch = a && b && a.i !== b.i ? halvesChange(vals, 'sg') : null;
-  const chWords = ch == null ? null : deltaTone(ch.delta, ch.se, false) === '' ? 'No clear change' : `${ch.delta > 0 ? 'Up' : 'Down'} ${Math.abs(ch.delta).toFixed(1)} a round, newer half vs older half`;
+  const chWords = ch == null ? null : deltaTone(ch.delta, ch.se, false) === '' ? 'No clear change' : `${ch.delta > 0 ? 'Up' : 'Down'} ${formatFixed(Math.abs(ch.delta))} a round, newer half vs older half`;
   return (
     <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">

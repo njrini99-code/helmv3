@@ -19,7 +19,7 @@ import { plural } from '../../lib/plural';
 
 const pct = formatPct;
 const num = formatFixed;
-const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${v.toFixed(d)} ft`);
+const ft = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : `${formatFixed(v, d)} ft`);
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
 

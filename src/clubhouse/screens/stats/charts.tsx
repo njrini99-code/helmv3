@@ -195,7 +195,7 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
           </span>
-          {r.bench != null && <span className="ch-par3__d ch-num">Tour {r.bench.toFixed(2)}</span>}
+          {r.bench != null && <span className="ch-par3__d ch-num">Tour {formatFixed(r.bench, 2)}</span>}
         </div>
       ))}
     </div>

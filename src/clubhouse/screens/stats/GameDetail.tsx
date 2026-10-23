@@ -413,8 +413,8 @@ export function GameDetail({
         {...ruleOf('Every scored hole of those rounds.')}
         lead={
           s.roundsPlayed
-            ? `${first} ${verb('makes', 'make')} ${dist.birdie.toFixed(1)} birdies and ${dist.double.toFixed(1)} doubles a round.${
-                p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${p5.avg.toFixed(2)} on average.` : ''
+            ? `${first} ${verb('makes', 'make')} ${formatFixed(dist.birdie)} birdies and ${formatFixed(dist.double)} doubles a round.${
+                p5.avg != null ? ` Par 5s ${p5.avg < 5 ? 'are a scoring chance' : 'are giving shots back'}, playing ${formatFixed(p5.avg, 2)} on average.` : ''
               }`
             : `No hole-by-hole scores in this window yet.`
         }
@@ -458,7 +458,7 @@ export function GameDetail({
               ? `${s.fairwaysHit} of ${s.fairwayOpportunities} fairways so far: too few rounds to read as a rate yet.`
               : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
-              }${s.penaltiesPerRound ? `, and ${s.penaltiesPerRound.toFixed(1)} penalty strokes a round come from the tee` : ''}.`
+              }${s.penaltiesPerRound ? `, and ${formatFixed(s.penaltiesPerRound)} penalty strokes a round come from the tee` : ''}.`
         }
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
@@ -665,7 +665,7 @@ export function GameDetail({
           ['Putts / GIR', num(s.puttsPerGir, 2), null, undefined],
           ['3-putts / round', num(s.threePuttsPerRound), null, undefined],
           ['One-putt rate', pct(onePuttRate), 'Of holes', undefined],
-          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${s.firstPuttDistanceAvg.toFixed(1)} ft`, 'Average start', undefined],
+          ['First putt', s.firstPuttDistanceAvg == null ? NO_DATA : `${formatFixed(s.firstPuttDistanceAvg)} ft`, 'Average start', undefined],
         ]}
         more={
           <More>

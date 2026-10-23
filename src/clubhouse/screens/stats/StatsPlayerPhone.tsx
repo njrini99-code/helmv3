@@ -290,7 +290,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
           {/* A change inside its standard error is no change (A1): the headline says so instead of "2.1 higher", and the sub-line
               names the halves it compared, so the cell never says a number and "No clear change" at once. */}
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : formSignal === '' ? 'No clear change' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : formSignal === '' ? 'No clear change' : `${formatFixed(Math.abs(form))} ${form < 0 ? 'lower' : 'higher'}`}</dd>
           <dd>
             {form == null ? 'After three rounds' : halves}
           </dd>
@@ -340,7 +340,7 @@ function StrokesGained({ data }: { data: ChPlayerProfile }) {
     : !losing.length
       ? `No leg is losing strokes against ${baseline.noun}.`
       : losing.length === 1
-        ? `${losing[0]!.label} is the only leg losing strokes, ${Math.abs(losing[0]!.value).toFixed(1)} a round.`
+        ? `${losing[0]!.label} is the only leg losing strokes, ${formatFixed(Math.abs(losing[0]!.value))} a round.`
         : `${losing.length} legs are losing strokes: ${losing.map((l) => l.label).join(', ')}.`;
   return (
     <section className="ch-stm-panel ch-stm-panel--sg" aria-labelledby="ch-spm-sg">

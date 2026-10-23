@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { HOLES_ADJ, hasPrevious, hasRange, isFiltered, type ChFilter } from '../../data/stats-filter';
 import type { ChBests } from '../../data/stats-figures';
 import type { ChProfileExtra } from '../../data/stats-player';
-import { formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatPct, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { DataTable, Empty, RoundLine, Rule, Tiles } from './detail';
 import { BestCardShare } from './BestCard';
 import { bestCardFields } from './best-card-fields';
@@ -168,8 +168,8 @@ export function RoundsExtra({
                     key: r.label,
                     head: r.label,
                     cells: [
-                      r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
-                      r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
+                      r.last == null ? NO_DATA : `${formatFixed(r.last, r.digits)}${r.unit}`,
+                      r.previous == null ? NO_DATA : `${formatFixed(r.previous, r.digits)}${r.unit}`,
                       change(r.last, r.previous, r.digits, r.lowerIsBetter),
                     ],
                   }))}
@@ -226,8 +226,8 @@ export function RoundsExtra({
                 key: r.label,
                 head: r.label,
                 cells: [
-                  r.last == null ? NO_DATA : `${r.last.toFixed(r.digits)}${r.unit}`,
-                  r.previous == null ? NO_DATA : `${r.previous.toFixed(r.digits)}${r.unit}`,
+                  r.last == null ? NO_DATA : `${formatFixed(r.last, r.digits)}${r.unit}`,
+                  r.previous == null ? NO_DATA : `${formatFixed(r.previous, r.digits)}${r.unit}`,
                   change(r.last, r.previous, r.digits, r.lowerIsBetter),
                 ],
               }))}

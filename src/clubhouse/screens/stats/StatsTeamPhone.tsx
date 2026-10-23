@@ -172,7 +172,7 @@ function toneClass(f: ChFigure): string {
   return t === 'is-gain' ? 'ch-gain' : t === 'is-loss' ? 'ch-loss' : '';
 }
 
-const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${f.value.toFixed(f.digits)}${f.unit}`);
+const figureValue = (f: ChFigure) => (f.value == null ? NO_DATA : `${formatFixed(f.value, f.digits)}${f.unit}`);
 
 /**
  * The one hero figure: the scoring average, its change and what the change is against ("vs previous 10"). A window with
@@ -236,7 +236,7 @@ function Trend({ data }: { data: ChTeamStats }) {
   const reading =
     change == null || deltaTone(change.delta, change.se, true) === ''
       ? 'No clear change across the window.'
-      : `${change.delta < 0 ? 'Down' : 'Up'} ${Math.abs(change.delta).toFixed(1)} strokes a round, newer half vs older half.`;
+      : `${change.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change.delta))} strokes a round, newer half vs older half.`;
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
   const mean = teamDaysMean(known);
   return (
@@ -327,7 +327,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   const note = !losing.length
     ? `No leg is losing strokes against ${baseline.noun}.`
     : losing.length === 1
-      ? `${losing[0]!.l} is the only leg losing strokes, ${Math.abs(losing[0]!.v).toFixed(1)} a round.`
+      ? `${losing[0]!.l} is the only leg losing strokes, ${formatFixed(Math.abs(losing[0]!.v))} a round.`
       : `${losing.length} legs are losing strokes: ${losing.map((x) => x.l).join(', ')}.`;
   // The team total is the window's own mean (data.team.sgMean), never the legs added up.
   const rows: Array<{ key: ChLegPick; label: string; v: number | null; total?: boolean }> = [

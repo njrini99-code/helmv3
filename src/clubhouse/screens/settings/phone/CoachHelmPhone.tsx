@@ -10,6 +10,7 @@ import { ReadFailed } from '../parts';
 import { Reorder } from './Reorder';
 import { ActionSheet } from './sheets';
 import { Group, PickerRow, SliderRow, SwitchRow } from './ui';
+import { formatFixed } from '../../../lib/format';
 import { plural } from '../../../lib/plural';
 
 /**
@@ -61,7 +62,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
           description="Strokes gained lost over five rounds before a decline is flagged."
           value={p.declineThreshold}
           {...THRESHOLD_RANGES.declineThreshold}
-          format={(v) => `${v.toFixed(1)} SG`}
+          format={(v) => `${formatFixed(v)} SG`}
           onChange={(v) => change({ declineThreshold: v }, { debounce: 'declineThreshold' })}
         />
         <SliderRow
@@ -69,7 +70,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
           description="Practice-to-tournament scoring gap that raises a mental-game alert."
           value={p.pressureGapThreshold}
           {...THRESHOLD_RANGES.pressureGapThreshold}
-          format={(v) => `${v.toFixed(1)} strokes`}
+          format={(v) => `${formatFixed(v)} strokes`}
           onChange={(v) => change({ pressureGapThreshold: v }, { debounce: 'pressureGapThreshold' })}
         />
         <SliderRow
@@ -77,7 +78,7 @@ function CoachHelmBody({ initial, writes }: { initial: ChCoachHelmSettings; writ
           description="Strokes-gained range around the qualifying cutoff that marks a player as on the bubble."
           value={p.bubbleZoneRange}
           {...THRESHOLD_RANGES.bubbleZoneRange}
-          format={(v) => `${v.toFixed(1)} SG`}
+          format={(v) => `${formatFixed(v)} SG`}
           onChange={(v) => change({ bubbleZoneRange: v }, { debounce: 'bubbleZoneRange' })}
         />
       </Group>
