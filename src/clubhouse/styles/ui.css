@@ -1690,6 +1690,19 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-line__ref.is-dashed {
   stroke-dasharray: 3 4;
 }
+/* A baseline's words: beside it where the line leaves room, else a key under the chart (P013 D3). */
+.ch-line__key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font: var(--ch-type-12);
+  color: var(--ch-text-secondary);
+}
+.ch-line__key > i {
+  width: 16px;
+  border-top: 1px dashed var(--ch-border-strong);
+}
 .ch-line__t {
   font: var(--ch-type-11-medium);
   font-variant-numeric: tabular-nums;

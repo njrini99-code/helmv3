@@ -27,13 +27,21 @@ const padMini = (h: number) => {
   return { l: 4, r: 4, t: v, b: v };
 };
 
-/** A few round ticks that cover [lo, hi]: a step of 0.5, 1, 2, 5, 10 or 20, so the labels are plain numbers. */
+/**
+ * A few round ticks inside [lo, hi]: the finest step of 0.5, 1, 2, 5, 10, 20 or 25 that gives at most `want` of them, so the
+ * labels are plain numbers and there are as many as fit.
+ */
 export function lineTicks(lo: number, hi: number, want = 3): number[] {
-  const span = Math.max(hi - lo, 1e-6);
-  const step = [0.5, 1, 2, 5, 10, 20].find((s) => s >= span / want) ?? 20;
-  const out: number[] = [];
-  for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(2)));
-  return out;
+  const at = (step: number) => {
+    const out: number[] = [];
+    for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(2)));
+    return out;
+  };
+  for (const step of [0.5, 1, 2, 5, 10, 20, 25]) {
+    const t = at(step);
+    if (t.length <= want) return t;
+  }
+  return at(50);
 }
 
 /** The domain a set of lines shares: their values (and a baseline), padded by an eighth of the span, at least `minPad`. */
@@ -67,6 +75,46 @@ export function linePath(values: Array<number | null>, x: (i: number) => number,
     open = true;
   });
   return d;
+}
+
+/** A baseline label's width per character, estimated from the larger (12px phone) tick type. */
+const REF_CHAR = 6.6;
+
+/**
+ * Where a baseline's label goes so it never sits on the line or a point (P013 D3): above the baseline at the right, else
+ * below it, else the same two at the left; when all four would touch the line, `null`, and the label is set as a key under
+ * the chart instead. `pts` are the drawn points in viewBox units, `w` the label's estimated width.
+ */
+export function placeRefLabel(
+  pts: Array<{ x: number; y: number }>,
+  ry: number,
+  w: number,
+  width: number,
+  pad: { l: number; r: number } = PAD_AXIS,
+): { x: number; y: number; anchor: 'start' | 'end' } | null {
+  const R = 5; // a point's radius plus its stroke
+  const lineSpan = (x0: number, x1: number): [number, number] | null => {
+    const ys: number[] = [];
+    pts.forEach((p, i) => {
+      if (p.x >= x0 && p.x <= x1) ys.push(p.y);
+      const q = pts[i + 1];
+      if (!q) return;
+      for (const x of [x0, x1]) {
+        if ((p.x <= x && x <= q.x) || (q.x <= x && x <= p.x)) ys.push(q.x === p.x ? p.y : p.y + ((x - p.x) * (q.y - p.y)) / (q.x - p.x));
+      }
+    });
+    return ys.length ? [Math.min(...ys) - R, Math.max(...ys) + R] : null;
+  };
+  const right = { x0: width - pad.r - w, x1: width - pad.r, x: width - pad.r, anchor: 'end' as const };
+  const left = { x0: pad.l + 4, x1: pad.l + 4 + w, x: pad.l + 4, anchor: 'start' as const };
+  for (const side of [right, left]) {
+    const span = lineSpan(side.x0, side.x1);
+    // The text's box: about 11px above its baseline and 3px below it.
+    for (const base of [ry - 5, ry + 15]) {
+      if (!span || span[1] < base - 11 || span[0] > base + 3) return { x: side.x, y: base, anchor: side.anchor };
+    }
+  }
+  return null;
 }
 
 export function Line({
@@ -108,14 +156,14 @@ export function Line({
   size?: 'phone' | 'desktop';
   /** The value ticks and their rules; off where the page says the figures in words (a phone summary). */
   axis?: boolean;
-  /** Every point drawn, or only the newest (a dense line). */
-  marks?: 'all' | 'last';
+  /** Every point drawn, only the newest (a dense line), or every point with the older ones hollow (`'trail'`). */
+  marks?: 'all' | 'last' | 'trail';
   /** A faint fill under the line, toward the worse edge; or, with `'baseline'`, between the line and the baseline. */
   wash?: boolean | 'baseline';
   /** Where a point reads: a line above the plot, or a tip over its top corner (where the page has no room for a line). */
   readAt?: 'line' | 'tip';
-  /** The first and last points' names under the plot. */
-  ends?: boolean;
+  /** The first and last points' names under the plot; with `'spread'`, every name up to six points, else first, middle and last. */
+  ends?: boolean | 'spread';
   /** Off where the chart sits inside a control (a leg card is a button): no readout, no focus, hidden from a screen reader. */
   interactive?: boolean;
   /** The plot's width in its own units: 340 on a phone, 680 on a desktop, or about its drawn width for a small multiple. */
@@ -146,6 +194,17 @@ export function Line({
         return `M${x0},${floor} L${x0},${y0}${rest} L${xEnd},${floor} Z`;
       })
     : '';
+  // A baseline's words go beside it where the line leaves room, else in a key under the chart.
+  const refText = baseline?.label ?? '';
+  const refAt = refText
+    ? placeRefLabel(
+        values.flatMap((v, i) => (v == null ? [] : [{ x: x(i), y: y(v) }])),
+        y(baseline!.value),
+        refText.length * REF_CHAR,
+        W,
+        PAD,
+      )
+    : null;
   const read = (i: number | null) => (i == null ? null : readout ? readout(i) : `${points[i]!.x} · ${points[i]!.y == null ? 'No figure' : format(points[i]!.y!)}`);
 
   // A tick under the finger as the readout moves from point to point while it scrubs (the slider's detent).
@@ -175,9 +234,9 @@ export function Line({
       {baseline && (
         <g>
           <line x1={PAD.l} x2={W - PAD.r} y1={y(baseline.value)} y2={y(baseline.value)} className={'ch-line__ref' + (baseline.dashed ? ' is-dashed' : '')} />
-          {baseline.label && (
-            <text x={W - PAD.r} y={y(baseline.value) - 4} textAnchor="end" className="ch-line__t">
-              {baseline.label}
+          {refAt && (
+            <text x={refAt.x} y={refAt.y} textAnchor={refAt.anchor} className="ch-line__t ch-line__ref-t">
+              {refText}
             </text>
           )}
         </g>
@@ -203,12 +262,20 @@ export function Line({
             key={`${p.x}-${i}`}
             cx={x(i)}
             cy={y(p.y)}
-            r={i === pin.active ? 5 : 3}
-            className={'ch-line__dot' + (early ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
+            r={i === pin.active ? 5 : marks === 'trail' ? 4 : 3}
+            className={'ch-line__dot' + (early || (marks === 'trail' && i !== newest) ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
           />
         ),
       )}
-      {ends && n > 0 && (
+      {ends === 'spread' &&
+        points.map((p, i) =>
+          n <= 6 || i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2) ? (
+            <text key={`x-${i}`} x={x(i)} y={H - 6} textAnchor="middle" className="ch-line__t">
+              {p.x}
+            </text>
+          ) : null,
+        )}
+      {ends === true && n > 0 && (
         <>
           <text x={PAD.l} y={H - 6} className="ch-line__t">
             {points[0]!.x}
@@ -251,6 +318,12 @@ export function Line({
         {read(pin.pinned)}
       </p>
       {plot}
+      {refText && !refAt && (
+        <p className="ch-line__key" aria-hidden="true">
+          <i />
+          {refText}
+        </p>
+      )}
     </div>
   );
 }

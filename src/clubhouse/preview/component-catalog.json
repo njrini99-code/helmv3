@@ -1627,16 +1627,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/coachhelm-thread.css",
-        "src/clubhouse/styles/coachhelm.css",
-        "src/clubhouse/styles/goals.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/coachhelm-thread.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7169,6 +7160,7 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/goals.css",
         "src/clubhouse/styles/home.css",
@@ -9063,6 +9055,12 @@
       "file": "src/clubhouse/styles/coachhelm-thread.css",
       "classes": [
         "ch-btn",
+        "ch-line__dot",
+        "ch-line__key",
+        "ch-line__path",
+        "ch-line__ref",
+        "ch-line__ref-t",
+        "ch-line__t",
         "ch-th",
         "ch-th--phone",
         "ch-th-act",
@@ -9082,7 +9080,6 @@
         "ch-th-ans",
         "ch-th-ans__body",
         "ch-th-at",
-        "ch-th-ax",
         "ch-th-bar",
         "ch-th-bar__label",
         "ch-th-bar__track",
@@ -9111,7 +9108,6 @@
         "ch-th-fig__take",
         "ch-th-flip",
         "ch-th-follow",
-        "ch-th-grid",
         "ch-th-icobtn",
         "ch-th-leg",
         "ch-th-leg__label",
@@ -9147,9 +9143,6 @@
         "ch-th-receipt__head",
         "ch-th-receipt__meta",
         "ch-th-receipt__title",
-        "ch-th-ref",
-        "ch-th-ref-label",
-        "ch-th-refkey",
         "ch-th-spin",
         "ch-th-sr",
         "ch-th-steps",
@@ -9172,7 +9165,18 @@
         "ch-th-work__btn",
         "ch-th-work__time"
       ],
-      "tokens": []
+      "tokens": [
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-green-600)",
+          "scope": ".ch-th-trend"
+        },
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-chart-loss)",
+          "scope": ".ch-th-trend.is-worse"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/coachhelm-track.css",
@@ -17558,6 +17562,7 @@
         "ch-line__dot",
         "ch-line__grid",
         "ch-line__guide",
+        "ch-line__key",
         "ch-line__path",
         "ch-line__read",
         "ch-line__ref",

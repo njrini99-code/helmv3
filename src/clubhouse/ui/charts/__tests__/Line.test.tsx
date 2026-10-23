@@ -39,6 +39,8 @@ describe('ui/charts/Line (B5)', () => {
       const t = lineTicks(lo, hi);
       expect(new Set(t.map(String)).size).toBe(t.length);
       expect(t.length).toBeGreaterThan(0);
+      // A span of a stroke or more gets at least two ticks to read against.
+      if (hi - lo >= 1) expect(t.length).toBeGreaterThanOrEqual(2);
     }
   });
 
