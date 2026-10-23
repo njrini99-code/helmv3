@@ -266,3 +266,44 @@ transitions)
   a page past either end, `onPage` on a settled swipe, links and read
   only); calendar, Hub and Home tests; WebKit shots at 390 and 1280
   (P006, P002, P010 `week-strip`, after).
+
+## 2026-10-23 — Segmented, avatars, tones and the selected state (WP-21)
+
+```text
+Design package: none (Clubhouse A+ handoff, B17, B19, CONS-20, CONS-22)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: B17's flat restyle (the seg-on well is the owner's "depth
+like the toggles", 2026-10-16); the four hand-rolled segmented controls
+(Hub reply, rounds-track keys, hole par, audience chips) need behaviour
+Segmented lacks; B19's one tint on both platforms (D-43), the Badge's
+info tone and the avatar size set (CONS-33); CONS-31's Menu sort and
+Segmented-to-pills on What's new
+```
+
+### Changed
+
+- `ui/Segmented` is pinned by a test (arrow keys, `aria-checked`, the
+  thumb's slide). The orphaned `.ch-rsu-seg` CSS is gone.
+- An avatar's tone is pinned per person at every size and ring.
+- Stats' deltas, tape, leaders and zones and Home's average mark use
+  `is-gain` and `is-loss` straight from `changeTone`; the older tone
+  words are ratcheted (82 to 54 lines).
+- The selected state is tokens: `--ch-selected-bg`,
+  `--ch-selected-pill-bg`, `--ch-selected-pill-ring`,
+  `--ch-selected-ink`. The pill, the deep dive's item, the people
+  picker and Home's rail use them; Home's rail item is green-50 now, as
+  every selected row is. Other selected paints are ratcheted (75).
+
+### Why
+
+- One control, one tone vocabulary and one selected state read the same
+  on every screen.
+
+### Verification
+
+- New `ui/__tests__/Segmented.test.tsx`, `ui/__tests__/Avatar.test.tsx`,
+  `tone-vocabulary.test.ts` and `selected-state.test.ts`; Stats, Home,
+  CoachHelm and round setup tests; `clubhouse:css` 0 findings.

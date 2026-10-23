@@ -47,3 +47,26 @@ Held items: none
 ### Verification
 
 - See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+## 2026-10-23 — Tones and the selected state (CONS-20, CONS-22)
+
+```text
+Design package: none (Clubhouse A+ handoff, WP-21)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- The people picker's chosen trigger paints with `--ch-selected-bg`.
+
+### Why
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.
+
+### Verification
+
+- See docs/clubhouse/changes/2026-10-23-cross-screen.md.
