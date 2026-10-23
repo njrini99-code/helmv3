@@ -92,14 +92,14 @@ describe('type roles (B1)', () => {
   });
 
   it('raw font shorthands only fall, file by file', () => {
-    const found = hits(/(?:^|[\s;{])font:\s*[^;]+;/, css).filter((h) => !role.test(h.text.replace(/^.*?(font:)/, '$1')));
+    const found = hits(/(?:^|[\s;{])font:\s*[^;]+;/, css).filter((h) => !role.test(/font:\s*[^;]+;/.exec(h.text)![0]));
     const { over, stale } = ratchet(found, RAW_FONT);
     expect(over).toEqual([]);
     expect(stale).toEqual([]);
   });
 
   it('letter-spacing is a role value, or a counted holdout that only falls', () => {
-    const found = hits(/letter-spacing:\s*[^;]+;/, css).filter((h) => !trackOk.test(h.text.replace(/^.*?(letter-spacing:)/, '$1')));
+    const found = hits(/letter-spacing:\s*[^;]+;/, css).filter((h) => !trackOk.test(/letter-spacing:\s*[^;]+;/.exec(h.text)![0]));
     const { over, stale } = ratchet(found, OFF_TRACK);
     expect(over).toEqual([]);
     expect(stale).toEqual([]);
@@ -113,7 +113,7 @@ describe('type roles (B1)', () => {
   it('the bar title is one role, pushed or at a tab’s root, and the shell’s stand-in matches it', () => {
     const shell = read('shell.css');
     const rule = (sel: string) => shell.slice(shell.indexOf(sel), shell.indexOf('}', shell.indexOf(sel)));
-    expect(tokens).toMatch(/--ch-type-bar-title: var\(--ch-type-17-strong\);/);
+    expect(tokens).toMatch(/--ch-type-bar-title: 600 calc\(17 \* var\(--ch-type-k\)\)\/calc\(22 \* var\(--ch-type-k\)\)/);
     expect(rule('  .ch-pbar__title {')).toMatch(/font: var\(--ch-type-bar-title\);/);
     expect(rule('  .ch-pbar__title.is-start {')).not.toMatch(/font(-size)?:|letter-spacing:/);
     expect(rule('  .ch-topbar__ptitle {')).toMatch(/font: var\(--ch-type-bar-title\);/);
@@ -128,42 +128,35 @@ describe('type roles (B1)', () => {
   });
 });
 
-/** Raw `font:` shorthands per stylesheet on 2026-10-23, before the screen-by-screen move onto the roles. Only falls. */
+/** Raw `font:` shorthands per stylesheet left after the codemod (2026-10-23): pixel sizes, sizes off the steps, 700 and the sign-in pages. Only falls. */
 const RAW_FONT: Record<string, number> = {
   'styles/auth.css': 32,
   'styles/base.css': 1,
-  'styles/calendar.css': 61,
-  'styles/classes.css': 88,
-  'styles/coachhelm-ask.css': 27,
-  'styles/coachhelm-brief.css': 11,
-  'styles/coachhelm-dive.css': 51,
-  'styles/coachhelm-patterns.css': 5,
-  'styles/coachhelm-profile.css': 24,
-  'styles/coachhelm-standing.css': 24,
-  'styles/coachhelm-thread.css': 55,
-  'styles/coachhelm-track.css': 9,
-  'styles/coachhelm-views.css': 7,
-  'styles/coachhelm.css': 69,
-  'styles/command.css': 4,
-  'styles/component-playground.css': 7,
-  'styles/controls.css': 16,
+  'styles/calendar.css': 27,
+  'styles/classes.css': 38,
+  'styles/coachhelm-ask.css': 2,
+  'styles/coachhelm-dive.css': 7,
+  'styles/coachhelm-profile.css': 3,
+  'styles/coachhelm-standing.css': 2,
+  'styles/coachhelm-thread.css': 10,
+  'styles/coachhelm.css': 11,
+  'styles/controls.css': 3,
   'styles/goals.css': 5,
   'styles/hero-tones.css': 5,
-  'styles/home.css': 117,
-  'styles/hub.css': 131,
-  'styles/messages.css': 64,
+  'styles/home.css': 52,
+  'styles/hub.css': 19,
+  'styles/messages.css': 4,
   'styles/onboard.css': 60,
-  'styles/qualifiers.css': 94,
-  'styles/recruiting.css': 62,
-  'styles/roster.css': 76,
-  'styles/rounds-recover.css': 8,
-  'styles/rounds-setup.css': 66,
-  'styles/rounds-track.css': 101,
-  'styles/rounds.css': 153,
+  'styles/qualifiers.css': 38,
+  'styles/recruiting.css': 17,
+  'styles/roster.css': 47,
+  'styles/rounds-setup.css': 14,
+  'styles/rounds-track.css': 36,
+  'styles/rounds.css': 74,
   'styles/settings.css': 3,
-  'styles/shell.css': 56,
-  'styles/stats.css': 201,
-  'styles/ui.css': 38,
+  'styles/shell.css': 27,
+  'styles/stats.css': 148,
+  'styles/ui.css': 10,
 };
 
 /** Off-role `letter-spacing` values per stylesheet on 2026-10-23. Only falls. */

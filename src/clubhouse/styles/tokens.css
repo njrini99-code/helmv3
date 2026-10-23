@@ -283,15 +283,15 @@
   --ch-wdth-dense: 'wdth' 88;
   /* Named roles. The large title (34, wdth 88, 600); the bar title, pushed and at a tab's root alike (17/600, as iOS);
      the desktop hero (52, every section including Rounds); the section header; the card title. */
-  --ch-type-large-title: var(--ch-type-34-strong);
+  --ch-type-large-title: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-large-title: -0.038em;
-  --ch-type-bar-title: var(--ch-type-17-strong);
+  --ch-type-bar-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-bar-title: var(--ch-track-17);
   --ch-type-hero: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-sans);
   --ch-track-hero: -0.01em;
-  --ch-type-section: var(--ch-type-20-strong);
+  --ch-type-section: 600 calc(20 * var(--ch-type-k))/calc(25 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-section: var(--ch-track-20);
-  --ch-type-card-title: var(--ch-type-17-strong);
+  --ch-type-card-title: 600 calc(17 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-track-card-title: var(--ch-track-17);
 
   /* Space and layout */

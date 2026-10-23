@@ -4,7 +4,7 @@
 
 ```text
 Design package: none (Clubhouse A+ handoff, section 6, B1)
-PR/commit: Phase 2 draft PR
+PR/commit: #2361
 Contract IDs: none
 Actions: none
 Data impact: none

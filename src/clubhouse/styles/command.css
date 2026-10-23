@@ -121,7 +121,7 @@
   padding: 0;
   background: transparent;
   color: var(--ch-text-primary);
-  font: 500 calc(16 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  font: var(--ch-type-16-medium);
 }
 .ch-root .ch-cmd-input:focus-visible {
   /* The field's own rule below it is the focus mark (the page's ring would box the input inside the field). */
@@ -142,7 +142,7 @@
 .ch-cmd [cmdk-group-heading] {
   padding: 10px 10px 4px;
   color: var(--ch-text-secondary);
-  font: 600 calc(13 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-strong);
 }
 .ch-cmd-item {
   display: flex;
@@ -152,7 +152,7 @@
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
   color: var(--ch-text-primary);
-  font: 500 calc(14 * var(--ch-type-k)) / 1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   cursor: pointer;
   scroll-margin: 6px;
 }
@@ -223,7 +223,7 @@
 .ch-cmd-sheet h3 {
   margin: 0 0 4px;
   color: var(--ch-text-primary);
-  font: 600 calc(14 * var(--ch-type-k)) / 1.3 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
 }
 .ch-cmd-rows {
   display: grid;

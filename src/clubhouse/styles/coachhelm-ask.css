@@ -34,7 +34,8 @@
   height: 36px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: 1;
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
 }
@@ -79,7 +80,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font: 500 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
   color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -119,7 +120,7 @@
 }
 .ch-ask-foot {
   margin: 0;
-  font: 400 calc(12 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-12);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
@@ -211,7 +212,7 @@
   padding: 0 4px 0 8px;
 }
 .ch-ask-hist__head b {
-  font: 600 calc(15 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
   letter-spacing: -0.01em;
 }
 .ch-ask-hist__iconbtn {
@@ -246,7 +247,8 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: 1;
   color: var(--ch-text-primary);
   cursor: pointer;
 }
@@ -276,7 +278,7 @@
 .ch-ask-hist__group {
   margin: 0;
   padding: 10px 10px 6px;
-  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
 /* A block, not a flex row: an ellipsis on a flex container cuts a long title mid-letter. The line height centres it. */
@@ -309,7 +311,7 @@
 .ch-ask-hist__nomatch {
   margin: 0;
   padding: 10px;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-hist__empty {
@@ -318,12 +320,12 @@
   align-items: center;
   gap: 8px;
   padding: 48px 20px;
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
 }
 .ch-ask-hist__empty b {
-  font: 600 calc(16 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-16-strong);
   color: var(--ch-text-primary);
 }
 .ch-ask-hist__emptyic {
@@ -343,7 +345,8 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
-  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-strong);
+  line-height: 1;
   color: var(--ch-green-600);
   cursor: pointer;
 }
@@ -373,7 +376,7 @@
 }
 .ch-ask-greet p {
   margin: 0;
-  font: 400 calc(15 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-15);
   color: var(--ch-text-secondary);
 }
 .ch-ask-pills {
@@ -392,7 +395,7 @@
   border-radius: 999px;
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
-  font: 400 calc(14 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   cursor: pointer;
   transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -426,11 +429,11 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
 .ch-ask-nothing__t b {
-  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: var(--ch-type-15-strong);
   color: var(--ch-text-primary);
 }
 
@@ -459,7 +462,7 @@
 }
 .ch-ask-state__alt {
   margin: 0;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -511,7 +514,7 @@
   outline: 0;
   background: none;
   resize: none;
-  font: 400 calc(16 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: var(--ch-type-16);
   color: var(--ch-text-primary);
 }
 .ch-ask-cmp__ta::placeholder {
@@ -554,7 +557,8 @@
   border-radius: 999px;
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
-  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: var(--ch-type-14-medium);
+  line-height: 1;
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -592,7 +596,7 @@
 }
 .ch-ask-cmp__note {
   margin: 8px 0 0;
-  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-secondary);
   text-align: center;
 }
@@ -685,7 +689,7 @@
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
   padding: 10px 10px 4px;
-  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
 .ch-ask-pick [cmdk-group] + [cmdk-group] {
@@ -700,7 +704,7 @@
   min-height: 44px;
   padding: 0 10px;
   border-radius: var(--ch-radius-md);
-  font: 400 calc(15 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: var(--ch-type-15);
   color: var(--ch-text-primary);
   cursor: pointer;
   user-select: none;
@@ -736,7 +740,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 10px;
-  font: 400 calc(14 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 
@@ -954,18 +958,19 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     outline-offset: -2px;
   }
   .ch-ask-card b {
-    font: 600 calc(16 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+    font: var(--ch-type-16-strong);
     letter-spacing: -0.012em;
     color: var(--ch-green-700);
   }
   .ch-ask-card span {
-    font: 400 calc(13 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+    font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
   .ch-ask-ph__title {
     min-width: 0;
     overflow: hidden;
-    font: 600 calc(16 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: var(--ch-type-16-strong);
+    line-height: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1155,6 +1160,6 @@ html:not([data-fw-theme='dark']) .ch-ask {
 /* Who Ask's answers cover, under the openers (the findings block moved to the Board's header line, D4). */
 .ch-ask-cov {
   max-width: 64ch;
-  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }

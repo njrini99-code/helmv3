@@ -4,7 +4,7 @@
 
 ```text
 Design package: none (Clubhouse A+ handoff, section 6, B1)
-PR/commit: Phase 2 draft PR
+PR/commit: #2361
 Contract IDs: none
 Actions: none
 Data impact: none
@@ -40,3 +40,40 @@ Held items: the screen-by-screen move onto the roles (owner sees each)
   one bar title, one hero. `clubhouse:css` 0. WebKit before and after on
   track, home, player and qualifier at 390, and rounds and home at 1280
   (screenshots in the store); the differences are a pixel or two.
+
+## 2026-10-23 — Every screen onto the type roles (B1, stage 2)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 6, B1)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- `scripts/clubhouse/type-roles.mjs` (dry run by default) moved 1,096 step
+  sized `font:` declarations onto the roles across every Clubhouse
+  stylesheet except the sign-in pages: Settings first as the pilot (67), then
+  the rest (1,029). New 500 `-medium` roles mean no weight changed.
+- Wrapped text takes the role's leading (Apple's: 13/18, 15/20, 17/22);
+  single-line text (368 declarations at a leading of 1.15 or less) keeps its
+  line height on the next line, so pills, tabs and figures don't move.
+- Left as written (695, ratcheted): pixel sizes kept fixed on purpose, sizes
+  off the steps (large figures), 700, and the sign-in pages.
+- The named roles are written out in full, so the Dynamic Type test still
+  sees every type token scale from `--ch-type-k`.
+
+### Why
+
+- One size, one leading: the same step reads the same on every screen.
+
+### Verification
+
+- WebKit before and after, full page, on all 39 preview screens at 390 and
+  1280 (148 shots in the store). No page changed width; phone pages moved by
+  −89 to +26px, from leading only (CoachHelm views and Hub checked by eye).
+  `npx vitest run src/clubhouse`: 342 files, 5,618 passed. `clubhouse:css`
+  0.
