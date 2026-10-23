@@ -730,8 +730,13 @@ before.
   counted at load; an untagged miss (stored, or skipped this session) joins
   the engine's coverage population, so the target is recomputed
   (`askTarget`) and Skip never closes the ask below 60%.
-- Clubhouse round entry does not show it yet (Clubhouse is off in
-  production).
+- Clubhouse (2026-10-22, CH-11960): the round-new and round-continue routes
+  load the same asks; `useChPuttPrompt` (`src/clubhouse/screens/rounds/track/
+  use-data-prompts.ts`) over the same `askForShot` rules feeds `PuttMissPrompt`
+  first inside the shot entry card ("Which side did it miss?", Short · Long ·
+  High side · Low side, the counter, Skip), writing through the same
+  `handleTagPuttMiss`. It shows on the entry screen only, not on the
+  completed-hole review.
 
 ## Recovery tap and course nudge (CoachHelm Slice 8b, added 2026-10-21)
 
@@ -783,8 +788,14 @@ recovery.ts` (pure).
   course id, every one with a typed course name; 30 of 521 completed. Tee
   shots ending `rough` 2,242 and `other` 387 (the recovery tap's
   population).
-- Clubhouse round entry does not show either yet (Clubhouse is off in
-  production).
+- Clubhouse (2026-10-22): the routes read the flag the same way.
+  `useChRecoveryPrompt` (over `isRecoveryCandidate`) feeds `RecoveryPrompt`
+  (CH-11961) in the shot entry card through `handleTagRecovery`;
+  `useChCourseNudge` (owned by `NewRound` / `ContinueRound`, which set
+  `resolvedCourseIdRef` / `linkedCourseIdRef`) feeds `CourseNudge` (CH-11962)
+  at the round's start (`isRoundStartMoment`) and in the Round complete
+  sheet's `notice` slot. Its picker lists library courses only (a saved
+  course with no library course is left out) and offers no Add.
 
 ## Held saves, idempotent discard, missing parent (swap audit, 2026-09-30)
 

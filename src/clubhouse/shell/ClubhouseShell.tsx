@@ -16,6 +16,8 @@ import { useWarmInbox } from "./use-warm-inbox";
 import { OfflineSync } from "./OfflineSync";
 import { DeepLinks } from "./DeepLinks";
 import { ChPhoneHintProvider } from "../lib/use-phone";
+import { ChClockProvider } from "../lib/use-clock";
+import type { ChClock } from "../lib/clock-cookie";
 
 /**
  * The live Clubhouse shell: the non-UI providers pages rely on (golf user,
@@ -29,6 +31,7 @@ export function ClubhouseShell({
   shell,
   phone = false,
   folded = false,
+  clock = "12",
   children,
 }: {
   userData: GolfUserData;
@@ -37,27 +40,31 @@ export function ClubhouseShell({
   phone?: boolean;
   /** The sidebar folded to its icon rail, from the server's cookie, so a reload draws the rail first (RailToggle). */
   folded?: boolean;
+  /** The clock this device reads times in, from the server's cookie, so a 24-hour device's first frame is in 24 hours (Settings › Time format). */
+  clock?: ChClock;
   children: ReactNode;
 }) {
   // Nothing here reads the address (ShellFrame does), so a navigation doesn't render this again (the animation
   // features' provider below must not render again: ChMotionFeatures in ClubhouseFrame.tsx).
   return (
     <ChPhoneHintProvider phone={phone}>
-      <SessionActivityProvider>
-        <NativeSwipeBackBridge />
-        <ThemeApplier />
-        <OfflineSync />
-        <DeepLinks />
-        <GolfUserProvider userData={userData}>
-          <NotificationBadgeProvider>
-            <ChMotionFeatures>
-              <ShellFrame userData={userData} shell={shell} folded={folded}>
-                {children}
-              </ShellFrame>
-            </ChMotionFeatures>
-          </NotificationBadgeProvider>
-        </GolfUserProvider>
-      </SessionActivityProvider>
+      <ChClockProvider clock={clock}>
+        <SessionActivityProvider>
+          <NativeSwipeBackBridge />
+          <ThemeApplier />
+          <OfflineSync />
+          <DeepLinks />
+          <GolfUserProvider userData={userData}>
+            <NotificationBadgeProvider>
+              <ChMotionFeatures>
+                <ShellFrame userData={userData} shell={shell} folded={folded}>
+                  {children}
+                </ShellFrame>
+              </ChMotionFeatures>
+            </NotificationBadgeProvider>
+          </GolfUserProvider>
+        </SessionActivityProvider>
+      </ChClockProvider>
     </ChPhoneHintProvider>
   );
 }

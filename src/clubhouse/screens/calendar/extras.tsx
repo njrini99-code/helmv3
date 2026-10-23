@@ -24,6 +24,7 @@ import { isOffline, normalise, useAction } from '../../lib/use-action';
 import { chReport } from '../../lib/track';
 import { newRequestId } from '../../data/recruiting-shape';
 import { haptic } from '../../lib/haptics';
+import { useChClock } from '../../lib/use-clock';
 import { addDays, dayLabel, dayNum, dowOf, monthName, rangeLabel, type ChCalEvent } from './model';
 import type { ChNow } from './views';
 
@@ -43,6 +44,7 @@ function fileSize(b: number | null) {
 /* The coach's own busy time */
 
 export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalEvent; now: ChNow; zoneLabel: string; onBack: () => void; onDeleted: () => void }) {
+  const clock = useChClock();
   const [confirm, setConfirm] = useState(false);
   // Closing the question and leaving the block's panel follow a landed remove inside the action, so the toast's Retry does them too.
   const remove = useAction(
@@ -81,7 +83,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
           <div>
             {dayLabel(e.date, now.date)}
             <br />
-            <span className="ch-num">{rangeLabel(e)}</span>
+            <span className="ch-num">{rangeLabel(e, clock)}</span>
             {!e.allDay && ` · ${zoneLabel}`}
           </div>
         </div>

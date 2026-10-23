@@ -36,6 +36,118 @@ This is not a substitute for `public.audit_log` (which exists, has the right
 schema, and has never been written to) — that covers privileged *runtime*
 actions. This covers a decision that leaves no runtime trace at all.
 
+## Apply queue (read-only plan, 2026-10-22)
+
+Built from this register, the production ledger (`list_migrations`, read-only,
+2026-10-22: 439 files on main, 45 with no ledger row) and `git merge-base`
+against the commit production serves (`d0f467a73`, 56 commits behind `main`
+`fada94fac`). Nothing here was applied. Owner approves one file at a time; the
+rows below stay HOLD until the owner's go.
+
+**Workflow input for every file** (`db-apply`, run from `main`): `migration` =
+the file name; `mode` = `dry-run` first, read the printed plan, then `apply`;
+`allow_out_of_order` = ticked, because the 45 older unapplied files below keep
+the ORDER GUARD pending and each stays unapplied; `held_override` = the file
+name (free text, the row anchor) and `reason` = one line quoting the owner's
+approval, because the row is still HOLD. The `-- VERIFY:` queries run after the
+apply and each must return a row. After an apply, update the row to APPLIED and
+run `npm run db:types` only where the file says so.
+
+### Tier 1: no deploy needed, apply one at a time
+
+- **Step 1.** `20261001000000_submit_round_expected_updated_at.sql` (QUEUE doc-31, #2189).
+   Adds the stale-device check inside `submit_round_atomic`; a missing
+   `expected_updated_at` key skips it. App side is live (#2189 is in the served
+   release). Low to medium risk (one function body, anchor found once in the
+   live body, md5 `c522e4cd…`). Rollback: `supabase/rollbacks/20261001000000_submit_round_expected_updated_at.rollback.sql`. Needs the
+   owner's review before apply.
+- **Step 2.** `20261017110000_golf_round_totals_null_putts.sql` (no QUEUE row; Fairway
+   rounds audit). `recompute_golf_round_totals` stops treating a missing putt
+   count as zero. Production effect: 0 of 757 completed rounds change; 27 of 54
+   in-progress rounds go from 0 putts to NULL on their next hole write. Low
+   risk. Rollback in the file header (`-- ROLLBACK:`, the live body). Order:
+   never apply `20260708141000` after it (that draft reverts this fix), so
+   retire or rewrite `20260708141000` in the same decision (see "Not
+   applyable").
+- **Step 3.** `20261017102000_golf_event_attendance_players_own_rows.sql` (QUEUE doc-32 and
+   pr-10, #2201). Players read only their own RSVP row; counts come from the new
+   `golf_event_attendance_counts`. The readers that call it
+   (`attendance-counts.ts`, Fairway `getEventRSVP`) are in the served release,
+   so no deploy is needed first. Medium risk. **Visible change on live
+   Fairway:** a player no longer sees teammates' names and replies in the event
+   drawer; the owner decides that with the apply. Rollback in the file header.
+- **Step 4.** `20261005120000_golf_shot_tables_hardening.sql` (no QUEUE row). Revokes
+   `anon` on six golf tables, revokes EXECUTE on two functions, drops two
+   redundant `golf_shots` indexes (3 s lock timeout). Low to medium risk; no
+   live code path uses the revoked access; pgTAP 28 of 28 on 2026-10-07.
+   Rollback in the file header. Independent of item 5 and of the last item.
+- **Step 5.** `20261007100000_golf_rls_helpers_sql_language.sql` (no QUEUE row). Rewrites
+   the five team-membership RLS helpers as SQL functions and pins
+   `search_path`. Medium risk: every RLS policy calls these. Needs `npm run
+   test:rls` and a reviewer pass first. Rollback file exists but predates
+   `20260929200000` (applied 10-21): re-pin `is_team_coach` / `is_team_player`
+   to `public, pg_temp` after a rollback, or re-capture first.
+
+### Tier 2: owner sees numbers move first
+
+- **Step 6.** `20260930150000_golf_sg_penalty_charged_to_earning_shot.sql` (QUEUE chs-62 and
+   doc-34). Strokes-gained penalty and shot-end rules; `is_test` rounds store
+   NULL strokes gained. Owner approved the rule 2026-09-30; applying is a
+   separate go after the before/after numbers in
+   `docs/operations/2026-09-30-sg-penalty-and-shot-end-before-after.md`. Medium
+   risk, data-moving: after apply run the batched recompute block in the file
+   header, then refresh player caches and Standing for all teams. The DO guard
+   refuses unless the live bodies match md5 `7f8fc142…` and `a51718c1…`.
+   Rollback file exists. Independent of the OD-01 chain.
+- **Step 7.** The OD-01 chain, one session, in this order: `20260924120000_golf_countable_round_stats_cache.sql`, then `20260924140000_golf_standing_pressure_gap_parity.sql`, then `20260925120000_golf_standing_team_pct_floor_5.sql`, then
+   `20260928120000_golf_putt_make_pct_countable_non_test.sql`, then
+   `20260928150000_golf_stats_cache_exclude_test_rounds.sql`; then the cache and
+   Standing refreshes in the first file's header (QUEUE chs-62 and doc-34).
+   Changes every cached golf average, best round, SG and pressure-gap figure
+   at once (the 37-stroke round drops out; 10 team percentiles go NULL). Medium
+   to high risk for what Nick sees, not for the schema. Each file's DO guard
+   refuses to run if the live function bodies differ from the md5s in its row, so
+   a mismatch fails closed. No rollback capture files exist: capture the four
+   live bodies (md5s are in the first row) before step one. The owner's
+   decision, per OD-01 and Q-128, is the gate; do not split the chain.
+
+### Tier 3: needs a deploy first
+
+- **Step 8.** `20261017005000_golf_players_select_drop_teammate_branch.sql` (QUEUE doc-33
+   and pr-09, #2269 / #2275 / #2276). A player can read only their own
+   `golf_players` row. Prerequisite: a deploy that carries `main`'s reads
+   through `golf_player_profiles` (`d86aa917` for #2269 and `45906c55` for
+   #2276 are on `main` and not in the served release), then this file. Medium
+   to high risk if applied early (teammate reads fail). Rollback SQL in the
+   file header. Owner deploys; the apply waits for it.
+
+### Last, highest risk
+
+- **Step 9.** `20261007102000_revoke_anon_public_table_grants.sql` (no QUEUE row). Removes
+   every `anon` privilege in `public` except the landing-page demo insert and
+   three public views (810 grants live on 2026-10-11). Needs a full anon-path
+   audit, `test:rls` and owner sign-off. Re-capture the ACL rollback snapshot
+   right before apply (it predates `20260929200000`, `20261005120000` and the
+   10-21 applies). Apply after item 4.
+
+### Not applyable as written (retire or rewrite, owner decides)
+
+- `20260708141000_gate_secdef_ownership_and_redemption.sql`: unfinished draft;
+  its guard breaks service_role writes and it would revert item 2. Rewrite as
+  a new migration on item 2's body, or mark OBSOLETE.
+- `20260715141727_baseball_legacy_stats_backfill.sql`: baseball seed data
+  nobody uses; recommend OBSOLETE.
+- `20260903150000_helm_debug_agent_runs.sql`: R3, `db-migration-reviewer` not
+  yet run; the writer is fail-open, so nothing waits on it.
+- `20260905091000_baseball_timeline_event_acks_user_id_columns.sql`: superseded
+  by `20260923000000`; already marked.
+- OBSOLETE, never apply or stamp: `20260528011000`, `20260928160000`.
+- No ledger row and not "held" but unresolved in the reconciliation tables
+  below (read the row, check live state read-only, then close it):
+  `20260621170000`, `20260623131038`, `20260625000080`, `20260730020000`,
+  `20260730030000`, `20260825222432`. The other older files without a ledger row
+  are recorded APPLIED-ELSEWHERE.
+
 ## The register
 
 | migration | status | why | decided |
@@ -79,7 +191,7 @@ actions. This covers a decision that leaves no runtime trace at all.
 | `20261008160000_golf_conversation_hidden_at.sql` | **APPLIED 2026-10-21 — hold discharged (db-apply workflow, held_override; ledger row verified 03:12Z; production rollout ledger)** | Written 2026-10-08 for Clubhouse Messages "Delete conversation" (owner request; per-person hide). Adds one nullable column, `golf_conversation_participants.hidden_at` (no default, no backfill), and re-creates `get_golf_conversations_with_details` with one extra WHERE (skip a hidden conversation unless a message arrived after `hidden_at`); owner, SECURITY DEFINER, `search_path` and grants kept as live. RLS unchanged: `golf_participants_update` (own row) already covers the column. Nothing depends on it before it is applied: the Clubhouse offers the action only when a probe of the column succeeds and the server action answers "not available yet" otherwise. Held awaiting the owner's apply; then run `npm run db:types` and drop the casts in `conversation-hide.ts`. | 2026-10-08, applied 2026-10-21 |
 | `20261007100000_golf_rls_helpers_sql_language.sql` | **HOLD** | Plan phase 6 item 6.1: rewrites the five team-membership RLS helpers as SQL-language functions and pins `search_path`. Checked 2026-10-11 against production: no ledger row, and `is_golf_team_coach` is still `plpgsql`, so not applied under any stamp. Overlaps `20260929200000` on the `is_team_coach` / `is_team_player` `pg_temp` pin: apply in filename order (after `20260929200000`), since the later file wins and this file's VERIFY expects `pg_catalog, public, pg_temp`. Rollback capture: `supabase/rollbacks/20261007100000_golf_rls_helpers_sql_language.rollback.sql` (the five live plpgsql bodies, verbatim, read-only 2026-10-12). It predates `20260929200000`: if that file is live, re-pin `is_team_coach` / `is_team_player` to `public, pg_temp` after the rollback, or re-capture before applying (the file says how). Needs `test:rls` and a reviewer pass before apply. | 2026-10-11, re-checked 2026-10-12 |
 | `20261007101000_golf_holes_shots_policy_consolidation.sql` | **VERIFIED APPLIED** | Ledger row `20261007101000` present in production (checked 2026-10-11). The file header still says "WRITTEN, NOT APPLIED"; the header is stale, the ledger is right. Applied files are not edited (`block-historical-edits`). | 2026-10-11 |
-| `20261007102000_revoke_anon_public_table_grants.sql` | **HOLD** | Plan phase 6 item 6.4: removes every `anon` privilege in `public` except the landing-page demo insert and three public views. Highest-risk file of the batch (810 anon table grants live on 2026-10-11); RLS already gives anon zero rows, so this is defense in depth. Not applied (no ledger row). Needs a full anon-path audit, `test:rls` and owner sign-off. The rollback is now an exact ACL snapshot, `supabase/rollbacks/20261007102000_revoke_anon_public_table_grants.rollback.sql` (119 relations re-granted exactly as live, plus the postgres default ACLs; read-only capture 2026-10-12), not `GRANT ALL ON ALL TABLES ... TO anon`. Re-capture it right before applying: the snapshot predates `20260929200000` and `20261005120000`, which revoke anon on nine of those tables, so run as captured it would re-grant them. | 2026-10-11, re-checked 2026-10-12 |
+| `20261007102000_revoke_anon_public_table_grants.sql` | **HOLD** | Plan phase 6 item 6.4: removes every `anon` privilege in `public` except the landing-page demo insert and three public views. Highest-risk file of the batch (810 anon table grants live on 2026-10-11); RLS already gives anon zero rows, so this is defense in depth. Not applied (no ledger row). Needs a full anon-path audit, `test:rls` and owner sign-off. The rollback is now an exact ACL snapshot, `supabase/rollbacks/20261007102000_revoke_anon_public_table_grants.rollback.sql` (119 relations re-granted exactly as live, plus the postgres default ACLs; read-only capture 2026-10-12), not `GRANT ALL ON ALL TABLES ... TO anon`. Re-capture it right before applying: the snapshot predates `20260929200000` and `20261005120000`, which revoke anon on nine of those tables, so run as captured it would re-grant them. **Health probe dependency (found 2026-10-23):** `/api/health` read `users` through the cookie client, which is `anon` for monitors and `scripts/warm-edge.ts`, so this revoke would have turned every signed-out probe into a 503 and an admin_events warning a minute. The probe now reads `organizations_public_profile`, which keeps its anon grant here; ship that change before applying this file. | 2026-10-11, re-checked 2026-10-12 |
 | `20261007103000_document_public_profile_views_definer.sql` | **APPLIED 2026-10-21 — hold discharged (db-apply workflow, held_override; ledger row verified 02:52Z; production rollout ledger)** | Plan phase 6 item 6.5: view comments only. Not applied (no ledger row). Safe; apply with the rest of the batch. | 2026-10-11, applied 2026-10-21 |
 | `20261007104000_wrap_auth_uid_in_seven_policies.sql` | **APPLIED 2026-10-21 — hold discharged (db-apply workflow, held_override; verified 03:03Z; production rollout ledger)** | Plan phase 6 item 6.5: wraps `auth.uid()` in seven policies (performance). Not applied (no ledger row). Low risk; `test:rls` before apply. Amended 2026-10-12: `SET LOCAL lock_timeout = '3s'` before the ALTER POLICY statements (ACCESS EXCLUSIVE on `golf_rounds` and `baseball_players`). | 2026-10-11, amended 2026-10-12, applied 2026-10-21 |
 | `20261007105000_add_missing_foreign_key_indexes.sql` | **APPLIED 2026-10-21 — hold discharged (db-apply workflow, held_override; verified 03:03Z; production rollout ledger)** | Plan phase 6 item 6.5: 11 foreign-key indexes. Not applied (no ledger row; none of its indexes exist on 2026-10-11). Low risk. | 2026-10-11, applied 2026-10-21 |
@@ -105,6 +217,7 @@ actions. This covers a decision that leaves no runtime trace at all.
 | `20261017005000_golf_players_select_drop_teammate_branch.sql` | **HOLD — DO NOT APPLY YET** | Written 2026-10-16 (security review S4, step 2 of 2), recovered 2026-10-21. Drops the teammate branch from `golf_players_select`, so a player can read only their own `golf_players` row (coaches, pending-join coaches and admins unchanged). **Order**: `20261017004000` (APPLIED 2026-10-21), the app that reads teammates through `golf_player_profiles` deployed, then this. **Audit done 2026-10-21** (`docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md`): 137 reviewed sites on main, two moved to the helper (`getTeamComparisonImpl`, `getGolfPlayerUserIdImpl`), the rest are coach-gated, own-row, admin or benign. Before applying, deploy the app that carries those two reads (this PR); the helper's table fallback is own-row only after this migration. pgTAP: `supabase/tests/rls/golf_player_profiles_teammate_scope.sql`. Rollback SQL is in the file's header. | 2026-10-21 |
 | `20261021110000_golf_import_player_classes.sql` | **APPLIED 2026-10-22 — hold discharged** | Written 2026-10-21 (Clubhouse P012 Classes, audit doc-61). The Clubhouse class import reads a player's classes, filters the reviewed rows in the browser, then inserts; `golf_player_classes` has no uniqueness beyond its id, so two imports in flight at once (two tabs or devices) both insert every class and the calendar doubles. Adds `public.golf_import_player_classes(uuid, uuid, text, jsonb)`: SECURITY INVOKER (the caller's RLS still decides), EXECUTE to `authenticated` only, one per-player advisory lock, then read-and-insert in one transaction; answers with what it saved, skipped and matched. No table, index or policy changes, and deliberately no unique index (a lecture and its lab may share a name). Read live 2026-10-21: no function of that name, 0 duplicate groups in 56 rows. Risk: LOW (a new function). If applied wrongly: the call errors and the app falls back to its read-then-insert path (PGRST202 only; any other error is shown). Rollback SQL: `supabase/rollbacks/20261021110000_golf_import_player_classes.rollback.sql` (drop function). pgTAP: `supabase/tests/rls/golf_import_player_classes.sql`. Production rollout applies after the freeze; the app side ships first and works either way. **Applied 2026-10-22** (owner: "apply whatever migrations, test them first") via `npm run db:apply -- --held-override`, after pgTAP 112/112 on a fresh local stack and a db-migration-reviewer pass; ledger row present and the post-apply check passed (`golf_import_player_classes` is SECURITY INVOKER, `anon` cannot execute, `authenticated` can, `search_path=public, pg_temp`). | 2026-10-22 |
 | `20261022090000_golf_player_availability_coach_notes.sql` | **APPLIED 2026-10-22 — hold discharged** | Written 2026-10-22 (Clubhouse roster availability, coach-only reason). One new table `golf_player_availability_coach_notes` (team_id, player_id, note 1 to 280 characters, updated_by, updated_at; primary key team_id + player_id) with RLS that admits only a coach of the team (`is_golf_team_coach`) for select, insert, update and delete; no policy for players or teammates, anon and PUBLIC revoked. Exists because `golf_team_members.availability_note` is readable by teammates (`golf_team_members_select_v5`), so a reason cannot live there. **Additive, no data, no existing table or policy touched; risk low.** **Order**: none. The app reads the table through `loadAvailabilityNotes` and writes it through `setPlayerAvailabilityCoachNote`; a missing table (`42P01` / `PGRST205`) reads as notes not available and the Roster draws no note field, so the app may ship before or after this apply and the field appears by itself once the table exists. **Rollback**: `drop table if exists public.golf_player_availability_coach_notes;` (loses only the notes; availability words stay on `golf_team_members`). After applying: run `npm run db:types` (the table is read untyped until then) and `npm run test:rls` (pgTAP `supabase/tests/rls/golf_player_availability_coach_notes.sql`, written but unrun where authored: no Docker). Plan: `docs/clubhouse/held/data/roster-availability-note.md`. 2026-10-22: tested on a fresh local stack (pgTAP 112/112, including this file's 12); review added an index on `updated_by` and a 3s `lock_timeout` (the `auth.users` reference locks that table for the transaction). Apply after this file lands on main. **Applied 2026-10-22** (owner: "apply whatever migrations, test them first") via `npm run db:apply -- --held-override` after it landed in #2326; ledger row present and all four VERIFY checks passed (table exists, RLS on, coach-only policies, `updated_by` index); `database.ts` regenerated. | 2026-10-22 |
+| `20261023130000_anon_surface_grants.sql` | **HOLD** | Written 2026-10-23 from a read-only permissions review of Helm-Production. Grants only, no function body, table or data change. (1) Revokes every grant `anon` and `authenticated` still hold on the 32 tables in schema `graveyard` (ALL to authenticated on 32, ALL to anon on 6; the schema itself already has no USAGE for either since `20260704090000`, so nothing reads them); clears 38 GraphQL exposure findings for retired tables. (2) Removes `anon` from the postgres default EXECUTE on new functions in `public`. The built-in PUBLIC EXECUTE stays: a global revoke would also strip extension functions postgres installs in `extensions` and `pgmq`. New pgTAP `supabase/tests/rls/anon_surface_guard.sql` fails if any SECURITY DEFINER function in `public` becomes anon-executable (0 live today), if a graveyard grant comes back, or if the anon default returns; written, not run here (no Docker). **Risk low. Order**: independent of every other held file, including the Clubhouse function migrations (grants only; `CREATE OR REPLACE` keeps ACLs). **Rollback**: `supabase/rollbacks/20261023130000_anon_surface_grants.rollback.sql` (exact grants captured live 2026-10-23). **Renamed 2026-10-23** from `20261023100000` so it sorts after `20261023110000` (applied ahead of it, #2350) and `db-apply` needs no out-of-order override; the content is unchanged. Owner applies. | 2026-10-23 |
 | `20261023170000_golf_sg_other_lie_curve.sql` | **HOLD** | Strokes gained prices the logger's 'Other' lie (trees, pine straw, waste, hazard edges) as fairway: `sg_normalize_lie` sends it to 'fairway'. Production read-only 2026-10-23: strokes taken over the Tour curve average +0.2 to +0.3 from fairway and rough at every distance, but 'other' runs about +0.4 more from 100 yd out and matches rough inside 50 yd. Changes: (1) `sg_normalize_lie` keeps 'other' and 'recovery'; (2) both `sg_expected_strokes` overloads price 'other' on the rough curve to 50 yd, halfway between rough and Broadie's recovery curve (Interfaces 2012, Appendix A, Table 9) from 100 yd, a straight blend between, and price 'recovery' on Broadie's recovery curve; (3) `recalculate_round_strokes_gained` and `calculate_round_strokes_gained` (Q-89 bodies plus a lateral) start a shot from 'recovery', and end the shot before it there, only when the player tapped "blocked" (`golf_shots.lie_after_recovery`, all NULL today, flag `coachhelm_data_prompts_v2` off). Holes still telescope. 'water' and unknown lies keep the fairway curve. **Apply after `20260930150000` (Q-89)**: the DO guard checks the three live md5s, both Q-89 round-function md5s and the `lie_after_recovery` column. TS mirror (`STROKES_GAINED_BENCHMARKS.other`/`.recovery`, `withRecoveryStart`) ships in the same PR. Rollback capture restores all five bodies: `supabase/rollbacks/20261023170000_golf_sg_other_lie_curve.rollback.sql`. Replayed on scratch Postgres 16: guard refuses before Q-89 and on a second apply, all four VERIFY rows pass, a synthetic blocked drive matches the TS engine, rollback restores all five md5s. Read-only replay on 819 rounds: totals unchanged on 810 (same count as the earlier curve), category split moves on 530, at most 3.18 strokes per round. After apply, run the RECOMPUTE block in `20260930150000`'s header (once, after both files). Owner applies. | 2026-10-23 |
 
 ## Why `20260528011000` is obsolete rather than pending

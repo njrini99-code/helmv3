@@ -3,6 +3,7 @@
 import { CalendarDays, MessageSquare, Navigation } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Icon } from '../../ui/Icon';
+import { useChClock } from '../../lib/use-clock';
 import { PeekTarget, type PeekAction } from '../../ui/Peek';
 import { rebuiltHref } from '../../shell/nav';
 import { messagesPrefillHref } from '../messages/prefill';
@@ -19,6 +20,7 @@ const OFF_SITE = new Set(['qualifier', 'tournament', 'travel']);
 export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<string, ChCalPerson>, onOpen: () => void): PeekAction[] {
   // An event that doesn't ask for replies has no one to nudge (owner, 2026-10-08).
   const waiting = coach && e.rsvpRequired ? e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending') : [];
+  // The nudge is a message to the players, so its time is written in the app's own voice (12 hours), not this device's clock.
   const when = e.allDay ? `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)}` : `${dowOf(e.date)} ${dayNum(e.date)} ${monthName(e.date)} at ${fmtHour(e.start!)}`;
   const href = waiting.length ? messagesPrefillHref({ players: waiting, draft: `Can you let me know if you’re coming to ${e.title} (${when})? You can reply on the event in Calendar.`, title: e.title }) : null;
   const nudge = href ? rebuiltHref(href) : null;
@@ -31,6 +33,7 @@ export function eventPeekActions(e: ChCalEvent, coach: boolean, people: Map<stri
 }
 
 export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: boolean; people: Map<string, ChCalPerson> }) {
+  const clock = useChClock();
   const counts = { accepted: 0, maybe: 0, declined: 0, pending: 0 };
   for (const p of e.people) counts[(e.rsvp[p] ?? 'pending') as keyof typeof counts] += 1;
   const waiting = e.people.filter((p) => (e.rsvp[p] ?? 'pending') === 'pending').map((p) => people.get(p)?.name.split(' ')[0]).filter(Boolean);
@@ -42,7 +45,7 @@ export function EventPeekCard({ e, coach, people }: { e: ChCalEvent; coach: bool
       </span>
       <b className="ch-evpeek__t">{e.title}</b>
       <span className="ch-evpeek__m ch-num">
-        {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e)}
+        {dowOf(e.date)} {dayNum(e.date)} {monthName(e.date)} · {rangeLabel(e, clock)}
       </span>
       {e.location && <span className="ch-evpeek__m">{e.location}</span>}
       {coach && e.people.length > 0 && !e.rsvpRequired && (

@@ -159,6 +159,9 @@ describe('buildCoursePlan', () => {
     expect(plan.coach.thinLine).toBe('3 rounds is a thin history; treat this as a reminder, not a read.');
     expect(plan.coach.title).toBe('Course plan: Pine Hollow · from 3 rounds here');
     expect(plan.player.title).toBe('At Pine Hollow');
+    // chs-21: the player's own copy carries the thin line in their voice, and no empty line while it has lines.
+    expect(plan.player.thinLine).toBe('From your 3 rounds here, so take it as a reminder, not a read.');
+    expect(plan.player.emptyLine).toBeNull();
   });
 
   it('drops the thin line from six rounds and never uses a ladder word', () => {
@@ -167,6 +170,7 @@ describe('buildCoursePlan', () => {
     if (plan.status !== 'plan') throw new Error('expected a plan');
     expect(plan.thin).toBe(false);
     expect(plan.coach.thinLine).toBeNull();
+    expect(plan.player.thinLine).toBeNull();
     for (const text of [plan.coach.title, ...plan.coach.lines, ...plan.player.lines]) {
       expect(text).not.toMatch(/\b(likely|confirmed|emerging|possible|probable)\b/i);
     }
@@ -178,6 +182,7 @@ describe('buildCoursePlan', () => {
     expect(plan.lines).toEqual([]);
     expect(plan.coach.lines).toEqual(['Nothing here costs a stroke a round yet across 3 rounds: no hole, par 3 or green stands out.']);
     expect(plan.player.lines).toEqual([]);
+    expect(plan.player.emptyLine).toBe('Nothing here has cost you a stroke a round yet across your 3 rounds.');
   });
 });
 

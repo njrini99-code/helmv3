@@ -42,7 +42,9 @@ and its consumer before copying a pattern; comments may describe older values.
 - Routine route change: `shell/RouteFrame.tsx`, `styles/shell.css`,
   `lib/reduced-motion.ts` and `lib/motion.ts`. Content is visible immediately.
   Preserve the whole-page crossfade with anchored chrome and Back/Forward
-  scroll restoration. There is no routine first-paint stagger.
+  scroll restoration. A section switch (a tab bar or sidebar item, marked
+  `data-ch-tab` by `lib/nav-motion.ts`) swaps at once instead, owner-approved
+  2026-10-22 (mot-03). There is no routine first-paint stagger.
 
 The shell handoff is `design/handoff/m-shell.jsx`; depth references are
 `design/handoff/depth.css` and `design/handoff/design-system/guidelines/elevation.html`.

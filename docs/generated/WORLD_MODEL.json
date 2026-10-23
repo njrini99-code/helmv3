@@ -17351,6 +17351,23 @@
     },
     {
       "source": "golf_round_lifecycle",
+      "target": "email_outbound",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/player-invite-email.ts",
+          "anchor": "src/lib/email/golf-player-invite-template"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/player-invite-email.ts",
+          "anchor": "src/lib/email/outbound-gate"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
       "target": "golf_course_edit_history",
       "kind": "feature_table",
       "evidence": [
@@ -22792,6 +22809,11 @@
         {
           "kind": "import_graph",
           "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/auth/action-rate-limit"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
           "anchor": "src/lib/supabase/untyped"
         },
         {
@@ -22922,6 +22944,16 @@
           "kind": "import_graph",
           "path": "src/app/golf/actions/player-profile-stats.ts",
           "anchor": "src/lib/golf/resolve-team-server"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/golf/invite-emails"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/app/golf/actions/team-management.ts",
+          "anchor": "src/lib/golf/player-invite-email"
         },
         {
           "kind": "import_graph",

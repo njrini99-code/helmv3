@@ -77,7 +77,8 @@ function fakeChat(start: { busy?: boolean; error?: unknown; messages?: UIMessage
  * pulsefailed | historyempty | historyfailed | threadfailed | history (the phone drawer open) | historyclosed (the desktop
  * panel folded) | offline | error (with `&q=rate|budget|gone|fault|dropped`), and any conversation state of
  * fixtures-ask-thread.ts: answer | thinking | working | action | confirmed | cancelled | receipt | receiptfailed | abandoned |
- * rejected | readfail | partial | long. Nothing reaches the server.
+ * rejected | readfail | partial | long | reads (an answer that names Jonah's reads, each a link to his Deep dive) | readsother
+ * (the same reads for a player not on the team: no links). Nothing reaches the server.
  */
 export function PreviewAsk({ state, kind }: { state?: string; kind?: string }) {
   const offline = state === 'offline';

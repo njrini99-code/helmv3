@@ -5,6 +5,7 @@ import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { chLogServer } from '../lib/track-server';
 import { coachTour, earliestStaleFloor, loadCoachHelmGate, loadVisible, newestRounds } from './coachhelm';
 import { countReads, type ChReadCount } from './coachhelm-classify';
+import { canEmailPlayerInvites } from '@/lib/golf/player-invite-email';
 import { relativeAgo } from '../screens/roster/format';
 import { NOTE_TABLE_MISSING_CODES, parseAvailability, type ChAvailability } from './availability';
 import { fromUntyped } from '@/lib/supabase/untyped';
@@ -83,6 +84,11 @@ export interface ChRoster {
   joinCode: string | null;
   /** The team row didn't load: the name falls back and the join code is unknown, not missing. */
   teamError: boolean;
+  /**
+   * An invite email can leave the product right now (the owner's customer-email switch is on and a transport is set). The
+   * invite sheet then offers "Email invites"; without it the sheet says email is off and keeps the code and link. Absent reads as false.
+   */
+  emailInvites?: boolean;
   players: ChRosterPlayer[];
   playersError: boolean;
   /** This coach's notes didn't load: note fields are locked so a blank field can't overwrite one. */
@@ -260,6 +266,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     season: teamRes.data?.season ?? null,
     joinCode: teamRes.data?.join_code ?? null,
     teamError: !!teamRes.error,
+    emailInvites: canEmailPlayerInvites(),
     players,
     playersError: !!membersRes.error,
     notesError: notes.error,

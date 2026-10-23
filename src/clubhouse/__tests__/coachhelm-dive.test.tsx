@@ -877,7 +877,6 @@ describe('the Deep dive screen', () => {
     const radios = within(screen.getByRole('radiogroup', { name: 'CoachHelm view' })).getAllByRole('radio');
     expect(radios.map((r) => [r.textContent, r.getAttribute('aria-checked')])).toEqual([
       ['Board', 'false'],
-      ['Game profile', 'false'],
       ['Standing', 'false'],
       ['Deep dive', 'true'],
     ]);

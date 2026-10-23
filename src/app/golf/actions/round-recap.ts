@@ -48,7 +48,14 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { compose, markCallFellBackToTemplate } from '@/lib/coachhelm/v3/llm/compose';
 import { buildRecapEvidencePacket, buildRecapFieldEvidence } from '@/lib/coachhelm/v3/llm/recap-evidence';
-import { buildDeterministicRecap, checkRecapStyle, RECAP_MAX_WORDS } from '@/lib/coachhelm/v3/llm/recap-style';
+import {
+  buildDeterministicRecap,
+  checkRecapStyle,
+  countRecapWords,
+  RECAP_MAX_WORDS,
+  RECAP_SENTENCE_WORD_TARGETS,
+  RECAP_SHORTEN_SENTENCE_WORD_TARGETS,
+} from '@/lib/coachhelm/v3/llm/recap-style';
 import { isFlagEnabled } from '@/lib/flags';
 import { pct } from '@/lib/golf/stat-formulas';
 import { loadRecapSeasonContext } from '@/lib/golf/recap-season-context';
@@ -58,9 +65,6 @@ import { gateUserAction, LLM_COMPOSE_RATE_LIMIT } from '@/lib/auth/action-rate-l
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
 import { acquireRoundLockOrWait, type RoundLockOutcome } from '@/lib/coachhelm/round-single-flight-lock';
-
-/** The rewrite asks for headroom under the enforced cap, since models overshoot word counts. */
-const RECAP_SHORTEN_TARGET_WORDS = RECAP_MAX_WORDS - 8;
 
 interface RoundContext {
   id: string;
@@ -577,8 +581,7 @@ async function generateLLMRecap(
 Lead with the one fact from the round data below that defines this round: a best score in a stretch, putting, fairways or greens. Use only the round totals given; you have no hole-by-hole data, so never describe individual holes. The second sentence is forward-looking: a takeaway for the next round, framed as observation not verdict.
 
 Strict rules:
-- Exactly two sentences.
-- 36 words or fewer in total.
+- Exactly two sentences: the first ${RECAP_SENTENCE_WORD_TARGETS[0]} words or fewer, the second ${RECAP_SENTENCE_WORD_TARGETS[1]} words or fewer. A recap over ${RECAP_MAX_WORDS} words in total is thrown away.
 - No exclamation points. No emojis. No dashes between clauses; use commas or periods.
 - Put each number right next to the stat it belongs to (for example "31 putts", "50% of greens").
 - Refer to the player as "${playerName}" in the third person, or as "you" in the second person. Never the first person, and never any other name.
@@ -704,13 +707,16 @@ Output only the two sentences. Nothing else.`;
 /**
  * The one rewrite pass for a recap that only broke the word limit. It hands
  * back the model's own draft, so no new figure can enter: the same field
- * evidence still verifies every number.
+ * evidence still verifies every number. It tells the model how long the
+ * draft actually ran, since a bare target gave it nothing to cut against.
  */
 function buildRecapShortenPrompt(draft: string): string {
-  return `Rewrite this two-sentence golf recap in ${RECAP_SHORTEN_TARGET_WORDS} words or fewer.
+  const [firstCap, secondCap] = RECAP_SHORTEN_SENTENCE_WORD_TARGETS;
+  return `This two-sentence golf recap is ${countRecapWords(draft)} words, over the ${RECAP_MAX_WORDS}-word limit. Rewrite it with the first sentence ${firstCap} words or fewer and the second ${secondCap} words or fewer.
 
 Rules:
 - Exactly two sentences.
+- Keep the fact that defines the round and the takeaway for the next one. Cut everything else.
 - Keep every number exactly as written, next to the same stat. Add no new numbers or names.
 - No exclamation points, no emojis, no dashes between clauses.
 
