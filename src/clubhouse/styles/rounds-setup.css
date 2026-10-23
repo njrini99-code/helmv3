@@ -884,7 +884,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   }
 }
 /* `scale`, not `transform`: the fold owns the card's transform, and the two compose. */
-.ch-cpk:active .ch-cpk__card {
+.ch-cpk:is(:active, [data-ch-pressed]) .ch-cpk__card {
   scale: 0.985;
   transition: scale var(--ch-dur-press) var(--ch-ease);
 }
@@ -1799,7 +1799,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::after {
     bottom: 0;
   }
-  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual:active {
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -1964,8 +1964,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     background: var(--ch-ledger-rule-soft);
     content: '';
   }
-  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel):active,
-  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel):not(:disabled):active {
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs:not(.is-skel):is(:active, [data-ch-pressed]),
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-tee:not(.is-skel):not(:disabled):is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -2187,7 +2187,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
       var(--ch-elevation-cast);
   }
 }
-.ch-rsu-qual:active .ch-rsu-qual__cta {
+.ch-rsu-qual:is(:active, [data-ch-pressed]) .ch-rsu-qual__cta {
   transform: translateY(1px);
 }
 

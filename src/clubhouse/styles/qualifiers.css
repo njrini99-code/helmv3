@@ -102,7 +102,7 @@
     box-shadow: inset 0 0 0 1px var(--ch-border-strong);
   }
 }
-.ch-qf-pill:active {
+.ch-qf-pill:is(:active, [data-ch-pressed]) {
   background: var(--ch-bg-subtle);
   transition-duration: var(--ch-dur-press);
 }
@@ -355,7 +355,7 @@
   }
 }
 /* CH-09601: a pressed row deepens to the row press tint over the press beat; it never scales. */
-.ch-qf-grid.is-ledger .ch-qf-card:active {
+.ch-qf-grid.is-ledger .ch-qf-card:is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
 }
@@ -1511,7 +1511,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-qf-hero:active::after {
+  .ch-qf-hero:is(:active, [data-ch-pressed])::after {
     opacity: 1;
   }
   .ch-qf-hero .ch-badge {
@@ -1898,7 +1898,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  button.ch-qfm-lb__row:active {
+  button.ch-qfm-lb__row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-qfm-lb__row:focus-visible {
@@ -2030,7 +2030,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-qfm-chip:active:not(:disabled):not([aria-pressed='true']) {
+  .ch-qfm-chip:is(:active, [data-ch-pressed]):not(:disabled):not([aria-pressed='true']) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2142,10 +2142,10 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-qf--form .ch-qf-prow:active {
+  .ch-qf--form .ch-qf-prow:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
-  .ch-qf--form .ch-qf-prow.is-locked:active {
+  .ch-qf--form .ch-qf-prow.is-locked:is(:active, [data-ch-pressed]) {
     background: none;
   }
   .ch-qf--form .ch-qf-rc {
@@ -2205,7 +2205,7 @@
   .ch-qfs-opt {
     touch-action: manipulation;
   }
-  .ch-qfs-opt:active {
+  .ch-qfs-opt:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2462,7 +2462,7 @@
   inset: -9px -4px;
   content: '';
 }
-.ch-qf-feed__refresh:active {
+.ch-qf-feed__refresh:is(:active, [data-ch-pressed]) {
   background: var(--ch-bg-inset);
 }
 .ch-qf-feed__refresh:disabled {
@@ -2672,11 +2672,11 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   /* CH-09601: a press deepens a row's tint, and the live qualifier's title deepens to forest, over the press beat.
      Nothing scales (the shell's CH-1606). */
-  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:active {
+  .ch-qf--list[data-canopy] .ch-qf-grid.is-ledger .ch-qf-card:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
+  .ch-qf--list[data-canopy] .ch-qf-hero:is(:active, [data-ch-pressed]) h2 {
     color: var(--ch-forest-800);
     transition-duration: var(--ch-dur-press);
   }
@@ -2770,7 +2770,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
       background: var(--ch-ledger-row-hover);
     }
   }
-  .ch-qf[data-canopy] .ch-qf-rowbtn:active {
+  .ch-qf[data-canopy] .ch-qf-rowbtn:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2911,7 +2911,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
 }
 @media (min-width: 821px) {
-  :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero:active h2 {
+  :where(html[data-fw-theme='dark']) .ch-qf--list[data-canopy] .ch-qf-hero:is(:active, [data-ch-pressed]) h2 {
     color: var(--ch-green-700);
   }
 }
@@ -3579,7 +3579,7 @@ a.ch-qf-prounds__r.is-play .ch-qf-prounds__m b {
     background: rgb(255 255 255 / 0.08);
   }
 }
-a.ch-qf-prounds__r.is-play:active {
+a.ch-qf-prounds__r.is-play:is(:active, [data-ch-pressed]) {
   background: rgb(255 255 255 / 0.14);
   transition-duration: var(--ch-dur-press);
 }
@@ -3619,7 +3619,7 @@ button.ch-qf-prounds__r {
     background: rgb(255 255 255 / 0.12);
   }
 }
-button.ch-qf-prounds__r:active {
+button.ch-qf-prounds__r:is(:active, [data-ch-pressed]) {
   background: rgb(255 255 255 / 0.16);
   transition-duration: var(--ch-dur-press);
 }

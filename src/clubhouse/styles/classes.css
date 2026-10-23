@@ -119,7 +119,7 @@
     color: var(--ch-danger-600);
   }
 }
-.ch-cl-delall .ch-cl-danger:active:not(:disabled) {
+.ch-cl-delall .ch-cl-danger:is(:active, [data-ch-pressed]):not(:disabled) {
   background: var(--ch-danger-100);
 }
 @media (hover: hover) {
@@ -1489,10 +1489,10 @@
     color: var(--ch-on-green-ink);
   }
   /* Its overlaps line opens the week's overlaps: a wide control, so the press deepens its wash on the green. */
-  .ch-cl.is-phone .ch-cl-tb__over:active {
+  .ch-cl.is-phone .ch-cl-tb__over:is(:active, [data-ch-pressed]) {
     background: rgb(255 255 255 / 0.12);
   }
-  .ch-cl.is-phone .ch-cl-tb__over.has-any:active {
+  .ch-cl.is-phone .ch-cl-tb__over.has-any:is(:active, [data-ch-pressed]) {
     background: rgb(231 184 102 / 0.26);
   }
 
@@ -1520,7 +1520,7 @@
     box-shadow: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-cl.is-phone .ch-cl-today__row:active {
+  .ch-cl.is-phone .ch-cl-today__row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-cl.is-phone .ch-cl-today__n {
@@ -1606,7 +1606,7 @@
   .ch-cl.is-phone .ch-cl-card + .ch-cl-add {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-cl.is-phone .ch-cl-card:active {
+  .ch-cl.is-phone .ch-cl-card:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-cl.is-phone .ch-cl-card__top {
@@ -1672,7 +1672,7 @@
     color: var(--ch-green-700);
     text-align: left;
   }
-  .ch-cl.is-phone .ch-cl-add:active {
+  .ch-cl.is-phone .ch-cl-add:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-cl.is-phone .ch-cl-add__plus {
@@ -2376,7 +2376,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     }
   }
   /* CH-12601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-cl[data-canopy] .ch-cl-card:active {
+  .ch-cl[data-canopy] .ch-cl-card:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }

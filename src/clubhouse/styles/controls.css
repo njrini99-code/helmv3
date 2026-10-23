@@ -49,7 +49,7 @@
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
    the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
-.ch-seg__b:not(.is-on):active {
+.ch-seg__b:not(.is-on):is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
 }
@@ -111,7 +111,7 @@
   }
 }
 /* CH-1617: a pill that isn't on answers a press the way a segment does. */
-.ch-pill:not([aria-pressed='true']):active {
+.ch-pill:not([aria-pressed='true']):is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
 }
@@ -713,10 +713,10 @@
    settles round as the finger lifts. The scale property composes with the travel's transform, so nothing reflows.
    Like the press (CH-1606), it is off with reduced motion and with Animations off. */
 @media (prefers-reduced-motion: no-preference) {
-  .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+  .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
     scale: 1.2 1;
   }
-  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
     scale: none;
   }
 }
@@ -956,7 +956,7 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df__open:active:not(:disabled) {
+.ch-df__open:is(:active, [data-ch-pressed]):not(:disabled) {
   background: var(--ch-ledger-row-press);
 }
 .ch-df__open:focus-visible {
@@ -1047,7 +1047,7 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-nav:active:not(:disabled) {
+.ch-df-nav:is(:active, [data-ch-pressed]):not(:disabled) {
   background: var(--ch-ledger-row-press);
 }
 .ch-df-nav:disabled {
@@ -1102,7 +1102,7 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-day:active:not(:disabled):not(.is-on) {
+.ch-df-day:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
 }
 /* Today is a dot under its numeral, not a colour; the chosen day is the segmented control's lit chip. */
@@ -1194,7 +1194,7 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-tf__row:active:not(:disabled):not(.is-on) {
+.ch-tf__row:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
 }
 .ch-tf__row.is-on {
@@ -1642,8 +1642,8 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     font-weight: 600;
     color: var(--ch-green-600);
   }
-  .ch-fsheet-act__btn:active,
-  .ch-fsheet-act__cancel:active {
+  .ch-fsheet-act__btn:is(:active, [data-ch-pressed]),
+  .ch-fsheet-act__cancel:is(:active, [data-ch-pressed]) {
     background: var(--ch-bg-hover);
   }
   .ch-fsheet-act__btn:focus-visible,

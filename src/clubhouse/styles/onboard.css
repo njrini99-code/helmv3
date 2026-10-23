@@ -536,7 +536,7 @@
     box-shadow: var(--ch-elevation-primary-hover);
   }
 }
-.ch-ox-card:active {
+.ch-ox-card:is(:active, [data-ch-pressed]) {
   transform: translateY(1px);
   box-shadow: var(--ch-green-raised-shadow);
   transition-duration: var(--ch-dur-press);
@@ -847,7 +847,7 @@
     box-shadow: var(--ch-raised-shadow);
   }
 }
-.ch-ox-tile:active {
+.ch-ox-tile:is(:active, [data-ch-pressed]) {
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
   transform: translateY(1px);
@@ -1368,7 +1368,7 @@
     transform: translateX(2px);
   }
 }
-.ch-ox-nextstep:active {
+.ch-ox-nextstep:is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
 }
 .ch-ox-nextstep:focus-visible {

@@ -2682,7 +2682,7 @@ button.ch-rt-strip__h {
       background var(--ch-dur-quick) var(--ch-ease),
       transform var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rt-seg button:not([aria-checked='true']):active {
+  .ch-rt-seg button:not([aria-checked='true']):is(:active, [data-ch-pressed]) {
     transform: translateY(1px);
     box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
   }
@@ -2757,9 +2757,9 @@ button.ch-rt-strip__h {
     box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
     transition: transform var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-rt-amiss button:not([aria-checked='true']):active,
-  .ch-rt-tags button:not([aria-pressed='true']):active,
-  .ch-rt-quick button:not([aria-pressed='true']):active {
+  .ch-rt-amiss button:not([aria-checked='true']):is(:active, [data-ch-pressed]),
+  .ch-rt-tags button:not([aria-pressed='true']):is(:active, [data-ch-pressed]),
+  .ch-rt-quick button:not([aria-pressed='true']):is(:active, [data-ch-pressed]) {
     transform: translateY(1px);
     box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
   }
@@ -2938,4 +2938,12 @@ button.ch-rt-strip__h {
     position: absolute;
     inset: min(0px, calc(50% - 22px));
   }
+}
+
+/* B6 (last, so a fill set by a state rule above still takes the tint): a quick tap on a choice shows it
+   (lib/press.ts holds data-ch-pressed for at least 90ms): the row-press tint over the tile, whatever its own fill. */
+.ch-rt-opt:is(:active, [data-ch-pressed]):not(:disabled),
+.ch-rt-xopt:is(:active, [data-ch-pressed]):not(:disabled),
+.ch-rt-rs:is(:active, [data-ch-pressed]):not(:disabled) {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
 }

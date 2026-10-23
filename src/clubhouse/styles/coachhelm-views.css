@@ -195,7 +195,7 @@
     background: none;
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
   }
-  .ch-hv-chip:active {
+  .ch-hv-chip:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-hv-chip[aria-current='true'] {
@@ -226,7 +226,7 @@
   .ch-hv-link {
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hv-link:active {
+  .ch-hv-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   /* A section's head while the view loads: the heading's line and its caption. */

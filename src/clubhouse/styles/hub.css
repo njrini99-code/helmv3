@@ -87,7 +87,7 @@
     color: var(--ch-text-primary);
   }
 }
-.ch-hb-tabs button:active {
+.ch-hb-tabs button:is(:active, [data-ch-pressed]) {
   color: var(--ch-text-primary);
 }
 .ch-hb-tabs button:focus-visible {
@@ -471,7 +471,7 @@
   cursor: pointer;
   transition: background-color var(--ch-dur-press) var(--ch-ease);
 }
-.ch-hb-reads--open:active {
+.ch-hb-reads--open:is(:active, [data-ch-pressed]) {
   background-color: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
 }
@@ -1364,7 +1364,7 @@
     transition: background-color var(--ch-dur-press) var(--ch-ease), box-shadow var(--ch-dur-press) var(--ch-ease);
   }
   /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
-  .ch-hb-rsvp__b:active {
+  .ch-hb-rsvp__b:is(:active, [data-ch-pressed]) {
     background-color: var(--ch-ledger-row-press);
     box-shadow: 0 0 0 6px var(--ch-ledger-row-press);
   }
@@ -1424,13 +1424,13 @@
     --ch-av-fg: #23402f;
     --ch-av-ring: rgb(35 64 47 / 0.18);
   }
-  .ch-hb-ann.is-featured .ch-hb-iconbtn:active {
+  .ch-hb-ann.is-featured .ch-hb-iconbtn:is(:active, [data-ch-pressed]) {
     background: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads {
     color: var(--ch-on-green-ink-soft);
   }
-  .ch-hb-ann.is-featured .ch-hb-reads--open:active {
+  .ch-hb-ann.is-featured .ch-hb-reads--open:is(:active, [data-ch-pressed]) {
     background-color: rgb(255 255 255 / 0.08);
   }
   .ch-hb-ann.is-featured .ch-hb-reads__t {
@@ -1478,7 +1478,7 @@
     box-shadow: 0 0 0 1px var(--ch-ledger-rule);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-new:active {
+  .ch-hb-new:is(:active, [data-ch-pressed]) {
     background-color: var(--ch-bg-hover);
   }
   .ch-hb-list > .ch-hb-ann {
@@ -1604,7 +1604,7 @@
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-feed li > a:active {
+  .ch-hb-feed li > a:is(:active, [data-ch-pressed]) {
     background-color: var(--ch-ledger-row-press);
   }
   .ch-hb-feed li.is-new::after {
@@ -1653,7 +1653,7 @@
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hb-file__open:active {
+  .ch-hb-file__open:is(:active, [data-ch-pressed]) {
     background-color: var(--ch-ledger-row-press);
   }
   .ch-hb-file__b b {
@@ -2017,7 +2017,7 @@
     }
   }
   /* A press deepens a file row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-hb[data-canopy] .ch-hb-file__open:active {
+  .ch-hb[data-canopy] .ch-hb-file__open:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -3996,4 +3996,11 @@ html[data-fw-theme='dark'] .ch-hw-days button[aria-pressed='true'] {
     width: 44px;
     height: 44px;
   }
+}
+
+/* B6 (last, so a fill set by a state rule above still takes the tint): a pick and a chip show a quick tap
+   (lib/press.ts), the row-press tint over their fill. */
+.ch-hb-picks button:is(:active, [data-ch-pressed]),
+.ch-hb-chip:is(:active, [data-ch-pressed]) {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
 }

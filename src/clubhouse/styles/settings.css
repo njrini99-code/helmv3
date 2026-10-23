@@ -82,7 +82,7 @@
   }
 }
 /* CH-8607: a section presses with a deeper tint over the press beat, never a scale (the shell's CH-1606). */
-.ch-set-rail__i:active {
+.ch-set-rail__i:is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
 }
@@ -849,7 +849,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-setm-id:active {
+  .ch-setm-id:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-setm-id:focus-visible {
@@ -979,8 +979,8 @@
   .ch-setm-row ~ .ch-setm-row.has-tile::before {
     left: 56px;
   }
-  button.ch-setm-row:active,
-  a.ch-setm-row:active {
+  button.ch-setm-row:is(:active, [data-ch-pressed]),
+  a.ch-setm-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-bg-hover);
   }
   .ch-setm-row:focus-visible {
@@ -1312,7 +1312,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-setm-signout:active {
+  .ch-setm-signout:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-setm-signout:disabled {
@@ -1507,8 +1507,8 @@
     left: 12px;
     background: var(--ch-ledger-rule-soft);
   }
-  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:active,
-  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:active {
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > button.ch-setm-row:is(:active, [data-ch-pressed]),
+  .ch-setm-page > .ch-setm-group > .ch-setm-card > a.ch-setm-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-setm-page > .ch-setm-group > .ch-setm-card > .ch-setm-row.has-tile {
@@ -1697,7 +1697,7 @@
     }
   }
   /* A press deepens a link row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-set[data-canopy] .ch-surface .ch-set-link:active {
+  .ch-set[data-canopy] .ch-surface .ch-set-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -1740,7 +1740,7 @@
   }
 }
 /* As in light: a press tints over hover, and the selected section keeps its own tint. */
-html[data-fw-theme='dark'] .ch-set-rail__i:active {
+html[data-fw-theme='dark'] .ch-set-rail__i:is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
 }
 html[data-fw-theme='dark'] .ch-set-rail__i.is-on {

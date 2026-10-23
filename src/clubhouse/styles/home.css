@@ -487,7 +487,7 @@
     background: color-mix(in oklab, var(--ch-green-600) 4.5%, transparent);
   }
 }
-.ch-h-rail__item:active {
+.ch-h-rail__item:is(:active, [data-ch-pressed]) {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
 .ch-h-rail__item.is-on {
@@ -634,7 +634,7 @@
     translate: 0 -50%;
   }
 }
-.ch-h-lb__row.is-link:active {
+.ch-h-lb__row.is-link:is(:active, [data-ch-pressed]) {
   background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
 }
 .ch-h-lb__row.is-link:has(.ch-h-lb__go:focus-visible) {
@@ -1535,7 +1535,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-hm-rd:active {
+  .ch-hm-rd:is(:active, [data-ch-pressed]) {
     background: var(--ch-bg-hover);
   }
   .ch-hm-rd__b {
@@ -2629,11 +2629,11 @@
   }
   /* CH-2602: a press deepens the row's tint and nudges its chevron 2px on, over the press beat; letting go eases back
      over quick. A row never scales (lib/press.ts, owner F02). */
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active {
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
-  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:active::after {
+  .ch-h-main--desk[data-canopy] .ch-h-lb__row.is-link:is(:active, [data-ch-pressed])::after {
     opacity: 1;
     translate: 2px -50%;
     transition-duration: var(--ch-dur-press);
@@ -3243,14 +3243,14 @@
   .ch-hm-week__d {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-week__d:active {
+  .ch-hm-week__d:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:active {
+  .ch-hm-week .is-major:not(.is-today) .ch-hm-week__d:is(:active, [data-ch-pressed]) {
     background: var(--ch-green-100);
   }
-  .ch-hm-week .is-today .ch-hm-week__d:active {
+  .ch-hm-week .is-today .ch-hm-week__d:is(:active, [data-ch-pressed]) {
     background: var(--ch-green-fill-700);
   }
   /* Up next is a link: a press deepens the card's green the same beat later (CH-1606: a large surface answers with a
@@ -3271,7 +3271,7 @@
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  a.ch-hm-next:active::after {
+  a.ch-hm-next:is(:active, [data-ch-pressed])::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3283,7 +3283,7 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-tl__a:active {
+  .ch-hm-tl__a:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3307,7 +3307,7 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-rd:active {
+  .ch-hm-rd:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3321,7 +3321,7 @@
   .ch-hm-link {
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-link:active {
+  .ch-hm-link:is(:active, [data-ch-pressed]) {
     opacity: 0.55;
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3329,11 +3329,11 @@
   .ch-hm-none__add {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-none__chip:active {
+  .ch-hm-none__chip:is(:active, [data-ch-pressed]) {
     background: rgb(255 255 255 / 0.16);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-none__add:active {
+  .ch-hm-none__add:is(:active, [data-ch-pressed]) {
     background: var(--ch-ivory-200);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3397,7 +3397,7 @@
     box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm--player .ch-ph-pg button:active::before {
+  .ch-hm--player .ch-ph-pg button:is(:active, [data-ch-pressed])::before {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3715,7 +3715,7 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     pointer-events: none;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-hm-day:has(.ch-hm-day__open:active)::after {
+  .ch-hm-day:has(.ch-hm-day__open:is(:active, [data-ch-pressed]))::after {
     opacity: 0.38;
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3764,11 +3764,11 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     color: var(--ch-green-800);
     font-weight: 600;
   }
-  .ch-hm-day__act:active {
+  .ch-hm-day__act:is(:active, [data-ch-pressed]) {
     background: rgb(244 238 221 / 0.2);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-hm-day__act.is-primary:active {
+  .ch-hm-day__act.is-primary:is(:active, [data-ch-pressed]) {
     background: var(--ch-champagne-100);
   }
   .ch-root .ch-hm-day__act:focus-visible {

@@ -988,7 +988,7 @@
   border-top: 0;
 }
 /* As a ledger row (CH-1606): the tint waits a beat, so a drag or a scroll that starts on a row never flashes it. */
-.ch-more__row:active {
+.ch-more__row:is(:active, [data-ch-pressed]) {
   background: var(--ch-bg-hover);
   transition-delay: var(--ch-dur-press-delay);
 }
@@ -1431,7 +1431,7 @@ button.ch-more__row[disabled] {
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-pbar__icon:active {
+  .ch-pbar__icon:is(:active, [data-ch-pressed]) {
     background: rgb(28 25 18 / 0.06);
   }
   .ch-pbar__text {
@@ -2358,11 +2358,11 @@ html[data-ch-ua-pop] .ch-pscreen::after {
   [data-ui='clubhouse'] .ch-pbar__icon {
     color: var(--ch-on-green-ink-soft);
   }
-  [data-ui='clubhouse'] .ch-pbar__icon:active {
+  [data-ui='clubhouse'] .ch-pbar__icon:is(:active, [data-ch-pressed]) {
     background: rgb(255 255 255 / 0.08);
   }
   /* Back and the text action are words on the green, with no key to tint: a press dims them, as iOS bar buttons do. */
-  [data-ui='clubhouse'] :is(.ch-pbar__back, .ch-pbar__text:not([aria-disabled='true'])):active {
+  [data-ui='clubhouse'] :is(.ch-pbar__back, .ch-pbar__text:not([aria-disabled='true'])):is(:active, [data-ch-pressed]) {
     opacity: 0.5;
   }
   [data-ui='clubhouse'] .ch-pbar__text[aria-disabled='true'] {
@@ -2678,7 +2678,7 @@ html[data-fw-theme='dark'] .ch-offline {
     box-shadow: var(--ch-elevation-floating), 0 0 0 1px var(--ch-border-subtle), var(--ch-highlight);
     transition: transform var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-resume:active {
+  .ch-resume:is(:active, [data-ch-pressed]) {
     transform: scale(0.98);
   }
   .ch-resume__ic {
@@ -2970,7 +2970,7 @@ html[data-fw-theme='dark'] .ch-offline {
     content: '';
     pointer-events: none;
   }
-  .ch-more__row:active {
+  .ch-more__row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-more__ic,
@@ -3018,7 +3018,7 @@ html[data-fw-theme='dark'] .ch-offline {
     -webkit-tap-highlight-color: transparent;
     transition: opacity var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-sw:active {
+  .ch-sw:is(:active, [data-ch-pressed]) {
     opacity: 0.62;
   }
   /* Inset: the title row clips anything drawn outside it. */
@@ -3150,7 +3150,7 @@ html[data-fw-theme='dark'] .ch-offline {
     inset: -2px 0;
     content: '';
   }
-  .ch-strip__pill:active {
+  .ch-strip__pill:is(:active, [data-ch-pressed]) {
     opacity: 0.7;
   }
   .ch-strip__pill[aria-current='page'] {
@@ -3436,16 +3436,16 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-bst-card {
     transition: scale var(--ch-dur-release) var(--ch-ease);
   }
-  .ch-bst-card:active:not(.ch-bst-card--still) {
+  .ch-bst-card:is(:active, [data-ch-pressed]):not(.ch-bst-card--still) {
     scale: 0.985;
     transition-duration: var(--ch-dur-press);
   }
-  [data-motion='off'] .ch-bst-card:active,
-  [data-motion='off'].ch-bst .ch-bst-card:active {
+  [data-motion='off'] .ch-bst-card:is(:active, [data-ch-pressed]),
+  [data-motion='off'].ch-bst .ch-bst-card:is(:active, [data-ch-pressed]) {
     scale: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    .ch-bst-card:active:not(.ch-bst-card--still) {
+    .ch-bst-card:is(:active, [data-ch-pressed]):not(.ch-bst-card--still) {
       scale: none;
     }
   }
@@ -3812,7 +3812,7 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
       box-shadow: var(--ch-elevation-on-frame-card-hover);
     }
   }
-  .ch-railtoggle:active {
+  .ch-railtoggle:is(:active, [data-ch-pressed]) {
     transform: scale(0.94);
     transition-duration: var(--ch-dur-spring-smooth), var(--ch-dur-press), var(--ch-dur-press);
   }

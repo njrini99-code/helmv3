@@ -268,7 +268,7 @@
   }
 }
 /* Pressing drops the hover lift. A card never scales: the shell's press is for keys (lib/press.ts, CH-1606). */
-.ch-rs-face:not(.ch-rs-face--static):active {
+.ch-rs-face:not(.ch-rs-face--static):is(:active, [data-ch-pressed]) {
   transform: translateY(0);
 }
 .ch-rs-face.is-sel {
@@ -1208,7 +1208,7 @@ a.ch-rs-peek__dev:focus-visible,
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-rsm-row:active {
+  .ch-rsm-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-rsm-row:focus-visible {
@@ -1419,7 +1419,7 @@ a.ch-rs-peek__dev:focus-visible,
     text-decoration: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-rsm-panel__link:active {
+  .ch-rsm-panel__link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   /* CoachHelm on the phone profile: the counts on the panel's seam, under its heading. */
@@ -1603,11 +1603,11 @@ a.ch-rs-peek__dev:focus-visible,
     bottom: 0;
     background: var(--ch-ledger-rule-soft);
   }
-  .ch-rsm-banner:active {
+  .ch-rsm-banner:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
-  .ch-rsm-banner:active::after {
+  .ch-rsm-banner:is(:active, [data-ch-pressed])::after {
     opacity: 1;
   }
   .ch-rsm-banner:focus-visible {
@@ -1797,7 +1797,7 @@ a.ch-rs-peek__dev:focus-visible,
     content: '';
     pointer-events: none;
   }
-  .ch-rsm-act:active {
+  .ch-rsm-act:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-rsm-act b {
@@ -1851,7 +1851,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-row--static {
     cursor: default;
   }
-  .ch-rsm-row--static:active {
+  .ch-rsm-row--static:is(:active, [data-ch-pressed]) {
     background: none;
   }
 }
@@ -1996,7 +1996,7 @@ a.ch-rs-peek__dev:focus-visible,
     }
   }
   /* CH-3602: a press deepens the tint over the press beat (the row press tint). */
-  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2028,7 +2028,7 @@ a.ch-rs-peek__dev:focus-visible,
       box-shadow: 0 0 0 1px var(--ch-champagne-500), inset 0 1px 0 var(--ch-light-rim), var(--ch-elevation-face-hover);
     }
   }
-  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):active {
+  .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):is(:active, [data-ch-pressed]) {
     background: var(--ch-green-50);
     transform: translateY(-2px);
   }
@@ -2129,7 +2129,7 @@ a.ch-rs-peek__dev:focus-visible,
     }
   }
   /* Pressing a player's name deepens the row's tint over the press beat; the row menu's key presses on its own. */
-  .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:active) {
+  .ch-rs[data-canopy] .ch-rs-row:has(.ch-rs-who:is(:active, [data-ch-pressed])) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2387,7 +2387,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     transform: translateY(-3px) scale(1.08);
   }
 }
-.ch-rs-sp__coins button:active .ch-avatar {
+.ch-rs-sp__coins button:is(:active, [data-ch-pressed]) .ch-avatar {
   transform: scale(0.96);
   transition-duration: var(--ch-dur-press);
 }

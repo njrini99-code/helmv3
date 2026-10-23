@@ -26,27 +26,47 @@ export const PRESS_TAP_SHOW_MS = 90;
 /** A touch that moves further than this before the delay is a scroll, not a press. */
 const PRESS_SLOP_PX = 10;
 
-/**
- * The press: a button inside Clubhouse shrinks on pointer down over press (110ms, ease-out) and springs back over
- * release (280ms), from wherever it had got to, so a quick tap never snaps to the full press first. A finger's press
- * waits 70ms first and a move past 10px cancels it, so a scroll that starts on a button never shrinks it; a tap that
- * lifts sooner still shows its press for 90ms (A12). It
- * animates the `scale` property, which composes with `transform` and
- * `translate`, so it never fights framer-motion or a sheet drag. Skipped for
- * disabled controls, anything inside `[data-ch-nopress]`, with reduced motion
- * or Animations off (pass `enabled: false`), and where the Web Animations API
- * is missing. Mounted once, by the shell. CH-1606.
- */
-export function useChPress(enabled: boolean): void {
-  useEffect(() => {
-    if (!enabled || typeof Element === 'undefined' || !Element.prototype.animate) return;
-    let held: { el: HTMLElement; scale: number; anim: Animation } | null = null;
-    /** A touch press waiting out its delay (A12): where it started, and the timer that will shrink the button. */
-    let pending: { el: HTMLElement; scale: number; x: number; y: number; id: number; timer: number } | null = null;
-    let tapTimer = 0;
+/** What shows a pressed look (B6): anything a finger can press. It carries `data-ch-pressed` while held. */
+const PRESSED_TARGET = '[data-ch-pressable],button,a,[role="button"]';
 
-    const press = (el: HTMLElement, scale: number) => {
-      held = { el, scale, anim: el.animate([{ scale: '1' }, { scale: String(scale) }], { duration: CH_DUR.press * 1000, easing: bezier(CH_EASE), fill: 'forwards' }) };
+/**
+ * The press controller (CH-1606, A12, B6), mounted once by the shell. On pointer down inside Clubhouse:
+ *
+ * - The pressed look: the control under the finger (a button, link, `[role=button]` or `[data-ch-pressable]`) carries
+ *   `data-ch-pressed` while it is held, and styles draw their pressed tint from it as well as `:active`. A finger's press
+ *   waits 70ms and a move past 10px or a cancel drops it, so a scroll that starts on a row never flashes it; a tap that
+ *   lifts sooner still shows it, and every press shows it for at least 90ms, so a quick tap is always acknowledged.
+ *   This runs whatever the motion setting: it is a state, not a movement.
+ * - The scale: a button (`.ch-btn`, `[data-ch-press]`, no wider than a button) shrinks over press (110ms, ease-out) and
+ *   springs back over release (280ms) from wherever it had got to. It animates the `scale` property, which composes with
+ *   `transform` and `translate`, so it never fights framer-motion or a sheet drag. Skipped without `motion` (reduced
+ *   motion, Animations off) and where the Web Animations API is missing.
+ *
+ * Disabled controls and anything inside `[data-ch-nopress]` take neither.
+ */
+export function useChPress(motion: boolean): void {
+  useEffect(() => {
+    if (typeof Element === 'undefined') return;
+    const scales = motion && !!Element.prototype.animate;
+    type Press = { target: HTMLElement | null; el: HTMLElement | null; scale: number };
+    let held: (Press & { anim: Animation | null; at: number }) | null = null;
+    /** A touch press waiting out its delay (A12): where it started, and the timer that will press it. */
+    let pending: (Press & { x: number; y: number; id: number; timer: number }) | null = null;
+    let tapTimer = 0;
+    /** A released control whose pressed look is still showing out its minimum. */
+    let lingering: { target: HTMLElement; timer: number } | null = null;
+
+    const unmark = () => {
+      if (!lingering) return;
+      window.clearTimeout(lingering.timer);
+      lingering.target.removeAttribute('data-ch-pressed');
+      lingering = null;
+    };
+    const press = ({ target, el, scale }: Press) => {
+      unmark();
+      target?.setAttribute('data-ch-pressed', '');
+      const anim = el && scales ? el.animate([{ scale: '1' }, { scale: String(scale) }], { duration: CH_DUR.press * 1000, easing: bezier(CH_EASE), fill: 'forwards' }) : null;
+      held = { target, el, scale, anim, at: Date.now() };
     };
     const drop = () => {
       if (!pending) return;
@@ -57,24 +77,32 @@ export function useChPress(enabled: boolean): void {
       if (e.button !== 0) return;
       // A second press while one is held lets the first go first.
       release();
+      unmark();
       drop();
-      const el = (e.target as Element | null)?.closest?.(PRESSABLE) as HTMLElement | null;
-      if (!el || !el.closest('[data-ui="clubhouse"]') || el.closest('[data-ch-nopress]')) return;
-      if ((el as HTMLButtonElement).disabled || el.getAttribute('aria-disabled') === 'true') return;
-      const width = el.getBoundingClientRect().width;
-      if (width > PRESS_MAX_WIDTH) return;
-      const scale = pressScale(width);
+      const from = e.target as Element | null;
+      if (!from?.closest?.('[data-ui="clubhouse"]') || from.closest('[data-ch-nopress]')) return;
+      const off = (n: Element | null) => !!n && ((n as HTMLButtonElement).disabled || n.getAttribute('aria-disabled') === 'true');
+      const target = from.closest(PRESSED_TARGET) as HTMLElement | null;
+      let el = from.closest(PRESSABLE) as HTMLElement | null;
+      if (off(el)) el = null;
+      const width = el?.getBoundingClientRect().width ?? 0;
+      if (width > PRESS_MAX_WIDTH) el = null;
+      const p: Press = { target: off(target) ? null : target, el, scale: pressScale(width) };
+      if (!p.target && !p.el) return;
       // Mouse and pen press at once; a finger waits out the delay, as UIKit's delaysContentTouches does in a scroll view.
       if (e.pointerType !== 'touch') {
-        press(el, scale);
+        press(p);
         return;
       }
-      const at = { el, scale, x: e.clientX, y: e.clientY, id: e.pointerId };
       pending = {
-        ...at,
+        ...p,
+        x: e.clientX,
+        y: e.clientY,
+        id: e.pointerId,
         timer: window.setTimeout(() => {
+          const at = pending;
           pending = null;
-          press(at.el, at.scale);
+          if (at) press(at);
         }, PRESS_TOUCH_DELAY_MS),
       };
     };
@@ -84,9 +112,9 @@ export function useChPress(enabled: boolean): void {
     const up = (e: PointerEvent) => {
       // A quick tap lifted before the delay: it still shows its press, briefly, then springs back.
       if (pending && e.pointerId === pending.id) {
-        const { el, scale } = pending;
+        const p = pending;
         drop();
-        press(el, scale);
+        press(p);
         tapTimer = window.setTimeout(release, PRESS_TAP_SHOW_MS);
         return;
       }
@@ -94,17 +122,24 @@ export function useChPress(enabled: boolean): void {
     };
     const cancel = () => {
       drop();
-      release();
+      release(true);
     };
-    const release = () => {
+    /** Springs the scale back at once; the pressed look stays out its 90ms (unless the press was cancelled). */
+    const release = (now = false) => {
       window.clearTimeout(tapTimer);
       if (!held) return;
-      const { el, scale, anim } = held;
+      const { target, el, scale, anim, at } = held;
       held = null;
+      if (target) {
+        const left = now ? 0 : PRESS_TAP_SHOW_MS - (Date.now() - at);
+        if (left > 0) lingering = { target, timer: window.setTimeout(unmark, left) };
+        else target.removeAttribute('data-ch-pressed');
+      }
+      if (!el || !anim) return;
       // Spring back from where the press actually is: a release before the press finished starts from part-way.
-      const now = parseFloat(getComputedStyle(el).scale);
-      const from = Number.isFinite(now) && now > 0 ? now : scale;
-      el.animate([{ scale: String(from) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(CH_SPRING) });
+      const current = parseFloat(getComputedStyle(el).scale);
+      const fromScale = Number.isFinite(current) && current > 0 ? current : scale;
+      el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR.release * 1000, easing: bezier(CH_SPRING) });
       anim.cancel();
     };
     document.addEventListener('pointerdown', down, true);
@@ -113,10 +148,11 @@ export function useChPress(enabled: boolean): void {
     for (const t of ['pointercancel', 'dragstart'] as const) document.addEventListener(t, cancel, true);
     return () => {
       cancel();
+      unmark();
       document.removeEventListener('pointerdown', down, true);
       document.removeEventListener('pointermove', move, true);
       document.removeEventListener('pointerup', up, true);
       for (const t of ['pointercancel', 'dragstart'] as const) document.removeEventListener(t, cancel, true);
     };
-  }, [enabled]);
+  }, [motion]);
 }

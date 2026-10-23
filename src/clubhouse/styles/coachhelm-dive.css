@@ -932,7 +932,7 @@
     }
   }
   /* A press deepens a row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  main[data-canopy] .ch-hd-it:active {
+  main[data-canopy] .ch-hd-it:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -950,7 +950,7 @@
       background: var(--ch-ledger-row-hover);
     }
   }
-  main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:active {
+  main[data-canopy] :is(.ch-hd-r, .ch-hd-where__i).is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -969,7 +969,7 @@
       background: var(--ch-ledger-row-hover);
     }
   }
-  main[data-canopy] .ch-hd-plan__i.is-link:active {
+  main[data-canopy] .ch-hd-plan__i.is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -1023,7 +1023,7 @@
     padding: 10px 0;
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  :is(.ch-hl.is-phone) .ch-hd-it:active {
+  :is(.ch-hl.is-phone) .ch-hd-it:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   :is(.ch-hl.is-phone) .ch-hd-sk__it {
@@ -1119,7 +1119,7 @@
     padding-inline: 0;
     border-top-color: var(--ch-ledger-rule-soft);
   }
-  .ch-hd-r.is-link:active {
+  .ch-hd-r.is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-hd-dx {
@@ -1144,7 +1144,7 @@
   .ch-hd-plan > li + li .ch-hd-plan__i {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-hd-plan__i.is-link:active {
+  .ch-hd-plan__i.is-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
 

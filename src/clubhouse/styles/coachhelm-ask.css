@@ -715,7 +715,7 @@
 .ch-ask-pick__row[data-selected='true'] {
   background: var(--ch-bg-inset);
 }
-.ch-ask-pick__row:active {
+.ch-ask-pick__row:is(:active, [data-ch-pressed]) {
   background: var(--ch-ledger-row-press);
 }
 .ch-ask-pick__name {
@@ -949,7 +949,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-ask-card:active {
+  .ch-ask-card:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }

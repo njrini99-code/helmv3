@@ -201,7 +201,7 @@
     inset 0 1px 0 #fff;
   transition: transform var(--ch-dur-press) var(--ch-ease);
 }
-.ch-rd-unf__cta:active {
+.ch-rd-unf__cta:is(:active, [data-ch-pressed]) {
   transform: translateY(1px);
 }
 .ch-rd-unf__cta:focus-visible,
@@ -1935,7 +1935,7 @@ a.ch-rd-sc:focus-visible {
   .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
-  .ch-rd.is-phone a.ch-rd-sc:active {
+  .ch-rd.is-phone a.ch-rd-sc:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-rd.is-phone .ch-rd-sc__date {
@@ -2047,8 +2047,8 @@ a.ch-rd-sc:focus-visible {
   }
   /* A hole on the scorecard answers the press with the row press tint (it selects, so it does not scale; the steps beside
      the hole are keys and compress, data-ch-press). */
-  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):active,
-.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):active {
+  .ch-rv.is-phone .ch-rv-nine thead button:not(.is-sel):is(:active, [data-ch-pressed]),
+.ch-rv.is-phone .ch-rv-nine td[data-hole]:not(.is-sel):is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-rv.is-phone .ch-rv-cols {
@@ -2937,7 +2937,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     }
   }
   /* CH-11601: a press deepens the tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-rd[data-canopy] a.ch-rd-sc:active {
+  .ch-rd[data-canopy] a.ch-rd-sc:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -3708,7 +3708,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     filter: brightness(1.1) saturate(1.1);
   }
 }
-.ch-rv .ch-rzcost button:active {
+.ch-rv .ch-rzcost button:is(:active, [data-ch-pressed]) {
   transform: scale(0.985);
   transition-duration: var(--ch-dur-press);
 }

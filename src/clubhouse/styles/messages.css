@@ -141,7 +141,7 @@
     background: rgb(28 25 18 / 0.045);
   }
 }
-.ch-ms-row:active {
+.ch-ms-row:is(:active, [data-ch-pressed]) {
   background: rgb(28 25 18 / 0.07);
 }
 .ch-ms-row:focus-visible {
@@ -273,7 +273,7 @@
     background: rgb(28 25 18 / 0.05);
   }
 }
-.ch-ms-row:active {
+.ch-ms-row:is(:active, [data-ch-pressed]) {
   background: rgb(28 25 18 / 0.08);
 }
 .ch-ms-row .ch-avatar {
@@ -1568,10 +1568,10 @@
   }
   /* The app's global press (src/app/globals.css: every button shrinks to 0.98 on :active) is not Clubhouse's: rows
      and links here answer with their tint, and keys take the shell's press (CH-1606), so it is switched off. */
-  .ch-msp button:active {
+  .ch-msp button:is(:active, [data-ch-pressed]) {
     transform: none;
   }
-  .ch-msp [role='button']:active {
+  .ch-msp [role='button']:is(:active, [data-ch-pressed]) {
     transform: none;
   }
   /* The inbox: Search and the filters, then its sections a full step apart. */
@@ -1645,7 +1645,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-msp-chip:active:not([aria-pressed='true']) {
+  .ch-msp-chip:is(:active, [data-ch-pressed]):not([aria-pressed='true']) {
     background: var(--ch-bg-subtle);
     transition-duration: var(--ch-dur-press);
   }
@@ -1710,7 +1710,7 @@
       background: transparent;
     }
   }
-  .ch-msp .ch-ms-row:active {
+  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-msp .ch-ms-row.is-sel {
@@ -1726,8 +1726,8 @@
     background: var(--ch-ledger-rule-soft);
     box-shadow: none;
   }
-  .ch-msp .ch-ms-row:active::before,
-  .ch-msp .ch-ms-row:active + .ch-ms-row::before {
+  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed])::before,
+  .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) + .ch-ms-row::before {
     opacity: 0;
   }
   .ch-msp .ch-ms-row.is-ann + .ch-ms-row::before {
@@ -1844,7 +1844,7 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-who:active {
+  .ch-msp-who:is(:active, [data-ch-pressed]) {
     background: rgb(255 255 255 / 0.08);
   }
   /* The push focuses the name for VoiceOver; from a keyboard it shows a gilt ring that reads on the green (the page's
@@ -2115,7 +2115,7 @@
     cursor: pointer;
     transition: background var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
   }
-  .ch-msp-tile:active:not(:disabled) {
+  .ch-msp-tile:is(:active, [data-ch-pressed]):not(:disabled) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -2209,8 +2209,8 @@
   .ch-msp-danger::before {
     margin-inline: 12px;
   }
-  .ch-msp-row.is-btn:active::before,
-  .ch-msp-row.is-btn:active + .ch-msp-row::before {
+  .ch-msp-row.is-btn:is(:active, [data-ch-pressed])::before,
+  .ch-msp-row.is-btn:is(:active, [data-ch-pressed]) + .ch-msp-row::before {
     opacity: 0;
   }
   .ch-msp-row + .ch-msp-set {
@@ -2224,7 +2224,7 @@
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-row.is-btn:active:not(:disabled) {
+  .ch-msp-row.is-btn:is(:active, [data-ch-pressed]):not(:disabled) {
     background: var(--ch-ledger-row-press);
   }
   .ch-msp-row__b {
@@ -2285,7 +2285,7 @@
     color: var(--ch-text-secondary);
     cursor: pointer;
   }
-  .ch-msp-icon:active {
+  .ch-msp-icon:is(:active, [data-ch-pressed]) {
     background: rgb(28 25 18 / 0.06);
   }
   /* Remove sits before Message on a member's row: no pull to the edge, so the two targets don't overlap. */
@@ -2351,7 +2351,7 @@
     cursor: pointer;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-danger:active {
+  .ch-msp-danger:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
 
@@ -2526,7 +2526,7 @@
     box-shadow: none;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:active {
+  .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-bub--file + .ch-ms-bub--file::before {
@@ -2750,7 +2750,7 @@
     background: rgb(107 187 140 / 0.16);
   }
 }
-html[data-fw-theme='dark'] .ch-ms-row:active {
+html[data-fw-theme='dark'] .ch-ms-row:is(:active, [data-ch-pressed]) {
   background: rgb(237 231 216 / 0.07);
 }
 html[data-fw-theme='dark'] .ch-ms-row.is-sel {
@@ -2798,7 +2798,7 @@ html[data-fw-theme='dark'] .ch-ms-below {
       background: transparent;
     }
   }
-  html[data-fw-theme='dark'] .ch-msp .ch-ms-row:active {
+  html[data-fw-theme='dark'] .ch-msp .ch-ms-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   html[data-fw-theme='dark'] .ch-msp .ch-ms-row.is-sel {
@@ -2823,7 +2823,7 @@ html[data-fw-theme='dark'] .ch-ms-below {
   html[data-fw-theme='dark'] .ch-msp-new .ch-ms-send.is-ready {
     color: var(--ch-text-on-accent);
   }
-  html[data-fw-theme='dark'] .ch-msp-icon:active {
+  html[data-fw-theme='dark'] .ch-msp-icon:is(:active, [data-ch-pressed]) {
     background: rgb(237 231 216 / 0.06);
   }
   html[data-fw-theme='dark'] .ch-msp-tok {

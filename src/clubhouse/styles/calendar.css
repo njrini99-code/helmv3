@@ -779,7 +779,7 @@
   outline-offset: -2px;
 }
 .ch-cg__row.is-sel,
-.ch-cg__row:active {
+.ch-cg__row:is(:active, [data-ch-pressed]) {
   background: var(--ch-info-100);
 }
 @media (hover: hover) {
@@ -1761,7 +1761,7 @@
   cursor: grab;
   touch-action: none;
 }
-.ch-cal-ft__band:active {
+.ch-cal-ft__band:is(:active, [data-ch-pressed]) {
   cursor: grabbing;
 }
 .ch-cal-ft__band:focus-visible {
@@ -2302,7 +2302,7 @@
     touch-action: manipulation;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-calm-week__d:active:not(.is-on) {
+  .ch-calm-week__d:is(:active, [data-ch-pressed]):not(.is-on) {
     background-color: var(--ch-ledger-row-press);
   }
   .ch-calm-week__d:focus-visible {
@@ -2455,7 +2455,7 @@
     touch-action: manipulation;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-calm-ev:active,
+  .ch-calm-ev:is(:active, [data-ch-pressed]),
   .ch-calm-ev.is-sel {
     background-color: var(--ch-ledger-row-press);
   }
@@ -2658,7 +2658,7 @@
     touch-action: pan-y;
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-calm-month__c:active {
+  .ch-calm-month__c:is(:active, [data-ch-pressed]) {
     background-color: var(--ch-ledger-row-press);
   }
   .ch-calm-month__c:focus-visible {
@@ -2796,7 +2796,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-calm .ch-ag__row:active,
+  .ch-calm .ch-ag__row:is(:active, [data-ch-pressed]),
   .ch-calm .ch-ag__row.is-sel {
     background-color: var(--ch-ledger-row-press);
     box-shadow: none;
@@ -3001,7 +3001,7 @@
     }
   }
   /* A press deepens an agenda row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-cal[data-canopy] .ch-ag__row:active {
+  .ch-cal[data-canopy] .ch-ag__row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -3207,7 +3207,7 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   html[data-fw-theme='dark'] .ch-calm .ch-ag__day.is-today .ch-ag__list {
     box-shadow: none;
   }
-  html[data-fw-theme='dark'] .ch-calm .ch-ag__row:active,
+  html[data-fw-theme='dark'] .ch-calm .ch-ag__row:is(:active, [data-ch-pressed]),
   html[data-fw-theme='dark'] .ch-calm .ch-ag__row.is-sel {
     background-color: var(--ch-ledger-row-press);
     box-shadow: none;

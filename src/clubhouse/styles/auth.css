@@ -424,7 +424,7 @@
     transform: translateX(-2px);
   }
 }
-.ch-au-back:active {
+.ch-au-back:is(:active, [data-ch-pressed]) {
   background: rgb(28 25 18 / 0.09);
   color: var(--ch-text-primary) !important;
 }
@@ -1568,7 +1568,7 @@ html[data-fw-theme='dark'] .ch-au-back:hover,
 html[data-fw-theme='dark'] .ch-au-eye:hover {
   background: rgb(237 231 216 / 0.06);
 }
-html[data-fw-theme='dark'] .ch-au-back:active {
+html[data-fw-theme='dark'] .ch-au-back:is(:active, [data-ch-pressed]) {
   background: rgb(237 231 216 / 0.1);
 }
 html[data-fw-theme='dark'] .ch-au-lock img {

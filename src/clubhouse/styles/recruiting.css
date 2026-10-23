@@ -834,7 +834,7 @@
   .ch-recm-row--static {
     cursor: default;
   }
-  .ch-recm-row.ch-recm-row--static:active {
+  .ch-recm-row.ch-recm-row--static:is(:active, [data-ch-pressed]) {
     background: none;
   }
 
@@ -947,7 +947,7 @@
   .ch-rec-pipe.is-compact .ch-rec-pipe__stage.is-committed > .ch-rec-pipe__dot::after {
     background: rgb(2 18 10 / 0.22);
   }
-  .ch-rec-pipe.is-compact .ch-rec-pipe__stage:active:not(:disabled) > .ch-rec-pipe__dot::after {
+  .ch-rec-pipe.is-compact .ch-rec-pipe__stage:is(:active, [data-ch-pressed]):not(:disabled) > .ch-rec-pipe__dot::after {
     opacity: 1;
   }
 
@@ -979,7 +979,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-sort:active {
+  .ch-recm-sort:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   /* The prospects: rows on seams under a hairline, with no card. */
@@ -1013,7 +1013,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-row:active {
+  .ch-recm-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-recm-row:focus-visible {
@@ -1134,7 +1134,7 @@
     content: '';
     pointer-events: none;
   }
-  .ch-recm-tile:active::after {
+  .ch-recm-tile:is(:active, [data-ch-pressed])::after {
     opacity: 1;
   }
   .ch-recm-tile:focus-visible {
@@ -1179,7 +1179,7 @@
   .ch-recm-stagerow::after {
     bottom: 0;
   }
-  .ch-recm-stagerow:active {
+  .ch-recm-stagerow:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-recm-stagerow:focus-visible {
@@ -1248,7 +1248,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-empty__a:active {
+  .ch-recm-det .ch-rec-empty__a:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   /* 44px tall on the heading's line; it sits above the first row, so its reach is not cut by the row under it. */
@@ -1261,7 +1261,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-link:active {
+  .ch-recm-det .ch-rec-link:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-recm-det .ch-rec-notes {
@@ -1297,7 +1297,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__open:active {
+  .ch-recm-det .ch-rec-doc__open:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-recm-det .ch-rec-doc__t {
@@ -1310,7 +1310,7 @@
     touch-action: manipulation;
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-recm-det .ch-rec-doc__x:active {
+  .ch-recm-det .ch-rec-doc__x:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
   }
   .ch-recm-det .ch-rec-note {
@@ -1631,7 +1631,7 @@
     background: color-mix(in oklab, var(--ch-green-600) 8%, transparent);
   }
   /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
-  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:active::before {
+  .ch-rec[data-canopy] .ch-rec-tb tbody tr .ch-rec-tb__name:is(:active, [data-ch-pressed])::before {
     background: var(--ch-ledger-row-press);
     transition-duration: var(--ch-dur-press);
   }
@@ -1782,7 +1782,7 @@
   }
 }
 /* A press tints the pick a beat after the finger lands, as a Ledger row does (CH-1606). */
-.ch-rec-cal__pick:active {
+.ch-rec-cal__pick:is(:active, [data-ch-pressed]) {
   background-color: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
 }
@@ -2033,7 +2033,7 @@
     transform: translateY(-2px);
   }
 }
-.ch-rec-pipe__stage:not(:disabled):active > .ch-rec-pipe__dot {
+.ch-rec-pipe__stage:not(:disabled):is(:active, [data-ch-pressed]) > .ch-rec-pipe__dot {
   transform: scale(0.96);
   transition-duration: var(--ch-dur-press);
 }

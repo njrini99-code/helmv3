@@ -756,7 +756,7 @@
   }
 }
 /* A press deepens the row's tint over the press beat (the shell's CH-1606: a row never scales). */
-.ch-lg__r:has(.ch-lg__a:active) {
+.ch-lg__r:has(.ch-lg__a:is(:active, [data-ch-pressed])) {
   background: var(--ch-ledger-row-press);
   transition-duration: var(--ch-dur-press);
 }
@@ -3775,7 +3775,7 @@
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
   /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it (CH-1606). */
-  .ch-stm .ch-stm-row:active {
+  .ch-stm .ch-stm-row:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3808,14 +3808,14 @@
   }
   /* All N rounds and the Message key answer a press as a ghost button and a key do: a tint, and the shrink every
      button takes (`data-ch-press`, CH-1606). */
-  .ch-stm .ch-spm-more:active {
+  .ch-stm .ch-spm-more:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
   .ch-stm .ch-spm-head__msg {
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-stm .ch-spm-head__msg:active {
+  .ch-stm .ch-spm-head__msg:is(:active, [data-ch-pressed]) {
     background: var(--ch-green-50);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -3894,7 +3894,7 @@
     border-radius: var(--ch-radius-md);
     transition: background var(--ch-dur-press) var(--ch-ease);
   }
-  .ch-stm .ch-gd.is-phone .ch-gm-how > summary:active {
+  .ch-stm .ch-gd.is-phone .ch-gm-how > summary:is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -4512,7 +4512,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     font-weight: 600;
   }
   /* The press tint waits a beat, as a row's does (CH-1606); the chosen row has nothing to change. */
-  .ch-stm.is-team .ch-stm-leg:not([data-active]):active {
+  .ch-stm.is-team .ch-stm-leg:not([data-active]):is(:active, [data-ch-pressed]) {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
   }
@@ -7360,4 +7360,10 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   .ch-lg__cl {
     display: none !important;
   }
+}
+
+/* B6 (last, so a fill set by a state rule above still takes the tint): a filter chip shows a quick tap
+   (lib/press.ts), the row-press tint over its fill. */
+.ch-sf__chip:is(:active, [data-ch-pressed]) {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
 }
