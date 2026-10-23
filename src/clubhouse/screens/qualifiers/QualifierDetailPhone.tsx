@@ -215,7 +215,7 @@ export function QualifierDetailPhone({
           {status === 'completed' && (
             <Button
               leftIcon={LockOpen}
-              disabled={reopenPending}
+              busy={reopenPending}
               onClick={() => {
                 // The sheet stays up while the server answers, so the wait is shown on the button that asked; a refusal leaves it
                 // there to try again, and a landed reopen closes it (the sheet then offers Close, not Reopen).

@@ -146,7 +146,7 @@ export function QualifierDetail({
           </Button>
           <Button
             variant="primary"
-            disabled={close.pending}
+            busy={close.pending}
             feel={null}
             onClick={() => void close.run()}
           >
@@ -222,7 +222,7 @@ export function QualifierDetail({
                 <Button
                   variant="ghost"
                   leftIcon={LockOpen}
-                  disabled={reopen.pending}
+                  busy={reopen.pending}
                   onClick={() => void reopenNow()}
                 >
                   {reopen.pending ? <span data-ch-code="CH-09406">Reopening…</span> : 'Reopen qualifier'}

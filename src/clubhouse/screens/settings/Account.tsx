@@ -63,7 +63,7 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
           <b>Photo</b>
           <span>A square photo works best. JPEG, PNG or WebP, up to 2 MB.</span>
           <div className="ch-set-photo__acts">
-            <Button size="sm" leftIcon={Camera} disabled={uploading} onClick={() => file.current?.click()}>
+            <Button size="sm" leftIcon={Camera} busy={uploading} onClick={() => file.current?.click()}>
               {/* CH-8404: the photo dims and the button says so while it uploads. */}
               {uploading ? 'Uploading…' : f.draft.avatarUrl ? 'Replace photo' : 'Add photo'}
             </Button>
@@ -315,7 +315,7 @@ function DangerCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted
             </Button>
             <Button
               variant="danger"
-              disabled={typed.trim().toLowerCase() !== 'delete' || del.pending}
+              busy={del.pending} disabled={typed.trim().toLowerCase() !== 'delete'}
               onClick={() => void del.run()}
             >
               {del.pending ? 'Deleting…' : 'Delete account'}

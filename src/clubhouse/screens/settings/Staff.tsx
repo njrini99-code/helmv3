@@ -52,10 +52,10 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
           >
             {requests.map((c) => (
               <Row key={c.coachId} label={pendingCoachName(c)} help={c.fullName?.trim() ? c.email : null}>
-                <Button size="sm" variant="secondary" disabled={deciding} onClick={() => setDeclining(c)}>
+                <Button size="sm" variant="secondary" busy={staff.decline.pending && staff.busyId === c.coachId} disabled={deciding} onClick={() => setDeclining(c)}>
                   {staff.decline.pending && staff.busyId === c.coachId ? 'Declining…' : 'Decline'}
                 </Button>
-                <Button size="sm" variant="primary" disabled={deciding} onClick={() => void staff.approve.run(c)}>
+                <Button size="sm" variant="primary" busy={staff.approve.pending && staff.busyId === c.coachId} disabled={deciding} onClick={() => void staff.approve.run(c)}>
                   {staff.approve.pending && staff.busyId === c.coachId ? 'Approving…' : 'Approve'}
                 </Button>
               </Row>
@@ -94,7 +94,7 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
             <Segmented label="Staff role" size="sm" value={invite.role} options={STAFF_ROLE_OPTIONS} onChange={invite.setRole} />
           </Row>
           <Row label="New invite">
-            <Button size="sm" variant="secondary" leftIcon={UserPlus} disabled={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
+            <Button size="sm" variant="secondary" leftIcon={UserPlus} busy={invite.create.pending} onClick={() => void invite.create.run(invite.role)}>
               {invite.create.pending ? 'Making…' : 'Create invite'}
             </Button>
           </Row>
