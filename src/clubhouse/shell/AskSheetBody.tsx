@@ -95,12 +95,12 @@ export default function AskSheetBody({
             {phone && (
               <button
                 type="button"
-                className="ch-asks__grab"
+                className="ch-asks__drag"
                 aria-label={full ? 'Make the sheet smaller' : 'Make the sheet full height'}
                 onPointerDown={drag.onPointerDown}
                 onClick={() => setFull((f) => !f)}
               >
-                <i aria-hidden="true" />
+                <i className="ch-grab" aria-hidden="true" />
               </button>
             )}
             <header className="ch-asks__head" onPointerDown={phone ? drag.onPointerDown : undefined}>

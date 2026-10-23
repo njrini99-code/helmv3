@@ -602,7 +602,9 @@ export function Bell() {
                 >
                   <BellStacks items={items} failed={listFailed} onRetry={() => setAttempt((x) => x + 1)} onOpen={openItem} onClear={clearItems} />
                 </div>
-                <div className="ch-bst__grab" aria-hidden="true" onPointerDown={onSheetDrag} />
+                <div className="ch-bst__drag" aria-hidden="true" onPointerDown={onSheetDrag}>
+                  <span className="ch-grab" />
+                </div>
               </m.div>
             )}
             <AnimatePresence>

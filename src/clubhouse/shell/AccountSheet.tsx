@@ -182,7 +182,7 @@ export function AccountSheet({
               }}
             >
               <OverlayScrollLock />
-              <div className="ch-more__grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+              <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
               <div className="ch-more__head" onPointerDown={drag.onPointerDown}>
                 <span>Account</span>
                 <button type="button" className="ch-more__x" aria-label="Close" onClick={() => setMoreOpen(false)}>

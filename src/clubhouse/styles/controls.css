@@ -385,7 +385,7 @@
   box-shadow: var(--ch-elevation-overlay);
   animation: ch-pop var(--ch-dur-base) var(--ch-ease);
 }
-.ch-modal__grab {
+.ch-modal__panel > .ch-grab {
   display: none;
 }
 .ch-modal__head {
@@ -485,19 +485,15 @@
        overshoot; the ease-out over base where linear() is missing. */
     animation: ch-rise var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
   }
-  .ch-modal__grab {
+  .ch-modal__panel > .ch-grab {
     display: block;
-    width: 36px;
-    height: 5px;
-    margin: 8px auto 0;
-    border-radius: 3px;
-    background: var(--ch-ivory-300);
+    margin-top: 8px;
   }
   .ch-modal__head {
     padding-top: 12px;
   }
   /* The sheet follows the finger from its grab and header (CH-1611). */
-  .ch-modal__grab,
+  .ch-modal__panel > .ch-grab,
   .ch-modal__head {
     touch-action: none;
   }
@@ -1416,4 +1412,24 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
    draws the point against the digits ("73.4" read "734"). */
 .ch-num__pt {
   margin-inline: 0.06em;
+}
+
+/* CONS-23: every sheet's grab handle is this one (iOS's: 36 by 5, a 2.5px corner, a quiet fill). A sheet places it;
+   --hit widens what a finger can catch, for a handle that drags. */
+.ch-grab {
+  position: relative;
+  display: block;
+  flex: none;
+  align-self: center;
+  width: 36px;
+  height: 5px;
+  margin-inline: auto;
+  border-radius: 2.5px;
+  background: var(--ch-grab-bg);
+  touch-action: none;
+}
+.ch-grab--hit::after {
+  position: absolute;
+  inset: -12px -40px;
+  content: '';
 }

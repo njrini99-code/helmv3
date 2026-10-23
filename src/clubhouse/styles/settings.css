@@ -1695,22 +1695,6 @@
   .ch-setm-dlg.is-full .ch-setm-sheet__note {
     text-align: center;
   }
-  .ch-setm-grab {
-    position: relative;
-    flex: none;
-    align-self: center;
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--ch-ivory-400);
-    touch-action: none;
-  }
-  /* A bigger grip to take hold of. */
-  .ch-setm-grab::after {
-    content: '';
-    position: absolute;
-    inset: -12px -40px;
-  }
   .ch-setm-bar {
     display: grid;
     flex: none;

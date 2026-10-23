@@ -1389,22 +1389,6 @@
     font: var(--ch-type-13);
     color: var(--ch-text-tertiary);
   }
-  .ch-rec-grab {
-    position: relative;
-    flex: none;
-    align-self: center;
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--ch-ivory-400);
-    touch-action: none;
-  }
-  /* A bigger grip to take hold of. */
-  .ch-rec-grab::after {
-    content: '';
-    position: absolute;
-    inset: -12px -40px;
-  }
   .ch-rec-bar {
     display: grid;
     flex: none;

@@ -926,17 +926,12 @@
   overscroll-behavior: contain;
 }
 /* The grab and the header drag the sheet shut (useSheetDrag); the rest of it scrolls. */
-.ch-more__grab,
+.ch-more > .ch-grab,
 .ch-more__head {
   touch-action: none;
 }
-.ch-more__grab,
-.ch-bellp__grab {
-  width: 38px;
-  height: 5px;
-  margin: 8px auto 4px;
-  border-radius: var(--ch-radius-xs);
-  background: rgb(28 25 18 / 0.18);
+.ch-more > .ch-grab {
+  margin-block: 8px 4px;
 }
 .ch-more__head {
   display: flex;
@@ -1540,7 +1535,6 @@ button.ch-more__row[disabled] {
   outline: none;
 }
 /* It follows the finger from its grab and header (CH-1611); the list scrolls. */
-.ch-bellp__grab,
 .ch-bellp__shead {
   flex: none;
   touch-action: none;
@@ -2580,10 +2574,6 @@ html[data-fw-theme='dark'] .ch-empty-page__seg i {
 html[data-fw-theme='dark'] .ch-scrim {
   background: rgb(0 0 0 / 0.55);
 }
-html[data-fw-theme='dark'] .ch-more__grab,
-html[data-fw-theme='dark'] .ch-bellp__grab {
-  background: rgb(237 231 216 / 0.22);
-}
 html[data-fw-theme='dark'] .ch-more__x,
 html[data-fw-theme='dark'] .ch-bellp__x {
   background: rgb(237 231 216 / 0.08);
@@ -2832,7 +2822,7 @@ html[data-fw-theme='dark'] .ch-offline {
   color: var(--ch-green-700);
   text-decoration: none;
 }
-.ch-asks__grab {
+.ch-asks__drag {
   display: none;
 }
 /* The sheet has no roster to mention from; the full Ask (Open in CoachHelm) has. */
@@ -2858,7 +2848,7 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-asks__panel[data-detent='full'] {
     height: calc(100dvh - env(safe-area-inset-top) - 12px);
   }
-  .ch-asks__grab {
+  .ch-asks__drag {
     display: grid;
     flex: none;
     place-items: center;
@@ -2868,12 +2858,6 @@ html[data-fw-theme='dark'] .ch-offline {
     border: 0;
     background: none;
     touch-action: none;
-  }
-  .ch-asks__grab i {
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--ch-border-strong);
   }
   .ch-asks__head {
     padding-top: 0;
@@ -3339,7 +3323,7 @@ html[data-fw-theme='dark'] .ch-offline {
     content: '';
   }
   /* The handle at the foot of the screen: drag it up (or the heading) to put the drop away. */
-  .ch-bst__grab {
+  .ch-bst__drag {
     position: absolute;
     bottom: calc(10px + env(safe-area-inset-bottom));
     left: 50%;
@@ -3349,15 +3333,10 @@ html[data-fw-theme='dark'] .ch-offline {
     touch-action: none;
     cursor: grab;
   }
-  .ch-bst__grab::before {
-    position: absolute;
-    top: 9px;
-    left: 8px;
-    width: 40px;
-    height: 5px;
-    border-radius: 3px;
+  /* On the bell's green the handle is an ivory one. */
+  .ch-bst__drag > .ch-grab {
+    margin-top: 9px;
     background: rgb(244 238 221 / 0.42);
-    content: '';
   }
 
   /* Positioned: a stack or card on its way out is lifted out of the flow (BellStacks' popLayout) and placed against the

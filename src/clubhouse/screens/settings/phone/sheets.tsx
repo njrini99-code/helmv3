@@ -127,7 +127,7 @@ export function FormSheet({
               if (!actionDisabled && !busy) onAction();
             }}
           >
-            <div className="ch-setm-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+            <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
             <header className="ch-setm-bar" onPointerDown={drag.onPointerDown}>
               <button type="button" className="ch-setm-bar__b" onClick={requestClose}>
                 Cancel
@@ -194,7 +194,7 @@ export function ListSheet({
     <dialog {...dialogProps} className="ch-setm-dlg" aria-labelledby={titleId} data-ch-code={code}>
       {retainContent(open && (
         <div className="ch-setm-sheet">
-          <div className="ch-setm-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-setm-lbar" onPointerDown={drag.onPointerDown}>
             <div className="ch-setm-lbar__t">
               <h2 id={titleId} tabIndex={-1}>{title}</h2>

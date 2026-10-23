@@ -147,7 +147,7 @@ export function CourseView({
               </div>
             </header>
             <section className="ch-rtcv__sheet" aria-labelledby="ch-rtcv-h">
-              <span className="ch-rtcv__grab" aria-hidden="true" />
+              <span className="ch-grab" aria-hidden="true" />
               <div className="ch-rtcv__sh">
                 <h3 id="ch-rtcv-h">{isCurrent ? 'This hole' : `Hole ${hole.number}`}</h3>
                 {!isCurrent && hole.score != null && (

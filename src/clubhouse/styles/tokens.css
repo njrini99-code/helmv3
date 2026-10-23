@@ -417,6 +417,8 @@
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;
   --ch-radius-sheet: 20px;
+  /* CONS-23: the one sheet grab handle's fill (controls.css .ch-grab). */
+  --ch-grab-bg: var(--ch-ivory-300);
   /* B4: how far a sideways scroller's clipped edge fades on a phone (ui.css .ch-hscroll), so the edge reads as more. */
   --ch-edge-fade: 28px;
   /* B3: the width of a separator. One device pixel on a Retina screen is set further down (min-resolution). */
@@ -734,6 +736,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
      (the placeholder ink falls under 4.5:1 there). */
   --ch-bg-elevated: #232925;
   --ch-bg-elevated-2: #2b322d;
+  --ch-grab-bg: rgb(237 231 216 / 0.22);
   --ch-bg-subtle: #181d19;
   --ch-bg-inset: #0e120f;
   --ch-bg-hover: #212722;

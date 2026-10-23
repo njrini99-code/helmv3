@@ -74,7 +74,7 @@ export function RecFormSheet({
             if (!busy) onAction();
           }}
         >
-          <div className="ch-rec-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-rec-bar" role="none" onPointerDown={drag.onPointerDown}>
             <button type="button" className="ch-rec-bar__b" disabled={busy} onClick={onClose}>
               Cancel
@@ -115,7 +115,7 @@ export function RecPickSheet({
     <dialog {...dialogProps} className="ch-rec-dlg" aria-labelledby={titleId} data-ch-code={code}>
       {retainContent(open && (
         <div className="ch-rec-sheet">
-          <div className="ch-rec-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           <header className="ch-rec-bar is-pick" role="none" onPointerDown={drag.onPointerDown}>
             <h2 id={titleId} className="ch-rec-bar__t" tabIndex={-1}>
               {title}

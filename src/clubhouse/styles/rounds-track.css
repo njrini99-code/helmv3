@@ -2057,14 +2057,6 @@ button.ch-rt-strip__h {
   color: var(--ch-ink-900);
   box-shadow: var(--ch-elevation-sheet);
 }
-.ch-rtcv__grab {
-  flex: none;
-  align-self: center;
-  width: 38px;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--ch-ivory-400);
-}
 .ch-rtcv__sh {
   display: flex;
   align-items: baseline;
