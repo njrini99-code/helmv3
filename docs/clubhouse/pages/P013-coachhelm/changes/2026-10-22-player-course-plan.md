@@ -43,5 +43,3 @@ Held items:     coachhelm_course_plan_v1 stays off in production
   `src/clubhouse/screens/coachhelm/__tests__/my-course-plan.test.tsx`.
 - Preview states `coachhelm-player?state=courseplan`, `courseplannone` and
   `courseplanfailed`, phone screenshots (390 × 844), light and dark.
-- How you play's window key (`.ch-hg-lede__k`) moves from 12.5px to 12px, so
-  it sits on the 11-size type scale (mot-08) that landed alongside it.

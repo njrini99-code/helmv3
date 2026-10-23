@@ -50,5 +50,3 @@ Held items:     coachhelm_data_gap_prompt_v1 and coachhelm_data_prompts_v2
   existing round tracking and entry suites.
 - Preview states `track?state=puttprompt|recovery|nudge|nudge-summary`, phone
   screenshots (390 × 844), light and dark.
-- The putt prompt's counter line (`.ch-rt-ask__s`) is 13px, on the 11-size
-  type scale (mot-08).
