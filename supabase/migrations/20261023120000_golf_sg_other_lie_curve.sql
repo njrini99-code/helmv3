@@ -78,7 +78,9 @@ BEGIN
   SELECT p.prosrc INTO v_src FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'sg_expected_strokes'
     AND pg_get_function_identity_arguments(p.oid) = 'p_lie text, p_distance_yards numeric';
-  IF v_src IS NULL OR md5(v_src) <> '69c1ac904be30a3b4b24210f4986b89e' THEN
+  -- 69c1ac90... is live; eac106bc... is what a fresh migration replay leaves
+  -- (20260606140000's body). The two differ only in comments and spacing.
+  IF v_src IS NULL OR md5(v_src) NOT IN ('69c1ac904be30a3b4b24210f4986b89e', 'eac106bc7b389bc0999cc9f19dea8a18') THEN
     RAISE EXCEPTION 'sg other curve: live sg_expected_strokes(text,numeric) is not the known body (md5 %). Rebase this file on the live body.', md5(v_src);
   END IF;
   SELECT p.prosrc INTO v_src FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
