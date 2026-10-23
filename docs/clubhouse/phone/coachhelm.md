@@ -206,9 +206,9 @@ too, not "off".
 - Pick a course turns into a row of course chips that wraps (name, then the
   round count in tabular numbers); each chip is 44px tall and ticks the
   select haptic (CH-13733). The picked chip is pressed.
-- The plan (CH-13917): "At" and the course name, up to three lines as a plain list, then
-  the thin-history line below six rounds in the muted caption. No coach copy,
-  no club names.
+- The plan (CH-13917): "At" and the course name, up to three lines as a plain
+  list, then the thin-history line below six rounds in the muted caption. No
+  coach copy, no club names.
 - No course with three rounds, or too few on the picked one: one muted line
   (CH-13333). A failed read: "Your course plan didn't load. Nothing was
   changed." with Try again (CH-13233).

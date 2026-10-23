@@ -37,12 +37,13 @@ no control leads nowhere.
 Where things live:
 - Code: `src/clubhouse/screens/coachhelm/` (`PlayerBoard`, `CoachBoard`,
   `Proposals`, `parts`, `writes`, `CoachHelmSkeleton`); the player's views in
-  `screens/coachhelm/views/` (`PlayerHelmTabs`, `Frame`, `Standing`, `HowYouPlay`,
-  `DeepDive`, `KeepReading`, `Skeletons`)
+  `screens/coachhelm/views/` (`PlayerHelmTabs`, `Frame`, `Standing`,
+  `HowYouPlay`, `DeepDive`, `KeepReading`, `Skeletons`)
 - Player views' loaders: `src/clubhouse/data/coachhelm-profile.ts`
-  (`loadPlayerGame`, Standing's How you play), `coachhelm-standing.ts` (`loadPlayerStanding`) and
-  `coachhelm-dive.ts` (`loadPlayerDeepDive`), with their pure steps in
-  `coachhelm-profile-shape.ts`, `coachhelm-standing-shape.ts` and
+  (`loadPlayerGame`, Standing's How you play), `coachhelm-standing.ts`
+  (`loadPlayerStanding`) and `coachhelm-dive.ts` (`loadPlayerDeepDive`), with
+  their pure steps in `coachhelm-profile-shape.ts`,
+  `coachhelm-standing-shape.ts` and
   `coachhelm-dive-shape.ts`, and the shared `coachhelm-views-shape.ts` (the view
   union, the addresses, the Development link); the gate every view and the board
   share is `loadPlayerHelmGate` in `coachhelm.ts`
@@ -51,7 +52,8 @@ Where things live:
   `coachhelm-views.test.tsx` (the route, the gate, the sub-navigation)
 - A coach's views of one player (spec A, 2026-10-21): the same two views at
   `?view=deep-dive|standing&player=<golf_players.id>`, landing on the Deep
-  dive; `view=profile&player=` lands on Standing's How you play (CH-13913). Loaders: `src/clubhouse/data/coachhelm-player.ts`
+  dive; `view=profile&player=` lands on Standing's How you play (CH-13913).
+  Loaders: `src/clubhouse/data/coachhelm-player.ts`
   (`loadCoachPlayerScope`, which checks the id against the coach's own team
   and makes the branded scope the three loaders take, and
   `loadCoachPlayerGame`, `loadCoachPlayerStanding`,

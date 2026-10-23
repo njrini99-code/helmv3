@@ -245,8 +245,8 @@ until one does. All three are off in production
   at the first hole before its first shot and in the Round complete sheet
   (inset there): "Link this round to a course" and Pick the course, which
   opens the course picker with the library only (no Add). After a pick:
-  "Linked to" and the course name, Change, and "It saves with your next shot" (in the
-  sheet: "when you post the round").
+  "Linked to" and the course name, Change, and "It saves with your next shot"
+  (in the sheet: "when you post the round").
 - **Feel.** The select tick on every chip (CH-11760), nothing else; no motion
   of their own.
 
