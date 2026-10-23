@@ -509,6 +509,9 @@
   /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
      scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
   --ch-dur-press-delay: 50ms;
+  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
+     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-dur-busy-delay: 150ms;
   /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
      that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
      interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs

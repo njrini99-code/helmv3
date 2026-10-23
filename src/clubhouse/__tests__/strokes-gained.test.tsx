@@ -105,9 +105,10 @@ beforeEach(() => {
 
 describe('the strokes gained baseline', () => {
   it('names the Tour for a men’s team, the women’s Tour baseline for a women’s team, and claims none when the tour is unknown', () => {
-    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline' });
-    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline" });
-    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline' });
+    // `mark` and `zero` name the gauge's zero mark and the trend's zero line (A8.3).
+    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', zero: 'Zero is the Tour' });
+    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", zero: "Zero is the women's Tour" });
+    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', zero: 'Zero is the baseline' });
   });
 
   it('the player profile says vs Tour (never vs D1) on the hero, on the phone figure and in the comparison table; a women’s team says so', () => {

@@ -13,6 +13,7 @@ import { Icon } from '../../ui/Icon';
 import { Tooltip } from '../../ui/Tooltip';
 
 import { dateOf, TYPE_LABEL } from './labels';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 export { dateOf, TYPE_LABEL };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -513,6 +514,8 @@ function Meter({ label, value, pct, muted }: { label: string; value: string; pct
  * desktop Ledger a round that opens its review takes the row tint on hover (quick) and a deeper one on press, no lift.
  */
 export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: string | null; /** Called as the review opens (the library notes it, so the review's Back is a step back). */ onOpen?: () => void; /** The library's right-click menu (desktop). */ bind?: ContextMenuBind }) {
+  // The review is fetched whole as a finger lands on the card, so it opens without its skeleton (A13).
+  const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
   const body = (
     <>
@@ -572,6 +575,7 @@ export function RoundRow({ r, href, onOpen, bind }: { r: ChLibraryRound; href: s
       className={'ch-rd-sc' + (under ? ' is-under' : '')}
       aria-label={label}
       {...bind}
+      {...press(href)}
       onClick={(e) => {
         haptic('select');
         // A plain left click only: a new-tab click may copy this tab's storage into a tab with no history behind it.

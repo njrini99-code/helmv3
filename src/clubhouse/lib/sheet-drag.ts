@@ -101,6 +101,24 @@ export function chThrownExit(speed: number, travel: number): { lead: number; ms:
 }
 
 /**
+ * The dim behind a dialog (A9): its `::backdrop` opacity is `--ch-scrim-a`, moved here and by the sheet drag, so it fades
+ * with the panel, turns round mid-exit and follows a finger, instead of a keyframe that a close could only jump to the end of.
+ * `ms` and `easing` set how it travels to `a` (the panel's own), 0 for at once.
+ */
+export function chSetScrim(dialog: HTMLElement, a: number, ms?: number, easing?: string) {
+  if (ms == null) dialog.style.removeProperty('--ch-scrim-dur');
+  else dialog.style.setProperty('--ch-scrim-dur', `${Math.max(0, Math.round(ms))}ms`);
+  if (easing) dialog.style.setProperty('--ch-scrim-ease', easing);
+  else dialog.style.removeProperty('--ch-scrim-ease');
+  dialog.style.setProperty('--ch-scrim-a', String(a));
+}
+
+/** How dark the dim stands with the sheet `offset` px out of its `size` px: full at rest, half at half way, clear when gone (A9). */
+export function chScrimAt(offset: number, size: number): number {
+  return size > 0 ? 1 - Math.min(1, Math.max(0, offset / size)) : 1;
+}
+
+/**
  * A phone sheet follows the finger down, and closes past 80px or on a quick flick with the medium settle haptic;
  * let go sooner and it springs back on the smooth spring, starting at the speed it was moving, and a finger can catch
  * it on the way. Pulled up past its open position it gives like a rubber band, its own colour reaching under it, and
@@ -161,9 +179,13 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
         // First in the list, so the sheet's own elevation blur never draws a seam across it.
         el.style.boxShadow = `0 ${FLOOR_PX}px 0 ${face ? getComputedStyle(face).backgroundColor : 'var(--ch-sheet-bg)'}${shadow && shadow !== 'none' ? `, ${shadow}` : ''}`;
       };
+      // The dim follows the finger, at once, as a sheet's does on iOS (A9): lighter as the sheet goes, back as it returns.
+      const dialog = el.closest('dialog');
+      const size = direction === 'left' ? el.offsetWidth : el.offsetHeight;
       const put = (offset: number) => {
         if (offset < 0 && direction === 'down') floor();
         el.style.translate = direction === 'left' ? `${-offset}px 0` : `0 ${offset}px`;
+        if (dialog) chSetScrim(dialog, chScrimAt(offset, size), 0);
       };
       el.style.transition = 'none';
       // Caught mid spring-back, it stays under the finger (dropping its transition would jump it to rest).
@@ -199,8 +221,11 @@ export function useSheetDrag(sheet: RefObject<HTMLElement | null>, onClose: () =
           if (direction === 'down' && dy > 0 && Array.from({ length: 49 }, (_, i) => curve.ease(i / 48)).some((p) => p > 1)) floor();
           ms = curve.ms;
           el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
+          // The dim comes back with the panel, on its spring (A9).
+          if (dialog) chSetScrim(dialog, 1, curve.ms, curve.linear);
         } else {
           el.style.transition = 'translate var(--ch-dur-release) var(--ch-ease)';
+          if (dialog) chSetScrim(dialog, 1, CH_DUR.release * 1000);
         }
         el.style.translate = '';
         el.addEventListener('transitionend', onEnd);

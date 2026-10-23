@@ -32,9 +32,9 @@ describe('FigureGauge (A8.4)', () => {
     expect(document.querySelector('.ch-fg__end')!.className).toContain('ch-num');
   });
 
-  it("names the women's Tour at zero for a women's team (A8.3)", () => {
+  it('names the women’s Tour at zero for a women’s team (A8.3)', () => {
     render(<FigureGauge gauge={{ kind: 'sg', tour: 'lpga' }} n={-0.6} />);
-    expect(document.querySelector('.ch-fg__gauge em')!.textContent).toBe("Women's Tour");
+    expect(document.querySelector('.ch-fg__gauge em')!.textContent).toMatch(/^Women.s Tour$/);
   });
 });
 

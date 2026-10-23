@@ -1905,6 +1905,9 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv-d::backdrop {
   background: rgb(4 20 12 / 0.62);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
 .ch-rtcv {
   position: relative;

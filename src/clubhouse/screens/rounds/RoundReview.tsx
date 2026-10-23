@@ -39,6 +39,7 @@ import { useRoundRecap } from './use-round-recap';
 import { openedFromLibrary } from './return-state';
 import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
+import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
@@ -322,6 +323,8 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
       const res = await updateRoundType({ roundId, roundType: choice.type, qualifierId: choice.qualifierId, qualifierRoundNumber: choice.roundNumber });
       if (res.success) {
         setOpen(false);
+        // Stats and the qualifier pages held from before count the round under its old type (A21).
+        invalidatePrefetchTabs();
         router.refresh();
       }
       return res;

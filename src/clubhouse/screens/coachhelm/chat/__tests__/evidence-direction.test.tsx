@@ -27,7 +27,8 @@ const block = (goodDirection: TrendBlock['goodDirection'], values: number[]): Tr
   }) as unknown as TrendBlock;
 
 const dotsY = () => [...document.querySelectorAll('.ch-th-trend circle')].map((c) => Number(c.getAttribute('cy')));
-const ticks = () => [...document.querySelectorAll('.ch-th-trend text.ch-th-ax.ch-num')].map((t) => t.textContent);
+/** The y axis's tick labels (end-anchored at the left); the x labels name the rounds. */
+const ticks = () => [...document.querySelectorAll('.ch-th-trend text.ch-th-ax.ch-num[text-anchor="end"]')].map((t) => t.textContent);
 
 describe('the Ask trend draws better as up (A8.1)', () => {
   it('lower is better: the latest, lower score is higher on screen, and the chart says so', () => {

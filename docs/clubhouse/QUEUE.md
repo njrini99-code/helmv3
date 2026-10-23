@@ -297,6 +297,12 @@ its rows together and does not map them one to one.
 | aplus-a4 | Team SG headline and leg totals obey the 3-round floor (A4) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
 | aplus-a20 | Standing “Refreshed” date in the team’s time zone; SG to one decimal (A20) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-1); no Bridge IDs or CH codes needed |
 | aplus-a8 | Chart defects (A8, 11 parts): Ask trend better-is-up with round ticks; SG tick decimals; women's Tour zero label; gauge stays in its half with its end labelled; putts lower is better; green's bold side is the worst; month spark per 18; ring early fill under 10 putts; tabular tick numbers; team phone mean weighted; par line only for one par, dead ScoreLine removed | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-2); no Bridge IDs or CH codes needed |
+| aplus-a9 | A dialog's dim fades with its panel, turns round mid-exit and follows a sheet drag (`--ch-scrim-a`) (A9) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
+| aplus-a10 | Desktop gapless crossfade on drill-ins (A10): waits on the owner (OQ-14, pinned motion tokens) | Clubhouse A+ | held | | Owner decision OQ-14 |
+| aplus-a11 | Stats busy dim holds off 150ms (`--ch-dur-busy-delay`) (A11) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
+| aplus-a12 | A finger's press waits 70ms before a button shrinks; a quick tap still shows it (A12) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
+| aplus-a21 | Held prefetch pages dropped after a round is submitted, discarded or retyped; Roster revalidates on submit (A21) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
+| aplus-a13 | A row's push target is fetched whole on touch-down (rounds cards, Stats player list, qualifier rows, Roster's View insights) (A13) | Clubhouse A+ | in progress | #2356 | agent/clubhouse-aplus-wp1 (Clubhouse A+ handoff, WP-3); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 

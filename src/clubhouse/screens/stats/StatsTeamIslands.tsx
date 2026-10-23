@@ -34,6 +34,7 @@ import { gridPeek, legDetailHref, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -720,6 +721,8 @@ function LegGrid({
   focus: string | null;
   setFocus: (id: string | null) => void;
 }) {
+  // A player's stats are fetched whole as a finger lands on the row (A13).
+  const press = usePressPrefetch();
   const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
@@ -783,7 +786,7 @@ function LegGrid({
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
                     <PlayerPeek player={gridPeek(g)} within="[role=cell]">
-                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)}>
+                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
                         <b>{g.name}</b>
                         <LinkPending />
                       </Link>

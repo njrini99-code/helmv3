@@ -1747,6 +1747,8 @@ async function submitGolfRoundComprehensiveImpl(
       revalidatePath('/golf/dashboard');
       revalidatePath('/golf/dashboard/rounds');
       revalidatePath('/golf/dashboard/stats');
+      // The roster's averages and form read the new round (Clubhouse A+ A21).
+      revalidatePath('/golf/dashboard/roster');
       // Engine-driven screens. LIVE-22: these paths were missing, so players
       // had to hard-reload CoachHelm / My Development to see post-round
       // insights, qualifier progress, or focus-area shifts.

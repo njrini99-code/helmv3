@@ -331,9 +331,9 @@
   background: rgb(28 25 18 / 0.08);
 }
 
-/* A sheet's rise and its scrim wait at their first frame until the sheet has painted (useDialogLifetime). */
-.ch-root [data-ch-hold],
-.ch-root dialog[data-ch-hold]::backdrop {
+/* A sheet's rise waits at its first frame until the sheet has painted (useDialogLifetime); its scrim is held at 0 the
+   same two frames by --ch-scrim-a (A9). */
+.ch-root [data-ch-hold] {
   animation-play-state: paused;
 }
 
@@ -351,10 +351,13 @@
 }
 .ch-modal::backdrop {
   background: var(--ch-scrim, rgb(20 20 18 / 0.36));
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease);
+  /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
+  opacity: var(--ch-scrim-a, 1);
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
 }
-.ch-root dialog[data-closing]::backdrop {
-  animation: ch-fade var(--ch-dur-base) var(--ch-ease) reverse forwards;
+/* Every dialog's dim starts at full; useDialogLifetime and the sheet drag move it (A9). */
+.ch-root dialog {
+  --ch-scrim-a: 1;
 }
 .ch-modal__panel {
   box-sizing: border-box;

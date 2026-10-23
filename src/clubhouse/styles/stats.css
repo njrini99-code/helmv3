@@ -21,6 +21,8 @@
 }
 .ch-st[aria-busy='true'] {
   opacity: 0.6;
+  /* The dim waits a beat (A11): a window that lands within 150ms never flickers. Leaving busy clears at once (delay 0). */
+  transition-delay: var(--ch-dur-busy-delay);
 }
 /* The phone keeps its header and the window switch crisp while the figures below wait (F-55): the switch has
    already moved, so only what is changing dims, and it eases rather than snapping. */
@@ -32,6 +34,7 @@
 }
 .ch-st.is-phone[aria-busy='true'] .ch-stm > :not(.ch-stm-head):not(.ch-spm-head):not(.ch-stm-controls) {
   opacity: 0.55;
+  transition-delay: var(--ch-dur-busy-delay);
 }
 /* A window or filter change in flight (CH-4903, CH-5903): the figures stay, dimmed, and this names which ones they are, so the
    switch (already on the new choice) never labels the old figures with the new period. Fixed under the top bar, so it moves
