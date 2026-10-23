@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { startTransition, useEffect, useRef } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { recordsOnRead } from '../lib/prefetch-guard';
 
 /** Away this long, the page on screen is old enough to fetch again when it comes back. */
 export const QUIET_REFRESH_AWAY_MS = 60_000;
@@ -12,10 +13,16 @@ export const QUIET_REFRESH_ONLINE_MS = 2_000;
 /** A round being scored: its screen keeps its own state and saves as it goes, so a refresh under it is never wanted. */
 const SCORING = /^\/golf\/dashboard\/rounds\/(new|continue\/[^/]+)\/?$/;
 
-/** Someone is in the middle of something: a dialog is open or a field has focus, so a refresh could cost what they typed. */
+/**
+ * Not now: someone is in the middle of something (a dialog is open or a field has focus, so a refresh could cost what they
+ * typed), or the page records what it shows (CoachHelm counts each read's insights as shown, CH-R1), so a read nobody
+ * asked for would count insights twice.
+ */
 function busy(pathname: string): boolean {
-  if (SCORING.test(pathname)) return true;
-  if (document.querySelector('dialog[open], [role="dialog"]:not([aria-hidden="true"]), [role="alertdialog"]:not([aria-hidden="true"])')) return true;
+  if (SCORING.test(pathname) || recordsOnRead(pathname)) return true;
+  // A <dialog> counts only when open (Settings keeps its closed action sheets mounted, role and all); any other dialog
+  // role is there only while it is shown, unless it is leaving (aria-hidden).
+  if (document.querySelector('dialog[open], :is([role="dialog"], [role="alertdialog"]):not(dialog):not([aria-hidden="true"])')) return true;
   const el = document.activeElement as HTMLElement | null;
   return !!el && (el.matches('input, textarea, select') || el.isContentEditable);
 }

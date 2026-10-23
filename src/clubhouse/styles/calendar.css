@@ -840,6 +840,11 @@
     line-clamp: 1;
   }
 }
+/* A busy block lies under the events it overlaps (A26), by its class, not an inline z-index, so hover (z-index 4) can
+   still bring it forward. */
+.ch-ev--under {
+  z-index: 0;
+}
 /* Under about 72px a block (58px of text) keeps its title alone, cut with an ellipsis; its time and the rest are in its
    peek and its name (A26). */
 @container (max-width: 58px) {

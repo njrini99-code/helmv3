@@ -298,7 +298,10 @@ describe('Calendar · a busy block lies under the events it overlaps (A26)', () 
     const busy = screen.getAllByRole('button', { name: /Staff meeting, / }).find((b) => b.className.includes('ch-ev--lane'))!;
     expect(busy.className).toContain('ch-ev--under');
     expect(round.className).not.toContain('ch-ev--under');
-    expect(Number(busy.style.zIndex)).toBeLessThan(Number(round.style.zIndex));
+    // Its place is its class (z-index 0 in calendar.css), never inline, so hover can raise it; the round keeps its lane's.
+    expect(busy.style.zIndex).toBe('');
+    expect(Number(round.style.zIndex)).toBeGreaterThan(0);
+    expect(readFileSync(join(__dirname, '..', 'styles', 'calendar.css'), 'utf8')).toMatch(/\.ch-ev--under \{\s*z-index: 0;/);
   });
 });
 

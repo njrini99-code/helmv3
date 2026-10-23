@@ -69,8 +69,20 @@ describe('Shell · quiet refresh (A17)', () => {
     awayFor(90_000);
     expect(refresh).not.toHaveBeenCalled();
     sheet.remove();
+    // A closed <dialog> left mounted with its role (Settings' action sheets) is not an open dialog.
+    const closed = document.createElement('dialog');
+    closed.setAttribute('role', 'alertdialog');
+    document.body.append(closed);
     awayFor(90_000);
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('CoachHelm, which records each read’s insights as shown (CH-R1): no refresh', () => {
+    renderHook(() => useQuietRefresh('/golf/dashboard/coachhelm'));
+    awayFor(90_000);
+    act(() => void window.dispatchEvent(new Event('online')));
+    act(() => void vi.advanceTimersByTime(2_000));
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('a round being scored: no refresh', () => {
