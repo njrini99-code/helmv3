@@ -27,7 +27,7 @@ import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
 import { chTrail } from '../../lib/track';
-import { formatFixed, formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
 import { RosterRequests } from './RosterRequests';
@@ -763,7 +763,7 @@ function RosterList({
               </span>
               <span role="cell" className="r ch-num ch-rs-num">{formatFixed(p.avg)}</span>
               <span role="cell" className="r ch-num ch-rs-num2">{formatHcp(p.handicap)}</span>
-              <span role="cell" className={'r ch-num ch-rs-sg' + (p.sgPerRound == null ? '' : p.sgPerRound >= 0 ? ' is-gain' : ' is-loss')}>
+              <span role="cell" className={'r ch-num ch-rs-sg ' + changeTone(p.sgPerRound, false, 1)}>
                 {p.sgPerRound == null ? NO_DATA : formatSigned(p.sgPerRound)}
               </span>
               <span role="cell" className="r ch-num ch-rs-num2">{p.rounds}</span>
@@ -916,11 +916,11 @@ function FaceFigures({
       </span>
       <span className="ch-rs-fig">
         <span className="ch-rs-fig__k">Strokes gained</span>
-        <b className={'ch-num' + (sg == null ? '' : sg >= 0 ? ' is-gain' : ' is-loss')}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
+        <b className={'ch-num ' + changeTone(sg, false, 1)}>{sg == null ? NO_DATA : formatSigned(sg)}</b>
         {sg != null && <span className="ch-rs-fig__m">a round</span>}
         {sg != null && (
           <span className="ch-rs-sgbar" aria-hidden="true">
-            <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
+            <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${sgW}%` } : { right: '50%', width: `${sgW}%` }} />
           </span>
         )}
       </span>

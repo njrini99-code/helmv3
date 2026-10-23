@@ -25,6 +25,18 @@ export function changeTone(value: number | null | undefined, lowerIsBetter: bool
   return value < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
+/** `changeTone` as the text classes figures paint with: `ch-gain`, `ch-loss`, or '' when the shown value rounds to zero. */
+export function changeInk(value: number | null | undefined, lowerIsBetter = false, digits = 1): '' | 'ch-gain' | 'ch-loss' {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'ch-gain' : tone === 'is-loss' ? 'ch-loss' : '';
+}
+
+/** `changeTone` as the good or bad word a figure's `tone` prop takes, and no tone when the shown value rounds to zero. */
+export function changeVerdict(value: number | null | undefined, lowerIsBetter = false, digits = 1): 'good' | 'bad' | undefined {
+  const tone = changeTone(value, lowerIsBetter, digits);
+  return tone === 'is-gain' ? 'good' : tone === 'is-loss' ? 'bad' : undefined;
+}
+
 /** A percentage at a whole number by default: 61%, 0%, and an em dash for no data. */
 export function formatPct(value: number | null | undefined, digits = 0): string {
   if (value == null || Number.isNaN(value)) return NO_DATA;

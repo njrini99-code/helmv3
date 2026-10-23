@@ -4,7 +4,7 @@ import type { ChSgChange } from '../../data/stats-common';
 import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, NO_DATA } from '../../lib/format';
 import { sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 
@@ -55,13 +55,13 @@ export function FigureGauge({ gauge, n }: { gauge: ChGauge; n: number }) {
     if (v == null) return null;
     const end = gauge.kind === 'sg' ? sgScale([v]) : 6;
     const w = pct((Math.abs(v) / end) * 50);
-    // Strokes gained above zero is good; a score above par is not.
-    const good = gauge.kind === 'sg' ? v >= 0 : v <= 0;
+    // Strokes gained above zero is good; a score above par is not; a value that shows as zero is neither.
+    const tone = changeTone(v, gauge.kind !== 'sg', 1);
     const right = gauge.kind === 'sg' ? v >= 0 : v > 0;
     return (
       <span className="ch-fg__gauge" aria-hidden="true">
         <span className="ch-fg__track">
-          <i className={good ? 'is-gain' : 'is-loss'} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
+          <i className={tone} style={right ? { left: '50%', width: w } : { right: '50%', width: w }} />
           <b style={{ left: '50%' }} />
         </span>
         <em style={{ left: '50%' }}>{gauge.kind === 'sg' ? 'Tour' : 'Par'}</em>

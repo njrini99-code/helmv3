@@ -25,7 +25,7 @@ import { haptic } from '../../lib/haptics';
 import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
-import { formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
@@ -356,7 +356,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
         <div className="ch-sgt__big">
           <h2 className="ch-sgt__k">{isSg ? 'Team strokes gained per round' : 'Team scoring average'}</h2>
           <span className="ch-sgt__row">
-            <b className={'ch-sgt__n ch-num' + (!isSg || leadValue == null ? '' : leadValue >= 0 ? ' ch-gain' : ' ch-loss')}>
+            <b className={'ch-sgt__n ch-num ' + (isSg ? changeInk(leadValue) : '')}>
               <Swap swapKey={`${lens}${leadText}`} inline>
                 {withPointSpan(leadText)}
               </Swap>
@@ -641,14 +641,15 @@ function LegTrend({ leg, data, mean, selected, onSelect }: { leg: ChLeg; data: A
   const a = firstValue(data);
   const b = lastValue(data);
   // The headline is the window's mean per round, not the latest week's value; the line and its dot still end on the latest week.
-  const tone = mean == null ? 'var(--ch-ink-400)' : mean >= 0 ? 'var(--ch-chart-gain)' : 'var(--ch-chart-loss)';
+  const meanTone = changeTone(mean, false, 1);
+  const tone = meanTone === 'is-gain' ? 'var(--ch-chart-gain)' : meanTone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-ink-400)';
   const d = gappedPath(data, x, y);
   const ch = a && b && a.i !== b.i ? b.v - a.v : null;
   return (
     <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">
         <span className="ch-sgm__l">{leg}</span>
-        <span className={`ch-sgm__v ch-num ${mean == null ? '' : mean >= 0 ? 'ch-gain' : 'ch-loss'}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
+        <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : NO_DATA}</span>
       </span>
       <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="ch-sgm__svg" aria-hidden="true">
         <line x1={pad} x2={w - pad} y1={y(0)} y2={y(0)} stroke="var(--ch-champagne-500)" strokeDasharray="3 3" strokeWidth={1} vectorEffect="non-scaling-stroke" />
@@ -775,9 +776,9 @@ function LegGrid({
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
                       {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
-                      <span className={'ch-num ' + (v == null ? '' : v >= 0 ? 'ch-gain' : 'ch-loss')}>{v == null ? NO_DATA : formatSigned(v)}</span>
+                      <span className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
-                        {v != null && <i className={'ch-lg__bar ' + (v >= 0 ? 'is-gain' : 'is-loss')} style={bar(v)} />}
+                        {v != null && <i className={'ch-lg__bar ' + changeTone(v, false, 1)} style={bar(v)} />}
                         {med != null && <i className="ch-lg__med" style={{ left: at(med) }} />}
                       </span>
                     </span>
@@ -786,11 +787,11 @@ function LegGrid({
                 <span
                   role="cell"
                   data-ch-code={g.total == null ? 'CH-4308' : undefined}
-                  className={'r ch-num ch-lg__tot ' + (g.total == null ? '' : g.total >= 0 ? 'ch-gain' : 'ch-loss')}
+                  className={'r ch-num ch-lg__tot ' + changeInk(g.total)}
                 >
                   {g.total == null ? 'Early read' : formatSigned(g.total)}
                 </span>
-                <span role="cell" className={'r ch-num ch-lg__ch ' + (g.change == null ? '' : g.change >= 0 ? 'ch-gain' : 'ch-loss')}>
+                <span role="cell" className={'r ch-num ch-lg__ch ' + changeInk(g.change)}>
                   {g.change == null ? (
                     NO_DATA
                   ) : (

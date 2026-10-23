@@ -72,7 +72,7 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
     'Strokes gained':
       sg != null ? (
         <span className="ch-ph-viz ch-ph-viz--sg" aria-hidden="true">
-          <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
+          <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${Math.min(50, (sg / 3) * 50)}%` } : { right: '50%', width: `${Math.min(50, (-sg / 3) * 50)}%` }} />
         </span>
       ) : null,
     'Under par': withPar.length ? (

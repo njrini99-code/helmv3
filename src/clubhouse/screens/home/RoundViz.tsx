@@ -3,6 +3,7 @@
  * gives: greens hit out of the greens played, putts against two on every green (36), and strokes gained from zero.
  * Decorative; the figure beside each says it in words.
  */
+import { changeTone } from '../../lib/format';
 
 /** "14/18": that many greens, lit out of the round's greens. */
 export function GirViz({ gir }: { gir: string | null }) {
@@ -37,7 +38,7 @@ export function SgViz({ sg }: { sg: number | null }) {
   const w = Math.min(50, (Math.abs(sg) / 3) * 50);
   return (
     <span className="ch-rviz ch-rviz--sg" aria-hidden="true">
-      <i className={sg >= 0 ? 'is-gain' : 'is-loss'} style={sg >= 0 ? { left: '50%', width: `${w}%` } : { right: '50%', width: `${w}%` }} />
+      <i className={changeTone(sg, false, 1)} style={sg >= 0 ? { left: '50%', width: `${w}%` } : { right: '50%', width: `${w}%` }} />
     </span>
   );
 }

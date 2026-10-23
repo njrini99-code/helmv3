@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeVerdict, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
@@ -144,7 +144,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         }
         read={
           <>
-            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={sg == null ? undefined : sg >= 0 ? 'good' : 'bad'} />
+            <Big value={sg == null ? NO_DATA : formatSigned(sg)} tone={changeVerdict(sg)} />
             <div className="ch-znlines">
               {sgTeam != null && sg != null && (
                 <span>

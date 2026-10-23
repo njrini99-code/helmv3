@@ -16,7 +16,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, halvesChange } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
@@ -257,7 +257,7 @@ export function StatsPlayerPhone({
  */
 function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: ReactNode }) {
   const w = data.win;
-  const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
+  const sgTone = ' ' + changeInk(w.sgPerRound);
   const form = w.formChange;
   const flat = form != null && Math.abs(form) < 0.05;
   // The rounds in each half of the trend the change compares (summarizeWindow's own split).
@@ -424,7 +424,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
                 <span className="ch-stm-row__v ch-num">
                   <b>{r.score}</b>
                   <span className={'ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                  <span className={r.sg == null ? '' : r.sg >= 0 ? 'ch-gain' : 'ch-loss'}>{formatSigned(r.sg)} SG</span>
+                  <span className={changeInk(r.sg)}>{formatSigned(r.sg)} SG</span>
                 </span>
               </li>
             ))}
