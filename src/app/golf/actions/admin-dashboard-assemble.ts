@@ -1578,7 +1578,7 @@ export function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboard
         : 0,
       totalClientErrors7d: totalErrors7d,
       // Nothing ever wrote admin_api_perf_log (0 rows in production; it
-      // moves to graveyard in migration 20261023020000), so apiPerf is
+      // moves to graveyard in migration 20261023151000), so apiPerf is
       // always []. Without this flag, avgResponseMs/p95ResponseMs read as a
       // genuine "0ms, fast" measurement instead of "never measured" — the UI
       // uses it to render an honest "Not measured" state instead of a green

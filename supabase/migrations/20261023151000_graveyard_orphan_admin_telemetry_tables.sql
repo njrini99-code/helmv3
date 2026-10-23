@@ -4,7 +4,7 @@
 -- migration freeze.
 -- Apply (one line):
 --   npm run db:apply --
---   supabase/migrations/20261023020000_graveyard_orphan_admin_telemetry_tables.sql
+--   supabase/migrations/20261023151000_graveyard_orphan_admin_telemetry_tables.sql
 -- Risk: LOW. Moves two empty tables (0 rows ever: n_tup_ins = 0 on
 -- 2026-10-23) to the graveyard schema. Nothing is dropped.
 --

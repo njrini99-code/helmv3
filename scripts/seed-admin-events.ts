@@ -274,7 +274,7 @@ async function seedAIGenerationEvents(): Promise<number> {
 }
 
 // No error backfill: the old source, admin_client_errors, never had a writer
-// and moves to graveyard in migration 20261023020000. Live errors already
+// and moves to graveyard in migration 20261023151000. Live errors already
 // reach admin_events through server-error-logger.ts and /api/log-error.
 
 // ============================================

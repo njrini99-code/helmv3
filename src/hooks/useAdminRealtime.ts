@@ -196,7 +196,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       // src/app/api/log-error/route.ts write), and nothing ever wrote
       // admin_api_perf_log (0 rows in production as of 2026-10-23), so the
       // subscriptions that used to live here were permanently inert. Both
-      // tables move to graveyard in migration 20261023020000; a
+      // tables move to graveyard in migration 20261023151000; a
       // postgres_changes subscription to a table that no longer exists can
       // fail the whole channel, admin_events included, so they are gone
       // rather than kept as dead paths. Thrown and soft-failed server

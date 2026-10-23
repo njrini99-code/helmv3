@@ -6,7 +6,7 @@ const ROOT = process.cwd();
 const RETIRED = ['admin_api_perf_log', 'admin_client_errors'] as const;
 const MIGRATION = join(
   ROOT,
-  'supabase/migrations/20261023020000_graveyard_orphan_admin_telemetry_tables.sql',
+  'supabase/migrations/20261023151000_graveyard_orphan_admin_telemetry_tables.sql',
 );
 
 function sourceFiles(dir: string): string[] {
@@ -57,6 +57,6 @@ describe('retired admin telemetry tables', () => {
 
   it('the migration is registered HOLD in HELD.md', () => {
     const held = readFileSync(join(ROOT, 'supabase/migrations/HELD.md'), 'utf8');
-    expect(held).toMatch(/\| `20261023020000_graveyard_orphan_admin_telemetry_tables\.sql` \| \*\*HOLD\*\* \|/);
+    expect(held).toMatch(/\| `20261023151000_graveyard_orphan_admin_telemetry_tables\.sql` \| \*\*HOLD\*\* \|/);
   });
 });
