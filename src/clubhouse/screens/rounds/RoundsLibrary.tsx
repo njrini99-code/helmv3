@@ -314,7 +314,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             <Button variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
+            <Button variant="danger" busy={discard.pending} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

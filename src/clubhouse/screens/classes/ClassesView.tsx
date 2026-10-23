@@ -482,7 +482,6 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button
               variant="danger"
               busy={remove.pending}
-              feel={null}
               onClick={() => {
                 if (asking) void remove.run(asking);
               }}
@@ -510,7 +509,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
             <Button variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
               Keep them
             </Button>
-            <Button variant="danger" busy={removeAll.pending} disabled={classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
+            <Button variant="danger" busy={removeAll.pending} disabled={classes.length === 0} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
               {removeAll.pending ? 'Deleting…' : 'Delete all classes'}
             </Button>
           </>

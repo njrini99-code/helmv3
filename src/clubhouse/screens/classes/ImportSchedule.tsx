@@ -480,7 +480,7 @@ export function ImportSchedule({
             <Button variant="ghost" onClick={() => setRestarting(false)}>
               Keep reviewing
             </Button>
-            <Button variant="danger" feel={null} onClick={startOver}>
+            <Button variant="danger" onClick={startOver}>
               Start over
             </Button>
           </>

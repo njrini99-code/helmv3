@@ -447,9 +447,19 @@
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
 }
 .ch-btn--danger {
-  color: #fff;
-  background: linear-gradient(180deg, #c0463a, #a5352a);
-  box-shadow: 0 0 0 1px #8e2c22, inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
+  color: var(--ch-danger-ink);
+  background: linear-gradient(180deg, var(--ch-danger-fill-top), var(--ch-danger-fill-bottom));
+  box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 0 rgb(255 255 255 / 0.2), 0 4px 10px -4px rgb(142 44 34 / 0.45);
+}
+/* CONS-1: lighter under the pointer, deeper while pressed (the press controller scales it); disabled is the shared .42. */
+@media (hover: hover) {
+  .ch-btn--danger:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--ch-danger-hover), var(--ch-danger-fill-bottom));
+  }
+}
+.ch-btn--danger:is(:active, [data-ch-pressed]):not(:disabled) {
+  background: var(--ch-danger-press);
+  box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
 }
 @keyframes ch-pop {
   from {

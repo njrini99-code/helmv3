@@ -9,7 +9,7 @@ import { ROOT, walk } from './_scan';
  * sheet's one primary action; "Clear filters" and "Clear search" are a way back, never the primary. Read from the JSX
  * itself (a `<Button>` whose only text is the label), so a moved line or a reformatted prop still counts.
  */
-type Found = { file: string; label: string; variant: string | null };
+type Found = { file: string; label: string; variant: string | null; feel: string | null };
 
 function buttons(): Found[] {
   const out: Found[] = [];
@@ -21,7 +21,9 @@ function buttons(): Found[] {
         const prop = node.openingElement.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === 'variant');
         const init = prop && ts.isJsxAttribute(prop) ? prop.initializer : undefined;
         const variant = init && ts.isStringLiteral(init) ? init.text : init ? init.getText(src) : null;
-        out.push({ file: relative(ROOT, file), label, variant });
+        const feelProp = node.openingElement.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === 'feel');
+        const feel = feelProp && ts.isJsxAttribute(feelProp) ? (feelProp.initializer?.getText(src) ?? null) : null;
+        out.push({ file: relative(ROOT, file), label, variant, feel });
       }
       ts.forEachChild(node, visit);
     };
@@ -47,5 +49,9 @@ describe('Button weight by role (CONS-5)', () => {
     const clear = all.filter((b) => b.label === 'Clear filters' || b.label === 'Clear search');
     expect(clear.length).toBeGreaterThanOrEqual(3);
     expect(clear.filter((b) => b.variant === 'primary')).toEqual([]);
+  });
+
+  it('a danger key never silences its warning (CONS-1)', () => {
+    expect(all.filter((b) => b.variant === 'danger' && b.feel === '{null}')).toEqual([]);
   });
 });

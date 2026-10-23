@@ -87,6 +87,14 @@
   --ch-warning-100: #faf0dc;
   --ch-danger-600: #b03a2e;
   --ch-danger-100: #fbe9e6;
+  /* CONS-1: the destructive key's fill (white words at 5:1 on the top stop, 4.6:1 on the hover's), its ring, and its
+     hover's top stop. */
+  --ch-danger-fill-top: #c0463a;
+  --ch-danger-fill-bottom: #a5352a;
+  --ch-danger-ring: #8e2c22;
+  --ch-danger-hover: #c84d40;
+  --ch-danger-press: #962f25;
+  --ch-danger-ink: #fff;
   --ch-info-600: #2d5c77;
   --ch-info-100: #e6eef3;
   /* Scoring. Red means under par, and nothing else. */
@@ -714,6 +722,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-warning-100: #2e2414;
   --ch-danger-600: #ef8576;
   --ch-danger-100: #35191a;
+  /* At night the key keeps its red; the ring turns to a light coral so its edge holds on the dark cards. */
+  --ch-danger-ring: rgb(239 133 118 / 0.45);
   --ch-info-600: #86b6d4;
   --ch-info-100: #172632;
   --ch-score-under: #ef8576;

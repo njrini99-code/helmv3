@@ -77,7 +77,6 @@ export function StaffCards({ coachId, writes }: { coachId: string | null; writes
             </Button>
             <Button
               variant="danger"
-              feel={null}
               onClick={() => {
                 const c = declining;
                 setDeclining(null);

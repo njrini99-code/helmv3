@@ -461,7 +461,6 @@ export function QualifierSelection({ data, writes = LIVE_SELECTION_WRITES }: { d
             </Button>
             <Button
               variant="danger"
-              feel={null}
               disabled={remove.pending}
               onClick={() => {
                 if (removing) void remove.run(removing);

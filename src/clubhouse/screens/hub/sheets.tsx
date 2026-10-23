@@ -941,7 +941,7 @@ export function ConfirmDelete({
           <Button variant="ghost" onClick={onCancel}>
             Keep it
           </Button>
-          <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
+          <Button variant="danger" busy={pending} onClick={onConfirm}>
             {pending ? 'Deleting…' : 'Delete'}
           </Button>
         </>

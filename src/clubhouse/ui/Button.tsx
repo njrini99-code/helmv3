@@ -36,7 +36,8 @@ type ButtonProps = CommonProps &
 
 export function Button(props: ButtonProps) {
   const { variant = 'secondary', size = 'md', leftIcon, rightIcon, kbd, className, children } = props;
-  const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : null) : props.feel;
+  // A primary press confirms; a destructive one warns as it is pressed (CONS-1).
+  const feel = props.feel === undefined ? (variant === 'primary' ? 'press' : variant === 'danger' ? 'warning' : null) : props.feel;
   const cls = ['ch-btn', `ch-btn--${variant}`, size !== 'md' && `ch-btn--${size}`, className].filter(Boolean).join(' ');
   const iconSize = size === 'sm' ? 14 : 15;
   const inner = (
