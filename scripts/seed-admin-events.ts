@@ -6,7 +6,7 @@
  * - users table → 'signup' events
  * - golf_rounds table → 'round_submitted' events
  * - golf_round_reviews table → 'ai_generation' events
- * - error_logs table → 'error' events (if exists)
+ * (No error backfill; see the note above MAIN.)
  * 
  * Run: npx tsx scripts/seed-admin-events.ts
  */
@@ -273,55 +273,9 @@ async function seedAIGenerationEvents(): Promise<number> {
   return inserted;
 }
 
-async function seedErrorEvents(): Promise<number> {
-  console.log('\n🚨 Seeding error events from error_logs table...');
-
-  // Check if error_logs table exists
-  const { data: tables } = await supabase
-    .from('information_schema.tables' as unknown as 'users')
-    .select('table_name')
-    .eq('table_schema', 'public')
-    .eq('table_name', 'error_logs')
-    .limit(1);
-
-  // Try admin_client_errors as fallback
-  const { data: clientErrors, error: clientError } = await supabase
-    .from('admin_client_errors')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(100);
-
-  if (clientError) {
-    console.log('  ℹ️  No error_logs or admin_client_errors table found, skipping');
-    return 0;
-  }
-
-  if (!clientErrors || clientErrors.length === 0) {
-    console.log('  ℹ️  No recent errors found');
-    return 0;
-  }
-
-  console.log(`  Found ${clientErrors.length} client errors`);
-
-  const events: AdminEventInsert[] = clientErrors.map((err) => ({
-    event_type: 'error',
-    title: `Client Error: ${(err.error_message || 'Unknown error').slice(0, 100)}`,
-    severity: 'error',
-    message: err.error_message,
-    metadata: {
-      source: 'client',
-      pageUrl: err.page_url,
-      userAgent: err.user_agent,
-    },
-    user_id: err.user_id || null,
-    stack_trace: err.error_stack,
-    created_at: err.created_at,
-  }));
-
-  const inserted = await insertEvents(events);
-  console.log(`  ✅ Inserted ${inserted} error events`);
-  return inserted;
-}
+// No error backfill: the old source, admin_client_errors, never had a writer
+// and moves to graveyard in migration 20261023020000. Live errors already
+// reach admin_events through server-error-logger.ts and /api/log-error.
 
 // ============================================
 // MAIN
@@ -349,7 +303,6 @@ async function main() {
     totalInserted += await seedSignupEvents();
     totalInserted += await seedRoundEvents();
     totalInserted += await seedAIGenerationEvents();
-    totalInserted += await seedErrorEvents();
 
     console.log('\n' + '═'.repeat(50));
     console.log(`\n✨ Seed complete! Inserted ${totalInserted} total events.`);

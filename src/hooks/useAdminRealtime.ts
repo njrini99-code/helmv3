@@ -188,7 +188,19 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
 
       const channelName = createAdminRealtimeChannelName();
 
-      // Create channel for admin_events table (primary) + fallback to admin_client_errors
+      // Create channel for admin_events inserts.
+      //
+      // admin_client_errors and admin_api_perf_log were prior-
+      // architecture tables. Client errors moved to error_logs +
+      // admin_events (the pair server-error-logger.ts and
+      // src/app/api/log-error/route.ts write), and nothing ever wrote
+      // admin_api_perf_log (0 rows in production as of 2026-10-23), so the
+      // subscriptions that used to live here were permanently inert. Both
+      // tables move to graveyard in migration 20261023020000; a
+      // postgres_changes subscription to a table that no longer exists can
+      // fail the whole channel, admin_events included, so they are gone
+      // rather than kept as dead paths. Thrown and soft-failed server
+      // actions already arrive here as admin_events rows.
       const channel = supabase
         .channel(channelName, {
           config: {
@@ -204,57 +216,6 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
             table: 'admin_events',
           },
           handleNewEvent
-        )
-        // NOTE: admin_client_errors was a prior-architecture table for client
-        // error capture, superseded when the client-error path was
-        // consolidated into error_logs + admin_events (the same pair the
-        // server-side logger writes to — see server-error-logger.ts and
-        // src/app/api/log-error/route.ts). Nothing writes to
-        // admin_client_errors anymore, so the realtime fallback subscription
-        // that used to live here was permanently inert; removed rather than
-        // kept as dead weight a future on-call could mistake for a live path.
-        // Listen for API errors
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'admin_api_perf_log',
-            filter: 'status=eq.error',
-          },
-          (payload) => {
-            const apiError = payload.new as {
-              id: string;
-              action_name: string;
-              error_message: string | null;
-              duration_ms: number;
-              user_id: string | null;
-              metadata: Record<string, unknown> | null;
-              created_at: string;
-            };
-
-            const event: AdminEvent = {
-              id: apiError.id,
-              event_type: 'api_error',
-              severity: 'error',
-              title: `API Error: ${apiError.action_name}`,
-              message: apiError.error_message,
-              metadata: { ...apiError.metadata, duration_ms: apiError.duration_ms },
-              user_id: apiError.user_id,
-              user_email: null,
-              url: null,
-              stack_trace: null,
-              browser_info: null,
-              resolved: false,
-              resolved_at: null,
-              resolved_by: null,
-              created_at: apiError.created_at,
-            };
-
-            if (shouldIncludeEvent(event)) {
-              setEvents(prev => [event, ...prev].slice(0, maxEvents));
-            }
-          }
         );
 
       channelRef.current = channel;
@@ -306,7 +267,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       setIsConnected(false);
       isConnectedRef.current = false;
     }
-  }, [supabase, handleNewEvent, shouldIncludeEvent, maxEvents, autoReconnect]);
+  }, [supabase, handleNewEvent, autoReconnect]);
 
   // Manual reconnect
   const reconnect = useCallback(() => {

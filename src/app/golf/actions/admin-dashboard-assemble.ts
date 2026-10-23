@@ -1521,7 +1521,8 @@ export function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboard
 
   // --- Infra health: merge rollupC shell with DB stats + client errors summary ---
   //
-  // Aggregate the per-action apiPerf rows (sourced from admin_api_perf_log) into
+  // Aggregate the per-action apiPerf rows (none today: the admin_api_perf_log
+  // source never had a writer and is retired) into
   // platform-wide totals. The previous implementation reported the current
   // dashboard fetch's wall time as avgResponseMs and `responseTime * 1.5` as
   // p95ResponseMs — both fabricated. Real data is right here in apiPerf.
@@ -1576,8 +1577,8 @@ export function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboard
         ? Math.round((totalErrors7d / rollupC.infraHealth.totals.totalApiCalls7d) * 10000) / 100
         : 0,
       totalClientErrors7d: totalErrors7d,
-      // Nothing in the app writes to admin_api_perf_log (checked: zero
-      // `.insert()`-style writes to it anywhere in src/), so apiPerf is
+      // Nothing ever wrote admin_api_perf_log (0 rows in production; it
+      // moves to graveyard in migration 20261023020000), so apiPerf is
       // always []. Without this flag, avgResponseMs/p95ResponseMs read as a
       // genuine "0ms, fast" measurement instead of "never measured" — the UI
       // uses it to render an honest "Not measured" state instead of a green
@@ -2125,11 +2126,11 @@ export function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboard
       roundReviewsThisWeek: coachhelm.reviewsThisWeek,
       insightsThisWeek: coachhelm.insightsThisWeek,
       systemErrors7d: systemErrors,
-      // Real call-weighted avg from admin_api_perf_log (same source as
+      // Call-weighted avg from apiPerf (same source as
       // infraHealth.totals.avgResponseMs / .measured). No consumer reads
       // this field today, but it used to fall back to the dashboard fetch's
       // own wall-clock time whenever there were no perf samples — i.e.
-      // always, since nothing writes to admin_api_perf_log — which is
+      // always, since apiPerf has never had samples — which is
       // exactly the fabricated-latency shape infraHealth.totals.measured
       // exists to stop. 0 here means "not measured," same as its sibling.
       avgResponseTimeMs: weightedAvgResponseMs,
