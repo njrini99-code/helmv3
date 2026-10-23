@@ -132,6 +132,15 @@ describe('the code (Q-96: a roster code is a player, a staff code an assistant)'
     expect(checkCode).toHaveBeenLastCalledWith('K7PQX4MN');
   });
 
+  it('B14 with no first name the questions drop the name, never "there"', () => {
+    const { unmount } = mount(makeWrites(), 'grad', { ...PLAYER, first: '' });
+    expect(screen.getByText('When do you graduate?')).toBeTruthy();
+    unmount();
+    mount(makeWrites(), 'account', { ...PLAYER, first: '  ' });
+    expect(screen.getByText('Create your account.')).toBeTruthy();
+    expect(screen.queryByText(/there/)).toBeNull();
+  });
+
   it('a staff code asks no role and no class year: code, name, account, staff access', async () => {
     const w = makeWrites();
     mount(w, 'code', { intent: 'code' });

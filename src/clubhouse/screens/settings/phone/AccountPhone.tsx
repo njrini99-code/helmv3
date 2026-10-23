@@ -153,7 +153,7 @@ export function ProfileSheet({
         </span>
         <div className="ch-setm-photo__acts">
           <button type="button" className="ch-setm-link" disabled={uploading} onClick={() => file.current?.click()}>
-            {uploading ? 'Uploading…' : draft.avatarUrl ? 'Replace photo' : 'Change photo'}
+            {uploading ? 'Uploading…' : draft.avatarUrl ? 'Replace photo' : 'Add photo'}
           </button>
           {draft.avatarUrl && !uploading && (
             <button type="button" className="ch-setm-link is-quiet" onClick={() => setDraft((d) => ({ ...d, avatarUrl: null }))}>

@@ -500,7 +500,7 @@ export function Name({ d, up, next, path, back, dir, phone }: StepProps) {
 export function Grad({ d, up, next, path, back, dir, now }: StepProps) {
   const years = gradYears(now);
   return (
-    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate, ${d.first.trim() || 'there'}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
+    <Q dir={dir} back={back} eyebrow={<Who d={d} path={path} />} title={`When do you graduate${d.first.trim() ? `, ${d.first.trim()}` : ''}?`} sub="Sets your class on the roster. Coaches use it for eligibility.">
       <div className="ch-ox-body">
         <div className="ch-ox-tiles" role="radiogroup" aria-label="Graduation year">
           {years.map((y) => (
@@ -585,7 +585,7 @@ export function Account({ d, hist, up, next, path, back, dir, phone, now, signIn
   const emailErr = err?.field === 'email' ? err.message : null;
   const pwErr = err?.field === 'pw' ? err.message : null;
   return (
-    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account, ${d.first.trim() || 'there'}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
+    <Q dir={dir} back={back} hold={busy} eyebrow={<Who d={d} path={path} />} title={`Create your account${d.first.trim() ? `, ${d.first.trim()}` : ''}.`} sub="You’ll use this email and password to sign in." onSubmit={() => void submit()}>
       <div className="ch-ox-body">
         <div className="ch-ox-fields">
           <div className="ch-ox-field">

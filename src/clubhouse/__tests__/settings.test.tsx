@@ -2061,6 +2061,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       const uploadAvatar = vi.fn(() => new Promise<ChResult<{ url: string }>>((r) => (resolve = r)));
       const { user } = phone({ writes: { uploadAvatar } });
       const sheet = await openProfile(user);
+      // B14: the phone names the action as the desktop does: Add photo with none, Replace photo with one.
+      expect(within(sheet).getByRole('button', { name: /^(Add|Replace) photo$/ })).toBeTruthy();
+      expect(within(sheet).queryByRole('button', { name: 'Change photo' })).toBeNull();
       const input = sheet.querySelector('input[type="file"]') as HTMLInputElement;
       await act(async () => {
         fireEvent.change(input, { target: { files: [new File(['x'], 'me.png', { type: 'image/png' })] } });
