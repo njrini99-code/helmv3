@@ -267,8 +267,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // The hole-level cards rest on the rounds with their holes: their own count, and when it is fewer than the window's, a line saying so.
   const holeSample = count(holeWindow.length);
   const coverage = holeCoverage(holeWindow.length, windowRounds.length) ?? undefined;
-  // An early-read rate (A7) says so on its second line, before the coverage line it shares with the other cards.
-  const withEarly = (early: string | undefined) => (early ? [early, coverage].filter(Boolean).join(' · ') : coverage);
+  // An early-read rate (A7) says so on its second line. The coverage line it would carry is the one every hole-level card shares,
+  // which the page draws once under them, so the tag takes its place rather than joining it.
+  const withEarly = (early: string | undefined) => early ?? coverage;
+  // A rate under its floor or still an early read has no change to colour (A7): no value or an untoned one, so no chip.
+  const steady = (r: { state: string }) => r.state === 'steady';
   // Strokes gained per round: the window's mean over its rounds with strokes gained, against the previous 10 when there is one.
   // A4: only the players with three whole rounds with shots in the window count, as each player's own figure and the previous
   // stretch do, so one player's first round or two never swings the headline or the leg totals.
@@ -315,9 +318,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     },
     { key: 'score', series: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)), label: 'Scoring average', value: scoring, unit: '', digits: 1, delta: d(weightedMean(windowPaired, (r) => r.total_score), prevScoring), se: seOf((r) => r.total_score, windowPaired, prevRounds, 'score'), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : sample, gauge: { kind: 'par', toPar } },
     // CH-4209: without Tour benchmarks, greens read against the sample instead of "Tour averages".
-    { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir.value, unit: '%', digits: 0, delta: d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')), se: rateSe('greens_hit', 'greens_total'), lowerIsBetter: false, context: gir.needs ?? (benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample), ...(gir.needs ? { state: 'empty' as const } : {}), note: withEarly(gir.early), gauge: { kind: 'rate', ref: benchGir ?? null } },
+    { key: 'gir', series: weekKeys.map((wk) => rate(weekRows(wk), 'greens_hit', 'greens_total')), label: 'Greens in regulation', value: gir.value, unit: '%', digits: 0, delta: steady(gir) ? d(rate(curPaired, 'greens_hit', 'greens_total'), rate(prev, 'greens_hit', 'greens_total')) : null, se: steady(gir) ? rateSe('greens_hit', 'greens_total') : null, lowerIsBetter: false, context: gir.needs ?? (benchGir != null ? `Tour averages ${Math.round(benchGir)}%` : holeSample), ...(gir.needs ? { state: 'empty' as const } : {}), note: withEarly(gir.early), gauge: { kind: 'rate', ref: benchGir ?? null } },
     { key: 'putts', series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), puttsOf)), label: 'Putts per round', value: puttsPer, unit: '', digits: 1, delta: d(weightedMean(holePaired, puttsOf), weightedMean(holePrev, puttsOf)), se: seOf(puttsOf, holePaired, holePrev, null), lowerIsBetter: true, context: hasPrev ? previousWords(f.last) : holeSample, note: coverage, gauge: { kind: 'putts' } },
-    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble.value, unit: '%', digits: 0, delta: d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')), se: rateSe('scrambles_converted', 'scramble_attempts'), lowerIsBetter: false, context: scramble.needs ?? (hasPrev ? previousWords(f.last) : holeSample), ...(scramble.needs ? { state: 'empty' as const } : {}), note: withEarly(scramble.early), gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
+    { key: 'scramble', series: weekKeys.map((wk) => rate(weekRows(wk), 'scrambles_converted', 'scramble_attempts')), label: 'Scrambling', value: scramble.value, unit: '%', digits: 0, delta: steady(scramble) ? d(rate(curPaired, 'scrambles_converted', 'scramble_attempts'), rate(prev, 'scrambles_converted', 'scramble_attempts')) : null, se: steady(scramble) ? rateSe('scrambles_converted', 'scramble_attempts') : null, lowerIsBetter: false, context: scramble.needs ?? (hasPrev ? previousWords(f.last) : holeSample), ...(scramble.needs ? { state: 'empty' as const } : {}), note: withEarly(scramble.early), gauge: { kind: 'rate', ref: hasPrev ? rate(prev, 'scrambles_converted', 'scramble_attempts') : null } },
     {
       key: 'birdies',
       series: weekKeys.map((wk) => avgOf(inWeek(holeWindow, wk), birdiesOf)),

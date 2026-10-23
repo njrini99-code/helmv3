@@ -18,6 +18,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { formatPct, NO_DATA } from '../../lib/format';
+import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
 import { PuttBands } from './PuttBands';
 import type { PuttBandInput } from './putt-bands';
@@ -32,6 +33,20 @@ const num = (v: number | null | undefined, d = 1) => (v == null ? NO_DATA : v.to
 /** Green when on the right side of the benchmark, amber when not, no colour without one. */
 const tone = (v: number | null | undefined, ref: number | null | undefined, lowerIsBetter = false): Tone =>
   v == null || ref == null ? undefined : (lowerIsBetter ? v <= ref : v >= ref) ? 'gain' : 'loss';
+
+/** A figure: label, value, the line under it, its tone, and what it needs when it is under its floor (said in place of the value). */
+type Fig = [string, string, string | null, Tone, string?];
+
+/**
+ * A rate held to its floor (A7): under it the figure says what it needs, never "100%" from one bunker shot; between the floors
+ * the value stays, untoned, with its early-read tag; from the steady floor it reads as before. `n` is in the floor's own unit.
+ */
+function floorFig(label: string, kind: 'fraction' | 'scramble', n: number, v: number | null | undefined, note: string | null, t: Tone): Fig {
+  const f = floorRate(kind, n, v ?? null);
+  if (f.needs) return [label, NO_DATA, null, undefined, f.needs];
+  if (f.early) return [label, pct(f.value), [f.early, note].filter(Boolean).join(' · '), undefined];
+  return [label, pct(v), note, t];
+}
 
 const SECTIONS = [
   ['scoring', 'Scoring'],
@@ -108,7 +123,7 @@ function Sec({
   title: string;
   lead: string;
   sub: string;
-  figs: Array<[string, string, string | null, Tone]>;
+  figs: Fig[];
   /** The window and the rounds this section counts, under its figures. */
   rule: string;
   /** The phone's long account of what the rule line counts, behind "How this is measured" (the line above is then the short one). */
@@ -134,8 +149,8 @@ function Sec({
           <span className="ch-gm__sub">{sub}</span>
         </header>
         <dl className="ch-gm__figs">
-          {figs.map(([l, v, n, t]) => {
-            const reason = v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined;
+          {figs.map(([l, v, n, t, needs]) => {
+            const reason = needs ?? (v === NO_DATA ? NONE_REASON[`${id}:${l}`] : undefined);
             return (
               <div key={l}>
                 <dt>{l}</dt>
@@ -275,6 +290,9 @@ export function GameDetail({
 
   // Off the tee
   const fw = s.fairwayPercentage;
+  // The fairway and green rates' floors count rounds with a chance at them (A7): the window's rounds, once any is logged.
+  const fwRounds = s.fairwayOpportunities ? rounds : 0;
+  const girRounds = s.girOpportunities ? rounds : 0;
   const left = s.missLeftPct;
   const right = s.missRightPct;
   const benchPen = bench.penalty_rate_per_round ?? null;
@@ -435,12 +453,14 @@ export function GameDetail({
         lead={
           fw == null
             ? 'No tee shots are logged in this window, so fairways and distance can’t be read yet.'
-            : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
+            : sampleState('fraction', fwRounds) === 'none'
+              ? `${s.fairwaysHit} of ${s.fairwayOpportunities} fairways so far: too few rounds to read as a rate yet.`
+              : `${first} ${verb('finds', 'find')} ${Math.round(fw)}% of fairways.${
                 left != null && right != null && Math.abs(left - right) >= 1 ? ` When the drive misses it goes ${left > right ? 'left' : 'right'} more often` : ''
               }${s.penaltiesPerRound ? `, and ${s.penaltiesPerRound.toFixed(1)} penalty strokes a round come from the tee` : ''}.`
         }
         figs={[
-          ['Fairways hit', pct(fw), s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined],
+          floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
           ['Driver distance', s.drivingDistanceDriverOnly == null ? NO_DATA : `${Math.round(s.drivingDistanceDriverOnly)} yds`, 'Average drive', undefined],
           ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
@@ -482,12 +502,14 @@ export function GameDetail({
         lead={
           s.girPercentage == null
             ? 'No approach shots are logged in this window.'
-            : worstProx && worstProx.value! > worstProx.bench!
+            : sampleState('fraction', girRounds) === 'none'
+              ? 'Greens in regulation needs two rounds before it reads as a rate.'
+              : worstProx && worstProx.value! > worstProx.bench!
               ? `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens. The biggest gap to the Tour is from ${worstProx.band} yards, finishing ${Math.round(worstProx.value!)} feet away against ${Math.round(worstProx.bench!)}.`
               : `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens in regulation.`
         }
         figs={[
-          ['Greens in regulation', pct(s.girPercentage), bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)],
+          floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
           ['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined],
           ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
@@ -580,13 +602,15 @@ export function GameDetail({
         lead={
           s.scramblingPercentage == null
             ? 'No up-and-down chances are logged in this window.'
-            : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
-                s.scramblingPctRough != null ? ` From the rough it’s ${Math.round(s.scramblingPctRough)}%` : ''
-              }${s.sandSavePercentage != null ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
+            : sampleState('scramble', s.scrambleAttempts) === 'none'
+              ? `Up and down ${s.scramblesMade} of ${s.scrambleAttempts} ${s.scrambleAttempts === 1 ? 'time' : 'times'} so far: too few chances to read as a rate yet.`
+              : `${first} ${verb('gets', 'get')} up and down ${Math.round(s.scramblingPercentage)}% of the time.${
+                  s.scramblingPctRough != null ? ` From the rough it’s ${Math.round(s.scramblingPctRough)}%` : ''
+                }${s.sandSavePercentage != null && sampleState('scramble', s.sandSaveAttempts) !== 'none' ? `, and sand saves are ${Math.round(s.sandSavePercentage)}%` : ''}.`
         }
         figs={[
-          ['Scrambling', pct(s.scramblingPercentage), s.scrambleAttempts ? `${s.scramblesMade} of ${s.scrambleAttempts} chances` : null, undefined],
-          ['Sand saves', pct(s.sandSavePercentage), benchSand != null ? `Tour ${benchSand}%` : s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : null, tone(s.sandSavePercentage, benchSand)],
+          floorFig('Scrambling', 'scramble', s.scrambleAttempts, s.scramblingPercentage, s.scrambleAttempts ? `${s.scramblesMade} of ${s.scrambleAttempts} chances` : null, undefined),
+          floorFig('Sand saves', 'scramble', s.sandSaveAttempts, s.sandSavePercentage, benchSand != null ? `Tour ${benchSand}%` : s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : null, tone(s.sandSavePercentage, benchSand)),
           ['Inside 10 yds', pct(s.scramblingPct0_10), 'Up and down', undefined],
           ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}

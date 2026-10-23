@@ -121,7 +121,7 @@ Held items: none
 
 - Fairways hit, Greens in regulation, Scrambling and Sand saves show no value
   under their floor (with what they need) and an early-read tag between the
-  floors.
+  floors, on the Overview and on Game detail.
 
 ### Why
 
