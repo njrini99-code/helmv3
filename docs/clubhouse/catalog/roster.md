@@ -13,16 +13,18 @@ browser checks do not replace physical keyboard, gesture or
 assistive-technology acceptance.
 <!-- clubhouse:release-audit:end -->
 
-Route `/golf/dashboard/roster` (coach) · code `src/clubhouse/screens/roster/`, loader
-`src/clubhouse/data/roster.ts` · tests `src/clubhouse/__tests__/roster.test.tsx` · preview
-`/clubhouse-preview/roster` (`?state=empty|failed|partial|loading`).
+Route `/golf/dashboard/roster` (coach) · code `src/clubhouse/screens/roster/`,
+loader `src/clubhouse/data/roster.ts` · tests
+`src/clubhouse/__tests__/roster.test.tsx` · preview `/clubhouse-preview/roster`
+(`?state=empty|failed|partial|loading`).
 
 The player's roster (owner, 2026-10-01: "the same thing as coach except they
 can't click") is the same route for a player: `TeamRoster` and
 `TeamRosterPhone`, loader `src/clubhouse/data/roster-player.ts`, tests
 `src/clubhouse/__tests__/roster-player.test.tsx`, preview
-`/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`). CH-3210,
-CH-3211, CH-3307, CH-3308, CH-3309, CH-3807 and CH-3808 are its own; CH-3302 is shared.
+`/clubhouse-preview/roster-player` (`?state=empty|failed|noteam|loading`).
+CH-3210, CH-3211, CH-3307, CH-3308, CH-3309, CH-3807 and CH-3808 are its own;
+CH-3302 is shared.
 
 Success toasts sit next to their error. Every save goes through `useAction`, so
 offline refusal (CH-1903), slow saves (CH-1902) and the commit/error haptics

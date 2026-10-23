@@ -568,9 +568,11 @@ Captured states are not all visually approved.
 
 ## 2026-10-19 — Contract tests for nine reserved hand contracts
 
-Two new files close the gaps the sections above list: `src/clubhouse/__tests__/rounds-contracts.test.tsx` (31 cases) and
-`src/clubhouse/__tests__/rounds-actions-contracts.test.ts` (8 cases, the real `deleteInProgressRound` against a fake database). Each
-case names its Bridge ID in its title. No implementation file changed.
+Two new files close the gaps the sections above list:
+`src/clubhouse/__tests__/rounds-contracts.test.tsx` (31 cases) and
+`src/clubhouse/__tests__/rounds-actions-contracts.test.ts` (8 cases, the real
+`deleteInProgressRound` against a fake database). Each case names its Bridge ID
+in its title. No implementation file changed.
 
 | Contract | What the test forces | Result |
 | --- | --- | --- |
@@ -584,8 +586,9 @@ case names its Bridge ID in its title. No implementation file changed.
 | 112001 Esc and focus | all nine sheets: the dialog's `cancel` closes each, focus returns to the opener, and no side effect runs (nothing discarded, saved, posted or navigated). Add a course returns to the course picker it was opened from, and that picker returns focus to its opener | pass |
 | 112101 loaders read in rounds | read waves: the library is two (clock, posted rounds and in-progress rounds together, then one holes read for up to 20 rounds); posted rounds page by 1000; the review is the round, then (coach) the membership check, then holes, shots, tee, player and team together | pass |
 
-Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx eslint` on them, exit 0;
-`node scripts/clubhouse/registry.mjs check`, exit 0. The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
+Run: `npx vitest run` on the four files, exit 0, 88 tests in 4 files; `npx
+eslint` on them, exit 0; `node scripts/clubhouse/registry.mjs check`, exit 0.
+The registry now shows 187 IDs, 185 on an element or in code, 2 reserved.
 
 **Still reserved, and why.** 111809 is a script (`clubhouse:a11y`) that needs
 the dev server and a browser, not a vitest case. 110804 has its test, but one of
@@ -645,9 +648,10 @@ Checks on b8920a4: `npm run check:changed` exit 0 (eslint, tsgo, the new test
 and its related tests), `npm run clubhouse:check` exit 0,
 `clubhouse:shots -- check` exit 0.
 
-**Wording that predates the code.** 112101 describes the library's reads in sequence; the loader now starts the clock, the posted
-rounds and the in-progress rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and 111202's meanings said
-"no test covers this"; they now say where the test is.
+**Wording that predates the code.** 112101 describes the library's reads in
+sequence; the loader now starts the clock, the posted rounds and the in-progress
+rounds together (the 2026-10-01 perf pass) and the test pins that. 111201's and
+111202's meanings said "no test covers this"; they now say where the test is.
 
 ## 2026-10-20 — No data lost: Exit's Discard offline, and the engine under a dropped connection
 
