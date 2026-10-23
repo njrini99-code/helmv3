@@ -22,14 +22,16 @@ import { shouldEmit } from '@/lib/admin/emit-throttle';
  * see server.ts's own header comment). A readiness probe that itself hangs
  * for 35s defeats the entire point of having one.
  *
- * `users` (not sport-prefixed) is used deliberately, not by oversight — it
- * is a real, small, canonical table (verified against
- * src/lib/types/database.ts; the last entry in `Tables`, confirming it is
- * `public.users`, not `auth.users`) that this exact query already probed in
- * production before this change. Switching to an unverified sport-prefixed
- * table would trade a known-working read for an unverified one on the one
- * route whose entire job is telling the truth about whether the database is
- * reachable.
+ * `organizations_public_profile` is probed, not `users`. The probe runs with
+ * the cookie client, so a monitor or scripts/warm-edge.ts (no session) reads
+ * as `anon`. Held migration 20261007102000_revoke_anon_public_table_grants
+ * removes anon's SELECT on `users`, which would turn every signed-out probe
+ * into a permission error and a 503. This view keeps an explicit anon SELECT
+ * grant (that same migration re-grants it, and the public team/program pages
+ * read it signed out), is readable by `authenticated` too, and is a small,
+ * canonical read (typed under `Views` in src/lib/types/database.ts). Before
+ * 2026-10-23 this probed `users`; the swap keeps the probe answering the one
+ * question it exists for, whether PostgREST and the database are reachable.
  *
  * NEVER a deployment id/URL/secret in the body — `release` (git SHA) is the
  * standard Sentry release identifier and does not let an unauthenticated
@@ -88,7 +90,7 @@ export async function GET() {
       createClientMs = Date.now() - attemptStartedAt;
       queryStartedAt = Date.now();
       const { error } = await supabase
-        .from('users')
+        .from('organizations_public_profile')
         .select('id')
         .limit(1)
         .abortSignal(AbortSignal.timeout(READINESS_QUERY_TIMEOUT_MS));

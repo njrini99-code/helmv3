@@ -2349,6 +2349,8 @@ systems:
       - supabase/migrations/*revoke_anon_public_table_grants*.sql
       - supabase/migrations/*document_public_profile_views_definer*.sql
       - supabase/migrations/*add_missing_foreign_key_indexes*.sql
+      # 2026-10-23: graveyard table grants and the anon function default.
+      - supabase/migrations/*anon_surface_grants*.sql
     criticality: high
   review_gate:
     docs: .github/branch-protection.md
