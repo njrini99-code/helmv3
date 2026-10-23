@@ -2,8 +2,8 @@
   "$comment": [
     "Objects an applied migration file CREATEs that are knowingly absent from the live catalog.",
     "check-ledger-vs-catalog.mjs reports these as ACCEPTED instead of FAIL, and WARNs when an entry no longer matches a missing object so the list cannot rot.",
-    "Why these exist: the ledger rows 20260624000050..450 carry no statements. The baseball SQL was applied under other ledger versions with different policy names, so the files and the catalog disagree on names, not on protection.",
-    "Classes: superseded = an equivalent object is live under another name; retired = the table moved to the graveyard schema; not-needed = absent on purpose, nothing depends on it.",
+    "Why these exist: the ledger rows 20260624000050..450 carry no statements. The baseball SQL was applied under other ledger versions with different policy names, so the files and the catalog mostly disagree on names, not on protection. The not-needed entries are where the live protection differs.",
+    "Classes: superseded = an equivalent object is live under another name; retired = the table moved to the graveyard schema; not-needed = absent with no live replacement; the reason says what that leaves out.",
     "Add an entry only after checking production read-only. Never add one to silence a real missing object."
   ],
   "entries": [
@@ -83,8 +83,8 @@
       "version": "20260624000094",
       "kind": "policy",
       "name": "bpbo_player_read_published",
-      "class": "superseded",
-      "reason": "Live as baseball_practice_block_objectives_select. The file version filters on a practice_id column the live table does not have.",
+      "class": "not-needed",
+      "reason": "No player read today: the live baseball_practice_block_objectives_select is staff-only, so players cannot see published-practice objectives. Stricter, not a leak; whether players should read them is an open owner call. The file version also filters on a practice_id column the live table does not have.",
       "verified": "2026-10-23"
     },
     {
@@ -107,8 +107,8 @@
       "version": "20260624000094",
       "kind": "policy",
       "name": "bpe_player_read_visible",
-      "class": "superseded",
-      "reason": "Live as baseball_practice_effectiveness_reviews_select.",
+      "class": "not-needed",
+      "reason": "No player read today: the live baseball_practice_effectiveness_reviews_select is staff-only, so the player_visible toggle reaches no player. Stricter, not a leak; whether players should read these reviews is an open owner call.",
       "verified": "2026-10-23"
     },
     {
