@@ -1062,6 +1062,11 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
+    /* B15: chart marks and lines step further from the paper (gain 9.8:1, loss 7.7:1, the flag 7.6:1). */
+    --ch-chart-gain: #0e4a2e;
+    --ch-chart-loss: #6f4706;
+    --ch-chart-loss-on-tint: #5f3d05;
+    --ch-chart-flag: #922e23;
   }
   html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     --ch-border-hairline: rgb(237 231 216 / 0.24);
@@ -1079,5 +1084,9 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-phone-tabbar-bg: var(--ch-phone-tabbar-shelf-bg);
     --ch-light-rim: transparent;
     --ch-light-rim-soft: transparent;
+    --ch-chart-gain: #8fd0a8;
+    --ch-chart-loss: #f0bd6a;
+    --ch-chart-loss-on-tint: #f3c77e;
+    --ch-chart-flag: #f6a294;
   }
 }

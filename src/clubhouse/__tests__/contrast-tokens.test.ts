@@ -107,3 +107,31 @@ describe('the primary key at night (B21, X-6)', () => {
     expect(contrast(hex(rule![2]!), hex(token('ch-bg-page', 'dark')))).toBeGreaterThanOrEqual(3);
   });
 });
+
+describe('Increase Contrast (B15)', () => {
+  const block = tokens.slice(tokens.indexOf('@media (prefers-contrast: more)'));
+  const lightMore = block.slice(0, block.indexOf("html[data-fw-theme='dark']"));
+  const darkMore = block.slice(block.indexOf("html[data-fw-theme='dark']"));
+  const more = (b: string, name: string) => new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`).exec(b)?.[1];
+
+  it('tertiary ink reads at 7:1 or more on the page', () => {
+    expect(lightMore).toMatch(/--ch-text-tertiary: var\(--ch-ink-600\);/);
+    expect(darkMore).toMatch(/--ch-text-tertiary: var\(--ch-ink-600\);/);
+    expect(contrast(hex(token('ch-ink-600', 'light')), hex(token('ch-bg-page', 'light')))).toBeGreaterThanOrEqual(7);
+    expect(contrast(hex(token('ch-ink-600', 'dark')), hex(token('ch-bg-page', 'dark')))).toBeGreaterThanOrEqual(7);
+  });
+
+  it('chart ink is stronger than at rest, and 4.5:1 or more on the paper and the page', () => {
+    for (const [theme, b] of [['light', lightMore], ['dark', darkMore]] as const) {
+      for (const name of ['ch-chart-gain', 'ch-chart-loss', 'ch-chart-flag']) {
+        const v = more(b, name);
+        expect(v, `${theme} ${name}`).toBeTruthy();
+        for (const bg of ['ch-chart-paper', 'ch-bg-page']) {
+          const paper = hex(token(bg, theme));
+          expect(contrast(hex(v!), paper), `${theme} ${name} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+          expect(contrast(hex(v!), paper)).toBeGreaterThan(contrast(hex(token(name, theme)), paper));
+        }
+      }
+    }
+  });
+});
