@@ -55,6 +55,9 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
     let covered: HTMLElement[] = [];
     let width = 0;
     let settling: (() => void) | null = null;
+    /** A committed swipe's hand-over, until the screen has gone: the cleanup runs it, so no timer outlives the screen. */
+    let committing: (() => void) | null = null;
+    let frame = 0;
     let live = false;
 
     const clear = (...els: HTMLElement[]) => {
@@ -146,6 +149,7 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       const finish = () => {
         if (done) return;
         done = true;
+        committing = null;
         window.clearTimeout(timer);
         el.removeEventListener('transitionend', onEnd);
         exit.current.holding = false;
@@ -157,19 +161,21 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       };
       const timer = window.setTimeout(finish, curve.ms + 80);
       el.addEventListener('transitionend', onEnd);
+      committing = finish;
       back.click();
       // A Back that was refused (unsaved changes, a prompt) leaves the screen where it is: bring it home again.
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
           if (done || !exit.current.present) return;
           done = true;
+          committing = null;
           window.clearTimeout(timer);
           el.removeEventListener('transitionend', onEnd);
           exit.current.holding = false;
           const shown = parseFloat(getComputedStyle(el).translate) || 0;
           springBack({ outcome: 'cancel', offset: Math.min(width, Math.max(0, shown)), speed: 0 });
-        }),
-      );
+        });
+      });
     };
 
     const onStart = (e: TouchEvent) => {
@@ -235,6 +241,8 @@ export function useEdgeSwipeBack(screen: RefObject<HTMLElement | null>, { enable
       el.removeEventListener('touchcancel', onCancel);
       abort();
       settling?.();
+      cancelAnimationFrame(frame);
+      committing?.();
     };
   }, [screen, enabled, reduced, exit]);
 }

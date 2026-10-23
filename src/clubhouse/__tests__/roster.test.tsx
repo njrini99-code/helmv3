@@ -891,6 +891,8 @@ describe('Roster · availability (injured, away)', () => {
   const menuLabels = () => within(screen.getByRole('menu')).getAllByRole('menuitem').map((i) => i.textContent);
   const openMenu = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
     await user.click(screen.getByRole('button', { name: `Actions for ${name}` }));
+    // The menu moves focus to its first item on the next frame, and its keys (Escape) only reach it from there.
+    await waitFor(() => expect(screen.getByRole('menu').contains(document.activeElement)).toBe(true));
     return menuLabels();
   };
   const metaOf = (name: string) => screen.getByRole('button', { name: `${name}. Open profile` }).querySelector('.ch-rs-who__m')!;
