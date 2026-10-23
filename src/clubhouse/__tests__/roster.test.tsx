@@ -54,6 +54,13 @@ import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+
+/** The team line's figure as loadRoster pools it (A3), from the fixture's own players: each active player's rounds at their average. */
+const POOLED = (() => {
+  const active = PREVIEW_ROSTER.players.filter((p) => p.status === 'active' && p.avg != null);
+  const n = active.reduce((a, p) => a + p.rounds, 0);
+  return (active.reduce((a, p) => a + p.avg! * p.rounds, 0) / n).toFixed(1);
+})();
 import './dialog-polyfill';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
@@ -332,6 +339,18 @@ describe('Roster · reads that fail', () => {
     await user.click(within(screen.getByRole('region', { name: 'Needs a look' })).getByRole('button', { name: /Jonah/ }));
     await expectCode('CH-3206', /The player panel couldn’t be shown/);
     quiet.mockRestore();
+  });
+
+  it('A3 team average is pooled per round: two rounds of 70 and ten of 80 make 78.3, not 75.0', async () => {
+    const day = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
+    const round = (id: string, player: string, score: number, n: number) => ({ id, player_id: player, round_date: day(n), total_score: score, score_to_par: score - 72, front_nine: score / 2, back_nine: score / 2, holes_played: 18, status: 'completed', round_type: 'practice' });
+    tables.current = {
+      golf_team_members: { data: [['pa', 'Ana'], ['pb', 'Ben']].map(([id, first]) => ({ status: 'active', jersey_number: null, joined_at: null, player: { id, first_name: first, last_name: 'M' } })) },
+      golf_rounds: { data: [...[1, 2].map((n) => round(`a${n}`, 'pa', 70, n)), ...Array.from({ length: 10 }, (_, i) => round(`b${i}`, 'pb', 80, i + 1))] },
+    };
+    const data = await loadRoster({ teamId: 't1', coachId: 'c1' });
+    expect(data.players.map((p) => p.avg)).toEqual([70, 80]);
+    expect(data.teamAvg!.toFixed(1)).toBe('78.3');
   });
 
   it('CH-3207 the team row does not load: Invite says the code did not load, not that there is none', async () => {
@@ -1052,7 +1071,7 @@ describe('Roster · availability (injured, away)', () => {
   it('CH-3809 the head counts injured and away among the active; the list, faces and labels say it in words, never a colour', async () => {
     const user = userEvent.setup();
     wrap(PREVIEW_ROSTER_AVAILABILITY);
-    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active · 1 injured · 1 away. Team average 73.6 over the season.');
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe(`8 players · 7 active · 1 injured · 1 away. Team average ${POOLED} over the season.`);
     // Faces: the note slot holds the line in plain ink, and the card's name says the word.
     const face = screen.getByRole('button', { name: /^Ava Lindqvist, scoring average 72\.4, 3 of 6, injured\. Open profile$/ });
     const slot = face.querySelector('.ch-rs-face__note')!;
@@ -1151,7 +1170,7 @@ describe('Roster · behaviour contracts (P003, docs/clubhouse/pages/P003-roster/
     const rosterCss = readFileSync(resolve(process.cwd(), 'src/clubhouse/styles/roster.css'), 'utf8');
     expect(rosterCss).not.toMatch(/\.ch-rs-team,\s*\.ch-rs-sgbar/);
     expect(rosterCss).toMatch(/\.ch-rs-strip,\s*\.ch-rs-sgbar/);
-    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe('8 players · 7 active. Team average 73.6 over the season.');
+    expect(document.querySelector('.ch-rs-head p')!.textContent).toBe(`8 players · 7 active. Team average ${POOLED} over the season.`);
     expect(cardNames()).toEqual(['Theo Marchetti', 'Sofia Alvarez', 'Ava Lindqvist', 'Jonah Okafor', 'Eli Brandt', 'Priya Natarajan', 'Luca Ferraro']);
     expect(screen.getByRole('button', { name: 'Active · 7' }).getAttribute('aria-pressed')).toBe('true');
     const attn = within(screen.getByRole('region', { name: 'Needs a look' }));

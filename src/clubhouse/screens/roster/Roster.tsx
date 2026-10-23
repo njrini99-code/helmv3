@@ -180,10 +180,8 @@ export function Roster({ data }: { data: ChRoster }) {
   // Injured and away are counted among the active players: availability never changes who is on the active roster.
   const injuredCount = active.filter((p) => p.availability === 'injured').length;
   const awayCount = active.filter((p) => p.availability === 'away').length;
-  const teamAvg = useMemo(() => {
-    const avgs = active.map((p) => p.avg).filter((v): v is number => v != null);
-    return avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
-  }, [active]);
+  // Pooled per round on the server (A3), never a mean of the players' means.
+  const teamAvg = data.teamAvg;
 
   // Places and the team strip rank the active roster, never the rows a search or filter left (P003 #2).
   const standings = useMemo(() => rosterStandings(players), [players]);

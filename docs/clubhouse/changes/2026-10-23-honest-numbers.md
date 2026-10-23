@@ -167,3 +167,31 @@ Held items: none
   early read, 40 read plain; fairways count rounds, not chances.
 - `stats-team.test.tsx`: one round and six chances leave both cards empty
   with what they need.
+
+## 2026-10-23 — Roster team average pooled per round (A3)
+
+```text
+Design package: none (Clubhouse A+ handoff, section 5, A3)
+PR/commit: #2356
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: none
+```
+
+### Changed
+
+- `loadRoster` returns `teamAvg`: every active player's scored round in the
+  season, pooled per round (a nine-hole round counts as half, per 18), the
+  same rule as the team scoring average on Stats. The Roster's "Team average
+  X over the season" line and the spread chart's team marker read it.
+
+### Why
+
+- The line was the mean of each player's average, so a player with 3 rounds
+  weighed the same as one with 30, and Roster disagreed with Stats.
+
+### Verification
+
+- `roster.test.tsx`: two rounds of 70 and ten of 80 make 78.3, not 75.0; the
+  head-line pins compute the pooled figure from the fixture.

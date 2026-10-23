@@ -19,6 +19,7 @@ import {
   summarizePlayer,
   type ChForm,
 } from './season';
+import { hasScore, weightedMean } from './stats-weight';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -100,6 +101,12 @@ export interface ChRoster {
    */
   availabilityCoachNotes?: boolean;
   statsError: boolean;
+  /**
+   * The team's season scoring average, pooled per round (A3): every active player's scored round counts once (a nine-hole
+   * round as half, per 18), so a player with 3 rounds weighs a tenth of one with 30. The same rule as the team scoring
+   * average on Stats. Null with no scored round or when the season read failed.
+   */
+  teamAvg: number | null;
   requests: ChJoinRequest[];
   requestsError: boolean;
   /**
@@ -244,6 +251,9 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     };
   });
 
+  const activeIds = new Set(players.filter((p) => p.status === 'active').map((p) => p.id));
+  const teamAvg = season.error ? null : weightedMean(season.rounds.filter((r) => activeIds.has(r.player_id) && hasScore(r)), (r) => r.total_score);
+
   const requests: ChJoinRequest[] = (requestsRes.success ? (requestsRes.data ?? []) : [])
     .filter((r) => r.status === 'pending')
     .map((r) => {
@@ -272,6 +282,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     notesError: notes.error,
     availabilityCoachNotes: availNotes.ready,
     statsError: season.error,
+    teamAvg,
     requests,
     requestsError: !requestsRes.success,
     helm,
