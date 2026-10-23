@@ -49,7 +49,8 @@ export function CoursePicker({
   /** Open straight on this course's tees (Change tees). */
   initialCourse: ChSetupCourse | null;
   onPick: (course: ChSetupCourse, tee: ChSetupTee) => void;
-  onAddCourse: () => void;
+  /** Types a course in by hand. Without it (the course nudge links a library course only) the head has no Add. */
+  onAddCourse?: () => void;
 }) {
   const [course, setCourse] = useState<ChSetupCourse | null>(initialCourse);
   const phone = useChPhone();
@@ -87,7 +88,7 @@ export function CoursePicker({
       code="CH-11510"
       // Typing a course in is in the head's corner, always in reach (owner, 2026-10-16), not under the whole library.
       action={
-        course ? undefined : (
+        course || !onAddCourse ? undefined : (
           // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
           <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-label="Add a course" onClick={onAddCourse}>
             <Icon icon={Plus} size={14} />
@@ -98,9 +99,9 @@ export function CoursePicker({
     >
       {open &&
         (course ? (
-          <TeeList course={course} listTees={teesFor} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} />
+          <TeeList course={course} listTees={teesFor} onBack={() => setCourse(null)} onPick={(t) => onPick(course, t)} canAdd={!!onAddCourse} />
         ) : (
-          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} />
+          <CourseList ports={ports} onCourse={setCourse} onReach={teesFor} canAdd={!!onAddCourse} />
         ))}
     </Modal>
   );
@@ -110,11 +111,14 @@ function CourseList({
   ports,
   onCourse,
   onReach,
+  canAdd,
 }: {
   ports: Pick<ChSetupPorts, 'listCourses'>;
   onCourse: (c: ChSetupCourse) => void;
   /** A hand is on its way to this course's card: its tees are fetched ahead. */
   onReach: (courseId: string) => unknown;
+  /** Add a course is offered, so the notices may point to it. */
+  canAdd: boolean;
 }) {
   const [q, setQ] = useState('');
   const [load, retry] = useRead(ports.listCourses);
@@ -140,7 +144,7 @@ function CourseList({
         </div>
       )}
       {load.state === 'failed' && (
-        <InlineNotice code="CH-11209" title="The course library didn’t load" body="Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand." onRetry={retry} />
+        <InlineNotice code="CH-11209" title="The course library didn’t load" body={canAdd ? 'Your round isn’t started yet, so nothing is lost. Try again, or add the course by hand.' : 'Nothing was changed. Try again in a moment.'} onRetry={retry} />
       )}
       {groups.map((g) => {
         return (
@@ -188,14 +192,14 @@ function CourseList({
       {load.state === 'ok' && !groups.length && (
         // CH-11310: nothing matches (or the library is empty).
         <p className="ch-rsu-none" data-ch-code="CH-11310">
-          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling, or use Add a course.` : 'No courses yet. Use Add a course for the one you’re playing.'}
+          {q.trim() ? `No courses match “${q.trim()}”. Check the spelling${canAdd ? ', or use Add a course' : ''}.` : canAdd ? 'No courses yet. Use Add a course for the one you’re playing.' : 'No courses in the library yet.'}
         </p>
       )}
     </div>
   );
 }
 
-function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; listTees: (courseId: string) => Promise<ChResult<ChSetupTee[]>>; onBack: () => void; onPick: (t: ChSetupTee) => void }) {
+function TeeList({ course, listTees, onBack, onPick, canAdd }: { course: ChSetupCourse; listTees: (courseId: string) => Promise<ChResult<ChSetupTee[]>>; onBack: () => void; onPick: (t: ChSetupTee) => void; canAdd: boolean }) {
   const read = useCallback(() => listTees(course.id), [listTees, course.id]);
   const [load, retry] = useRead(read);
   const tees = load.state === 'ok' ? load.data : [];
@@ -214,10 +218,10 @@ function TeeList({ course, listTees, onBack, onPick }: { course: ChSetupCourse; 
           <span className="ch-rsu-tee-wait" />
         </div>
       )}
-      {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn’t load`} body="Try again, or add the course by hand." onRetry={retry} />}
+      {load.state === 'failed' && <InlineNotice code="CH-11208" title={`The tees at ${course.name} didn’t load`} body={canAdd ? 'Try again, or add the course by hand.' : 'Try again in a moment.'} onRetry={retry} />}
       {load.state === 'ok' && !tees.some((t) => !t.draft) && (
         <p className="ch-rsu-none" data-ch-code="CH-11311">
-          {course.name} has no tees ready to play yet. A coach can finish them in the course library; for now, add the course by hand.
+          {course.name} has no tees ready to play yet. A coach can finish them in the course library{canAdd ? '; for now, add the course by hand.' : '.'}
         </p>
       )}
       {!!tees.length && (

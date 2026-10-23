@@ -220,6 +220,36 @@ as they read every other make.
 - **Feel.** Medium on the tap (a shot recorded, CH-11705), success once the
   hole is saved (D-70, a write that landed). No motion of its own.
 
+## CoachHelm prompts on the phone (draft, no owner board)
+
+Status: draft, 2026-10-22. The Fairway prompts (CoachHelm Slices 8a and 8b)
+are the reference; no Clubhouse board draws them, so this note is the spec
+until one does. All three are off in production
+(`coachhelm_data_gap_prompt_v1`, `coachhelm_data_prompts_v2`).
+
+- **Where.** First inside the entry card, above the lie and result controls,
+  as one flush section: a label, a ghost Skip at the right (44px tall), one
+  row of chips, and a muted caption that is a live status line. Never in the
+  action bar, never a second primary. At most one prompt shows: the putt ask,
+  then the recovery tap, then the course nudge.
+- **Putt miss (CH-11960).** After a missed first putt in the band the
+  player's putting read is short of, with no miss side tagged: "Which side
+  did it miss?" and the chips Short, Long, High side, Low side. The caption
+  names the putt and the count ("First putt, 8 ft · 3 of 6 for your 5–10 ft
+  putt read"); after a tap it reads "Tagged short · …" and the chosen chip
+  stays pressed. Meters follow the player's distance setting.
+- **Recovery (CH-11961).** After a tee shot that finished in the rough or
+  another lie: "Next shot from there?" with Clear shot and Blocked or punch
+  out. After a tap: "Saved: a recovery shot" or "Saved: a clear shot".
+- **Course nudge (CH-11962).** A round typed by hand with no library course,
+  at the first hole before its first shot and in the Round complete sheet
+  (inset there): "Link this round to a course" and Pick the course, which
+  opens the course picker with the library only (no Add). After a pick:
+  "Linked to" and the course name, Change, and "It saves with your next shot" (in the
+  sheet: "when you post the round").
+- **Feel.** The select tick on every chip (CH-11760), nothing else; no motion
+  of their own.
+
 ## Setup: board to source
 
 The board is `rounds-flow.jsx` (Setup, Picker, HoleConfig) and

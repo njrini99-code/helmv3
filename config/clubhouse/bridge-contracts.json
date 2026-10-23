@@ -12755,6 +12755,39 @@
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
+    "id": 110760,
+    "page": "P011",
+    "category": 7,
+    "item": 60,
+    "name": "COACHHELMS_PUTT_MISS_ASK_THE_HOLES_FIRST",
+    "chCode": "CH-11960",
+    "meaning": "CoachHelm's putt-miss ask (chs-22, Slice 8a, `coachhelm_data_gap_prompt_v1`): the hole's first putt missed from a distance band one of the player's open reads is waiting on, and it has no miss tag",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110761,
+    "page": "P011",
+    "category": 7,
+    "item": 61,
+    "name": "THE_RECOVERY_TAP_THE_LAST_SHOT_RECORDED",
+    "chCode": "CH-11961",
+    "meaning": "The recovery tap (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the last shot recorded is a tee shot into the rough or an 'other' lie, not yet answered",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 110762,
+    "page": "P011",
+    "category": 7,
+    "item": 62,
+    "name": "THE_COURSE_NUDGE_THE_ROUND_HAS_NO",
+    "chCode": "CH-11962",
+    "meaning": "The course nudge (chs-23, Slice 8b, `coachhelm_data_prompts_v2`): the round has no library course (a course typed by hand)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
     "id": 110801,
     "page": "P011",
     "category": 8,
@@ -13402,6 +13435,17 @@
     "chCode": "CH-11710",
     "meaning": "Tap in is tapped (CH-11913)",
     "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/rounds.md"
+  },
+  {
+    "id": 111760,
+    "page": "P011",
+    "category": 17,
+    "item": 60,
+    "name": "A_CHIP_IN_A_DATA_PROMPT_IS",
+    "chCode": "CH-11760",
+    "meaning": "A chip in a data prompt is tapped: a putt miss side (CH-11960), Clear shot or Blocked or punch out (CH-11961)",
+    "status": "reserved",
     "catalog": "docs/clubhouse/catalog/rounds.md"
   },
   {
@@ -14766,8 +14810,8 @@
     "item": 9,
     "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
     "chCode": "CH-13460",
-    "meaning": "Profile: the Game profile is on its way",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: the Game profile is on its way",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -14876,7 +14920,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
+    "meaning": "Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15043,7 +15087,7 @@
     "item": 19,
     "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
     "chCode": "CH-13360",
-    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "meaning": "Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15054,7 +15098,7 @@
     "item": 20,
     "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
     "chCode": "CH-13361",
-    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "meaning": "Standing: How you play is an early read (some measures have enough rounds, some do not)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15220,6 +15264,17 @@
     "name": "STANDING_A_PART_OF_THE_ROUND_ON",
     "chCode": "CH-13374",
     "meaning": "Standing: a part of the round on Where strokes go has no figure (no strokes-gained row for it, or no Tour figure to compare with)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130460,
+    "page": "P013",
+    "category": 4,
+    "item": 60,
+    "name": "PLAYER_NO_COURSE_HAS_THREE_OF_THEIR",
+    "chCode": "CH-13333",
+    "meaning": "Player: no course has three of their countable rounds yet, or the course picked has fewer than three (chs-21)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15507,7 +15562,7 @@
     "item": 25,
     "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
     "chCode": "CH-13260",
-    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "meaning": "Standing: How you play doesn't load (the genome read fails or throws)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15639,8 +15694,8 @@
     "item": 37,
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
-    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -15717,6 +15772,17 @@
     "name": "RECHECK_FAILS",
     "chCode": "CH-13006",
     "meaning": "Re-check fails or is offline",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130660,
+    "page": "P013",
+    "category": 6,
+    "item": 60,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_DOESNT_LOAD",
+    "chCode": "CH-13233",
+    "meaning": "Player: their own course plan (chs-21) doesn't load: the courses or the plan read fails or throws",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -16339,6 +16405,61 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130760,
+    "page": "P013",
+    "category": 7,
+    "item": 60,
+    "name": "PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS",
+    "chCode": "CH-13913",
+    "meaning": "Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130761,
+    "page": "P013",
+    "category": 7,
+    "item": 61,
+    "name": "ASK_AN_ANSWER_NAMES_A_PLAYERS_READS",
+    "chCode": "CH-13914",
+    "meaning": "Ask (coach): an answer names a player's reads (chs-39)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130762,
+    "page": "P013",
+    "category": 7,
+    "item": 62,
+    "name": "STANDING_HOW_YOU_PLAY",
+    "chCode": "CH-13915",
+    "meaning": "Standing: How you play (chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130763,
+    "page": "P013",
+    "category": 7,
+    "item": 63,
+    "name": "PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY",
+    "chCode": "CH-13916",
+    "meaning": "Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130764,
+    "page": "P013",
+    "category": 7,
+    "item": 64,
+    "name": "PLAYER_THE_PLAN_FOR_THE_COURSE_THEY",
+    "chCode": "CH-13917",
+    "meaning": "Player: the plan for the course they picked",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130780,
     "page": "P013",
     "category": 7,
@@ -16810,6 +16931,17 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 131760,
+    "page": "P013",
+    "category": 17,
+    "item": 60,
+    "name": "PLAYER_A_COURSE_IS_PICKED_IN_THEIR",
+    "chCode": "CH-13733",
+    "meaning": "Player: a course is picked in their Course plan (chs-21)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 131801,
     "page": "P013",
     "category": 18,
@@ -16980,7 +17112,7 @@
     "item": 16,
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
-    "meaning": "Profile: a screen reader moves through the page",
+    "meaning": "Standing: a screen reader moves through How you play",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

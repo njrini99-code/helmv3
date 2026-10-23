@@ -42,7 +42,7 @@
   gap: 12px;
 }
 .ch-rs-team__name {
-  font: 500 13.5px/1 var(--ch-font-sans);
+  font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 
@@ -146,7 +146,7 @@
   color: var(--ch-text-primary);
 }
 .ch-rs-attn__n {
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 13px/1 var(--ch-font-sans);
 }
 .ch-rs-attn__n.is-warning,
 .ch-rs-face__note.is-warning {
@@ -308,7 +308,7 @@
   box-shadow: 0 0 0 3px #fffefb, 0 0 0 5px var(--ch-green-600), 0 8px 18px -6px rgb(11 58 37 / 0.4);
 }
 .ch-rs-face__av .ch-avatar {
-  font-size: 24px;
+  font-size: 22px;
 }
 .ch-rs-face__name {
   display: -webkit-box;
@@ -583,7 +583,7 @@
   height: 26px;
   padding: 0 10px;
   border-radius: 999px;
-  font: 500 12.5px/1 var(--ch-font-sans);
+  font: 500 13px/1 var(--ch-font-sans);
 }
 .ch-rs-status i {
   width: 6px;
@@ -649,10 +649,10 @@
   box-shadow: 0 0 0 5px var(--ch-ivory-25), 0 0 0 6px rgb(176 149 96 / 0.55), 0 14px 30px -12px rgb(28 25 18 / 0.4);
 }
 .ch-rs-peek__av .ch-avatar {
-  font-size: 30px;
+  font-size: 28px;
 }
 .ch-rs-peek__hero h2 {
-  font: 600 24px/1.15 var(--ch-font-sans);
+  font: 600 22px/1.15 var(--ch-font-sans);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;
 }
@@ -681,7 +681,7 @@
   align-items: center;
   gap: 6px;
   margin-bottom: 5px;
-  font: 500 11.5px/1 var(--ch-font-sans);
+  font: 500 12px/1 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__facts dt svg {
@@ -689,7 +689,7 @@
 }
 .ch-rs-peek__facts dd {
   margin: 0;
-  font: 500 13.5px/1.3 var(--ch-font-sans);
+  font: 500 14px/1.3 var(--ch-font-sans);
 }
 .ch-rs-peek__figs {
   display: grid;
@@ -713,7 +713,7 @@
   box-shadow: inset 1px 0 0 var(--ch-border-hairline);
 }
 .ch-rs-peek__figs dt {
-  font: 500 11.5px/1.2 var(--ch-font-sans);
+  font: 500 12px/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__figs dd {
@@ -740,7 +740,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-rs-peek__note {
-  font: italic 400 13.5px/1.45 var(--ch-font-sans);
+  font: italic 400 14px/1.45 var(--ch-font-sans);
   color: var(--ch-green-700);
 }
 .ch-rs-peek__rd {
@@ -753,7 +753,7 @@
 }
 .ch-rs-peek__rd b {
   display: block;
-  font: 500 13.5px/1.25 var(--ch-font-sans);
+  font: 500 14px/1.25 var(--ch-font-sans);
 }
 .ch-rs-peek__rd span span {
   font: var(--ch-type-caption);
@@ -880,7 +880,7 @@ a.ch-rs-peek__dev:focus-visible,
 }
 .ch-rs-inv__code b {
   grid-row: 2;
-  font: 500 26px/1 var(--ch-font-sans);
+  font: 500 28px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: var(--ch-forest-800);
@@ -1060,7 +1060,7 @@ a.ch-rs-peek__dev:focus-visible,
     padding: 28px 16px 60px;
   }
   .ch-rs-head h1 {
-    font-size: calc(32 * var(--ch-type-k));
+    font-size: calc(34 * var(--ch-type-k));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1130,7 +1130,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-title {
     margin: 0;
-    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    font: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1175,7 +1175,7 @@ a.ch-rs-peek__dev:focus-visible,
     margin: 14px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1383,7 +1383,7 @@ a.ch-rs-peek__dev:focus-visible,
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-panel__h b {
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1504,7 +1504,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-about > b {
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1540,7 +1540,7 @@ a.ch-rs-peek__dev:focus-visible,
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-rsm-note .ch-rs-peek__l b {
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1688,12 +1688,12 @@ a.ch-rs-peek__dev:focus-visible,
     min-width: 44px;
   }
   .ch-rsm-rq__h b {
-    font: 500 18px/1 var(--ch-font-sans);
+    font: 500 17px/1 var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.03em;
   }
   .ch-rsm-rq__h span {
-    font: 500 calc(10.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: 500 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   .ch-rsm-rq__meta {
@@ -1732,7 +1732,7 @@ a.ch-rs-peek__dev:focus-visible,
     gap: 4px;
   }
   .ch-rsm-code > span > span {
-    font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+    font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
     color: var(--ch-text-tertiary);
   }
   /* Instrument Sans, as on desktop: the design's tracked mono isn't in the doctrine. */
@@ -1896,7 +1896,7 @@ a.ch-rs-peek__dev:focus-visible,
     display: none;
   }
   .ch-rs[data-canopy] .ch-rs-req__head b {
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 20px/1.2 var(--ch-font-sans);
 
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.022em;
@@ -2284,12 +2284,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 .ch-rs-sp__h h2 {
   margin: 0 0 4px;
-  font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-forest-800);
 }
 .ch-rs-sp__h p {
   margin: 0;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-rs-sp__plot {

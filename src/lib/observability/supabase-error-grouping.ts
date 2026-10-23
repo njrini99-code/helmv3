@@ -36,6 +36,11 @@ type Fingerprintable = {
   exception?: { values?: Array<{ value?: string; mechanism?: { type?: string } }> };
 };
 
+type RoutedEvent = Fingerprintable & {
+  transaction?: string;
+  request?: { url?: string };
+};
+
 const SUPABASE_MECHANISM = 'auto.db.supabase.postgres';
 const PG_CODE = /^(PGRST\d{3}|[0-9A-Z]{5})$/;
 
@@ -77,6 +82,34 @@ function transportFailureKind(event: Fingerprintable): string | null {
 }
 
 /**
+ * A gateway in front of Supabase (Cloudflare) can answer with an HTML error
+ * PAGE instead of a PostgREST error. The integration then throws
+ * `new Error(<the whole document>)`: no code, no transport signature, and a
+ * body that differs on every request (Ray ID, timestamp, client IP), so
+ * default grouping makes one issue per event. 2026-10-22 15:29-15:33Z: one
+ * Supabase 502 became JAVASCRIPT-NEXTJS-1D6, -1D7 and -1D8, each titled
+ * "Error: <!DOCTYPE html>" and each storing the page.
+ *
+ * The page states its cause in `<title>` ("supabase.co | 502: Bad gateway"),
+ * the same line `summariseErrorBody` in src/lib/admin/job-log.ts keeps. The
+ * match is anchored to the START of the message (after the IE-shim comments a
+ * Cloudflare page opens with), so a message that merely quotes a tag is not a
+ * page.
+ */
+export function gatewayErrorPage(text: string): { status: string; title: string } | null {
+  const head = text.replace(/^(?:\s|<!--[\s\S]*?-->)+/, '');
+  if (!/^<(?:!doctype\s|html[\s>])/i.test(head)) return null;
+  const title =
+    /<title[^>]*>([\s\S]*?)<\/title>/i
+      .exec(text)?.[1]
+      ?.replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200) || 'HTML error page (no title)';
+  const status = /\b([45]\d\d)\b/.exec(title)?.[1] ?? /Error code ([45]\d\d)\b/i.exec(text)?.[1] ?? 'unknown';
+  return { status, title };
+}
+
+/**
  * Regroups an integration auto-capture. Never overrides a deliberate
  * fingerprint, and returns every other event untouched.
  */
@@ -97,9 +130,56 @@ export function fingerprintSupabaseAutoCapture<E extends Fingerprintable>(
     };
   }
 
+  const values = event.exception?.values ?? [];
+  const page = values.map((value) => gatewayErrorPage(value.value ?? '')).find((found) => found !== null);
+  if (page) {
+    return {
+      ...event,
+      tags: { ...event.tags, http_status: page.status },
+      exception: {
+        ...event.exception,
+        values: values.map((value) =>
+          gatewayErrorPage(value.value ?? '') ? { ...value, value: `Supabase gateway error page: ${page.title}` } : value,
+        ),
+      },
+      fingerprint: ['supabase-gateway', `http:${page.status}`],
+    };
+  }
+
   const kind = transportFailureKind(event);
   if (kind) {
     return { ...event, fingerprint: ['supabase-transport', kind] };
   }
   return event;
+}
+
+const READINESS_PROBE_PATH = '/api/health';
+
+function isReadinessProbeEvent(event: RoutedEvent): boolean {
+  if (/^(?:GET|HEAD) \/api\/health$/.test(event.transaction ?? '')) return true;
+  const url = event.request?.url;
+  if (!url) return false;
+  try {
+    return new URL(url, 'https://helm.invalid').pathname === READINESS_PROBE_PATH;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The readiness probe's own timed-out read, captured by the integration.
+ *
+ * /api/health bounds its read at 2.5s, catches the timeout, answers 503 and
+ * records a throttled degraded row in admin_events with `skipSentry: true` —
+ * "a single transient blip shouldn't page" was a deliberate choice there. The
+ * integration captured the same read anyway, once per attempt, so every slow
+ * Supabase window became a stack of JAVASCRIPT-NEXTJS-YY events from the probe
+ * alone (29 of the 31 on 2026-10-21; real pages raised 2), burying the page-level
+ * timeouts that share that issue.
+ *
+ * Timeouts only, and only on /api/health: a PostgREST error code there (the
+ * database answered no) and every other route's timeout still reach Sentry.
+ */
+export function isReadinessProbeTimeoutCapture(event: RoutedEvent): boolean {
+  return isSupabaseAutoCapture(event) && transportFailureKind(event) === 'timeout' && isReadinessProbeEvent(event);
 }

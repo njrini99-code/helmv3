@@ -757,8 +757,10 @@ flags:
       chips (Short, Long, High, Low) with a counter ("4 of 10 for your 5-10
       ft putt read"); one tap sets that shot's miss tag exactly as the
       existing optional miss chips do, and the row disappears at the
-      target. When off,
-      the pages read nothing extra and shot entry is exactly what it was.
+      target. Clubhouse shot entry (src/clubhouse/screens/rounds/track,
+      CH-11960, loaded by the round-new and round-continue routes) asks the
+      same question from the same loader. When off, the pages read nothing
+      extra and shot entry is exactly what it was.
     type: release
     status: active
     created_at: "2026-10-20"
@@ -832,8 +834,11 @@ flags:
       rough or an "other" lie, one row asks "Next shot from there?" with
       Clear shot / Blocked or punch out; the answer is stored on the tee shot
       as golf_shots.lie_after_recovery the way a miss chip is (device copy
-      first). When off, the pages read nothing extra, pass nothing down, and
-      shot entry and its round payloads are exactly what they were.
+      first). Clubhouse round entry (CH-11961 recovery tap, CH-11962 course
+      nudge, library-only picker) asks the same questions over the same
+      lib/golf/data-prompts logic. When off, the pages read nothing extra,
+      pass nothing down, and shot entry and its round payloads are exactly
+      what they were.
     type: release
     status: active
     created_at: "2026-10-21"
@@ -1112,8 +1117,11 @@ flags:
       Targets and sides only, never a club. Read only, on the coach's
       request (no event source carries a course yet). Turning it on shows
       the action to coaches in Clubhouse (itself off in production); Fairway
-      is unchanged. Off: the loader does not offer it and both server
-      actions return not available without reading anything.
+      is unchanged. The player's Board in Clubhouse shows their own Course
+      plan (CH-13916) in the player's voice, read by two actions that take
+      no player id and answer for the signed-in player only. Off: the
+      loaders do not offer it and all four server actions return not
+      available without reading anything.
     type: release
     status: active
     created_at: "2026-10-21"

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   fingerprintSupabaseAutoCapture,
   isInfrastructurePgCode,
+  isReadinessProbeTimeoutCapture,
   postgresCodeFromHint,
 } from '../supabase-error-grouping';
 
@@ -80,6 +81,51 @@ describe('fingerprintSupabaseAutoCapture', () => {
     expect(fingerprintSupabaseAutoCapture(event, { originalException: codedError('x', '57014') })).toBe(event);
   });
 
+  /**
+   * 2026-10-22 15:29-15:33Z: one Supabase 502 answered by Cloudflare's HTML
+   * error page became three Sentry issues (JAVASCRIPT-NEXTJS-1D6/-1D7/-1D8),
+   * each titled "Error: <!DOCTYPE html>" and storing the whole page, because
+   * the Ray ID and timestamp in the body differ per request.
+   */
+  it('groups a gateway HTML error page on its HTTP status and keeps only the title', () => {
+    const page = (ray: string) =>
+      [
+        '<!DOCTYPE html>',
+        '<!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]-->',
+        '<!--[if gt IE 8]><!--> <html class="no-js" lang="en-US"> <!--<![endif]-->',
+        '<head>',
+        '<title>supabase.co | 502: Bad gateway</title>',
+        '</head><body><span class="code-label">Error code 502</span>',
+        `<span>Cloudflare Ray ID: <strong>${ray}</strong></span>`,
+        '<span id="cf-footer-ip">203.0.113.7</span></body></html>',
+      ].join('\n');
+    const first = fingerprintSupabaseAutoCapture(autoCapture(page('a4e98d523df5823e')), {
+      originalException: new Error(page('a4e98d523df5823e')),
+    });
+    const second = fingerprintSupabaseAutoCapture(autoCapture(page('b1c2d3e4f5a60718')), {
+      originalException: new Error(page('b1c2d3e4f5a60718')),
+    });
+    expect(first.fingerprint).toEqual(['supabase-gateway', 'http:502']);
+    expect(second.fingerprint).toEqual(first.fingerprint);
+    expect(first.tags?.http_status).toBe('502');
+    const value = first.exception.values[0]?.value ?? '';
+    expect(value).toBe('Supabase gateway error page: supabase.co | 502: Bad gateway');
+    expect(value).not.toMatch(/<html|Ray ID|203\.0\.113\.7/);
+  });
+
+  it('groups a gateway page with no status in its title as unknown', () => {
+    const event = fingerprintSupabaseAutoCapture(autoCapture('<html><head></head><body>oops</body></html>'), {
+      originalException: new Error('x'),
+    });
+    expect(event.fingerprint).toEqual(['supabase-gateway', 'http:unknown']);
+    expect(event.exception.values[0]?.value).toBe('Supabase gateway error page: HTML error page (no title)');
+  });
+
+  it('does not treat a message that merely quotes a tag as a gateway page', () => {
+    const event = autoCapture('invalid input syntax near "<html>" in user content');
+    expect(fingerprintSupabaseAutoCapture(event, { originalException: new Error('x') })).toBe(event);
+  });
+
   it('leaves an auto-capture with no code and no transport signature untouched', () => {
     const event = autoCapture('something unexpected');
     expect(fingerprintSupabaseAutoCapture(event, { originalException: new Error('x') })).toBe(event);
@@ -104,5 +150,44 @@ describe('postgresCodeFromHint', () => {
     expect(postgresCodeFromHint({ originalException: codedError('x', 'ECONNRESET') })).toBeNull();
     expect(postgresCodeFromHint({ originalException: 'string' })).toBeNull();
     expect(postgresCodeFromHint(undefined)).toBeNull();
+  });
+});
+
+describe('isReadinessProbeTimeoutCapture', () => {
+  const TIMEOUT = 'TimeoutError: The operation was aborted due to timeout';
+  const onRoute = (value: string, route: { transaction?: string; request?: { url?: string } }) => ({
+    ...autoCapture(value),
+    ...route,
+  });
+
+  it.each([
+    ['a GET transaction', { transaction: 'GET /api/health' }],
+    ['a HEAD transaction', { transaction: 'HEAD /api/health' }],
+    ['the request URL alone', { request: { url: 'https://helmsportslabs.com/api/health' } }],
+  ])("drops the probe's own timed-out read, recognised by %s", (_label, route) => {
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, route))).toBe(true);
+  });
+
+  it('keeps a timeout on any other route: those are real pages waiting on the database', () => {
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, { transaction: 'GET /golf/dashboard/coachhelm' }))).toBe(false);
+    expect(isReadinessProbeTimeoutCapture(onRoute(TIMEOUT, { request: { url: 'https://helmsportslabs.com/api/healthz' } }))).toBe(false);
+  });
+
+  it('keeps a PostgREST error on the probe: the database answered, and the answer was no', () => {
+    const event = onRoute('permission denied for table users', { transaction: 'GET /api/health' });
+    expect(isReadinessProbeTimeoutCapture(event)).toBe(false);
+  });
+
+  it('keeps an aborted or failed fetch on the probe', () => {
+    expect(isReadinessProbeTimeoutCapture(onRoute('AbortError: This operation was aborted', { transaction: 'GET /api/health' }))).toBe(false);
+    expect(isReadinessProbeTimeoutCapture(onRoute('TypeError: fetch failed', { transaction: 'GET /api/health' }))).toBe(false);
+  });
+
+  it('keeps a timeout on the probe that the integration did not capture', () => {
+    const event = {
+      transaction: 'GET /api/health',
+      exception: { values: [{ value: TIMEOUT, mechanism: { type: 'generic' } }] },
+    };
+    expect(isReadinessProbeTimeoutCapture(event)).toBe(false);
   });
 });

@@ -86,7 +86,7 @@ describe('a switch of view, as React runs it', () => {
  */
 describe('rapid switching between the player’s views', () => {
   const resolvedRead = (v: string) => Object.assign(Promise.resolve(v), { status: 'fulfilled', value: v }) as Promise<string>;
-  const order: PlayerHelmView[] = ['board', 'profile', 'standing', 'deep-dive'];
+  const order: PlayerHelmView[] = ['board', 'standing', 'deep-dive'];
 
   function View({ view, read }: { view: PlayerHelmView; read: Promise<string> }) {
     const text = use(read);
@@ -120,16 +120,15 @@ describe('rapid switching between the player’s views', () => {
     });
   async function setup() {
     drawn = [];
-    const later = { profile: deferred<string>(), standing: deferred<string>(), 'deep-dive': deferred<string>() };
-    const reads = { board: resolvedRead('Board'), profile: later.profile.promise, standing: later.standing.promise, 'deep-dive': later['deep-dive'].promise };
+    const later = { standing: deferred<string>(), 'deep-dive': deferred<string>() };
+    const reads = { board: resolvedRead('Board'), standing: later.standing.promise, 'deep-dive': later['deep-dive'].promise };
     render(<Page reads={reads} />);
     await act(async () => {});
     return later;
   }
 
-  it('board, profile, standing, deep dive in quick taps: the tabs follow the last tap, the board stays on screen busy, and only the last view is drawn when it is ready', async () => {
+  it('board, standing, deep dive in quick taps: the tabs follow the last tap, the board stays on screen busy, and only the last view is drawn when it is ready', async () => {
     const later = await setup();
-    await tap('Game profile');
     await tap('Standing');
     await tap('Deep dive');
     expect(checked()).toBe('Deep dive');
@@ -137,7 +136,6 @@ describe('rapid switching between the player’s views', () => {
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBe('true');
     expect(screen.queryByTestId('skeleton')).toBeNull();
     // An earlier choice that lands late changes nothing: the last choice is the one that is waited for.
-    await act(async () => later.profile.resolve('Profile'));
     await act(async () => later.standing.resolve('Standing'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('board');
     expect(checked()).toBe('Deep dive');
@@ -145,30 +143,27 @@ describe('rapid switching between the player’s views', () => {
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBeNull();
     expect(checked()).toBe('Deep dive');
-    expect(drawn).not.toContain('profile');
     expect(drawn).not.toContain('standing');
   });
 
   it('the last tap wins whichever order the views land in (the last view first, then the earlier ones)', async () => {
     const later = await setup();
-    await tap('Game profile');
     await tap('Standing');
     await tap('Deep dive');
     await act(async () => later['deep-dive'].resolve('Deep dive'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     await act(async () => later.standing.resolve('Standing'));
-    await act(async () => later.profile.resolve('Profile'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('deep-dive');
     expect(checked()).toBe('Deep dive');
   });
 
   it('tapping back to the view on screen while another loads sends the page back to it: the board, not the view that was loading', async () => {
     const later = await setup();
-    await tap('Game profile');
-    expect(checked()).toBe('Game profile');
+    await tap('Standing');
+    expect(checked()).toBe('Standing');
     await tap('Board');
     expect(checked()).toBe('Board');
-    await act(async () => later.profile.resolve('Profile'));
+    await act(async () => later.standing.resolve('Standing'));
     expect(screen.getByTestId('view').getAttribute('data-view')).toBe('board');
     expect(screen.getByTestId('view').getAttribute('aria-busy')).toBeNull();
     expect(checked()).toBe('Board');

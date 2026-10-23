@@ -4,7 +4,15 @@
  * and 14% carried an em-dash, mostly from the deterministic template itself.
  */
 import { describe, it, expect } from 'vitest';
-import { checkRecapStyle, buildDeterministicRecap, type DeterministicRecapRound } from './recap-style';
+import {
+  checkRecapStyle,
+  buildDeterministicRecap,
+  countRecapWords,
+  RECAP_MAX_WORDS,
+  RECAP_SENTENCE_WORD_TARGETS,
+  RECAP_SHORTEN_SENTENCE_WORD_TARGETS,
+  type DeterministicRecapRound,
+} from './recap-style';
 
 describe('checkRecapStyle', () => {
   it('passes a compliant two-sentence recap', () => {
@@ -19,6 +27,24 @@ describe('checkRecapStyle', () => {
   it('flags more than 36 words', () => {
     const long = `${'word '.repeat(30)}end. ${'more '.repeat(8)}end.`;
     expect(checkRecapStyle(long, [])).toContain('too_many_words');
+  });
+
+  it('counts words the same way the limit does, so a prompt can quote the count', () => {
+    const atCap = `${'word '.repeat(RECAP_MAX_WORDS - 2)}end. last.`;
+    expect(countRecapWords(atCap)).toBe(RECAP_MAX_WORDS);
+    expect(checkRecapStyle(atCap, [])).not.toContain('too_many_words');
+    expect(countRecapWords(`${atCap} extra`)).toBe(RECAP_MAX_WORDS + 1);
+    expect(countRecapWords('  31 putts,   50% of greens.\n')).toBe(5);
+  });
+
+  it('asks the model for per-sentence caps that leave headroom under the enforced limit', () => {
+    // The model overshoots the caps it is given (2026-10-21 data: 74% of first
+    // drafts ran past 36), so the caps must sum well under 36, and the rewrite
+    // pass, which already overshot once, gets less room than the first ask.
+    const first = RECAP_SENTENCE_WORD_TARGETS[0] + RECAP_SENTENCE_WORD_TARGETS[1];
+    const shorten = RECAP_SHORTEN_SENTENCE_WORD_TARGETS[0] + RECAP_SHORTEN_SENTENCE_WORD_TARGETS[1];
+    expect(first).toBeLessThanOrEqual(RECAP_MAX_WORDS - 8);
+    expect(shorten).toBeLessThan(first);
   });
 
   it('flags a sentence count other than two, without splitting on decimals or No.', () => {

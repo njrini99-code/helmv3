@@ -5,6 +5,7 @@ import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
+import { afterRailMove } from '../../lib/rail-fold';
 
 /**
  * P011: the pictures of a round's review. A zone is a band under a gold rule: what the area is and one reading on the left,
@@ -320,7 +321,8 @@ function useLabelSize(fallback: number) {
     };
     read();
     if (typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(read);
+    // Once the sidebar's fold has settled, not on every frame of it (lib/rail-fold.ts).
+    const ro = new ResizeObserver(() => afterRailMove(read));
     ro.observe(svg);
     return () => ro.disconnect();
   }, [fallback]);

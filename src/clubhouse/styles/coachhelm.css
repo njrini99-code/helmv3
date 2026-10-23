@@ -37,7 +37,7 @@
 }
 .ch-hl-role {
   justify-self: start;
-  font: 600 calc(12.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1 var(--ch-font-sans);
   letter-spacing: 0.01em;
   color: var(--ch-green-600);
 }
@@ -119,7 +119,7 @@
 /* A metric label can run to two lines on a phone ("Downhill penalty vs level putts (distance-controlled)", 286px wide at
    390px); at line-height 1 the lines touched, so it takes the caption leading. Aesthetic audit CH-1. */
 .ch-hl-ev__l {
-  font: 500 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-bars {
@@ -135,7 +135,7 @@
   grid-template-columns: 78px minmax(0, 1fr) 44px;
   gap: 12px;
   align-items: center;
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
 }
 .ch-hl-bars__t {
   height: 10px;
@@ -176,7 +176,7 @@
   max-width: 62ch;
 }
 .ch-hl-path__l {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -232,7 +232,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-ledger li {
@@ -272,7 +272,7 @@
 
 /* "Since you were last here" (D4): the program pulse as one collapsed line in the header. */
 .ch-hl-since {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-since.is-loading {
@@ -337,7 +337,7 @@
 
 /* CH-13942: reads rated Not enough yet, one collapsed line under the board that opens in place (round 2C). */
 .ch-hl-ney {
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-ney__b {
@@ -395,7 +395,7 @@
 .ch-hl-rck__s {
   flex: 1 1 260px;
   margin: 0;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-rck__s:not(:empty) {
@@ -453,7 +453,7 @@
   min-height: 44px;
   padding-top: 14px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-hl-why svg {
@@ -467,7 +467,7 @@
 .ch-hl-why__b {
   margin: -4px 0 0;
   max-width: 62ch;
-  font: 400 calc(14.5 * var(--ch-type-k))/1.6 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.6 var(--ch-font-sans);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -540,7 +540,7 @@
   min-width: 0;
 }
 .ch-hl-row__b em {
-  font: 500 calc(11.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -557,14 +557,14 @@
 .ch-hl-row__v small {
   display: block;
   margin-top: 3px;
-  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-row svg {
   color: var(--ch-text-tertiary);
 }
 .ch-hl-note {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 /* Player: the reads the Board leaves to the Deep dive (NEEDS_MAX, WORKING_MAX), a button on its own width, not the column's. */
@@ -611,7 +611,7 @@
   text-wrap: pretty;
 }
 .ch-hl-prop__t em {
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -678,7 +678,7 @@
   border-radius: var(--ch-radius-md);
   display: grid;
   place-items: center;
-  font: 600 11.5px/1 var(--ch-font-sans);
+  font: 600 12px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-150);
   color: var(--ch-text-secondary);
@@ -701,7 +701,7 @@
 }
 .ch-hl-cact__m {
   flex-basis: 100%;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 /* The focus status that could not be checked (CH-13207) takes the row, with Dismiss under it. */
@@ -717,7 +717,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-positive-100);
   color: var(--ch-green-700);
-  font: 600 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   animation: ch-hl-rise var(--ch-dur-base) var(--ch-ease);
 }
 .ch-hl-dis {
@@ -822,7 +822,7 @@
     gap: 8px;
   }
   .ch-hl-h .ch-hl-h__t {
-    font-size: calc(32 * var(--ch-type-k));
+    font-size: calc(34 * var(--ch-type-k));
   }
   .ch-hl-h p {
     font-size: calc(14 * var(--ch-type-k));
@@ -835,10 +835,10 @@
     background: var(--ch-sheet-bg);
   }
   .ch-hl-focus h2 {
-    font-size: calc(30 * var(--ch-type-k));
+    font-size: calc(28 * var(--ch-type-k));
   }
   .ch-hl-lede {
-    font-size: calc(15.5 * var(--ch-type-k));
+    font-size: calc(16 * var(--ch-type-k));
   }
   .ch-hl-ev {
     padding: 16px;
@@ -1090,7 +1090,7 @@
   /* Proposed for you: a section whose caption carries the rule; its first answer sits on it. */
   .ch-hl[data-canopy] .ch-hl-prop > h2 {
     margin: 0 0 4px;
-    font: 600 19px/1.2 var(--ch-font-sans);
+    font: 600 20px/1.2 var(--ch-font-sans);
   }
   .ch-hl[data-canopy] .ch-hl-prop ul {
     margin-top: 0;
@@ -1128,11 +1128,11 @@
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__k {
   margin-bottom: 4px;
-  font: 500 calc(12.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(13 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   color: var(--ch-on-green-ink-muted);
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus h2 {
-  font: 600 calc(23 * var(--ch-type-k))/1.15 var(--ch-font-sans);
+  font: 600 calc(22 * var(--ch-type-k))/1.15 var(--ch-font-sans);
   letter-spacing: -0.03em;
   color: var(--ch-on-green-ink);
 }
@@ -1166,14 +1166,14 @@
     color: var(--ch-ledger-eyebrow);
   }
   .ch-hl.is-phone > .ch-hl-h .ch-hl-h__t {
-    font: 600 calc(31 * var(--ch-type-k))/1.08 var(--ch-font-sans);
+    font: 600 calc(34 * var(--ch-type-k))/1.08 var(--ch-font-sans);
     letter-spacing: -0.038em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
   .ch-hl.is-phone > .ch-hl-h p {
     max-width: 60ch;
-    font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+    font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
     color: var(--ch-text-secondary);
   }
 
@@ -1184,7 +1184,7 @@
     margin: 0 0 4px;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: 600 calc(19 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+    font: 600 calc(20 * var(--ch-type-k))/1.2 var(--ch-font-sans);
     letter-spacing: -0.025em;
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1369,7 +1369,7 @@
     font: 500 13px/1.2 var(--ch-font-sans);
   }
   .ch-hl[data-canopy] .ch-hl-focus__head h2 {
-    font: 600 36px/1.1 var(--ch-font-sans);
+    font: 600 34px/1.1 var(--ch-font-sans);
     letter-spacing: -0.03em;
     text-wrap: balance;
   }
@@ -1385,7 +1385,7 @@
   }
   .ch-hl[data-canopy] .ch-hl-focus__head .ch-hl-lede {
     max-width: 60ch;
-    font: 400 16.5px/1.55 var(--ch-font-sans);
+    font: 400 17px/1.55 var(--ch-font-sans);
   }
 
   /* The evidence sits straight under the plate: no soft rule between them, the plate is the divider. */
@@ -1413,7 +1413,7 @@
     font-size: calc(14 * var(--ch-type-k));
   }
   .ch-hl[data-canopy] .ch-hl-bars b {
-    font-size: calc(18 * var(--ch-type-k));
+    font-size: calc(17 * var(--ch-type-k));
     letter-spacing: -0.02em;
   }
   .ch-hl[data-canopy] .ch-hl-bars__t i {
@@ -1607,7 +1607,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-eng dt {
   padding-top: 4px;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-eng dd {
@@ -1639,7 +1639,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-eng__l {
   max-width: 62ch;
-  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -1664,7 +1664,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   border-top: 1px solid var(--ch-border-hairline);
 }
 .ch-hl-audit__l dt {
-  font: 600 calc(12.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-audit__l dd {
@@ -1685,7 +1685,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-cx__k {
   margin: 0;
-  font: 600 calc(12.5 * var(--ch-type-k))/1.4 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.4 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-cx__chips,
@@ -1769,14 +1769,14 @@ html:not([data-fw-theme='dark']) .ch-hl {
 }
 .ch-hl-cx__err {
   margin: 0;
-  font: 500 calc(13.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-warning-600);
 }
 .ch-hl-later {
   margin: 0;
   padding: 12px 0 0;
   border-top: 1px solid var(--ch-border-hairline);
-  font: 400 calc(14.5 * var(--ch-type-k))/1.55 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.55 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 @media (hover: hover) {
@@ -1871,10 +1871,10 @@ html:not([data-fw-theme='dark']) .ch-hl {
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-hl-plan__c b {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.25 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.25 var(--ch-font-sans);
 }
 .ch-hl-plan__c em {
-  font: 500 calc(11.5 * var(--ch-type-k))/1.2 var(--ch-font-sans);
+  font: 500 calc(12 * var(--ch-type-k))/1.2 var(--ch-font-sans);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1891,12 +1891,12 @@ html:not([data-fw-theme='dark']) .ch-hl {
   gap: 8px;
   margin: 0;
   padding-inline-start: 18px;
-  font: 400 calc(13.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(14 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-hl-plan__thin {
   margin-top: 10px;
-  font: 400 calc(12.5 * var(--ch-type-k))/1.45 var(--ch-font-sans);
+  font: 400 calc(13 * var(--ch-type-k))/1.45 var(--ch-font-sans);
   color: var(--ch-text-tertiary);
 }
 .ch-hl-plan__player {
@@ -1909,11 +1909,11 @@ html:not([data-fw-theme='dark']) .ch-hl {
   border-top: 1px solid var(--ch-border-subtle);
 }
 .ch-hl-plan__player h4 {
-  font: 600 calc(12.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(13 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-hl-plan__pt {
-  font: 600 calc(13.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(14 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 @media (pointer: coarse) {

@@ -49,7 +49,7 @@ export interface ConnectionStatus {
 }
 
 interface UseConnectionStatusOptions {
-  /** URL to ping for connectivity check (default: /api/health or a small resource) */
+  /** URL to ping for connectivity check (default: /api/ping, the liveness probe) */
   pingUrl?: string;
   /** Interval between connectivity checks in ms (default: 30000 = 30s) */
   checkInterval?: number;
@@ -67,7 +67,12 @@ interface UseConnectionStatusOptions {
 // CONSTANTS
 // ============================================================================
 
-const DEFAULT_PING_URL = '/api/health';
+// The liveness probe, never the readiness probe (/api/health). This asks "can
+// the device reach the server"; /api/health asks "can the server reach the
+// database", spends up to two 2.5s reads plus the proxy's auth check finding
+// out, and so outlasted DEFAULT_CHECK_TIMEOUT whenever Supabase was slow —
+// reading a slow database as an offline phone. See src/app/api/ping/route.ts.
+const DEFAULT_PING_URL = '/api/ping';
 const DEFAULT_CHECK_INTERVAL = 30000; // 30 seconds
 const DEFAULT_CHECK_TIMEOUT = 5000; // 5 seconds
 const DEFAULT_SLOW_THRESHOLD = 500; // 500ms RTT
