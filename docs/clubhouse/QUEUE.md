@@ -333,6 +333,11 @@ its rows together and does not map them one to one.
 | aplus-b21 | Dark primary key on a lighter face (B21, X-6) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
 | aplus-b15 | Chart ink under Increase Contrast (B15) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-12); no Bridge IDs or CH codes needed |
 | aplus-cons23 | One grab handle and one FormSheet for Settings and Recruiting (CONS-23) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-13); no Bridge IDs or CH codes needed |
+| aplus-b6 | One press controller (data-ch-pressed) and the pressed-state sweep (B6) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-14); no Bridge IDs or CH codes needed |
+| aplus-cons1 | Danger key on tokens with states and a default warning (CONS-1) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-14); no Bridge IDs or CH codes needed |
+| aplus-cons2 | Every button is ui/Button: rounds/track first, per-file ratchet (CONS-2) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-14); no Bridge IDs or CH codes needed |
+| aplus-cons3 | In flight is busy: 24 keys (CONS-3) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-14); no Bridge IDs or CH codes needed |
+| aplus-cons25 | Haptic grammar held: commit only for settle, shot, refresh (CONS-25) | Clubhouse A+ | in progress | #2361 | agent/clubhouse-aplus-phase2 (Clubhouse A+ handoff, WP-14); no Bridge IDs or CH codes needed |
 
 <!-- markdownlint-enable MD013 -->
 
