@@ -5,13 +5,12 @@ import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { GENOME_WINDOW_DAYS, type DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import { formatSigned } from '../lib/format';
-import type { ChInsight } from './coachhelm-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
- * The player's Game profile (Clubhouse P013, `?view=profile`): the genome the Fairway page's profile drill reads
- * (`loadGenome`, `derivePersona`, `GENOME_DIMENSIONS`), shaped for the screen. Pure, so the loader, the preview and the tests
- * run this one function.
+ * The genome the Fairway page's profile drill reads (`loadGenome`, `derivePersona`, `GENOME_DIMENSIONS`), shaped for the screen:
+ * the whole profile (`toChProfile`), and the part of it Standing's "How you play" draws (`toChGame`). Game profile was its own
+ * view (Clubhouse P013, `?view=profile`) until it folded into Standing. Pure, so the loader, the preview and the tests run these.
  *
  * Doctrine carried over from Fairway's own retirement of the radar (`PlayerGenomeProfile`): the radar-normalised 0 to 100 score
  * is never printed. It was a score with no baseline behind it, and read as a grade it is not. Every measure here shows its real
@@ -94,16 +93,49 @@ export interface ChProfile {
   measures: ChMeasure[];
   /** How many are ready. */
   ready: number;
-  /**
-   * What CoachHelm's insights say about this player, ranked as the Board ranks them (owner, 2026-10-16: the profile reads the
-   * actual CoachHelm output, not only the genome). `error`: the read failed, never "nothing to say"; absent when not read.
-   */
-  sees?: { list: ChInsight[]; error: boolean };
-  /**
-   * A coach's one line under the hero (spec A): how many of the player's current reads are costing strokes and how many are
-   * working, counted from the visible reads with no exposure recorded. `error`: that read failed. Absent on the player's own page.
-   */
-  seen?: { costing: number; working: number; error: boolean };
+}
+
+/**
+ * The genome measures Standing's own rows already draw from the stats cache, against the Tour and the team: scrambling (Short
+ * game), par 3 scoring (Scoring) and tournament against practice scoring (Pressure). "How you play" leaves them out, so a stat is
+ * never drawn twice on one page with two different numbers.
+ */
+export const STANDING_DRAWS: ReadonlySet<string> = new Set(['scrambling_rate', 'par3_proficiency', 'pressure_delta']);
+
+/**
+ * Standing's "How you play" (CH-13915): what the Game profile showed that Standing does not, folded into it (design call, Nav and
+ * Standing). The persona's sentence on the shape of the game, and the measures Standing has no row for (miss side, the back nine,
+ * the recent trend, how often driver comes out), each on its own scale with its word, its read and how it is measured. A measure
+ * the persona calls a strength or a watch-out carries that tag on its card; there is no second list of them. `state` and `ready`
+ * count only these measures.
+ */
+export interface ChGame {
+  state: ChProfile['state'];
+  windowDays: number;
+  rounds: number | null;
+  refreshed: string | null;
+  courseProfile: string | null;
+  measures: ChMeasure[];
+  ready: number;
+}
+
+/** The section's read: `failed` is a genome read that did not come back, never "nothing yet" (CH-13260). */
+export type ChGameLoad = { status: 'ready'; data: ChGame } | { status: 'failed' };
+
+/** "How you play" from the genome row: `toChProfile`, without what Standing's own rows draw. */
+export function toChGame(genome: LoadedGenome | null, now: Date = new Date(), viewer: ChViewer = { role: 'player' }): ChGame {
+  const p = toChProfile(genome, now, viewer);
+  const measures = p.measures.filter((m) => !STANDING_DRAWS.has(m.id));
+  const ready = measures.filter((m) => !m.locked).length;
+  return {
+    state: ready === 0 ? 'empty' : ready < measures.length ? 'partial' : 'full',
+    windowDays: p.windowDays,
+    rounds: p.rounds,
+    refreshed: p.refreshed,
+    courseProfile: p.courseProfile,
+    measures,
+    ready,
+  };
 }
 
 interface MeasureCopy {

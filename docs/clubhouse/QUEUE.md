@@ -130,13 +130,22 @@ its rows together and does not map them one to one.
 | chs-34 | "No reads yet" becomes a By player row | CoachHelm board UI | done | #2294 | |
 | chs-35 | Deep dive: one-sentence hero and one read ledger | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-36 | Standing: "Where strokes go" ladder replaces Most to gain | CoachHelm board UI | done | #2290 (landed in #2312) | claude/coachhelm-strokes-ladder |
-| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | open | | |
+| chs-37 | Game profile folds into Standing (out of scope of #2290) | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
+| chs-39 | A coach's Ask answer that names a read links to the coach Player page | CoachHelm board UI | in progress | #2328 | CoachHelm: fix it all thread, claude/coachhelm-standing-ask (CH-13913 to CH-13915, Bridge IDs 130760 to 130762) |
 | chs-38 | Deep dive: "Where it happened" example holes | CoachHelm board UI | done | #2297 (landed in #2312) | claude/coachhelm-deepdive-ledger |
 | chs-40 | Coach voice from the stored `coach_copy`, regex as fallback (#2306 writes it) | CoachHelm board UI | done | #2303, #2306 (landed in #2310, #2312) | claude/coachhelm-coach-voice |
 | chs-43 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-44 | As chs-29 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | chs-56 | Team-grid leg figure opens Game detail (with par-12) | Clubhouse parity & pages | done | #2281 | |
 | chs-62 | Waits on a held migration (production rollout, per #2281) | Clubhouse parity & pages | held | | |
+| mot-01 | Desktop sidebar fold: the spring keeps its look, but resize readers and Lenis wait until it settles and the brand panel drops its blur while it moves | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-02 | Dialog backdrop is a solid wash on desktop too, never a live blur | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-03 | Tab bar and sidebar section switches swap at once (no fade-through dip); pushes, pops and other links keep their motion | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (motion pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-04 | Back during a phone push reverses from where the push stood instead of waiting it out | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-05 | A sheet or dialog reopened while closing picks up from where it stood instead of snapping | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-06 | Font weights on four rungs (400 to 700) and the phone player name wraps instead of truncating | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-07 | Placeholder text on its own readable token in both themes | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (look-and-feel pass the owner approved 2026-10-22); no Bridge IDs or CH codes needed |
+| mot-08 | Text on 11 sizes (11 to 34px), nearest step, from approved before/after renders | Clubhouse fixes | in progress | | claude/clubhouse-motion-apple-bar (type scale the owner approved 2026-10-23); no Bridge IDs or CH codes needed |
 | doc-06 | Recruiting Due field uses the app's date field: found already done | Clubhouse fixes | closed | #2284 | |
 | doc-12 | As par-01 | Clubhouse parity & pages | done | #2295 | claude/project-thread-icincd |
 | doc-13 | Team stats print: the leg grid narrows on paper | Clubhouse parity & pages | done | #2281 | |

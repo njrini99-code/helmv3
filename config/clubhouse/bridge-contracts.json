@@ -14755,8 +14755,8 @@
     "item": 9,
     "name": "PROFILE_THE_GAME_PROFILE_IS_ON_ITS",
     "chCode": "CH-13460",
-    "meaning": "Profile: the Game profile is on its way",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: the Game profile is on its way",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -14865,7 +14865,7 @@
     "item": 4,
     "name": "PLAYER_COACHHELM_IS_OFF_FOR_THEM",
     "chCode": "CH-13304",
-    "meaning": "Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
+    "meaning": "Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15032,7 +15032,7 @@
     "item": 19,
     "name": "PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET",
     "chCode": "CH-13360",
-    "meaning": "Profile: no measure has enough rounds yet (no genome row, or one with nothing computed)",
+    "meaning": "Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15043,7 +15043,7 @@
     "item": 20,
     "name": "PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND",
     "chCode": "CH-13361",
-    "meaning": "Profile: some measures have enough rounds and some do not (an early read)",
+    "meaning": "Standing: How you play is an early read (some measures have enough rounds, some do not)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15507,7 +15507,7 @@
     "item": 25,
     "name": "PROFILE_THE_GAME_PROFILE_DOESNT_LOAD",
     "chCode": "CH-13260",
-    "meaning": "Profile: the Game profile doesn't load (the genome read fails or throws)",
+    "meaning": "Standing: How you play doesn't load (the genome read fails or throws)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
@@ -15639,8 +15639,8 @@
     "item": 37,
     "name": "PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD",
     "chCode": "CH-13261",
-    "meaning": "Profile: what CoachHelm sees doesn't load (the player's insight read fails)",
-    "status": "implemented",
+    "meaning": "(retired with the Game profile, chs-37) Profile: what CoachHelm sees doesn't load",
+    "status": "deprecated",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
@@ -16350,6 +16350,39 @@
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },
   {
+    "id": 130760,
+    "page": "P013",
+    "category": 7,
+    "item": 60,
+    "name": "PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS",
+    "chCode": "CH-13913",
+    "meaning": "Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130761,
+    "page": "P013",
+    "category": 7,
+    "item": 61,
+    "name": "ASK_AN_ANSWER_NAMES_A_PLAYERS_READS",
+    "chCode": "CH-13914",
+    "meaning": "Ask (coach): an answer names a player's reads (chs-39)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
+    "id": 130762,
+    "page": "P013",
+    "category": 7,
+    "item": 62,
+    "name": "STANDING_HOW_YOU_PLAY",
+    "chCode": "CH-13915",
+    "meaning": "Standing: How you play (chs-37)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/coachhelm.md"
+  },
+  {
     "id": 130763,
     "page": "P013",
     "category": 7,
@@ -17024,7 +17057,7 @@
     "item": 16,
     "name": "PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE",
     "chCode": "CH-13860",
-    "meaning": "Profile: a screen reader moves through the page",
+    "meaning": "Standing: a screen reader moves through How you play",
     "status": "reserved",
     "catalog": "docs/clubhouse/catalog/coachhelm.md"
   },

@@ -277,6 +277,41 @@ alongside (not duplicated here).
   `pg:<code>`, and uncoded transport failures group by kind. A deliberate
   fingerprint is never overridden. Measured 2026-09-23: 35 of the top 100
   unresolved issues were these auto-captures.
+- **A gateway HTML error page groups on its HTTP status.** When Cloudflare
+  answers for Supabase with an HTML page (502, 522, 504), the integration
+  throws the whole document as the message, with no code. Each page carries
+  its own Ray ID, timestamp and client IP, so default grouping made one issue
+  per event (2026-10-22 15:29-15:33Z: one 502 became JAVASCRIPT-NEXTJS-1D6,
+  -1D7 and -1D8, all titled "Error: <!DOCTYPE html>"). `gatewayErrorPage`
+  keeps the page's `<title>`, tags `http_status`, fingerprints
+  `['supabase-gateway', 'http:<status>']`, and replaces the message with
+  `Supabase gateway error page: <title>` so the page body (including the
+  client IP) is not stored.
+- **A gateway HTML page in a server trace's metadata is collapsed too.**
+  `logServerError(..., { metadata: { dbError: error } })` passes the
+  PostgrestError as is, and on a gateway failure its `message` is the page.
+  `normalizeContext` in `src/lib/server-error-logger.ts` runs
+  `collapseHtmlErrorPages` (`src/lib/utils/describe-error.ts`) over the whole
+  context, so `error_logs.context`, `admin_events.metadata` and Sentry's
+  `server_trace` context hold `upstream returned an HTML error page (HTTP
+  <status>): <title>` instead (2026-10-22, /admin/errors/fae748c7: 6.8KB of
+  markup with the egress IP). Only a string that starts as a page is replaced.
+- **The readiness probe's own Supabase timeouts are dropped.** `/api/health`
+  already records a slow database as a throttled `admin_events` degraded row
+  and a 503, and passes `skipSentry`, but the integration still raised its
+  query timeouts (JAVASCRIPT-NEXTJS-YY, 29 of the 31 on 2026-10-21; real
+  pages raised 2). `isReadinessProbeTimeoutCapture` drops an auto-captured
+  timeout whose transaction or URL is `/api/health`, in the server
+  `beforeSend` (`src/instrumentation.ts`). Every other route, PostgREST error
+  and abort still reports.
+- **The browser connectivity check pings `/api/ping`, not `/api/health`.**
+  `use-connection-status` sent a HEAD every 30s from every mounted instance,
+  and each one cost a proxy `getUser` plus readiness reads, so a slow
+  Supabase window showed online players "Unable to reach server". `/api/ping`
+  is a 204 liveness route with no database and no auth: `src/proxy.ts`
+  returns before `updateSession` for that exact path. `/api/health` stays the
+  readiness probe for `scripts/warm-edge.ts`, `StaleDeploymentRecoveryScript`
+  and the Sentry uptime monitor.
 
 ## Rollback
 

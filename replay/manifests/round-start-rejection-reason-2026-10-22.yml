@@ -1,0 +1,35 @@
+schema_version: 1
+replay_id: round-start-rejection-reason-2026-10-22
+incident_id: /admin/errors/9a6618a3
+feature_id: golf_round_lifecycle
+title: >-
+  A server-rejected round start reported only the generic "Failed to save
+  round" text. savePartialRound now returns the Postgres code and the
+  flight-recorder trace id its server log row carries, and the client's
+  "Round start failed: server_rejected" report includes both.
+bad_version: 0d4c12357eb98cf6ac660c1e841bcb89bb0f1ecc
+fixed_version: 53721a79d52cd847735a73eb981ffcfdfe2544d8
+fixture:
+  - source: golf-save-partial-round.test.ts
+    target: src/app/golf/actions/__tests__/golf-save-partial-round.test.ts
+  - source: use-new-round-session.start.test.tsx
+    target: src/lib/golf/round-session/__tests__/use-new-round-session.start.test.tsx
+test_command: "./node_modules/.bin/vitest run src/app/golf/actions/__tests__/golf-save-partial-round.test.ts src/lib/golf/round-session/__tests__/use-new-round-session.start.test.tsx"
+expected:
+  bad_version: fail
+  fixed_version: pass
+expected_failure_mode: assertion
+sanitization:
+  reviewed: true
+  contains_production_data: false
+  notes: >-
+    Synthetic player, team, course, round and trace ids in an in-memory fake
+    Supabase and mocked server actions; no production rows, PII, tokens or
+    logs.
+source_incident_status: fixed
+created_at: "2026-10-22"
+notes: >-
+  On bad_version 2 tests fail by assertion: the server test finds no
+  `failure` on the result, and the client test finds no serverErrorCode or
+  serverTraceId in the server_rejected report. Every other test passes on
+  both versions.

@@ -657,7 +657,13 @@ reload (`lieFromShotResult`) restore position from.
   `logError` (`component: NewRoundClient`, `action: round start`, `reason`
   offline / server_rejected / transport, with `navigatorOnLine` and the
   health-probe state) so a start that never reaches the server is visible in
-  `error_logs`. The offline gate refuses only when `navigator.onLine` is false
+  `error_logs`. A `server_rejected` report also carries `serverErrorCode` (the
+  Postgres code, or `exception`) and `serverTraceId`: `savePartialRound`'s
+  database and unexpected-error failures return `failure: { code, traceId }`
+  beside the unchanged generic `error`, and each of those branches writes the
+  same id to its server log row as `helmTraceId`, so the client report joins
+  the row that holds the cause (2026-10-22, Bridge rel:5a4785bd / 9a6618a3).
+  Only the code and the opaque id reach the client. The offline gate refuses only when `navigator.onLine` is false
   AND the last `/api/health` probe failed (`connectionStatus.isConnected`;
   `isOnline` merely mirrors `navigator.onLine`) — WKWebView's
   `navigator.onLine` alone is not trusted.

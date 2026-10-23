@@ -9,7 +9,7 @@
   justify-self: start;
   min-height: 32px;
   color: var(--ch-green-700);
-  font: 500 calc(13.5 * var(--ch-type-k))/1 var(--ch-font-sans);
+  font: 500 calc(14 * var(--ch-type-k))/1 var(--ch-font-sans);
   text-decoration: none;
 }
 .ch-htr-back:hover {
@@ -34,7 +34,7 @@
 .ch-htr-note,
 .ch-htr-corr {
   max-width: 64ch;
-  font: 400 calc(14.5 * var(--ch-type-k))/1.5 var(--ch-font-sans);
+  font: 400 calc(15 * var(--ch-type-k))/1.5 var(--ch-font-sans);
   color: var(--ch-text-secondary);
 }
 .ch-htr-note {
@@ -68,7 +68,7 @@
 .ch-htr-rung__w {
   grid-area: w;
   align-self: start;
-  font: 600 calc(14.5 * var(--ch-type-k))/1.3 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.3 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-htr-rung__l {
@@ -133,11 +133,11 @@
   border-top: 0;
 }
 .ch-htr-fam__n {
-  font: 600 calc(14.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-primary);
 }
 .ch-htr-fam__l {
-  font: 600 calc(14.5 * var(--ch-type-k))/1.35 var(--ch-font-sans);
+  font: 600 calc(15 * var(--ch-type-k))/1.35 var(--ch-font-sans);
   color: var(--ch-text-primary);
   text-align: right;
 }

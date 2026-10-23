@@ -1,7 +1,10 @@
 # INC-2026-10-20 — a practice start reused an empty tournament shell and failed with 55000
 
 - Feature: `golf_round_lifecycle`
-- Status: FIXED on branch (agent/health-20261021-0009), not yet merged or deployed
+- Status: VERIFIED IN PRODUCTION — fixed in PR #2243 (a93f8f3), live since
+  2026-10-21 03:28Z (dpl_6Enpeka5udJctZo5MC5VHnVQ7o7R), 0 occurrences in the
+  24h proof window; both fingerprints resolved by the desktop health routine
+  2026-10-22 03:49Z
 - Risk: R2 — a round start failed with "Failed to save round"; no data was
   written or lost (the trigger refused the write)
 - Fingerprints: `c449552f` (server, `savePartialRound.updateExisting`, x2),

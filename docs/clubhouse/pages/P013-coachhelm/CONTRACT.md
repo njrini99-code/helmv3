@@ -60,9 +60,10 @@ person picks (130102), and a coach's players come most pressing first (130103).
 Every number is the generator's own, re-shaped and never computed here (130106).
 The header counts the players with an open signal, never the rows behind them,
 and a strength, a card that states no finding and a read that is out of date are
-not open signals (130105, 130107). `?view=profile`, `standing` and `deep-dive`
-are the player's own Game profile, Standing and Deep dive, each read for the
-signed-in player alone and only once CoachHelm is on for them, and
+not open signals (130105, 130107). `?view=standing` and `deep-dive` are the
+player's own Standing and Deep dive, each read for the signed-in player alone
+and only once CoachHelm is on for them; `?view=profile`, the Game profile's old
+address, is Standing opened at its How you play section (130760), and
 `?view=development` goes to Stats' Development (130104, Q-76); none says "not
 rebuilt yet" any more. Tested for each view in `coachhelm-views.test.tsx`: who
 it reads for, the switch, a gate lookup that failed, and that a coach following
@@ -97,7 +98,6 @@ own after the server render, so there are no section skeletons.
 | 130206 | CH-13420 | `ASK_THE_CHAT_PAGE_LOADS` | Ask: The chat page loads |
 | 130207 | CH-13421 | `ASK_A_REPLY_IS_STREAMING` | Ask: A reply is streaming |
 | 130208 | CH-13450 | `ASK_AN_ACTION_WAS_CONFIRMED_AND_IS` | Ask: An action was confirmed and is being carried out |
-| 130209 | CH-13460 | `PROFILE_THE_GAME_PROFILE_IS_ON_ITS` | Profile: the Game profile is on its way |
 | 130210 | CH-13470 | `STANDING_THE_STANDING_IS_ON_ITS_WAY` | Standing: the standing is on its way |
 | 130211 | CH-13480 | `DEEP_DIVE_THE_INSIGHTS_ARE_ON_THEIR` | Deep dive: the insights are on their way |
 | 130212 | CH-13405 | `COACH_THE_BOARD_IS_DRAWN_AND_THE` | Coach: the board is drawn and the program pulse is still on its way |
@@ -135,7 +135,7 @@ filter, so it has no filtered empty state.
 | 130401 | CH-13301 | `PLAYER_NO_ROUND_POSTED_YET` | Player: no round posted yet (the lede reads "One thing to work on each week, from the rounds you post.") |
 | 130402 | CH-13302 | `PLAYER_ROUNDS_POSTED_NO_INSIGHT_YET` | Player: rounds posted, no insight yet |
 | 130403 | CH-13303 | `PLAYER_EVERY_INSIGHT_IS_A_STRENGTH` | Player: every insight is a strength |
-| 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them (the board, and Game profile, Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
+| 130404 | CH-13304 | `PLAYER_COACHHELM_IS_OFF_FOR_THEM` | Player: CoachHelm is off for them (the board, and Standing and Deep dive, which say the same, answered at once and with no sub-navigation) |
 | 130405 | CH-13305 | `COACH_COACHHELM_IS_OFF` | Coach: CoachHelm is off (by them, by the team, or globally) |
 | 130406 | CH-13306 | `COACH_PLAYERS_ON_THE_TEAM_NO_SIGNAL` | Coach: players on the team, no signal yet |
 | 130407 | CH-13307 | `COACH_NO_PLAYERS_ON_THE_TEAM` | Coach: no players on the team |
@@ -149,8 +149,8 @@ filter, so it has no filtered empty state.
 | 130415 | CH-13323 | `ASK_NO_CHATS_YET` | Ask: No chats yet |
 | 130416 | CH-13324 | `ASK_A_CHAT_SEARCH_WITH_NO_MATCH` | Ask: A chat search with no match |
 | 130418 | CH-13350 | `ASK_A_READ_TOOL_FOUND_NOTHING_RECORDED` | Ask: A read tool found nothing recorded |
-| 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Profile: no measure has enough rounds yet (no genome row, or one with nothing computed) |
-| 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Profile: some measures have enough rounds and some do not (an early read) |
+| 130419 | CH-13360 | `PROFILE_NO_MEASURE_HAS_ENOUGH_ROUNDS_YET` | Standing: How you play has no measure with enough rounds yet (no genome row, or one with nothing computed) |
+| 130420 | CH-13361 | `PROFILE_SOME_MEASURES_HAVE_ENOUGH_ROUNDS_AND` | Standing: How you play is an early read (some measures have enough rounds, some do not) |
 | 130421 | CH-13370 | `STANDING_NO_STANDING_ROW_YET` | Standing: no standing row yet |
 | 130422 | CH-13371 | `STANDING_AN_EARLY_READ` | Standing: an early read (rows, but under five rounds on file, or the count unknown) |
 | 130423 | CH-13372 | `STANDING_A_STAT_THE_TEAM_IS_TOO` | Standing: a stat the team is too small to compare on (under five teammates have it) |
@@ -219,7 +219,7 @@ the whole change again, follow-ups included (131401).
 | 130622 | CH-13253 | `ASK_A_CONFIRMED_ACTION_FAILED_OR_ONLY` | Ask: A confirmed action failed or only partly completed |
 | 130623 | CH-13254 | `ASK_THE_CONVERSATION_MOVED_PAST_A_CARD` | Ask: The conversation moved past a card that was never answered |
 | 130624 | CH-13255 | `ASK_THE_EVIDENCE_PANEL_IS_OPENED_FOR` | Ask: The evidence panel is opened for a player the conversation has nothing on |
-| 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Profile: the Game profile doesn't load (the genome read fails or throws) |
+| 130625 | CH-13260 | `PROFILE_THE_GAME_PROFILE_DOESNT_LOAD` | Standing: How you play doesn't load (the genome read fails or throws) |
 | 130626 | CH-13270 | `STANDING_THE_STANDING_DOESNT_LOAD` | Standing: the standing doesn't load (the standing read fails or throws) |
 | 130627 | CH-13271 | `STANDING_THEIR_SCORING_AVERAGE_DOESNT_LOAD` | Standing: their scoring average doesn't load (the read every projection starts from fails) |
 | 130628 | CH-13280 | `DEEP_DIVE_THE_INSIGHTS_DONT_LOAD` | Deep dive: the insights don't load (the delivery read throws, or comes back empty while undismissed insights are on file, or a read after it throws) |
@@ -230,7 +230,6 @@ the whole change again, follow-ups included (131401).
 | 130633 | CH-13207 | `COACH_A_READ_ABOUT_THE_TOP_CARD` | Coach: a read about the top card failed: which focus areas were made from it, which were declined, or the newest round (whether the read is still current) |
 | 130634 | CH-13208 | `A_READ_BESIDE_THE_CARDS_FAILED_THE` | A read beside the cards failed: the Tour's values (or the team they come from), the drills' text, which reads are Assigned (the player's board and Deep dive), or the newest round |
 | 130636 | CH-13272 | `STANDING_THE_COHORT_LOOKUP_FAILED` | Standing: the cohort lookup (their team's gender, which picks the Tour) failed |
-| 130637 | CH-13261 | `PROFILE_WHAT_COACHHELM_SEES_DOESNT_LOAD` | Profile: what CoachHelm sees doesn't load (the player's insight read fails) |
 | 130638 | CH-13230 | `WHATS_NEW_A_REFRESH_FAILS_AFTER_THE` | What’s new: a refresh fails after the week loaded |
 | 130639 | CH-13231 | `WHATS_NEW_THE_FEED_DOESNT_LOAD` | What’s new: the feed doesn’t load (the action fails, or the coach’s team can’t be resolved) |
 | 130640 | CH-13232 | `WHATS_NEW_THE_FEED_CRASHES_WHILE_DRAWING` | What’s new: the feed crashes while drawing |
@@ -309,6 +308,9 @@ its own.
 | 130754 | CH-13944 | `RECHECK_READS` | Re-check reads (coach) |
 | 130755 | CH-13945 | `RECHECK_LANDS` | Re-check lands |
 | 130756 | CH-13996 | `DEEP_DIVE_WHERE_IT_HAPPENED` | Deep dive: where it happened (chs-38) |
+| 130760 | CH-13913 | `PLAYER_COACH_GAME_PROFILES_OLD_ADDRESS` | Player, coach: Game profile's old address (`?view=profile`, and `view=profile&player=` for a coach; chs-37) |
+| 130761 | CH-13914 | `ASK_AN_ANSWER_NAMES_A_PLAYERS_READS` | Ask (coach): an answer names a player's reads (chs-39) |
+| 130762 | CH-13915 | `STANDING_HOW_YOU_PLAY` | Standing: How you play (chs-37) |
 | 130763 | CH-13916 | `PLAYER_THEIR_OWN_COURSE_PLAN_OFFERED_BY` | Player: their own Course plan (chs-21 / par-14, `coachhelm_course_plan_v1`), offered by the loader while the flag is on |
 | 130764 | CH-13917 | `PLAYER_THE_PLAN_FOR_THE_COURSE_THEY` | Player: the plan for the course they picked |
 | 130780 | CH-13983 | `COACH_THE_BRIEF_BEHIND_INTELLIGENCE` | Coach: the Brief behind /intelligence (`?view=brief`, flag `coachhelm_monday_brief_v1`) |
@@ -524,7 +526,7 @@ CH-1842, 11825 CH-1816.
 | 131813 | CH-13850 | `ASK_COACHHELM_IS_WORKING_ON_AN_ANSWER` | Ask: CoachHelm is working on an answer |
 | 131814 | CH-13851 | `ASK_THE_EVIDENCE_CONTROL` | Ask: The evidence control |
 | 131815 | CH-13852 | `ASK_EVIDENCE_DRAWN_AS_A_CHART` | Ask: Evidence drawn as a chart |
-| 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Profile: a screen reader moves through the page |
+| 131816 | CH-13860 | `PROFILE_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through How you play |
 | 131817 | CH-13880 | `STANDING_A_SCREEN_READER_MOVES_THROUGH_THE` | Standing: a screen reader moves through the page |
 | 131818 | CH-13890 | `DEEP_DIVE_A_SCREEN_READER_MOVES_THROUGH` | Deep dive: a screen reader moves through the page |
 
