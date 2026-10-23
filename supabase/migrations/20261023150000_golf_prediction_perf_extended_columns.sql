@@ -4,7 +4,7 @@
 -- the owner lifts the migration freeze.
 -- Apply (one line):
 --   npm run db:apply --
---   supabase/migrations/20261023010000_golf_prediction_perf_extended_columns.sql
+--   supabase/migrations/20261023150000_golf_prediction_perf_extended_columns.sql
 -- Risk: LOW. Three nullable columns with no default on a 685-row table
 -- (304 kB, 2026-10-23). No data, no index, no policy or grant change.
 --

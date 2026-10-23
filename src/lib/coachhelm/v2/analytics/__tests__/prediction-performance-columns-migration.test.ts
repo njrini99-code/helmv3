@@ -9,7 +9,7 @@ import { EXTENDED_COLUMNS } from '../prediction-performance-writer';
 
 const MIGRATION = join(
   process.cwd(),
-  'supabase/migrations/20261023010000_golf_prediction_perf_extended_columns.sql',
+  'supabase/migrations/20261023150000_golf_prediction_perf_extended_columns.sql',
 );
 
 /**
@@ -36,6 +36,6 @@ describe('golf_prediction_model_performance extended columns migration', () => {
 
   it('is registered in HELD.md', () => {
     const held = readFileSync(join(process.cwd(), 'supabase/migrations/HELD.md'), 'utf8');
-    expect(held).toContain('`20261023010000_golf_prediction_perf_extended_columns.sql` | **HOLD**');
+    expect(held).toContain('`20261023150000_golf_prediction_perf_extended_columns.sql` | **HOLD**');
   });
 });
