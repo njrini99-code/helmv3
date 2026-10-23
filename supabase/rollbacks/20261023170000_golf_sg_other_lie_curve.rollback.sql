@@ -1,4 +1,4 @@
--- ROLLBACK CAPTURE for supabase/migrations/20261023120000_golf_sg_other_lie_curve.sql
+-- ROLLBACK CAPTURE for supabase/migrations/20261023170000_golf_sg_other_lie_curve.sql
 --
 -- Forward change (not applied when this file was written):
 --   * sg_normalize_lie keeps 'other' and 'recovery' as their own lies.

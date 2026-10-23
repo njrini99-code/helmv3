@@ -433,7 +433,7 @@ describe('getExpectedStrokes', () => {
   });
 
   it("prices an 'other' lie like rough inside 50 yd and between rough and recovery from 100 yd", () => {
-    // Same anchors as sg_expected_strokes('other', …) in 20261023120000.
+    // Same anchors as sg_expected_strokes('other', …) in 20261023170000.
     // 50 yd and in: the rough curve (to the 0.001 the 50 yd anchor is kept to).
     for (const yards of [5, 10, 20, 25, 30, 40, 45, 50]) {
       expect(getExpectedStrokes('other', yards)).toBeCloseTo(getExpectedStrokes('rough', yards), 3);

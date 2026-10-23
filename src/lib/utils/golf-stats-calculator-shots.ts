@@ -697,7 +697,7 @@ const STROKES_GAINED_BENCHMARKS = {
   },
 
   // From 'other' (trees, pine straw, waste, hazard edges), yards. Same anchors
-  // as the 'other' branch of sg_expected_strokes() (migration 20261023120000,
+  // as the 'other' branch of sg_expected_strokes() (migration 20261023170000,
   // held). 'Other' is the logger's catch-all, so it is priced in three parts:
   //   - 50 yd and in: the rough curve. Near the green an 'other' lie (collar,
   //     pine straw, hardpan) plays like rough on production: 10-19 yd took
@@ -1014,7 +1014,7 @@ export function isBlockedFinish(shot: RawShot, lie: string | null | undefined): 
  * and the shot that put the ball behind the tree carries the cost. Its
  * partner is the 'recovery' end that withNextShotStart gives the blocked
  * shot, so each hole still telescopes. Mirrors rc.from_blocked in
- * recalculate_/calculate_round_strokes_gained (migration 20261023120000).
+ * recalculate_/calculate_round_strokes_gained (migration 20261023170000).
  *
  * @internal - exported for testing
  */

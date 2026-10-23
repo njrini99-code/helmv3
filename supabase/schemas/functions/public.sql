@@ -556,7 +556,7 @@ BEGIN
   WITH normalized AS (
     SELECT gs.shot_type, gs.shot_number, gh.par,
       -- the shot after one the player marked blocked (recovery tap) starts on
-      -- Broadie's recovery curve (20261023120000)
+      -- Broadie's recovery curve (20261023170000)
       CASE WHEN gs.shot_type='putting' THEN 'green'
         WHEN COALESCE(rc.from_blocked, FALSE) AND sg_normalize_lie(gs.lie_before) IN ('rough','other') THEN 'recovery'
         ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
@@ -7499,7 +7499,7 @@ BEGIN
     WITH normalized AS (
       SELECT gs.shot_type, gs.shot_number, gh.par,
         -- the shot after one the player marked blocked (recovery tap) starts on
-        -- Broadie's recovery curve (20261023120000)
+        -- Broadie's recovery curve (20261023170000)
         CASE WHEN gs.shot_type='putting' THEN 'green'
           WHEN COALESCE(rc.from_blocked, FALSE) AND sg_normalize_lie(gs.lie_before) IN ('rough','other') THEN 'recovery'
           ELSE sg_normalize_lie(gs.lie_before) END AS lie_before_norm,
@@ -9754,13 +9754,13 @@ BEGIN
   ELSIF p_lie = 'other' THEN
     -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
     -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
-    -- straight blend between (see 20261023120000).
+    -- straight blend between (see 20261023170000).
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
     v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
   ELSIF p_lie = 'recovery' THEN
     -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
-    -- Appendix A, Table 9 (see 20261023120000).
+    -- Appendix A, Table 9 (see 20261023170000).
     v_distance  := p_distance_yards;
     v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
     v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
@@ -9819,13 +9819,13 @@ BEGIN
   ELSIF p_lie = 'other' THEN
     -- 'Other' (catch-all: trees, pine straw, waste, hazard edges): the rough
     -- curve to 50 yd, halfway between rough and recovery from 100 yd, a
-    -- straight blend between (see 20261023120000).
+    -- straight blend between (see 20261023170000).
     v_distance  := p_distance_yards;
     v_distances := ARRAY[540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,20]::NUMERIC[];
     v_strokes   := ARRAY[5.19,5.10,5.00,4.91,4.81,4.72,4.62,4.53,4.44,4.35,4.25,4.14,4.05,3.96,3.88,3.81,3.73,3.65,3.58,3.54,3.49,3.44,3.41,3.31,3.19,3.06,2.91,2.751,2.59]::NUMERIC[];
   ELSIF p_lie = 'recovery' THEN
     -- Blocked (recovery tap): Broadie's recovery curve, Interfaces 42(2),
-    -- Appendix A, Table 9 (see 20261023120000).
+    -- Appendix A, Table 9 (see 20261023170000).
     v_distance  := p_distance_yards;
     v_distances := ARRAY[600,580,560,540,520,500,480,460,440,420,400,380,360,340,320,300,280,260,240,220,200,180,160,140,120,100,90,80,70,60,50,40,30,20]::NUMERIC[];
     v_strokes   := ARRAY[5.70,5.60,5.51,5.41,5.32,5.22,5.13,5.03,4.94,4.84,4.75,4.66,4.56,4.44,4.31,4.20,4.10,4.03,3.97,3.92,3.87,3.82,3.81,3.80,3.78,3.80,3.82,3.84,3.84,3.83,3.79,3.71,3.57,3.51]::NUMERIC[];
