@@ -1,8 +1,9 @@
 # Clubhouse work queue: what is left and who has it
 
-Updated 2026-10-22, after the merge trains landed. This is the single list
-of open Clubhouse and CoachHelm work. Read it with [STATUS.md](STATUS.md)
-(current state, rollout, rollback) before you start anything.
+Updated 2026-10-23, after the merge trains and PRs 2328, 2333, 2334, 2339 and
+2332 landed. This is the single list of open Clubhouse and CoachHelm work.
+Read it with [STATUS.md](STATUS.md) (current state, rollout, rollback) before
+you start anything.
 
 The rows come from a missing-work audit, the "supercharge 04" output specs
 and the CoachHelm design call (D1 to D8). Those three live in the Claude
@@ -11,7 +12,7 @@ audit rows** (the audit's 179 ids plus chs-63, see the note under the table),
 each with its current status, and "Design call and output specs" maps the
 design call's decisions and the output specs' layouts to those rows.
 Statuses are the audit's evidence checked against `main`'s PR history on
-2026-10-22; the audit's file and line checks were not rerun. **Before anyone
+2026-10-23; the audit's file and line checks were not rerun. **Before anyone
 starts work that is not in this table, add a row for it first**, with its id,
 a short description and its area, in the same commit as the claim.
 
@@ -85,7 +86,9 @@ acknowledgements policy), #2217 (iOS edge swipe; its real-phone checklist
 still has to run before the next TestFlight build, doc-37), #2319
 (coach-only availability note), and #2313 with #2323 (CoachHelm copy
 names no clubs, v2 and v3). #2309 was closed and #2323 carries its
-change. One PR is open on queue rows: #2328 (chs-37 and chs-39).
+change. Since then #2328 (chs-37, chs-39), #2333 (chs-21, chs-22, chs-23,
+par-14), #2334 (doc-07, doc-60), #2339 (mot-01 to mot-08) and #2332 (new-02 to
+new-04) landed; every PR that carried queue rows has landed.
 
 ## The queue
 
@@ -334,7 +337,7 @@ maps each decision, layout and slice to those rows. Every v3 flag named is
 | D5 | Team pattern is a rollup of causes | chs-19, par-07 | done, flag `coachhelm_team_pattern_v1` |
 | D6 | Freshness and lifecycle are words on the read | chs-27, chs-09 | done: Out of date shows now; Cleared and the other lifecycle words wait on `coachhelm_recheck_v1` and data |
 | D7 | No Ask for players | par-25 | closed (owner decision 2026-10-19) |
-| D8 | Cut, do not add (pulse block, Gauge, ReadMeter, Game profile view) | chs-33, chs-35, chs-37 | done except chs-37, in progress in #2328 |
+| D8 | Cut, do not add (pulse block, Gauge, ReadMeter, Game profile view) | chs-33, chs-35, chs-37 | done (chs-37 in #2328) |
 | Layout 1 | Coach Monday brief | chs-28, par-05 | done (#2292, #2299), flag `coachhelm_monday_brief_v1` |
 | Layout 2 | Coach Player page | chs-29, par-01 | done (#2295) |
 | Layout 3 | Player post-round 30-second screen | chs-30 | done (#2298) |
@@ -348,8 +351,8 @@ maps each decision, layout and slice to those rows. Every v3 flag named is
 | Slice 4 | Closed loop: a verdict on every prescription | chs-10, chs-11 | done |
 | Slice 5 | Counted families and insight angles | chs-16, chs-17 | done |
 | Slice 6 | Learning from corrections, Track record | chs-13, chs-14, chs-15 | done |
-| Slice 7 | Team pool, team pattern, course plan, canary | chs-18, chs-19, chs-20, chs-21, chs-26 | done except chs-21 (player copy in progress in #2333) |
-| Slice 8 | New data: one-tap prompts, club chip, course nudge, recovery lie | chs-22, chs-23, chs-24 | chs-22 and chs-23 in progress in #2333 (they were Fairway round entry only); chs-24 closed (no clubs) |
+| Slice 7 | Team pool, team pattern, course plan, canary | chs-18, chs-19, chs-20, chs-21, chs-26 | done (chs-21 player copy in #2333) |
+| Slice 8 | New data: one-tap prompts, club chip, course nudge, recovery lie | chs-22, chs-23, chs-24 | chs-22 and chs-23 done in #2333 (Fairway and Clubhouse round entry); chs-24 closed (no clubs) |
 | Level anchors | A GolfHelm-wide benchmark pool | chs-25 | closed (owner decision Q-88) |
 
 <!-- markdownlint-enable MD013 -->
@@ -373,23 +376,21 @@ the queue above.
 | #2318 | Home and Calendar read a player's availability | Clubhouse parity & pages | landed |
 | #2319 | Coach-only availability note for the roster (held migration `20261022090000`) | Clubhouse parity & pages | landed |
 | #2320 | Coach Standing: the ladder's reads come from the coach feed | CoachHelm board UI | landed |
-| #2328 | Game profile folds into Standing; Ask answers link a player's reads | CoachHelm board UI | open (chs-37, chs-39) |
-| #2333 | CoachHelm data prompts in round entry, player Course plan | CoachHelm board UI | open draft (chs-21, chs-22, chs-23, par-14) |
-| #2332 | Roster CH-3009 flake, presentation server-start timeout, edge-swipe timer | Clubhouse fixes | open (new-02, new-03, new-04) |
+| #2328 | Game profile folds into Standing; Ask answers link a player's reads | CoachHelm board UI | landed (chs-37, chs-39) |
+| #2333 | CoachHelm data prompts in round entry, player Course plan | CoachHelm board UI | landed (chs-21, chs-22, chs-23, par-14) |
+| #2334 | 12 or 24-hour time choice and invite by email | Clubhouse parity & pages | landed (doc-07, doc-60) |
+| #2339 | Motion, look-and-feel and type scale toward the Apple bar | Clubhouse fixes | landed (mot-01 to mot-08) |
+| #2332 | Roster CH-3009 flake, presentation server-start timeout, edge-swipe timer | Clubhouse fixes | landed (new-02, new-03, new-04) |
 | #2329 | `HELD.md` marks `20261022090000` applied; regenerated database types | docs | landed |
-| #2331 | Regenerate `database.ts` for `golf_import_player_classes`; incident close-out | docs | open |
-| #2327 | Regenerate `database.ts` from the production schema (bot; #2331 supersedes it) | docs | open |
+| #2331 | Round-start rejections carry the server's error code and trace id; incident close-out | docs | landed |
+| #2327 | Regenerate `database.ts` from the production schema (bot; superseded by #2329) | docs | closed unmerged |
 
 <!-- markdownlint-enable MD013 -->
 
-Two open PRs sit in CoachHelm board UI: PR #2328 (branch
-`claude/coachhelm-standing-ask`) and PR #2333 (branch
-`claude/coachhelm-round-prompts`), both from the CoachHelm thread. Order
-decided by the coordinator 2026-10-22: #2328 lands first, then #2333, and that
-thread refreshes #2333 (merge main, regenerate) after #2328 lands. They change
-the same files: `src/clubhouse/data/coachhelm.ts`,
-`docs/clubhouse/catalog/coachhelm.md`, the P013 `CONTRACT.md`,
-`config/clubhouse/bridge-contracts.json` and the generated Clubhouse files.
+PR #2328 (branch `claude/coachhelm-standing-ask`) and PR #2333 (branch
+`claude/coachhelm-round-prompts`) were both open in CoachHelm board UI and
+changed the same files. The coordinator set the order on 2026-10-22: #2328
+first, then #2333 refreshed from main. Both landed in that order.
 
 ## Reserving Bridge IDs and CH codes
 
@@ -429,12 +430,11 @@ category of every page, and for CH suffixes, in every kind of every page:
 
 P015 (sign-in) kind 9 already uses suffixes 60-62 and 70-72; take the next
 free code in your window there. **P013 kind 9 is nearly full.** On `main`
-on 2026-10-22, 69 of its 99 codes are defined in `catalog/coachhelm.md`, so
-30 are free: 22 inside the area windows above (board UI 7, engine 4, parity
+on 2026-10-23, 74 of its 99 codes are defined in `catalog/coachhelm.md`, so
+25 are free: 17 inside the area windows above (board UI 2, engine 4, parity
 6, fixes 5) and 8 outside them (CH-13973 to CH-13979 and CH-13994). The
-open PR #2328 takes CH-13913 to CH-13915 and the open draft #2333 takes
-CH-13916 and CH-13917, which leaves 25 free and 17 in the windows (board UI
-2, engine 4, parity 6, fixes 5). The 2026-10-21 count listed only CH-13978,
+landed #2328 took CH-13913 to CH-13915 and the landed #2333 took CH-13916 and
+CH-13917. The 2026-10-21 count listed only CH-13978,
 CH-13979 and CH-13994 as free outside the windows; CH-13973 to CH-13977 are
 used nowhere on `main` now, but ask the owner before taking them. When an area
 runs out, ask the owner before using another kind with a
@@ -442,8 +442,8 @@ runs out, ask the owner before using another kind with a
 
 **#2299 (par-05) landed** with CH-13983 to CH-13989 and CH-13997 to
 CH-13999, Bridge IDs 130780 to 130789 (P013, category 07, parity window).
-The open PR #2328 takes Bridge IDs 130760 to 130762 and the open draft
-PR #2333 takes 130763 and 130764, both inside the board UI window.
+The landed PR #2328 took Bridge IDs 130760 to 130762 and the landed PR #2333
+took 130763 and 130764, both inside the board UI window.
 
 How to use a reservation:
 
