@@ -78,6 +78,14 @@ describe('suppression', () => {
     expect(interpretKey(key('?', { shiftKey: true }), free, null, 1).outcome.kind).toBe('help');
   });
 
+  it('B11 Cmd or Ctrl comma opens Settings, even from a field, but not over a dialog', () => {
+    const key = (k: Partial<ChKeyInput>): ChKeyInput => ({ key: ',', metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, repeat: false, isComposing: false, ...k });
+    expect(interpretKey(key({}), { typing: false, overlay: false }, null, 0).outcome).toEqual({ kind: 'settings' });
+    expect(interpretKey(key({ metaKey: false, ctrlKey: true }), { typing: true, overlay: false }, null, 0).outcome).toEqual({ kind: 'settings' });
+    expect(interpretKey(key({}), { typing: false, overlay: true }, null, 0).outcome).toEqual({ kind: 'none' });
+    expect(interpretKey(key({ metaKey: false }), { typing: false, overlay: false }, null, 0).outcome).toEqual({ kind: 'none' });
+  });
+
   it('Cmd or Ctrl K opens the palette even from a field, but not over another dialog', () => {
     expect(interpretKey(key('k', { metaKey: true }), { typing: true, overlay: false }, null, 1).outcome.kind).toBe('palette');
     expect(interpretKey(key('K', { ctrlKey: true }), free, null, 1).outcome.kind).toBe('palette');

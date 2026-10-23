@@ -35,6 +35,7 @@ import { armRelink } from './relink';
 import { chReport, chTrail } from '../lib/track';
 import { useAction, type ServerResult } from '../lib/use-action';
 import { ListPresence, PresenceRow } from '../ui/ListPresence';
+import { useRovingRows } from '../lib/roving';
 
 /**
  * The notifications bell: the same feed, badge and read state as the
@@ -109,6 +110,9 @@ export function Bell() {
   const btn = useRef<HTMLButtonElement | null>(null);
   const panel = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  // B11: ↑ and ↓ walk the notifications in the open popover; the list is one Tab stop.
+  const listRef = useRef<HTMLDivElement | null>(null);
+  useRovingRows(listRef, '.ch-bellp__row', open);
   // The feed starts loading as the finger lands on the bell, so on a phone the cards are there before the drop lands
   // and nothing swaps under it mid-motion. Cleared on close, so the next open fetches fresh.
   const [primed, setPrimed] = useState(false);
@@ -421,7 +425,7 @@ export function Bell() {
   );
   // The desktop popover's list: built only when the popover is open, never on the phone (its drop draws BellStacks).
   const body = () => (
-    <div className="ch-bellp__body">
+    <div className="ch-bellp__body" ref={listRef}>
       {listFailed ? (
         <InlineNotice code="CH-1201" title="Notifications didn’t load" body="Try again." onRetry={() => setAttempt((x) => x + 1)} />
       ) : items === null ? (

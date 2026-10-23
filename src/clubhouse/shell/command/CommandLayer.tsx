@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
-import type { ChRole } from '../nav';
+import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChRecent } from './commands';
 import { setPeopleScope, usePeople } from './people';
 import { Palette } from './Palette';
@@ -99,6 +99,11 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
         case 'palette':
           e.preventDefault();
           openPalette();
+          break;
+        case 'settings':
+          e.preventDefault();
+          chTrail('command settings (keyboard)');
+          live.current.router.push(CH_SETTINGS_ITEM.href, { scroll: false });
           break;
         case 'help':
           e.preventDefault();

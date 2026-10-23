@@ -113,6 +113,7 @@ import { isMessagesFirstRun, MessagesFirstRun } from "./MessagesFirstRun";
 import { MessagesHead } from "./MessagesNoTeam";
 import { Tooltip } from '../../ui/Tooltip';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { useRovingRows } from "../../lib/roving";
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
@@ -463,6 +464,8 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
 function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const body = useRef<HTMLDivElement | null>(null);
   usePanelSmoothScroll(body);
+  // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
+  useRovingRows(body, ".ch-ms-row");
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter((c) => c.unread > 0).length;

@@ -16,6 +16,7 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
   const mod = modKey(apple);
   const general: Row[] = [
     { label: 'Open the command palette', keys: [mod, 'K'] },
+    { label: 'Open Settings', keys: [mod, ','] },
     { label: 'Show these shortcuts', keys: ['?'] },
     { label: 'Search this page', keys: ['/'] },
     { label: 'Fold or open the sidebar', keys: [mod, '\\'] },

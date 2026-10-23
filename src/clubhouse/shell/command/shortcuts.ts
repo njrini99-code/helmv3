@@ -114,6 +114,8 @@ export type ChKeyOutcome =
   | { kind: 'arm' }
   | { kind: 'go'; letter: string }
   | { kind: 'palette' }
+  /** Cmd or Ctrl and comma: Settings, as in every Mac app (B11). */
+  | { kind: 'settings' }
   | { kind: 'search' }
   | { kind: 'help' };
 
@@ -121,7 +123,7 @@ export type ChKeyOutcome =
  * What a key does, given whether G is armed. Pure, so the timing and the suppression are tested without a DOM: `armedAt`
  * is when G was pressed (null when it was not), `now` the key's time, and the result says what to do and the new `armedAt`.
  *
- * Cmd or Ctrl with K opens the palette even from a field (the only shortcut that does), but not over another dialog. Every
+ * Cmd or Ctrl with K opens the palette, and with a comma Settings, even from a field, but not over another dialog. Every
  * other shortcut is a bare key: typed into a field or a dialog, with a modifier held, held down (repeat) or mid-composition
  * (an IME), it is just a key, and it also ends a pending G.
  */
@@ -132,6 +134,9 @@ export function interpretKey(k: ChKeyInput, ctx: ChKeyContext, armedAt: number |
   if (k.key === 'Shift' || k.key === 'CapsLock') return { outcome: { kind: 'none' }, armedAt };
   if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && k.key.toLowerCase() === 'k') {
     return ctx.overlay ? none : { outcome: { kind: 'palette' }, armedAt: null };
+  }
+  if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && k.key === ',') {
+    return ctx.overlay ? none : { outcome: { kind: 'settings' }, armedAt: null };
   }
   if (k.metaKey || k.ctrlKey || k.altKey) return none;
   if (ctx.typing || ctx.overlay) return none;

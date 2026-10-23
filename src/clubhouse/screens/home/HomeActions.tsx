@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Button } from '../../ui/Button';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import { isInOverlay, isTypingTarget, modalOpen } from '../../shell/command/shortcuts';
 
 const NEW_EVENT = '/golf/dashboard/calendar?new=1';
 
@@ -14,9 +15,9 @@ export function HomeActions({ teamChatId }: { teamChatId: string | null }) {
   const router = useRouter();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // A key sent to the document or window has no closest.
-      const t = e.target instanceof Element ? e.target : null;
-      if (e.key !== 'n' || e.metaKey || e.ctrlKey || e.altKey || t?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+      // B11: the shell's own tests for a field, a dialog or menu (a native <dialog> has no role attribute), or any modal open.
+      if (e.key !== 'n' || e.defaultPrevented || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target) || isInOverlay(e.target) || modalOpen(document)) return;
       haptic('press');
       chTrail('home new event (keyboard)');
       router.push(NEW_EVENT);

@@ -204,6 +204,21 @@ afterEach(() => {
 });
 
 describe('Messages · actions that fail', () => {
+  it('B11 ↓ and ↑ walk the conversation rail, which is one Tab stop', () => {
+    show();
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-ms-rail .ch-ms-row')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+
   it('CH-7001 a deep link to a player who is not on the team', async () => {
     params.current = new URLSearchParams('player=nobody');
     show();
