@@ -1,7 +1,7 @@
 -- A round save or submit writes the round's totals once, not once per hole row.
 --
 -- Both atomic round RPCs replace the whole hole snapshot. Before
--- 20261023120000_round_save_one_totals_write.sql the per-row trigger
+-- 20261023152000_round_save_one_totals_write.sql the per-row trigger
 -- golf_holes_recompute_round_totals rewrote golf_rounds after every hole
 -- DELETE and INSERT, so a 3-hole re-save took 1 + 3 + 3 = 7 golf_rounds
 -- updates. The RPCs now defer the trigger and recompute once. These are real

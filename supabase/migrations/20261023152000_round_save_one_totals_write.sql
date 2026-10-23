@@ -79,7 +79,7 @@ DECLARE
 BEGIN
   -- A round RPC is rewriting this round's holes and recomputes the totals
   -- once after its last hole write. Note that a hole changed and skip the
-  -- per-row write. See 20261023120000_round_save_one_totals_write.sql.
+  -- per-row write. See 20261023152000_round_save_one_totals_write.sql.
   IF current_setting('helm.defer_round_totals', true) IN ('on', 'dirty') THEN
     PERFORM set_config('helm.defer_round_totals', 'dirty', true);
     IF TG_OP = 'DELETE' THEN
@@ -145,7 +145,7 @@ BEGIN
       fn_definition,
       delete_anchor,
       '\1\2-- One totals write after the hole rewrite, not one per hole row\1'
-      || '\2-- (20261023120000_round_save_one_totals_write.sql).\1'
+      || '\2-- (20261023152000_round_save_one_totals_write.sql).\1'
       || '\2PERFORM set_config(''helm.defer_round_totals'', ''on'', true);\1\2\3'
     );
     -- After the last hole INSERT, where the last per-row trigger ran: one
