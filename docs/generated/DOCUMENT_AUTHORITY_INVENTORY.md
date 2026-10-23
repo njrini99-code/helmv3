@@ -998,7 +998,7 @@ them would bury everything above.
 | `docs/operations/SENTRY_ADMIN_READ_API.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_ALERT_ROUTING.md` | current | - | - | - | - |
 | `docs/operations/SENTRY_MONITORS.md` | current | - | - | - | - |
-| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | 1 |
+| `docs/operations/SUPABASE_DRIFT_GUARD.md` | current | - | - | yes | - |
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 2 |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | - |
