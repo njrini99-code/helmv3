@@ -22,6 +22,8 @@ import {
   calculateStrokesGainedForShot,
   getStrokesGainedCategory,
   getPenaltyCategory,
+  isBlockedFinish,
+  withRecoveryStart,
   type RawShot,
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { WOMENS_SG_SCALE } from '@/lib/golf/sg-benchmarks';
@@ -67,7 +69,7 @@ export function attachShotStrokesGained<T extends RawShot>(
 ): (T & { sg: number | null })[] {
   return shots.map((shot) => ({
     ...shot,
-    sg: computeShotStrokesGained(withNextShotEnd(shot, shots), scale),
+    sg: computeShotStrokesGained(withNextShotEnd(withRecoveryStart(shot, shots), shots), scale),
   }));
 }
 
@@ -77,7 +79,8 @@ export function attachShotStrokesGained<T extends RawShot>(
  * 20260928160000). When a shot's own recorded end disagrees with the next
  * shot's start (a lie break), using its own end makes per-shot SG stop
  * summing to the hole's expected-minus-strokes. Holed shots, penalty rows and
- * a hole's last shot keep their recorded end.
+ * a hole's last shot keep their recorded end. A shot the player marked blocked
+ * (recovery tap) ends on the recovery curve, the partner of withRecoveryStart.
  */
 export function withNextShotEnd<T extends RawShot>(shot: T, shots: readonly T[]): T {
   if (shot.is_penalty) return shot;
@@ -90,10 +93,12 @@ export function withNextShotEnd<T extends RawShot>(shot: T, shots: readonly T[])
     if (!s.lie_before && s.shot_type !== 'putting') continue; // no usable start state
     if (!next || s.shot_number < next.shot_number) next = s;
   }
-  if (!next) return shot;
+  if (!next) return isBlockedFinish(shot, shot.lie_after) ? { ...shot, lie_after: 'recovery' } : shot;
+  let lieAfter = next.shot_type === 'putting' ? 'green' : next.lie_before;
+  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)) lieAfter = 'recovery';
   return {
     ...shot,
-    lie_after: next.shot_type === 'putting' ? 'green' : next.lie_before,
+    lie_after: lieAfter,
     distance_to_hole_after: next.distance_to_hole_before,
     distance_unit_after: next.distance_unit_before ?? null,
   };

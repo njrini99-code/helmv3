@@ -253,6 +253,7 @@ async function getPlayerProfileStatsImpl(
         putt_made: s.putt_made,
         is_penalty: s.is_penalty,
         penalty_type: s.penalty_type,
+        lie_after_recovery: s.lie_after_recovery ?? null,
         // Extended putt detail fields
         putt_miss_tags: puttDetails?.miss_tags ?? null,
         putt_break_direction: puttDetails?.break_direction ?? null,

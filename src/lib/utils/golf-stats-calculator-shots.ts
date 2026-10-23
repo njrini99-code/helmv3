@@ -49,6 +49,9 @@ export interface RawShot {
   putt_made?: boolean | null;
   is_penalty?: boolean | null;
   penalty_type?: string | null;
+  /** Recovery tap: true when the player marked the next shot blocked (punch
+   *  out), false when clear, null/absent when not asked. */
+  lie_after_recovery?: boolean | null;
   // Extended detail fields from putt_details table
   putt_miss_tags?: string[] | null;
   putt_break_direction?: string | null;
@@ -693,18 +696,38 @@ const STROKES_GAINED_BENCHMARKS = {
     100: 3.23, 20: 2.53,
   },
 
-  // From 'other' (trees, pine straw, waste, hazard edges), yards: halfway
-  // between rough and Broadie's recovery curve (Interfaces 2012, Appendix A
-  // Table 9), at the recovery anchors. Same anchors as the 'other' branch of
-  // sg_expected_strokes() (migration 20261023120000, held), which explains the
-  // choice: priced as fairway, 'other' shots ran 0.78 strokes over the curve
-  // against about 0.21 for fairway and rough; this curve puts them at 0.25.
+  // From 'other' (trees, pine straw, waste, hazard edges), yards. Same anchors
+  // as the 'other' branch of sg_expected_strokes() (migration 20261023120000,
+  // held). 'Other' is the logger's catch-all, so it is priced in three parts:
+  //   - 50 yd and in: the rough curve. Near the green an 'other' lie (collar,
+  //     pine straw, hardpan) plays like rough on production: 10-19 yd took
+  //     2.63 strokes from 'other' against 2.60 from rough.
+  //   - 100 yd and out: halfway between rough and Broadie's recovery curve.
+  //     Out there 'other' is often the trees, and priced as fairway those shots
+  //     ran 0.78 strokes over the curve against about 0.21 for fairway/rough.
+  //   - 50 to 100 yd: a straight blend from the first to the second.
+  // A shot the player marked as blocked uses the recovery curve below instead.
   other: {
     540: 5.19, 520: 5.10, 500: 5.00, 480: 4.91, 460: 4.81, 440: 4.72,
     420: 4.62, 400: 4.53, 380: 4.44, 360: 4.35, 340: 4.25, 320: 4.14,
     300: 4.05, 280: 3.96, 260: 3.88, 240: 3.81, 220: 3.73, 200: 3.65,
-    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.39,
-    80: 3.38, 70: 3.35, 60: 3.32, 50: 3.27, 40: 3.20, 30: 3.11, 20: 3.05,
+    180: 3.58, 160: 3.54, 140: 3.49, 120: 3.44, 100: 3.41, 90: 3.31,
+    80: 3.19, 70: 3.06, 60: 2.91, 50: 2.751, 20: 2.59,
+  },
+
+  // From a blocked lie (yards): Broadie's RECOVERY curve, "the golfer's shot to
+  // the hole is impeded by trees or other obstacles" ("Assessing Golfer
+  // Performance on the PGA TOUR", Interfaces 42(2), Appendix A, Table 9, the
+  // table the fairway/rough/sand anchors above come from). Used only for the
+  // shot after one the player marked blocked (golf_shots.lie_after_recovery,
+  // see withRecoveryStart), never inferred from the lie alone.
+  recovery: {
+    600: 5.70, 580: 5.60, 560: 5.51, 540: 5.41, 520: 5.32, 500: 5.22,
+    480: 5.13, 460: 5.03, 440: 4.94, 420: 4.84, 400: 4.75, 380: 4.66,
+    360: 4.56, 340: 4.44, 320: 4.31, 300: 4.20, 280: 4.10, 260: 4.03,
+    240: 3.97, 220: 3.92, 200: 3.87, 180: 3.82, 160: 3.81, 140: 3.80,
+    120: 3.78, 100: 3.80, 90: 3.82, 80: 3.84, 70: 3.84, 60: 3.83,
+    50: 3.79, 40: 3.71, 30: 3.57, 20: 3.51,
   },
 
   // From green (putting, by distance in FEET) — Broadie Tour expected putts.
@@ -768,8 +791,8 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     | Record<number, number>
     | undefined;
 
-  // SG-1: unmapped / non-tabulated lies ('recovery', 'water', and any
-  // unrecognised value; 'other' has its own curve above) previously collapsed to a flat 3.50 with ZERO distance
+  // SG-1: unmapped / non-tabulated lies ('water' and any unrecognised value;
+  // 'other' and 'recovery' have their own curves above) previously collapsed to a flat 3.50 with ZERO distance
   // sensitivity — fabricating ±1-stroke SG that flipped sign with distance.
   // Route them to the FAIRWAY table: it keeps the estimate distance-sensitive
   // AND matches the canonical DB sg_expected_strokes() ELSE branch (which uses
@@ -935,21 +958,75 @@ export function withNextShotStart(shot: RawShot, holeShots: readonly RawShot[]):
     // Holed: nothing remains (SQL is_holed = putt_made OR result IN ('holed','hole')).
     return shot.result === 'hole' ? shot : { ...shot, result: 'hole' };
   }
-  let next: RawShot | null = null;
-  for (const s of holeShots) {
-    if (s.shot_number <= shot.shot_number) continue;
-    if (s.is_penalty === true || s.shot_type === 'penalty' || s.result === 'penalty') continue;
-    if (s.distance_to_hole_before == null || s.distance_to_hole_before <= 0) continue;
-    if (!s.lie_before && s.shot_type !== 'putting') continue;
-    if (!next || s.shot_number < next.shot_number) next = s;
+  const next = nextShotStart(shot, holeShots);
+  if (!next) {
+    return isBlockedFinish(shot, shot.lie_after) ? { ...shot, lie_after: 'recovery' } : shot;
   }
-  if (!next) return shot;
+  let lieAfter = next.shot_type === 'putting' ? 'green' : next.lie_before;
+  if (next.shot_type !== 'putting' && isBlockedFinish(shot, next.lie_before)) lieAfter = 'recovery';
   return {
     ...shot,
-    lie_after: next.shot_type === 'putting' ? 'green' : next.lie_before,
+    lie_after: lieAfter,
     distance_to_hole_after: next.distance_to_hole_before,
     distance_unit_after: next.distance_unit_before,
   };
+}
+
+/** Lies a player can mark as blocked with the recovery tap. */
+const RECOVERY_TAP_LIES: ReadonlySet<string> = new Set(['rough', 'other']);
+
+function isPenaltyRow(shot: RawShot): boolean {
+  return shot.is_penalty === true || shot.shot_type === 'penalty' || shot.result === 'penalty';
+}
+
+/** A shot the next shot can start from (SQL: the `nx` lateral in 20260930150000). */
+function isUsableShotStart(shot: RawShot): boolean {
+  if (isPenaltyRow(shot)) return false;
+  if (shot.distance_to_hole_before == null || shot.distance_to_hole_before <= 0) return false;
+  return Boolean(shot.lie_before) || shot.shot_type === 'putting';
+}
+
+/** The next non-penalty shot on the hole with a usable start, or null. */
+function nextShotStart(shot: RawShot, holeShots: readonly RawShot[]): RawShot | null {
+  let next: RawShot | null = null;
+  for (const s of holeShots) {
+    if (s.hole_number !== shot.hole_number || s.shot_number <= shot.shot_number) continue;
+    if (!isUsableShotStart(s)) continue;
+    if (!next || s.shot_number < next.shot_number) next = s;
+  }
+  return next;
+}
+
+/** The player marked this shot's finish as blocked, and the ball sits in a lie
+ *  the recovery tap is asked about.
+ *  @internal - exported for the round-review mirror and tests */
+export function isBlockedFinish(shot: RawShot, lie: string | null | undefined): boolean {
+  return shot.lie_after_recovery === true
+    && !isPenaltyRow(shot)
+    && lie != null
+    && RECOVERY_TAP_LIES.has(lie.toLowerCase());
+}
+
+/**
+ * The shot after one the player marked blocked (recovery tap,
+ * golf_shots.lie_after_recovery) starts from Broadie's RECOVERY curve instead
+ * of the rough/'other' curve, so the punch-out is judged against a punch-out
+ * and the shot that put the ball behind the tree carries the cost. Its
+ * partner is the 'recovery' end that withNextShotStart gives the blocked
+ * shot, so each hole still telescopes. Mirrors rc.from_blocked in
+ * recalculate_/calculate_round_strokes_gained (migration 20261023120000).
+ *
+ * @internal - exported for testing
+ */
+export function withRecoveryStart<T extends RawShot>(shot: T, holeShots: readonly RawShot[]): T {
+  if (shot.shot_type === 'putting' || !isUsableShotStart(shot)) return shot;
+  if (!shot.lie_before || !RECOVERY_TAP_LIES.has(shot.lie_before.toLowerCase())) return shot;
+  for (const p of holeShots) {
+    if (p.hole_number !== shot.hole_number || p.shot_number >= shot.shot_number) continue;
+    if (p.lie_after_recovery !== true || isPenaltyRow(p)) continue;
+    if (nextShotStart(p, holeShots)?.id === shot.id) return { ...shot, lie_before: 'recovery' };
+  }
+  return shot;
 }
 
 // ============================================================================
@@ -2616,7 +2693,10 @@ function aggregateRoundStats(rounds: Array<{
           continue;
         }
 
-        const sg = calculateStrokesGainedForShot(withNextShotStart(shot, hole.shots), sgScale);
+        const sg = calculateStrokesGainedForShot(
+          withNextShotStart(withRecoveryStart(shot, hole.shots), hole.shots),
+          sgScale,
+        );
         const category = getStrokesGainedCategory(shot, hole.par);
 
         // Accumulate by category - only when SG is calculable (not null)
