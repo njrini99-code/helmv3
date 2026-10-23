@@ -162,7 +162,8 @@ when every listed file carries its Bridge ID.
 ### Desktop
 
 ```text
-Viewport:  1280px (dev preview: /clubhouse-preview/rounds, /round, /setup, /track), logged 2026-09-30 in PROGRESS.md
+Viewport:  1280px (dev preview: /clubhouse-preview/rounds, /round, /setup,
+           /track), logged 2026-09-30 in PROGRESS.md
 Reference: design/handoff/Player - Rounds.html and the rounds-*.jsx boards
 Result:    library and review: matched after the 2026-09-30 browser pass (headless Chromium; the Chrome extension was not
            connected), which fixed the hero stacking at a normal width, an under-par label on the ribbon sat on the dates,
@@ -180,7 +181,8 @@ Viewport:     390px (headless Chromium, 2026-09-30); the library, the review, se
 Device/shell: not on a real iPhone (npm run ios:dev, owner). The iOS number pad has no Done key yet (the Fairway screen
               adds a bar for it). Swipe-back with a sheet open and the haptics were not felt.
 Reference:    design/handoff/Player - Rounds - Mobile.html
-Result:       built to the approved spec and seen at 390; 430px is not recorded as checked; the iPhone pass is open
+Result:       built to the approved spec and seen at 390; 430px is not
+              recorded as checked; the iPhone pass is open
 ```
 
 ## Forced states
