@@ -1851,6 +1851,8 @@
   width: 10px;
   height: 10px;
   box-shadow: 0 0 0 2px var(--ch-sheet-bg);
+  /* No clear change: a neutral mark, darker than the previous window's so the two stay apart. */
+  background: var(--ch-ink-500);
 }
 .ch-ph-viz--avg i.is-gain {
   background: var(--ch-chart-gain);
