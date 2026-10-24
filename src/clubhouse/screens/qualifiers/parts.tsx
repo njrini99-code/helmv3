@@ -191,7 +191,7 @@ export function ViewerLineCard({
           </li>
         )}
         {gaps.map((g) => (
-          <li key={g.line} className={g.tie ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
+          <li key={g.line} className={g.tie || g.picks ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
             <b>{g.label}</b> {lineGapText(g, me, numRounds, firstName)}
           </li>
         ))}

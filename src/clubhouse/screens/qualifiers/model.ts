@@ -293,7 +293,6 @@ export function buildBoard(input: {
   return { rows: scored, unscored, topScore, squad, submitted: all.reduce((s, r) => s + r.played, 0) };
 }
 
-/** P009-C2, the board's caption: why a player below the line isn't on the Bubble yet, when one round isn't enough to say so. */
 /** One line on the board measured from the viewer's row (row 74, "you vs the line"). */
 export interface ChQLineGap {
   line: 'score' | 'travel';
@@ -305,6 +304,11 @@ export interface ChQLineGap {
    * last place on score and the next player, so neither side of the line is theirs until the coach chooses.
    */
   tie: boolean;
+  /**
+   * Before confirm, the viewer is below the top-score line but above the travel cut: those places are the coach's picks,
+   * not ranked places, so the viewer is neither inside nor outside the travel cut (review of #2361; selectionOutcomeFor).
+   */
+  picks: boolean;
   /** The row on the far side of the line the viewer is measured against: the first below it, or the last above it. */
   against: ChQRow;
   /**
@@ -363,7 +367,8 @@ export function viewerVsLines(
     const inside = i < cut;
     const against = b.rows[inside ? cut : cut - 1]!;
     const comparable = against.played === me.played && me.toPar != null && against.toPar != null;
-    gaps.push({ line, label, inside, tie: line === 'score' && me.state === 'tie', against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
+    const picks = line === 'travel' && inside && i >= b.topScore;
+    gaps.push({ line, label, inside: inside && !picks, tie: line === 'score' && me.state === 'tie', picks, against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
   }
   return gaps.length ? { me, gaps, outcome: null } : null;
 }
@@ -372,6 +377,7 @@ export function viewerVsLines(
 export function lineGapText(g: ChQLineGap, me: Pick<ChQRow, 'played'>, numRounds: number, first: (name: string) => string): string {
   const who = first(g.against.name);
   if (g.tie) return `Tie at cut, level with ${who} on to par and total strokes: your coach decides.`;
+  if (g.picks) return 'In the coach’s pick places: your coach chooses who fills them.';
   const where = g.inside ? `${who} is first below it` : `${who} holds the last place above it`;
   if (g.strokes == null) {
     return `${g.inside ? 'Inside' : 'Outside'}. ${who} has played ${g.against.played} of ${plural(numRounds, 'round')} to your ${me.played}, so the gap isn’t comparable yet.`;

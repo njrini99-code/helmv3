@@ -244,8 +244,9 @@ describe('Qualifiers · the standings model', () => {
       };
       expect(say('b')[0]).toBe('Top-score line: Tie at cut, level with Jonah on to par and total strokes: your coach decides.');
       expect(say('c')[0]).toBe('Top-score line: Tie at cut, level with Eli on to par and total strokes: your coach decides.');
-      // The travel cut is not the tie's line: C is still inside it.
-      expect(say('c')[1]).toBe('Travel cut: Inside by 4 strokes. Maya is first below it.');
+      // Between the two lines before confirm, the places are the coach's picks: C is neither inside nor outside the travel cut.
+      expect(say('c')[1]).toBe('Travel cut: In the coach’s pick places: your coach chooses who fills them.');
+      expect(say('a')[1]).toBe('Travel cut: Inside by 6 strokes. Maya is first below it.');
     });
     it('draws the outcome on a confirmed board for the player, desktop and phone', () => {
       const data = previewDetail(DETAIL_INDEX.selected!, 'player');
