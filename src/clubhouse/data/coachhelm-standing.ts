@@ -10,6 +10,7 @@ import { chLogServer } from '../lib/track-server';
 import { earliestStaleFloor, loadPlayerDismissed, loadVisible, newestRounds, PLAYER_FEED_LIMIT, playerTeam } from './coachhelm';
 import { isOpenFinding } from './coachhelm-classify';
 import { readEngineFlags } from './coachhelm-engine';
+import { seasonStartDate } from './season';
 import { shapeReadsLifecycle } from './coachhelm-engine-shape';
 import type { ChLadderReads } from './coachhelm-ladder-shape';
 import { toChInsight } from './coachhelm-map';
@@ -182,7 +183,11 @@ export async function loadPlayerStanding(input: { playerId: string; viewer?: ChV
       readTeamZone(supabase, input.playerId),
     ]);
     if (!map.ok) return { status: 'failed' };
-    return { status: 'ready', data: { ...toChStanding(map.rows, baseline, reads, input.viewer, zone, map.window), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
+    // A season row from before this season's 1 August (on the team's clock) is last season's: the nightly run at 02:20 UTC on
+    // 1 August is still 31 July in every US zone, and a team outside a chunk waits longer. It is dropped, never labelled "This season".
+    const since = seasonStartDate(new Date(), zone);
+    const rows = map.window === 'season' ? map.rows.filter((r) => typeof r.season_start === 'string' && r.season_start.slice(0, 10) >= since) : map.rows;
+    return { status: 'ready', data: { ...toChStanding(rows, baseline, reads, input.viewer, zone, map.window), ...(cohort.failed ? { cohortFailed: true as const } : {}) } };
   } catch (err) {
     log('standing', err);
     return { status: 'failed' };

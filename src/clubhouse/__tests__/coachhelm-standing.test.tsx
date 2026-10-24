@@ -31,6 +31,7 @@ import { METRIC_IDS, type MetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { loadPlayerStanding } from '../data/coachhelm-standing';
+import { seasonStartDate } from '../data/season';
 import { areaOf, LADDER_METRICS } from '../data/coachhelm-ladder-shape';
 import { breakBias, penalties, slope } from '../preview/fixtures-coachhelm';
 import { figure, groupOf, MIN_PROJECTION_ROUNDS, toChStanding, versus } from '../data/coachhelm-standing-shape';
@@ -304,7 +305,8 @@ describe('the loader reads the signed-in player’s own standing, and says when 
   });
 
   it('this season first (owner decision 9): the season rows, with their counts, and the lifetime map is not read', async () => {
-    const season = rows('pl-jonah').map((r) => ({ ...r, rounds_n: r.metric_id.startsWith('sg_') ? 11 : 13, season_start: '2026-08-01' }));
+    // This season's start, whenever the suite runs (a fixed date would turn into last season's next August).
+    const season = rows('pl-jonah').map((r) => ({ ...r, rounds_n: r.metric_id.startsWith('sg_') ? 11 : 13, season_start: seasonStartDate() }));
     standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map(season) });
     const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
     expect(standingRead.season).toHaveBeenLastCalledWith('pl-jonah');
@@ -333,6 +335,25 @@ describe('the loader reads the signed-in player’s own standing, and says when 
     expect(out.status).toBe('failed');
     expect(standingRead.load).not.toHaveBeenCalled();
     expect(logServer).toHaveBeenCalledWith('coachhelm', 'standing.map', expect.any(Error), 'coachhelm');
+  });
+
+  it('last season’s rows are dropped, never labelled "This season" (the turn is 1 August on the team’s clock)', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      // 1 August, 06:00 UTC: 2 AM in New York (the default zone here), so this season began today.
+      vi.setSystemTime(new Date('2026-08-01T06:00:00Z'));
+      const last = rows('pl-jonah').map((r) => ({ ...r, rounds_n: 30, season_start: '2025-08-01' }));
+      const fresh = { ...rows('pl-jonah').find((r) => r.metric_id === 'gir_pct')!, rounds_n: 1, season_start: '2026-08-01' };
+      standingRead.season.mockResolvedValueOnce({ status: 'ok', rows: map([...last.filter((r) => r.metric_id !== 'gir_pct'), fresh]) });
+      const out = await loadPlayerStanding({ playerId: 'pl-jonah' });
+      expect(out.status).toBe('ready');
+      if (out.status !== 'ready') return;
+      expect(out.data.counts.measures).toBe(1);
+      expect(out.data.rounds).toBe(1);
+      expect(out.data.window).toEqual({ kind: 'season', label: 'This season', since: 'Aug 1' });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('a season row that is anyone else’s is never drawn either', async () => {
