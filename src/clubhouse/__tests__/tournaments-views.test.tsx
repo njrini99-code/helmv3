@@ -1,18 +1,18 @@
 import { cleanup, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { tourFixture } from '../../../preview/fixtures-tournaments';
-import { Compare } from '../Compare';
-import { EventDesk } from '../EventDesk';
-import { EventForm } from '../EventForm';
-import { History } from '../History';
-import { LineupBuilder } from '../LineupBuilder';
-import { LinkInbox } from '../LinkInbox';
-import { LiveRound } from '../LiveRound';
-import { PlayerEvent } from '../PlayerEvent';
-import { Review } from '../Review';
-import { TournamentsHome } from '../TournamentsHome';
-import type { ChTourLoad } from '../types';
+import { tourFixture } from '../preview/fixtures-tournaments';
+import { Compare } from '../screens/tournaments/Compare';
+import { EventDesk } from '../screens/tournaments/EventDesk';
+import { EventForm } from '../screens/tournaments/EventForm';
+import { History } from '../screens/tournaments/History';
+import { LineupBuilder } from '../screens/tournaments/LineupBuilder';
+import { LinkInbox } from '../screens/tournaments/LinkInbox';
+import { LiveRound } from '../screens/tournaments/LiveRound';
+import { PlayerEvent } from '../screens/tournaments/PlayerEvent';
+import { Review } from '../screens/tournaments/Review';
+import { TournamentsHome } from '../screens/tournaments/TournamentsHome';
+import type { ChTourLoad } from '../screens/tournaments/types';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }) }));
 
