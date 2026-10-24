@@ -35,6 +35,7 @@ import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -91,7 +92,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
           <span className="ch-num">
             {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · `}countable rounds only
           </span>
-          <h1>Team stats</h1>
+          <LargeTitle>Team stats</LargeTitle>
         </header>
         {/* The window and the filter share one row (F-42): the board has no row of its own for the filter. */}
         {!bare && (

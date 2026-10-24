@@ -28,6 +28,7 @@ import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
 import { pluralWord } from '../../lib/plural';
 import '../../styles/qualifiers.css';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 const LIST = '/golf/dashboard/qualifiers';
 // The limit is said before a save refuses it (wave-6 #16).
@@ -260,7 +261,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
       <header className="ch-qf-head" data-canopy-head="">
         <div>
           <span className="ch-qf-eyebrow">{editing ? 'Edit qualifier' : 'Qualifiers'}</span>
-          <h1>{editing ? data.name : 'New qualifier'}</h1>
+          <LargeTitle>{editing ? data.name : 'New qualifier'}</LargeTitle>
           <p>{FORM_LEDE}</p>
         </div>
       </header>

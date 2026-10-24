@@ -27,6 +27,7 @@ import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard 
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 type Group = 'month' | 'course';
 
@@ -148,7 +149,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
             {refreshing ? 'Updating…' : ''}
           </span>
           {/* D11: one h1 per screen; the phone bar's "Rounds" is plain text (heading={false}). */}
-          <h1 id="ch-rd-title">Rounds</h1>
+          <LargeTitle id="ch-rd-title">Rounds</LargeTitle>
         </div>
         {/* One primary for one action: the idle card carries Start a round, so the head's New round is for when a round is
             in progress, or the check for one failed (that card is a notice with no Start). */}

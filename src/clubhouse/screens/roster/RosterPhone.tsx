@@ -33,6 +33,7 @@ import { useCopyText } from './useCopyText';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { TERMS } from '../../lib/glossary';
 import { pluralWord } from '../../lib/plural';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 export type { PhoneSort } from './sort';
 
@@ -165,10 +166,10 @@ export function RosterPhone({
               )}
             </span>
           )}
-          {/* The top bar carries the page's heading; this is the design's large title. */}
-          <p className="ch-rsm-title" aria-hidden="true">
+          {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
+          <LargeTitle as="p" hidden>
             Roster
-          </p>
+          </LargeTitle>
         </header>
 
         <PageRefreshNotice parts={failed} />

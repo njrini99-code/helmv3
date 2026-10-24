@@ -1210,17 +1210,12 @@
     border-top: var(--ch-ledger-rule-double);
     border-bottom: 0;
   }
-  /* The phone title belongs to the shell from first paint, before useChPhone hydrates. */
-  .ch-hb-h h1 {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+  /* The page's large title (.ch-large-title, shell.css; owner decision 4) on its own line under the role chip and the
+     team line, from the first paint. */
+  .ch-hb-h > div:first-child > .ch-large-title {
+    order: 1;
+    flex-basis: 100%;
+    margin-top: 4px;
   }
   /* The phone's full-width head action is 44px tall, as Create qualifier's (qualifiers.css). */
   .ch-hb-h > button,
@@ -1237,12 +1232,10 @@
     flex-direction: column;
     gap: 22px;
   }
-  .ch-hb-skelm .ch-hb-h > div {
-    height: 24px;
-  }
-  /* A player's opening has no role chip: the team line alone, as the loaded page draws it. */
-  .ch-hb-skelm .ch-hb-h > div.is-player {
-    height: 16px;
+  /* The opening's first line at its loaded height: the role chip's 24px, or a player's team line alone (16px), then
+     the large title's block under it. */
+  .ch-hb-skelm .ch-hb-h > div.is-player > .ch-skel {
+    margin-block: 3px;
   }
   .ch-hb-skelm__tab {
     display: flex;

@@ -4,6 +4,7 @@ import { useGolfUserOptional } from '@/contexts/golf-user-context';
 import { Skeleton } from '../../ui/States';
 import { useChPhone } from '../../lib/use-phone';
 import '../../styles/coachhelm.css';
+import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 
 /** One text line's box at its loaded height, with the bar centred in it (the phone intro's lines). */
 function Line({ h, w, sh, r }: { h: number; w: number | string; sh: number; r?: number }) {
@@ -100,10 +101,10 @@ export function CoachHelmSkeleton({ view, chained }: { view: 'coach' | 'player';
       <h1 className="ch-sr-only">CoachHelm</h1>
       {phone && <StripSkeleton coach={coach} phone />}
       {phone ? (
-        // The phone's intro at its loaded line heights: the coach's eyebrow, the 31px title and the live line under the double rule.
+        // The phone's intro at its loaded line heights: the coach's eyebrow, the large title and the live line under the double rule.
         <header className="ch-hl-h" data-canopy-head="">
           {coach && <Line h={14.4} w={56} sh={11} />}
-          <Line h={33.5} w={176} sh={28} r={8} />
+          <LargeTitleSkeleton width={176} />
           {coach ? (
             <>
               <Line h={21.75} w="74%" sh={13} />

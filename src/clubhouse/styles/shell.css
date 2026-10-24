@@ -2957,8 +2957,23 @@ html[data-fw-theme='dark'] .ch-offline {
    list is CH_LARGE_TITLES and must stay in step with it; it holds from the first paint. The bar's title keeps its
    place in the accessibility tree and stays the focus target for a pushed page. Pages with no large title, the green
    hero's bar and desktop are untouched. The scroll edge: a soft shade under the bar once content has scrolled under
-   it (data-scrolled), drawn on ::before because ::after is the sheet's lip. */
+   it (data-scrolled), drawn on ::before because ::after is the sheet's lip.
+   The title itself is one style everywhere (owner decision 4, 2026-10-24; CONS-27): .ch-large-title (ui/LargeTitle.tsx)
+   on the large-title role, 34 semibold sans with its 41 leading, the dense width and the forest ink. No screen sets its
+   own size, face, tracking or colour for it; a screen's rule only places it (padding, a rule above). A skeleton's
+   title block is the same class with a bar in its one line, so the page lands without the title moving (CONS-13). */
 @media (max-width: 820px) {
+  [data-ui='clubhouse'] .ch-large-title {
+    margin: 0;
+    font: var(--ch-type-large-title);
+    letter-spacing: var(--ch-track-large-title);
+    font-variation-settings: var(--ch-wdth-dense);
+    color: var(--ch-ledger-ink);
+    text-wrap: balance;
+  }
+  [data-ui='clubhouse'] .ch-large-title--skel > .ch-skel {
+    vertical-align: middle;
+  }
   [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     transition:
       opacity var(--ch-dur-quick) var(--ch-ease),
@@ -2967,14 +2982,7 @@ html[data-fw-theme='dark'] .ch-offline {
   [data-ui='clubhouse']:not([data-phone-hero]):has(
       #ch-canvas
         :is(
-          [data-ch-large-title],
-          .ch-rsm-title,
-          .ch-recm-title,
-          .ch-setm-title,
-          .ch-qf-head h1,
-          .ch-rd-h h1,
-          .ch-hl-h__t,
-          .ch-stm-head h1
+          .ch-large-title
         ):not(.ch-sr-only, .ch-pscreen *, dialog *)
     )
     .ch-topbar:not([data-large-title='tucked'])
@@ -3006,6 +3014,14 @@ html[data-fw-theme='dark'] .ch-offline {
   [data-ui='clubhouse'] .ch-topbar::before,
   [data-ui='clubhouse'] .ch-topbar :is(.ch-topbar__ptitle, .ch-topbar__pslot > .ch-pbar__title, .ch-topbar__pstand .ch-pbar__title) {
     transition: none;
+  }
+}
+
+/* A skeleton that serves both widths draws the desktop's own title bar beside the large-title block, which is the phone's
+   alone. */
+@media (min-width: 821px) {
+  [data-ui='clubhouse'] .ch-large-title--skel {
+    display: none;
   }
 }
 

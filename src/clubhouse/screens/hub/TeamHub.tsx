@@ -32,6 +32,7 @@ import { useToast } from '../../ui/Toast';
 import { useHScroll } from '../../ui/use-hscroll';
 import '../../styles/hub.css';
 import { ListPresence } from '../../ui/ListPresence';
+import { LargeTitle } from '../../ui/LargeTitle';
 
 // The tabs and their `?tab=` parser live in a plain module so the server route can call the parser.
 export { parseHubTab, type ChHubTab } from '../../lib/hub-tabs';
@@ -538,9 +539,9 @@ export function TeamHub({
               Coach view
             </span>
           )}
-          <h1 id="ch-hb-title" className={phone ? 'ch-sr-only' : undefined}>
-            Team Hub
-          </h1>
+          {/* The phone's one large title (owner decision 4); desktop keeps its hero rule (hub.css). Drawn from the first
+              paint, before useChPhone hydrates, since its look is the phone's CSS alone. */}
+          <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
         {primary && (

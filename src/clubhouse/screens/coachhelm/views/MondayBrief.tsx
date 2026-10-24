@@ -13,6 +13,7 @@ import { EmptyState } from '../../../ui/States';
 import { Surface } from '../../../ui/Surface';
 import { BackLink } from '../../../ui/Section';
 import '../../../styles/coachhelm-brief.css';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const LINE = 'Who needs a conversation before practice, and what the team works on this week.';
 
@@ -29,7 +30,9 @@ function BriefFrame({ sub, children }: { sub?: string; children: ReactNode }) {
         )}
         <span className="ch-hl-role">Coach</span>
         {phone ? (
-          <p className="ch-hl-h__t">Monday brief</p>
+          <LargeTitle as="p" className="ch-hl-h__t">
+            Monday brief
+          </LargeTitle>
         ) : (
           <h1 id="ch-hmb-title" className="ch-hl-h__t">
             Monday brief

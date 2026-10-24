@@ -23,6 +23,7 @@ import { HeldSheetsContext, type ChHeldSheet } from './sheets';
 import { ActionRow, Group, LinkRow, NavRow } from './ui';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 import { poppedByUA } from '../../../lib/ua-pop';
+import { LargeTitle } from '../../../ui/LargeTitle';
 
 const ICON: Record<ChSettingsSection, LucideIcon> = {
   account: UserRound,
@@ -217,9 +218,9 @@ export function SettingsPhone({
             same way; base duration, instant with reduced motion or Animations off. */}
         <AnimatePresence mode="popLayout" initial={false} custom={way}>
           <PushPage key={section ?? 'root'} sub={!!section} way={way} reduced={reduced}>
-            <p className="ch-setm-title" aria-hidden="true">
+            <LargeTitle as="p" hidden className="ch-setm-title">
               {current?.label ?? 'Settings'}
-            </p>
+            </LargeTitle>
             {section == null ? (
               <Root data={data} writes={writes} onOpen={open} onProfile={() => setProfileOpen(true)} />
             ) : (

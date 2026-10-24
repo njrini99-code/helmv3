@@ -101,6 +101,7 @@ import { useThreadAnchor } from "./use-thread-anchor";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
+import { LargeTitle } from "../../ui/LargeTitle";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -246,36 +247,42 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   ];
   return (
     <div className="ch-msp-page ch-msp-home">
-      {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
-      {!isMessagesFirstRun(api) && (
-        <div className="ch-msp-tools">
-          <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
-          <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
-            {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
-            {(
-              [
-                ["all", "All", null],
-                ["unread", "Unread", unread],
-                ["groups", "Groups", null],
-              ] as Array<[ChConvFilter, string, number | null]>
-            ).map(([k, l, n]) => (
-              <button
-                key={k}
-                type="button"
-                className="ch-msp-chip ch-num"
-                aria-pressed={filter === k}
-                onClick={() => {
-                  if (filter !== k) haptic("select");
-                  setFilter(k);
-                }}
-              >
-                {l}
-                {n != null && <> <span>{n}</span></>}
-              </button>
-            ))}
+      <div className="ch-msp-top">
+        {/* The phone's one large title (owner decision 4, 2026-10-24); the top bar holds the page's heading, so VoiceOver reads it once. */}
+        <LargeTitle as="p" hidden>
+          Messages
+        </LargeTitle>
+        {/* With nothing to search or filter the page is the first-run empty alone (board: Empty state), not controls over nothing. */}
+        {!isMessagesFirstRun(api) && (
+          <div className="ch-msp-tools">
+            <SearchField value={q} onChange={setQ} placeholder="Search messages" label="Search conversations and messages" className="ch-msp-search" />
+            <div className="ch-msp-chips" role="group" aria-label="Filter conversations">
+              {/* The Qualifiers chips: a count is its own figure beside the word (space kept, so it reads "Unread 2"). */}
+              {(
+                [
+                  ["all", "All", null],
+                  ["unread", "Unread", unread],
+                  ["groups", "Groups", null],
+                ] as Array<[ChConvFilter, string, number | null]>
+              ).map(([k, l, n]) => (
+                <button
+                  key={k}
+                  type="button"
+                  className="ch-msp-chip ch-num"
+                  aria-pressed={filter === k}
+                  onClick={() => {
+                    if (filter !== k) haptic("select");
+                    setFilter(k);
+                  }}
+                >
+                  {l}
+                  {n != null && <> <span>{n}</span></>}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       {api.convsError ? (
         <InlineNotice
           code="CH-7201"

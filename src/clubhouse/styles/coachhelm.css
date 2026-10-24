@@ -51,7 +51,8 @@
   row-gap: 4px;
 }
 
-.ch-hl-h .ch-hl-h__t {
+/* Desktop's title; on the phone the title is the one large title (.ch-large-title, shell.css), never this serif. */
+.ch-hl-h .ch-hl-h__t:not(.ch-large-title) {
   font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
@@ -834,7 +835,7 @@
     padding-bottom: 16px;
     gap: 8px;
   }
-  .ch-hl-h .ch-hl-h__t {
+  .ch-hl-h .ch-hl-h__t:not(.ch-large-title) {
     font-size: calc(34 * var(--ch-type-k));
   }
   .ch-hl-h p {
@@ -1179,14 +1180,7 @@
     letter-spacing: 0.01em;
     color: var(--ch-ledger-eyebrow);
   }
-  .ch-hl.is-phone > .ch-hl-h .ch-hl-h__t {
-    font: var(--ch-type-34-strong);
-    line-height: 1.08;
-    letter-spacing: -0.038em;
-    font-variation-settings: 'wdth' 88;
-    color: var(--ch-ledger-ink);
-  }
-  .ch-hl.is-phone > .ch-hl-h p {
+  .ch-hl.is-phone > .ch-hl-h p:not(.ch-large-title) {
     max-width: 60ch;
     font: var(--ch-type-15);
     color: var(--ch-text-secondary);
