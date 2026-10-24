@@ -49,7 +49,9 @@ export function RoundTrend({
 
   const known = withValue(rounds);
   if (known.length === 0 || (kind === 'sg' && known.length < 3)) {
-    return <EmptyState compact code={kind === 'sg' ? 'CH-5309' : 'CH-5302'} title={kind === 'sg' ? 'No strokes gained trend yet.' : 'No rounds in this window.'} body={kind === 'sg' ? `${needsText('sgLong')} with shots. ${known.length} so far.` : undefined} />;
+    // A score trend with no rounds is the window's filtered empty (CH-5302), the same words as the rounds table's.
+    if (kind === 'score') return <EmptyState compact code="CH-5302" kind="filtered" title="No rounds in this window." body="Try This season to see every round posted since August." />;
+    return <EmptyState compact code="CH-5309" title="No strokes gained trend yet." body={`${needsText('sgLong')} with shots. ${known.length} so far.`} />;
   }
   if (known.length === 1 && kind === 'score') {
     const r = known[0]!;

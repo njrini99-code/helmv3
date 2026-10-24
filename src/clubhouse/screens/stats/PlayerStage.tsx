@@ -24,7 +24,8 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
   if (n === 0) {
     return (
       <section className="ch-fm" aria-label="Scoring form">
-        <EmptyState compact code="CH-5302" title="No rounds in this window." />
+        {/* The same filtered empty as the rounds table (CH-5302): a window with no rounds says so and points at This season. */}
+        <EmptyState compact code="CH-5302" kind="filtered" title="No rounds in this window." body="Try This season to see every round posted since August." />
       </section>
     );
   }

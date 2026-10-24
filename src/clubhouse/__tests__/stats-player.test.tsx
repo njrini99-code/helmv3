@@ -230,6 +230,18 @@ describe('Stats player · empty', () => {
     expect(filtered?.textContent).toMatch(/No rounds in this window.*Try This season to see every round posted since August\./);
   });
 
+  it('CH-5302 is the filtered empty with its body wherever a tab has no rounds, and once per tab (Overview’s scoring form drew a bare one)', async () => {
+    const user = userEvent.setup();
+    show(player({ rounds: [] }));
+    for (const tab of [/^Rounds/, /^Overview/]) {
+      await openTab(user, tab);
+      await waitFor(() => expect(document.querySelectorAll('[data-ch-code="CH-5302"]')).toHaveLength(1));
+      const only = document.querySelector('[data-ch-code="CH-5302"]')!;
+      expect(only.getAttribute('data-ch-state')).toBe('filtered');
+      expect(only.textContent).toMatch(/Try This season to see every round posted since August\./);
+    }
+  });
+
   it('CH-5303 CH-5304 no focus areas, no goals', async () => {
     const user = userEvent.setup();
     show(player({ focusAreas: [], goals: [] }));
