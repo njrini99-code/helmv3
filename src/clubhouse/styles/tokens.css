@@ -1016,6 +1016,9 @@ html:has([data-ui='clubhouse']) {
   --ch-dur-vt-gap: var(--ch-dur-vt-out);
   --ch-ease-vt-out: cubic-bezier(0.4, 0, 1, 1);
   --ch-ease-vt-in: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Under the OS Reduce Motion setting a page change is a plain crossfade over the quick beat, old and new together, in
+     opacity only: no push, no pop, no parallax (owner decision 2, 2026-10-24, OQ-15; CH_FADE_MS in lib/motion.ts). */
+  --ch-dur-vt-fade: 180ms;
   /* How long a navigation onto a route skeleton keeps the old page up before the skeleton shows (native-feel audit
      2026-10-08, P0-2): a load that finishes sooner never shows a skeleton. base.css delays the skeleton by the same. */
   --ch-dur-vt-hold: 300ms;

@@ -1,22 +1,32 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { CH_DUR, CH_EASE, chSpringCurve } from './motion';
+import { CH_DUR, CH_EASE, CH_FADE_MS, chSpringCurve } from './motion';
 import { acquireOverlayScroll } from './overlay-scroll';
-import { useChReducedMotion } from './reduced-motion';
+import { useChMotionMode, useChReducedMotion } from './reduced-motion';
 import { chSetScrim, chSupportsLinear, chThrownExit, takeSheetFling } from './sheet-drag';
 import { chFocusQuietly } from './focus-quietly';
 
-/** Pauses the opening animation on `surface`, and holds the scrim clear, until two frames have painted. */
-function holdRise(dialog: HTMLElement, surface: HTMLElement | null) {
+const EASE = `cubic-bezier(${CH_EASE.join(', ')})`;
+
+/**
+ * Pauses the opening animation on `surface`, and holds the scrim clear, until two frames have painted. With `fade` (the
+ * OS Reduce Motion setting, owner decision 2, OQ-15) the surface fades in over the quick beat instead, in opacity only:
+ * the CSS rise or pop is floored to 1ms there (base.css), so nothing slides or scales, and the scrim fades alongside.
+ */
+function holdRise(dialog: HTMLElement, surface: HTMLElement | null, fade: boolean) {
   const held = surface && surface !== dialog ? [dialog, surface] : [dialog];
   for (const el of held) el.setAttribute('data-ch-hold', '');
   chSetScrim(dialog, 0, 0);
+  const appear = fade ? (surface ?? dialog).animate?.([{ opacity: 0 }, { opacity: 1 }], { duration: CH_FADE_MS, easing: EASE }) : undefined;
+  appear?.pause();
   requestAnimationFrame(() =>
     requestAnimationFrame(() => {
       for (const el of held) el.removeAttribute('data-ch-hold');
-      // Fades in over the base duration as the panel rises (the CSS's own transition).
-      chSetScrim(dialog, 1);
+      appear?.play();
+      // Fades in over the base duration as the panel rises (the CSS's own transition); over the quick beat with `fade`.
+      if (fade) chSetScrim(dialog, 1, CH_FADE_MS, EASE);
+      else chSetScrim(dialog, 1);
     }),
   );
 }
@@ -39,6 +49,7 @@ export function useDialogLifetime(open: boolean, {
   const caught = useRef<{ transform: string; opacity: string } | null>(null);
   const [retained, setRetained] = useState(open);
   const reduced = useChReducedMotion();
+  const mode = useChMotionMode();
   openRef.current = open;
   const present = open || retained;
 
@@ -86,7 +97,7 @@ export function useDialogLifetime(open: boolean, {
         // animation's clock starts when its style lands, so the frames spent laying out a long sheet were taken off the
         // start of the rise and it jumped up from part way (phone, owner 2026-10-15: "needs to be smoother"). Two
         // frames later it plays from the bottom, on the compositor.
-        holdRise(dialog, surface);
+        holdRise(dialog, surface, mode === 'fade');
         dialog.showModal();
         // A field that asked for focus (autoFocus) keeps it; otherwise the named element (a title) takes it.
         const active = document.activeElement;
@@ -106,7 +117,18 @@ export function useDialogLifetime(open: boolean, {
     };
     dialog.setAttribute('data-closing', '');
     if (surface) surface.inert = true;
-    if (reduced || !surface?.animate) { finish(); return; }
+    if (mode === 'off' || !surface?.animate) { finish(); return; }
+    if (reduced) {
+      // Reduce Motion (owner decision 2, OQ-15): the surface fades out where it stands, the scrim with it; no slide.
+      const gone = surface.animate([{ opacity: getComputedStyle(surface).opacity }, { opacity: 0 }], { duration: CH_FADE_MS, easing: EASE, fill: 'forwards' });
+      chSetScrim(dialog, 0, CH_FADE_MS, EASE);
+      gone.onfinish = finish;
+      return () => {
+        active = false;
+        gone.onfinish = null;
+        gone.cancel();
+      };
+    }
     const exitTransform = direction === 'left' ? 'translateX(-100%)' : direction === 'bottom' ? 'translateY(100%)' : 'translateY(6px) scale(.98)';
     const computed = getComputedStyle(surface);
     // A sheet or drawer leaves on the smooth spring it rose on, ending as it leaves sight, as the bell and the account
@@ -137,7 +159,7 @@ export function useDialogLifetime(open: boolean, {
       }
       exit.cancel();
     };
-  }, [open, reduced, direction, surfaceSelector, focusSelector]);
+  }, [open, reduced, mode, direction, surfaceSelector, focusSelector]);
 
   // A caller can clear its selected object immediately on dismiss. Retain the
   // last open subtree as well as the dialog, so the exit never becomes empty.

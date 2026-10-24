@@ -25,8 +25,8 @@ import { Menu } from '../ui/Menu';
 import { EmptyState, Skeleton } from '../ui/States';
 import { haptic } from '../lib/haptics';
 import { useAfterPaint } from '../lib/use-painted';
-import { CH_POP, chSpring, chSpringCurve } from '../lib/motion';
-import { useChReducedMotion } from '../lib/reduced-motion';
+import { CH_POP, chFade, chSpring, chSpringCurve } from '../lib/motion';
+import { useChMotionMode, useChReducedMotion } from '../lib/reduced-motion';
 import { useChPhone } from '../lib/use-phone';
 import { useSectionSwitch } from './section-switch';
 import { BellStacks, CH_NOTIFICATION_KIND } from './BellStacks';
@@ -104,6 +104,8 @@ export function Bell() {
   const router = useRouter();
   const id = useId();
   const reduced = useChReducedMotion();
+  // Reduce Motion fades the drop and its veil over the quick beat (owner decision 2, OQ-15); Animations off is instant.
+  const mode = useChMotionMode();
   const phone = useChPhone();
   // The portal waits for hydration: the server has no document, and the phone drop is always rendered once it exists.
   const hydrated = useSyncExternalStore(noSubscribe, () => true, () => false);
@@ -155,9 +157,9 @@ export function Bell() {
   const sheetMotion = {
     // The stacks drop from under the bar and land with the settle spring's slight give, a touch smaller as they come.
     // Transform and opacity only, nothing that re-rasterizes (no scale, no blur), so WebKit keeps it on the compositor.
-    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? { duration: 0 } : { ...REVEAL_IN, opacity: chSpring('smooth') } },
+    shown: { transform: 'translateY(0px)', opacity: 1, visibility: 'visible', transition: reduced ? chFade(mode) : { ...REVEAL_IN, opacity: chSpring('smooth') } },
     gone: () => {
-      if (reduced) return { opacity: 0, transition: { duration: 0 }, transitionEnd: { visibility: 'hidden' } };
+      if (reduced) return { opacity: 0, transition: chFade(mode), transitionEnd: { visibility: 'hidden' } };
       // Back up under the bar from where the finger left it, at the speed it was thrown, fading as it goes.
       const from = dragY.current;
       dragY.current = 0;
@@ -553,7 +555,7 @@ export function Bell() {
                 initial={false}
                 animate={
                   reduced
-                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: open ? 'visible' : 'hidden', transition: { duration: 0 } }
+                    ? { opacity: open ? 1 : 0, transform: 'translateY(0%)', visibility: 'visible', transition: chFade(mode), transitionEnd: { visibility: open ? 'visible' : 'hidden' } }
                     : moving
                       ? { transform: 'translateY(0%)', opacity: 1, visibility: 'visible', transition: REVEAL_IN }
                       : { transform: 'translateY(-100%)', opacity: 1, transition: chSpring('smooth'), transitionEnd: { visibility: 'hidden' } }
