@@ -635,3 +635,41 @@ filter, chip and tab migrations, the font shorthands that block .ch-num
 - `phone-desktop-words`, `avatar-sizes`, `chips-tabs` and `tabular-nums`
   tests; related tests (109 files); `tsgo`, eslint, `clubhouse:check`,
   `clubhouse:css`.
+
+## 2026-10-23 — Dates, page spacing and desktop keys
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-16, CONS-34, B11)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: the day locale, round entry's and Roster's relative
+wording, the phone gutter, Cmd-1 to 9; Cmd-N is not available in a
+browser
+```
+
+### Changed
+
+- `lib/dates` holds the day key (`isoDay`), the one clock ("3:30 PM")
+  and relative time in two lengths. The welcome's last visit reads
+  "9:12 PM" and the recruiting dead period "7 AM". Other date
+  formatting is ratcheted (CONS-16).
+- Page roots take their padding and gap from page spacing tokens, each
+  equal to today's value; a guard lists the roots (CONS-34).
+- ↑ and ↓ walk the Recruiting table and the Settings rail. The
+  shortcuts sheet lists the open page's own keys (Home, Calendar,
+  Messages, Recruiting, Settings). CoachHelm's "Since you were last
+  here" opens into What's new (B11).
+
+### Why
+
+- One clock and one day key; spacing by meaning; a Mac keyboard that
+  reaches every list.
+
+### Verification
+
+- `dates`, `page-spacing`, `page-keys`, recruiting, settings and
+  coachhelm tests; related tests; guard suite (287 files); `tsgo`,
+  eslint, `clubhouse:check`, `clubhouse:css`. The spacing tokens were
+  resolved and diffed against the old values (no change).
