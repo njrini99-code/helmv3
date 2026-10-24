@@ -22,9 +22,9 @@ Success confirmations are listed next to their error: the toast shows for 4
 seconds, errors for 8 with Retry.
 
 The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in
-`parts.tsx`). Only a save that got no answer (it threw, gave no reason, or
-failed with the browser's network wording) says "Check your connection and try
-again." A save the server refused says why: "Your account doesn't have access to
+`parts.tsx`). A save that got no answer (it threw, gave no reason, or failed
+with the browser's network wording) says "Your changes are kept. Try again.",
+with no guess at the cause (row 62). A save the server refused says why: "Your account doesn't have access to
 do this." for a policy or a missing grant (also when the database words it as
 "violates row-level security"), the session line for an expired sign-in, the
 server's own short sentence as written, and "The server didn't accept the
@@ -46,8 +46,8 @@ are the "Settings · phone" group in `settings.test.tsx`.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-8001 | Saving the profile (name, a coach's title, or photo) fails | "Couldn't save your profile" + the reason or "Check your connection and try again.", Retry. On success: "Profile saved" | `useAction('settings.saveProfile')` | settings.test › CH-8001 |
-| CH-8002 | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails | "Couldn't upload that photo" + "Use a JPEG, PNG, GIF or WebP photo." / "Photos must be under 2 MB." / "Check your connection and try again." | `writes.uploadAvatar`, toast in `ProfileCard` | settings.test › CH-8002 |
+| CH-8001 | Saving the profile (name, a coach's title, or photo) fails | "Couldn't save your profile" + the reason or "Your changes are kept. Try again.", Retry. On success: "Profile saved" | `useAction('settings.saveProfile')` | settings.test › CH-8001 |
+| CH-8002 | A photo can't be uploaded: wrong type, over 2 MB, or the upload fails | "Couldn't upload that photo" + "Use a JPEG, PNG, GIF or WebP photo." / "Photos must be under 2 MB." / "Your photo wasn’t changed. Try again." | `writes.uploadAvatar`, toast in `ProfileCard` | settings.test › CH-8002 |
 | CH-8003 | Sending the email-change confirmation fails | "Couldn't start the email change", Retry. On success: "Confirmation sent to name@school.edu" and a notice to check that inbox | `useAction('settings.changeEmail')` | settings.test › CH-8003 |
 | CH-8004 | Changing the password fails, including a wrong current password | "Couldn't update your password" + "Your current password is incorrect." when that's why. On success: "Password updated" and the fields clear | `useAction('settings.changePassword')`, re-auth first | settings.test › CH-8004 |
 | CH-8005 | An email or push switch (or quiet mode) doesn't save | "Couldn't change messages email" (the switch named) + "It is back where it was…", Retry; the switch flips back | `useInstantSave('notifications')` (`useDelivery`); on the phone, the switch in the kind's sheet | settings.test › CH-8005 |
@@ -69,12 +69,12 @@ are the "Settings · phone" group in `settings.test.tsx`.
 | CH-8021 | The team CoachHelm switch doesn't save (head coach) | "Couldn't change CoachHelm for the team" | `useInstantSave` | settings.test › CH-8021 |
 | CH-8022 | A CoachHelm priority, threshold, alert or display change doesn't save | "Couldn't save that CoachHelm setting" + "It's back where it was…"; the control reverts; the status line says "A change didn't save" | ordered save queue in `CoachHelm.tsx` | settings.test › CH-8022 |
 | CH-8023 | Deleting the account fails | "Couldn't delete your account" + the server's reason (for example data that needs an admin) | `useAction('settings.deleteAccount')` | settings.test › CH-8023 |
-| CH-8024 | Signing out fails | "Couldn't sign you out" + "Check your connection and try again." | `SessionCard` | settings.test › CH-8024 |
+| CH-8024 | Signing out fails | "Couldn't sign you out" + "You’re still signed in. Try again." | `SessionCard` | settings.test › CH-8024 |
 | CH-8025 | Report a problem can't open the in-app form (info, not an error) | "Opening email" + "The in-app report form isn't available right now." then the mail app opens | Sentry feedback, `mailto:` fallback | settings.test › CH-8025 |
 | CH-8026 | Approving an assistant coach request fails (head coach) | "Couldn't approve Avery Lee" + the reason (for example "Only a head coach of this team can do that."), Retry; the request stays. On success: "Avery Lee is now an assistant coach", the request leaves and the staff list reads again | `useAction('settings.approveAssistant')` (`useCoachingStaff`) → `approvePendingAssistantCoach`; Approve on desktop, the Approve pill on the phone | settings-staff.test › CH-8026 |
 | CH-8027 | Declining an assistant coach request fails (head coach) | "Couldn't decline Avery Lee" + the reason, Retry; the request stays. On success: "Declined Avery Lee" and the request leaves. The person is detached from the program, not deleted | `useAction('settings.declineAssistant')` (`useCoachingStaff`) → `declinePendingAssistantCoach` | settings-staff.test › CH-8027 |
 | CH-8028 | Making a staff invite fails (head coach) | "Couldn't make the assistant coach invite" / "Couldn't make the program admin invite" + the server's reason (for example "Only a head coach of this team can invite staff."), Retry; a code shown before is cleared first. On success there is no toast: the code, its role and how long it works show, with Copy staff code, Copy staff invite link and Share (Copy code, Copy link and Share on the phone) | `useAction('settings.createStaffInvite')` (`useStaffInvite`) → `createStaffInvite` | settings-staff.test › CH-8028 |
-| CH-8029 | Send a test push fails (P008-C3, D1-6) | "Couldn't send a test" + the server's reason ("No device has push on yet.", "Too many tests. Try again in a minute.") or "Try again in a moment." / "Check your connection and try again." Done: "Test sent" + where it went, with a success haptic | `useTestPush` → `POST /api/push-subscriptions/test` (the caller's own Web Push subscriptions only); Send a test beside Push on this device (desktop), a row under it (phone) | settings.test › CH-8029 |
+| CH-8029 | Send a test push fails (P008-C3, D1-6) | "Couldn't send a test" + the server's reason ("No device has push on yet.", "Too many tests. Try again in a minute.") or "Try again in a moment." / "Nothing was sent. Try again." Done: "Test sent" + where it went, with a success haptic | `useTestPush` → `POST /api/push-subscriptions/test` (the caller's own Web Push subscriptions only); Send a test beside Push on this device (desktop), a row under it (phone) | settings.test › CH-8029 |
 | CH-8320 | The team's course location (Team; migration 20261008150000, applied 2026-10-11) | Card (desktop) / group (phone): "Course location", Set: `<name>` or Not set, Use my location (rounded to two decimals) with a name, Clear; a denied or missing location says why inline. Draws nothing while the columns are missing or when the read fails | `useCourseLocation` → `golf_team_settings` course_latitude/longitude/label (coach RLS); the shell's light reads it for the sun | course-location.test |
 
 ## 81xx Validation (shown before anything is sent; Save stays disabled)

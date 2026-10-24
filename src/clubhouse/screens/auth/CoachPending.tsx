@@ -117,7 +117,7 @@ export function CoachPending({ programName, signOut = chSignOut, refresh, initia
         {signOutFailed && (
           <div className="ch-au-err">
             <AuthNotice tone="danger" code="CH-15962">
-              We couldn’t sign you out. Check your connection and try again.
+              We couldn’t sign you out. You’re still signed in. Try again.
             </AuthNotice>
           </div>
         )}

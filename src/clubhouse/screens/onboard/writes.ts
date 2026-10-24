@@ -100,7 +100,7 @@ export async function uploadPhoto(file: File): Promise<{ ok: true; url: string }
   try {
     const supabase = createClient();
     const { data: s, error: se } = await supabase.auth.getSession();
-    if (se) return { ok: false, error: 'Couldn’t check your session just now. Check your connection and try again.' };
+    if (se) return { ok: false, error: 'Couldn’t check your session just now. Try again.' };
     const uid = s.session?.user?.id;
     if (!uid) return { ok: false, error: 'Your session has expired. Sign in again to add a photo.' };
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';

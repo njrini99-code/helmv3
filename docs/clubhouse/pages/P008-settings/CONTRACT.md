@@ -158,7 +158,7 @@ reminders off let an out-of-order schedule send and fail).
 Status: DEFINED
 
 Every change has its own toast (80601 to 80624) naming what failed and why when
-the server gave a short reason, otherwise "Check your connection and try again",
+the server gave a short reason, otherwise "Your changes are kept. Try again",
 with Retry on saves and switches. Every section that fails to load shows its own
 notice with Try again (80625 to 80635), never a blank form that could be saved
 over real data; its Try again reads the whole page again (81401). When more than

@@ -118,7 +118,7 @@ export function useTestPush(push: ChDevice['push']) {
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.notifications', action: 'testPush' });
-      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Check your connection and try again.', code: 'CH-8029' });
+      toast({ tone: 'error', title: 'Couldn’t send a test', body: 'Nothing was sent. Try again.', code: 'CH-8029' });
     } finally {
       setBusy(false);
     }
@@ -418,12 +418,12 @@ export function useAvatarUpload(writes: ChSettingsWrites, onUploaded: (url: stri
       else {
         haptic('error');
         chReport(new Error(r.error || 'avatar upload failed'), { surface: 'settings.profile', action: 'uploadAvatar', severity: 'low' });
-        toast({ tone: 'error', title: "Couldn’t upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Check your connection and try again.', code: 'CH-8002' });
+        toast({ tone: 'error', title: "Couldn’t upload that photo", body: r.error && r.error.length < 80 ? r.error : 'Your photo wasn’t changed. Try again.', code: 'CH-8002' });
       }
     } catch (err) {
       haptic('error');
       chReport(err, { surface: 'settings.profile', action: 'uploadAvatar' });
-      toast({ tone: 'error', title: "Couldn’t upload that photo", body: 'Check your connection and try again.', code: 'CH-8002' });
+      toast({ tone: 'error', title: "Couldn’t upload that photo", body: 'Your photo wasn’t changed. Try again.', code: 'CH-8002' });
     } finally {
       setUploading(false);
     }
