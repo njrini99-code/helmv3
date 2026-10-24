@@ -431,7 +431,11 @@ describe('111901 the library and the review are the phone build at phone width',
     inFrame(<RoundReview review={PREVIEW_REVIEW} />);
     const zone = screen.getByRole('region', { name: /Tee to green/ }).querySelector('.ch-znbig');
     expect(zone).toBeTruthy();
-    expect(zone!.className).not.toMatch(/\bis-(good|bad)\b/);
+    expect(zone!.className).not.toMatch(/\bis-(gain|loss|even)\b/);
+    // The words looked for are the ones ZoneBig paints with (CONS-20): a toned reading on the same review carries one, so
+    // this can still fail (it went vacuous when the words were is-good and is-bad).
+    const toned = [...document.querySelectorAll('.ch-znbig')].filter((z) => /\bis-(gain|loss)\b/.test(z.className));
+    expect(toned.length).toBeGreaterThan(0);
   });
 
   it('111901 the review: the top bar is Round with ‹ Rounds for a player and ‹ Stats for a coach', () => {
