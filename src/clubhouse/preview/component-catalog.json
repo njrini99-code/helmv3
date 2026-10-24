@@ -1,6 +1,16 @@
 {
   "components": [
     {
+      "file": "src/clubhouse/lib/roving.tsx",
+      "group": "lib",
+      "exports": [
+        "RovingRows"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/lib/use-clock.tsx",
       "group": "lib",
       "exports": [
@@ -4165,7 +4175,16 @@
         "AccountSection"
       ],
       "styles": [
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4474,7 +4493,16 @@
         "SettingsPhone"
       ],
       "styles": [
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6379,6 +6407,7 @@
       "file": "src/clubhouse/ui/Notices.tsx",
       "group": "ui",
       "exports": [
+        "FAILURE_COPY",
         "InlineNotice",
         "PageNotice",
         "RouteErrorView"
@@ -9096,6 +9125,7 @@
         "ch-hl-plan__lines",
         "ch-hl-plan__player",
         "ch-hl-plan__pt",
+        "ch-hl-plan__send",
         "ch-hl-plan__start",
         "ch-hl-plan__thin",
         "ch-hl-plist",
