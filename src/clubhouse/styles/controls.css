@@ -3,26 +3,26 @@
 /* Segmented: recessed well with a raised, pressed chip that slides. */
 .ch-seg {
   display: inline-flex;
-  gap: 3px;
+  gap: 4px;
   padding: 4px;
   border-radius: var(--ch-radius-lg);
 }
 .ch-seg--sm {
-  padding: 3px;
+  padding: 4px;
 }
 .ch-seg__b {
   position: relative;
   height: 30px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
   /* Concentric with the track: its radius less its padding. */
-  border-radius: calc(var(--ch-radius-lg) - 4px);
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
   background: transparent;
   /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
   color: var(--ch-text-secondary);
   font: var(--ch-type-13-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   white-space: nowrap;
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.6);
   cursor: pointer;
@@ -31,9 +31,9 @@
     background var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
-  border-radius: calc(var(--ch-radius-lg) - 3px);
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
   height: 26px;
-  padding: 0 11px;
+  padding: 0 12px;
   font-size: calc(13 * var(--ch-type-k));
 }
 @media (hover: hover) {
@@ -49,9 +49,15 @@
 /* CH-1617: pressed, an option that isn't chosen takes the Ledger's press tint over the press beat, after the beat UIKit
    waits so a scroll that starts on it never flashes it; letting go clears it at once. It never scales (lib/press.ts):
    the chip arriving is the answer. The chosen option has nothing to change, so it doesn't answer. */
-.ch-seg__b:not(.is-on):is(:active, [data-ch-pressed]) {
+.ch-seg__b:not(.is-on)[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-seg__b:not(.is-on):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-seg__b:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -96,7 +102,7 @@
   border-radius: 999px;
   background: transparent;
   color: var(--ch-text-secondary);
-  font: 500 calc(13 * var(--ch-type-k))/30px var(--ch-font-sans);
+  font: var(--ch-type-13-medium);
   font-variant-numeric: tabular-nums;
   box-shadow: inset 0 0 0 1px var(--ch-border-subtle);
   cursor: pointer;
@@ -111,9 +117,15 @@
   }
 }
 /* CH-1617: a pill that isn't on answers a press the way a segment does. */
-.ch-pill:not([aria-pressed='true']):is(:active, [data-ch-pressed]) {
+.ch-pill:not([aria-pressed='true'])[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
+}
+@media (hover: hover) {
+  .ch-pill:not([aria-pressed='true']):active {
+    background: var(--ch-ledger-row-press);
+    transition-delay: var(--ch-dur-press-delay);
+  }
 }
 .ch-pill[aria-pressed='true'] {
   background: var(--ch-selected-pill-bg);
@@ -149,7 +161,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -226,7 +238,7 @@
 }
 .ch-textarea {
   min-height: 64px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   line-height: 1.5;
   resize: vertical;
 }
@@ -304,16 +316,16 @@
 .ch-menu__item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   height: 34px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -342,8 +354,8 @@
   font-weight: 600;
 }
 .ch-menu__sep {
-  height: 1px;
-  margin: 5px 6px;
+  height: var(--ch-hairline-w);
+  margin: 4px 6px;
   background: rgb(28 25 18 / 0.08);
 }
 
@@ -398,8 +410,8 @@
   overscroll-behavior: contain;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 20px 16px 6px 22px;
+  gap: 16px;
+  padding: 20px 16px 6px 24px;
 }
 .ch-modal__icon {
   display: grid;
@@ -427,13 +439,13 @@
   letter-spacing: var(--ch-track-17);
 }
 .ch-modal__titles p {
-  margin: 3px 0 0;
+  margin: 4px 0 0;
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
 }
 .ch-modal__body {
   min-height: 0;
-  padding: 14px 22px 20px;
+  padding: 16px 24px 20px;
   overflow: auto;
   overscroll-behavior: contain;
 }
@@ -443,8 +455,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding: 12px 16px 12px 22px;
-  border-top: 1px solid rgb(28 25 18 / 0.08);
+  padding: 12px 16px 12px 24px;
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: #efece3;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
 }
@@ -459,9 +471,15 @@
     background: linear-gradient(180deg, var(--ch-danger-hover), var(--ch-danger-fill-bottom));
   }
 }
-.ch-btn--danger:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-btn--danger[data-ch-pressed]:not(:disabled) {
   background: var(--ch-danger-press);
   box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
+}
+@media (hover: hover) {
+  .ch-btn--danger:active:not(:disabled) {
+    background: var(--ch-danger-press);
+    box-shadow: 0 0 0 1px var(--ch-danger-ring), inset 0 1px 3px rgb(0 0 0 / 0.25);
+  }
 }
 @keyframes ch-pop {
   from {
@@ -594,10 +612,10 @@
 .ch-pp__row {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   min-height: 44px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: transparent;
@@ -664,7 +682,7 @@
   box-shadow: none;
 }
 .ch-pp__empty {
-  padding: 14px 10px;
+  padding: 16px 8px;
   font: var(--ch-type-body-s);
   color: var(--ch-text-tertiary);
 }
@@ -675,7 +693,7 @@
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font: var(--ch-type-body);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -725,11 +743,21 @@
    settles round as the finger lifts. The scale property composes with the travel's transform, so nothing reflows.
    Like the press (CH-1606), it is off with reduced motion and with Animations off. */
 @media (prefers-reduced-motion: no-preference) {
-  .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
+  .ch-switch:not(.is-disabled):not(.is-busy)[data-ch-pressed] .ch-switch__thumb {
     scale: 1.2 1;
   }
-  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):is(:active, [data-ch-pressed]) .ch-switch__thumb {
+  @media (hover: hover) {
+    .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+      scale: 1.2 1;
+    }
+  }
+  [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy)[data-ch-pressed] .ch-switch__thumb {
     scale: none;
+  }
+  @media (hover: hover) {
+    [data-motion='off'] .ch-switch:not(.is-disabled):not(.is-busy):active .ch-switch__thumb {
+      scale: none;
+    }
   }
 }
 .ch-switch input:focus-visible + .ch-switch__track {
@@ -754,7 +782,7 @@
 .ch-select select {
   width: 100%;
   height: 38px;
-  padding: 0 34px 0 12px;
+  padding: 0 32px 0 12px;
   border: 0;
   border-radius: var(--ch-radius-md);
   outline: 0;
@@ -801,7 +829,7 @@
 }
 .ch-slider__v {
   font: var(--ch-type-14-strong);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);
 }
@@ -833,7 +861,7 @@
 .ch-slider input::-webkit-slider-thumb {
   width: 20px;
   height: 20px;
-  margin-top: -7px;
+  margin-top: -8px;
   border-radius: 50%;
   appearance: none;
   background: linear-gradient(180deg, #fff 0%, #f4f1ea 70%, #e9e5db 100%);
@@ -850,7 +878,7 @@
 .ch-slider input:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
 }
 .ch-slider.is-disabled {
   opacity: 0.5;
@@ -859,7 +887,7 @@
   display: flex;
   justify-content: space-between;
   font: var(--ch-type-12);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 
@@ -868,7 +896,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
 }
 .ch-check.is-disabled {
@@ -968,8 +996,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df__open:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-df__open[data-ch-pressed]:not(:disabled) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df__open:active:not(:disabled) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-df__open:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -1059,8 +1092,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-nav:is(:active, [data-ch-pressed]):not(:disabled) {
+.ch-df-nav[data-ch-pressed]:not(:disabled) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df-nav:active:not(:disabled) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-df-nav:disabled {
   color: var(--ch-ink-400);
@@ -1079,7 +1117,7 @@
 }
 .ch-df-cal__h {
   height: 24px;
-  font: 500 calc(12 * var(--ch-type-k))/24px var(--ch-font-sans);
+  font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
   text-align: center;
 }
@@ -1100,7 +1138,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
@@ -1114,8 +1152,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-df-day:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
+.ch-df-day[data-ch-pressed]:not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-df-day:active:not(:disabled):not(.is-on) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 /* Today is a dot under its numeral, not a colour; the chosen day is the segmented control's lit chip. */
 .ch-df-day.is-today::after {
@@ -1190,7 +1233,7 @@
   background: transparent;
   color: var(--ch-text-primary);
   font: var(--ch-type-14-medium);
-  line-height: 1;
+  line-height: var(--ch-lead-tight);
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
@@ -1206,8 +1249,13 @@
     background: var(--ch-ledger-row-hover);
   }
 }
-.ch-tf__row:is(:active, [data-ch-pressed]):not(:disabled):not(.is-on) {
+.ch-tf__row[data-ch-pressed]:not(:disabled):not(.is-on) {
   background: var(--ch-ledger-row-press);
+}
+@media (hover: hover) {
+  .ch-tf__row:active:not(:disabled):not(.is-on) {
+    background: var(--ch-ledger-row-press);
+  }
 }
 .ch-tf__row.is-on {
   background: var(--ch-seg-on-bg);
@@ -1360,22 +1408,22 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border-radius: var(--ch-radius-xl);
     background: #fbfaf6;
     box-shadow:
-      0 0 0 1px rgb(16 18 14 / 0.08),
+      0 0 0 var(--ch-hairline-w) var(--ch-border-hairline),
       var(--ch-elevation-overlay);
   }
   .ch-modal__head {
-    padding: 22px 18px 8px 24px;
+    padding: 24px 16px 8px 24px;
   }
   .ch-modal__titles h2 {
-    font: 600 20px/1.25 var(--ch-font-sans);
+    font: var(--ch-type-20-strong);
     letter-spacing: var(--ch-track-20);
   }
   .ch-modal__body {
-    padding: 14px 24px 22px;
+    padding: 16px 24px 24px;
   }
   .ch-modal__foot {
-    padding: 14px 18px 14px 24px;
-    border-top: 1px solid rgb(16 18 14 / 0.07);
+    padding: 16px 16px 16px 24px;
+    border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
     background: transparent;
     box-shadow: none;
   }
@@ -1385,7 +1433,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   html[data-fw-theme='dark'] .ch-modal__panel {
     background: var(--ch-bg-elevated);
     box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.14),
+      0 0 0 var(--ch-hairline-w) var(--ch-ink-rule),
       var(--ch-elevation-overlay);
   }
   html[data-fw-theme='dark'] .ch-modal__foot {
@@ -1410,10 +1458,10 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
    The margin cancels the button's inline padding at its size (--ch-btn-pad-x, ui.css); the hover and press tint still
    reach past the words. */
 .ch-btn.ch-btn--flush-start {
-  margin-inline-start: calc(-1 * var(--ch-btn-pad-x, 14px));
+  margin-inline-start: calc(-1 * var(--ch-btn-pad-x, 16px));
 }
 .ch-btn.ch-btn--flush-end {
-  margin-inline-end: calc(-1 * var(--ch-btn-pad-x, 14px));
+  margin-inline-end: calc(-1 * var(--ch-btn-pad-x, 16px));
 }
 
 /* A hero figure's decimal point (ui/point-span.tsx): room on each side, so a display figure's tight tracking never
@@ -1432,7 +1480,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   width: 36px;
   height: 5px;
   margin-inline: auto;
-  border-radius: 2.5px;
+  border-radius: 999px;
   background: var(--ch-grab-bg);
   touch-action: none;
 }
@@ -1478,7 +1526,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   .ch-fsheet {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
     box-sizing: border-box;
     max-height: calc(100dvh - 54px);
     padding: 8px 16px max(40px, calc(16px + env(safe-area-inset-bottom)));
@@ -1530,6 +1578,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     overflow-wrap: anywhere;
     text-align: center;
     font: var(--ch-type-17-strong);
+    letter-spacing: var(--ch-track-17);
   }
   .ch-fsheet-bar__b {
     justify-self: start;
@@ -1539,7 +1588,8 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border: 0;
     background: none;
     font: var(--ch-type-16);
-    line-height: 1;
+    letter-spacing: var(--ch-track-16);
+    line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     text-align: left;
     cursor: pointer;
@@ -1574,6 +1624,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   .ch-fsheet-lbar__t h2 {
     margin: 0;
     font: var(--ch-type-20-strong);
+    letter-spacing: var(--ch-track-20);
   }
   .ch-fsheet-lbar__t span {
     font: var(--ch-type-14);
@@ -1585,7 +1636,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     max-height: calc(100dvh - env(safe-area-inset-top) - 8px);
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 0 10px calc(10px + env(safe-area-inset-bottom));
+    padding: 0 8px calc(8px + env(safe-area-inset-bottom));
   }
   .ch-fsheet-act[open] {
     display: flex;
@@ -1606,7 +1657,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 16px 20px 14px;
+    padding: 16px 20px 16px;
     text-align: center;
   }
   .ch-fsheet-act__msg b {
@@ -1629,7 +1680,8 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     border: 0;
     background: none;
     font: var(--ch-type-20-medium);
-    line-height: 1;
+    letter-spacing: var(--ch-track-20);
+    line-height: var(--ch-lead-tight);
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -1650,9 +1702,15 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     font-weight: 600;
     color: var(--ch-green-600);
   }
-  .ch-fsheet-act__btn:is(:active, [data-ch-pressed]),
-  .ch-fsheet-act__cancel:is(:active, [data-ch-pressed]) {
+  .ch-fsheet-act__btn[data-ch-pressed],
+  .ch-fsheet-act__cancel[data-ch-pressed] {
     background: var(--ch-bg-hover);
+  }
+  @media (hover: hover) {
+    .ch-fsheet-act__btn:active,
+    .ch-fsheet-act__cancel:active {
+      background: var(--ch-bg-hover);
+    }
   }
   .ch-fsheet-act__btn:focus-visible,
   .ch-fsheet-act__cancel:focus-visible {

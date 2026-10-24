@@ -16,7 +16,7 @@ const SHEETS: Array<[file: string, selector: string]> = [
   ['shell.css', '.ch-more'],
   ['shell.css', '.ch-asks__panel'],
 ];
-const TOKEN_PX = new Set([5, 7, 10, 14, 16, 20]);
+const TOKEN_PX = new Set([2, 4, 6, 8, 12, 16, 20]);
 
 const css = (name: string) => readFileSync(join(ROOT, 'styles', name), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 /** Every `border-*-radius` value in rules whose selector list holds exactly `selector`. */
@@ -67,9 +67,9 @@ describe('radii and hairlines (B3)', () => {
   });
 
   it('button sizes keep their 8 and 12 corners (owner, 2026-10-24, decision 7; OQ-59) and the phone cards are cards (CONS-32)', () => {
-    // CONS-4 had moved them onto the scale (7 and 14); the owner kept 8 / 12, which no radius token names.
-    expect(radii('ui.css', '.ch-btn--sm')).toEqual(['8px']);
-    expect(radii('ui.css', '.ch-btn--lg')).toEqual(['12px']);
+    // The owner kept 8 / 12; the four-step scale (row 35) names them sm and md.
+    expect(radii('ui.css', '.ch-btn--sm')).toEqual(['var(--ch-radius-sm)']);
+    expect(radii('ui.css', '.ch-btn--lg')).toEqual(['var(--ch-radius-md)']);
     expect(radii('ui.css', '.ch-btn')).toEqual(['var(--ch-radius-md)']);
     for (const [file, sel] of [['rounds-track.css', '.ch-rt-card'], ['stats.css', '.ch-stm-panel'], ['shell.css', '.ch-bst-card']] as const) {
       expect(radii(file, sel), `${file} ${sel}`).toContain('var(--ch-radius-card)');
@@ -78,6 +78,8 @@ describe('radii and hairlines (B3)', () => {
 
   it('the tokens hold the settled values', () => {
     const tokens = css('tokens.css');
+    expect(tokens).toMatch(/--ch-radius-sm: 8px;/);
+    expect(tokens).toMatch(/--ch-radius-md: 12px;/);
     expect(tokens).toMatch(/--ch-radius-card: 16px;/);
     expect(tokens).toMatch(/--ch-radius-sheet: 20px;/);
     expect(tokens).toMatch(/--ch-hairline-w: 1px;/);

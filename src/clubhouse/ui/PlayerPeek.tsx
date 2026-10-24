@@ -2,7 +2,8 @@
 
 import { ChartColumn, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { formatFixed, formatToPar, NO_DATA } from '../lib/format';
+import { formatFixed, formatToPar } from '../lib/format';
+import { NoData } from './NoData';
 import { rebuiltHref } from '../shell/nav';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
@@ -79,14 +80,14 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
                 {last.toPar != null && <small> {formatToPar(last.toPar)}</small>}
               </>
             ) : (
-              NO_DATA
+              <NoData />
             )}
           </dd>
           {last && <span className="ch-ppeek__m">{last.label}</span>}
         </div>
         <div>
           <dt>Average</dt>
-          <dd className="ch-num">{formatFixed(p.avg ?? null)}</dd>
+          <dd className="ch-num">{p.avg == null ? <NoData /> : formatFixed(p.avg)}</dd>
           {p.trend && p.trend.length >= 2 && <TrendLine scores={p.trend} />}
         </div>
       </dl>

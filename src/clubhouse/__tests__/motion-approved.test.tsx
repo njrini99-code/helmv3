@@ -337,7 +337,7 @@ describe('CH-1620 the switch thumb stretches while held', () => {
   const controls = readFileSync(join(process.cwd(), 'src/clubhouse/styles/controls.css'), 'utf8');
 
   it('by a fifth of its width toward its travel, on the scale property, never its width', () => {
-    const held = /@media \(prefers-reduced-motion: no-preference\) \{\s*\.ch-switch:not\(\.is-disabled\):not\(\.is-busy\):is\(:active, \[data-ch-pressed\]\) \.ch-switch__thumb \{\s*scale: 1\.2 1;/;
+    const held = /@media \(prefers-reduced-motion: no-preference\) \{\s*\.ch-switch:not\(\.is-disabled\):not\(\.is-busy\)\[data-ch-pressed\] \.ch-switch__thumb \{\s*scale: 1\.2 1;/;
     expect(controls).toMatch(held);
     // Off it grows from its left edge; on, from the track's inner right edge, whatever size a page draws the track.
     expect(controls).toMatch(/\.ch-switch__thumb \{[^}]*transform-origin: left center;/);
@@ -347,7 +347,7 @@ describe('CH-1620 the switch thumb stretches while held', () => {
   });
 
   it('is off with Animations off, as the press is', () => {
-    expect(controls).toMatch(/\[data-motion='off'\] \.ch-switch:not\(\.is-disabled\):not\(\.is-busy\):is\(:active, \[data-ch-pressed\]\) \.ch-switch__thumb \{\s*scale: none;/);
+    expect(controls).toMatch(/\[data-motion='off'\] \.ch-switch:not\(\.is-disabled\):not\(\.is-busy\)\[data-ch-pressed\] \.ch-switch__thumb \{\s*scale: none;/);
   });
 });
 

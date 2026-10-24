@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { code, hits, ratchet, ROOT, walk, type Hit } from './_scan';
+import { code, hits, ratchet, ROOT, slack, walk, type Hit } from './_scan';
 
 /**
  * The look-and-feel pass (2026-10-22, mot-04 to mot-07): the rules only a stylesheet can hold. Placeholder text reads
@@ -96,6 +96,7 @@ describe('type roles (B1)', () => {
     const { over, stale } = ratchet(found, RAW_FONT);
     expect(over).toEqual([]);
     expect(stale).toEqual([]);
+    expect(slack(found, RAW_FONT)).toEqual([]);
   });
 
   it('letter-spacing is a role value, or a counted holdout that only falls', () => {
@@ -103,6 +104,7 @@ describe('type roles (B1)', () => {
     const { over, stale } = ratchet(found, OFF_TRACK);
     expect(over).toEqual([]);
     expect(stale).toEqual([]);
+    expect(slack(found, OFF_TRACK)).toEqual([]);
   });
 
   it('two widths only, 88 for dense numbers and 96 for display, the sign-in pages too, and font-stretch as well', () => {
@@ -127,6 +129,38 @@ describe('type roles (B1)', () => {
     const { over, stale } = ratchet(found, RAW_LONGHAND);
     expect(over).toEqual([]);
     expect(stale).toEqual([]);
+    expect(slack(found, RAW_LONGHAND)).toEqual([]);
+  });
+
+  /**
+   * Row 27: a line height comes from the step role (its own leading) or, for a single line, from `--ch-lead-tight`
+   * (1.1). The rest (a few fixed-row px leadings and legacy ratios) are counted per file and may only fall.
+   */
+  it('a line height is a role’s or --ch-lead-tight, or a counted holdout that only falls', () => {
+    const found: Hit[] = [];
+    for (const f of css) {
+      for (const m of code(f).matchAll(/(?:^|[\s;{])line-height:\s*([^;}]+);/g)) {
+        if (!/^(?:inherit|initial|unset|normal|var\(--ch-[a-z0-9-]+\))$/.test(m[1]!.trim())) found.push({ file: relative(ROOT, f), line: 0, text: m[0].trim() });
+      }
+    }
+    const { over, stale } = ratchet(found, RAW_LEAD);
+    expect(over).toEqual([]);
+    expect(stale).toEqual([]);
+    expect(slack(found, RAW_LEAD)).toEqual([]);
+  });
+
+  /** Row 28: a rule set on a step whose tracking is not 0 carries that step's tracking, so the step reads the same everywhere. */
+  it('a rule on a tracked step role sets a letter-spacing', () => {
+    const bare: string[] = [];
+    for (const f of css) {
+      for (const [, sel, body] of code(f).matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+        const step = /font: var\(--ch-type-(\d+)(?:-medium|-strong)?\);/.exec(body!)?.[1];
+        if (step && !['12', '13', '14'].includes(step) && !/letter-spacing:/.test(body!) && !/\.ch-sidebar|\.ch-brand__fold/.test(sel!)) {
+          bare.push(`${relative(ROOT, f)} ${sel!.trim()}`);
+        }
+      }
+    }
+    expect(bare).toEqual([]);
   });
 
   it('the bar title is one role, pushed or at a tab’s root, and the shell’s stand-in matches it', () => {
@@ -147,35 +181,59 @@ describe('type roles (B1)', () => {
   });
 });
 
-/** Raw `font:` shorthands per stylesheet left after the codemod (2026-10-23): pixel sizes, sizes off the steps, 700 and the sign-in pages. Only falls. */
+/**
+ * Raw `font:` shorthands per stylesheet left after the second codemod pass (2026-10-24, scripts/clubhouse/type-roles.mjs):
+ * sizes off the steps, 700, italics, the mono face, step-sized px on chart, badge and count text or in a fixed-height
+ * box, and the sign-in pages (auth.css keeps the owner's ported type, as the first pass decided). Only falls.
+ */
 const RAW_FONT: Record<string, number> = {
   'styles/auth.css': 32,
   'styles/base.css': 1,
-  'styles/calendar.css': 27,
-  'styles/classes.css': 38,
-  'styles/coachhelm-ask.css': 2,
-  'styles/coachhelm-dive.css': 7,
-  'styles/coachhelm-profile.css': 3,
-  'styles/coachhelm-standing.css': 2,
-  'styles/coachhelm-thread.css': 10,
-  'styles/coachhelm.css': 11,
-  'styles/controls.css': 3,
-  'styles/goals.css': 5,
-  'styles/hero-tones.css': 5,
-  'styles/home.css': 52,
-  'styles/hub.css': 19,
-  'styles/messages.css': 4,
-  'styles/onboard.css': 60,
-  'styles/qualifiers.css': 38,
-  'styles/recruiting.css': 17,
-  'styles/roster.css': 47,
-  'styles/rounds-setup.css': 14,
-  'styles/rounds-track.css': 36,
-  'styles/rounds.css': 74,
+  'styles/calendar.css': 8,
+  'styles/classes.css': 12,
+  'styles/coachhelm-ask.css': 1,
+  'styles/coachhelm-dive.css': 2,
+  'styles/coachhelm-profile.css': 1,
+  'styles/coachhelm.css': 2,
+  'styles/hero-tones.css': 1,
+  'styles/home.css': 15,
+  'styles/hub.css': 8,
+  'styles/messages.css': 1,
+  'styles/onboard.css': 12,
+  'styles/qualifiers.css': 16,
+  'styles/recruiting.css': 9,
+  'styles/roster.css': 13,
+  'styles/rounds-setup.css': 6,
+  'styles/rounds-track.css': 20,
+  'styles/rounds.css': 23,
   'styles/settings.css': 3,
-  'styles/shell.css': 27,
-  'styles/stats.css': 148,
-  'styles/ui.css': 10,
+  'styles/shell.css': 10,
+  'styles/stats.css': 38,
+  'styles/ui.css': 5,
+};
+
+/** Raw `line-height` values per stylesheet after the leading pass (2026-10-24, row 27): fixed-row px leadings and legacy ratios. Only falls. */
+const RAW_LEAD: Record<string, number> = {
+  'styles/classes.css': 2,
+  'styles/coachhelm-ask.css': 3,
+  'styles/coachhelm-profile.css': 1,
+  'styles/coachhelm-thread.css': 2,
+  'styles/coachhelm.css': 1,
+  'styles/controls.css': 2,
+  'styles/home.css': 1,
+  'styles/hub.css': 7,
+  'styles/messages.css': 2,
+  'styles/onboard.css': 1,
+  'styles/qualifiers.css': 4,
+  'styles/recruiting.css': 2,
+  'styles/roster.css': 1,
+  'styles/rounds-setup.css': 3,
+  'styles/rounds-track.css': 1,
+  'styles/rounds.css': 2,
+  'styles/shell.css': 1,
+  'styles/stats.css': 2,
+  'styles/ui.css': 2,
+  'styles/whats-new.css': 1,
 };
 
 /** Raw `font-size` and `font-weight` longhands per stylesheet on 2026-10-24 (B1). Only falls. */
@@ -233,9 +291,34 @@ const OFF_TRACK: Record<string, number> = {
   'styles/rounds.css': 7,
   'styles/settings.css': 1,
   'styles/shell.css': 5,
-  'styles/stats.css': 9,
-  'styles/ui.css': 5,
+  'styles/stats.css': 8,
+  'styles/ui.css': 4,
 };
+
+/**
+ * Row 32: one section-header style and one card-title style. The shared primitives and every screen's section head
+ * (a selector naming a section, set at 20 semibold) and card title (a card's title or head, at 17 semibold) read the
+ * roles, with their tracking.
+ */
+describe('section and card titles (row 32)', () => {
+  it('the primitives are the roles', () => {
+    const ui = read('ui.css');
+    const rule = (sel: string) => ui.slice(ui.indexOf(`\n${sel} {`), ui.indexOf('}', ui.indexOf(`\n${sel} {`)));
+    expect(rule('.ch-sec__title')).toMatch(/font: var\(--ch-type-section\);\s*letter-spacing: var\(--ch-track-section\);/);
+    expect(rule('.ch-surface__title')).toMatch(/font: var\(--ch-type-card-title\);\s*letter-spacing: var\(--ch-track-card-title\);/);
+  });
+  it('no section head or card title hand-sets the same step', () => {
+    const off: string[] = [];
+    for (const f of readdirSync(dir).filter((x) => x.endsWith('.css'))) {
+      for (const [, sel, body] of read(f).replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+        const last = sel!.split(',').pop()!;
+        if (/font: var\(--ch-type-20-strong\);/.test(body!) && /sec|section/.test(last)) off.push(`${f} ${sel!.trim()}`);
+        if (/font: var\(--ch-type-17-strong\);/.test(body!) && /card[^ ]*(title|__t\b|__h\b|-t\b|-h\b)/.test(last)) off.push(`${f} ${sel!.trim()}`);
+      }
+    }
+    expect(off).toEqual([]);
+  });
+});
 
 describe('eyebrows (CONS-30)', () => {
   it('every eyebrow and kicker is the one role, 13/500 with no tracking, or sets no type at all', () => {
@@ -272,23 +355,23 @@ describe('tabular figures (CONS-39)', () => {
 const LOCAL_TABULAR: Record<string, number> = {
   'styles/auth.css': 1,
   'styles/base.css': 2,
-  'styles/calendar.css': 29,
+  'styles/calendar.css': 28,
   'styles/classes.css': 22,
   'styles/coachhelm-profile.css': 5,
   'styles/coachhelm-thread.css': 9,
   'styles/coachhelm.css': 4,
-  'styles/home.css': 61,
+  'styles/home.css': 60,
   'styles/hub.css': 31,
   'styles/messages.css': 15,
   'styles/onboard.css': 8,
   'styles/qualifiers.css': 54,
-  'styles/recruiting.css': 9,
+  'styles/recruiting.css': 8,
   'styles/roster.css': 26,
   'styles/rounds-recover.css': 1,
   'styles/rounds-setup.css': 15,
   'styles/rounds-track.css': 35,
-  'styles/rounds.css': 62,
-  'styles/settings.css': 9,
+  'styles/rounds.css': 61,
+  'styles/settings.css': 8,
   'styles/shell.css': 5,
   'styles/stats.css': 99,
 };

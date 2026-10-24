@@ -132,7 +132,10 @@
   margin: 0;
 }
 
-.ch-num {
+/* `svg .ch-num`: chart text sets its font shorthand in its screen's sheet, which loads later and would reset the figures
+   to proportional at the same weight; the extra element keeps them even there (row 113). */
+.ch-num,
+svg .ch-num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }

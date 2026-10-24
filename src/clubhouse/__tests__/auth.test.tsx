@@ -396,8 +396,8 @@ describe('the sign-in screen', () => {
     expect(css).toContain('@media (max-width: 820px)');
     // Desktop and phone are one structure: a label over its own rounded box on both, the phone's on Sign in's radius
     // (owner 2026-10-13; the grouped-row sheet is retired), not a second form.
-    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*gap: 14px/);
-    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-input\s*{[^}]*border-radius: 13px/);
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-fields\s*{[^}]*gap: 16px/); // the 4pt scale (row 33)
+    expect(css).toMatch(/@media \(max-width: 820px\)[\s\S]*\.ch-au-input\s*{[^}]*border-radius: var\(--ch-radius-md\)/); // the radius steps (row 35)
     expect(css).not.toMatch(/\.ch-au-field \+ \.ch-au-field::before/);
     // Both "Forgot password?" links are in the markup and CSS shows one.
     render(<SignIn signIn={login} />);
@@ -619,7 +619,7 @@ describe('the sign-in micro-motion', () => {
     render(<SignIn signIn={login} />);
     expect(document.querySelector('.ch-au-back svg')).not.toBeNull();
     expect(css()).toMatch(/@media \(hover: hover\) \{[^@]*\.ch-au-back:hover svg \{\s*transform: translateX\(-2px\);/);
-    expect(css()).toMatch(/\.ch-au-back:is\(:active, \[data-ch-pressed\]\) \{\s*background:/);
+    expect(css()).toMatch(/\.ch-au-back\[data-ch-pressed\] \{\s*background:/);
   });
 });
 

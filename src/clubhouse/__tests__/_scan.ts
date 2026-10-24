@@ -16,10 +16,17 @@ export function walk(dir = ROOT, ext = /\.(tsx?|css)$/): string[] {
   });
 }
 
-/** Source with comments removed (the rules copy-apostrophes.test.ts used). */
+/**
+ * A pressed mirror: the `:active` copy of a `[data-ch-pressed]` rule, alone in its own `@media (hover: hover)` block
+ * (scripts/clubhouse/pressed-hover.mjs; pressed-sweep.test.ts holds each one equal to its twin). Line-counting guards
+ * count the twin, not the copy, so the split never inflates a ratchet. Lines are kept, so line numbers still hold.
+ */
+export const withoutPressedMirrors = (src: string) =>
+  src.replace(/@media \(hover: hover\) \{\s*[^{}]*:active[^{}]*\{[^{}]*\}\s*\}/g, (m) => m.replace(/[^\n]/g, ''));
+
+/** Source with comments and pressed mirrors removed (the rules copy-apostrophes.test.ts used). */
 export const code = (p: string) =>
-  readFileSync(p, 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+  withoutPressedMirrors(readFileSync(p, 'utf8').replace(/\/\*[\s\S]*?\*\//g, ''))
     .replace(/^\s*\/\/.*$/gm, '')
     .replace(/\s\/\/ .*$/gm, '');
 
@@ -50,4 +57,13 @@ export function ratchet(found: Hit[], allow: Record<string, number>) {
     .filter((f) => !by[f])
     .map((f) => `${f}: now 0, delete it from the allowlist`);
   return { over, stale };
+}
+
+/** The other half of a tight ratchet: listed files now below their count, so the number must come down to the live one. */
+export function slack(found: Hit[], allow: Record<string, number>) {
+  const by: Record<string, number> = {};
+  for (const h of found) by[h.file] = (by[h.file] ?? 0) + 1;
+  return Object.entries(allow)
+    .filter(([f, n]) => (by[f] ?? 0) > 0 && by[f]! < n)
+    .map(([f, n]) => `${f}: now ${by[f]}, lower it from ${n}`);
 }

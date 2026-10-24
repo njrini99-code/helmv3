@@ -244,7 +244,7 @@ export function AnnouncementPane({ api, a, onBack }: { api: ChMessagesApi; a: Ch
             <InlineNotice code="CH-7207" title="The details didn’t load" body="The announcement above is complete. Try again for replies, tasks and files." onRetry={() => setAttempt((x) => x + 1)} />
           ) : !detail ? (
             (a.requiresAck || a.taskCount > 0 || a.docCount > 0) && (
-              <div style={{ display: 'grid', gap: 10 }} aria-busy="true" data-ch-code="CH-7406">
+              <div style={{ display: 'grid', gap: 8 }} aria-busy="true" data-ch-code="CH-7406">
                 <Skeleton height={16} width={180} />
                 <Skeleton height={44} />
               </div>

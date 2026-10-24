@@ -257,7 +257,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         </>
       }
     >
-      <div style={{ display: 'grid', gap: 14 }}>
+      <div style={{ display: 'grid', gap: 16 }}>
         <label className="ch-field">
           <span className="ch-field__label">What</span>
           <input className="ch-input" placeholder="Recruiting call" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} aria-invalid={touched && !title.trim()} />

@@ -215,8 +215,8 @@ describe('Today, on the phone', () => {
 describe('spacing the base reset can’t take away', () => {
   it('sets the hero’s brief, greeting and Up next margins above base.css’s `.ch-root p, h1, h2 { margin: 0 }`', () => {
     // One class (0,1,0) loses to the reset, and two selectors tie it, so load order decided: the brief hugged Up next and the greeting hugged the date.
-    expect(css).toMatch(/\.ch-hm-hero > \.ch-hm-hero__brief\s*{[^}]*margin: 0 0 18px;/);
-    expect(css).toMatch(/\.ch-hm > \.ch-hm-hero > h1\s*{\s*margin: 8px 0 10px;/);
+    expect(css).toMatch(/\.ch-hm-hero > \.ch-hm-hero__brief\s*{[^}]*margin: 0 0 16px;/); // the 4pt scale (row 33)
+    expect(css).toMatch(/\.ch-hm > \.ch-hm-hero > h1\s*{\s*margin: 8px 0 8px;/);
     expect(css).toMatch(/\.ch-hm-hero \.ch-hm-next h2\s*{\s*margin-top: 6px;/);
     expect(css).toMatch(/\.ch-ph-leg > \.ch-ph-leg__n\s*{\s*margin: 4px 0 0;/);
     expect(css).toMatch(/\.ch-ph-game__h > div > h2\s*{\s*margin: 0 0 6px;/);
