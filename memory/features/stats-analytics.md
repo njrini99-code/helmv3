@@ -375,6 +375,20 @@ opens Overview. It is read once on load (`StatsPlayer({ initialTab })`, passed t
 as Roster's `rounds`, so the Rounds tab's count matches the N on the link. Tests: `src/clubhouse/__tests__/stats-player.test.tsx`
 › "Stats player · opened from a link" (commit 041ef83ee).
 
+## Clubhouse season, time and change rules (lane C, October 24)
+
+- The season starts on 1 August in the team's own zone (`golf_team_settings.timezone`, `loadTeamZone`; owner decision 9),
+  not the server's or New York's: Team and player Stats, Coach and Player Home, Roster, the team's Rounds and CoachHelm's
+  track record all turn it there (`seasonStartDate(now, tz)`). The SQL readers that use `CURRENT_DATE` stay held (C10).
+- Dated charts space points by real time (`ui/charts/Line` `at`, `slotPositions`; the round trends, the phone team trend
+  and the desktop week chart), and every Line, round trend and leg bar chart carries its figures as a visually hidden table
+  after its summary (`ChartTable`, AX-17).
+- A change word or tone (Improving, Slipping, a green or amber change) is shown only past its standard error: Game
+  detail's "Against the one before" (`windowCompare` rows carry `se`), the Deep dive's theme trend (pooled strokes-gained
+  spread, not the engine's fixed 0.15) and the phone trend's words; otherwise "No clear change".
+- Player Home's fairways, greens and scrambling, and Coach Home's team greens, hold to the rate floors (two rounds with a
+  chance for fairways and greens, ten chances for scrambling); under them the stat says what it needs.
+
 ## Clubhouse interaction preferences, October 6
 
 Desktop Game detail section jumps use the canonical Clubhouse reduced-motion
