@@ -30,7 +30,7 @@ export function SgBars({ rows }: { rows: SgBarRow[] }) {
       {...pin.container}
     >
       <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
-        {shown ?? 'Tap a leg to see how sure it is.'}
+        {shown ?? 'Tap a leg to see its likely range.'}
       </p>
       <p className="ch-sr-only" aria-live="polite">
         {spoken}

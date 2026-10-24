@@ -39,7 +39,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       {...pin.container}
     >
       <p className={'ch-sv-read' + (shown ? ' is-on' : '')} aria-hidden="true">
-        {shown ?? 'Select a leg to see its margin of error.'}
+        {shown ?? 'Select a leg to see its likely range.'}
       </p>
       <p className="ch-sr-only" aria-live="polite">
         {spoken}
