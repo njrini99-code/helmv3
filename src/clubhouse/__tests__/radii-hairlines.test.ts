@@ -66,9 +66,11 @@ describe('radii and hairlines (B3)', () => {
     expect(contrast).toMatch(/--ch-hairline-w: 1px;/);
   });
 
-  it('button sizes take their corner from the scale (CONS-4) and the phone cards are cards (CONS-32)', () => {
-    expect(radii('ui.css', '.ch-btn--sm')).toEqual(['var(--ch-radius-sm)']);
-    expect(radii('ui.css', '.ch-btn--lg')).toEqual(['var(--ch-radius-lg)']);
+  it('button sizes keep their 8 and 12 corners (owner, 2026-10-24, decision 7; OQ-59) and the phone cards are cards (CONS-32)', () => {
+    // CONS-4 had moved them onto the scale (7 and 14); the owner kept 8 / 12, which no radius token names.
+    expect(radii('ui.css', '.ch-btn--sm')).toEqual(['8px']);
+    expect(radii('ui.css', '.ch-btn--lg')).toEqual(['12px']);
+    expect(radii('ui.css', '.ch-btn')).toEqual(['var(--ch-radius-md)']);
     for (const [file, sel] of [['rounds-track.css', '.ch-rt-card'], ['stats.css', '.ch-stm-panel'], ['shell.css', '.ch-bst-card']] as const) {
       expect(radii(file, sel), `${file} ${sel}`).toContain('var(--ch-radius-card)');
     }

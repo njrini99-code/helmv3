@@ -38,7 +38,7 @@
   height: 30px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 6px;
-  border-radius: var(--ch-radius-sm);
+  border-radius: 8px; /* owner, 2026-10-24 (decision 7): sm keeps 8 and lg 12, off the radius scale */
   font-size: calc(13 * var(--ch-type-k));
 }
 .ch-btn--lg {
@@ -46,7 +46,7 @@
   height: 44px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 8px;
-  border-radius: var(--ch-radius-lg);
+  border-radius: 12px;
   font-size: calc(15 * var(--ch-type-k));
   letter-spacing: var(--ch-track-15);
 }
