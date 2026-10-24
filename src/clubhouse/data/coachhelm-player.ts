@@ -17,7 +17,7 @@ import { loadPlayerStanding } from './coachhelm-standing';
 import type { ChStanding } from './coachhelm-standing-shape';
 import { coachHeadLine, type ChCoachPlayerHead, type ChViewLoad } from './coachhelm-views-shape';
 import { speak, type ChViewer } from './coachhelm-voice';
-import { classYearLabel } from './season';
+import { classYearLabel, loadTeamZone } from './season';
 
 /**
  * A coach's views of one player (Clubhouse P013, spec A): Standing (with "How {first} plays", once the Game profile) and Deep dive at
@@ -110,9 +110,10 @@ export async function loadCoachPlayerScope(input: { coachId: string; teamId: str
     const p = who.data as { first_name: string | null; last_name: string | null; graduation_year: number | null } | null;
     const name = [p?.first_name, p?.last_name].filter(Boolean).join(' ').trim() || NO_NAME;
     const first = name === NO_NAME ? NO_NAME : firstName(name);
-    const [playerGate, lastRound] = await Promise.all([loadPlayerHelmGate(playerId), newestRoundDay(supabase, playerId)]);
+    // The class year turns on 1 August in the team's zone (decision 9).
+    const [playerGate, lastRound, tz] = await Promise.all([loadPlayerHelmGate(playerId), newestRoundDay(supabase, playerId), loadTeamZone(supabase, teamId, 'coachhelm')]);
     if (playerGate.status === 'failed' || lastRound === undefined) return { status: 'failed' };
-    const head: ChCoachPlayerHead = { playerId, name, first, line: coachHeadLine(classYearLabel(p?.graduation_year ?? null, now), lastRound, now) };
+    const head: ChCoachPlayerHead = { playerId, name, first, line: coachHeadLine(classYearLabel(p?.graduation_year ?? null, now, tz), lastRound, now) };
     if (playerGate.status === 'off') return { status: 'player-off', reason: playerGate.reason, head };
     return { status: 'ok', scope: { coachId, teamId, playerId, head, lastRound } as ChCoachPlayerScope };
   } catch (err) {
