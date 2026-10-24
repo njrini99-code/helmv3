@@ -130,6 +130,11 @@ export interface ChKeyContext {
   typing: boolean;
   /** The key went into a dialog, menu or listbox, or a modal is open (anything but the palette). */
   overlay: boolean;
+  /**
+   * Cmd or Ctrl and 1 to 9 are free here: the iOS app (isNativeApp), which has no tabs. A browser keeps them for its own
+   * tabs, so there they are left to it (decision 13).
+   */
+  digits: boolean;
 }
 
 export type ChKeyOutcome =
@@ -140,7 +145,7 @@ export type ChKeyOutcome =
   | { kind: 'palette' }
   /** Cmd or Ctrl and comma: Settings, as in every Mac app (B11). */
   | { kind: 'settings' }
-  /** Cmd or Ctrl and 1 to 9: the sidebar's sections in order (owner, decision 13). */
+  /** Cmd or Ctrl and 1 to 9: the sidebar's sections in order (owner, decision 13), only where the keys are free (`digits`). */
   | { kind: 'section'; digit: number }
   | { kind: 'search' }
   | { kind: 'help' };
@@ -150,7 +155,8 @@ export type ChKeyOutcome =
  * is when G was pressed (null when it was not), `now` the key's time, and the result says what to do and the new `armedAt`.
  *
  * Cmd or Ctrl with K opens the palette, with a comma Settings and with 1 to 9 a sidebar section, even from a field (none of
- * them types anything), but not over another dialog. Every
+ * them types anything), but not over another dialog. The digits only in the app: a browser's Cmd 1 to 9 switch its tabs,
+ * so there the key is not ours and nothing is prevented. Cmd N is never bound (a browser's new window). Every
  * other shortcut is a bare key: typed into a field or a dialog, with a modifier held, held down (repeat) or mid-composition
  * (an IME), it is just a key, and it also ends a pending G.
  */
@@ -166,7 +172,7 @@ export function interpretKey(k: ChKeyInput, ctx: ChKeyContext, armedAt: number |
     return ctx.overlay ? none : { outcome: { kind: 'settings' }, armedAt: null };
   }
   if ((k.metaKey || k.ctrlKey) && !k.altKey && !k.shiftKey && /^[1-9]$/.test(k.key)) {
-    return ctx.overlay || k.repeat ? none : { outcome: { kind: 'section', digit: Number(k.key) }, armedAt: null };
+    return !ctx.digits || ctx.overlay || k.repeat ? none : { outcome: { kind: 'section', digit: Number(k.key) }, armedAt: null };
   }
   if (k.metaKey || k.ctrlKey || k.altKey) return none;
   if (ctx.typing || ctx.overlay) return none;

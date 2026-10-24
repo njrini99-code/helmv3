@@ -13,6 +13,9 @@ vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
 // The real loader is a server action; each test hands CommandLayer its own (loadPeople).
 vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null) }));
+// The iOS app or a browser: Cmd or Ctrl and 1 to 9 are bound only in the app (decision 13).
+const native = { on: false };
+vi.mock('@/lib/utils/capacitor', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/utils/capacitor')>()), isNativeApp: () => native.on }));
 
 let desktop = true;
 beforeAll(() => {
@@ -27,6 +30,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   desktop = true;
+  native.on = false;
   push.mockClear();
   window.sessionStorage.clear();
   resetRecent();
@@ -370,7 +374,31 @@ describe('G then a letter, / and ?', () => {
     expect(within(sheet).queryByText('New event')).toBeNull();
   });
 
-  it('Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+  it('in a browser, Cmd or Ctrl and a digit are left to it (its tabs): nothing is prevented or pushed, and the sheet offers none', () => {
+    mount('coach');
+    let notPrevented = true;
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '2', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '6', ctrlKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    // Cmd N is never bound either: a browser's new window.
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: 'n', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    expect(push).not.toHaveBeenCalled();
+    key('?', { shiftKey: true });
+    const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const home = within(sheet).getByText('Home', { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
+    expect(Array.from(home.querySelectorAll('kbd')).map((k) => k.textContent)).toEqual(['G', 'H']);
+  });
+
+  it('in the app, Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+    native.on = true;
     mount('coach', <input aria-label="Notes" />);
     key('2', { metaKey: true });
     expect(push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm', { scroll: false });
@@ -384,7 +412,8 @@ describe('G then a letter, / and ?', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+  it('in the app, the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+    native.on = true;
     mount('coach');
     key('?', { shiftKey: true });
     const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });

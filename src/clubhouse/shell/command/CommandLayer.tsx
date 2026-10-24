@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { isNativeApp } from '@/lib/utils/capacitor';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
@@ -15,7 +16,7 @@ import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemF
 
 /**
  * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K (or the top bar's search pill, palette-open.ts) opens
- * the command palette, G then a letter (or Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
+ * the command palette, G then a letter (or, in the app, Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
@@ -104,7 +105,7 @@ export function CommandLayer({
       }
       const result = interpretKey(
         e,
-        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document) },
+        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document), digits: isNativeApp() },
         armed.current,
         performance.now(),
       );
