@@ -26,6 +26,14 @@ export function sgBaseline(tour: ChSgTour): ChSgBaseline {
 }
 
 /**
+ * The word a Tour average is labelled with beside a figure ("Tour 66%", "Women's Tour 66%"): a women's team's averages are the
+ * women's Tour's (golf_pga_standards' LPGA column), so they say so (A8.3, row 110). A Tour average shows only when the tour is known.
+ */
+export function tourMark(tour: ChSgTour | undefined): string {
+  return tour === 'lpga' ? "Women's Tour" : 'Tour';
+}
+
+/**
  * The half-width of a strokes gained bar chart: the largest value shown,
  * rounded up to a whole stroke, never under 1. Bars are symmetric around
  * zero, so a bar's length is its value on a scale the data itself sets

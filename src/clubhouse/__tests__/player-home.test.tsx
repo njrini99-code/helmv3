@@ -180,6 +180,11 @@ describe('Player Home · desktop (Player - Home.html)', () => {
     expect(legs[3]!.querySelector('.ch-ph-leg__sg')!.textContent).toMatch(/^\+0\.1/);
   });
 
+  it("a women's team's legs are set against the women's Tour, by name (row 110)", () => {
+    show(home({ tour: 'lpga' }));
+    expect(document.querySelectorAll('.ch-ph-leg')[1]!.querySelector('.ch-ph-bench')!.textContent).toMatch(/You 74%Women’s Tour 66%|You 74%Women's Tour 66%/);
+  });
+
   it('a leg against the Tour: level as printed is neither, an early read is never toned, and one under its floor says what it needs (A2, A7)', () => {
     const rows = PREVIEW_PLAYER_HOME.legs!.rows;
     const with_ = (over: Partial<(typeof rows)[number]>) => home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, rows: rows.map((r) => (r.key === 'approach' ? { ...r, ...over } : r)) } });

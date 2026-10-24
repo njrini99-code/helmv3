@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import { changeVerdict, formatAvg, formatFixed, formatSigned, formatToPar, NO_DATA, versusTeam } from '../../lib/format';
-import { sgBaseline, sgScale } from '../../lib/sg';
+import { sgBaseline, sgScale, tourMark } from '../../lib/sg';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { holeCoverage } from '../../data/round-scope';
 import { rebuiltHref } from '../../shell/nav';
@@ -51,7 +51,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
   const cmp = (label: string) => data.comparisons.find((c) => c.label === label);
   const baseline = sgBaseline(data.tour);
   const ref = (label: string) => (coach ? cmp(label)?.team : cmp(label)?.bench) ?? null;
-  const refName = coach ? 'Team' : 'Tour';
+  const refName = coach ? 'Team' : tourMark(data.tour);
   const first = data.firstName;
 
   // 1 · strokes gained
@@ -193,13 +193,13 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               <span>
                 <i className="is-tour" />
-                Tour 0.0
+                {baseline.mark} 0.0
               </span>
             </div>
           </Vis>
         )}
         {withValue(sgTrend).length >= 3 && (
-          <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
+          <Vis title="Round by round" note={`Strokes gained in each round, per 18 holes. Zero is ${baseline.noun}; the line is the five-round average.`}>
             <RoundTrend rounds={sgTrend} kind="sg" tour={data.tour} size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
           </Vis>
         )}

@@ -6,7 +6,7 @@ import { ArrowRight, ChartColumn } from 'lucide-react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
 import { filterFor, statsHref } from '../../data/stats-filter';
 import { changeTone, formatFixed, formatPct, formatSigned, NO_DATA } from '../../lib/format';
-import { sgBaseline } from '../../lib/sg';
+import { sgBaseline, tourMark, type ChSgTour } from '../../lib/sg';
 import { deltaTone, deltaWords, needsText } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
 import { RefreshNotice } from '../../ui/RefreshNotice';
@@ -20,11 +20,11 @@ export function legPlayerHref(id: string): string | null {
 }
 
 /** "Fairways 61% · Tour 66%", "Putts 30.4 · Tour 29.0"; without a Tour mark, "Fairways 61%". */
-export function legStatText(stat: ChTeamLeg['stat']): string {
+export function legStatText(stat: ChTeamLeg['stat'], tour?: ChSgTour): string {
   const fmt = (v: number | null) => (stat.unit === '%' ? formatPct(v, 0) : formatFixed(v, stat.digits));
   // A rate under its floor says what it needs; an early read says so (A7).
   if (stat.value == null && stat.needs) return `${stat.label} · ${stat.needs}`;
-  return [`${stat.label} ${fmt(stat.value)}`, stat.early ?? null, stat.tour != null ? `Tour ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
+  return [`${stat.label} ${fmt(stat.value)}`, stat.early ?? null, stat.tour != null ? `${tourMark(tour)} ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
 }
 
 /** The change's tone and words: inside its standard error it is "No clear change vs previous 10" in plain ink. */
@@ -143,7 +143,7 @@ export function TeamLegs({ legs, covered = false }: { legs: ChTeamLegs; covered?
                   return (
                     <tr key={leg.key}>
                       <th scope="row">{leg.label}</th>
-                      <td className="ch-num">{legStatText(leg.stat)}</td>
+                      <td className="ch-num">{legStatText(leg.stat, legs.tour)}</td>
                       <td className={'r ch-num ch-h-legs__sg ' + changeTone(leg.sg, false)}>{formatSigned(leg.sg)}</td>
                       <td className={'ch-h-legs__chg ' + change.tone}>{change.words}</td>
                       <td className="ch-num">
@@ -225,7 +225,7 @@ export function TeamLegsPhone({ legs, covered = false }: { legs: ChTeamLegs; cov
                 <li key={leg.key} className="ch-hm-legs__r">
                   <b className="ch-hm-legs__l">{leg.label}</b>
                   <b className={'ch-hm-legs__sg ch-num ' + changeTone(leg.sg, false)}>{formatSigned(leg.sg)}</b>
-                  <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat)}</span>
+                  <span className="ch-hm-legs__s ch-num">{legStatText(leg.stat, legs.tour)}</span>
                   <em className={'ch-hm-legs__c ' + change.tone}>{change.words}</em>
                   <PeopleLine leg={leg} />
                 </li>

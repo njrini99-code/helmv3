@@ -20,6 +20,7 @@ import { haptic } from '../../lib/haptics';
 import { formatFixed, formatPct, NO_DATA } from '../../lib/format';
 import { floorRate, sampleState } from '../../lib/stats-signal';
 import { Compare, CupMiss, FairwayStrip, GreenMiss, Ladder, ParTiles } from './charts';
+import { tourMark, type ChSgTour } from '../../lib/sg';
 import { PuttBands } from './PuttBands';
 import type { PuttBandInput } from './putt-bands';
 import { ScoreMixBar } from './ScoreMixBar';
@@ -184,6 +185,7 @@ export function GameDetail({
   s,
   x,
   bench,
+  tour,
   first,
   rounds,
   window: win,
@@ -199,6 +201,8 @@ export function GameDetail({
   x: ChProfileExtra;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
+  /** The team's tour, which names its averages ("Women's Tour 66%", row 110); absent reads "Tour". */
+  tour?: ChSgTour;
   first: string;
   rounds: number;
   window: ChWindow;
@@ -213,6 +217,7 @@ export function GameDetail({
   onRetry?: () => void;
   phone?: boolean;
 }) {
+  const tm = tourMark(tour);
   // The player reading their own stats is "You": the verb agrees and mid-sentence it is lower case (F-45).
   const reduced = useChReducedMotion();
   const you = first === 'You';
@@ -425,7 +430,7 @@ export function GameDetail({
           [
             'Doubles or worse',
             num(s.doublePlusPerRound),
-            doublePct == null ? null : `${formatPct(doublePct)} of holes${bench.big_number_rate != null ? ` · Tour ${bench.big_number_rate}%` : ''}`,
+            doublePct == null ? null : `${formatPct(doublePct)} of holes${bench.big_number_rate != null ? ` · ${tm} ${bench.big_number_rate}%` : ''}`,
             doublePct != null && bench.big_number_rate != null ? (doublePct <= bench.big_number_rate ? 'gain' : 'loss') : undefined,
           ],
         ]}
@@ -439,7 +444,7 @@ export function GameDetail({
           <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
-          <ParTiles rows={pars} />
+          <ParTiles rows={pars} tour={tour} />
         </Panel>
       </Sec>
 
@@ -463,7 +468,7 @@ export function GameDetail({
         figs={[
           floorFig('Fairways hit', 'fraction', fwRounds, fw, s.fairwayOpportunities ? `${s.fairwaysHit} of ${s.fairwayOpportunities} attempts` : null, undefined),
           ['Driver distance', s.drivingDistanceDriverOnly == null ? NO_DATA : `${Math.round(s.drivingDistanceDriverOnly)} yds`, 'Average drive', undefined],
-          ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `Tour ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
+          ['Penalties / round', num(s.penaltiesPerRound), benchPen != null ? `${tm} ${benchPen}` : null, tone(s.penaltiesPerRound, benchPen, true)],
           ['Fairways par 5', pct(s.fairwayPctPar5), s.fairwayPctPar4 != null ? `Par 4s: ${Math.round(s.fairwayPctPar4)}%` : null, undefined],
         ]}
         more={
@@ -510,7 +515,7 @@ export function GameDetail({
               : `${first} ${verb('hits', 'hit')} ${Math.round(s.girPercentage)}% of greens in regulation.`
         }
         figs={[
-          floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `Tour ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
+          floorFig('Greens in regulation', 'fraction', girRounds, s.girPercentage, bench.gir_pct != null ? `${tm} ${bench.gir_pct}%` : null, tone(s.girPercentage, bench.gir_pct)),
           ['Proximity · all', s.approachProximityAvg == null ? NO_DATA : `${Math.round(s.approachProximityAvg)} ft`, 'Every approach', undefined],
           ['Missed short', hasMiss ? pct(missShort) : NO_DATA, 'Of missed greens', hasMiss && missShort > missLong ? 'loss' : undefined],
           ['From the rough', pct(s.girPctFromRough), s.girPctFromFairway != null ? `GIR · fairway ${Math.round(s.girPctFromFairway)}%` : null, undefined],
@@ -611,9 +616,9 @@ export function GameDetail({
         }
         figs={[
           floorFig('Scrambling', 'scramble', s.scrambleAttempts, s.scramblingPercentage, s.scrambleAttempts ? `${s.scramblesMade} of ${s.scrambleAttempts} chances` : null, undefined),
-          floorFig('Sand saves', 'scramble', s.sandSaveAttempts, s.sandSavePercentage, benchSand != null ? `Tour ${benchSand}%` : s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : null, tone(s.sandSavePercentage, benchSand)),
+          floorFig('Sand saves', 'scramble', s.sandSaveAttempts, s.sandSavePercentage, benchSand != null ? `${tm} ${benchSand}%` : s.sandSaveAttempts ? `${s.sandSavesMade} of ${s.sandSaveAttempts}` : null, tone(s.sandSavePercentage, benchSand)),
           ['Inside 10 yds', pct(s.scramblingPct0_10), 'Up and down', undefined],
-          ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `Tour ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
+          ['From the rough', pct(s.scramblingPctRough), benchScrRough != null ? `${tm} ${benchScrRough}%` : `${s.scrambleRoughAttempts} attempts`, tone(s.scramblingPctRough, benchScrRough)],
         ]}
         more={
           <More>
@@ -627,9 +632,9 @@ export function GameDetail({
             max={100}
             rows={[
               { label: 'Fringe', value: s.scramblingPctFringe, sub: `${s.scrambleFringeAttempts} attempts` },
-              { label: 'Fairway', value: s.scramblingPctFairway, sub: `${s.scrambleFairwayAttempts} attempts${benchScrFw != null ? ` · Tour ${benchScrFw}%` : ''}` },
-              { label: 'Rough', value: s.scramblingPctRough, sub: `${s.scrambleRoughAttempts} attempts${benchScrRough != null ? ` · Tour ${benchScrRough}%` : ''}` },
-              { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts${benchSand != null ? ` · Tour ${benchSand}%` : ''}` },
+              { label: 'Fairway', value: s.scramblingPctFairway, sub: `${s.scrambleFairwayAttempts} attempts${benchScrFw != null ? ` · ${tm} ${benchScrFw}%` : ''}` },
+              { label: 'Rough', value: s.scramblingPctRough, sub: `${s.scrambleRoughAttempts} attempts${benchScrRough != null ? ` · ${tm} ${benchScrRough}%` : ''}` },
+              { label: 'Sand', value: s.scramblingPctSand, sub: `${s.scrambleSandAttempts} attempts${benchSand != null ? ` · ${tm} ${benchSand}%` : ''}` },
             ]}
           />
         </Panel>

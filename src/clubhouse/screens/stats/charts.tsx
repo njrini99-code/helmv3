@@ -5,7 +5,7 @@ import type { ChGauge } from '../../data/stats-team';
 import { Icon } from '../../ui/Icon';
 import { SerifText } from '../../ui/SerifText';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
-import { sgBaseline, sgScale } from '../../lib/sg';
+import { sgBaseline, sgScale, tourMark, type ChSgTour } from '../../lib/sg';
 import { deltaTone, deltaWords, type DeltaTone } from '../../lib/stats-signal';
 import { plural } from '../../lib/plural';
 
@@ -184,7 +184,7 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
+export function ParTiles({ rows, tour }: { rows: Array<{ par: number; avg: number | null; bench: number | null }>; tour?: ChSgTour }) {
   return (
     <div className="ch-par3">
       {rows.map((r) => (
@@ -195,7 +195,11 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
           </span>
-          {r.bench != null && <span className="ch-par3__d ch-num">Tour {formatFixed(r.bench, 2)}</span>}
+          {r.bench != null && (
+            <span className="ch-par3__d ch-num">
+              {tourMark(tour)} {formatFixed(r.bench, 2)}
+            </span>
+          )}
         </div>
       ))}
     </div>

@@ -9,7 +9,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
-import { sgBaseline, type ChSgTour } from '../../lib/sg';
+import { sgBaseline, tourMark, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
 
@@ -342,7 +342,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
       ) : (
         <div className="ch-ph-legs">
           {legs.rows.map((g) => (
-            <Leg key={g.key} g={g} />
+            <Leg key={g.key} g={g} tour={tour} />
           ))}
         </div>
       )}
@@ -350,7 +350,7 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
   );
 }
 
-function Leg({ g }: { g: ChPlayerLeg }) {
+function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
   const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
   // The benchmark bar: a share of the scale for percentages, or a putts band (fewer is further right).
   const pos = (v: number) => (g.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
@@ -380,7 +380,9 @@ function Leg({ g }: { g: ChPlayerLeg }) {
           </span>
           <span className="ch-ph-bench__k ch-num">
             <span>You {fmt(g.value)}</span>
-            <span>Tour {fmt(g.bench)}</span>
+            <span>
+              {tourMark(tour)} {fmt(g.bench)}
+            </span>
           </span>
         </div>
       )}
