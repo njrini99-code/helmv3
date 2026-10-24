@@ -101,7 +101,10 @@ export interface ChQRow extends ChQEntrant {
   shortRounds: number;
   /** Places gained (positive) or lost (negative) since the previous round; null when there is nothing to compare. */
   move: number | null;
-  /** Fewer rounds in than the most anyone has (owner decision 10): ranked below every complete card, flagged "Missed a round". */
+  /**
+   * A card a round short, once the event is complete (owner decision 10): flagged "Missed a round". During play a short card
+   * still ranks below the complete ones but is not flagged: it may yet play the round (`sampleNote` gives its pace instead).
+   */
   missed: boolean;
   state: ChQRowState;
   rounds: ChQRound[];
@@ -147,7 +150,13 @@ export function parseSelectionState(s: string | null | undefined): ChQSelectionS
   return s === 'scoring' || s === 'closed' || s === 'selected' ? s : 'open';
 }
 
-/** The scored rows ranked, with positions and ties assigned (states left null), and the unscored rows by name. */
+/** Fewer rounds in than the most anyone on the board has: the group decision 10 ranks below the complete cards. */
+const shortOf = (rows: ReadonlyArray<Pick<ChQRow, 'played'>>) => {
+  const most = rows.reduce((m, r) => Math.max(m, r.played), 0);
+  return (row: Pick<ChQRow, 'played'>) => row.played < most;
+};
+
+/** The scored rows ranked, with positions and ties assigned (states left null; `missed` left false), and the unscored rows by name. */
 function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[]; unscored: ChQRow[]; all: ChQRow[] } {
   const byPlayer = new Map<string, ChQRound[]>();
   for (const r of rounds) {
@@ -190,13 +199,13 @@ function rankRows(entrants: ChQEntrant[], rounds: ChQRound[]): { scored: ChQRow[
   const scored = all.filter((r) => r.played > 0);
   const unscored = all.filter((r) => r.played === 0).sort((a, b) => a.name.localeCompare(b.name));
   // Owner decision 10 (B13.3): complete cards rank first, a card with fewer rounds than the most anyone has goes below them,
-  // flagged, so a player who skipped a round never stands over one who played it. Ties are only within a group.
-  const most = scored.reduce((m, r) => Math.max(m, r.played), 0);
-  for (const row of scored) row.missed = row.played < most;
-  scored.sort((a, b) => Number(a.missed) - Number(b.missed) || compareStandings(standingKey(a), standingKey(b)));
+  // so a player who skipped a round never stands over one who played it. Ties are only within a group. The flag waits for the
+  // event to end (`buildBoard`).
+  const short = shortOf(scored);
+  scored.sort((a, b) => Number(short(a)) - Number(short(b)) || compareStandings(standingKey(a), standingKey(b)));
   scored.forEach((row, i) => {
     const prev = scored[i - 1];
-    if (prev && prev.missed === row.missed && sameStanding(standingKey(prev), standingKey(row))) {
+    if (prev && short(prev) === short(row) && sameStanding(standingKey(prev), standingKey(row))) {
       row.position = prev.position;
       row.tied = true;
       prev.tied = true;
@@ -266,10 +275,13 @@ export function buildBoard(input: {
   // Q-114 (owner, 2026-10-01): players level with both the last place on score and the next player share a "Tie at
   // cut" until the coach chooses in Manage selections; name order no longer decides it.
   const cutRow = topScore > 0 ? scored[topScore - 1] : undefined;
-  const level = (a: ChQRow, b: ChQRow) => a.missed === b.missed && sameStanding(standingKey(a), standingKey(b));
+  const short = shortOf(scored);
+  const level = (a: ChQRow, b: ChQRow) => short(a) === short(b) && sameStanding(standingKey(a), standingKey(b));
   const tieAtCut = !!cutRow && !!scored[topScore] && level(cutRow, scored[topScore]!);
   const tied = (row: ChQRow) => tieAtCut && level(row, cutRow!);
   scored.forEach((row, i) => {
+    // "Missed a round" only once the event is complete: during play a short card may still play the round (decision 10).
+    row.missed = input.status === 'completed' && short(row);
     if (confirmed) row.state = confirmed.get(row.playerId) === 'coach_pick' ? 'pick' : confirmed.has(row.playerId) ? 'selected' : null;
     else if (tied(row)) row.state = 'tie';
     else if (input.status === 'completed') row.state = i < topScore ? 'qualified' : null;
@@ -350,13 +362,14 @@ export function bubbleNote(numRounds: number, status: ChQStatus): string {
 }
 
 /**
- * The sample-size note (P009-C2): "Missed a round · 1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a
- * total over one round never reads as the same thing as a total over two. Null when the row has kept pace.
+ * The sample-size note (P009-C2): "1 of 3 rounds" on a ranked row with fewer rounds in than the most anyone has, so a total over one
+ * round never reads as the same thing as a total over two; "Missed a round · 1 of 3 rounds" once the event is complete and the row
+ * is flagged (`missed`, owner decision 10). Null when the row has kept pace.
  */
-export function sampleNote(row: Pick<ChQRow, 'played'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
-  const most = board.rows.reduce((m, r) => Math.max(m, r.played), 0);
-  // Owner decision 10: such a card ranks below the complete ones and says why.
-  return row.played > 0 && row.played < most ? `Missed a round · ${row.played} of ${plural(numRounds, 'round')}` : null;
+export function sampleNote(row: Pick<ChQRow, 'played' | 'missed'>, board: Pick<ChQBoard, 'rows'>, numRounds: number): string | null {
+  if (!(row.played > 0 && shortOf(board.rows)(row))) return null;
+  const pace = `${row.played} of ${plural(numRounds, 'round')}`;
+  return row.missed ? `Missed a round · ${pace}` : pace;
 }
 
 /**
