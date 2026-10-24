@@ -1007,9 +1007,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
    <html>, so they read these from there: both pages crossfade together. Scoped to a
    document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
-  /* A fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new one fades in,
-     so two different pages are never on screen at once (a crossfade of two pages read as a washed-out double image).
-     The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last frames. */
+  /* On the phone, a fade through, not a crossfade (phone test 2026-10-13): the old page clears quickly, then the new
+     one fades in, so two different pages are never on screen at once (a crossfade of two pages read as a washed-out
+     double image). The new page waits for the whole fade out: a shorter gap leaves both snapshots up for its last
+     frames. The desktop crossfades with no gap (below). */
   --ch-dur-vt-out: 120ms;
   --ch-dur-vt-in: 220ms;
   --ch-dur-vt-gap: var(--ch-dur-vt-out);
@@ -1027,6 +1028,15 @@ html:has([data-ui='clubhouse']) {
      push, whose page beneath is a view-transition snapshot that cannot take an overlay. */
   --ch-push-dim: rgb(20 18 12 / 0.1);
   --ch-vt-push-dim: brightness(0.9);
+}
+/* The desktop drill-in (a player row into a profile) crossfades with no gap: the old page fades out over 120ms while
+   the new one fades in over 180ms, both from the first frame, so there is no blank beat between them (owner decision
+   3, 2026-10-24, OQ-14 / A10). The phone keeps its fade through above. */
+@media (min-width: 821px) {
+  html:has([data-ui='clubhouse']) {
+    --ch-dur-vt-in: 180ms;
+    --ch-dur-vt-gap: 0ms;
+  }
 }
 /* The smooth spring as CSS linear(), as [data-ui='clubhouse'] has it above (motion-physics.test pins the two). */
 @supports (transition-timing-function: linear(0, 1)) {

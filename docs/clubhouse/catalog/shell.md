@@ -80,7 +80,7 @@ that the screen does not show.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
-| CH-1601 | Moving to another page, or its first load | A navigation crossfades the page (180ms out, 180ms in) while the shell stays put (owner 2026-10-01; React `ViewTransition`). Content is visible at once: the staggered section rise ended on 2026-10-01, and a refresh or in-page update never animates the page. Instant when motion is reduced or Animations is off (D-64) | `RouteFrame`, `shell.css` view-transition rules | preview |
+| CH-1601 | Moving to another page, or its first load | A navigation changes the page while the shell stays put: on the phone it fades through (120ms out, a 120ms gap, 220ms in), and on the desktop it crossfades with no gap (120ms out and 180ms in together, owner decision 3, 2026-10-24) (owner 2026-10-01; React `ViewTransition`). Content is visible at once: the staggered section rise ended on 2026-10-01, and a refresh or in-page update never animates the page. Instant when motion is reduced or Animations is off (D-64) | `RouteFrame`, `shell.css` view-transition rules | preview |
 | CH-1602 | Opening the account sheet on a phone (the strip's Account pill; once More) | The sheet rises on the smooth spring (base, no bounce: it never passes its mark) over a fading scrim (260ms), and leaves on it, ending as it leaves sight; swiped shut, it leaves at the speed it was thrown (CH-1611). A fade when motion is reduced | `AccountSheet`, `chSpring('smooth')`, `chSpringCurve` | preview |
 | CH-1603 | Opening the bell or any menu | It scales out of its button (180ms) | `CH_POP` | preview |
 | CH-1604 | A toast arrives or leaves | Slides up 10px and fades (260ms); the stack reflows. Held or thrown: CH-1614 | `ToastProvider` | preview |
