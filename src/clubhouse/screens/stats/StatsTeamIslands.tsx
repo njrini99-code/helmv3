@@ -443,7 +443,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     <em>of {known.length}</em>
                     <span className="ch-sgt__pips" aria-hidden="true">
                       {known.map((t) => (
-                        <i key={t.i} className={beats(t.v) ? 'is-up' : undefined} />
+                        <i key={t.i} className={beats(t.v) ? 'is-gain' : undefined} />
                       ))}
                     </span>
                   </dd>
@@ -535,8 +535,8 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               {/* The team's line holds a wash to the reference: green where it sits above it (better), amber below. */}
               {teamPath && tFirst && tLast && yRef != null && (
                 <g aria-hidden="true">
-                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-up" fill={`url(#${uid}-gu)`} clipPath={`url(#${uid}-up)`} />
-                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-down" fill={`url(#${uid}-gd)`} clipPath={`url(#${uid}-down)`} />
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-above" fill={`url(#${uid}-gu)`} clipPath={`url(#${uid}-up)`} />
+                  <path d={`${teamPath} L${x(tLast.i)},${yRef} L${x(tFirst.i)},${yRef} Z`} className="ch-sgt__wash is-below" fill={`url(#${uid}-gd)`} clipPath={`url(#${uid}-down)`} />
                 </g>
               )}
               {yRef != null && (
@@ -632,7 +632,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     <Avatar name={p.name} id={p.id} size={22} />
                     <span>{p.first}</span>
                     <i
-                      className={'ch-sgt__bar' + (m != null && endTone(m) === 'is-gain' ? ' is-up' : '')}
+                      className={'ch-sgt__bar' + (m != null && endTone(m) === 'is-gain' ? ' is-gain' : '')}
                       style={{ ['--ch-bar' as string]: `${widest > 0 ? (Math.abs(gapOf(m) ?? 0) / widest) * 100 : 0}%` }}
                       aria-hidden="true"
                     />

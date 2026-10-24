@@ -38,7 +38,8 @@ const RED_TOKENS = /var\(--ch-(score-under|chart-flag|danger-600)\)/;
  * pair on itself rather than reaching for another colour. Neutral keywords and the ink on a filled key pass.
  */
 const TONE_SELECTOR = /\.is-(gain|loss)\b/;
-const TONE_PROPS = /^(color|background(-color|-image)?|fill|stroke|border(-[a-z]+)?(-color)?|outline(-color)?|text-decoration-color|-webkit-text-fill-color|--[a-z0-9-]+)$/;
+// A border's colour or shorthand (border, border-top, border-inline-start-color); never its radius, width or style.
+const TONE_PROPS = /^(color|background(-color|-image)?|fill|stroke|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?(-color)?|outline(-color)?|text-decoration-color|-webkit-text-fill-color|--[a-z0-9-]+)$/;
 const TONE_VARS = /^--ch-(chart-(gain|loss)(-[a-z-]+)?|text-on-accent)$/;
 const LITERAL_COLOUR = /#[0-9a-fA-F]{3,8}\b|\b(rgba?|hsla?|oklch|oklab|lab|lch)\(/;
 

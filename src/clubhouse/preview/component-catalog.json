@@ -13757,6 +13757,11 @@
           "scope": "html[data-fw-theme='dark'] .ch-st .ch-sgt"
         },
         {
+          "name": "--ch-chart-gain-fill",
+          "value": "var(--ch-green-200)",
+          "scope": ".ch-st[data-canopy] .ch-sgt"
+        },
+        {
           "name": "--ch-stage-up",
           "value": "var(--ch-green-200)",
           "scope": ".ch-st[data-canopy] .ch-sgt"

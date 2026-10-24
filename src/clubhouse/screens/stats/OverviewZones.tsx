@@ -452,9 +452,9 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                   Saved par or better<small>The scramble</small>
                 </span>
                 <div>
-                  <i className="is-win" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
+                  <i className="is-made" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
                 </div>
-                <b className="ch-num is-win">{scrMade}</b>
+                <b className="ch-num is-made">{scrMade}</b>
               </div>
               {sandAtt > 0 && (
                 <>
