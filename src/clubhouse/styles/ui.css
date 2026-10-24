@@ -778,6 +778,12 @@
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */
+/* Hover first: a row pressed under the pointer is also hovered, and the press must win. */
+@media (hover: hover) {
+  .ch-lgr__row.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
 .ch-lgr__row.is-link[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
@@ -786,11 +792,6 @@
   .ch-lgr__row.is-link:active {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
-  }
-}
-@media (hover: hover) {
-  .ch-lgr__row.is-link:hover {
-    background: var(--ch-ledger-row-hover);
   }
 }
 .ch-lgr__row.is-link:focus-visible {

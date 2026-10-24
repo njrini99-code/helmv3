@@ -760,7 +760,10 @@ a.ch-rd-sc:focus-visible {
 .ch-rd-tee--silver {
   background: #b8bcc2;
 }
+/* A flex item in the row's meta line: its one line centres in the 20px box (the step's 13px leading no longer fills it). */
 .ch-rd-pill {
+  display: inline-flex;
+  align-items: center;
   height: 20px;
   padding: 0 8px;
   border-radius: 999px;
