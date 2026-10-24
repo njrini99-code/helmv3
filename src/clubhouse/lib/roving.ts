@@ -2,18 +2,24 @@
 
 import { useEffect, type RefObject } from 'react';
 
+/** A link or an enabled button: what a row must be to take focus. */
+const isControl = (r: HTMLElement) => (r.matches('a[href]') || r.matches('button')) && !(r as HTMLButtonElement).disabled;
+
 /**
  * A list of rows walked with the arrow keys (B11): ↓ and ↑ move focus to the next and previous row, Home and End to the
  * first and last, and the list is one Tab stop (roving tabindex): the row last focused, else the chosen one
  * (`aria-current`/`aria-selected`), else the first, keeps tabindex 0 and the rest take -1. Rows are found by `selector`
  * inside `root`, so rows that arrive, leave or reorder are picked up as they are; a row that is leaving
- * (`[data-leaving]`) is skipped. A key typed in a field inside the list is left alone.
+ * (`[data-leaving]`) is skipped, and so is anything that isn't a link or an enabled button (a skeleton's placeholder
+ * row). A key typed in a field inside the list is left alone.
  */
 export function useRovingRows(root: RefObject<HTMLElement | null>, selector: string, /** Re-attach when the list mounts (a popover's). */ shown = true) {
   useEffect(() => {
     const el = root.current;
     if (!el || !shown) return;
-    const rows = () => Array.from(el.querySelectorAll<HTMLElement>(selector)).filter((r) => !r.closest('[data-leaving]'));
+    // Only rows that are controls: a loading skeleton's placeholder rows share the class (Messages, Settings) but are
+    // plain boxes, and must never take the Tab stop (#2361 audit).
+    const rows = () => Array.from(el.querySelectorAll<HTMLElement>(selector)).filter((r) => !r.closest('[data-leaving]') && isControl(r));
     let last: HTMLElement | null = null;
     const settle = () => {
       const all = rows();

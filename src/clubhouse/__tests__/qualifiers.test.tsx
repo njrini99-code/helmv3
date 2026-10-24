@@ -595,6 +595,20 @@ describe('Qualifiers · a failed read is never an empty (owner rule 1, 2026-10-0
 });
 
 describe('Qualifiers · list', () => {
+  it('row 63 B11: ↓ and ↑ walk the qualifiers (hero, then cards), which are one Tab stop', () => {
+    wrap(<QualifiersList data={previewList('coach')} />);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-qf-hero, .ch-qf-card')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+  });
+
   it('90101 the list opens on the live qualifier as the hero, then Active and Concluded, with the counts in the head', () => {
     const data = list();
     wrap(<QualifiersList data={data} />);

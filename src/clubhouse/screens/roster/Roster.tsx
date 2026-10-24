@@ -26,6 +26,8 @@ import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
+import { useRovingRows } from '../../lib/roving';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
@@ -146,6 +148,11 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
+  // B11: on the desktop table, Up and Down walk the players' rows (their name buttons), Home and End go to the ends,
+  // and the table is one Tab stop. The cards view and the phone are left alone.
+  const deskMain = useRef<HTMLElement>(null);
+  useRovingRows(deskMain, '.ch-rs-list .ch-rs-who', !phone);
+  usePageKeys('Roster', phone ? null : ROW_KEYS);
   useEffect(() => {
     if (!focusRequests || phone) return;
     requestsRef.current?.focus();
@@ -456,7 +463,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
   return (
-    <main className="ch-rs" data-canopy="">
+    <main ref={deskMain} className="ch-rs" data-canopy="">
       <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
@@ -656,6 +663,8 @@ export function Roster({ data }: { data: ChRoster }) {
     </main>
   );
 }
+
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
 
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
 const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);

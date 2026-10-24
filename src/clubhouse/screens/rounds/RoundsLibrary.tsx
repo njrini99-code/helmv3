@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Flag, Plus, ScrollText, Trash2, TriangleAlert } from 'lucide-react';
 import type { ChLibraryRound, ChRoundsLibrary, ChUnfinishedRound } from '../../data/rounds-shape';
@@ -10,6 +10,8 @@ import { normalise, useAction } from '../../lib/use-action';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
+import { useRovingRows } from '../../lib/roving';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
@@ -55,6 +57,8 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
   return [...groups].map(([key, rounds]) => ({ key, rounds }));
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between rounds', keys: ['Up', 'Down'] }];
+
 /**
  * Rounds (P011) library, for the player (design/handoff/Player - Rounds.html,
  * rounds-flow.jsx `Library`; spec docs/clubhouse/phone/rounds.md). The round
@@ -64,6 +68,10 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
 export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRITES }: { data: ChRoundsLibrary; playerId: string; writes?: ChRoundsWrites }) {
   const phone = useChPhone();
   const { refresh, refreshing } = useRefresh();
+  // B11: on desktop, Up and Down walk the rounds that open (their links), Home and End go to the ends; one Tab stop.
+  const book = useRef<HTMLElement>(null);
+  useRovingRows(book, '.ch-rd-book a.ch-rd-sc', !phone);
+  usePageKeys('Rounds', phone ? null : ROW_KEYS);
   // Rule 2: a refresh that fails does not replace what the player was looking at with an error. The last library that landed in full
   // stays (`stale`) and says it may be out of date; a first load that fails, or another player's, is the error as it came.
   const { value: data, stale } = useLastGood(playerId, fresh, libraryLanded);
@@ -139,7 +147,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
   const [current, ...more] = unfinished;
 
   return (
-    <main className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
+    <main ref={book} className={'ch-rd' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rd-title" aria-busy={refreshing || undefined} data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>

@@ -206,11 +206,15 @@ afterEach(() => {
 });
 
 describe('Messages · actions that fail', () => {
-  it('B11 ↓ and ↑ walk the conversation rail, which is one Tab stop', () => {
+  it('B11 ↓ and ↑ walk the conversation rail, which is one Tab stop; the loading rows never take it (#2361 audit)', async () => {
+    live.convs.conversations = [team, { ...team, id: 'travel', title: 'Travel' }, { ...team, id: 'quals', title: 'Qualifier crew' }];
     show();
-    const rows = [...document.querySelectorAll<HTMLElement>('.ch-ms-rail .ch-ms-row')];
-    expect(rows.length).toBeGreaterThan(2);
-    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    // While the conversations load the rail draws placeholder rows with the same class: none is a Tab stop. (This test
+    // used to walk those placeholders, which is the audit's finding; it now waits for the conversations.)
+    for (const r of document.querySelectorAll<HTMLElement>('.ch-ms-rail div.ch-ms-row')) expect(r.hasAttribute('tabindex')).toBe(false);
+    await waitFor(() => expect(document.querySelectorAll('.ch-ms-rail button.ch-ms-row').length).toBeGreaterThan(2));
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-ms-rail button.ch-ms-row')];
+    await waitFor(() => expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1));
     rows[0]!.focus();
     fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(rows[1]);

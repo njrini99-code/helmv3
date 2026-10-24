@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -307,6 +307,23 @@ describe('112401 Rounds library, on screen', () => {
 /**
  * Owner rules (2026-10-01), rule 1: no zero or empty copy beside a failed or unread read; a retry that lands shows what it read.
  */
+describe('Rounds library · keyboard (B11)', () => {
+  it('row 63: ↓ and ↑ walk the rounds that open, which are one Tab stop', () => {
+    show(PREVIEW_ROUNDS);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rd-book a.ch-rd-sc')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+});
+
 describe('Rounds library: never a false empty or a wrong figure', () => {
   const lib = (data: ChRoundsLibrary) => (
     <LazyMotion features={domAnimation}>

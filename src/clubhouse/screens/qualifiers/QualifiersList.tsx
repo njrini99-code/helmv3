@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Play, Plus, Search } from 'lucide-react';
-import { useMemo, type MouseEvent } from 'react';
+import { useMemo, useRef, type MouseEvent } from 'react';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -13,6 +13,8 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
+import { useRovingRows } from '../../lib/roving';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -37,8 +39,15 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
 };
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
+
 export function QualifiersList({ data }: { data: ChQList }) {
   const { refresh, refreshing } = useRefresh();
+  // B11: Up and Down walk the qualifiers (the hero, then the cards, in reading order), Home and End go to the ends; the
+  // list is one Tab stop.
+  const list = useRef<HTMLElement>(null);
+  useRovingRows(list, '.ch-qf-hero, .ch-qf-card');
+  usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
@@ -71,7 +80,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const lede = listLede(coach, data.mode);
 
   return (
-    <main className="ch-qf ch-qf--list" data-canopy="">
+    <main ref={list} className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
