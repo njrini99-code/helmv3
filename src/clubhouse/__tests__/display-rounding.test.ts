@@ -23,7 +23,6 @@ const ALLOW_TOFIXED: Record<string, number> = {
   'lib/motion.ts': 1,
   'lib/nav-motion.ts': 1,
   'lib/sg.ts': 1,
-  'preview/fixtures-stats.ts': 1,
   'preview/playground-tokens.ts': 1,
   'screens/auth/GolfScene.tsx': 3,
   'screens/auth/SceneLayers.tsx': 2,

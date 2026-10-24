@@ -38,10 +38,12 @@ const MEANS: Record<(typeof P)[number][0], { sgMean: number; scoreMean: number }
  * A fixture trend's newer half against its older half (A1), as the loader shapes it (`roundHalves`): the change of the halves' means,
  * and its standard error from about `perPoint` rounds behind each point on a spread of `sd` a round (the loader measures both).
  */
+/** A fixture figure to two places, as the loader stores it. */
+const hundredths = (v: number) => Math.round(v * 100) / 100;
 const halvesOf = (xs: readonly number[], sd: number, perPoint: number) => {
   const half = Math.floor(xs.length / 2);
   const m = (a: readonly number[]) => a.reduce((t, v) => t + v, 0) / a.length;
-  return { delta: Number((m(xs.slice(xs.length - half)) - m(xs.slice(0, half))).toFixed(2)), se: Number((sd * Math.sqrt(2 / (half * perPoint))).toFixed(2)) };
+  return { delta: hundredths(m(xs.slice(xs.length - half)) - m(xs.slice(0, half))), se: hundredths(sd * Math.sqrt(2 / (half * perPoint))) };
 };
 const TEAM_SG = [-1.0, -0.8, -0.6, -0.3, -0.1, 0.0, 0.0];
 const TEAM_SCORE = [74.8, 74.4, 74.2, 73.9, 73.1, 73.5, 73.4];
@@ -89,7 +91,7 @@ const TEAM_PICK_ROUNDS: ChPickRound[] = P.flatMap(([id, name, scores], pi) =>
 ).sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.id.localeCompare(b.id)));
 
 /** A grid row's leg samples for the ranked dot plot: `n` whole rounds with shots, each leg's own spread about 1.2 a round. */
-const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: Number((sd / Math.sqrt(n)).toFixed(2)) }));
+const rankLegs = (n: number) => [1.1, 1.3, 0.9, 1.2].map((sd) => ({ n, se: hundredths(sd / Math.sqrt(n)) }));
 
 export const PREVIEW_TEAM_STATS: ChTeamStats = {
   teamName: 'Varsity',
@@ -117,7 +119,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
   // A player plays about one and a half rounds a week: no player's halves clear one round's spread over seven weeks.
   players: P.map(([id, name, score, sg]) => ({ id, name, first: name.split(' ')[0]!, score: [...score], sg: [...sg], ...MEANS[id], sgHalves: halvesOf(sg, 3.8, 1.5), scoreHalves: halvesOf(score, 3.6, 1.5) })),
   legWeeks: LEG_WEEKS,
-  legHalves: { 'Off the tee': halvesOf(LEG_WEEKS['Off the tee'], 1.2, 9), Approach: halvesOf(LEG_WEEKS.Approach, 1.2, 9), 'Around green': halvesOf(LEG_WEEKS['Around green'], 1.2, 9), Putting: halvesOf(LEG_WEEKS.Putting, 1.2, 9) },
+  legHalves: Object.fromEntries(Object.entries(LEG_WEEKS).map(([leg, weeks]) => [leg, halvesOf(weeks, 1.2, 9)])),
   grid: [
     { id: 'theo', name: 'Theo Marchetti', rounds: 10, legs: [0.4, 0.7, 0.2, 0.4], total: 1.7, change: 0.6, avg: 70.9, spread: { sg: { n: 10, se: 0.63 }, legs: rankLegs(10), score: { n: 10, se: 0.85 } } },
     { id: 'sofia', name: 'Sofia Alvarez', rounds: 10, legs: [0.4, 0.5, 0.1, 0.4], total: 1.2, change: 0.3, avg: 71.6, spread: { sg: { n: 10, se: 0.66 }, legs: rankLegs(10), score: { n: 10, se: 0.8 } } },

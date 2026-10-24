@@ -1,3 +1,5 @@
+import { formatFixed } from './format';
+
 /**
  * One rank rule (B13): places are taken on the value as it is shown, so two players shown with the same 74.3 share a
  * place ("T2") and the next place counts them both (1, T2, T2, 4). `digits` is the shown precision; lower is better
@@ -7,7 +9,7 @@
 export function displayPlaces(values: ReadonlyArray<number | null>, digits = 1, higherIsBetter = false): Array<{ place: number; tied: boolean } | null> {
   // Keyed on the printed figure itself: `toFixed` and `Math.round(v * 10 ** d)` disagree on x.x5 values (72.35 prints
   // "72.3" but rounds to 724), and the rule is about what the reader sees.
-  const shown = values.map((v) => (v == null ? null : Number(v.toFixed(digits)) * (higherIsBetter ? -1 : 1)));
+  const shown = values.map((v) => (v == null ? null : Number(formatFixed(v, digits)) * (higherIsBetter ? -1 : 1)));
   return shown.map((s) => {
     if (s == null) return null;
     const ahead = shown.filter((o) => o != null && o < s).length;

@@ -21,7 +21,7 @@ describe('the putts bar speaks the tone vocabulary (CONS-20)', () => {
 
   it('the loss side is painted, in the chart loss ink', () => {
     const css = readFileSync(join(__dirname, '../../../styles/home.css'), 'utf8');
-    expect(css).toMatch(/\.ch-rviz--putts i\.is-loss \{\s*background: var\(--ch-chart-loss\);/);
+    expect(css).toMatch(/.ch-rviz--putts i\.is-loss \{\s*background: var\(--ch-chart-loss-fill\);/);
     expect(css).not.toMatch(/\.ch-rviz--putts i\.is-over\b/);
   });
 });

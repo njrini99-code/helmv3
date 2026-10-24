@@ -8811,7 +8811,7 @@
         },
         {
           "name": "--ch-hs-tone",
-          "value": "var(--ch-green-fill-600)",
+          "value": "var(--ch-chart-gain-fill)",
           "scope": ".ch-hs-ld__r.is-gain"
         },
         {
@@ -9768,6 +9768,16 @@
           "name": "--ch-av-ring",
           "value": "rgb(35 64 47 / 0.18)",
           "scope": "@media (max-width: 820px) → html[data-fw-theme='dark'] .ch-hm-day .ch-hm-day__stack .ch-avatar"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-stage-line)",
+          "scope": ".ch-h-form"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-stage-gold)",
+          "scope": ".ch-h-form"
         }
       ]
     },
@@ -11042,6 +11052,16 @@
         "ch-textarea"
       ],
       "tokens": [
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-hero-mint)",
+          "scope": ".ch-scoreboard .ch-qf-move"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-on-green-ink-soft)",
+          "scope": ".ch-scoreboard .ch-qf-move"
+        },
         {
           "name": "--ch-ink-700",
           "value": "#1c1b18",
@@ -14240,6 +14260,26 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-chart-gain-fill",
+          "value": "var(--ch-green-fill-500)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-chart-loss-fill",
+          "value": "var(--ch-chart-loss)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-chart-gain-tint",
+          "value": "var(--ch-positive-100)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-chart-loss-tint",
+          "value": "var(--ch-warning-100)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-chart-flag",
           "value": "#b03a2e",
           "scope": "[data-ui='clubhouse']"
@@ -17090,6 +17130,11 @@
           "scope": "html:has([data-ui='clubhouse'])"
         },
         {
+          "name": "--ch-dur-vt-fade",
+          "value": "180ms",
+          "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
           "name": "--ch-dur-vt-hold",
           "value": "300ms",
           "scope": "html:has([data-ui='clubhouse'])"
@@ -17118,6 +17163,16 @@
           "name": "--ch-vt-push-dim",
           "value": "brightness(0.9)",
           "scope": "html:has([data-ui='clubhouse'])"
+        },
+        {
+          "name": "--ch-dur-vt-in",
+          "value": "180ms",
+          "scope": "@media (min-width: 821px) → html:has([data-ui='clubhouse'])"
+        },
+        {
+          "name": "--ch-dur-vt-gap",
+          "value": "0ms",
+          "scope": "@media (min-width: 821px) → html:has([data-ui='clubhouse'])"
         },
         {
           "name": "--ch-ease-vt-push",
