@@ -1155,7 +1155,8 @@ button.ch-rt-strip__h {
   line-height: var(--ch-lead-tight);
 }
 .ch-rt-review__h span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rt-rs-list {
@@ -1577,7 +1578,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-sum__n {
   margin: 12px 0 0;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 

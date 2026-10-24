@@ -178,7 +178,8 @@
   align-items: center;
   gap: 16px;
   margin-left: auto;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-cal-legend i {
@@ -291,7 +292,8 @@
 }
 .ch-pp__txt span {
   overflow: hidden;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -334,7 +336,8 @@
   margin-top: 6px;
   padding: 8px 8px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 
@@ -442,7 +445,8 @@
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-wk__allday > span:first-child {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-wk__allcell {
@@ -1128,7 +1132,8 @@
   color: var(--ch-text-primary);
 }
 .ch-ag__when span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-ag__when.is-today {
@@ -1210,7 +1215,8 @@
   color: var(--ch-text-primary);
 }
 .ch-ag__b {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-ag__row.is-class .ch-ag__a {
@@ -1278,7 +1284,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -1343,7 +1350,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-in__sechead b {
@@ -1393,7 +1401,8 @@
 }
 /* Injured or away, beside a name on the coach's lists: plain tertiary ink, never the red of a state. */
 .ch-in__out {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-in__person > span:nth-child(2) {
@@ -1461,7 +1470,8 @@
   }
 }
 .ch-in__need span span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
 
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -1507,7 +1517,8 @@
 }
 .ch-in__nb {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: #bfd5c6;
 }
 .ch-in__next > svg {
@@ -1653,7 +1664,8 @@
   padding: 8px 12px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-info-100);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-info-600);
 }
 .ch-in__note > svg {
@@ -1676,7 +1688,8 @@
 }
 .ch-in__who small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-in__att .ch-seg__b {
@@ -1839,7 +1852,8 @@
 .ch-ed__lbl {
   display: block;
   margin-bottom: 6px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
 .ch-ed__types .ch-seg {
@@ -1894,7 +1908,8 @@
 }
 .ch-ed__inv label small {
   display: block;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-warning-600);
 }
 .ch-ed__inv input {
@@ -1986,7 +2001,8 @@
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 .ch-rcpt dt {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rcpt dd {
@@ -2017,7 +2033,8 @@
   color: var(--ch-text-primary);
 }
 .ch-feed__t span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-feed code {
@@ -2047,7 +2064,8 @@
 }
 .ch-feed__ask p {
   margin: 0;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-feed__ask .ch-feed__acts {
@@ -2180,7 +2198,8 @@
 }
 .ch-in__file span span,
 .ch-in__file a span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-in__file-ic {
@@ -2323,7 +2342,8 @@
     color: var(--ch-ledger-ink);
   }
   .ch-calm-dayk span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
@@ -2520,7 +2540,8 @@
     color: var(--ch-text-primary);
   }
   .ch-calm-ev__b span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-calm-ev__w {
@@ -2668,7 +2689,8 @@
     margin-top: 8px;
     padding-top: 12px;
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-calm-month__lg span {
@@ -2724,7 +2746,8 @@
   }
   .ch-calm .ch-ag__when span,
   .ch-calm .ch-ag__when.is-today span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-calm .ch-ag__list,
@@ -3267,7 +3290,8 @@ html[data-fw-theme='dark'] .ch-ev--busy::after {
   align-items: center;
   gap: 6px;
   margin-bottom: 2px;
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-evpeek__t {

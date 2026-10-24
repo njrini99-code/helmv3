@@ -234,7 +234,7 @@
   gap: 6px;
 }
 .ch-hb-saving {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
   line-height: 1.4;
   color: var(--ch-text-secondary);
   overflow-wrap: anywhere;
@@ -1336,7 +1336,8 @@
     color: var(--ch-ledger-eyebrow);
   }
   .ch-hb-card__h .ch-hb-muted {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
@@ -1391,7 +1392,8 @@
     font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hb-rsvp__b > span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
 
@@ -1653,7 +1655,8 @@
     font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hb-feed__b > span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
   }
 
   /* Tasks: rows on seams. */
@@ -1704,7 +1707,8 @@
     font-size: calc(15 * var(--ch-type-k));
   }
   .ch-hb-file__b span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
 }
@@ -2381,7 +2385,8 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     text-wrap: balance;
   }
   .ch-hb-margin__n {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }

@@ -1048,7 +1048,8 @@
     overflow-wrap: anywhere;
   }
   .ch-recm-row__b span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   /* A prospect: a pushed screen with its own scroll, on the same ledger. Who, then Stage with Email and Call as keys
@@ -1540,7 +1541,8 @@
     color: var(--ch-ledger-ink);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__all {

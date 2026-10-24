@@ -587,7 +587,8 @@
   letter-spacing: var(--ch-track-16);
 }
 .ch-cl-over__h span:not(.ch-cl-over__ic) {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-over__ic {
@@ -980,7 +981,8 @@
   letter-spacing: var(--ch-track-17);
 }
 .ch-cl-read > span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-cl-read__slow {

@@ -314,6 +314,10 @@
   --ch-track-34: -0.03em;
   /* A single-line label (a pill, a tab, a figure's caption on one line) takes this leading in place of its step's. */
   --ch-lead-tight: 1.1;
+  /* The legacy caption and label leadings (1.4, 1.3), kept as tokens so the rules moved off --ch-type-caption, -label and
+     -label-s onto the step roles render exactly as before (S1 item 5). A ratio, so it follows a rule's own font-size. */
+  --ch-lead-caption: 1.4;
+  --ch-lead-label: 1.3;
   /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;

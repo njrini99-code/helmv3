@@ -19,7 +19,7 @@
 .ch-playground__layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 32px; }
 .ch-playground__controls { display: grid; align-content: start; gap: 16px; }
 .ch-playground__controls h2 { margin-top: 12px; }
-.ch-playground__controls p { font: var(--ch-type-caption); color: var(--ch-text-secondary); }
+.ch-playground__controls p { font: var(--ch-type-13); line-height: var(--ch-lead-caption); color: var(--ch-text-secondary); }
 .ch-playground__field, .ch-gallery__field { display: grid; gap: 8px; min-width: 0; }
 .ch-playground__field > span { display: flex; justify-content: space-between; gap: 8px; }
 .ch-playground__field output { color: var(--ch-text-secondary); }
@@ -27,7 +27,7 @@
 .ch-playground__field textarea { width: 100%; resize: vertical; font: var(--ch-type-body-s); }
 .ch-playground__previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); align-items: start; gap: 24px; min-width: 0; }
 .ch-playground__pane { min-width: 0; }
-.ch-playground__pane > p { color: var(--ch-text-secondary); font: var(--ch-type-caption); }
+.ch-playground__pane > p { color: var(--ch-text-secondary); font: var(--ch-type-13); line-height: var(--ch-lead-caption); }
 .ch-playground__viewport { overflow: auto; border: var(--ch-hairline-w) solid var(--ch-border-subtle); border-radius: var(--ch-radius-md); background: var(--ch-bg-surface); }
 .ch-playground__viewport iframe { display: block; border: 0; max-width: none; }
 .ch-gallery { display: grid; gap: 32px; padding: var(--ch-gutter); min-width: 0; }
@@ -64,7 +64,7 @@
 .ch-catalog p { overflow-wrap: anywhere; }
 .ch-catalog__modules { max-height: 480px; overflow: auto; }
 .ch-catalog__table { overflow: auto; }
-.ch-catalog table { width: 100%; border-collapse: collapse; font: var(--ch-type-caption); }
+.ch-catalog table { width: 100%; border-collapse: collapse; font: var(--ch-type-13); line-height: var(--ch-lead-caption); }
 .ch-catalog th, .ch-catalog td { padding: 8px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .ch-catalog__links { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 0; }
 .ch-catalog summary:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; }

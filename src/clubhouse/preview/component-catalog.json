@@ -15056,6 +15056,16 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-lead-caption",
+          "value": "1.4",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-lead-label",
+          "value": "1.3",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-wdth-display",
           "value": "'wdth' 96",
           "scope": "[data-ui='clubhouse']"

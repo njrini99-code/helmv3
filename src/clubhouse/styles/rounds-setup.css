@@ -150,7 +150,8 @@
   letter-spacing: var(--ch-track-card-title);
 }
 .ch-rsu-card__h span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 
@@ -222,7 +223,8 @@
   letter-spacing: var(--ch-track-16);
 }
 .ch-rsu-course__empty span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-course__ic {
@@ -283,7 +285,8 @@
   letter-spacing: var(--ch-track-15);
 }
 .ch-rsu-qual__b span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-rsu-qual__cta {
@@ -744,7 +747,8 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-crs__r {
@@ -1022,7 +1026,8 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   line-height: var(--ch-lead-tight);
 }
 .ch-rsu-add em {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -1079,7 +1084,8 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   line-height: var(--ch-lead-tight);
 }
 .ch-rsu-tee__b span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rsu-tee__y {
@@ -1667,7 +1673,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     color: var(--ch-ledger-ink);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols .ch-rsu-card__h.ch-rsu-ph {
@@ -1707,7 +1714,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     color: var(--ch-ledger-ink);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course__band span {
-    font: var(--ch-type-caption);
+    font: var(--ch-type-13);
+    line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-course {
