@@ -11,6 +11,13 @@ import { plural } from './plural';
 /** Production's within-player standard deviation of a round (players with five or more rounds): the fallback while a player has too few rounds to measure their own. */
 export const POOLED_SD = { sg: 3.8, score: 3.6 } as const;
 
+/**
+ * The same within-player spread for each strokes-gained leg (production, 2026-10-24: 51 players with five or more rounds, 743
+ * rounds per 18 holes; the total read 4.0 on the same rounds). A leg moves far less than the total, so a leg's change judged
+ * against the total's spread would almost never be called (the Deep dive, review of #2361).
+ */
+export const POOLED_LEG_SD = { tee: 1.3, approach: 2.5, around: 1.4, putting: 2.0 } as const;
+
 /** The figures with a pooled spread to fall back on. */
 export type SpreadKind = keyof typeof POOLED_SD;
 

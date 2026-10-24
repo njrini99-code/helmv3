@@ -8,7 +8,7 @@ import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { formatFixed, formatSG, formatToPar } from '../lib/format';
-import { diffSe, halvesTone, POOLED_SD, standardError } from '../lib/stats-signal';
+import { diffSe, halvesTone, POOLED_LEG_SD, POOLED_SD, standardError } from '../lib/stats-signal';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, type ChRead } from './coachhelm-read-shape';
@@ -393,13 +393,22 @@ function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeep
   return { strokes: formatFixed(cause.strokesSavedPerRound, 1), anchor: team ? 'team' : 'tour' };
 }
 
+/** Each strokes-gained theme's leg spread (`POOLED_LEG_SD`); a theme with no leg of its own falls back to the total's. */
+const LEG_SD: Partial<Record<ThemeNode['category'], number>> = {
+  tee: POOLED_LEG_SD.tee,
+  approach: POOLED_LEG_SD.approach,
+  short_game: POOLED_LEG_SD.around,
+  putting: POOLED_LEG_SD.putting,
+};
+
 function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme {
   const trend = t.trend;
   const sg = t.sgPerRound != null ? formatSG(t.sgPerRound) : null;
   if (!trend) return { label: t.displayLabel, state: t.state, sg, trend: null };
   // The engine's direction cuts at a fixed 0.15 with no noise test; the page words and tones the change only past its standard
-  // error (A1, the one change rule), each window's rounds at the pooled strokes-gained spread, as every leg on Stats is judged.
-  const se = diffSe(standardError(POOLED_SD.sg, trend.recentN), standardError(POOLED_SD.sg, trend.priorN));
+  // error (A1, the one change rule), each window's rounds at the theme's own leg spread, never the total's (review of #2361).
+  const sd = LEG_SD[t.category] ?? POOLED_SD.sg;
+  const se = diffSe(standardError(sd, trend.recentN), standardError(sd, trend.priorN));
   const tone = halvesTone({ delta: trend.recentAvg - trend.priorAvg, se }, false, 1);
   const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
   const span = `strokes gained averaged ${formatSG(trend.recentAvg)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSG(trend.priorAvg)} over the ${trend.priorN} before`;
