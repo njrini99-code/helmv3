@@ -711,3 +711,35 @@ first-run empties; the remaining selected paints
 - `search-pill`, `identity-menu`, `command-layer`, `empty-honest` and
   `selected-state` tests; guard suite (287 files); `tsgo`, eslint,
   `clubhouse:check`, `clubhouse:css`.
+
+## 2026-10-23 — Plurals, rounding and two more keys
+
+```text
+Design package: none (Clubhouse A+ handoff, CONS-2, CONS-14, CONS-15)
+PR/commit: #2361
+Contract IDs: none
+Actions: none
+Data impact: none
+Held items: plurals that can be negative or sit in empty states;
+rounding where a NaN can reach the text; the auth keys (auth.css)
+```
+
+### Changed
+
+- Inline plural ternaries use `plural()` (93 → 6 lines); display
+  rounding goes through `lib/format` (84 → 69 `.toFixed`). No shown
+  string changed.
+- Round setup's Add a course and the phone's New message are
+  `ui/Button`.
+- The search pill takes focus on press, so Esc returns to it in Safari;
+  the shortcuts sheet spells arrow keys as words.
+
+### Why
+
+- One plural rule and one rounding rule; one key component.
+
+### Verification
+
+- `plural`, `display-rounding`, `buttons` and `search-pill` tests;
+  related tests (180, 118 and 21 files); guard suite (287 files);
+  `tsgo`, eslint.
