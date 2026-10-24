@@ -416,6 +416,10 @@ GRANT ALL ON TABLE "public"."golf_player_standing" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_standing" TO "service_role";
 
+GRANT ALL ON TABLE public.golf_player_standing_season TO "service_role";
+
+GRANT ALL ON TABLE public.golf_standing_refresh_queue TO "service_role";
+
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."golf_player_stats_cache" TO "service_role";

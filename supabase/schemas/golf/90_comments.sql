@@ -149,6 +149,14 @@ COMMENT ON TABLE "public"."golf_player_genome" IS 'v3 W33 per-player 80-dim geno
 
 COMMENT ON TABLE "public"."golf_player_standing" IS 'v3 standing snapshots — one row per (player_id, metric_id). Computed nightly by /api/cron/v3/standing-refresh. Powers every StandingBar render plus W17 counterfactuals. pga_value NOT NULL — metric must have a PGA baseline to land here.';
 
+COMMENT ON TABLE public.golf_player_standing_season IS 'Clubhouse Standing for this season (owner decision 9, 2026-10-24): one row per (player_id, metric_id), every metric over the rounds since 1 August in the team''s time zone. Same shape as golf_player_standing plus rounds_n and season_start. Written by refresh_player_standing_season (nightly standing-refresh cron and its dirty pass). service_role only. golf_player_standing (lifetime, Fairway) is unchanged.';
+
+COMMENT ON COLUMN public.golf_player_standing_season.rounds_n IS 'Rounds this row''s value was built from (not a cohort size: team_n and level_n are those).';
+
+COMMENT ON COLUMN public.golf_player_standing_season.season_start IS 'The first day this row covers: 1 August of the current season in the player''s team''s time zone (the earlier start when the player is on two teams).';
+
+COMMENT ON TABLE public.golf_standing_refresh_queue IS 'Teams whose Standing needs a refresh because a player saved a round (Clubhouse A+ rows 105/121, 2026-10-24). Written by mark_team_standing_dirty, read by select_dirty_standing_teams, cleared by clear_dirty_standing_teams; all three service_role only. marked_at is the debounce clock (moves on every mark), first_marked_at the cap.';
+
 COMMENT ON COLUMN "public"."golf_player_standing"."team_n" IS 'Number of teammates contributing to team_avg / team_pct. When < 5, StandingBar omits the team marker (cold-start rule per master plan Part VII.3). Row still writes for the player vs PGA comparison.';
 
 COMMENT ON COLUMN "public"."golf_player_standing"."team_pct" IS 'Player percentile (0-100) within the team for this metric. Computed via SQL PERCENT_RANK() OVER (PARTITION BY team_id ORDER BY player_value [ASC|DESC depending on metric direction]).';

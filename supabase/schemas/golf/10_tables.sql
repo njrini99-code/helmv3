@@ -1348,6 +1348,40 @@ CREATE TABLE IF NOT EXISTS "public"."golf_player_standing" (
 
 ALTER TABLE "public"."golf_player_standing" OWNER TO "postgres";
 
+CREATE TABLE IF NOT EXISTS public.golf_player_standing_season (
+  player_id uuid NOT NULL REFERENCES public.golf_players (id) ON DELETE CASCADE,
+  metric_id text NOT NULL REFERENCES public.golf_metrics (metric_id) ON DELETE RESTRICT,
+  player_value numeric NOT NULL,
+  team_avg numeric,
+  team_n integer NOT NULL DEFAULT 0,
+  team_pct numeric,
+  level_avg numeric,
+  level_n integer NOT NULL DEFAULT 0,
+  level_pct numeric,
+  pga_value numeric NOT NULL,
+  pga_delta numeric,
+  basis text,
+  on_green_proximity_feet numeric,
+  layup_excluded_n integer,
+  rounds_n integer NOT NULL,
+  season_start date NOT NULL,
+  computed_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT golf_player_standing_season_pkey PRIMARY KEY (player_id, metric_id),
+  CONSTRAINT golf_player_standing_season_basis_check CHECK (basis IS NULL OR basis IN ('on_green', 'all_shot')),
+  CONSTRAINT golf_player_standing_season_rounds_n_check CHECK (rounds_n >= 0)
+);
+
+ALTER TABLE public.golf_player_standing_season OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS public.golf_standing_refresh_queue (
+  team_id uuid PRIMARY KEY REFERENCES public.golf_teams (id) ON DELETE CASCADE,
+  first_marked_at timestamptz NOT NULL DEFAULT now(),
+  marked_at timestamptz NOT NULL DEFAULT now(),
+  marks integer NOT NULL DEFAULT 1
+);
+
+ALTER TABLE public.golf_standing_refresh_queue OWNER TO "postgres";
+
 CREATE TABLE IF NOT EXISTS "public"."golf_player_stats_cache" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "player_id" "uuid" NOT NULL,
