@@ -41,6 +41,17 @@ describe('home logic', () => {
     expect(classYearLabel(2032, oct)).toBe('Class of 2032');
     expect(classYearLabel(null, oct)).toBeNull();
   });
+  it('turns the class year with the season, on 1 August in the team’s zone, not the server’s UTC month (owner decision 9)', () => {
+    // 11 PM on 31 July in New York is already 1 August in UTC: the class of 2027 are still juniors there.
+    const lateJuly = new Date('2026-08-01T03:00:00Z');
+    expect(classYearLabel(2027, lateJuly, 'America/New_York')).toBe('Junior');
+    expect(classYearLabel(2027, lateJuly, 'UTC')).toBe('Senior');
+    // With no zone given, the product default's (New York), never UTC's.
+    expect(classYearLabel(2027, lateJuly)).toBe('Junior');
+    // A Pacific team turns three hours later.
+    expect(classYearLabel(2027, new Date('2026-08-01T06:00:00Z'), 'America/Los_Angeles')).toBe('Junior');
+    expect(classYearLabel(2027, new Date('2026-08-01T07:00:00Z'), 'America/Los_Angeles')).toBe('Senior');
+  });
   it('reads form from the newer half against the older half, a change only past its standard error (stats visuals Q4)', () => {
     expect(formStatus([72, 73])).toBe('early');
     // Three scores a half on the pooled 3.6 a round: a standard error of about 2.9 strokes.

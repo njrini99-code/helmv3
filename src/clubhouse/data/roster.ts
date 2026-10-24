@@ -223,7 +223,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       id: p.id,
       name: fullName(p),
       firstName: p.first_name || fullName(p),
-      classYear: classYearLabel(p.graduation_year, now),
+      classYear: classYearLabel(p.graduation_year, now, tz),
       gradYear: p.graduation_year,
       hometown: [p.hometown, p.state].filter(Boolean).join(', ') || null,
       highSchool: p.high_school_name,
@@ -263,7 +263,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
     .filter((r) => r.status === 'pending')
     .map((r) => {
       const gradYear = r.player?.graduation_year ?? null;
-      const classYear = classYearLabel(gradYear, now);
+      const classYear = classYearLabel(gradYear, now, tz);
       const requested = relativeAgo(r.created_at, now);
       return {
         id: r.id,
