@@ -6,7 +6,7 @@ import { memo, useDeferredValue, useEffect, useRef, useState, useTransition, typ
 import { useRouter } from 'next/navigation';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { ChPlayerProfile } from '../../data/stats-player';
-import type { ChStatsReads } from '../../data/stats-reads';
+import type { ChReadsSource } from './GameDetail';
 import { basisWords, clearFilters, HOLES_ADJ, hasRange, per18, type ChHoles, isFiltered, isWindowChange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button, IconButton } from '../../ui/Button';
@@ -74,7 +74,7 @@ export function formNote(first: string, scores: number[]): string {
  * `initialTab` is the URL's `tab` (Roster's "All N" opens `tab=rounds`, D-53); anything else opens Overview. `reads` is what CoachHelm
  * sees per Game detail section (data/stats-reads.ts); without it Game detail draws no count line.
  */
-export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChStatsReads }) {
+export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlayerProfile; coachId: string | null; initialTab?: string; reads?: ChReadsSource }) {
   const router = useRouter();
   const toast = useToast();
   const delayedToast = useDelayedToast();
