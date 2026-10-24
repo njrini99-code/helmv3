@@ -522,7 +522,7 @@
   border-radius: 50%;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
-  box-shadow: 0 10px 20px -10px rgb(11 58 37 / 0.8);
+  box-shadow: var(--ch-drop-green-3);
 }
 .ch-cl-add b {
   font: var(--ch-type-16-strong);
@@ -740,7 +740,7 @@
   background: var(--ch-green-fill-700);
   color: var(--ch-on-fill-100);
   font-weight: 600;
-  box-shadow: 0 1px 2px rgb(11 58 37 / 0.3);
+  box-shadow: var(--ch-drop-green-1);
 }
 .ch-cl-daypick button:focus-visible {
   outline: 2px solid var(--ch-border-focus);

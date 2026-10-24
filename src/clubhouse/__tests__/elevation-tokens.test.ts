@@ -96,6 +96,21 @@ describe('elevation tokens (B4)', () => {
     for (const file of walk(join(ROOT, 'styles'), /\.css$/)) expect(css(basename(file)), basename(file)).not.toMatch(/var\(--ch-elevation-floating\)/);
   });
 
+  /** Row 40: a surface on the green or ink casts a tinted drop from the tokens, not a hand-set one. */
+  it.each([
+    ['classes.css', '.ch-cl-add__plus', 'green-3'],
+    ['classes.css', ".ch-cl-daypick button[aria-pressed='true']", 'green-1'],
+    ['hub.css', ".ch-hb-rsvp__a button[aria-checked='true']", 'green-1'],
+    ['messages.css', '.ch-ms-below', 'green-2'],
+    ['rounds-track.css', '.ch-rt-hno', 'green-3'],
+    ['ui.css', '.ch-toast', 'ink'],
+    ['stats.css', '.ch-st-updating', 'ink'],
+  ])('%s %s casts --ch-drop-%s', (file, selector, drop) => {
+    const rule = [...css(file).matchAll(/([^{}]*)\{([^{}]*)\}/g)].find((m) => m[1]!.trim() === selector);
+    expect(rule?.[2]).toMatch(new RegExp(`box-shadow: var\\(--ch-drop-${drop}\\);`));
+    expect(css('tokens.css')).toMatch(new RegExp(`--ch-drop-${drop}: [^;]+;`));
+  });
+
   it('a phone scroller fades over the edge-fade token', () => {
     expect(css('tokens.css')).toMatch(/--ch-edge-fade: 28px;/);
     expect(css('ui.css')).toMatch(/@media \(max-width: 820px\) \{\s*\.ch-hscroll \{\s*--ch-hs-fade: var\(--ch-edge-fade\);/);
@@ -106,7 +121,7 @@ describe('elevation tokens (B4)', () => {
 const RAW_SHADOW: Record<string, number> = {
   'styles/auth.css': 6,
   'styles/calendar.css': 31,
-  'styles/classes.css': 16,
+  'styles/classes.css': 14,
   'styles/coachhelm-ask.css': 1,
   'styles/coachhelm-dive.css': 1,
   'styles/coachhelm-profile.css': 5,
@@ -115,37 +130,34 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/coachhelm.css': 1,
   'styles/controls.css': 12,
   'styles/home.css': 16,
-  'styles/hub.css': 11,
-  'styles/messages.css': 12,
+  'styles/hub.css': 10,
+  'styles/messages.css': 10,
   'styles/onboard.css': 17,
   'styles/qualifiers.css': 8,
   'styles/recruiting.css': 1,
   'styles/roster.css': 8,
   'styles/rounds-setup.css': 17,
-  'styles/rounds-track.css': 18,
+  'styles/rounds-track.css': 17,
   'styles/rounds.css': 22,
   'styles/settings.css': 3,
   'styles/shell.css': 21,
-  'styles/stats.css': 31,
-  'styles/ui.css': 20,
+  'styles/stats.css': 30,
+  'styles/ui.css': 19,
 };
 
 /** Raw drop shadows per stylesheet on 2026-10-24 (row 40): tinted lifts under green and ink surfaces. Only falls. */
 const RAW_DROP: Record<string, number> = {
   'styles/auth.css': 2,
-  'styles/classes.css': 4,
+  'styles/classes.css': 2,
   'styles/coachhelm-ask.css': 1,
   'styles/controls.css': 2,
   'styles/home.css': 3,
-  'styles/hub.css': 1,
-  'styles/messages.css': 2,
-  'styles/onboard.css': 6,
+      'styles/onboard.css': 6,
   'styles/roster.css': 1,
   'styles/rounds-setup.css': 1,
-  'styles/rounds-track.css': 2,
+  'styles/rounds-track.css': 1,
   'styles/rounds.css': 1,
   'styles/settings.css': 1,
   'styles/shell.css': 4,
-  'styles/stats.css': 1,
-  'styles/ui.css': 3,
+    'styles/ui.css': 2,
 };

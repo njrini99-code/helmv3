@@ -57,7 +57,7 @@
   font: var(--ch-type-13-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 8px 22px -8px rgb(0 0 0 / 0.35);
+  box-shadow: var(--ch-drop-ink);
   pointer-events: none;
   animation: ch-fade var(--ch-dur-quick) var(--ch-ease) var(--ch-dur-press) backwards;
 }

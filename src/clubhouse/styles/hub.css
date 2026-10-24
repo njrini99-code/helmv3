@@ -264,7 +264,7 @@
 }
 .ch-hb-rsvp__a button[aria-checked='true'] {
   background: var(--ch-green-fill-700);
-  box-shadow: 0 1px 2px rgb(11 58 37 / 0.3);
+  box-shadow: var(--ch-drop-green-1);
   font-weight: 600;
   color: var(--ch-on-fill-100);
 }

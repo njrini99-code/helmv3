@@ -266,7 +266,7 @@ button.ch-rt-strip__h {
   letter-spacing: -0.03em;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
-  box-shadow: 0 8px 16px -10px rgb(11 58 37 / 0.8);
+  box-shadow: var(--ch-drop-green-3);
 }
 .ch-rt-hno em {
   margin-bottom: 2px;
