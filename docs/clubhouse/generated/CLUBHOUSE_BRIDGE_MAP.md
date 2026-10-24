@@ -36,6 +36,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | CH-8902 | 08 Permission / authorization | The phone's push permission before iOS has asked: a permission request, not the network. |
 | CH-8903 | 08 Permission / authorization | The phone's push permission as iOS answered it, changed only in its Settings app. |
 | CH-09901 | 10 Warning | The qualifier is closed: a standing condition the coach and players are told about. |
+| CH-16920 | 10 Warning | The host's number differs from our scorecard: a standing condition the coach is told about, with both numbers shown and neither picked. |
 | CH-09902 | 06 Server / system error | An edit saved only in part, or not at all: the server refused a step. |
 | CH-1904 | 01 Default / core UI | Core navigation behaviour: a new page opens at the top. |
 | CH-1911 | 08 Permission / authorization | The app asks for the phone's push permission: a permission outcome, not the network. |
@@ -122,7 +123,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
-| P016 |  | 1 |  | 4 |  | 2 |  |  |  |  |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 9 |
+| P016 |  | 1 |  | 6 |  | 5 |  |  |  | 1 |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 15 |
 
 ## P001 Shell
 
@@ -1889,8 +1890,14 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 160402 | CH-16310 | 04 Empty | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | implemented | Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | 04 Empty | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | implemented | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | 04 Empty | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | implemented | Home: no event is upcoming or live |
+| 160405 | CH-16320 | 04 Empty | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | implemented | Event desk: the event has no scores yet (not played, nothing entered) |
+| 160406 | CH-16321 | 04 Empty | `EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS` | implemented | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) |
 | 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | 06 Server / system error | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | implemented | Home: the events read fails while the page itself loads (`errors.events`) |
+| 160603 | CH-16220 | 06 Server / system error | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | implemented | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
+| 160604 | CH-16221 | 06 Server / system error | `EVENT_DESK_THE_FIELD_READ_FAILS` | implemented | Event desk: the field read fails (`errors.field`) |
+| 160605 | CH-16222 | 06 Server / system error | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | implemented | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
+| 161001 | CH-16920 | 10 Warning | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | implemented | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 | 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
 | 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |
 

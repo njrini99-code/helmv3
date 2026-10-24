@@ -997,6 +997,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1039,6 +1040,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -1067,7 +1069,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1104,6 +1107,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1142,6 +1146,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -1165,7 +1170,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1187,7 +1193,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1211,7 +1218,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1233,7 +1241,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1326,7 +1335,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1355,7 +1365,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1379,7 +1390,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1420,7 +1432,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1441,7 +1454,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1464,7 +1478,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1485,7 +1500,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1531,7 +1547,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1553,7 +1570,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1788,7 +1806,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1812,7 +1831,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1851,7 +1871,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1876,7 +1897,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1899,7 +1921,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1937,7 +1960,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -1994,6 +2018,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2018,7 +2043,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2040,7 +2066,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2077,7 +2104,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2098,7 +2126,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2123,7 +2152,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2162,7 +2192,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2201,6 +2232,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2234,6 +2266,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2257,7 +2290,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2280,7 +2314,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2305,6 +2340,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2374,7 +2410,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2408,6 +2445,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2442,6 +2480,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2494,6 +2533,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2532,6 +2572,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -2561,7 +2602,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2600,6 +2642,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2650,7 +2693,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2717,6 +2761,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2794,6 +2839,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2827,7 +2873,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2977,7 +3024,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -2999,7 +3047,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3025,7 +3074,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3049,7 +3099,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3074,7 +3125,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3098,6 +3150,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3152,6 +3205,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3209,7 +3263,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3237,7 +3292,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3298,7 +3354,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3379,6 +3436,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -3415,7 +3473,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3478,7 +3537,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3531,6 +3591,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -3576,7 +3637,8 @@
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3601,7 +3663,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3623,7 +3686,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3670,7 +3734,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3705,7 +3770,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3728,7 +3794,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3753,7 +3820,8 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3788,6 +3856,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3813,6 +3882,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -3835,7 +3905,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3883,7 +3954,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3918,7 +3990,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4103,7 +4176,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4125,7 +4199,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds-recover.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4158,6 +4233,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -4192,6 +4268,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -4421,6 +4498,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -4489,7 +4567,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4585,7 +4664,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4610,6 +4690,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4639,6 +4720,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4707,7 +4789,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4771,6 +4854,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4806,7 +4890,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4830,6 +4915,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -4902,7 +4988,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4925,7 +5012,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4950,7 +5038,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4975,7 +5064,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4999,7 +5089,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5021,7 +5112,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5043,6 +5135,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5065,7 +5158,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5086,7 +5180,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5120,7 +5215,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5142,7 +5238,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5177,7 +5274,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5199,7 +5297,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5236,6 +5335,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5287,6 +5387,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5311,7 +5412,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5363,7 +5465,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5402,7 +5505,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5425,7 +5529,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5447,7 +5552,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5468,7 +5574,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5489,7 +5596,8 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5534,6 +5642,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -5566,7 +5675,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5590,7 +5700,30 @@
         "EventDesk"
       ],
       "styles": [
-        "src/clubhouse/styles/tournaments-desk.css"
+        "src/clubhouse/styles/auth.css",
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/classes.css",
+        "src/clubhouse/styles/coachhelm-thread.css",
+        "src/clubhouse/styles/coachhelm-views.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/onboard.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/rounds-setup.css",
+        "src/clubhouse/styles/rounds-track.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css",
+        "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5608,6 +5741,29 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/screens/tournaments/EvidenceDrawer.tsx",
+      "group": "screens",
+      "exports": [
+        "EvidenceDrawer"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/screens/tournaments/History.tsx",
       "group": "screens",
       "exports": [
@@ -5615,6 +5771,30 @@
       ],
       "styles": [
         "src/clubhouse/styles/tournaments-review.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/HoleGrid.tsx",
+      "group": "screens",
+      "exports": [
+        "HoleGrid"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/tournaments.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5697,6 +5877,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css"
       ],
       "examples": [],
@@ -5719,6 +5900,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css"
       ],
       "examples": [],
@@ -5741,7 +5923,30 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/screens/tournaments/WhoCounted.tsx",
+      "group": "screens",
+      "exports": [
+        "WhoCounted"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/rounds.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5772,6 +5977,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css"
       ],
       "examples": [],
@@ -5806,6 +6012,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
@@ -5945,6 +6152,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -5969,7 +6177,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6092,6 +6301,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -6140,7 +6350,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6306,7 +6517,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6352,7 +6564,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6707,6 +6920,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -6731,6 +6945,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -6798,6 +7013,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments-home.css",
         "src/clubhouse/styles/ui.css",
         "src/clubhouse/styles/whats-new.css"
@@ -6886,6 +7102,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -6914,7 +7131,8 @@
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "InlineNotice"
@@ -6940,7 +7158,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -7035,6 +7254,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7164,7 +7384,8 @@
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "PillGroup",
@@ -7233,7 +7454,8 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/stats.css"
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css"
       ],
       "examples": [
         "Slider"
@@ -7281,6 +7503,7 @@
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [
@@ -7372,6 +7595,7 @@
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/tournaments.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -7431,6 +7655,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -7457,6 +7682,7 @@
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
         "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -17191,8 +17417,71 @@
     },
     {
       "file": "src/clubhouse/styles/tournaments-desk.css",
-      "classes": [],
-      "tokens": []
+      "classes": [
+        "ch-num",
+        "ch-tour-desk",
+        "ch-tour-desk-ct",
+        "ch-tour-desk-ct__c",
+        "ch-tour-desk-ct__cnt",
+        "ch-tour-desk-ct__fin",
+        "ch-tour-desk-ct__n",
+        "ch-tour-desk-ct__row",
+        "ch-tour-desk-ct__s",
+        "ch-tour-desk-ct__scroll",
+        "ch-tour-desk-ct__tot",
+        "ch-tour-desk-ct__w",
+        "ch-tour-desk-ct__who",
+        "ch-tour-desk-dot",
+        "ch-tour-desk-ev",
+        "ch-tour-desk-ev__card",
+        "ch-tour-desk-ev__d",
+        "ch-tour-desk-ev__fig",
+        "ch-tour-desk-ev__list",
+        "ch-tour-desk-ev__nine",
+        "ch-tour-desk-ev__t",
+        "ch-tour-desk-ev__tot",
+        "ch-tour-desk-ev__v",
+        "ch-tour-desk-fc",
+        "ch-tour-desk-fc__a",
+        "ch-tour-desk-find",
+        "ch-tour-desk-heat",
+        "ch-tour-desk-hg",
+        "ch-tour-desk-hg__c",
+        "ch-tour-desk-hg__cell",
+        "ch-tour-desk-hg__group",
+        "ch-tour-desk-hg__nine",
+        "ch-tour-desk-hg__row",
+        "ch-tour-desk-hg__scroll",
+        "ch-tour-desk-hg__tools",
+        "ch-tour-desk-hg__tot",
+        "ch-tour-desk-hg__tp",
+        "ch-tour-desk-hg__who",
+        "ch-tour-desk-key",
+        "ch-tour-desk-line",
+        "ch-tour-desk-link",
+        "ch-tour-desk-links",
+        "ch-tour-desk-meta",
+        "ch-tour-desk-note",
+        "ch-tour-desk-panel",
+        "ch-tour-desk-pill",
+        "ch-tour-desk-pills",
+        "ch-tour-desk-res",
+        "ch-tour-desk-sc",
+        "ch-tour-desk-side",
+        "ch-tour-desk-tabs",
+        "ch-tour-desk-tabs__bar",
+        "ch-tour-desk-tabs__n",
+        "ch-tour-desk-tools",
+        "ch-tour-desk-warn",
+        "ch-tour-desk-warn__t"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-tour-desk-n",
+          "value": "3",
+          "scope": ".ch-tour-desk-ct__scroll"
+        }
+      ]
     },
     {
       "file": "src/clubhouse/styles/tournaments-home.css",

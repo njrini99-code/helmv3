@@ -19257,6 +19257,28 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160405,
+    "page": "P016",
+    "category": 4,
+    "item": 5,
+    "name": "EVENT_DESK_THE_EVENT_HAS_NO_SCORES",
+    "chCode": "CH-16320",
+    "meaning": "Event desk: the event has no scores yet (not played, nothing entered)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160406,
+    "page": "P016",
+    "category": 4,
+    "item": 6,
+    "name": "EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS",
+    "chCode": "CH-16321",
+    "meaning": "Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -19275,6 +19297,50 @@
     "name": "HOME_THE_EVENTS_READ_FAILS_WHILE_THE",
     "chCode": "CH-16210",
     "meaning": "Home: the events read fails while the page itself loads (`errors.events`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160603,
+    "page": "P016",
+    "category": 6,
+    "item": 3,
+    "name": "EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ",
+    "chCode": "CH-16220",
+    "meaning": "Event desk, Holes tab: the scorecards read fails (`errors.holes`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160604,
+    "page": "P016",
+    "category": 6,
+    "item": 4,
+    "name": "EVENT_DESK_THE_FIELD_READ_FAILS",
+    "chCode": "CH-16221",
+    "meaning": "Event desk: the field read fails (`errors.field`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160605,
+    "page": "P016",
+    "category": 6,
+    "item": 5,
+    "name": "EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE",
+    "chCode": "CH-16222",
+    "meaning": "Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161001,
+    "page": "P016",
+    "category": 10,
+    "item": 1,
+    "name": "EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS",
+    "chCode": "CH-16920",
+    "meaning": "Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

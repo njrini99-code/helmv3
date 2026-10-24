@@ -62,3 +62,53 @@ Not drawn (the data is read, no board draws it, so nothing is invented):
 `next.ticks` and `alsoThisWeek` (the week rail), `path` (the season path and
 the ranking), `ladder`, `heatmap` and `links`. A failed `path` or `heatmap`
 read therefore shows no notice on Home; `errors.events` shows CH-16210.
+
+## Event desk
+
+Boards: `tour.jsx` (`EventDesk`, `Contribution`, `Holes`), `tour-compare.jsx`
+(`Evidence`) and `tour-m.jsx` (`MEvent`, `MEvidence`). Code: `EventDesk.tsx`,
+`WhoCounted.tsx`, `HoleGrid.tsx`, `EvidenceDrawer.tsx`, `desk-model.ts`.
+
+Matched:
+
+- The head: crumb to the season, date, course and tees, the name, the chips
+  (holes and play, the count, completed, the trust state, scorecards with
+  shot data, amber where some have none), the result with the finish, and
+  the event's actions. On the phone the result sits under the title.
+- Overview: Who counted (every score by round, NC where it did not count,
+  the team row under the lineup, individuals apart, the shot-data dot and
+  the key) and Where the event turned (the three finding cards, each link
+  opening its tab on its round).
+- Holes: a round's grid with scores or to par, the par row, Out, In and Tot,
+  the team-against-par row with the three costliest holes marked, and the
+  note under it. On the phone it scrolls sideways inside its own region.
+- The provisional note, from the data's `officialTotal`.
+
+Changed from the board, and why:
+
+- One primary action, by the week (`event.mood`): Build or Edit lineup,
+  Follow live, Open review, and Compare once the event is a result (the
+  board's). Manage lineup is left out of a completed event, where the board
+  only answers it with a toast; Official results shows when the event has a
+  results link.
+- Tabs follow the URL state (`search.tab`): Overview, Live (only while live),
+  Who counted, Holes, Compare, Review. The board's Compare players and Hole
+  analysis tabs are Compare and Holes; Who counted is its own tab as well as
+  the Overview's first section, with the round and the Team or Players view
+  the URL carries (`round`, `view`). Players lists everyone flat by their own
+  total; one round says in words who made the count.
+- Holes gains a third view, Counting, which groups the rows by how the round
+  counted (the board marks that only with "NC" and "Ind." in a name).
+- The evidence drawer is the kit's `Modal` (a radius 20 sheet; the phone's
+  bottom sheet): `ui/` has no side drawer, and the board's drawer is one.
+  It shows the figure, the formula in words, the round's lineup scores with
+  which counted, and the card, from the data with nothing recomputed.
+- A tie at the line is an amber ring on the score; the key says NC and the
+  words of the aria label say how each score counted.
+- The Compare tab links to Compare with the event preset, and Live to the
+  live view: the desk data carries neither view's data, so they cannot embed.
+  Review embeds `Review` (`embedded`), which is built in its own change.
+
+Not drawn: the field table, the story card (six-hole splits, bounce-back,
+swing hole) and the trip, none of which a board shows. `errors.travel` has
+no home on the desk and shows nothing.

@@ -40,6 +40,8 @@ Until a lane builds its view, the view says so honestly (CH-16301, preview only)
 | 160402 | CH-16310 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | Home: no event in the season, nothing failed |
 | 160403 | CH-16311 | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | The season ledger (Home, History): the season has no finished event yet |
 | 160404 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
+| 160405 | CH-16320 | `EVENT_DESK_THE_EVENT_HAS_NO_SCORES` | Event desk: the event has no scores yet (not played, nothing entered) |
+| 160406 | CH-16321 | `EVENT_DESK_HOLES_TAB_NO_SCORECARD_HAS` | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) |
 
 ## 05 — Validation
 
@@ -55,6 +57,9 @@ A view whose one read failed draws its head and "Tournaments didn’t load" with
 | --- | --- | --- | --- |
 | 160601 | CH-16201 | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | A Tournaments view's one read fails (any view; `load: 'failed'`) |
 | 160602 | CH-16210 | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | Home: the events read fails while the page itself loads (`errors.events`) |
+| 160603 | CH-16220 | `EVENT_DESK_HOLES_TAB_THE_SCORECARDS_READ` | Event desk, Holes tab: the scorecards read fails (`errors.holes`) |
+| 160604 | CH-16221 | `EVENT_DESK_THE_FIELD_READ_FAILS` | Event desk: the field read fails (`errors.field`) |
+| 160605 | CH-16222 | `EVENT_DESK_OVERVIEW_AND_WHO_COUNTED_THE` | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) |
 
 ## 07 — Network / offline
 
@@ -80,7 +85,13 @@ Status: N/A — not defined yet: no view is built (each renders the base's place
 
 ## 10 — Warning
 
-Status: N/A — not defined yet: no view is built (each renders the base's placeholder) and nothing is wired. The lane that builds the view defines this category with its catalog rows (screens/tournaments/README.md).
+Status: DEFINED
+
+The event desk tells the coach when the host's published number differs from our scorecard (CH-16920): shown with both numbers, never silently picked (D-82).
+
+| Bridge ID | Code | Name | Meaning |
+| --- | --- | --- | --- |
+| 161001 | CH-16920 | `EVENT_DESK_THE_HOSTS_PUBLISHED_NUMBER_DIFFERS` | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) |
 
 ## 11 — Destructive
 

@@ -44,6 +44,9 @@ sync` mints its Bridge ID.
 | --- | --- | --- | --- | --- |
 | CH-16201 | A Tournaments view's one read fails (any view; `load: 'failed'`) | The view's head, then "Tournaments didn’t load" + "Nothing is lost. Your events and scores are still saved; try again in a moment." + Try again (which re-runs the server render; offline it says so, CH-1905) | `TourPlaceholder` → `EmptyState size="page" tone="danger"`; a built view keeps this code for its page failure | tournaments/views.test › CH-16201 |
 | CH-16210 | Home: the events read fails while the page itself loads (`errors.events`) | The head stays, then "The events didn’t load" + "Nothing has changed. Try again; the error has been reported." + Try again; never an empty ledger or "No tournaments yet" | `InlineNotice` in `TournamentsHome` | tournaments-home.test › CH-16210 |
+| CH-16220 | Event desk, Holes tab: the scorecards read fails (`errors.holes`) | "The scorecards didn’t load" + "Team scores are unaffected. Try again; the error has been reported." + Try again, in place of the grid; never "No hole-by-hole scores yet" | `InlineNotice` in `HoleGrid` | tournaments-desk.test › CH-16220 |
+| CH-16221 | Event desk: the field read fails (`errors.field`) | Under the head: "The field didn’t load" + "Where the team finished needs the field, so it is left out for now. Scores are unaffected. Try again; the error has been reported." + Try again; the scores stay | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16221 |
+| CH-16222 | Event desk, Overview and Who counted: the rounds read fails (`errors.rounds`) | "The rounds didn’t load" + "Scores are saved; they just can’t be shown right now. Try again; the error has been reported." + Try again, in place of the table | `InlineNotice` in `EventDesk` | tournaments-desk.test › CH-16222 |
 
 ## 163xx Empty
 
@@ -53,6 +56,8 @@ sync` mints its Bridge ID.
 | CH-16310 | Home: no event in the season, nothing failed | The head (without Add event), then "No tournaments yet" + "Add your first event to see who counted, how the team finished and how it compares with qualifying and last season." + Add event (the page's one primary) | `EmptyState size="page"` in `TournamentsHome` | tournaments-home.test › CH-16310 |
 | CH-16311 | The season ledger (Home, History): the season has no finished event yet | Under the season's heading, one line: "No finished events yet" + "Results show here once an event is complete." A past season with none is left out | `EmptyState compact` in `SeasonLedger` | tournaments-home.test › CH-16311 |
 | CH-16312 | Home: no event is upcoming or live | In place of the next-event card, one line: "Nothing on the calendar" + "Add an event and it shows here with its lineup and travel." | `EmptyState compact` in `TournamentsHome` | tournaments-home.test › CH-16312 |
+| CH-16320 | Event desk: the event has no scores yet (not played, nothing entered) | Where Who counted would be: "No scores yet" + "Scores show here as rounds are entered." + where the lineup stands ("Draft lineup · 4 of 5 set · locks Tue 7:50 AM.") and the event's note | `EmptyState compact` in `EventDesk` (`NoScores`) | tournaments-desk.test › CH-16320 |
+| CH-16321 | Event desk, Holes tab: no scorecard has holes (a totals-only event, or none entered) | "No hole-by-hole scores yet" + "Holes show here once scorecards are in. Team scores use whole rounds either way." For one round with none: "Round 3 has no scorecards with holes." | `EmptyState compact` in `HoleGrid` | tournaments-desk.test › CH-16321 |
 
 ## 164xx Loading
 
@@ -86,3 +91,4 @@ sync` mints its Bridge ID.
 
 | # | When | They see | How | Test |
 | --- | --- | --- | --- | --- |
+| CH-16920 | Event desk: the host's published number differs from our scorecard (`officialTotal` set and unequal) | A status note under the head: "Results are provisional" + "The imported leaderboard has Sofia at 73 in round 3. The scorecard says 74. Team totals use the scorecard until you confirm which is right." (and "2 more differ."). Shown, never silently picked (D-82) | `EventDesk` (`.ch-tour-desk-warn`, `role="status"`) | tournaments-desk.test › CH-16920 |

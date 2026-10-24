@@ -20,6 +20,7 @@ export function TourPlaceholder({
   detail,
   load = 'ready',
   phone: forced,
+  embedded = false,
 }: {
   /** The view's area, for `data-ch-tour-view` (tests and shots find a view by it). */
   view: string;
@@ -31,9 +32,23 @@ export function TourPlaceholder({
   detail: ReactNode;
   load?: ChTourLoad;
   phone?: boolean;
+  /** Inside another view (the desk's Review tab): a section of that page, not a page of its own. */
+  embedded?: boolean;
 }) {
   const auto = useChPhone();
   const phone = forced ?? auto;
+  if (embedded)
+    return (
+      <section className="ch-tour-ph__in" aria-label={title} data-ch-tour-view={view}>
+        {load === 'loading' ? (
+          <Skeleton width="100%" height={180} radius={12} />
+        ) : load === 'failed' ? (
+          <EmptyState size="page" tone="danger" code="CH-16201" title="Tournaments didn’t load" body="Nothing is lost. Your events and scores are still saved; try again in a moment." />
+        ) : (
+          <EmptyState compact code="CH-16301" title={`${name ?? title} isn’t built yet`} body={detail} />
+        )}
+      </section>
+    );
   const cls = 'ch-tour ch-tour-ph' + (phone ? ' is-phone' : '');
   if (load === 'loading') {
     return (

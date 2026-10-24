@@ -912,6 +912,8 @@ export interface EventDeskProps extends ChTourViewBase {
 }
 export interface ReviewProps extends ChTourViewBase {
   data: ChTourReviewData;
+  /** Inside the desk's Review tab: no page head, no page root. */
+  embedded?: boolean;
 }
 export interface HistoryProps extends ChTourViewBase {
   data: ChTourHistoryData;

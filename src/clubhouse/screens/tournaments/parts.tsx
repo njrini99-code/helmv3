@@ -61,15 +61,16 @@ export function TourMain({ view, phone, labelledBy, className, busy, label, chil
 }
 
 /**
- * The view's head. Desktop: the canopy head (an eyebrow, the title, one line, the actions on the right). Phone: the
- * kit's PageIntro, with the actions under it at full width.
+ * The view's head. Desktop: the canopy head (an eyebrow, the title, one line, then `meta` such as a row of chips, and the
+ * actions on the right). Phone: the kit's PageIntro, `meta`, and the actions at full width.
  */
-export function TourHead({ id, phone, eyebrow, title, line, actions, crumb, tight = false }: { id: string; phone: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; actions?: ReactNode; crumb?: ReactNode; tight?: boolean }) {
+export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb, tight = false }: { id: string; phone: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode; tight?: boolean }) {
   if (phone)
     return (
       <>
         {crumb}
         <PageIntro className="ch-tour-intro" eyebrow={eyebrow} title={title} titleId={id} brief={line} />
+        {meta}
         {actions && <div className="ch-tour-head__a">{actions}</div>}
       </>
     );
@@ -81,6 +82,7 @@ export function TourHead({ id, phone, eyebrow, title, line, actions, crumb, tigh
           <span className="ch-tour-head__k ch-num">{eyebrow}</span>
           <h1 id={id}>{title}</h1>
           {line && <p>{line}</p>}
+          {meta}
         </div>
         {actions && <div className="ch-tour-head__a">{actions}</div>}
       </header>

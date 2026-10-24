@@ -11,7 +11,7 @@ ten. The split it kept still holds, so the files stay separable:
 | --- | --- | --- | --- | --- |
 | shared pieces | `parts.tsx`, `paths.tsx`, `format.ts`, `SeasonLedger.tsx` (Home and History) | `tournaments.css` | `.ch-tour-` | 01–09 |
 | season home | `TournamentsHome.tsx` | `tournaments-home.css` | `.ch-tour-home-` | 10–19 |
-| event desk, who counted, holes, evidence drawer | `EventDesk.tsx` | `tournaments-desk.css` | `.ch-tour-desk-` | 20–34 |
+| event desk, who counted, holes, evidence drawer | `EventDesk.tsx`, `WhoCounted.tsx`, `HoleGrid.tsx`, `EvidenceDrawer.tsx`, `desk-model.ts` | `tournaments-desk.css` | `.ch-tour-desk-` | 20–34 |
 | review, history, link inbox | `Review.tsx`, `History.tsx`, `LinkInbox.tsx` | `tournaments-review.css` | `.ch-tour-rev-` | 35–44 |
 | comparison | `Compare.tsx` | `tournaments-compare.css` | `.ch-tour-cmp-` | 45–59 |
 | event form, lineup builder | `EventForm.tsx`, `LineupBuilder.tsx` | `tournaments-lineup.css` | `.ch-tour-lu-` | 60–69 |
