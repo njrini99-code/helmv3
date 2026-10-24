@@ -236,6 +236,9 @@
     background: var(--ch-bg-inset);
   }
 }
+.ch-ask-hist__iconbtn:is(:active, [data-ch-pressed]) {
+  background: var(--ch-ledger-row-press);
+}
 .ch-ask-hist__new {
   display: flex;
   flex: none;
@@ -260,6 +263,9 @@
   .ch-ask-hist__new:hover {
     background: linear-gradient(var(--ch-ledger-row-hover), var(--ch-ledger-row-hover)), var(--ch-bg-surface);
   }
+}
+.ch-ask-hist__new:is(:active, [data-ch-pressed]) {
+  background: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press)), var(--ch-bg-surface);
 }
 .ch-ask-hist__scroll {
   flex: 1;
@@ -303,6 +309,10 @@
 .ch-ask-hist__row.is-on {
   background: var(--ch-bg-inset);
   font-weight: 500;
+}
+/* After the open chat's fill, so pressing it shows too. */
+.ch-ask-hist__row:is(:active, [data-ch-pressed]) {
+  background: var(--ch-ledger-row-press);
 }
 /* Inset: the history scroller clips a ring drawn outside the row. */
 .ch-ask-hist__row:focus-visible {
@@ -577,6 +587,9 @@
     color: var(--ch-text-primary);
   }
 }
+.ch-ask-cmp__chip:is(:active, [data-ch-pressed]) {
+  background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
 .ch-ask-cmp__send {
   display: grid;
   flex: none;
@@ -589,6 +602,9 @@
   background: var(--ch-accent);
   color: var(--ch-text-on-accent);
   cursor: pointer;
+}
+.ch-ask-cmp__send:is(:active, [data-ch-pressed]):not(:disabled):not(.is-stop) {
+  background: var(--ch-accent-press);
 }
 .ch-ask-cmp__send:disabled {
   background: var(--ch-ivory-300);

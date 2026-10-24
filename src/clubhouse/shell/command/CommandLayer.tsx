@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { chTrail } from '../../lib/track';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChPerson, ChRecent } from './commands';
+import { getPalettePeople } from '../../data/palette-people';
 import { seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
 import { Palette } from './Palette';
@@ -26,14 +27,17 @@ export function CommandLayer({
   pathname,
   userId,
   teamId,
-  shellPeople = null,
+  loadPeople = getPalettePeople,
 }: {
   role: ChRole;
   pathname: string;
   userId: string;
   teamId: string | null;
-  /** A coach's players, names and ids, loaded with the shell data (decision 16): People works before Roster opens. */
-  shellPeople?: readonly ChPerson[] | null;
+  /**
+   * A coach's players, names and ids (decision 16), read when the palette first opens rather than with the page, so
+   * they stay in memory (people.ts) and never ride a cached page or a phone's payload. Injected in tests.
+   */
+  loadPeople?: () => Promise<readonly ChPerson[] | null>;
 }) {
   const router = useRouter();
   const desktop = useCommandDesktop();
@@ -53,13 +57,27 @@ export function CommandLayer({
 
   // A layout effect: every layout effect runs before any passive one, so a team switch empties the old team's names before the
   // page (the Roster) publishes the new team's in its own effect, never after it. The scope is the person and the team, so a
-  // different account on the same browser never inherits the last one's list. The shell's names are then seeded for the new
-  // scope; a page's own list still takes precedence (people.ts). Only a coach's are ever seeded.
+  // different account on the same browser never inherits the last one's list.
   const peopleScope = `${userId}:${teamId ?? ''}`;
+  const seededFor = useRef<string | null>(null);
   useLayoutEffect(() => {
     setPeopleScope(peopleScope);
-    seedPeople(role === 'coach' && shellPeople ? shellPeople : []);
-  }, [peopleScope, role, shellPeople]);
+    seededFor.current = null;
+  }, [peopleScope]);
+  // The coach's names are read once per scope, when the palette first opens (decision 16); a page's own list still takes
+  // precedence (people.ts). A reply for a scope that has since changed is dropped. Only a coach's are ever read.
+  const seedOnOpen = useCallback(() => {
+    if (role !== 'coach' || seededFor.current === peopleScope) return;
+    seededFor.current = peopleScope;
+    const forScope = peopleScope;
+    void loadPeople()
+      .then((list) => {
+        if (list && seededFor.current === forScope) seedPeople(list);
+      })
+      .catch(() => {
+        if (seededFor.current === forScope) seededFor.current = null;
+      });
+  }, [role, peopleScope, loadPeople]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
   }, [userId, role, pathname]);
@@ -70,8 +88,9 @@ export function CommandLayer({
     setOpens((n) => n + 1);
     setUsed((u) => ({ ...u, palette: true }));
     setPalette(true);
+    seedOnOpen();
     chTrail('command palette open');
-  }, [userId]);
+  }, [userId, seedOnOpen]);
 
   useEffect(() => {
     if (!desktop) return;

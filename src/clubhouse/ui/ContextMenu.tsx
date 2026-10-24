@@ -71,7 +71,7 @@ export function useContextMenu<T>({
   /** The sheet's heading; the label when absent. */
   title?: (target: T) => string;
   touchHold?: boolean;
-}): { bind: (target: T) => ContextMenuBind; menu: ReactNode; openSheet: (target: T) => void } {
+}): { bind: (target: T) => ContextMenuBind; menu: ReactNode; openSheet: (target: T) => void; cancelHold: () => void } {
   const [open, setOpen] = useState<Open<T> | null>(null);
   // Nothing is drawn, not even the presence that eases a menu out, until the list's first right-click (a long inbox has a hook per row).
   const [used, setUsed] = useState(false);
@@ -182,6 +182,9 @@ export function useContextMenu<T>({
   // The menu leaves with an exit; AnimatePresence needs to see it go.
   return {
     bind,
+    // A parent that takes the pointer over (a SwipeRow claiming a sideways drag) cancels the long press: the row's own
+    // move/up/cancel no longer reach it once the pointer is captured elsewhere.
+    cancelHold,
     menu: used || sheetEl ? (
       <>
         {used && <ContextMenuHost>{menu}</ContextMenuHost>}

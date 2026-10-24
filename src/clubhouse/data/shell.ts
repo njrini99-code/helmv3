@@ -49,12 +49,6 @@ export interface ChShellData {
   roundInProgress?: ChRoundInProgress | null;
   /** The signed-in coach is this team's head coach: the identity line says "Head coach". False when unread (plain "Coach"). */
   viewerIsHeadCoach?: boolean;
-  /**
-   * A coach's players for the command palette's People, so it works before Roster has been opened (owner, decision 16).
-   * Names and ids only, nothing else about a player: it rides every page's payload. Coach only (a player's is never read);
-   * null when unread or failed, and the palette then waits for Roster's own list as before.
-   */
-  people?: ChShellPerson[] | null;
 }
 
 /** One of the coach's players, as the palette lists them: the id it opens and the name it shows. Nothing more. */
@@ -102,16 +96,20 @@ export async function countOverdueTasks(supabase: Awaited<ReturnType<typeof crea
 }
 
 /**
- * The coach's players, names and ids only, for the palette (owner, decision 16). The same set the Roster lists (active
- * and inactive members), so People does not change when Roster opens. RLS scopes it to the coach's own team; a roster is
- * well under the row cap. Each row is rebuilt as `{ id, name }`, so no other column can reach the client. Null on failure.
+ * The coach's players, names and ids only, for the palette (owner, decision 16). Active members only: RLS on
+ * golf_players (user_is_coach_of_golf_player) matches active members, so an inactive one would come back empty anyway.
+ * RLS scopes it to the coach's own team; a roster is well under the row cap. Each row is rebuilt as `{ id, name }`, so
+ * no other column can reach the client. Null on failure.
+ *
+ * Read only when the palette first opens (data/palette-people.ts), never with the shell: the shell rides
+ * every page's HTML, which the site's service worker keeps in Cache Storage, and the decision says in memory only.
  */
 export async function loadPalettePeople(supabase: Awaited<ReturnType<typeof createClient>>, teamId: string): Promise<ChShellPerson[] | null> {
   const { data, error } = await supabase
     .from('golf_team_members')
     .select('player:golf_players(id, first_name, last_name)')
     .eq('team_id', teamId)
-    .in('status', ['active', 'inactive'])
+    .eq('status', 'active')
     .limit(1000);
   if (error) {
     chLogServer('shell', 'palettePeople', error, 'teams');
@@ -126,7 +124,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   const supabase = await createClient();
   // The team's zone is read once and shared: the coach's overdue count needs today's date in it, and runs beside the rest.
   const zoneRead = Promise.resolve(supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle());
-  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes, overdueTasks, people] = await Promise.all([
+  const [eventRes, joinRes, tzRes, roundRes, askOn, courseRes, staffRes, overdueTasks] = await Promise.all([
     supabase
       .from('golf_events')
       .select('id, title, start_time, all_day, location, event_type, description, requires_rsvp, rsvp_deadline')
@@ -186,13 +184,6 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
             chLogServer('shell', 'overdueTasks', err, 'tasks');
             return null;
           })
-      : Promise.resolve(null),
-    // A coach's players for the palette's People (decision 16). A player's client never receives the list: not read for them.
-    coachId
-      ? loadPalettePeople(supabase, teamId).catch((err: unknown) => {
-          chLogServer('shell', 'palettePeople', err, 'teams');
-          return null;
-        })
       : Promise.resolve(null),
   ]);
   // A failed timezone read falls back to the product default, same as dashboard-data.
@@ -256,7 +247,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
   return {
     nextEvent: e ? { ...describeEvent(e, timezone), ready, ...(forPlayer ? { mine } : {}) } : null,
     pendingJoinRequests: joinRes.error ? null : (joinRes.count ?? 0),
-    ...(coachId ? { overdueTasks, people } : {}),
+    ...(coachId ? { overdueTasks } : {}),
     timezone,
     askAvailable: askOn,
     course: courseOf(courseRes),

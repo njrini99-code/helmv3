@@ -6,6 +6,7 @@ import { useEffect, type CSSProperties, type KeyboardEvent } from 'react';
 import type { ChTeamStats } from '../../data/stats-team';
 import { basisWords, type ChFilter } from '../../data/stats-filter';
 import { changeInk, changeTone, NO_DATA } from '../../lib/format';
+import { useGlide } from '../../lib/motion-glide';
 import { useChSessionState } from '../../lib/session-state';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { EmptyState } from '../../ui/States';
@@ -51,13 +52,25 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
   const sg = !def.lowerIsBetter;
   const fmt = (v: number) => formatRankValue(metric, v);
   const tone = (v: number) => (sg ? ' ' + changeTone(v, false, 1) : '');
+  // Each player's whisker and dot glide sideways on a new window (B9), followed by player, not by place: a re-ranked row
+  // moves to its new place at once, and its dot glides along the track.
+  const players = rows.map((r) => r.id).sort();
+  const slot = new Map(players.map((id, k) => [id, k]));
+  const drawn = useGlide(
+    players.flatMap((id) => {
+      const r = rows.find((x) => x.id === id)!;
+      const known = r.value != null && r.se != null;
+      return [known ? scale.at(r.value! - r.se!) : null, known ? scale.at(r.value! + r.se!) : null, r.value == null ? null : scale.at(r.value)];
+    }),
+    `${metric}|${players.join('|')}`,
+  );
 
   const row = (r: (typeof rows)[number], i: number) => {
     const item = pin.item(i);
     // A second tap on the pinned player opens them; the first pins (the row is aria-hidden: the group's keys and the grid's links reach the same).
     const press = { ...item, onClick: () => (pin.pinned === i ? router.push(href(i)) : item.onClick()) };
-    const lo = r.value != null && r.se != null ? scale.at(r.value - r.se) : null;
-    const hi = r.value != null && r.se != null ? scale.at(r.value + r.se) : null;
+    const k = slot.get(r.id)! * 3;
+    const [lo, hi, dot] = drawn.slice(k, k + 3);
     return (
       <div
         key={r.id}
@@ -68,7 +81,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
         <span className="ch-sv-tr__who">{phone ? r.short : r.name}</span>
         <span className="ch-sv-tr__track">
           {lo != null && hi != null && <i className="ch-sv-whisk" style={{ left: pct(Math.min(lo, hi)), width: pct(Math.abs(hi - lo)) }} />}
-          {r.value != null && <b className={'ch-sv-tr__dot' + (r.state === 'early' ? '' : tone(r.value))} style={{ left: pct(scale.at(r.value)) }} />}
+          {r.value != null && dot != null && <b className={'ch-sv-tr__dot' + (r.state === 'early' ? '' : tone(r.value))} style={{ left: pct(dot) }} />}
           {r.value == null && <span className="ch-sv-tr__needs">{r.tag}</span>}
         </span>
         <span className={'ch-sv-tr__v ch-num ' + (r.state === 'early' || !sg ? '' : changeInk(r.value))}>{r.value == null ? NO_DATA : fmt(r.value)}</span>

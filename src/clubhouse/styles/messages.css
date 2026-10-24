@@ -2981,7 +2981,17 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-500) 22%, transparent);
 }
 
-/* B8: a long conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew. */
+/* B8: the conversation list draws only the rows near the screen; an off-screen row keeps the height it last drew (a
+   row's 44px avatar and its padding before it first draws). Everything a row paints sits inside its box (the seam is
+   its top edge, the focus ring is inset), so the paint containment clips nothing. On the phone the row sits in its
+   swipe frame, whose content is what slides, so the row's own containment leaves the swipe alone. Thread messages do
+   not skip: their heights vary too much for an estimate, and reading up a thread would jump in a browser that does not
+   anchor the scroll (overflow-anchor, which WebKit has not been shown to honour here). */
+.ch-ms-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
+}
+/* Search hits are shorter rows. */
 .ch-ms-row.is-hit {
   content-visibility: auto;
   contain-intrinsic-size: auto 60px;

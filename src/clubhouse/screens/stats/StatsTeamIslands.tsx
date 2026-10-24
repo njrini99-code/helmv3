@@ -35,7 +35,8 @@ import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
 import { Line } from '../../ui/charts/Line';
-import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { useIdleFetchAhead, usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { windowsAhead } from './window-ahead';
 import { plural, pluralWord } from '../../lib/plural';
 
 /*
@@ -99,6 +100,8 @@ export function StatsTeamFrame({ filter: current, phone, children }: { filter: C
     const words = changeWords(current, loading);
     return delayedToast({ title: words.slow, body: `This is taking longer than usual. ${words.still}`, code: 'CH-4902' }, CH_SLOW_SAVE_AFTER);
   }, [loading, current, delayedToast]);
+  // Row 15: once the window has settled, the windows either side are fetched whole when idle, so a switch to one is instant.
+  useIdleFetchAhead(loading || pending ? [] : windowsAhead(current).map((f) => statsHref('/golf/dashboard/stats', f)));
   const go = (next: ChFilter) => {
     if (isOffline()) {
       // CH-4901: nothing is requested while offline, and the control stays where it is.

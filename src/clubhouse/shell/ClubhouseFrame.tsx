@@ -189,7 +189,7 @@ export function ClubhouseFrame({
                       <PhoneDock round={shell.roundInProgress ?? null} pathname={pathname} />
                       <SectionStrip pathname={pathname} role={role} user={{ name: userData.name }} />
                       {/* Desktop only: Cmd K's palette, G-then-letter jumps, / and ? (shell/command). */}
-                      <CommandLayer role={role} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} shellPeople={role === 'coach' ? (shell.people ?? null) : null} />
+                      <CommandLayer role={role} pathname={pathname} userId={userData.userId} teamId={userData.teamId ?? null} />
                       <AccountSheet pathname={pathname} role={role} user={{ name: userData.name, teamName: userData.teamName ?? null, headCoach: shell.viewerIsHeadCoach ?? false }} teamSwitch={teamSwitch} />
                       {/* The iPhone app's pull to refresh (CH-1909); nothing in a browser. */}
                       <PullToRefresh pathname={pathname} />
