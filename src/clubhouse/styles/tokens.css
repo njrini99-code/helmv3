@@ -120,6 +120,13 @@
   --ch-chart-loss: #865608;
   /* The loss amber on a tinted cell: darker so it holds 4.5:1 on the heat fills. */
   --ch-chart-loss-on-tint: #744a06;
+  /* CONS-20: the rest of the gain and loss family, so a tone paints only with it (check.mjs). A bar or a mark takes the
+     -fill (a graphic, 3:1); a chip's ground takes the -tint and its words the ink. Aliases declared beside the night
+     values they read, so each follows the theme. A surface the ink can't sit on (a green stage) redefines the pair. */
+  --ch-chart-gain-fill: var(--ch-green-fill-500);
+  --ch-chart-loss-fill: var(--ch-chart-loss);
+  --ch-chart-gain-tint: var(--ch-positive-100);
+  --ch-chart-loss-tint: var(--ch-warning-100);
   --ch-chart-flag: #b03a2e;
   --ch-chart-fairway: #cbddcc;
   --ch-chart-fairway-alt: #bfd5c1;

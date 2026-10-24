@@ -433,14 +433,15 @@
   font: 600 12px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
 }
+/* Gain and loss weigh the same (CONS-20): a tint under the ink, each with its own hairline. */
 .ch-delta.is-gain {
-  background: var(--ch-green-fill-700);
-  color: #f4f1e8;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  background: var(--ch-chart-gain-tint);
+  color: var(--ch-chart-gain);
+  box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.2);
 }
 .ch-delta.is-loss {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
+  background: var(--ch-chart-loss-tint);
+  color: var(--ch-chart-loss);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.2);
 }
 .ch-delta.is-flat {
@@ -1684,10 +1685,10 @@
   transform-origin: bottom;
 }
 .ch-lad__fill.is-gain {
-  background: linear-gradient(180deg, #4f8a64, var(--ch-green-600));
+  background: var(--ch-chart-gain-fill);
 }
 .ch-lad__fill.is-loss {
-  background: linear-gradient(180deg, #c49043, var(--ch-chart-loss));
+  background: var(--ch-chart-loss-fill);
 }
 /* No benchmark to grade against: the player's own figure, in the chart green (board: bars are green, amber only when
    below the benchmark). Grey read as missing data (F-54). */
@@ -4055,8 +4056,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   background: linear-gradient(90deg, var(--ch-chart-gain) var(--ch-fg-part, 100%), rgb(237 231 216 / 0.1) var(--ch-fg-part, 100%));
 }
 :where(html[data-fw-theme='dark']) .ch-delta.is-gain {
-  color: var(--ch-text-on-accent);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(107 187 140 / 0.24);
 }
 :where(html[data-fw-theme='dark']) .ch-delta.is-loss,
 :where(html[data-fw-theme='dark']) .ch-pf-early {
@@ -4144,13 +4144,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 :where(html[data-fw-theme='dark']) .ch-fws__z.is-fw {
   background: repeating-linear-gradient(90deg, var(--ch-chart-fairway) 0 18px, var(--ch-chart-fairway-alt) 18px 36px);
 }
-/* Large chart fills take the deep fill greens at night; the light text greens are for strokes and figures. */
-:where(html[data-fw-theme='dark']) .ch-lad__fill.is-gain,
+/* Large chart fills take the deep fill greens at night; the light text greens are for strokes and figures. A gain or loss
+   fill is --ch-chart-gain-fill or --ch-chart-loss-fill, which already do (CONS-20). */
 :where(html[data-fw-theme='dark']) .ch-lad__fill.is-neutral {
   background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-700));
-}
-:where(html[data-fw-theme='dark']) .ch-lad__fill.is-loss {
-  background: linear-gradient(180deg, #edc07a, var(--ch-chart-loss));
 }
 :where(html[data-fw-theme='dark']) .ch-gmiss__c b {
   color: var(--ch-text-primary);
@@ -4701,10 +4698,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-gain {
-  color: var(--ch-green-700);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-loss {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-flat {
   color: var(--ch-text-secondary);
@@ -4797,10 +4794,10 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   color: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-tp__d.is-gain {
-  color: var(--ch-green-700);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-tp__d.is-loss {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-tp__d.is-flat {
   color: var(--ch-text-secondary);
@@ -4920,10 +4917,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   text-shadow: 0 2px 24px rgb(0 0 0 / 0.25);
 }
 .ch-st[data-canopy] .ch-sgt__n.ch-gain {
-  color: var(--ch-green-200);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-sgt__n.ch-loss {
-  color: var(--ch-champagne-300);
+  color: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-sgt__chg {
   padding: 5px 10px 5px 8px;
@@ -4932,10 +4929,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-gain {
-  color: var(--ch-green-200);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-loss {
-  color: var(--ch-champagne-300);
+  color: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-sgt__chg.is-flat,
 .ch-st[data-canopy] .ch-sgt__chg em,
@@ -5110,7 +5107,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   stroke-linecap: round;
 }
 .ch-st[data-canopy] .ch-tp__dial.is-loss .ch-tp__arc {
-  stroke: var(--ch-champagne-500);
+  stroke: var(--ch-chart-loss-fill);
 }
 .ch-st[data-canopy] .ch-tp__dial.is-flat .ch-tp__arc {
   stroke: var(--ch-ink-400);
@@ -5138,10 +5135,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   color: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-tp__par.is-gain {
-  color: var(--ch-green-600);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-tp__par.is-loss {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
 
 /* More air between the page's sections, set apart by a gold rule. */
@@ -5638,10 +5635,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   border-radius: 6px;
 }
 .ch-st[data-canopy] .ch-lb__bar.is-gain {
-  background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-600));
+  background: var(--ch-chart-gain-fill);
 }
 .ch-st[data-canopy] .ch-lb__bar.is-loss {
-  background: linear-gradient(270deg, var(--ch-champagne-300), var(--ch-champagne-500));
+  background: var(--ch-chart-loss-fill);
 }
 .ch-st[data-canopy] .ch-lb__team {
   position: absolute;
@@ -5848,10 +5845,10 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 /* P005: the player Overview as seven zones (OverviewZones). Each stat area is a band set off by a gold rule, an alternating tint
    and, left, what the stat is with one big reading; right, the picture that fits it. Prefix .ch-z. */
 .ch-st[data-canopy] .ch-znbig.is-gain {
-  color: var(--ch-green-600);
+  color: var(--ch-chart-gain);
 }
 .ch-st[data-canopy] .ch-znbig.is-loss {
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
 .ch-st[data-canopy] .ch-zsvg {
   display: block;
@@ -5897,7 +5894,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   transform-origin: left center;
 }
 .ch-st[data-canopy] .ch-ztrack__fill.is-loss {
-  background: var(--ch-warning-600);
+  background: var(--ch-chart-loss-fill);
 }
 /* The strokes gained change in the zone's lines: coloured only when it clears its standard error (OverviewZones). */
 .ch-znlines b.ch-gain {

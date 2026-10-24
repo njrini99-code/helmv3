@@ -7,7 +7,7 @@
   max-width: var(--ch-measure-text);
 }
 .ch-wn-what.is-gain {
-  color: var(--ch-accent);
+  color: var(--ch-chart-gain);
 }
 .ch-wn-detail {
   color: var(--ch-text-secondary);

@@ -26,6 +26,23 @@ test('red is allowed for under par only', () => {
   assert.equal(checkSource('src/clubhouse/a.css', '.ch-badge{color:var(--ch-score-under)}').length, 1);
 });
 
+test('a gain or loss tone paints only with the chart gain and loss family (CONS-20)', () => {
+  const tone = (css) => checkSource('src/clubhouse/a.css', css).filter((x) => x.includes('CONS-20'));
+  // The family, a filled key's ink, neutral keywords and non-colour declarations pass.
+  assert.deepEqual(tone('.ch-a.is-gain{color:var(--ch-chart-gain)}'), []);
+  assert.deepEqual(tone('.ch-a.is-loss{background:var(--ch-chart-loss-fill);box-shadow:inset 0 0 0 1px rgb(0 0 0 / 0.2)}'), []);
+  assert.deepEqual(tone('.ch-a.is-gain{background:var(--ch-chart-gain-fill);color:var(--ch-text-on-accent)}'), []);
+  assert.deepEqual(tone('.ch-a.is-gain .ch-b{bottom:50%;--ch-spark:var(--ch-chart-gain);background:none}'), []);
+  // Anything else a tone paints with is flagged: another token, a literal, a gradient of either, an ancestor's tone.
+  assert.equal(tone('.ch-a.is-gain{color:var(--ch-green-700)}').length, 1);
+  assert.equal(tone('.ch-a.is-loss{background-image:linear-gradient(180deg, #c58a2c, #7a4a08)}').length, 1);
+  assert.equal(tone('.ch-a.is-gain{background:linear-gradient(90deg, var(--ch-green-400), var(--ch-chart-gain))}').length, 1);
+  assert.equal(tone('.ch-a.is-gain .ch-v{color:var(--ch-warning-600)}').length, 1);
+  assert.equal(tone(':where(html) .ch-a.is-loss{--ch-tone:var(--ch-champagne-500)}').length, 1);
+  // A rule that only excludes the tones (:not(.is-gain)) is not a tone's paint.
+  assert.deepEqual(tone('.ch-a:not(.is-gain, .is-loss) .ch-w{color:var(--ch-text-secondary)}'), []);
+});
+
 test('flags emoji, exclamation copy, staggers and uppercase', () => {
   const src = "const a = <p>Great round!</p>;\nconst b = 'Nice \u{1F3CC}';\nconst t = { staggerChildren: 0.1 };\nconst c = <span className=\"uppercase\" />;";
   const v = checkSource('src/clubhouse/b.tsx', src);

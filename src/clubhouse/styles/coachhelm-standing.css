@@ -572,7 +572,7 @@
   --ch-hs-tone: var(--ch-chart-loss);
 }
 .ch-hs-ld__r.is-gain {
-  --ch-hs-tone: var(--ch-green-fill-600);
+  --ch-hs-tone: var(--ch-chart-gain-fill);
 }
 .ch-hs-ld__h {
   display: flex;
@@ -594,7 +594,7 @@
   color: var(--ch-chart-loss-on-tint);
 }
 .ch-hs-ld__r.is-gain .ch-hs-ld__v {
-  color: var(--ch-green-700);
+  color: var(--ch-chart-gain);
 }
 .ch-hs-ld__r.is-none .ch-hs-ld__v {
   color: var(--ch-text-tertiary);

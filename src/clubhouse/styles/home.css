@@ -1883,10 +1883,10 @@
   border-radius: 3px;
 }
 .ch-ph-viz--sg i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-ph-viz--sg i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 .ch-ph-viz--rounds {
   display: flex;
@@ -1985,12 +1985,12 @@
   font-variant-numeric: tabular-nums;
 }
 .ch-ph-leg__sg.is-gain {
-  background: var(--ch-positive-100);
-  color: var(--ch-green-700);
+  background: var(--ch-chart-gain-tint);
+  color: var(--ch-chart-gain);
 }
 .ch-ph-leg__sg.is-loss {
-  background: var(--ch-warning-100);
-  color: var(--ch-warning-600);
+  background: var(--ch-chart-loss-tint);
+  color: var(--ch-chart-loss);
 }
 /* Rounds to zero ("0.0"): no gain and no loss, so neither green nor amber. */
 .ch-ph-leg__sg.is-flat {
@@ -2437,10 +2437,10 @@
   border-radius: 3px;
 }
 .ch-rviz--putts i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-rviz--putts i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 .ch-rviz--putts b,
 .ch-rviz--sg::after {
@@ -2462,10 +2462,10 @@
   border-radius: 2px;
 }
 .ch-rviz--sg i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-rviz--sg i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 /* The stats row's own span rule (flex, baseline, 6px gap) also reaches the drawings; reset them. */
 .ch-h-round__stats .ch-rviz {
@@ -3747,6 +3747,9 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
     var(--ch-stage-bg);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), var(--ch-elevation-feature);
   color: var(--ch-stage-ink);
+  /* The gain and loss pair on the green stage (CONS-20): the stage's mint and gold, which hold on it. */
+  --ch-chart-gain: var(--ch-stage-line);
+  --ch-chart-loss: var(--ch-stage-gold);
 }
 .ch-h-form__lead {
   display: grid;
@@ -3776,10 +3779,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   color: var(--ch-stage-ink-soft);
 }
 .ch-h-form__delta.is-gain {
-  color: var(--ch-stage-line);
+  color: var(--ch-chart-gain);
 }
 .ch-h-form__delta.is-loss {
-  color: var(--ch-stage-gold);
+  color: var(--ch-chart-loss);
 }
 .ch-h-form__basis {
   font: 400 13px/1.35 var(--ch-font-sans);
@@ -3870,10 +3873,10 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
   color: var(--ch-stage-ink);
 }
 .ch-h-form__figs dd.is-gain {
-  color: var(--ch-stage-line);
+  color: var(--ch-chart-gain);
 }
 .ch-h-form__figs dd.is-loss {
-  color: var(--ch-stage-gold);
+  color: var(--ch-chart-loss);
 }
 @media (prefers-reduced-motion: reduce) {
   .ch-h-form__dot {

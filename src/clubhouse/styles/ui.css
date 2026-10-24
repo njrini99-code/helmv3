@@ -1545,11 +1545,14 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   letter-spacing: 0;
   -webkit-text-fill-color: var(--ch-text-secondary);
 }
+/* A toned reading is the gain or loss ink, solid (CONS-20); only the untoned one keeps the green gradient. */
 .ch-znbig.is-gain {
-  background-image: linear-gradient(180deg, var(--ch-green-500), var(--ch-green-800));
+  background: none;
+  color: var(--ch-chart-gain);
 }
 .ch-znbig.is-loss {
-  background-image: linear-gradient(180deg, #c58a2c, #7a4a08);
+  background: none;
+  color: var(--ch-chart-loss);
 }
 .ch-znlines {
   display: grid;

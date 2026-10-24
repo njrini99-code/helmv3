@@ -454,10 +454,10 @@
   border-radius: 3px;
 }
 .ch-rs-sgbar i.is-gain {
-  background: var(--ch-green-fill-500);
+  background: var(--ch-chart-gain-fill);
 }
 .ch-rs-sgbar i.is-loss {
-  background: var(--ch-chart-loss);
+  background: var(--ch-chart-loss-fill);
 }
 .ch-rs-face__hcp {
   font: 500 12px/1 var(--ch-font-sans);
