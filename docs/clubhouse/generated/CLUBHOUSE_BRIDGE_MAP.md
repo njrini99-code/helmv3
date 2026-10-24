@@ -115,7 +115,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P006 | 4 | 5 | 3 | 9 | 4 | 30 | 1 | 8 | 1 | 2 | 5 | 3 | 2 | 2 | 1 | 6 | 3 | 4 | 1 | 1 | 1 |  | 1 | 1 |  | 98 |
 | P007 | 2 | 10 | 1 | 9 | 6 | 38 | 1 | 2 | 2 | 1 | 4 | 2 | 1 | 2 | 1 | 7 | 4 | 4 | 1 | 1 | 1 |  | 2 | 1 |  | 103 |
 | P008 | 2 | 1 | 3 | 6 | 15 | 42 | 3 | 10 | 3 | 3 | 8 | 6 | 2 | 2 | 1 | 9 | 8 | 7 | 1 | 1 | 1 |  | 1 | 1 |  | 136 |
-| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 6 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 136 |
+| P009 | 7 | 7 | 4 | 13 | 14 | 34 | 7 | 12 | 2 | 1 | 4 | 4 | 1 | 2 | 1 | 3 | 3 | 4 | 4 | 3 | 2 |  | 4 | 1 |  | 137 |
 | P010 | 3 | 10 |  | 16 | 10 | 25 | 1 | 4 | 1 |  | 4 | 1 | 1 | 2 | 1 | 2 | 2 | 2 | 1 | 1 | 1 |  | 1 | 1 |  | 90 |
 | P011 | 16 | 14 |  | 23 | 11 | 44 | 22 | 5 | 2 |  | 23 | 2 | 1 | 4 | 4 | 4 | 11 | 11 | 3 | 1 | 1 |  | 1 | 2 |  | 205 |
 | P012 | 3 | 3 |  | 8 | 16 | 12 | 3 | 3 | 2 |  | 4 | 1 |  | 4 | 4 | 2 | 5 | 6 | 1 | 1 | 1 |  | 1 | 1 |  | 81 |
@@ -1012,6 +1012,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 90704 | CH-09905 | 07 Network / offline | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | reserved | Returning to the list from a qualifier |
 | 90705 | CH-09906 | 07 Network / offline | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | implemented | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | 07 Network / offline | `PLAYER_THE_SQUAD_IS_CONFIRMED` | reserved | Player: the squad is confirmed |
+| 90707 | CH-09908 | 07 Network / offline | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | implemented | Player: their own ranked row on a board that draws a line |
 | 90801 | CH-09310 | 08 Permission / authorization | `THE_QUALIFIER_ISNT_ON_THE_VIEWERS_TEAM` | implemented | The qualifier isn't on the viewer's team, or doesn't exist |
 | 90802 | CH-09311 | 08 Permission / authorization | `A_PLAYER_OPENS_NEW_OR_EDIT` | implemented | A player opens /new, /edit or /selection |
 | 90803 |  | 08 Permission / authorization | `COACH_ADDRESSES_READ_NOTHING_FOR_A_PLAYER` | implemented | For a player, /qualifiers/new, /qualifiers/[id]/edit and /qualifiers/[id]/selection stop at the coach-only page (CH-09311) before any loader runs, so nothing of the qualifier is read for them. |

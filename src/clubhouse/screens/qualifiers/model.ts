@@ -274,6 +274,57 @@ export function buildBoard(input: {
 }
 
 /** P009-C2, the board's caption: why a player below the line isn't on the Bubble yet, when one round isn't enough to say so. */
+/** One line on the board measured from the viewer's row (row 74, "you vs the line"). */
+export interface ChQLineGap {
+  line: 'score' | 'travel';
+  label: 'Top-score line' | 'Travel cut';
+  /** The viewer is above the line. */
+  inside: boolean;
+  /** The row on the far side of the line the viewer is measured against: the first below it, or the last above it. */
+  against: ChQRow;
+  /**
+   * Strokes to par between the two, or null when they have played a different number of rounds: a total over two rounds
+   * set against one over three is not a gap anyone can close or keep (the A1 honesty rule), so it is not given.
+   */
+  strokes: number | null;
+}
+
+/**
+ * The viewer against the board's lines (row 74): where the top-score line and the travel cut sit relative to their
+ * row, and by how many strokes. Read from the board's own order and the indices it draws its lines at (the phone and
+ * desktop boards draw the top-score line before row `topScore` and the travel cut before row `squad`), never a sort of
+ * its own, so it follows the board's ranking rule wherever that goes (decision 10, row 115). Null when the viewer has no
+ * ranked row or the board draws no line.
+ */
+export function viewerVsLines(b: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>, viewerId: string | null | undefined): { me: ChQRow; gaps: ChQLineGap[] } | null {
+  if (!viewerId) return null;
+  const i = b.rows.findIndex((r) => r.playerId === viewerId);
+  const me = b.rows[i];
+  if (!me) return null;
+  const lines: Array<[ChQLineGap['line'], number, ChQLineGap['label']]> = [['score', b.topScore, 'Top-score line']];
+  if (b.squad !== b.topScore) lines.push(['travel', b.squad, 'Travel cut']);
+  const gaps: ChQLineGap[] = [];
+  for (const [line, cut, label] of lines) {
+    if (cut <= 0 || cut >= b.rows.length) continue;
+    const inside = i < cut;
+    const against = b.rows[inside ? cut : cut - 1]!;
+    const comparable = against.played === me.played && me.toPar != null && against.toPar != null;
+    gaps.push({ line, label, inside, against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
+  }
+  return gaps.length ? { me, gaps } : null;
+}
+
+/** A line gap in words: "Inside by 3 strokes. Eli is first below it." */
+export function lineGapText(g: ChQLineGap, me: Pick<ChQRow, 'played'>, numRounds: number, first: (name: string) => string): string {
+  const who = first(g.against.name);
+  const where = g.inside ? `${who} is first below it` : `${who} holds the last place above it`;
+  if (g.strokes == null) {
+    return `${g.inside ? 'Inside' : 'Outside'}. ${who} has played ${g.against.played} of ${plural(numRounds, 'round')} to your ${me.played}, so the gap isn’t comparable yet.`;
+  }
+  if (g.strokes === 0) return `${g.inside ? 'Inside' : 'Outside'}, level with ${who} on to par: total strokes decide.`;
+  return `${g.inside ? 'Inside' : 'Outside'} by ${plural(g.strokes, 'stroke')}. ${where}.`;
+}
+
 /** The board's order, as `compareStandings` (lib/coachhelm/v3/qualifying/ranking.ts) sorts it: one sentence for desktop and the phone. */
 export const RANK_RULE = 'Ranked by total to par, then total strokes, then more rounds played.';
 

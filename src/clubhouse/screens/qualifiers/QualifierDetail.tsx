@@ -21,7 +21,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { formatFixed } from '../../lib/format';
 import { boardCaption, dayLabel, endedLive, plural, positionLabel, sampleNote, shortRange, yearOf, type ChQBoard, type ChQHole, type ChQRound, type ChQRow, type ChQStatus } from './model';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToPar, ToParPlate, ViewerLineCard } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { useLiveStandings, type ChLiveFeed, type LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -437,6 +437,7 @@ function Leaderboard({
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} />
       <StandingsSpread rows={b.rows} topScore={b.topScore} />
       <div className="ch-qf-table" role="table" aria-labelledby="ch-qf-lb">
         <div role="rowgroup">

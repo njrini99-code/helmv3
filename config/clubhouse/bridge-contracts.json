@@ -9669,6 +9669,17 @@
     "catalog": "docs/clubhouse/catalog/qualifiers.md"
   },
   {
+    "id": 90707,
+    "page": "P009",
+    "category": 7,
+    "item": 7,
+    "name": "PLAYER_THEIR_OWN_RANKED_ROW_ON_A",
+    "chCode": "CH-09908",
+    "meaning": "Player: their own ranked row on a board that draws a line",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/qualifiers.md"
+  },
+  {
     "id": 90801,
     "page": "P009",
     "category": 8,

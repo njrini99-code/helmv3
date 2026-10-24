@@ -62,7 +62,8 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, roundPars, stageNoteText, validateForm, type ChQFormValues, type ChQRound } from '../screens/qualifiers/model';
+import { buildBoard, lineGapText, roundPars, stageNoteText, validateForm, viewerVsLines, type ChQFormValues, type ChQRound, type ChQRow } from '../screens/qualifiers/model';
+import { firstName } from '../lib/names';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
 import { isRebuilt } from '../shell/nav';
@@ -154,6 +155,55 @@ beforeEach(() => {
 });
 
 describe('Qualifiers · the standings model', () => {
+  describe('CH-09908 you vs the line (row 74)', () => {
+    const r = (id: string, name: string, toPar: number, played = 2) => ({ playerId: id, name, toPar, played, total: 140 + toPar, position: 0, tied: false }) as unknown as ChQRow;
+    const rows = [r('a', 'Ava Chen', -2), r('b', 'Eli Park', 1), r('c', 'Jonah Okafor', 4), r('d', 'Maya Reyes', 4), r('e', 'Luca Ferraro', 9, 1)];
+    const board = { rows, topScore: 2, squad: 4 };
+    const say = (id: string) => {
+      const v = viewerVsLines(board, id)!;
+      return v.gaps.map((g) => `${g.label}: ${lineGapText(g, v.me, 3, firstName)}`);
+    };
+    it('measures from the board’s own order and the rows its lines are drawn at', () => {
+      expect(say('a')).toEqual([
+        'Top-score line: Inside by 6 strokes. Jonah is first below it.',
+        'Travel cut: Inside. Luca has played 1 of 3 rounds to your 2, so the gap isn’t comparable yet.',
+      ]);
+    });
+    it('says Outside with the last place above the line', () => {
+      expect(say('c')[0]).toBe('Top-score line: Outside by 3 strokes. Eli holds the last place above it.');
+    });
+    it('gives no strokes across a different number of rounds, and nothing for a coach or a board with no line', () => {
+      expect(say('e')).toEqual(['Top-score line: Outside. Eli has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.', 'Travel cut: Outside. Maya has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.']);
+      expect(viewerVsLines(board, null)).toBeNull();
+      expect(viewerVsLines({ rows, topScore: 0, squad: 0 }, 'a')).toBeNull();
+      expect(viewerVsLines({ rows: rows.slice(0, 2), topScore: 2, squad: 2 }, 'a')).toBeNull();
+    });
+    it('is drawn at the top of a player’s board, desktop and phone, and never for a coach', () => {
+      wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
+      const card = code('CH-09908');
+      expect(card).not.toBeNull();
+      expect(within(card as HTMLElement).getByRole('heading', { name: 'You vs the line' })).toBeTruthy();
+      expect(card!.textContent).toMatch(/Top-score line (Inside|Outside)/);
+      cleanup();
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
+        expect(code('CH-09908')).not.toBeNull();
+      } finally {
+        window.matchMedia = real;
+      }
+      cleanup();
+      wrap(<QualifierDetail data={previewDetail(0, 'coach')} writes={fakeWrites()} live={false} />);
+      expect(code('CH-09908')).toBeNull();
+    });
+    it('a tie on to par across the line is level', () => {
+      const tie = { rows: [r('a', 'Ava Chen', 1), r('b', 'Eli Park', 1)], topScore: 1, squad: 1 };
+      const v = viewerVsLines(tie, 'b')!;
+      expect(lineGapText(v.gaps[0]!, v.me, 3, firstName)).toBe('Outside, level with Ava on to par: total strokes decide.');
+    });
+  });
+
   const e = (id: string) => ({ playerId: id, name: id.toUpperCase(), classYear: null });
   const rd = (playerId: string, number: number, total: number, toPar: number, holesPlayed: number | null = 18): ChQRound => ({
     id: `${playerId}${number}`,

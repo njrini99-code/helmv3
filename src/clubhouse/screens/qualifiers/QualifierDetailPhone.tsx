@@ -19,7 +19,7 @@ import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { boardCaption, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { PrintHead } from './PrintHead';
-import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
+import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate, ViewerLineCard } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import type { LiveFeedView } from './live';
 import { useRankSlide } from './rank-slide';
@@ -310,6 +310,7 @@ function Board({
       <p className="ch-sr-only" aria-live="polite" data-ch-code="CH-09803">
         {announce}
       </p>
+      <ViewerLineCard board={b} viewerId={data.viewerPlayerId} numRounds={data.numRounds} />
       <div className="ch-qfm-lbhead" aria-hidden="true">
         <span>Pos</span>
         <span>Player</span>
