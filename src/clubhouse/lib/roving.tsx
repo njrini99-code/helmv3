@@ -70,4 +70,3 @@ export function RovingRows({ selector, within }: { selector: string; within: str
   useRovingRows(ref, selector, !!root);
   return <span hidden ref={(el) => setRoot(el?.parentElement?.closest<HTMLElement>(within) ?? null)} />;
 }
-
