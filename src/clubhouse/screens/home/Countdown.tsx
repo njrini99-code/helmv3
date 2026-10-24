@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { plural } from '../../lib/plural';
 
 /**
  * Time to an event in its two largest units (Player - Home.html `Countdown`; owner item E): days and hours a day or
@@ -27,7 +28,7 @@ export function Countdown({ to, frozen }: { to: string; frozen?: string }) {
   const h = Math.floor((left % 86400) / 3600);
   const m = Math.floor((left % 3600) / 60);
   const parts: Array<[number, string]> = d > 0 ? [[d, 'd'], [h, 'h']] : h > 0 ? [[h, 'h'], [m, 'm']] : [[m, 'm'], [left % 60, 's']];
-  const said = (v: number, name: string) => `${v} ${name}${v === 1 ? '' : 's'}`;
+  const said = (v: number, name: string) => plural(v, name);
   // The seconds tick visually only; a screen reader hears the larger units once.
   const label = d > 0 ? `${said(d, 'day')} and ${said(h, 'hour')}` : h > 0 ? `${said(h, 'hour')} and ${said(m, 'minute')}` : m > 0 ? said(m, 'minute') : 'less than a minute';
   return (

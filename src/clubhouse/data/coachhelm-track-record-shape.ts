@@ -16,7 +16,7 @@ import {
   type TrackRecord,
 } from '@/lib/coachhelm/v3/track-record/track-record';
 import type { LadderRung } from '@/lib/coachhelm/v3/support/ladder';
-import { plural } from '../lib/plural';
+import { plural, pluralWord } from '../lib/plural';
 
 export const COACH_TRACK_RECORD_HREF = '/golf/dashboard/coachhelm?view=track-record';
 export const COACH_BOARD_HREF = '/golf/dashboard/coachhelm';
@@ -165,7 +165,7 @@ function correctionsLine(tr: TrackRecord): string {
   if (parts.length === 0) return 'Your staff has not marked any of these reads yet.';
   const later =
     c.not_this + c.wrong_cause > 0
-      ? `; ${tr.correctedThenCleared} of the not this and wrong cause ${tr.correctedThenCleared === 1 ? 'read' : 'reads'} cleared on ${tr.correctedThenCleared === 1 ? 'its' : 'their'} own later`
+      ? `; ${tr.correctedThenCleared} of the not this and wrong cause ${pluralWord(tr.correctedThenCleared, 'read')} cleared on ${pluralWord(tr.correctedThenCleared, 'its', 'their')} own later`
       : '';
   return `Your staff marked ${parts.join(', ')}${later}.`;
 }

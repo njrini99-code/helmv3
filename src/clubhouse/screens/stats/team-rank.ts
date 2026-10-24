@@ -2,6 +2,7 @@ import type { ChRankSample, ChTeamStats } from '../../data/stats-team';
 import { formatSigned } from '../../lib/format';
 import { earlyTag, needsText, POOLED_SD, rankWithTies, sampleState, standardError, type FloorKind, type SampleState, type SpreadKind } from '../../lib/stats-signal';
 import { shortName } from '../../lib/names';
+import { plural } from '../../lib/plural';
 
 /** The figure the ranked dot plot ranks by: strokes gained in total or one leg, or the scoring average. */
 export type TeamRankMetric = 'sg' | 'tee' | 'approach' | 'around' | 'putting' | 'score';
@@ -167,7 +168,7 @@ export function rankScale(rows: TeamRankRow[], mean: number | null, metric: Team
   return { lo, hi, ticks, at };
 }
 
-const ROUNDS = (n: number) => `${Math.round(n)} ${Math.round(n) === 1 ? 'round' : 'rounds'}`;
+const ROUNDS = (n: number) => plural(Math.round(n), 'round');
 
 /**
  * What a pinned or hovered player says in the line above the plot: "Theo Marchetti · +1.7 a round · T1 of 6 · 10 rounds ·

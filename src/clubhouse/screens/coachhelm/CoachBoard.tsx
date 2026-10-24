@@ -29,6 +29,7 @@ import { CoursePlan } from './CoursePlan';
 import { LIVE_COACHHELM_WRITES, LIVE_COURSE_PLAN_READS, LIVE_RECHECK_WRITES, type ChCoachHelmWrites, type ChCoursePlanReads, type ChRecheckWrites } from './writes';
 import { RecheckReads } from './Recheck';
 import { SideScroll } from '../../ui/SideScroll';
+import { pluralWord } from '../../lib/plural';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachBoardLinks = {
@@ -211,7 +212,7 @@ export function CoachBoard({
                             {r.name}
                           </Link>
                         ) : (
-                          (r.name ?? `${r.more} more ${r.more === 1 ? 'player' : 'players'}`)
+                          (r.name ?? `${r.more} more ${pluralWord(r.more, 'player')}`)
                         )}
                       </b>
                       <em>No reads yet</em>

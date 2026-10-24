@@ -45,7 +45,7 @@ import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
 import { ROSTER_SORT_DIRECTION, sortRoster, type RosterSort } from './sort';
 import { TERMS } from '../../lib/glossary';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * B10.5: a sortable column's header is a button that sorts by it (the same orders as Sort players, from ./sort), and the
@@ -465,7 +465,7 @@ export function Roster({ data }: { data: ChRoster }) {
           {/* With nobody on the roster every count is 0: the team and season above say enough (wave 10). */}
           {!data.playersError && players.length > 0 && (
             <p>
-              <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} &middot;{' '}
+              <span className="ch-num">{players.length}</span> {pluralWord(players.length, 'player')} &middot;{' '}
               <span className="ch-num">{active.length}</span> active
               {injuredCount > 0 && (
                 <>

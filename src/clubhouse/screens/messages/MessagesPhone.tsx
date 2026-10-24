@@ -97,6 +97,7 @@ import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useFocusMessage } from "./use-focus-message";
 import { ListPresence } from "../../ui/ListPresence";
+import { pluralWord } from "../../lib/plural";
 
 /** What New message hands the thread that opens next: the text and any files picked with it. */
 type FirstMessage = { text: string; files: File[] };
@@ -1021,7 +1022,7 @@ function PhoneNewMessage({
                     <span className="ch-msp-row__b">
                       <b>Whole team</b>
                       <span className="ch-num">
-                        {players.length} {players.length === 1 ? "player" : "players"} · {coaches.length + 1} coaches
+                        {players.length} {pluralWord(players.length, "player")} · {coaches.length + 1} coaches
                       </span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />

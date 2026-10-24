@@ -12,6 +12,7 @@ import { changeTone, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA 
 import { rebuiltHref } from '../../shell/nav';
 import { AvailabilityPanel, CoachNote, HelmPanel, LegsCaption, type AvailabilityControl, type NoteSaved } from './RosterPeek';
 import { AVAILABILITY_WORD, rowNote } from './format';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * A player on the phone, pushed from the list (`?player=`): who they are,
@@ -109,7 +110,7 @@ export function RosterProfile({
             <b id={`trend-${p.id}`}>Scoring trend</b>
             {p.trend.length > 0 && (
               <span className="ch-num">
-                Last {p.trend.length} {p.trend.length === 1 ? 'round' : 'rounds'}
+                Last {p.trend.length} {pluralWord(p.trend.length, 'round')}
               </span>
             )}
           </div>

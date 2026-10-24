@@ -26,6 +26,7 @@ import { FIELD_ORDER, FORM_HELP, FORM_LEDE, plural, SQUAD_MAX, validateForm, typ
 import { CoursePicker, type ChQPickedCourse } from './CoursePicker';
 import { isPlainClick } from './return-state';
 import { LIVE_WRITES, type ChQEditPlan, type ChQWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
 import '../../styles/qualifiers.css';
 
 const LIST = '/golf/dashboard/qualifiers';
@@ -523,7 +524,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                     <b>{Math.max(0, squad - picks)}</b> qualify on score
                   </span>
                   <span className="ch-qf-seg">
-                    <b>{picks}</b> coach {picks === 1 ? 'pick' : 'picks'}
+                    <b>{picks}</b> coach {pluralWord(picks, 'pick')}
                   </span>
                   <span className="ch-qf-seg">
                     <b>{squad}</b>-player squad

@@ -15,7 +15,7 @@ import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
 import { displayPlaces, placeLabel } from '../../lib/rank';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 const STATUS: Record<ChLeaderRow['status'], string> = {
   improving: 'Improving',
@@ -130,7 +130,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           {!data.error && data.scorecards > 0 && (
             <span>
               Season scoring average &middot; 18-hole rounds &middot; <span className="ch-num">{data.scorecards}</span>{' '}
-              {data.scorecards === 1 ? 'scorecard' : 'scorecards'}
+              {pluralWord(data.scorecards, 'scorecard')}
             </span>
           )}
         </div>

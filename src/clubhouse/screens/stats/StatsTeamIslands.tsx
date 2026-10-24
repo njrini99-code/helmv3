@@ -36,7 +36,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { TeamRank } from './TeamRank';
 import { Line } from '../../ui/charts/Line';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /*
  * Team stats' client islands. The page itself (StatsTeam) renders on the
@@ -794,7 +794,7 @@ function LegGrid({
                       </Link>
                     </PlayerPeek>
                     <span className="ch-who__m ch-num">
-                      {g.rounds} {g.rounds === 1 ? 'round' : 'rounds'}
+                      {g.rounds} {pluralWord(g.rounds, 'round')}
                     </span>
                   </span>
                 </span>

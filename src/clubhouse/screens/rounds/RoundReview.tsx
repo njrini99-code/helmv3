@@ -41,7 +41,7 @@ import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
 import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const fmt = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...o });
@@ -725,7 +725,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                 )}
               </ZoneBlock>
               {approach && (
-                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${approach.n === 1 ? 'shot' : 'shots'} that found the green.`}>
+                <ZoneBlock title="How close approaches finished" note={`${approach.n} approach ${pluralWord(approach.n, 'shot')} that found the green.`}>
                   <div className="ch-rzpair">
                     <div>
                       <b className="ch-num">{Math.round(approach.avg)}</b>
@@ -790,7 +790,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                       </span>
                       {hole.putts != null && (
                         <span>
-                          <b>{hole.putts}</b> {hole.putts === 1 ? 'putt' : 'putts'}
+                          <b>{hole.putts}</b> {pluralWord(hole.putts, 'putt')}
                         </span>
                       )}
                     </div>
@@ -840,7 +840,7 @@ export function RoundReview({ review, typeEdit = null }: { review: ChRoundReview
                     </h3>
                     <p>{recap}</p>
                     <span className="ch-rv-recap__by">
-                      Written by CoachHelm from {holesScored} hole{holesScored === 1 ? '' : 's'}
+                      Written by CoachHelm from {holesScored} {pluralWord(holesScored, 'hole')}
                     </span>
                   </section>
                   )

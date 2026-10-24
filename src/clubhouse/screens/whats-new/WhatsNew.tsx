@@ -19,7 +19,7 @@ import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import '../../styles/rounds.css';
 import '../../styles/whats-new.css';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 type Filter = 'all' | ChWhatsNewKind;
 
@@ -57,7 +57,7 @@ function Days({ days }: { days: ChWhatsNewDay[] }) {
   return (
     <>
       {days.map((d) => (
-        <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {d.items.length === 1 ? 'update' : 'updates'}</span>}>
+        <Section key={d.key} id={`ch-wn-${d.key}`} title={d.label} meta={<span className="ch-num">{d.items.length} {pluralWord(d.items.length, 'update')}</span>}>
           <LedgerList label={`${d.label}, ${d.items.length} updates`}>
             {d.items.map((it) => (
               <WhatsNewRow key={it.key} it={it} />

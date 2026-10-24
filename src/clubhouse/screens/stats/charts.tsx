@@ -237,7 +237,7 @@ export function FairwayStrip({ opportunities, hit, left: leftN, right: rightN }:
       </div>
       <div className="ch-fws__cap">
         <span>Miss bias</span>
-        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${Math.round(Math.abs(bias))} ${Math.round(Math.abs(bias)) === 1 ? 'pt' : 'pts'}`}</b>
+        <b>{Math.abs(bias) < 1 ? 'Even' : `${bias > 0 ? 'Left' : 'Right'} by ${plural(Math.round(Math.abs(bias)), 'pt')}`}</b>
       </div>
     </div>
   );

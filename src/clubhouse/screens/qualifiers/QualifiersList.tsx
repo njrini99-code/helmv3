@@ -23,6 +23,7 @@ import { playRoundHref } from './RoundsShowcase';
 import '../../styles/qualifiers.css';
 import { SerifText } from '../../ui/SerifText';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
+import { pluralWord } from '../../lib/plural';
 
 type Filter = 'all' | 'active' | 'concluded';
 const isActive = (i: ChQListItem) => i.status !== 'completed';
@@ -265,7 +266,7 @@ function Mine({ item }: { item: ChQListItem }) {
   }
   return (
     <span className="ch-qf-mine">
-      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {item.numRounds === 1 ? 'round' : 'rounds'}
+      You’re {placeOf(item.mine.position)} · {formatToPar(item.mine.toPar)} · {item.mine.played} of {item.numRounds} {pluralWord(item.numRounds, 'round')}
     </span>
   );
 }

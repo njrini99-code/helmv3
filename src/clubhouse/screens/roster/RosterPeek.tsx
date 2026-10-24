@@ -21,7 +21,7 @@ import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../.
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 const FORM_NOTE: Record<ChRosterPlayer['form'], string> = {
   improving: 'Scoring is coming down.',
@@ -121,10 +121,10 @@ function PeekBody({
   const devCounts = (
     <>
       <span>
-        <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {p.focusAreas === 1 ? 'area' : 'areas'}
+        <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {pluralWord(p.focusAreas ?? 0, 'area')}
       </span>
       <span>
-        <b className="ch-num">{p.goals ?? NO_DATA}</b> {p.goals === 1 ? 'goal' : 'goals'}
+        <b className="ch-num">{p.goals ?? NO_DATA}</b> {pluralWord(p.goals ?? 0, 'goal')}
       </span>
     </>
   );

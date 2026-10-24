@@ -13,7 +13,7 @@ import { trendRounds, withValue } from './round-trend';
 import { PuttBands } from './PuttBands';
 import { ScoreMixBar } from './ScoreMixBar';
 import { sgLegBars } from './leg-rows';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * P005: the Overview as seven zones, one per stat area (strokes gained, scoring, off the tee, approach, short game, putting,
@@ -536,7 +536,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
             Each round against {first}’s own average. Green rises when a round beat it, gold hangs when it didn’t. <b>Lower is better.</b>
           </>
         }
-        read={<div className="ch-znlines">{data.rounds.length} {data.rounds.length === 1 ? 'round' : 'rounds'} in this window</div>}
+        read={<div className="ch-znlines">{data.rounds.length} {pluralWord(data.rounds.length, 'round')} in this window</div>}
       >
         {ribbon}
       </Zone>

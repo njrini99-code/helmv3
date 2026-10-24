@@ -3,7 +3,7 @@ import type { ChReadEngine } from './coachhelm-engine-shape';
 import type { ChPathLine } from './coachhelm-path';
 import type { ChNotEnough } from './coachhelm-firm';
 import type { ChTeamPatterns } from './coachhelm-team-pattern';
-import { plural } from '../lib/plural';
+import { plural, pluralWord } from '../lib/plural';
 
 /**
  * CoachHelm's data shapes (Clubhouse P013) and the steps the screens share,
@@ -404,7 +404,7 @@ export function partitionInsights(
 /** "6 more reads in the Deep dive": what the Board leaves out, said where it is. Empty when it shows every read. */
 export function moreReadsLine(more: number): string {
   if (more <= 0) return '';
-  return `${more} more ${more === 1 ? 'read' : 'reads'} in the Deep dive`;
+  return `${more} more ${pluralWord(more, 'read')} in the Deep dive`;
 }
 
 /** Most pressing first: the top insight's priority (an out-of-date read or a strength after it, a note last), then how many signals, then the name. */

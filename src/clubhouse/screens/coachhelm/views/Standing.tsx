@@ -17,7 +17,7 @@ import { coachHelmLinks } from '../PlayerBoard';
 import { HelmOff, PlayerHelmFrame } from './Frame';
 import { HowYouPlay } from './HowYouPlay';
 import { KeepReading } from './KeepReading';
-import { plural } from '../../../lib/plural';
+import { plural, pluralWord } from '../../../lib/plural';
 
 const LINE = 'Where you stand on every stat CoachHelm tracks, against the Tour and against your team, and how you play.';
 
@@ -140,7 +140,7 @@ function Row({ r, voice = PLAYER_VOICE, readHref = null }: { r: ChStandRow; voic
           <span className="ch-num">
             {r.projection.from} to {r.projection.to}
           </span>
-          , typically in about {r.projection.weeks} {r.projection.weeks === 1 ? 'week' : 'weeks'}
+          , typically in about {r.projection.weeks} {pluralWord(r.projection.weeks, 'week')}
           {r.projection.clamped ? '. The projection is capped, so it is a ceiling, not a forecast' : ''}.
         </p>
       )}
@@ -219,7 +219,7 @@ function LadderRow({ r, open, onToggle, readsFailed, voice }: { r: ChLadderRow; 
           <button type="button" className="ch-hs-ld__why" aria-expanded={open} aria-controls={`${id}-b`} onClick={onToggle}>
             <span>Because</span>
             <span className="ch-hs-ld__n ch-num">
-              {r.causes.length} {r.causes.length === 1 ? 'open read' : 'open reads'}
+              {r.causes.length} {pluralWord(r.causes.length, 'open read')}
             </span>
             <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
           </button>
@@ -362,7 +362,7 @@ export function Standing({ load, voice = PLAYER_VOICE, game, at }: { load: ChVie
             ))}
           {s.state === 'early' && (
             <p className="ch-hs-early" role="note" data-ch-code="CH-13371">
-              <b className="ch-num">{s.rounds ?? 0} {s.rounds === 1 ? 'round' : 'rounds'}</b> so far, so this is an early read. Projections start at 5 rounds
+              <b className="ch-num">{s.rounds ?? 0} {pluralWord(s.rounds ?? 0, 'round')}</b> so far, so this is an early read. Projections start at 5 rounds
               {/* The team clause only where a row is short of teammates: rows with team values say otherwise. */}
               {s.groups.some((g) => g.rows.some((r) => r.teamNote)) ? `, and a comparison with ${w.team} needs 5 teammates with the stat` : ''}.
             </p>

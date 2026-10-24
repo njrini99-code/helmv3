@@ -80,7 +80,7 @@ import { Icon } from '../../ui/Icon';
 import { InlineNotice } from '../../ui/Notices';
 import { Spinner } from '../../ui/Spinner';
 import { EmptyState } from '../../ui/States';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** "3 credits · 5 classes". */
 export function termFigures(classes: readonly ChClass[]): { credits: number; count: number; text: string } {
@@ -153,7 +153,7 @@ export function TermBar({
             <>
               <span>Starts in</span>
               <b className="ch-num">{term.startsIn}</b>
-              <em>{term.startsIn === 1 ? 'day' : 'days'}</em>
+              <em>{pluralWord(term.startsIn ?? 0, 'day')}</em>
             </>
           )}
         </div>
@@ -359,7 +359,7 @@ export function OverlapsCard({ groups, error, onRetry }: { groups: readonly ChCo
           <Icon icon={TriangleAlert} size={16} />
         </span>
         <div>
-          <h2 id="ch-cl-over-h">{groups.length === 1 ? 'A team event overlaps your classes' : `${groups.length} team events overlap your classes`}</h2>
+          <h2 id="ch-cl-over-h">{pluralWord(groups.length, 'A team event overlaps your classes', `${groups.length} team events overlap your classes`)}</h2>
           <span>This week. Your coach can see your classes.</span>
         </div>
       </div>

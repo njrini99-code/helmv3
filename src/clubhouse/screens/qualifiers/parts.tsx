@@ -4,7 +4,7 @@ import { Icon } from '../../ui/Icon';
 import { formatToPar } from '../../lib/format';
 import type { ChPlayerPeek } from '../../ui/PlayerPeek';
 import { endedLabel, rangeLabel, shortRange, yearOf, STATE_LABEL, STATUS_LABEL, type ChQRow, type ChQRowState, type ChQStatus } from './model';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * Live, Upcoming or Concluded (the list's own word for a finished one). Live is a static dot: no pulse (D-33). A live
@@ -108,7 +108,7 @@ export function Meta({
       </span>
       <span>
         <Icon icon={Flag} size={15} />
-        {squad} {squad === 1 ? 'spot' : 'spots'}
+        {squad} {pluralWord(squad, 'spot')}
       </span>
       {course && (
         <span className="ch-qf-meta__w">

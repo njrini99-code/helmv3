@@ -19,6 +19,7 @@ import { puttingNote } from './notes';
 import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -70,7 +71,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
             'Countable rounds only'
           ) : (
             <>
-              <span className="ch-num">{data.activeCount}</span> active {data.activeCount === 1 ? 'player' : 'players'} &middot; countable rounds only
+              <span className="ch-num">{data.activeCount}</span> active {pluralWord(data.activeCount, 'player')} &middot; countable rounds only
             </>
           )}
         </PageHero>

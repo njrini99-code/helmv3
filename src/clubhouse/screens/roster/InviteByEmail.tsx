@@ -8,7 +8,7 @@ import { haptic } from '../../lib/haptics';
 import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 interface Chip {
   /** What was typed: the normalised address when it reads as one. */
@@ -176,7 +176,7 @@ export function InviteByEmail({ enabled }: { enabled: boolean }) {
       <div className="ch-rs-em__foot">
         <span className={'ch-field__help' + (over || bad > 0 ? ' is-error' : '')} role={over || bad > 0 ? 'alert' : undefined}>
           {bad > 0
-            ? `${bad === 1 ? 'One address' : `${bad} addresses`} can’t be read. Fix or remove ${bad === 1 ? 'it' : 'them'}.`
+            ? `${pluralWord(bad, 'One address', `${bad} addresses`)} can’t be read. Fix or remove ${pluralWord(bad, 'it', 'them')}.`
             : over
               ? `${MAX_INVITE_EMAILS} at a time. Send these, then add the rest.`
               : `They get the link and the team code. ${count} of ${MAX_INVITE_EMAILS}`}

@@ -2,6 +2,7 @@ import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
 import { MINUS, NO_DATA } from '../lib/format';
+import { plural } from '../lib/plural';
 
 /**
  * Ask CoachHelm, the conversation (Clubhouse P013): what a thread of AI SDK message parts means on
@@ -247,9 +248,9 @@ export function describeWork(steps: AskStep[], envelopes: ToolEnvelope[]): strin
   const rounds = maxBy('rounds');
   const players = new Set(ms.filter((m) => m.entity.kind === 'player').map((m) => m.entity.id)).size;
   const bits: string[] = [];
-  if (rounds > 0) bits.push(`${rounds} round${rounds === 1 ? '' : 's'}`);
+  if (rounds > 0) bits.push(plural(rounds, 'round'));
   if (players > 1) bits.push(`${players} players`);
-  if (bits.length === 0) return `Worked through ${steps.length} step${steps.length === 1 ? '' : 's'}`;
+  if (bits.length === 0) return `Worked through ${plural(steps.length, 'step')}`;
   return `Read ${bits.join(' across ')}`;
 }
 
@@ -723,7 +724,7 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: `${names.join(' and ')}`,
         ...base,
         table: {
-          caption: `Comparison of ${names.join(' and ')} across ${metricIds.length} metric${metricIds.length === 1 ? '' : 's'}, with sample sizes`,
+          caption: `Comparison of ${names.join(' and ')} across ${plural(metricIds.length, 'metric')}, with sample sizes`,
           columns: ['Metric', ...names],
           rows: metricIds.map((id) => [ms.find((m) => m.metric_id === id)?.metric_label ?? id, ...names.map((n) => { const m = find(n, id); return m ? `${formatValue(m.value, m.unit)}${m.sample_size > 0 ? ` (${sampleWords(m.sample_size, m.sample_unit)})` : ''}` : NO_DATA; })]),
         },

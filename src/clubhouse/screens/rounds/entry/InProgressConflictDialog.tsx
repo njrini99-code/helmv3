@@ -6,6 +6,7 @@ import { haptic } from '../../../lib/haptics';
 import { Modal } from '../../../ui/Modal';
 import { factsLine, failureLine } from './labels';
 import { DiscardConfirm, Opt, Opts, RoundFacts, useAgo, useErrorHaptic } from './parts';
+import { pluralWord } from '../../../lib/plural';
 
 /**
  * CH-11514: starting a round found that the player already has one in
@@ -86,7 +87,7 @@ export function InProgressConflictDialog({
   }, [open]);
   useErrorHaptic(error);
   const ago = useAgo(updatedAt, now);
-  const scored = scoredHoles > 0 ? `${scoredHoles} scored ${scoredHoles === 1 ? 'hole' : 'holes'}` : 'no scored holes yet';
+  const scored = scoredHoles > 0 ? `${scoredHoles} scored ${pluralWord(scoredHoles, 'hole')}` : 'no scored holes yet';
   const where = course?.trim() ? `${course.trim()} on this date` : 'this course and date';
 
   return (

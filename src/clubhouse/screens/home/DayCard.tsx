@@ -22,6 +22,7 @@ import { agendaDetail } from './agenda-clock';
 import { CALENDAR, eventHref, whenLabel } from './event-links';
 import { nudgeDraft } from './nudge-draft';
 import { firstName } from '../../lib/names';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The coach's phone Home as one living card (owner-approved phone concept, board 1 "The day, not a dashboard"): the
@@ -317,7 +318,7 @@ export function sinceChips(prev: Seen | null, rounds: ChLatestRound[], event: Ch
     .map((r) => ({ key: `r-${r.id}`, big: String(r.score), toPar: r.toPar != null ? { text: formatToPar(r.toPar), under: r.toPar < 0 } : undefined, label: `${firstName(r.playerName)} posted`, round: r }));
   if (event && event.going != null && prev.event?.id === event.id && event.going > prev.event.going) {
     const more = event.going - prev.event.going;
-    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${more === 1 ? 'Reply' : 'Replies'} · ${event.title}`, href: eventHref(event) });
+    chips.push({ key: `e-${event.id}`, big: `+${more}`, label: `${pluralWord(more, 'Reply', 'Replies')} · ${event.title}`, href: eventHref(event) });
   }
   return chips;
 }

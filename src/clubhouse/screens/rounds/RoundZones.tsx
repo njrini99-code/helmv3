@@ -6,7 +6,7 @@ import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
 import { afterRailMove } from '../../lib/rail-fold';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /**
  * P011: the pictures of a round's review. A zone is a band under a gold rule: what the area is and one reading on the left,
@@ -274,7 +274,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
             <b className="ch-num">{split.two}</b>two-putt holes
           </span>
           <span className={split.three ? 'is-warn' : undefined}>
-            <b className="ch-num">{split.three}</b>three-putt {split.three === 1 ? 'hole' : 'holes'}
+            <b className="ch-num">{split.three}</b>three-putt {pluralWord(split.three, 'hole')}
           </span>
         </div>
       </ZoneBlock>

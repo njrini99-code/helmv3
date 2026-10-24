@@ -18,7 +18,7 @@
  */
 
 import { compareStandings, sameStanding } from '@/lib/coachhelm/v3/qualifying/ranking';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 export type ChQStatus = 'upcoming' | 'in_progress' | 'completed';
 export type ChQSelectionState = 'open' | 'scoring' | 'closed' | 'selected';
@@ -430,7 +430,7 @@ export function stageNoteText(
   if (stage === 1) {
     if (nobody) return 'Nobody has a score in and no pick is made yet, so there is no squad to confirm.';
     if (picksReady) return 'Every pick is made. Confirm the squad to tell the players.';
-    const missing = reasons === 1 ? 'the missing reason' : `the ${reasons} missing reasons`;
+    const missing = pluralWord(reasons, 'the missing reason', `the ${reasons} missing reasons`);
     if (!picks) return `Every pick is chosen. Add ${missing}, then confirm the squad.`;
     const what = made ? plural(picks, 'more coach’s pick', 'more coach’s picks') : plural(picks, 'coach’s pick', 'coach’s picks');
     return `Choose ${what}, ${picks === 1 ? 'with a reason' : 'each with a reason'}, to confirm the squad.${reasons ? ` Add ${missing} too.` : ''}`;

@@ -8,6 +8,7 @@ import { Button } from '../../ui/Button';
 import { Surface } from '../../ui/Surface';
 import { useToast } from '../../ui/Toast';
 import type { ChCoursePlanReads } from './writes';
+import { pluralWord } from '../../lib/plural';
 
 type Step =
   | { at: 'idle' }
@@ -101,7 +102,7 @@ function PlanCard({ plan, who, onCopy }: { plan: Plan; who: string; onCopy: (tex
   if (plan.status === 'too_few') {
     return (
       <p className="ch-hl-note" role="status">
-        {who} has {plan.rounds} countable {plan.rounds === 1 ? 'round' : 'rounds'} at {plan.courseName}. A plan needs three.
+        {who} has {plan.rounds} countable {pluralWord(plan.rounds, 'round')} at {plan.courseName}. A plan needs three.
       </p>
     );
   }

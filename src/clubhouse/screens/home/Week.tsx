@@ -15,10 +15,11 @@ import { useChClock } from '../../lib/use-clock';
 import { agendaDetail, agendaTime } from './agenda-clock';
 import { nudgeDraft } from './nudge-draft';
 import { firstName } from '../../lib/names';
+import { plural } from '../../lib/plural';
 
 /** What the dots under a day say to a screen reader. */
 export function dayLabel(count: number, competition: boolean): string {
-  const events = count === 0 ? 'no events' : count === 1 ? '1 event' : `${count} events`;
+  const events = count === 0 ? 'no events' : plural(count, 'event');
   return competition ? `competition, ${events}` : events;
 }
 

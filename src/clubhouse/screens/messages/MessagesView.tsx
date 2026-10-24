@@ -115,6 +115,7 @@ import { Tooltip } from '../../ui/Tooltip';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { useRovingRows } from "../../lib/roving";
 import { usePageKeys, type ChPageKey } from "../../shell/command/page-keys";
+import { plural } from "../../lib/plural";
 
 /** B11: the rail's keys, as the shortcuts sheet lists them. */
 const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["↑", "↓"] }];
@@ -1602,7 +1603,7 @@ export function ThreadBelow({ anchor }: { anchor: { unseen: number; atEnd: boole
   if (anchor.unseen > 0) {
     return (
       <button type="button" className="ch-ms-below" onClick={anchor.toEnd}>
-        {anchor.unseen === 1 ? "1 new message" : `${anchor.unseen} new messages`}
+        {plural(anchor.unseen, "new message")}
       </button>
     );
   }

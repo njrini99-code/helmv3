@@ -7,6 +7,7 @@ import type { CoursePlanCourse } from '@/lib/coachhelm/course-plan/build-plan';
 import { haptic } from '../../lib/haptics';
 import { Button } from '../../ui/Button';
 import { LIVE_MY_COURSE_PLAN_READS, type ChMyCoursePlanReads } from './writes';
+import { pluralWord } from '../../lib/plural';
 
 type Step =
   | { at: 'idle' }
@@ -88,7 +89,7 @@ function PlanLines({ plan }: { plan: Plan }) {
   if (plan.status === 'too_few') {
     return (
       <p className="ch-hl-note" role="status" data-ch-code="CH-13333">
-        You have {plan.rounds} countable {plan.rounds === 1 ? 'round' : 'rounds'} at {plan.courseName}. A plan needs three.
+        You have {plan.rounds} countable {pluralWord(plan.rounds, 'round')} at {plan.courseName}. A plan needs three.
       </p>
     );
   }

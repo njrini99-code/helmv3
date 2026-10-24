@@ -21,6 +21,7 @@ import { radioKeys, rovingRadios } from './radio';
 import { HUB_UPLOAD_ACCEPT } from './upload-rules';
 import type { ChHubWrites } from './writes';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's sections (design/handoff/hub.jsx). Each takes what it shows and
@@ -212,7 +213,7 @@ export function Announcement({
   );
 }
 
-const attachmentCount = (n: number) => (n === 1 ? '1 attachment' : `${n} attachments`);
+const attachmentCount = (n: number) => plural(n, 'attachment');
 
 /** What a post's attachment list needs from the Hub: the read, and Documents' own open (one tab, one signed link). */
 export interface ChHubAttachments {
@@ -728,7 +729,7 @@ export function Documents({
                 <Icon icon={Folder} size={16} />
                 {f.name}
               </h2>
-              <span className="ch-hb-muted ch-num">{f.files.length === 1 ? '1 file' : `${f.files.length} files`}</span>
+              <span className="ch-hb-muted ch-num">{plural(f.files.length, 'file')}</span>
             </div>
             <div className="ch-hb-files">
               {f.files.map((d) => (

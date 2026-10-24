@@ -1,6 +1,6 @@
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { isUuid } from '@/lib/utils/uuid';
-import { plural } from '../lib/plural';
+import { plural, pluralWord } from '../lib/plural';
 
 /*
  * The Stats round filter, shared by the team page and the player profile (desktop and phone).
@@ -353,7 +353,7 @@ function filterParts(f: ChFilter, year: number): string[] {
 
 /** The count line: "12 rounds: tournaments, Sep 1 to Sep 29". */
 export function filterSummary(f: ChFilter, count: number, year = new Date().getUTCFullYear()): string {
-  if (f.pick?.mode === 'only') return `${count} picked ${count === 1 ? 'round' : 'rounds'}`;
+  if (f.pick?.mode === 'only') return `${count} picked ${pluralWord(count, 'round')}`;
   return `${plural(count, 'round', 'rounds')}: ${filterParts(f, year).join(', ')}`;
 }
 

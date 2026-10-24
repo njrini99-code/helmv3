@@ -20,7 +20,7 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { addDays, dayNum, dowOf, fmtHour, monthKey, monthName, playerReplyNeeded, rangeLabel, startLabel, weekDates, yearOf, type ChCalEvent, type ChCalPerson, type ChCalView } from './model';
 import { AgendaView, eventTitle, type ChNow } from './views';
 import { MonthGrid } from './month';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** The phone's three views (board: Day, Month, List); the desktop's week is the phone's Day. */
 export type ChCalPhoneView = 'day' | 'month' | 'list';
@@ -308,8 +308,8 @@ function DayPage({
         {/* An empty day has no "0 events": the empty state under it says so. */}
         {!failed && list.length > 0 && (
           <span className="ch-num">
-            {team.length} {team.length === 1 ? 'event' : 'events'}
-            {blocks > 0 ? ` · ${blocks} ${coach ? (blocks === 1 ? 'class or busy block' : 'classes or busy blocks') : blocks === 1 ? 'class' : 'classes'}` : ''}
+            {team.length} {pluralWord(team.length, 'event')}
+            {blocks > 0 ? ` · ${blocks} ${coach ? pluralWord(blocks, 'class or busy block', 'classes or busy blocks') : pluralWord(blocks, 'class', 'classes')}` : ''}
           </span>
         )}
         {/* P006 D5, B2: the week before and after without going through Month; the same reach a swipe gives, for

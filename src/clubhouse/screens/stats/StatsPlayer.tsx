@@ -50,6 +50,7 @@ import { OverviewZones } from './OverviewZones';
 import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
+import { pluralWord } from '../../lib/plural';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -425,7 +426,7 @@ const Overview = memo(function Overview({ data, coach, onOpenLeg }: { data: ChPl
           first={first}
           coach={coach}
           teamAvg={data.teamAvg}
-          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${trendRounds.length === 1 ? 'round' : 'rounds'}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
+          meta={`Last ${trendRounds.length} ${HOLES_ADJ[data.filter.holes]} ${pluralWord(trendRounds.length, 'round')}${trendRounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}`}
           note={trendRounds.length ? formNote(first, trendRounds.map((r) => r.score)) : undefined}
         />
       }

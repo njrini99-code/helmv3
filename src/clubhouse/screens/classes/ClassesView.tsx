@@ -21,6 +21,7 @@ import { AddTile, ClassCard, CoachNote, OverlapsCard, SyncStatus, TermBar, Timet
 import { newClassId, type ChClassesWrites, type ChRemoveAllData } from './writes';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { chScrollIntoView } from '../../lib/smooth-scroll';
+import { pluralWord } from '../../lib/plural';
 
 const label = (c: { code: string; name: string }) => c.code || c.name;
 
@@ -200,7 +201,7 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     'classes.removeAll',
     removeAllAction,
     (ids: string[]) => ({
-      done: `${ids.length === 1 ? 'Class' : `All ${ids.length} classes`} deleted`,
+      done: `${pluralWord(ids.length, 'Class', `All ${ids.length} classes`)} deleted`,
       failed: "Couldn’t delete your classes",
       hint: 'Nothing was deleted. Check your connection and try again.',
       code: 'CH-12005',

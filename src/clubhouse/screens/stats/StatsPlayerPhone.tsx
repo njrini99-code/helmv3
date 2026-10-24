@@ -40,7 +40,7 @@ import { chScrollIntoView } from '../../lib/smooth-scroll';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useArrivalPainted } from '../../lib/use-painted';
 import { TERMS } from '../../lib/glossary';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -371,7 +371,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
         <div className="ch-stm-panel__h">
           <h2 id="ch-spm-trend">Scoring trend</h2>
           <span className="ch-num">
-            {rounds.length} {rounds.length === 1 ? 'round' : 'rounds'}
+            {rounds.length} {pluralWord(rounds.length, 'round')}
             {rounds.some((r) => r.holes === 9) ? ' · 9-hole scores doubled' : ''}
           </span>
         </div>

@@ -41,7 +41,7 @@ import { CalendarFirstRun } from './CalendarFirstRun';
 import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
   const p: Record<string, string> = {};
@@ -824,7 +824,7 @@ export function Calendar({
             <Icon icon={ChevronDown} size={16} />
           </button>
           <div className="ch-cal-sub">
-            {data.eventsError ? "Events didn’t load" : `${count} team ${count === 1 ? 'event' : 'events'}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
+            {data.eventsError ? "Events didn’t load" : `${count} team ${pluralWord(count, 'event')}${view === 'week' ? ' this week' : view === 'day' ? '' : ' this month'}`} · {data.zoneLabel}
           </div>
           <AnimatePresence>
             {jump && (
@@ -966,7 +966,7 @@ export function Calendar({
       {sel.length > 0 && (
         <span className="ch-sr-only" role="status">
           {/* CH-6803 */}
-          Showing {sel.length} {sel.length === 1 ? 'player' : 'players'}
+          Showing {sel.length} {pluralWord(sel.length, 'player')}
         </span>
       )}
 

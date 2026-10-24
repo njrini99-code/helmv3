@@ -33,6 +33,7 @@ import TeamTrendChart from './TeamTrendChart';
 import { hasRange, isFiltered } from '../../data/stats-filter';
 import { useChSessionState } from '../../lib/session-state';
 import { useArrivalPainted } from '../../lib/use-painted';
+import { pluralWord } from '../../lib/plural';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -87,7 +88,7 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
       <div className="ch-stm is-team">
         <header className="ch-stm-head">
           <span className="ch-num">
-            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${data.activeCount === 1 ? 'player' : 'players'} · `}countable rounds only
+            {data.teamName} · {data.roundsError ? '' : `${data.activeCount} active ${pluralWord(data.activeCount, 'player')} · `}countable rounds only
           </span>
           <h1>Team stats</h1>
         </header>
@@ -439,7 +440,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                     <span className="ch-stm-row__b">
                       <b>{p.name}</b>
                       <span className="ch-num">
-                        {p.rounds} {p.rounds === 1 ? 'round' : 'rounds'}
+                        {p.rounds} {pluralWord(p.rounds, 'round')}
                       </span>
                     </span>
                     <span className="ch-stm-row__v ch-num">

@@ -33,7 +33,7 @@ import {
 } from './model';
 
 import { TYPE_ICON } from './type-icon';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 export { TYPE_ICON };
 
 export interface ChNow {
@@ -509,7 +509,7 @@ export function AgendaView({
       {past.length > 0 && (
         <div>
           <Button size="sm" variant="ghost" leftIcon={early ? ChevronUp : ChevronDown} onClick={() => setEarly(!early)}>
-            {early ? 'Hide earlier days' : `Show ${past.length} earlier ${past.length === 1 ? 'day' : 'days'}`}
+            {early ? 'Hide earlier days' : `Show ${past.length} earlier ${pluralWord(past.length, 'day')}`}
           </Button>
         </div>
       )}

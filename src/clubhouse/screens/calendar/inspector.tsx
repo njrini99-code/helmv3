@@ -67,7 +67,7 @@ import { messageCoachHref } from '../home/player-links';
 import { BusyDetail, EventFiles, LinkedTrip } from './extras';
 import { courseParts } from './class-group';
 import { BackLink } from '../../ui/Section';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 export type ChInsp =
   | { kind: 'event'; id: string; date: string }
@@ -185,7 +185,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           <span className="ch-num">{fmtHour(now.hour, true, clock)}</span>
         </div>
         <h2 className="ch-in__title">
-        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${today.length === 1 ? 'event' : 'events'} today`}
+        {today.length === 0 ? <span data-ch-code="CH-6302">Nothing on the team calendar today</span> : `${today.length} team ${pluralWord(today.length, 'event')} today`}
       </h2>
       {next && (
         <button
@@ -293,7 +293,7 @@ export function Summary({ ctx }: { ctx: InspCtx }) {
           {role === 'coach' ? (
             <>
               <Fact icon={BookOpen} tone="class">
-                Class schedules for {classOwners.size} {classOwners.size === 1 ? 'player' : 'players'}
+                Class schedules for {classOwners.size} {pluralWord(classOwners.size, 'player')}
               </Fact>
               <Fact icon={Lock} tone="own">Your busy time · only you see it</Fact>
             </>
@@ -713,7 +713,7 @@ export function Attendance({ ctx, id, date }: { ctx: InspCtx; id: string; date: 
       return failed.length ? { success: false, error: failed.length === results.length ? failed[0]?.error : `${failed.length} of ${results.length} marks didn’t save` } : { success: true };
     },
     () => ({
-      done: `${unsaved.current.length} attendance ${unsaved.current.length === 1 ? 'mark' : 'marks'} saved`,
+      done: `${unsaved.current.length} attendance ${pluralWord(unsaved.current.length, 'mark')} saved`,
       failed: "Couldn’t save attendance",
       hint: 'The marks that saved are kept. Try again for the rest.',
       code: 'CH-6011',

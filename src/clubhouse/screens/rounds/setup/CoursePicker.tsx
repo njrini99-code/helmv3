@@ -10,6 +10,7 @@ import { Modal } from '../../../ui/Modal';
 import { TeeSwatch } from '../parts';
 import { groupCourses, type ChResult, type ChSetupCourse, type ChSetupPorts, type ChSetupTee } from './shape';
 import { BackLink } from '../../../ui/Section';
+import { plural } from '../../../lib/plural';
 
 type Load<T> = { state: 'loading' } | { state: 'ok'; data: T } | { state: 'failed'; error: string };
 
@@ -180,7 +181,7 @@ function CourseList({
                         {c.place && <span>{c.place}</span>}
                       </span>
                       <span className="ch-cpk__meta ch-num">
-                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? `${c.teeCount} tee${c.teeCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}
+                        {[c.lastPlayed, c.par ? `Par ${c.par}` : null, c.teeCount ? plural(c.teeCount, 'tee') : null].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </span>

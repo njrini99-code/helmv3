@@ -11,6 +11,7 @@ import { PhoneTop } from '../../shell/phone-chrome';
 import { formatHcp } from '../../lib/format';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import { TERMS } from '../../lib/glossary';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The player's phone Roster: the coach's phone list (docs/clubhouse/phone/roster.md) as plain text. The top bar
@@ -35,7 +36,7 @@ export function TeamRosterPhone({ data, onRetry }: { data: ChPlayerRoster; onRet
               {data.players.length > 0 && (
                 <>
                   {' '}
-                  · <span className="ch-num">{data.players.length}</span> {data.players.length === 1 ? 'player' : 'players'}
+                  · <span className="ch-num">{data.players.length}</span> {pluralWord(data.players.length, 'player')}
                 </>
               )}
             </span>

@@ -1,5 +1,6 @@
 import type { ChTeamStats } from '../../data/stats-team';
 import { roundsWord } from '../../data/stats-filter';
+import { pluralWord } from '../../lib/plural';
 
 /** C-24(f), CH-5213: the profile's round cache didn't load, so its figures are missing, never "no data" (a dash read as an empty sample). */
 export const CACHE_ERROR = {
@@ -9,7 +10,7 @@ export const CACHE_ERROR = {
 
 /** "2 countable rounds", or with nine-hole rounds in, "3 countable rounds, 2.5 counting 9-hole rounds as half" (the early-read floors count whole rounds). */
 export function countWords(raw: number, whole: number): string {
-  const base = `${raw} countable ${raw === 1 ? 'round' : 'rounds'}`;
+  const base = `${raw} countable ${pluralWord(raw, 'round')}`;
   return whole === raw ? base : `${base}, ${roundsWord(whole)} counting 9-hole rounds as half`;
 }
 

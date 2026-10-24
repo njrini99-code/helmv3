@@ -31,6 +31,7 @@ import { nameList, type ChJoinRequestsState } from './useJoinRequests';
 import { useCopyText } from './useCopyText';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { TERMS } from '../../lib/glossary';
+import { pluralWord } from '../../lib/plural';
 
 export type { PhoneSort } from './sort';
 
@@ -439,12 +440,12 @@ function RequestsBanner({ jr, error, covered, onRetry, onOpen }: { jr: ChJoinReq
   const names = jr.reqs.slice(0, 2).map((r) => r.name);
   const who = n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names);
   return (
-    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${n === 1 ? 'request' : 'requests'}, ${who}`} onClick={onOpen}>
+    <button type="button" className="ch-rsm-banner" aria-label={`${n} join ${pluralWord(n, 'request')}, ${who}`} onClick={onOpen}>
       <span className="ch-rsm-banner__n ch-num" aria-hidden="true">
         {n}
       </span>
       <span className="ch-rsm-banner__b">
-        <b>{n === 1 ? 'Join request' : 'Join requests'}</b>
+        <b>{pluralWord(n, 'Join request')}</b>
         <span>{who}</span>
       </span>
       <Icon icon={ChevronRight} size={16} />

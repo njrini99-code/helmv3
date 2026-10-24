@@ -21,6 +21,7 @@ import { TeamRosterPhone } from './TeamRosterPhone';
 import { sortTeammates, teammateLine, type TeamSort } from './team';
 import '../../styles/roster.css';
 import { SideScroll } from '../../ui/SideScroll';
+import { pluralWord } from '../../lib/plural';
 
 type View = 'faces' | 'list';
 // The same key as the coach's roster: the layout is a preference for this screen on this device.
@@ -80,7 +81,7 @@ export function TeamRoster({ data }: { data: ChPlayerRoster }) {
           <h1 className="ch-display">Roster</h1>
           {!data.playersError && players.length > 0 && (
             <p>
-              <span className="ch-num">{players.length}</span> {players.length === 1 ? 'player' : 'players'} on the roster.
+              <span className="ch-num">{players.length}</span> {pluralWord(players.length, 'player')} on the roster.
             </p>
           )}
         </div>

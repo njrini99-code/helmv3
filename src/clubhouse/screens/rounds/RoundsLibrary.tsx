@@ -26,6 +26,7 @@ import { Tooltip } from '../../ui/Tooltip';
 import { monthLabel, MonthSpark, RoundRow, SeasonCard, shortDay, UnfinishedCard } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
 import { LIVE_ROUNDS_WRITES, type ChRoundsWrites } from './writes';
+import { pluralWord } from '../../lib/plural';
 
 type Group = 'month' | 'course';
 
@@ -141,7 +142,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
       {phone && <PhoneTop start heading={false} title="Rounds" />}
       <header className="ch-rd-h" data-canopy-head={phone ? undefined : ''}>
         <div>
-          <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${counted === 1 ? 'round' : 'rounds'}` : 'Since August 1'}</span>
+          <span className="ch-rd-k">{counted ? `Since August 1 · ${counted} counted ${pluralWord(counted, 'round')}` : 'Since August 1'}</span>
           {/* CH-11410: a refresh with the page on screen keeps it and says it is updating (a Try again is the usual cause). */}
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11410' : undefined}>
             {refreshing ? 'Updating…' : ''}
@@ -207,7 +208,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
           {more.length > 0 && (
             <section className="ch-rd-more" aria-labelledby="ch-rd-more-h">
               <h2 id="ch-rd-more-h">
-                {more.length} more unfinished {more.length === 1 ? 'round' : 'rounds'}
+                {more.length} more unfinished {pluralWord(more.length, 'round')}
               </h2>
               <ul>
                 {more.map((r) => {
@@ -265,7 +266,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                         <span className="ch-rd-grp__rule" />
                         <MonthSpark rounds={g.rounds} />
                         <span className="ch-num">
-                          {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
+                          {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
                         </span>
                         {full.length > 0 && (
                           <span className="ch-num">

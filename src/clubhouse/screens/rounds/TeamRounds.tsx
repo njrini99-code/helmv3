@@ -21,7 +21,7 @@ import { Select } from '../../ui/Select';
 import { EmptyState } from '../../ui/States';
 import { monthLabel, shortDay, TeeSwatch, TypePill } from './parts';
 import { noteOpenedFromLibrary } from './return-state';
-import { plural } from '../../lib/plural';
+import { plural, pluralWord } from '../../lib/plural';
 
 type Group = 'month' | 'player';
 
@@ -126,7 +126,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
         <div>
           <span className="ch-rd-k">
             {data.teamName ? `${data.teamName} · ` : ''}
-            {s.rounds ? `Since August 1 · ${s.rounds} counted ${s.rounds === 1 ? 'round' : 'rounds'}` : 'Since August 1'}
+            {s.rounds ? `Since August 1 · ${s.rounds} counted ${pluralWord(s.rounds, 'round')}` : 'Since August 1'}
           </span>
           <span className="ch-rd-upd" role="status" data-ch-code={refreshing ? 'CH-11412' : undefined}>
             {refreshing ? 'Updating…' : ''}
@@ -189,7 +189,7 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
                 const avg = full.length ? full.reduce((a, r) => a + r.score, 0) / full.length : null;
                 const meta = (
                   <span className="ch-num">
-                    {g.rounds.length} {g.rounds.length === 1 ? 'round' : 'rounds'}
+                    {g.rounds.length} {pluralWord(g.rounds.length, 'round')}
                     {avg != null && ` · avg ${formatFixed(avg, 1)}`}
                   </span>
                 );

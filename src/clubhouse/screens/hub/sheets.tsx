@@ -19,6 +19,7 @@ import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
 import { radioKeys, rovingRadios } from './radio';
 import { isoDay } from '../../lib/dates';
+import { plural } from '../../lib/plural';
 
 /*
  * Team Hub's forms, each a Modal (a bottom sheet on the phone). A form keeps
@@ -835,7 +836,7 @@ export function AssignSheet({
       return res;
     },
     (i) => ({
-      done: `${i.title.trim()} assigned to ${i.playerIds.length === players.length ? 'the team' : i.playerIds.length === 1 ? '1 player' : `${i.playerIds.length} players`}`,
+      done: `${i.title.trim()} assigned to ${i.playerIds.length === players.length ? 'the team' : plural(i.playerIds.length, 'player')}`,
       failed: `Couldn’t assign ${i.title.trim() || 'the task'}`,
       hint: 'What you entered is still here.',
       code: 'CH-10007',

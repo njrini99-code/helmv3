@@ -13,6 +13,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { clock, dayLabel, needsMyAck, railTime, type ChAnnouncement, type ChAnnouncementDetail } from './model';
 import type { ChMessagesApi } from './MessagesView';
+import { pluralWord } from '../../lib/plural';
 
 /**
  * The team's announcements, folded under the conversations (owner, 2026-10-16: messages first, announcements folded).
@@ -102,7 +103,7 @@ export function AnnouncementsSection({ api, q }: { api: ChMessagesApi; q: string
           </div>
           {more > 0 && (
             <button type="button" className="ch-ms-more" onClick={() => api.selectAnn(api.announcements[list.length]!.id)}>
-              {more} earlier {more === 1 ? 'announcement' : 'announcements'}
+              {more} earlier {pluralWord(more, 'announcement')}
             </button>
           )}
         </div>
