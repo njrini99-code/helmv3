@@ -583,6 +583,7 @@
 }
 .ch-qf-you-line__me b {
   font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-qf-you-line ul {
@@ -2034,13 +2035,9 @@
     gap: var(--ch-space-1);
     justify-self: end;
   }
-  .ch-qfm-lbhead__stack small {
-    font: inherit;
-  }
   .ch-qfm-lb__tot {
     font: var(--ch-type-caption);
     font-style: normal;
-    font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
   }
   .ch-qfm-lb__thru {

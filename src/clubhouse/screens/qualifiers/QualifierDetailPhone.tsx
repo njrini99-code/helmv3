@@ -315,7 +315,7 @@ function Board({
         <span>Pos</span>
         <span>Player</span>
         <span className="ch-qfm-lbhead__stack">
-          To par<small>Total</small>
+          To par<span>Total</span>
         </span>
         <span>Thru</span>
       </div>
