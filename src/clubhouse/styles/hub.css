@@ -1452,7 +1452,7 @@
   }
   /* The keyboard ring in champagne, so it reads on the green. */
   .ch-hb-ann.is-featured .ch-btn:focus-visible {
-    box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-champagne-300);
+    box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-border-focus-on-dark);
   }
   .ch-hb-ann.is-featured .ch-hb-iconbtn:focus-visible {
     outline-color: var(--ch-border-focus-on-dark);
@@ -2612,7 +2612,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     color: var(--ch-green-800);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-btn:focus-visible {
-    box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-champagne-300);
+    box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-border-focus-on-dark);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-iconbtn:hover,
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-reads--open:hover {
@@ -2959,7 +2959,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw--dark .ch-btn:focus-visible {
   outline: 0;
-  box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-champagne-300);
+  box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-border-focus-on-dark);
 }
 .ch-hw-pager {
   display: inline-flex;

@@ -250,7 +250,7 @@
 .ch-input:focus,
 .ch-textarea:focus {
   /* Design system: forms, green accents (default). */
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-input[aria-invalid='true'],
 .ch-textarea[aria-invalid='true'] {
@@ -770,7 +770,7 @@
   }
 }
 .ch-select select:focus-visible {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px rgb(21 90 57 / 0.12);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-select > svg {
   position: absolute;
@@ -1307,7 +1307,7 @@ html[data-fw-theme='dark'] .ch-menu__item:focus-visible {
 html[data-fw-theme='dark'] .ch-input:focus,
 html[data-fw-theme='dark'] .ch-textarea:focus,
 html[data-fw-theme='dark'] .ch-select select:focus-visible {
-  box-shadow: 0 0 0 1px var(--ch-green-600), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
 }
 html[data-fw-theme='dark'] .ch-input[aria-invalid='true'],
 html[data-fw-theme='dark'] .ch-textarea[aria-invalid='true'] {
