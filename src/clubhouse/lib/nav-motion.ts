@@ -178,13 +178,9 @@ export function takeRunningPush(): number {
     const pseudo = (a.effect as KeyframeEffect | null)?.pseudoElement ?? '';
     return pseudo.startsWith('::view-transition') && a.playState === 'running';
   });
-  if (!running.length) return 1;
-  const incoming = running.find((a) => (a.effect as KeyframeEffect | null)?.pseudoElement === '::view-transition-new(ch-page)');
-  const pushing = (incoming as CSSAnimation | undefined)?.animationName === 'ch-vt-push-in';
-  const curve = chSpringCurve('smooth');
-  const at = pushing ? Number(incoming?.currentTime ?? curve.ms) : curve.ms;
+  // Any other page transition still running (a crossfade or a pop) is finished: a push is no longer a view transition.
   for (const a of running) a.finish();
-  return curve.ease(Math.min(1, Math.max(0, at / curve.ms)));
+  return 1;
 }
 
 /**
@@ -320,6 +316,12 @@ function pushShare(run: NonNullable<typeof pushing>): number {
   return run.curve.ease(Math.min(1, Math.max(0, at / run.curve.ms)));
 }
 
+/** A number for a CSS value (geometry, not a displayed figure: CONS-15), rounded on `Math.round` to `places`. */
+export function cssNum(n: number, places = 2): string {
+  const k = 10 ** places;
+  return String(Math.round(n * k) / k);
+}
+
 /**
  * A finger takes the push in flight (use-route-swipe.ts): the slide stops where it stands, and the page and the copy
  * beneath are left there, inline, for the finger to move. Null when no push is running.
@@ -332,8 +334,8 @@ export function grabPush(): { entry: ChUnder; offset: number; share: number } | 
   const width = run.page.getBoundingClientRect().width || window.innerWidth;
   const { parallax, dim } = chUnderLook();
   for (const a of run.anims) a.cancel();
-  run.page.style.translate = `${((1 - share) * width).toFixed(2)}px 0`;
-  run.entry.layer.style.transform = `translateX(calc(${parallax} * ${share.toFixed(4)}))`;
+  run.page.style.translate = `${cssNum((1 - share) * width)}px 0`;
+  run.entry.layer.style.transform = `translateX(calc(${parallax} * ${cssNum(share, 4)}))`;
   run.entry.layer.style.filter = share > 0.5 ? dim : 'none';
   return { entry: run.entry, offset: (1 - share) * width, share };
 }

@@ -19,6 +19,11 @@ export const CH_EDGE_FLICK_PX_PER_MS = 0.5;
 export const CH_EDGE_SLOP_PX = 8;
 /** …and a flick counts only after the screen has moved this much. */
 const FLICK_MIN_PX = 10;
+/**
+ * A pushed screen (PhoneScreen, use-edge-swipe.ts) still waits this long after it mounts (its 462ms entry spring) before
+ * its swipe arms. A pushed route page doesn't: it is grabbed where it stands (C1, use-route-swipe.ts).
+ */
+export const CH_EDGE_ENTRY_SETTLE_MS = 480;
 
 export type EdgePhase = 'idle' | 'pending' | 'dragging' | 'refused';
 export type EdgeOutcome = 'commit' | 'cancel';

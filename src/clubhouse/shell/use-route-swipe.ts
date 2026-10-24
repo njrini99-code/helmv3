@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { haptic } from '../lib/haptics';
-import { chHandPop, chPushTiming, chShownPath, chUnderLook, grabPush, pageLayer, underFor, type ChUnder } from '../lib/nav-motion';
+import { chHandPop, chPushTiming, cssNum, chShownPath, chUnderLook, grabPush, pageLayer, underFor, type ChUnder } from '../lib/nav-motion';
 import { CH_EDGE_ZONE_PX, claimWebSwipe, createEdgeSwipe, edgeSwipeAllowed, findScreenBack, overlayIsOpen, type EdgeFrame, type EdgeRelease } from './edge-swipe';
 
 const PHONE = '(max-width: 820px)';
@@ -19,7 +19,7 @@ function routeBack(): HTMLButtonElement | null {
 /** `brightness(x)` eased toward none as the page beneath comes home; any other dim holds until halfway. */
 function dimAt(dim: string, drawnBack: number): string {
   const m = /brightness\(\s*([\d.]+)\s*\)/.exec(dim);
-  if (m) return `brightness(${(1 - (1 - Number(m[1])) * drawnBack).toFixed(4)})`;
+  if (m) return `brightness(${cssNum(1 - (1 - Number(m[1])) * drawnBack, 4)})`;
   return drawnBack > 0.5 ? dim : 'none';
 }
 
@@ -59,9 +59,9 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
 
     const place = (f: Pick<EdgeFrame, 'offset' | 'progress'>) => {
       offset = f.offset;
-      if (page) page.style.translate = `${f.offset.toFixed(2)}px 0`;
+      if (page) page.style.translate = `${cssNum(f.offset)}px 0`;
       if (entry) {
-        entry.layer.style.transform = `translateX(calc(${look.parallax} * ${(1 - f.progress).toFixed(4)}))`;
+        entry.layer.style.transform = `translateX(calc(${look.parallax} * ${cssNum(1 - f.progress, 4)}))`;
         entry.layer.style.filter = dimAt(look.dim, 1 - f.progress);
       }
     };
@@ -103,7 +103,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       const { curve, timing } = chPushTiming({ velocity: (-r.speed * 1000) / r.offset, rest: 0.5 / r.offset, hold: true });
       p.style.translate = '';
       const anims = [
-        p.animate([{ translate: `${r.offset.toFixed(2)}px 0` }, { translate: '0px 0' }], timing),
+        p.animate([{ translate: `${cssNum(r.offset)}px 0` }, { translate: '0px 0' }], timing),
         u.layer.animate([{ transform: u.layer.style.transform || 'none', filter: u.layer.style.filter || 'none' }, { transform: `translateX(${look.parallax})`, filter: look.dim }], { ...timing, fill: 'forwards' }),
       ];
       machine = null;
@@ -135,7 +135,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       const travel = Math.max(1, width - r.offset);
       const { curve, timing } = chPushTiming({ velocity: Math.max(0, r.speed) * (1000 / travel), rest: 0.5 / travel, hold: true });
       const anims = [
-        overlay.animate([{ transform: `translateX(${r.offset.toFixed(2)}px)` }, { transform: `translateX(${width}px)` }], { ...timing, fill: 'forwards' }),
+        overlay.animate([{ transform: `translateX(${cssNum(r.offset)}px)` }, { transform: `translateX(${width}px)` }], { ...timing, fill: 'forwards' }),
         u.layer.animate([{ transform: u.layer.style.transform || 'none', filter: u.layer.style.filter || 'none' }, { transform: 'none', filter: 'none' }], { ...timing, fill: 'forwards' }),
       ];
       machine = null;
@@ -195,6 +195,10 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
       });
     };
 
+    // The one listener that can hold up a scroll (it may preventDefault) is on only while a touch that landed at the edge is
+    // being read, so every other touch on the page scrolls without waiting on script.
+    const MOVE = { passive: false, capture: true } as const;
+    const disarm = () => document.removeEventListener('touchmove', onMove, MOVE);
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
       if (machine || ending || !t || e.touches.length !== 1 || t.clientX > CH_EDGE_ZONE_PX) return;
@@ -219,6 +223,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
         return;
       }
       machine = m;
+      document.addEventListener('touchmove', onMove, MOVE);
     };
     const onMove = (e: TouchEvent) => {
       if (!machine) return;
@@ -229,6 +234,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
         // The touch turned out to be a scroll: a push it held carries on home.
         if (machine.phase === 'refused') {
           machine = null;
+          disarm();
           if (grabbed) springHome({ offset, speed: 0 });
           else rest();
         }
@@ -244,6 +250,7 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     };
     const onEnd = (e: TouchEvent) => {
       if (!machine) return;
+      disarm();
       const release = machine.end(e.timeStamp);
       if (!release) {
         machine = null;
@@ -256,18 +263,18 @@ export function useRouteSwipe(on: boolean, routeKey: string): void {
     };
     /** The system took the touch: everything back where it rests, at once. */
     const abort = () => {
+      disarm();
       if (!machine) return;
       machine.cancel();
       rest();
     };
 
     document.addEventListener('touchstart', onStart, { passive: true, capture: true });
-    document.addEventListener('touchmove', onMove, { passive: false, capture: true });
     document.addEventListener('touchend', onEnd, { capture: true });
     document.addEventListener('touchcancel', abort, { capture: true });
     return () => {
       document.removeEventListener('touchstart', onStart, { capture: true });
-      document.removeEventListener('touchmove', onMove, { capture: true });
+      disarm();
       document.removeEventListener('touchend', onEnd, { capture: true });
       document.removeEventListener('touchcancel', abort, { capture: true });
       ending?.();
