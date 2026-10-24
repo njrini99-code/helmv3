@@ -126,7 +126,8 @@ inside GolfHelm), and Settings.
 Design:          the owner (Claude Design)
 Implementation:  src/clubhouse/shell, src/clubhouse/ui (toasts, notices), src/clubhouse/lib (useAction, track, motion, haptics)
 Data:            golf_events and golf_event_attendance (next-event card), golf_team_join_requests (Roster
-                 badge), golf_team_settings (timezone), the unified notifications feed
+                 badge), golf_team_settings (timezone), golf_team_members and golf_players (a coach's player names
+                 and ids for the palette, decision 16), the unified notifications feed
 ```
 
 ## Current status
