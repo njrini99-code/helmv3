@@ -32,6 +32,17 @@ export function chTween(duration: keyof typeof CH_DUR = 'base', reduced = false)
 }
 
 /**
+ * The Reduce Motion fade (owner decision 2, 2026-10-24, OQ-15): under the OS setting a page or a sheet fades in opacity
+ * over the quick beat (180ms) instead of sliding or scaling, as iOS does; with Animations off (`'off'`) it is instant.
+ * Opacity only: the caller drops every transform.
+ */
+export function chFade(mode: 'full' | 'fade' | 'off'): Transition {
+  return { duration: mode === 'off' ? 0 : CH_DUR.quick, ease: CH_EASE };
+}
+/** The same fade in milliseconds, for WAAPI and a view transition (--ch-dur-vt-fade in tokens.css). */
+export const CH_FADE_MS = CH_DUR.quick * 1000;
+
+/**
  * Springs (D-64 extension, 2026-10-08; a lead decision under the owner's full-auto brief, for the owner to confirm).
  * Apple's perceptual model (WWDC23, "Animate with springs"): a visual duration and a bounce. The durations are D-64's,
  * so the doctrine's numbers hold, and the bounce stays between 0 and 0.1 (Masters restraint: an arrival settles, it

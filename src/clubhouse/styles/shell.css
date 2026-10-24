@@ -1948,11 +1948,22 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
     pointer-events: none;
   }
 }
+/* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
+   together over --ch-dur-vt-fade (180ms), in opacity only, as iOS swaps its slides for fades. No push, pop, parallax,
+   dim or hold; the bars stay put and a section switch still swaps at once. Settings › Animations off never starts a
+   transition (RouteFrame renders without one). */
 @media (prefers-reduced-motion: reduce) {
   html:has([data-ui='clubhouse'])::view-transition-group(*),
   html:has([data-ui='clubhouse'])::view-transition-old(*),
   html:has([data-ui='clubhouse'])::view-transition-new(*) {
     animation: none !important;
+  }
+  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-old(ch-page) {
+    z-index: auto;
+    animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-out) both ch-vt-out !important;
+  }
+  html:not([data-ch-tab], [data-ch-ua-pop]):has([data-ui='clubhouse'])::view-transition-new(ch-page) {
+    animation: var(--ch-dur-vt-fade) var(--ch-ease-vt-in) both ch-vt-in !important;
   }
 }
 /* A Back that iOS already played with its own edge swipe (CH-1908, lib/ua-pop.ts) swaps at once: the page had slid off
