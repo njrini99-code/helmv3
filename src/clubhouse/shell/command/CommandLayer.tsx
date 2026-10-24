@@ -1,34 +1,21 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChRecent } from './commands';
 import { setPeopleScope, usePeople } from './people';
+import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
 import { Palette } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
 
-/** The command layer is for a keyboard and a pointer that hovers, on the desktop layout; the phone has none of it. */
-const DESKTOP = '(hover: hover) and (min-width: 821px)';
-
-function useDesktop(): boolean {
-  return useSyncExternalStore(
-    (cb) => {
-      const mql = window.matchMedia(DESKTOP);
-      mql.addEventListener('change', cb);
-      return () => mql.removeEventListener('change', cb);
-    },
-    () => window.matchMedia(DESKTOP).matches,
-    () => false,
-  );
-}
-
 /**
- * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K opens the command palette, G then a letter goes to a
+ * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K (or the top bar's search pill, palette-open.ts) opens
+ * the command palette, G then a letter goes to a
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
@@ -37,7 +24,7 @@ function useDesktop(): boolean {
  */
 export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole; pathname: string; userId: string; teamId: string | null }) {
   const router = useRouter();
-  const desktop = useDesktop();
+  const desktop = useCommandDesktop();
   const people = usePeople();
   const [palette, setPalette] = useState(false);
   const [opens, setOpens] = useState(0);
@@ -134,7 +121,15 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
     // Capture, so the layer sees a key before a page's own handler and a jump it takes is marked used (defaultPrevented): Calendar
     // binds a bare T (today) and skips a key already used, so G then T leaves it alone rather than doing both.
     window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    // The top bar's search pill opens the same palette; a second press while it is up changes nothing.
+    const onOpen = () => {
+      if (!live.current.palette) openPalette();
+    };
+    window.addEventListener(CH_PALETTE_EVENT, onOpen);
+    return () => {
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener(CH_PALETTE_EVENT, onOpen);
+    };
   }, [desktop, openPalette]);
   useEffect(() => () => window.clearTimeout(waitTimer.current), []);
 

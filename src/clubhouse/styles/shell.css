@@ -351,12 +351,38 @@
   border-radius: 2px;
   background: var(--ch-green-fill-600);
 }
+/* The identity is the account menu's key (B11): reset as a button, it keeps the block's look, and its hover and open
+   wash is a ring drawn outside it (box-shadow), so the foot's layout never moves. */
 .ch-identity {
   display: flex;
   align-items: center;
   gap: 11px;
+  width: 100%;
   min-width: 0;
+  margin: 0;
   padding: 0 4px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+@media (hover: hover) {
+  .ch-identity:hover {
+    background: rgb(250 248 241 / 0.07);
+    box-shadow: 0 0 0 6px rgb(250 248 241 / 0.07);
+  }
+}
+.ch-identity[aria-expanded='true'] {
+  background: rgb(250 248 241 / 0.07);
+  box-shadow: 0 0 0 6px rgb(250 248 241 / 0.07);
+}
+.ch-identity:focus-visible {
+  outline: 2px solid var(--ch-border-focus-on-dark);
+  outline-offset: 2px;
 }
 .ch-identity .ch-avatar {
   box-shadow: 0 0 0 2px rgb(220 205 166 / 0.5);
@@ -421,6 +447,39 @@
   display: flex;
   gap: 4px;
   margin-left: auto;
+}
+/* The search pill (B11, desktop only, SearchPill.tsx): a key drawn as the search field (controls.css .ch-search) that opens
+   the command palette, its chord at the end. */
+.ch-topbar__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 220px;
+  height: 32px;
+  margin: auto 8px auto 0;
+  padding: 0 6px 0 10px;
+  border: 0;
+  border-radius: var(--ch-radius-md);
+  background: var(--ch-ivory-25);
+  color: var(--ch-text-tertiary);
+  font: var(--ch-type-14);
+  text-align: left;
+  box-shadow: inset 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  cursor: pointer;
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+}
+.ch-topbar__search-t {
+  flex: 1;
+  min-width: 0;
+}
+.ch-topbar__search:focus-visible {
+  outline: 0;
+  box-shadow: inset 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo);
+}
+@media (hover: hover) {
+  .ch-topbar__search:hover {
+    box-shadow: inset 0 0 0 1px var(--ch-border-focus), inset 0 1px 2px rgb(28 25 18 / 0.06);
+  }
 }
 /* The phone's tab-root title, the slot for a page's own top bar and the shell's stand-in for it: phone only. */
 .ch-topbar__ptitle,
