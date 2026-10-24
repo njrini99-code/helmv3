@@ -17,6 +17,8 @@ import { Icon } from '../../ui/Icon';
 import { Segmented } from '../../ui/Segmented';
 import { Swap } from '../../ui/Swap';
 import { SectionBoundary } from '../../ui/SectionBoundary';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { useDelayedToast, useToast } from '../../ui/Toast';
 import { useChPhone } from '../../lib/use-phone';
 import { usePrinting } from './PrintHead';
@@ -757,6 +759,8 @@ function gridBasis(filter: ChFilter): string {
   return b.charAt(0).toLowerCase() + b.slice(1);
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
+
 function LegGrid({
   data,
   leg,
@@ -770,6 +774,7 @@ function LegGrid({
 }) {
   // A player's stats are fetched whole as a finger lands on the row (A13).
   const press = usePressPrefetch();
+  usePageKeys('Stats', useChPhone() ? null : ROW_KEYS);
   const playerHref = (id: string) => teamPlayerHref(id, data.filter);
   const li = LEGS_LIST.indexOf(leg);
   const rows = [...data.grid].sort((a, b) => (b.legs[li] ?? -99) - (a.legs[li] ?? -99));
@@ -786,6 +791,10 @@ function LegGrid({
   };
   return (
     <section className="ch-lg">
+      {/* B11 (row 63): Up and Down walk the players (their name links), Home and End go to the ends, and the list is one
+          Tab stop. Inside the stats.team.legs boundary, so it runs once that has hydrated; walked within the section, which
+          stays put when a leg change swaps the table. */}
+      <RovingRows selector=".ch-lg__tbl .ch-lg__a" within=".ch-lg" />
       <div className="ch-sgt__head">
         <div>
           <h2>Where each player gains and loses</h2>
