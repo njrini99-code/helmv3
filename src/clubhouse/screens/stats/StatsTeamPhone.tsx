@@ -38,6 +38,7 @@ import { useGlide } from '../../lib/motion-glide';
 import { pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
+import { NoData } from '../../ui/NoData';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -368,7 +369,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
-          <b className={'ch-num ' + changeInk(picked.v)}>{picked.v == null ? NO_DATA : formatSigned(picked.v)}</b>
+          <b className={'ch-num ' + changeInk(picked.v)}>{picked.v == null ? <NoData /> : formatSigned(picked.v)}</b>
           <span>{picked.total ? 'Team total' : picked.label}, a round</span>
         </p>
         {/* Plain tabs, not Base UI's: its list scrolled the chosen tab into view and its indicator measured it as the page
@@ -397,7 +398,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
                   <i className="ch-stm-leg__z" />
                   {v != null && bar != null && <i className={'ch-stm-leg__v ' + changeTone(v, false, 1)} style={bar >= 0 ? { left: '50%', width: `${bar}%` } : { right: '50%', width: `${-bar}%` }} />}
                 </span>
-                <b className={'ch-num ' + changeInk(v)}>{v == null ? NO_DATA : formatSigned(v)}</b>
+                <b className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</b>
               </button>
             );
           })}
@@ -465,7 +466,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
                       </span>
                     </span>
                     <span className="ch-stm-row__v ch-num">
-                      <b>{p.avg == null ? NO_DATA : formatFixed(p.avg)}</b>
+                      <b>{p.avg == null ? <NoData /> : formatFixed(p.avg)}</b>
                       <span className={changeInk(sg)}>{sg == null ? 'Early read' : `${formatSigned(sg)} SG`}</span>
                     </span>
                     <Icon icon={ChevronRight} size={16} className="ch-stm-row__chev" />
@@ -505,7 +506,7 @@ function Putting({ data, covered }: { data: ChTeamStats; covered: boolean }) {
                 {rate != null && <i className={low ? 'is-low' : ''} style={{ width: `${rate}%` }} />}
                 {b.bench != null && <em style={{ left: `${b.bench}%` }} />}
               </span>
-              <b className={'ch-num' + (low ? ' ch-loss' : '')}>{rate == null ? NO_DATA : `${Math.round(rate)}%`}</b>
+              <b className={'ch-num' + (low ? ' ch-loss' : '')}>{rate == null ? <NoData /> : `${Math.round(rate)}%`}</b>
             </div>
           );
         })}

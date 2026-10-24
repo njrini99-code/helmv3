@@ -8,6 +8,7 @@ import { Compare } from './charts';
 import { ScoreMixBar } from './ScoreMixBar';
 import { DataTable, Empty, Panel, RoundLine, SectorGrid, Tiles, type Cell, type Tone } from './detail';
 import { plural } from '../../lib/plural';
+import { NoData } from '../../ui/NoData';
 
 /**
  * Game detail's "More detail": for each section the figures the production
@@ -86,7 +87,7 @@ export function ScoringMore({ s, x, onRetry }: { s: GolfStats; x: ChProfileExtra
               <div key={p} className="ch-gx-pm">
                 <b>Par {p}s</b>
                 <span className="ch-num">
-                  {d.avgToPar == null ? NO_DATA : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
+                  {d.avgToPar == null ? <NoData /> : `${formatSigned(d.avgToPar, 2)} / hole`} · {d.total} holes
                 </span>
                 <ScoreMixBar counts={{ eagle: d.eagle, birdie: d.birdie, par: d.par, bogey: d.bogey, double: d.doublePlus }} label={`Par ${p}s`} compact />
               </div>
