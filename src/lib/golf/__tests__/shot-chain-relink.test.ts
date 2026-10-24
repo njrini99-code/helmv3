@@ -237,6 +237,17 @@ describe('relinkAfterEdit', () => {
     expect(out[2]).toMatchObject({ shotType: 'approach', lieBefore: 'rough', distanceToHoleBefore: 60 });
   });
 
+  it('splits a moved putt at 50 yd exactly as live entry does: 49 is around the green, 50 is an approach', () => {
+    const before = PAR4();
+    const at = (yards: number) => {
+      const edited = { ...before[1]!, result: 'rough' as const, distanceToHoleAfter: yards, distanceUnitAfter: 'yards' as const };
+      return relinkAfterEdit([before[0]!, edited, before[2]!], 1, before[1]!).history[2]!.shotType;
+    };
+
+    expect(at(49)).toBe('around_green');
+    expect(at(50)).toBe('approach');
+  });
+
   it('changes nothing around an edit that keeps the shot\'s start and end', () => {
     const before = PAR4();
     const edited = { ...before[1]!, clubType: 'driver' as const };

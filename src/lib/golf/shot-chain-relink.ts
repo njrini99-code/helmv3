@@ -24,6 +24,7 @@
 import type { ShotRecord } from '@/lib/types/golf';
 import { liesChain } from '@/lib/golf/shot-ledger-continuity';
 import { calculateShotDistanceWithDirection, deriveLieAfter, lieFromShotResult } from '@/lib/utils/shot-helpers';
+import { AROUND_GREEN_THRESHOLD_YARDS } from '@/lib/utils/golf-stats-calculator-shots';
 
 export interface RelinkResult {
   history: ShotRecord[];
@@ -84,9 +85,6 @@ function placePenalty(row: ShotRecord, spot: Spot): ShotRecord {
     distanceUnitAfter: spot.unit,
   };
 }
-
-/** Live entry files a shot from inside this distance as around-the-green (use-shot-state-machine). */
-const AROUND_GREEN_THRESHOLD_YARDS = 50;
 
 /**
  * Start a real shot at `spot`, keeping a recovery lie the player chose ('other'
