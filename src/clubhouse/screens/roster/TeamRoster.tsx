@@ -14,7 +14,8 @@ import { SearchField } from '../../ui/SearchField';
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { Tooltip } from '../../ui/Tooltip';
 import { haptic } from '../../lib/haptics';
-import { formatHcp, NO_DATA } from '../../lib/format';
+import { formatHcp } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
 import { useChPhone } from '../../lib/use-phone';
 import { TeamRosterPhone } from './TeamRosterPhone';
@@ -245,7 +246,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
             </span>
           </span>
           <span role="cell" className="ch-rs-num2">
-            {p.classYear ?? NO_DATA}
+            {p.classYear ?? <NoData />}
           </span>
           <span role="cell" className="r ch-num ch-rs-num2">
             {formatHcp(p.handicap)}

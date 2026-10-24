@@ -18,6 +18,7 @@ import { useAction, type ActionCopy } from '../../lib/use-action';
 import { chTween } from '../../lib/motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { rebuiltHref } from '../../shell/nav';
 import { AVAILABILITY_WORD, legsCaption, relativeAgo } from './format';
 import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
@@ -121,10 +122,10 @@ function PeekBody({
   const devCounts = (
     <>
       <span>
-        <b className="ch-num">{p.focusAreas ?? NO_DATA}</b> focus {pluralWord(p.focusAreas ?? 0, 'area')}
+        <b className="ch-num">{p.focusAreas ?? <NoData />}</b> focus {pluralWord(p.focusAreas ?? 0, 'area')}
       </span>
       <span>
-        <b className="ch-num">{p.goals ?? NO_DATA}</b> {pluralWord(p.goals ?? 0, 'goal')}
+        <b className="ch-num">{p.goals ?? <NoData />}</b> {pluralWord(p.goals ?? 0, 'goal')}
       </span>
     </>
   );
