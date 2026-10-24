@@ -1,6 +1,6 @@
-# 2026-10-24 — Open tests: Reduce Motion fades (CH-1608) and the filtered empties
+# 2026-10-24 — Open tests: Reduce Motion fades (CH-1608), the filtered empties
 
-## 2026-10-24 — CH-1608 gets its own test and the decision-2 wording; the filtered empties are pinned
+## 2026-10-24 — CH-1608 tested with decision 2's words; filtered empties pinned
 
 ```text
 Design package: none (Clubhouse A+ Round 1, S3 item 5)
@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-s3
 Contract IDs:   CH-1608, CH-5302, CH-11303, CH-09302, CH-13331
 Actions:        none
 Data impact:    none
-Held items:     a second, unfiltered CH-5302 on the desktop Rounds tab (PlayerStage.tsx:26 or RoundTrend.tsx:52, S2's files)
+Held items:     a second, unfiltered CH-5302 on the desktop Rounds tab
+                (PlayerStage.tsx:26 or RoundTrend.tsx:52, S2's files)
 ```
 
 ### Changed

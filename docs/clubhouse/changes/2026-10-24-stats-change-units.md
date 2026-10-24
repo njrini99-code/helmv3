@@ -1,6 +1,6 @@
-# 2026-10-24 — Stats changes say they are changes, and rates their unit (Clubhouse A+ S2c)
+# 2026-10-24 — Stats changes say they are changes, and rates their unit (S2c)
 
-## 2026-10-24 — The phone SG change names itself; the card's rate changes read in points (Round 3 review)
+## 2026-10-24 — The phone SG change names itself; rate changes read in points
 
 ```text
 Design package: none (Clubhouse A+ Round 3 review)

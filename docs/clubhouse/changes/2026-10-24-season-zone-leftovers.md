@@ -1,6 +1,6 @@
 # 2026-10-24 — The last two season cuts take the team's zone (Clubhouse A+ S2)
 
-## 2026-10-24 — Track record's start and the class year turn on 1 August in the team's zone (decision 9, review of #2361)
+## 2026-10-24 — Track record and class year turn on 1 August, team zone
 
 ```text
 Design package: none (Clubhouse A+ review of #2361, owner decision 9)
@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-s2
 Contract IDs:   none
 Actions:        none
 Data impact:    none (reads only)
-Held items:     Standing's window (rows 105 and 121) is still blocked on a migration
+Held items:     Standing's window (rows 105 and 121) is still blocked on a
+                migration
 ```
 
 ### Changed

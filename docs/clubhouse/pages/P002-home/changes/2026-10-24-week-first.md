@@ -3,12 +3,14 @@
 ## 2026-10-24 — Today's events sit above the two cards of figures
 
 ```text
-Design package: Coach Home v3 (decided) and coach-parity spec B; this changes v3's order, owner to confirm from WebKit shots
+Design package: Coach Home v3 (decided) and coach-parity spec B; this changes
+                v3's order, owner to confirm from WebKit shots
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   20105 (kept: the team's game stays under the team's form)
 Actions:        none
 Data impact:    none
-Held items:     owner confirmation of the order (Coach Home v3 is a decided design)
+Held items:     owner confirmation of the order (Coach Home v3 is a decided
+                design)
 ```
 
 ### Changed

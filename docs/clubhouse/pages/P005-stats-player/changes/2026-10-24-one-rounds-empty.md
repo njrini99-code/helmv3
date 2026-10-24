@@ -1,6 +1,6 @@
 # 2026-10-24 — One "No rounds in this window" (Clubhouse A+ S2b)
 
-## 2026-10-24 — The scoring form and the score trend use the rounds table's filtered empty (CH-5302)
+## 2026-10-24 — Scoring form and score trend use the filtered empty (CH-5302)
 
 ```text
 Design package: none (Clubhouse A+ follow-up found by S3)

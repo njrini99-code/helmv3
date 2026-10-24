@@ -3,7 +3,8 @@
 ## 2026-10-24 — A coach's create action is the phone top bar's plus
 
 ```text
-Design package: none (Clubhouse A+ handoff, B10.1; P010 D6 for which action each tab offers)
+Design package: none (Clubhouse A+ handoff, B10.1; P010 D6 for which action each
+                tab offers)
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   101901
 Actions:        none

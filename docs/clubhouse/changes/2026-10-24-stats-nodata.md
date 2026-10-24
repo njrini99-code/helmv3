@@ -1,6 +1,6 @@
 # 2026-10-24 — Stats' empty figures render NoData (Clubhouse A+ S2, row 46)
 
-## 2026-10-24 — 25 empty figures on Stats read "No data" to a screen reader (row 46)
+## 2026-10-24 — 25 empty Stats figures read "No data" to VoiceOver (row 46)
 
 ```text
 Design package: none (Clubhouse A+ row 46)
@@ -8,7 +8,9 @@ PR/commit:      agent/aplus-s2
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     string-typed values (a tile's or a table row's cells, a zone's Big), formatters and dashes beside their own words keep the bare string
+Held items:     string-typed values (a tile's or a table row's cells, a zone's
+                Big), formatters and dashes beside their own words keep the bare
+                string
 ```
 
 ### Changed

@@ -1,6 +1,6 @@
 # 2026-10-24 — Cmd 1 to 9 only in the app
 
-## 2026-10-24 — A browser keeps Cmd or Ctrl 1 to 9 for its tabs; the iOS app keeps the section keys
+## 2026-10-24 — Browsers keep Cmd/Ctrl 1-9 for tabs; the app keeps section keys
 
 ```text
 Design package: none (Clubhouse A+ Round 1, S3 item 2; owner decision 13)

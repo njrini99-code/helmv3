@@ -13,7 +13,9 @@ Held items:     none
 
 ### Changed
 
-- The Rounds season ribbon's y ticks, day numbers and average chip, and RoundZones' y ticks, take the `ch-num` class (CONS-39); `svg .ch-num` keeps chart text on even digits though a later font shorthand resets it.
+- The Rounds season ribbon's y ticks, day numbers and average chip, and
+  RoundZones' y ticks, take the `ch-num` class (CONS-39); `svg .ch-num` keeps
+  chart text on even digits though a later font shorthand resets it.
 
 ### Why
 

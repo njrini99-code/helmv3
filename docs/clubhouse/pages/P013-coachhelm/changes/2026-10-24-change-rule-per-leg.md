@@ -1,14 +1,16 @@
-# 2026-10-24 — Momentum and the Deep dive finish the one change rule (Clubhouse A+ S2)
+# 2026-10-24 — Momentum and the Deep dive finish the one change rule (S2)
 
-## 2026-10-24 — Momentum's word is tested; the Deep dive judges each leg by its own spread (A1, row 93, review of #2361)
+## 2026-10-24 — Momentum's word is tested; each Deep dive leg has its own spread
 
 ```text
 Design package: none (Clubhouse A+ review of #2361, A1 and row 93)
 PR/commit:      agent/aplus-s2
 Contract IDs:   none
 Actions:        none
-Data impact:    none (reads only; the leg spreads were measured read-only on production)
-Held items:     Momentum's stored result has no round counts, so its test is conservative (see Why)
+Data impact:    none (reads only; the leg spreads were measured read-only on
+                production)
+Held items:     Momentum's stored result has no round counts, so its test is
+                conservative (see Why)
 ```
 
 ### Changed

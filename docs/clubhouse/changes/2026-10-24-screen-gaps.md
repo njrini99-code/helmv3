@@ -1,6 +1,6 @@
 # 2026-10-24 — Screen gaps (Clubhouse A+ lane D)
 
-## 2026-10-24 — Calm failure copy: templates, nothing reported, no guessed causes (B10.3, CONS-6)
+## 2026-10-24 — Calm failure copy: templates, no guessed causes (B10.3, CONS-6)
 
 ```text
 Design package: none (Clubhouse A+ handoff, B10.3 and CONS-6)
@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-lane-d
 Contract IDs:   CH-1204, CH-1206, CH-1209, CH-1210, CH-12002, CH-12006, CH-12203
 Actions:        none
 Data impact:    none
-Held items:     "Retry sync" and "Retry send" stay: they name a different action than the read's Try again
+Held items:     "Retry sync" and "Retry send" stay: they name a different action
+                than the read's Try again
 ```
 
 ### Changed

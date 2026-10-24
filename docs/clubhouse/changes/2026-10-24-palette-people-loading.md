@@ -1,9 +1,10 @@
 # 2026-10-24 — Palette People: the right words, and a quiet loading line
 
-## 2026-10-24 — A coach's search says when players are still on their way or didn't load; no more "open the Roster"
+## 2026-10-24 — Search says when players are loading or failed to load
 
 ```text
-Design package: none (Clubhouse A+ Round 1, S3; found by S1, decision 16 follow-up)
+Design package: none (Clubhouse A+ Round 1, S3; found by S1, decision 16
+                follow-up)
 PR/commit:      agent/aplus-s3
 Contract IDs:   none
 Actions:        none

@@ -382,7 +382,7 @@ function Leaderboard({
     <div className="ch-qf-panel__head">
       <div>
         <h2 id="ch-qf-lb">Leaderboard</h2>
-        {b && <p className="ch-num">Ranked by total to par · {plural(b.submitted, 'round')} submitted</p>}
+        {b && <p className="ch-num">Full cards first, then total to par · {plural(b.submitted, 'round')} submitted</p>}
       </div>
       {status === 'in_progress' && b && <LiveChip view={feed} />}
     </div>
