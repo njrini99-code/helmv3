@@ -9,7 +9,7 @@
   color: var(--ch-text-primary);
 }
 .ch-rcv.is-phone {
-  padding: 14px 16px 110px;
+  padding: 14px var(--ch-page-x-phone) 110px;
   gap: 12px;
 }
 .ch-rcv-k {

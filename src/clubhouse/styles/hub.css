@@ -1283,8 +1283,8 @@
     justify-content: flex-start;
     gap: calc(16 * var(--ch-type-k));
     max-width: none;
-    margin: -6px -20px 0;
-    padding: 0 20px;
+    margin: -6px calc(-1 * var(--ch-page-x-phone)) 0;
+    padding: 0 var(--ch-page-x-phone);
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-hb-tabs button {

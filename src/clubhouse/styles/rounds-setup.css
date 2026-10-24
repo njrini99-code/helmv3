@@ -1459,7 +1459,7 @@ html[data-fw-theme='dark'] .ch-acs-sum > div:last-child {
 @media (max-width: 820px) {
   /* A container cannot query its own padding; use the shared phone boundary. */
   .ch-rsu {
-    padding: 0 12px 16px;
+    padding: 0 var(--ch-page-x-phone) 16px;
   }
   /* P011-D1: setup is full screen on the phone. The shell's top bar and bell give way (usePhoneImmersive marks the
      root), so the green band is the screen's own top bar, full bleed under the status bar. */
@@ -1609,15 +1609,15 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
    and the tees are rows on seams; the scorecard's figures sit between two hairlines. Segmented controls, fields and the
    par keys keep their material. The start dock is the one action bar: a solid toolbar across the foot, no blur. Every
    rule is scoped to the setup root so it outranks the night rules above (which stay for the desktop). Everything lines
-   up on one 20px gutter, the band's text included. */
+   up on the one phone gutter, the band's text included. */
 @media (max-width: 820px) {
   .ch-rsu {
     gap: 28px;
-    padding: 0 20px;
+    padding: 0 var(--ch-page-x-phone);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-band {
-    margin: 0 -20px;
-    padding-inline: 20px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding-inline: var(--ch-page-x-phone);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-cols {
     gap: 40px;
@@ -1857,8 +1857,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
      safe-area padding, so the inset is not counted twice. */
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock {
     bottom: 0;
-    margin: 0 -20px calc(-1 * env(safe-area-inset-bottom));
-    padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    margin: 0 calc(-1 * var(--ch-page-x-phone)) calc(-1 * env(safe-area-inset-bottom));
+    padding: 10px var(--ch-page-x-phone) calc(10px + env(safe-area-inset-bottom));
     border-radius: 0;
     background: var(--ch-bg-surface);
     -webkit-backdrop-filter: none;

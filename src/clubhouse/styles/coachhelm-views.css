@@ -188,8 +188,8 @@
    a section under the engraved double rule, its ways on rows between soft seams. */
 @media (max-width: 820px) {
   .ch-hv-chips {
-    margin: 0 -20px;
-    padding: 4px 20px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 4px var(--ch-page-x-phone);
   }
   .ch-hv-chip {
     background: none;

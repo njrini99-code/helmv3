@@ -1504,7 +1504,7 @@
     display: flex;
     flex-direction: column;
     gap: 36px;
-    padding: 26px 20px 32px;
+    padding: 26px var(--ch-page-x-phone) 32px;
   }
   .ch-msp-skel__tools {
     display: flex;
@@ -1566,7 +1566,7 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 26px 20px 32px;
+    padding: 26px var(--ch-page-x-phone) 32px;
   }
   /* The app's global press (src/app/globals.css: every button shrinks to 0.98 on :active) is not Clubhouse's: rows
      and links here answer with their tint, and keys take the shell's press (CH-1606), so it is switched off. */
@@ -2364,7 +2364,7 @@
     flex: none;
     align-items: flex-start;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 10px var(--ch-page-x-phone);
     background: transparent;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
@@ -2461,7 +2461,7 @@
     gap: 14px;
     max-width: none;
     margin: 0;
-    padding: 26px 20px 32px;
+    padding: 26px var(--ch-page-x-phone) 32px;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -2477,7 +2477,7 @@
     font: var(--ch-type-16);
   }
   .ch-msp-ann .ch-ms-ann.is-letter {
-    padding: 26px 20px 32px;
+    padding: 26px var(--ch-page-x-phone) 32px;
     background: none;
   }
   .ch-msp-ann .ch-ms-ann__sec {

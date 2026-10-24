@@ -38,8 +38,7 @@
   height: 30px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 6px;
-  /* 8 and 12 until the owner answers OQ-59 (sm 8 to 7, lg 12 to 14); then the scale's --ch-radius-sm and -lg. */
-  border-radius: 8px;
+  border-radius: 8px; /* owner, 2026-10-24 (decision 7): sm keeps 8 and lg 12, off the radius scale */
   font-size: calc(13 * var(--ch-type-k));
 }
 .ch-btn--lg {

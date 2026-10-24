@@ -2005,7 +2005,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding: 16px 16px 28px;
+    padding: 16px var(--ch-page-x-phone) 28px;
   }
   .ch-stm-head {
     display: flex;
@@ -3640,7 +3640,7 @@
 @media (max-width: 820px) {
   .ch-stm {
     gap: 16px;
-    padding: 26px 20px 36px;
+    padding: 26px var(--ch-page-x-phone) 36px;
   }
   .ch-stm .ch-stm-head {
     gap: 10px;
@@ -3666,7 +3666,7 @@
     padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
   }
-  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's edge. */
   .ch-stm .ch-spm-head > .ch-avatar {
     margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);
@@ -3870,8 +3870,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-stm .ch-gd.is-phone .ch-gd__nav {
-    margin: 0 -20px;
-    padding: 4px 20px 6px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 4px var(--ch-page-x-phone) 6px;
   }
   .ch-stm .ch-gd.is-phone .ch-gm {
     overflow: visible;
@@ -4212,7 +4212,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 @media (max-width: 820px) {
   .ch-stm.is-team {
     gap: 16px;
-    padding: 18px 16px 40px;
+    padding: 18px var(--ch-page-x-phone) 40px;
   }
   .ch-stm.is-team > .ch-stm-head,
 .ch-stm.is-team > .ch-stm-controls,

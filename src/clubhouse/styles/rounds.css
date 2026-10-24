@@ -2035,8 +2035,8 @@ a.ch-rd-sc:focus-visible {
     padding-inline: 0;
   }
   .ch-rv.is-phone .ch-rv-cardw {
-    margin-inline: -20px;
-    padding-inline: 20px;
+    margin-inline: calc(-1 * var(--ch-page-x-phone));
+    padding-inline: var(--ch-page-x-phone);
   }
   .ch-rv.is-phone .ch-rv-hole .ch-notice,
 .ch-rv.is-phone .ch-rv-none {

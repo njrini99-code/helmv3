@@ -20,11 +20,13 @@ describe('spacing scale (B2)', () => {
     expect(tokens).toMatch(/--ch-measure-text: 68ch;/);
   });
 
-  it('the phone gutter is one token at today’s 20, and the phone page roots take it (OQ-63 changes one line)', () => {
+  it('the phone gutter is one token, 16 and 20 on a large phone (owner, 2026-10-24, decision 5; OQ-63)', () => {
+    // Corrected: this pinned the B2 placeholder (--ch-phone-gutter at today's 20) while OQ-63 was open. Decision 5
+    // answered it on --ch-page-x-phone itself, so the placeholder alias is gone; page-spacing.test.ts pins the rest.
     const tokens = readFileSync(join(ROOT, 'styles/tokens.css'), 'utf8');
-    expect(tokens).toContain('--ch-phone-gutter: var(--ch-space-5);');
-    expect(tokens).toContain('--ch-page-x-phone: var(--ch-phone-gutter);');
-    expect(tokens.match(/--ch-phone-gutter:/g)).toHaveLength(1);
+    expect(tokens).toContain('--ch-page-x-phone: var(--ch-space-4);');
+    expect(tokens).toMatch(/@media \(min-width: 414px\)[\s\S]*?--ch-page-x-phone: var\(--ch-space-5\);/);
+    expect(tokens).not.toContain('--ch-phone-gutter');
   });
 
   it.each(MIGRATED)('%s spaces only on the scale', (name) => {

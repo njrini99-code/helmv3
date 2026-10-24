@@ -829,7 +829,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     height: calc(100dvh - var(--ch-phone-topbar-h) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--keyboard-height, 0px));
   }
   .ch-ask-top {
-    padding: 8px 16px;
+    padding: 8px var(--ch-page-x-phone);
   }
   .ch-ask-top .ch-ask-tabs {
     flex: 1;
@@ -849,7 +849,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     grid-template-columns: minmax(0, 1fr);
   }
   .ch-ask-scroll {
-    padding: 0 16px 12px;
+    padding: 0 var(--ch-page-x-phone) 12px;
   }
   .ch-ask-scroll.is-home {
     display: flex;
@@ -1032,7 +1032,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
 }
 
 /* The Mobile clubhouse pass (owner, 2026-10-08: "phone too cardy"). On the phone Ask sits on the parchment (the canvas
-   above) under the green bar like every other page, at its 20px edge; the bar's title takes the bar's ivory (it was dark
+   above) under the green bar like every other page, at the phone gutter; the bar's title takes the bar's ivory (it was dark
    ink on the green); the suggestions are action rows (above), not filled plates; and the note for a roster with no rounds
    is a line under a soft rule, not a box. The thread's bubbles, its evidence, the history drawer and the composer keep
    their material. */
@@ -1041,11 +1041,11 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     color: var(--ch-on-green-ink);
   }
   .ch-ask-top {
-    padding: 8px 20px;
+    padding: 8px var(--ch-page-x-phone);
     border-bottom-color: var(--ch-ledger-rule-soft);
   }
   .ch-ask-scroll {
-    padding: 0 20px 12px;
+    padding: 0 var(--ch-page-x-phone) 12px;
   }
   .ch-ask-plain {
     padding: 16px 20px;
