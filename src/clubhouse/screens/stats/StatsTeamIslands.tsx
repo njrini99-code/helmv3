@@ -283,7 +283,9 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const x = (i: number) => (n <= 1 ? (padL + w - padR) / 2 : padL + (i * (w - padL - padR)) / (n - 1));
   const y = (v: number) => padT + ((hi - v) / (hi - lo)) * (h - padT - padB);
   const ticks = isSg ? niceTicks(lo, hi) : niceTicks(Math.min(lo, hi), Math.max(lo, hi));
-  const good = (v: number) => (isSg ? v >= 0 : par != null && v <= par);
+  // A player's end figure is toned on its gap to the reference at the precision it prints (strokes gained at one decimal, a
+  // player's score in whole strokes), so a gap that prints as none is neither a gain nor a loss (A2).
+  const endTone = (v: number) => (ref == null ? '' : changeTone(v - ref, !isSg, isSg ? 1 : 0));
   const fmt = (v: number) => (isSg ? formatSigned(v) : formatFixed(v));
   // Players' scores read in whole strokes, as in the handoff; the team keeps its decimal.
   const fmtEnd = (v: number) => (isSg ? formatSigned(v) : formatFixed(v, 0));
@@ -617,11 +619,11 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                     <Avatar name={p.name} id={p.id} size={22} />
                     <span>{p.first}</span>
                     <i
-                      className={'ch-sgt__bar' + (m != null && good(m) ? ' is-up' : '')}
+                      className={'ch-sgt__bar' + (m != null && endTone(m) === 'is-gain' ? ' is-up' : '')}
                       style={{ ['--ch-bar' as string]: `${widest > 0 ? (Math.abs(gapOf(m) ?? 0) / widest) * 100 : 0}%` }}
                       aria-hidden="true"
                     />
-                    <b className={`ch-num ${m == null ? '' : good(m) ? 'ch-gain' : 'ch-loss'}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
+                    <b className={`ch-num ${m == null ? '' : endTone(m) === 'is-gain' ? 'ch-gain' : endTone(m) === 'is-loss' ? 'ch-loss' : ''}`}>{m != null ? fmtEnd(m) : NO_DATA}</b>
                   </button>
                 );
               })}

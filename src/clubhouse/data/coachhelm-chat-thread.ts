@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
+import { changeTone, formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
 import { plural } from '../lib/plural';
 
 /**
@@ -738,7 +738,8 @@ export function evidenceBlocks(envelope: ToolEnvelope): AskEvidence[] {
         title: entities.size === 1 ? `Strokes gained, ${legs[0]?.entity.label}` : 'Strokes gained',
         ...base,
         rows: legs.map((m) => ({ label: m.metric_label.replace(/^strokes gained[:\s-]*/i, '').trim() || m.metric_label, value: m.value as number, display: formatValue(m.value, m.unit) })),
-        takeaway: (worst.value ?? 0) < 0 ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
+        // A loss that prints as 0.0 is no loss (A2).
+        takeaway: changeTone(worst.value, false, 1) === 'is-loss' ? `Largest loss: ${worst.metric_label} at ${formatValue(worst.value, worst.unit)}.` : 'No leg is below zero.',
         table: measurementTable(legs, 'Strokes gained by leg'),
       });
     } else {
