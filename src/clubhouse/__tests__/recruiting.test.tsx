@@ -386,6 +386,21 @@ describe('Recruiting · the loader, the route and the page', () => {
 // ── Desktop ──────────────────────────────────────────────────────────────────
 
 describe('Recruiting · desktop', () => {
+  it('B11 ↓ and ↑ walk the prospect table, which is one Tab stop', () => {
+    wrap();
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rec-tb__name')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+
   it('CH-14904 CH-14801 CH-14802 it opens on the pipeline, the list by recently updated and the first prospect, as the board does', () => {
     wrap();
     expect(code('CH-14904')?.tagName).toBe('MAIN');

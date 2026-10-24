@@ -2796,3 +2796,17 @@ describe('Settings · this file', () => {
     expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });
+
+describe('Settings · keyboard (B11)', () => {
+  it('↓ and ↑ walk the section rail, which is one Tab stop', () => {
+    setup();
+    const items = [...nav().querySelectorAll<HTMLElement>('.ch-set-rail__i')];
+    expect(items.length).toBeGreaterThan(2);
+    expect(items.filter((i) => i.tabIndex === 0)).toHaveLength(1);
+    items[0]!.focus();
+    fireEvent.keyDown(items[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(items[1]);
+    fireEvent.keyDown(items[1]!, { key: 'Home' });
+    expect(document.activeElement).toBe(items[0]);
+  });
+});

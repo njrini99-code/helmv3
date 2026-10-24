@@ -6,13 +6,16 @@ import { useEffect } from 'react';
 import { Button } from '../../ui/Button';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { isInOverlay, isTypingTarget, modalOpen } from '../../shell/command/shortcuts';
 
 const NEW_EVENT = '/golf/dashboard/calendar?new=1';
+const HOME_KEYS: readonly ChPageKey[] = [{ label: 'New event', keys: ['N'] }];
 
 /** Home's two actions: the team chat, and a new calendar event (N from anywhere on Home). */
 export function HomeActions({ teamChatId }: { teamChatId: string | null }) {
   const router = useRouter();
+  usePageKeys('Home', HOME_KEYS);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       // B11: the shell's own tests for a field, a dialog or menu (a native <dialog> has no role attribute), or any modal open.

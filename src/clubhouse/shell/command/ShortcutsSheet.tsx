@@ -4,6 +4,7 @@ import { Keyboard } from 'lucide-react';
 import type { ChRole } from '../nav';
 import { Modal } from '../../ui/Modal';
 import { Keys } from './Keys';
+import { usePageKeysNow } from './page-keys';
 import { modKey, navLetters } from './shortcuts';
 
 interface Row {
@@ -24,6 +25,7 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
     { label: 'Close a dialog or menu', keys: ['Esc'] },
   ];
   const goTo = navLetters(role);
+  const here = usePageKeysNow();
   return (
     <Modal open={open} onClose={onClose} title="Keyboard shortcuts" description="They work anywhere except while you are typing." icon={Keyboard} width={600}>
       <div className="ch-cmd-sheet">
@@ -57,16 +59,19 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
             ))}
           </dl>
         </section>
-        {role === 'coach' && (
-          <section aria-labelledby="ch-cmd-home">
-            <h3 id="ch-cmd-home">On Home</h3>
+        {/* B11: the open screen's own keys, as it registered them (shell/command/page-keys.ts). */}
+        {here && (
+          <section aria-labelledby="ch-cmd-page">
+            <h3 id="ch-cmd-page">On {here.page}</h3>
             <dl className="ch-cmd-rows">
-              <div className="ch-cmd-row">
-                <dt>New event</dt>
-                <dd>
-                  <Keys keys={['N']} />
-                </dd>
-              </div>
+              {here.keys.map((r) => (
+                <div key={r.label} className="ch-cmd-row">
+                  <dt>{r.label}</dt>
+                  <dd>
+                    <Keys keys={r.keys} />
+                  </dd>
+                </div>
+              ))}
             </dl>
           </section>
         )}

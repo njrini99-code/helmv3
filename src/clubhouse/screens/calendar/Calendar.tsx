@@ -40,6 +40,7 @@ import { usePopoverFit } from '../../lib/use-popover-fit';
 import { CalendarFirstRun } from './CalendarFirstRun';
 import { useCalendarLive } from './live';
 import { chFocusQuietly } from '../../lib/focus-quietly';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { plural } from '../../lib/plural';
 
 function zonedNow(timeZone: string, d: Date): ChNow {
@@ -98,6 +99,13 @@ function useOpenOnNow(tick: number, first: string, on: boolean, hour: number | n
 }
 
 /** Widgets whose arrow keys move their own selection or focus, and the page's popovers (A-09). */
+/** B11: the calendar's own keys, as the shortcuts sheet lists them. */
+const CAL_KEYS: readonly ChPageKey[] = [
+  { label: 'Go to today', keys: ['T'] },
+  { label: 'Previous or next', keys: ['Left', 'Right'] },
+];
+const CAL_COACH_KEYS: readonly ChPageKey[] = [{ label: 'New event', keys: ['N'] }, ...CAL_KEYS];
+
 const COMPOSITE = '[role="radiogroup"], [role="tablist"], [role="menu"], [role="menubar"], [role="listbox"], [role="grid"], [role="tree"], [role="slider"], [role="dialog"]';
 const toHHMM = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60)).padStart(2, '0')}`;
 
@@ -548,6 +556,7 @@ export function Calendar({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [coach, editor, cancelling, deleting, subs, busyOpen, view, anchor, insp, goToday, step]);
+  usePageKeys('Calendar', coach ? CAL_COACH_KEYS : CAL_KEYS);
 
   const dates = view === 'day' ? [anchor] : weekDates(anchor);
   // P006-A1: the global light's sun at the team's place, on the team's clock; one read per day shown.

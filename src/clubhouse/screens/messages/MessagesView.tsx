@@ -114,6 +114,10 @@ import { MessagesHead } from "./MessagesNoTeam";
 import { Tooltip } from '../../ui/Tooltip';
 import { ListPresence, PresenceRow } from '../../ui/ListPresence';
 import { useRovingRows } from "../../lib/roving";
+import { usePageKeys, type ChPageKey } from "../../shell/command/page-keys";
+
+/** B11: the rail's keys, as the shortcuts sheet lists them. */
+const RAIL_KEYS: readonly ChPageKey[] = [{ label: "Move between conversations", keys: ["↑", "↓"] }];
 
 /** The thread's glide, longer than the page's (a conversation is read down a long column). */
 const THREAD_SCROLL_DUR = 1.2;
@@ -466,6 +470,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   usePanelSmoothScroll(body);
   // B11: ↑ and ↓ walk the conversations; the rail is one Tab stop.
   useRovingRows(body, ".ch-ms-row");
+  usePageKeys("Messages", RAIL_KEYS);
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
   const unread = api.convs.filter((c) => c.unread > 0).length;
