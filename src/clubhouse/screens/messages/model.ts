@@ -26,6 +26,11 @@ export interface ChConv {
   memberIds: string[];
   memberCount: number;
   unread: number;
+  /**
+   * Marked unread from the row menu or a swipe (owner decision 14). The database has no per-person unread flag, so the
+   * mark is this device's own (marked-unread.ts) and opening or marking the conversation read clears it.
+   */
+  markedUnread?: boolean;
   lastAt: string | null;
   lastSenderId: string | null;
   lastText: string;
@@ -144,9 +149,14 @@ export function threadItems(msgs: ChMsg[], now: string, timeZone: string): ChThr
   return out;
 }
 
+/** Whether a conversation reads as unread: something new in it, or marked unread by the viewer. */
+export function isUnread(c: Pick<ChConv, 'unread' | 'markedUnread'>): boolean {
+  return c.unread > 0 || !!c.markedUnread;
+}
+
 export function filterConvs(convs: ChConv[], filter: ChConvFilter, q: string): ChConv[] {
   const s = q.trim().toLowerCase();
-  return convs.filter((c) => (filter === 'unread' ? c.unread > 0 : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
+  return convs.filter((c) => (filter === 'unread' ? isUnread(c) : filter === 'groups' ? c.group : true) && (!s || c.title.toLowerCase().includes(s) || c.lastText.toLowerCase().includes(s)));
 }
 
 export { firstName } from '../../lib/names';

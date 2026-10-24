@@ -247,6 +247,13 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-on-accent);
 }
+/* Marked unread with nothing new (owner decision 14): the count's fill as a dot, since there is no number to show. */
+.ch-ms-count.is-dot {
+  min-width: 10px;
+  width: 10px;
+  height: 10px;
+  padding: 0;
+}
 /* The conversation list (owner, 2026-10-08: "too card heavy"): a flat list on the rail, thin dividers inset to the text,
    the open conversation the one filled row (green, ivory ink). The unread count is a green chip, ivory on the open row. */
 .ch-ms-sec__card {
@@ -1732,6 +1739,31 @@
   }
   .ch-msp .ch-ms-row.is-ann + .ch-ms-row::before {
     left: 60px;
+  }
+  /* Owner decision 14: a conversation sits in its swipe frame (ui/SwipeRow.tsx), which takes the row's bleed past the
+     text edge; the seams run between frames, inset to the text as above, and step aside for a pressed row. */
+  .ch-msp .ch-ms-swipe {
+    margin-inline: -12px;
+  }
+  .ch-msp .ch-ms-swipe .ch-ms-row {
+    width: 100%;
+    margin-inline: 0;
+  }
+  .ch-msp .ch-ms-swipe + .ch-ms-swipe .ch-ms-row::before {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    left: 68px;
+    height: 1px;
+    background: var(--ch-ledger-rule-soft);
+    content: '';
+    pointer-events: none;
+  }
+  .ch-msp .ch-ms-swipe .ch-ms-row:is(:active, [data-ch-pressed])::before,
+  .ch-msp .ch-ms-swipe:has(.ch-ms-row:is(:active, [data-ch-pressed])) + .ch-ms-swipe .ch-ms-row::before,
+  .ch-msp .ch-ms-swipe[data-side] .ch-ms-row::before,
+  .ch-msp .ch-ms-swipe[data-side] + .ch-ms-swipe .ch-ms-row::before {
+    opacity: 0;
   }
   .ch-msp .ch-ms-row .ch-ms-grp {
     width: 44px;

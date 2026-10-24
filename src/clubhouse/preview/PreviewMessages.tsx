@@ -154,6 +154,9 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [anns, setAnns] = useState<ChAnnouncement[]>(state === 'empty' ? [] : baseAnns);
   const [annId, setAnnId] = useState<string | null>(state === 'announcement' ? 'an1' : null);
   const [mute, setMute] = useState<ChMute>({ muted: false, until: null });
+  // Any row's mute (owner decision 14), the open one's included: the preview's own record by conversation.
+  const [mutes, setMutes] = useState<Record<string, ChMute>>({});
+  const muteOf = useCallback(async (id: string): Promise<ChMute> => mutes[id] ?? { muted: false, until: null }, [mutes]);
 
   const files = useCallback(async (id: string) => (state === 'files-failed' ? null : (previewFiles[id] ?? [])), [state]);
   const addCandidates = useCallback(async () => (state === 'add-failed' ? null : previewCandidates), [state]);
@@ -179,7 +182,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     select: (id) => {
       setSelectedId(id);
       if (id) setAnnId(null);
-      if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+      if (id) setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: 0, markedUnread: false } : c)));
     },
     msgs: selectedId ? (threads[selectedId] ?? []) : [],
     msgsLoading: false,
@@ -230,7 +233,12 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     membersError: false,
     retryMembers: () => {},
     leave: async () => true,
-    deleteConversation: async () => true,
+    deleteConversation: async (id) => {
+      setConvs((cs) => cs.filter((c) => c.id !== id));
+      if (id === selectedId) setSelectedId(null);
+      toast({ title: 'Conversation deleted' });
+      return true;
+    },
     addCandidates,
     addMember: async (_userId, name) => {
       toast({ title: `Added ${name.split(' ')[0]} to ${convs.find((c) => c.id === selectedId)?.title ?? 'the group'}` });
@@ -270,6 +278,18 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
     setMute: async (muted, hours) => {
       setMute({ muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null });
       toast({ title: muted ? 'Conversation muted' : 'Notifications back on' });
+      return true;
+    },
+    muteOf,
+    muteConversation: async (id, muted, hours) => {
+      const next = { muted, until: muted && hours ? new Date(Date.parse(NOW) + hours * 3600000).toISOString() : null };
+      setMutes((m) => ({ ...m, [id]: next }));
+      if (id === selectedId) setMute(next);
+      toast({ title: muted ? 'Conversation muted' : 'Notifications back on', replace: 'mute' });
+      return true;
+    },
+    setRead: async (id, read) => {
+      setConvs((cs) => cs.map((c) => (c.id === id ? { ...c, unread: read ? 0 : c.unread, markedUnread: !read } : c)));
       return true;
     },
     announcements: anns,

@@ -59,6 +59,7 @@ import {
   filterConvs,
   firstName,
   groupLacksPlayer,
+  isUnread,
   MESSAGE_MAX,
   sectionOf,
   threadItems,
@@ -235,7 +236,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
   const [filter, setFilter] = useState<ChConvFilter>("all");
   const [q, setQ] = useState("");
   // Conversations with something unread, not the messages added up (D-46).
-  const unread = api.convs.filter((c) => c.unread > 0).length;
+  const unread = api.convs.filter(isUnread).length;
   const list = filterConvs(api.convs, filter, q);
   const sections: Array<[ReturnType<typeof sectionOf>, string]> = [
     ["today", "Today"],
@@ -326,7 +327,7 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
                 <div className="ch-ms-sec__card">
                   <ListPresence>
                     {rows.map((c) => (
-                      <ConvRow key={c.id} api={api} c={c} avatarSize={44} />
+                      <ConvRow key={c.id} api={api} c={c} avatarSize={44} phone />
                     ))}
                   </ListPresence>
                 </div>
