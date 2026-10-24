@@ -61,8 +61,8 @@ export function formatAvg(value: number | null | undefined): string {
   return formatFixed(value, 1);
 }
 
-/** Strokes gained, signed at two decimals (CONS-15): +0.84, −1.20, 0.00. */
-export function formatSG(value: number | null | undefined, digits = 2): string {
+/** Strokes gained, signed at one decimal everywhere (owner decision 11, 2026-10-24): +0.8, −1.2, 0.0. */
+export function formatSG(value: number | null | undefined, digits = 1): string {
   return formatSigned(value, digits);
 }
 

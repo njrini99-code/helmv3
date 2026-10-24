@@ -285,8 +285,8 @@ describe('the deep dive as the page draws it', () => {
     expect(t.putting).toEqual({
       label: 'Putting',
       state: 'leak',
-      sg: '−0.42',
-      trend: { word: 'Improving', tone: 'good', text: 'Putting: strokes gained averaged −0.31 a round over your last 5 rounds, against −0.62 over the 5 before' },
+      sg: '−0.4',
+      trend: { word: 'Improving', tone: 'good', text: 'Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before' },
     });
     expect(t.course_management?.trend).toBeNull();
     const node = (direction: 'improving' | 'declining' | 'steady'): ThemeNode => ({
@@ -661,7 +661,7 @@ describe('the Deep dive screen', () => {
     const part = within(article()).getByRole('region', { name: 'How it has moved' });
     expect(part.textContent).toContain('From 31% to 23%, down 8 pts');
     expect(part.textContent).toContain('Improving');
-    expect(part.textContent).toContain('Putting: strokes gained averaged −0.31 a round over your last 5 rounds, against −0.62 over the 5 before');
+    expect(part.textContent).toContain('Putting: strokes gained averaged −0.3 a round over your last 5 rounds, against −0.6 over the 5 before');
     expect(part.textContent).toContain('+6 to +2');
     expect(part.querySelector('svg')!.getAttribute('aria-hidden')).toBe('true');
   });
