@@ -13744,7 +13744,7 @@
         },
         {
           "name": "--ch-pb-pad",
-          "value": "10px",
+          "value": "8px",
           "scope": ".ch-sv-pb"
         },
         {
@@ -15185,12 +15185,12 @@
         },
         {
           "name": "--ch-gap-grid",
-          "value": "18px",
+          "value": "var(--ch-space-4)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-gap-section",
-          "value": "28px",
+          "value": "var(--ch-space-8)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -15225,12 +15225,12 @@
         },
         {
           "name": "--ch-gap-section-phone",
-          "value": "28px",
+          "value": "var(--ch-space-8)",
           "scope": "[data-ui='clubhouse']"
         },
         {
           "name": "--ch-gap-section-phone-snug",
-          "value": "22px",
+          "value": "var(--ch-space-6)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -17689,12 +17689,12 @@
       "tokens": [
         {
           "name": "--ch-btn-pad-x",
-          "value": "14px",
+          "value": "16px",
           "scope": ".ch-btn"
         },
         {
           "name": "--ch-btn-pad-x",
-          "value": "11px",
+          "value": "12px",
           "scope": ".ch-btn--sm"
         },
         {
