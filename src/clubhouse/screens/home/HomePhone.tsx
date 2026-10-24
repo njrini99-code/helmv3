@@ -474,7 +474,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} size={38} />
+                    <Avatar name={r.playerName} id={r.playerId} size={38} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />

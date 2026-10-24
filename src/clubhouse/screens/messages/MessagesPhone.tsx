@@ -89,6 +89,7 @@ import {
   ThreadBelow,
   muteLabel,
   personOf,
+  convAvatarId,
   useAddAttachments,
   useAutosize,
   useNewDivider,
@@ -418,7 +419,7 @@ function PhoneThread({
         back={{ onBack, ariaLabel: "Back to Messages" }}
         title={
           <button type="button" className="ch-msp-who" onClick={onDetails}>
-            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} size={30} />}
+            {conv.group ? <GroupMark size="sm" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}
             <span>
               <b>{conv.title}</b>
               <em>{sub}</em>
@@ -484,7 +485,7 @@ function PhoneThread({
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
             {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
               <div className="ch-ms-msg is-first">
-                <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
+                <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
                 <div className="ch-ms-msg__col">
                   <div className="ch-ms-typing" role="status" aria-label={`${conv.group ? "Someone" : firstName(conv.title)} is typing`}>
                     <i />
@@ -636,7 +637,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
         <SectionBoundary surface="messages.details" label="Details" code="CH-7213">
           <div className="ch-msp-page">
             <section className="ch-msp-prof">
-              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} size={72} />}
+              {conv.group ? <GroupMark size="lg" /> : <Avatar name={conv.title} id={convAvatarId(api, conv)} size={72} />}
               <h2>{conv.title}</h2>
               <p className="ch-num">
                 {conv.group

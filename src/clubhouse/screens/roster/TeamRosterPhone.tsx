@@ -129,7 +129,7 @@ function TeamCoachesPhone({ coaches }: { coaches: ChPlayerRoster['coaches'] }) {
 function TeammateRow({ p }: { p: ChTeammate }) {
   return (
     <div className="ch-rsm-row ch-rsm-row--static">
-      <Avatar name={p.name} size="lg" />
+      <Avatar name={p.name} id={p.id} size="lg" />
       <span className="ch-rsm-row__b">
         <b>{p.name}</b>
         <span>{teammateLine(p) || ' '}</span>

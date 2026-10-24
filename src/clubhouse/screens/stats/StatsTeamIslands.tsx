@@ -596,7 +596,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
                       setFocus(p.id === focus ? null : p.id);
                     }}
                   >
-                    <Avatar name={p.name} size={22} />
+                    <Avatar name={p.name} id={p.id} size={22} />
                     <span>{p.first}</span>
                     <i
                       className={'ch-sgt__bar' + (m != null && good(m) ? ' is-up' : '')}
@@ -784,7 +784,7 @@ function LegGrid({
                 className={'ch-lg__r' + (g.id === focus ? ' is-sel' : '')}
               >
                 <span role="cell" className="ch-who">
-                  <Avatar name={g.name} size={30} />
+                  <Avatar name={g.name} id={g.id} size={30} />
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
                     <PlayerPeek player={gridPeek(g)} within="[role=cell]">

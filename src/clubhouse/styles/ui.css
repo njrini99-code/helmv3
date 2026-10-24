@@ -208,6 +208,12 @@
   --ch-av-fg: #6a4a3c;
   --ch-av-ring: rgb(106 74 60 / 0.22);
 }
+/* B19: the sixth tone, a muted heather beside the warm and green greys. */
+.ch-avatar[data-tone='heather'] {
+  --ch-av-bg: #e4dfe6;
+  --ch-av-fg: #51475a;
+  --ch-av-ring: rgb(81 71 90 / 0.22);
+}
 /* On the phone every coin is the one calm neutral (owner design, m.css; D-43). */
 @media (max-width: 820px) {
   .ch-avatar[data-tone] {
@@ -1056,6 +1062,11 @@ html[data-fw-theme='dark'] .ch-avatar[data-tone='clay'] {
   --ch-av-bg: #352a23;
   --ch-av-fg: #e4c9b8;
   --ch-av-ring: rgb(228 201 184 / 0.16);
+}
+html[data-fw-theme='dark'] .ch-avatar[data-tone='heather'] {
+  --ch-av-bg: #2d2833;
+  --ch-av-fg: #d6cbe0;
+  --ch-av-ring: rgb(214 203 224 / 0.16);
 }
 @media (max-width: 820px) {
   html[data-fw-theme='dark'] .ch-avatar[data-tone] {

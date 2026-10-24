@@ -191,7 +191,7 @@ export function CoachBoard({
                         setByHand(true);
                       }}
                     >
-                      <Avatar name={p.name} size={phone ? 28 : 34} />
+                      <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                       <span>
                         <b>{p.name}</b>
                         <em>{dismissed[p.top.id] ? 'Dismissed' : p.top.title}</em>
@@ -221,7 +221,7 @@ export function CoachBoard({
                 ))}
                 {heldOnly.map((p) => (
                   <div key={p.id} className="ch-hl-pl is-none" data-ch-code="CH-13943">
-                    <Avatar name={p.name} size={phone ? 28 : 34} />
+                    <Avatar name={p.name} id={p.id} size={phone ? 28 : 34} />
                     <span>
                       <b>{p.name}</b>
                       <em>Not enough yet</em>

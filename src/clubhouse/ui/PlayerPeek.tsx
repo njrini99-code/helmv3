@@ -57,7 +57,7 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
   return (
     <div className="ch-ppeek" data-ch-code="CH-1832">
       <div className="ch-ppeek__head">
-        <Avatar name={p.name} size={44} />
+        <Avatar name={p.name} id={p.id} size={44} />
         <div className="ch-ppeek__who">
           <b>{p.name}</b>
           {p.sub && <span>{p.sub}</span>}
