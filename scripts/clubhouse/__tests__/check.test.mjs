@@ -158,3 +158,28 @@ test('a comma inside :is() is part of one selector, not a second unscoped one', 
   assert.ok(!v.some((x) => x.includes('data-ch-pressed')));
   assert.ok(v.some((x) => x.includes('unscoped selector ".button"')));
 });
+
+test('a z-index is a ladder step, a step plus or minus 1 to 5, or a local -1 to 5 (CONS-35)', () => {
+  const ok = '.ch-a{z-index:var(--ch-z-dock)}\n.ch-b{z-index:calc(var(--ch-z-dock) + 1)}\n.ch-c{z-index:-1}\n.ch-d{z-index:5}\n.ch-e{z-index:auto}';
+  assert.deepEqual(checkSource('src/clubhouse/styles/x.css', ok), []);
+  for (const bad of ['55', '6', 'calc(var(--ch-z-sticky) + 11)', '9999']) {
+    assert.ok(checkSource('src/clubhouse/styles/x.css', `.ch-a { z-index: ${bad}; }`).some((x) => x.includes('CONS-35')), bad);
+  }
+  // In a media block too.
+  assert.ok(checkSource('src/clubhouse/styles/x.css', '@media (max-width: 820px) {\n  .ch-a {\n    z-index: 70;\n  }\n}').some((x) => x.includes('z-index 70')));
+});
+
+test('a card, panel or tile takes its corner from the radius scale; its children do not count (CONS-32)', () => {
+  const css = (decl, sel = '.ch-x-card') => checkSource('src/clubhouse/styles/x.css', `${sel} { ${decl} }`);
+  assert.deepEqual(css('border-radius: var(--ch-radius-card);'), []);
+  assert.deepEqual(css('border-radius: var(--ch-radius-sheet) var(--ch-radius-sheet) 0 0;'), []);
+  assert.deepEqual(css('border-radius: 999px;'), []);
+  assert.ok(css('border-radius: 22px;').some((x) => x.includes('CONS-32')));
+  assert.ok(css('border-top-left-radius: 18px;', '.ch-a .ch-stm-panel:hover').some((x) => x.includes('CONS-32')));
+  assert.ok(css('border-radius: 8px;', '.ch-team-tile').some((x) => x.includes('CONS-32')));
+  // The subject is what is styled: a card's child is not a card.
+  assert.deepEqual(css('border-radius: 6px;', '.ch-x-card .ch-x-chip'), []);
+  // A named exception is the file and the subject.
+  assert.deepEqual(checkSource('src/clubhouse/styles/settings.css', '.ch-setm-tile { border-radius: 8px; }'), []);
+  assert.ok(checkSource('src/clubhouse/styles/other.css', '.ch-setm-tile { border-radius: 8px; }').some((x) => x.includes('CONS-32')));
+});

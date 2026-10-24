@@ -669,7 +669,8 @@
 .ch-ms-reactbar {
   position: absolute;
   bottom: calc(100% + 6px);
-  z-index: 20;
+  /* Over the thread (the new-messages pill is 2), under the narrow details panel (--ch-z-panel). */
+  z-index: var(--ch-z-raised);
   display: flex;
   gap: 2px;
   padding: 5px;
@@ -784,7 +785,8 @@
 /* Who reacted: a green head naming the reaction, a row a person, one action under them. */
 .ch-rx {
   position: fixed;
-  z-index: 70;
+  /* A popover; a menu (a step over the popovers) still opens above it, as before. */
+  z-index: var(--ch-z-popover);
   display: flex;
   flex-direction: column;
   width: 248px;

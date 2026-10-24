@@ -60,7 +60,8 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 6;
+  /* The onboarding stack sits just under the raised step: the bar 6, the seal 7, the paper 8 (over its 1 to 4). */
+  z-index: calc(var(--ch-z-raised) - 4);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
@@ -224,7 +225,7 @@
 }
 .ch-ox-seal {
   position: absolute;
-  z-index: 7;
+  z-index: calc(var(--ch-z-raised) - 3);
   top: 57px;
   left: 50%;
   transform: translateX(-50%);
@@ -1686,7 +1687,7 @@
 .ch-ox-paper {
   position: absolute;
   inset: 0;
-  z-index: 8;
+  z-index: calc(var(--ch-z-raised) - 2);
   pointer-events: none;
   opacity: 0;
   background: var(--ch-bg-page);
@@ -1724,7 +1725,7 @@
 .ch-ox-mhome {
   position: absolute;
   inset: 0;
-  z-index: 35;
+  z-index: calc(var(--ch-z-panel) + 5);
   display: none;
   place-items: center;
   pointer-events: none;

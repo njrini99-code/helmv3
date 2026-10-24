@@ -1586,7 +1586,7 @@ button.ch-more__row[disabled] {
 .ch-bellp {
   /* A design-system PopoverPanel (.ch-popover): glass, 14px radius, 5px inset. */
   position: fixed;
-  z-index: var(--ch-z-overlay);
+  z-index: var(--ch-z-popover);
   display: flex;
   flex-direction: column;
   max-height: min(540px, calc(100dvh - 80px));
@@ -4085,7 +4085,8 @@ html[data-ch-handoff] [data-ui='clubhouse'] .ch-brand:has(.ch-brand__line.is-wri
      over it, as iOS keeps its tab bar for a push. The accessory floats above the screen, the page's own thumb controls
      stand down (they belong to the page under it), and the screen stops short of the accessory by what it covers. */
   .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock {
-    z-index: calc(var(--ch-z-sticky) + 11);
+    /* One over the pushed screen (.ch-pscreen sits on the dock step). */
+    z-index: calc(var(--ch-z-dock) + 1);
   }
   .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock__slot {
     display: none;

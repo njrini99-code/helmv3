@@ -41,7 +41,8 @@
    nothing; it fades in after a press beat, so a change that lands at once never shows it. A sibling of the dimmed page. */
 .ch-st-updating {
   position: fixed;
-  z-index: 55;
+  /* Over the dock and a pushed screen, under every popover. */
+  z-index: calc(var(--ch-z-dock) + 5);
   top: calc(var(--ch-topbar-h) + 10px);
   left: 50%;
   translate: -50% 0;

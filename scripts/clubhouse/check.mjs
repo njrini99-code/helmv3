@@ -35,6 +35,38 @@ const RED_ALLOWED_CONTEXT = /under|birdie|eagle|flag|danger|error|invalid/i;
 /** v2 motion (D-64): press, quick, base, release, reveal, in seconds. */
 const ALLOWED_DURATIONS_S = new Set(['0', '0.11', '.11', '0.18', '.18', '0.26', '.26', '0.28', '.28', '0.52', '.52']);
 const STATUSES = /^(todo|doing|done|blocked \(.+\))$/;
+/**
+ * CONS-35: a z-index is a ladder step (tokens.css --ch-z-*), a step plus or minus 1 to 5, or a local -1 to 5 inside
+ * one component. A literal off the ladder stacks against nothing named, so its order breaks silently.
+ */
+const Z_OK = /^(?:var\(--ch-z-[a-z]+\)|calc\(var\(--ch-z-[a-z]+\) [+-] [1-5]\)|-?[0-5]|auto|inherit)$/;
+/**
+ * CONS-32: a card, panel or tile takes its corner from the radius scale (var(--ch-radius-*)), or none, a pill (999px)
+ * or a circle. The rule reads a selector's subject (its last compound), so a card's children are not cards. Named
+ * exceptions wait on a screenshot or are not cards: `file selector`.
+ */
+const CARD_SUBJECT = /card|panel|tile/;
+const CARD_RADIUS_EXEMPT = new Set([
+  // An 8px icon tile, not a card (section 4.18 CONS-32).
+  'settings.css .ch-setm-tile',
+  // A 6px hold chip inside the best-round card, not a card.
+  'stats.css .ch-bestcard__hold',
+  // 18px, between the card (16) and the sheet (20): snapping it is a visible change that waits on a shot.
+  'qualifiers.css .ch-qf-panel',
+]);
+const RADIUS_OK = (value) => value.split(/\s+/).every((t) => /^var\(--ch-radius-[\w-]+\)$/.test(t) || /^(?:0|0px|50%|999px|inherit)$/.test(t));
+/** A selector's subject: the compound after its last combinator, outside brackets and parentheses. */
+function subjectOf(part) {
+  let depth = 0;
+  let last = 0;
+  for (let i = 0; i < part.length; i += 1) {
+    const c = part[i];
+    if (c === '(' || c === '[') depth += 1;
+    else if (c === ')' || c === ']') depth -= 1;
+    else if (depth === 0 && /[\s>+~]/.test(c)) last = i + 1;
+  }
+  return part.slice(last).replace(/::?[\w-]+(?:\([^)]*\))?/g, '').trim();
+}
 const GATES = ['spec', 'desktop', 'wired', 'states', 'error-tracking', 'phone-spec', 'phone', 'motion', 'accessibility', 'performance', 'verified'];
 
 function walk(dir, out = []) {
@@ -115,6 +147,16 @@ export function checkSource(file, raw) {
       }
       for (const part of parts) {
         if (!/\.ch-|\[data-ui=/.test(part)) add(m.index, `unscoped selector "${part}"`);
+      }
+      for (const z of body.matchAll(/(?:^|[\s;])z-index:\s*([^;]+?)\s*(?:;|$)/g)) {
+        if (!Z_OK.test(z[1])) add(m.index, `z-index ${z[1]} in "${selector}": use a --ch-z-* step, a step plus or minus 1 to 5, or a local -1 to 5 (CONS-35)`);
+      }
+      const name = file.split('/').pop();
+      const cards = parts.map(subjectOf).filter((subj) => CARD_SUBJECT.test(subj) && !CARD_RADIUS_EXEMPT.has(`${name} ${subj}`));
+      if (cards.length) {
+        for (const r of body.matchAll(/(?:^|[\s;])(border(?:-[a-z]+)*-radius):\s*([^;]+?)\s*(?:;|$)/g)) {
+          if (!RADIUS_OK(r[2])) add(m.index, `${r[1]}: ${r[2]} on "${cards.join(', ')}": a card, panel or tile takes var(--ch-radius-*) (CONS-32)`);
+        }
       }
       if (RED_TOKENS.test(body) && !RED_ALLOWED_CONTEXT.test(selector)) {
         add(m.index, `red token outside an under-par/flag/danger context in "${selector}"`);
