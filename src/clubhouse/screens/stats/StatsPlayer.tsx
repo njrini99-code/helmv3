@@ -26,6 +26,8 @@ import { useSlidePlate } from '../../lib/slide-plate';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
+import { useIdleFetchAhead } from '../../shell/use-prefetch-tabs';
+import { windowsAhead } from './window-ahead';
 import { changeInk, formatAvg, formatFixed, formatHcp, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { TERMS } from '../../lib/glossary';
 import { sgBaseline } from '../../lib/sg';
@@ -158,6 +160,8 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
     go(data.id, next);
   };
   const changeWindow = (r: ChRange) => changeFilter(withScope(data.filter, r));
+  // Row 15: once the window has settled, the windows either side are fetched whole when idle, so a switch to one is instant.
+  useIdleFetchAhead(loading || pending ? [] : windowsAhead(data.filter).map((f) => href(data.id, f)));
   const filterCodes = { empty: 'CH-5320', pickEmpty: 'CH-5321', pickCap: 'CH-5322', range: 'CH-5102', holes: 'CH-5323' };
   // A coach's Message opens the direct thread with this player (Messages' ?player= link), not the bare inbox.
   const messageHref = coach ? rebuiltHref(`/golf/dashboard/messages?player=${data.id}`) : null;

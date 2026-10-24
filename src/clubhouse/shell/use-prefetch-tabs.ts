@@ -257,6 +257,24 @@ export function usePressPrefetch(): (href: string | null | undefined) => { onPoi
   return (href) => (href && router ? { onPointerDown: () => prefetchOnPress(router, href, Date.now()) } : {});
 }
 
+/**
+ * Pages the reader is likely to open next (the Stats windows either side of the one shown, row 15), fetched whole once
+ * the page has settled and the thread is idle, so the switch shows them at once instead of dimming the figures while it
+ * loads. The same guards as a press: nothing on Data Saver or offline, nothing Next holds fresh, never CoachHelm (CH-R1).
+ * Pass none while a change is in flight; outside the app router it does nothing.
+ */
+export function useIdleFetchAhead(hrefs: readonly string[]): void {
+  const router = useContext(AppRouterContext) as Router | null;
+  const key = hrefs.join('|');
+  useEffect(() => {
+    if (!key || !router) return;
+    return whenIdle(() => {
+      const now = Date.now();
+      for (const href of key.split('|')) prefetchOnPress(router, href, now);
+    });
+  }, [key, router]);
+}
+
 /** Tests only: forget what was fetched. */
 export function resetPrefetchTabsForTests(): void {
   fetchedAt.clear();
