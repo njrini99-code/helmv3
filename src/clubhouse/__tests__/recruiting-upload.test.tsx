@@ -277,7 +277,7 @@ describe('Recruiting · film and file drop · the transfer to Storage', () => {
     const policy = await uploadRecruitFile(io({ put: { status: 403, body: '' } }).io, 'p-mason', film(), meta);
     expect(policy).toEqual({ success: false, error: 'Only this team’s coaches can add recruit documents' });
     const lost = await uploadRecruitFile(io({ put: { status: 0, body: '' } }).io, 'p-mason', film(), meta);
-    expect(lost).toEqual({ success: false, error: 'The file didn’t finish sending. Check your connection and try again.' });
+    expect(lost).toEqual({ success: false, error: 'The file didn’t finish sending. Try again.' });
     const server = await uploadRecruitFile(io({ put: { status: 503, body: '' } }).io, 'p-mason', film(), meta);
     expect(server.success).toBe(false);
     expect(server).not.toHaveProperty('refused');
@@ -552,7 +552,7 @@ describe('Recruiting · film and file drop · the page', () => {
   it('CH-14005 CH-14916 a failure that is not a refusal of the file keeps the Retry toast, and Retry sends the same upload id, so nothing is sent or recorded twice', async () => {
     const user = userEvent.setup();
     const w = fakeWrites();
-    w.documents.upload.mockImplementation(() => fail('The file didn’t finish sending. Check your connection and try again.'));
+    w.documents.upload.mockImplementation(() => fail('The file didn’t finish sending. Try again.'));
     wrap(w);
     await within(panel('Mason Reilly')).findByRole('button', { name: /^Fall tournament schedule\.pdf/ });
     fireEvent.drop(section(), drag([film()]));

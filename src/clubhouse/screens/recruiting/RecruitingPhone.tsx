@@ -56,7 +56,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
         </LargeTitle>
         {!c.error && !nothing && <CalendarLine c={c} phone />}
         {c.error ? (
-          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Check your connection and try again." onRetry={c.tryAgain} />
+          <InlineNotice code="CH-14201" title="Your prospects didn’t load" body="Nothing was lost. Try again." onRetry={c.tryAgain} />
         ) : nothing ? (
           <EmptyState
             size="page"

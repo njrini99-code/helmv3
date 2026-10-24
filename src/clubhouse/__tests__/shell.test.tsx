@@ -278,10 +278,10 @@ describe('Shell · page states', () => {
   });
 
   it.each([
-    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
+    ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
     ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /Nothing you saved is lost\. Try again\./],
     ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /Nothing you saved is lost\. Try again\./],
-    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
+    ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /^(?!.*connection).*Nothing you saved is lost\. Try again\./],
     ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
     ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
     ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],

@@ -14,7 +14,9 @@ const key = (k: string, extra: Partial<ChKeyInput> = {}): ChKeyInput => ({
   isComposing: false,
   ...extra,
 });
-const free = { typing: false, overlay: false };
+// A browser: Cmd or Ctrl and a digit are its own (tabs). `app` is the iOS app, where they are free (decision 13).
+const free = { typing: false, overlay: false, digits: false };
+const app = { ...free, digits: true };
 
 describe('the G sequence', () => {
   it('arms on G and goes on the next letter inside the window', () => {
@@ -62,10 +64,10 @@ describe('the G sequence', () => {
 describe('suppression', () => {
   it('ignores bare shortcuts typed in a field or a dialog, and ends a pending G', () => {
     for (const k of ['g', '/', '?', 'r']) {
-      expect(interpretKey(key(k), { typing: true, overlay: false }, null, 1).outcome.kind).toBe('none');
-      expect(interpretKey(key(k), { typing: false, overlay: true }, null, 1).outcome.kind).toBe('none');
+      expect(interpretKey(key(k), { typing: true, overlay: false, digits: false }, null, 1).outcome.kind).toBe('none');
+      expect(interpretKey(key(k), { typing: false, overlay: true, digits: false }, null, 1).outcome.kind).toBe('none');
     }
-    expect(interpretKey(key('r'), { typing: true, overlay: false }, 500, 600).armedAt).toBeNull();
+    expect(interpretKey(key('r'), { typing: true, overlay: false, digits: false }, 500, 600).armedAt).toBeNull();
   });
 
   it('ignores a held modifier and mid-composition keys', () => {
@@ -81,16 +83,16 @@ describe('suppression', () => {
 
   it('B11 Cmd or Ctrl comma opens Settings, even from a field, but not over a dialog', () => {
     const key = (k: Partial<ChKeyInput>): ChKeyInput => ({ key: ',', metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, repeat: false, isComposing: false, ...k });
-    expect(interpretKey(key({}), { typing: false, overlay: false }, null, 0).outcome).toEqual({ kind: 'settings' });
-    expect(interpretKey(key({ metaKey: false, ctrlKey: true }), { typing: true, overlay: false }, null, 0).outcome).toEqual({ kind: 'settings' });
-    expect(interpretKey(key({}), { typing: false, overlay: true }, null, 0).outcome).toEqual({ kind: 'none' });
-    expect(interpretKey(key({ metaKey: false }), { typing: false, overlay: false }, null, 0).outcome).toEqual({ kind: 'none' });
+    expect(interpretKey(key({}), { typing: false, overlay: false, digits: false }, null, 0).outcome).toEqual({ kind: 'settings' });
+    expect(interpretKey(key({ metaKey: false, ctrlKey: true }), { typing: true, overlay: false, digits: false }, null, 0).outcome).toEqual({ kind: 'settings' });
+    expect(interpretKey(key({}), { typing: false, overlay: true, digits: false }, null, 0).outcome).toEqual({ kind: 'none' });
+    expect(interpretKey(key({ metaKey: false }), { typing: false, overlay: false, digits: false }, null, 0).outcome).toEqual({ kind: 'none' });
   });
 
   it('Cmd or Ctrl K opens the palette even from a field, but not over another dialog', () => {
-    expect(interpretKey(key('k', { metaKey: true }), { typing: true, overlay: false }, null, 1).outcome.kind).toBe('palette');
+    expect(interpretKey(key('k', { metaKey: true }), { typing: true, overlay: false, digits: false }, null, 1).outcome.kind).toBe('palette');
     expect(interpretKey(key('K', { ctrlKey: true }), free, null, 1).outcome.kind).toBe('palette');
-    expect(interpretKey(key('k', { metaKey: true }), { typing: true, overlay: true }, null, 1).outcome.kind).toBe('none');
+    expect(interpretKey(key('k', { metaKey: true }), { typing: true, overlay: true, digits: false }, null, 1).outcome.kind).toBe('none');
     expect(interpretKey(key('k', { metaKey: true, shiftKey: true }), free, null, 1).outcome.kind).toBe('none');
   });
 
@@ -146,21 +148,32 @@ describe('the letter map', () => {
 });
 
 describe('Cmd or Ctrl and 1 to 9 (owner, decision 13)', () => {
-  it('reaches a section with either modifier, from a field too, but not over a dialog', () => {
-    expect(interpretKey(key('1', { metaKey: true }), free, null, 0).outcome).toEqual({ kind: 'section', digit: 1 });
-    expect(interpretKey(key('9', { ctrlKey: true }), free, null, 0).outcome).toEqual({ kind: 'section', digit: 9 });
-    expect(interpretKey(key('3', { metaKey: true }), { typing: true, overlay: false }, null, 0).outcome).toEqual({ kind: 'section', digit: 3 });
-    expect(interpretKey(key('3', { metaKey: true }), { typing: false, overlay: true }, null, 0).outcome.kind).toBe('none');
+  it('is left to the browser (its tabs): nothing is bound there, and Cmd N is unbound in the app and the browser', () => {
+    for (const d of ['1', '5', '9']) {
+      expect(interpretKey(key(d, { metaKey: true }), free, null, 0).outcome.kind).toBe('none');
+      expect(interpretKey(key(d, { ctrlKey: true }), free, null, 0).outcome.kind).toBe('none');
+    }
+    for (const ctx of [free, app]) {
+      expect(interpretKey(key('n', { metaKey: true }), ctx, null, 0).outcome.kind).toBe('none');
+      expect(interpretKey(key('n', { ctrlKey: true }), ctx, null, 0).outcome.kind).toBe('none');
+    }
+  });
+
+  it('in the app, reaches a section with either modifier, from a field too, but not over a dialog', () => {
+    expect(interpretKey(key('1', { metaKey: true }), app, null, 0).outcome).toEqual({ kind: 'section', digit: 1 });
+    expect(interpretKey(key('9', { ctrlKey: true }), app, null, 0).outcome).toEqual({ kind: 'section', digit: 9 });
+    expect(interpretKey(key('3', { metaKey: true }), { ...app, typing: true }, null, 0).outcome).toEqual({ kind: 'section', digit: 3 });
+    expect(interpretKey(key('3', { metaKey: true }), { ...app, overlay: true }, null, 0).outcome.kind).toBe('none');
   });
 
   it('is only the bare chord: 0, Shift, Alt, a held key and a plain digit do nothing, and it ends a pending G', () => {
-    expect(interpretKey(key('0', { metaKey: true }), free, null, 0).outcome.kind).toBe('none');
-    expect(interpretKey(key('!', { metaKey: true, shiftKey: true }), free, null, 0).outcome.kind).toBe('none');
-    expect(interpretKey(key('1', { metaKey: true, shiftKey: true }), free, null, 0).outcome.kind).toBe('none');
-    expect(interpretKey(key('1', { metaKey: true, altKey: true }), free, null, 0).outcome.kind).toBe('none');
-    expect(interpretKey(key('1', { metaKey: true, repeat: true }), free, null, 0).outcome.kind).toBe('none');
-    expect(interpretKey(key('1'), free, null, 0).outcome.kind).toBe('none');
-    const fromArmed = interpretKey(key('2', { metaKey: true }), free, 100, 200);
+    expect(interpretKey(key('0', { metaKey: true }), app, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('!', { metaKey: true, shiftKey: true }), app, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, shiftKey: true }), app, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, altKey: true }), app, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, repeat: true }), app, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1'), app, null, 0).outcome.kind).toBe('none');
+    const fromArmed = interpretKey(key('2', { metaKey: true }), app, 100, 200);
     expect(fromArmed.outcome).toEqual({ kind: 'section', digit: 2 });
     expect(fromArmed.armedAt).toBeNull();
   });

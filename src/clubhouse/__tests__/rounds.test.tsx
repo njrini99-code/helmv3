@@ -235,6 +235,8 @@ describe('112401 Rounds library, on screen', () => {
     const search = screen.getByRole('searchbox', { name: 'Search rounds by course' });
     await user.type(search, 'Pinehurst');
     await expectCode('CH-11303', /No rounds at “Pinehurst”/);
+    // A search that hides every round is a filtered empty, not a first run (2026-10-23, filtered empties).
+    expect(document.querySelector('[data-ch-code="CH-11303"]')!.getAttribute('data-ch-state')).toBe('filtered');
     await user.clear(search);
     await user.type(search, 'hope');
     expect(screen.getAllByRole('link').map((g) => g.getAttribute('aria-label')).filter(Boolean)).toEqual(['Sep 18, Hope Valley CC, 71 (+1)', 'Sep 12, Hope Valley CC, 74 (+4)']);

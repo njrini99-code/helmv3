@@ -1,6 +1,7 @@
 'use client';
 
 import { Keyboard } from 'lucide-react';
+import { isNativeApp } from '@/lib/utils/capacitor';
 import type { ChRole } from '../nav';
 import { Modal } from '../../ui/Modal';
 import { Keys } from './Keys';
@@ -25,6 +26,8 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
     { label: 'Close a dialog or menu', keys: ['Esc'] },
   ];
   const goTo = navLetters(role);
+  // Drawn only once it is opened, so reading the platform here never differs from the server's HTML.
+  const digits = isNativeApp();
   const here = usePageKeysNow();
   return (
     <Modal open={open} onClose={onClose} title="Keyboard shortcuts" description="They work anywhere except while you are typing." icon={Keyboard} width={600}>
@@ -46,8 +49,9 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
           <h3 id="ch-cmd-goto">Go to a section</h3>
           <dl className="ch-cmd-rows is-two">
             {goTo.map(({ letter, item }) => {
-              // The first nine sidebar sections also answer Cmd or Ctrl and their digit (owner, decision 13).
-              const digit = digitFor(role, item.id);
+              // In the app, the first nine sidebar sections also answer Cmd or Ctrl and their digit (owner, decision 13); a
+              // browser keeps those keys for its tabs, so the sheet doesn't offer them there.
+              const digit = digits ? digitFor(role, item.id) : undefined;
               return (
                 <div key={item.id} className="ch-cmd-row">
                   <dt>{item.label}</dt>

@@ -13,6 +13,9 @@ vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
 // The real loader is a server action; each test hands CommandLayer its own (loadPeople).
 vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null) }));
+// The iOS app or a browser: Cmd or Ctrl and 1 to 9 are bound only in the app (decision 13).
+const native = { on: false };
+vi.mock('@/lib/utils/capacitor', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/utils/capacitor')>()), isNativeApp: () => native.on }));
 
 let desktop = true;
 beforeAll(() => {
@@ -27,6 +30,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   desktop = true;
+  native.on = false;
   push.mockClear();
   window.sessionStorage.clear();
   resetRecent();
@@ -46,7 +50,7 @@ const loaderOf = (list: { id: string; name: string }[] | null) => vi.fn(async ()
 /** Lets the palette's People load settle after it opens. */
 const settle = () => act(async () => {});
 
-function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf(null)) {
+function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf([])) {
   return render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
@@ -132,15 +136,58 @@ describe('the palette (Cmd or Ctrl K)', () => {
     expect(push).toHaveBeenCalledWith('/golf/dashboard/roster', { scroll: false });
   });
 
-  it('says nothing matched and offers the nearest section, which Enter takes', () => {
+  it('says nothing matched and offers the nearest section, which Enter takes', async () => {
     mount('coach');
     key('k', { metaKey: true });
+    await settle();
     search('rostr');
     expect(options()[0]).toBe('Roster');
     search('zzzqxw');
     expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches/);
-    expect(within(palette()).getByRole('status').textContent).toMatch(/Players appear here once you have opened the Roster/);
+    // Players were read as it opened (decision 16), so it no longer sends the coach to the Roster first.
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/Roster|your players/i);
     expect(within(palette()).queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('while a coach\'s players are on their way, a search says so quietly, under results or in the no-match line, and stops once they land', async () => {
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    mount('coach', null, vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done))));
+    key('k', { metaKey: true });
+    // Nothing typed: the launcher shows no People, so nothing waits.
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('rost');
+    expect(options()).toContain('Roster');
+    expect(within(palette()).getByRole('status').textContent).toBe('Looking up your players…');
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches.*Looking up your players…/);
+    await act(async () => answer([{ id: 'p1', name: 'Mae Lindqvist' }]));
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByRole('status')).toBeNull();
+  });
+
+  it('players that didn\'t load are said in a search, and the next opening asks again', async () => {
+    const load = vi.fn<() => Promise<{ id: string; name: string }[] | null>>().mockResolvedValueOnce(null).mockResolvedValueOnce([{ id: 'p1', name: 'Mae Lindqvist' }]);
+    mount('coach', null, load);
+    key('k', { metaKey: true });
+    await settle();
+    search('mae');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Your players didn’t load\. Close this and open it again to try again\./);
+    key('k', { metaKey: true });
+    key('k', { metaKey: true });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(2);
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
+  });
+
+  it('a player\'s search never waits on players', () => {
+    mount('player');
+    key('k', { metaKey: true });
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/your players/i);
   });
 
   it('draws the new-event key only where it works, on Home', () => {
@@ -246,6 +293,40 @@ describe('people across a team switch', () => {
     expect(options()).toContain('Priya Natarajan');
     search('jon');
     expect(options()).not.toContain('Jonah Okafor');
+  });
+
+  it('leaving the frame (the idle timeout\'s sign-out goes to login without a page load) empties the list', () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', ['Jonah Okafor']));
+    expect(seen).toHaveLength(1);
+    unmount();
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
+  });
+
+  it('a People reply that lands after the frame has gone never refills the list', async () => {
+    let seen: readonly unknown[] = ['unset'];
+    function Probe() {
+      seen = usePeople();
+      return null;
+    }
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    const late = vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done)));
+    const probe = render(<Probe />);
+    const { unmount } = render(tree('t1', [], late));
+    key('k', { metaKey: true });
+    expect(late).toHaveBeenCalledTimes(1);
+    unmount();
+    await act(async () => answer([{ id: 'a', name: 'Jonah Okafor' }]));
+    probe.rerender(<Probe />);
+    expect(seen).toEqual([]);
+    probe.unmount();
   });
 
   it('another person signing in on the same team never sees the last one\'s list', () => {
@@ -370,7 +451,31 @@ describe('G then a letter, / and ?', () => {
     expect(within(sheet).queryByText('New event')).toBeNull();
   });
 
-  it('Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+  it('in a browser, Cmd or Ctrl and a digit are left to it (its tabs): nothing is prevented or pushed, and the sheet offers none', () => {
+    mount('coach');
+    let notPrevented = true;
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '2', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: '6', ctrlKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    // Cmd N is never bound either: a browser's new window.
+    act(() => {
+      notPrevented = fireEvent.keyDown(window, { key: 'n', metaKey: true });
+    });
+    expect(notPrevented).toBe(true);
+    expect(push).not.toHaveBeenCalled();
+    key('?', { shiftKey: true });
+    const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const home = within(sheet).getByText('Home', { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
+    expect(Array.from(home.querySelectorAll('kbd')).map((k) => k.textContent)).toEqual(['G', 'H']);
+  });
+
+  it('in the app, Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+    native.on = true;
     mount('coach', <input aria-label="Notes" />);
     key('2', { metaKey: true });
     expect(push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm', { scroll: false });
@@ -384,7 +489,8 @@ describe('G then a letter, / and ?', () => {
     expect(push).not.toHaveBeenCalled();
   });
 
-  it('the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+  it('in the app, the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+    native.on = true;
     mount('coach');
     key('?', { shiftKey: true });
     const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });

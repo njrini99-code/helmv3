@@ -1,25 +1,26 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { isNativeApp } from '@/lib/utils/capacitor';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChPerson, ChRecent } from './commands';
 import { getPalettePeople } from '../../data/palette-people';
-import { seedPeople, setPeopleScope, usePeople } from './people';
+import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
-import { Palette } from './Palette';
+import { Palette, type ChPeopleState } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
 
 /**
  * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K (or the top bar's search pill, palette-open.ts) opens
- * the command palette, G then a letter (or Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
+ * the command palette, G then a letter (or, in the app, Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
- * the players it has already loaded (people.ts). Its keys never fire while typing in a field or inside a dialog, a
+ * the players it has already loaded (people.ts), which it empties when it unmounts (sign-out, the idle timeout). Its keys never fire while typing in a field or inside a dialog, a
  * menu or a list (shortcuts.ts); the sidebar's Cmd or Ctrl \ and Home's N keep their own handlers.
  */
 export function CommandLayer({
@@ -60,23 +61,44 @@ export function CommandLayer({
   // different account on the same browser never inherits the last one's list.
   const peopleScope = `${userId}:${teamId ?? ''}`;
   const seededFor = useRef<string | null>(null);
+  // Whether the coach's names are on their way (the palette's quiet loading line) or didn't come.
+  const [peopleState, setPeopleState] = useState<ChPeopleState>('idle');
   useLayoutEffect(() => {
     setPeopleScope(peopleScope);
     seededFor.current = null;
+    setPeopleState('idle');
   }, [peopleScope]);
+  // Leaving the signed-in frame drops the names, and any reply still on its way. Sign-out ends in a page load, which
+  // empties memory anyway; the idle timeout's sign-out (useSessionActivity) goes to login as a client navigation, which
+  // would otherwise keep the list in memory until the next sign-in.
+  useEffect(
+    () => () => {
+      seededFor.current = null;
+      clearPeople();
+    },
+    [],
+  );
   // The coach's names are read once per scope, when the palette first opens (decision 16); a page's own list still takes
   // precedence (people.ts). A reply for a scope that has since changed is dropped. Only a coach's are ever read.
   const seedOnOpen = useCallback(() => {
     if (role !== 'coach' || seededFor.current === peopleScope) return;
     seededFor.current = peopleScope;
     const forScope = peopleScope;
+    setPeopleState('loading');
+    // No list (null) or a throw: the next opening asks again.
+    const failed = () => {
+      if (seededFor.current !== forScope) return;
+      seededFor.current = null;
+      setPeopleState('failed');
+    };
     void loadPeople()
       .then((list) => {
-        if (list && seededFor.current === forScope) seedPeople(list);
+        if (seededFor.current !== forScope) return;
+        if (!list) return failed();
+        seedPeople(list);
+        setPeopleState('ready');
       })
-      .catch(() => {
-        if (seededFor.current === forScope) seededFor.current = null;
-      });
+      .catch(failed);
   }, [role, peopleScope, loadPeople]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
@@ -104,7 +126,7 @@ export function CommandLayer({
       }
       const result = interpretKey(
         e,
-        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document) },
+        { typing: isTypingTarget(e.target), overlay: isInOverlay(e.target) || modalOpen(document), digits: isNativeApp() },
         armed.current,
         performance.now(),
       );
@@ -185,7 +207,7 @@ export function CommandLayer({
   return (
     <>
       {waiting && <GoHint role={role} />}
-      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} recent={recent} keyword={opens} />}
+      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
       {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} apple={apple} />}
     </>
   );

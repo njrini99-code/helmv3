@@ -146,7 +146,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
     (file: File, meta: { title: string; category: ChDocCategory }) => ({
       done: '',
       failed: `Couldn’t upload ${meta.title || file.name}`,
-      hint: 'Nothing was added. Check your connection and try again.',
+      hint: 'Nothing was added. Try again.',
       code: 'CH-14005',
     }),
     // A refusal of the file is drawn by the dialog. Anything else keeps the toast's own wording: the server's sentence if it gave one.
@@ -173,7 +173,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
   const open = useAction('recruiting.openDocument', openAction, (doc: ChDocument) => ({
     done: '',
     failed: `Couldn’t open ${doc.title}`,
-    hint: 'The link could not be made. Check your connection and try again.',
+    hint: 'The link could not be made. Try again.',
     code: 'CH-14007',
   }));
 
