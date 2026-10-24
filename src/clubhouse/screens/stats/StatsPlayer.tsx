@@ -53,6 +53,7 @@ import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
 import { pluralWord } from '../../lib/plural';
+import { PlayerInsight } from './StatsInsight';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -341,6 +342,13 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
         )}
         {data.roundsError && (
           <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again." onRetry={() => router.refresh()} />
+        )}
+
+        {/* Row 70: what changed, in words, before the tabs' figures; the same on every tab. */}
+        {!emptyFilter && !failed && (
+          <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
+            <PlayerInsight data={data} />
+          </SectionBoundary>
         )}
 
         {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}

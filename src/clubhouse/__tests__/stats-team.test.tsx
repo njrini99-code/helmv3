@@ -1303,3 +1303,49 @@ describe('Team stats phone · window switch', () => {
     expect(src).toMatch(/<PhoneWindowSwitch /);
   });
 });
+
+/** Row 70: the insight-first card at the top of Team stats, desktop and phone. */
+describe('Stats team · what changed (row 70)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const asPhone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
+  /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
+  const agreesWithPage = (box: HTMLElement) => {
+    for (const b of box.querySelectorAll('b')) {
+      const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(b.textContent!));
+      expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
+    }
+  };
+
+  for (const surface of ['desktop', 'phone'] as const) {
+    it(`${surface}: states the changes past their standard error, clearest first, each toned as the page tones it`, async () => {
+      if (surface === 'phone') asPhone();
+      wrap(stats());
+      // Greens +3% (1.25 errors) and the scoring average −0.9 (1.18); strokes gained, putts, scrambling and birdies are inside theirs.
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('What changed');
+      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 Greens in regulation, better vs previous 10', '−0.9 Scoring average, better vs previous 10']);
+      expect(unsignedTones(box)).toEqual([]);
+      agreesWithPage(box);
+    });
+
+    it(`${surface}: nothing past its error says "No clear change"; nothing to compare draws no card`, async () => {
+      if (surface === 'phone') asPhone();
+      const inside = PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, se: f.delta == null ? f.se : Math.abs(f.delta) * 2 }));
+      const view = wrap(stats({ figures: inside }));
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('No clear change');
+      expect(box.textContent).toContain('Nothing has moved past its usual round-to-round spread vs previous 10.');
+      view.unmount();
+      wrap(stats({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, delta: null, se: null })) }));
+      await waitFor(() => expect(document.querySelector('.ch-st, .ch-stm')).not.toBeNull());
+      expect(card()).toBeNull();
+    });
+  }
+});

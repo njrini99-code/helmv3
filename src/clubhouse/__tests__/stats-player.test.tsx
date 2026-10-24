@@ -1493,3 +1493,55 @@ describe('toned figures say which way (row 48)', () => {
     });
   }
 });
+
+/** Row 70: the insight-first card at the top of a player's Stats, desktop and phone. */
+describe('Stats player · what changed (row 70)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const asPhone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
+  /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
+  const agreesWithPage = (box: HTMLElement) => {
+    for (const b of box.querySelectorAll('b')) {
+      const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(b.textContent!));
+      expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
+    }
+  };
+  const LINES = ['−0.8 Putts per round, better vs previous 10', '−5.6 Greens in regulation, worse vs previous 10'];
+
+  it('desktop: the window against the one before, only past each change’s error, and the Rounds tab tones them alike', async () => {
+    const user = userEvent.setup();
+    show(player());
+    const box = card()!;
+    expect(within(box).getByRole('heading').textContent).toBe('What changed');
+    expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(LINES);
+    expect(unsignedTones(box)).toEqual([]);
+    await openTab(user, /^Rounds/);
+    // The card stays on every tab; the comparison it reads is on Rounds.
+    agreesWithPage(card()!);
+  });
+
+  it('phone: the same card above the figures', async () => {
+    asPhone();
+    show(player());
+    const box = await waitFor(() => card()!);
+    expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(LINES);
+    await act(async () => {});
+    agreesWithPage(box);
+  });
+
+  it('nothing past its error is "No clear change"; nothing to compare draws no card', () => {
+    const p = player();
+    const quiet = { ...p, sgChange: { ...p.sgChange, se: 9 }, extra: { ...p.extra, compare: { ...p.extra.compare!, rows: p.extra.compare!.rows.map((r) => ({ ...r, se: 9 })) } } };
+    const view = show(quiet);
+    expect(within(card()!).getByRole('heading').textContent).toBe('No clear change');
+    view.unmount();
+    show({ ...p, sgChange: { delta: null, context: '' }, extra: { ...p.extra, compare: null } });
+    expect(card()).toBeNull();
+  });
+});

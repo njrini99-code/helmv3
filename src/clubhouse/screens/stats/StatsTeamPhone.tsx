@@ -37,6 +37,7 @@ import { useArrivalPainted } from '../../lib/use-painted';
 import { useGlide } from '../../lib/motion-glide';
 import { pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { TeamInsight } from './StatsInsight';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -134,6 +135,10 @@ export function StatsTeamPhone({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
+              {/* Row 70: what changed, in words, before any figure. */}
+              <SectionBoundary surface="stats.team.insight" label="What changed" code="CH-4204">
+                <TeamInsight figures={data.figures} last={data.last} />
+              </SectionBoundary>
               <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                 {data.cacheError && (
                   <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />

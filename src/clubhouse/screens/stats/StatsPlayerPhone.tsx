@@ -42,6 +42,7 @@ import { useArrivalPainted } from '../../lib/use-painted';
 import { TERMS } from '../../lib/glossary';
 import { plural, pluralWord } from '../../lib/plural';
 import { LargeTitle } from '../../ui/LargeTitle';
+import { PlayerInsight } from './StatsInsight';
 
 /** Rounds the list shows before "All N rounds". */
 const ROUNDS_SHOWN = 5;
@@ -203,6 +204,10 @@ export function StatsPlayerPhone({
 
       {!emptyFilter && !failed && (
         <>
+      {/* Row 70: what changed, in words, before any figure. */}
+      <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
+        <PlayerInsight data={data} />
+      </SectionBoundary>
       <SectionBoundary surface="stats.player.overview" label="The overview" code="CH-5204">
         {data.cacheError && <InlineNotice code="CH-5213" title={CACHE_ERROR.title} body={CACHE_ERROR.body} onRetry={onRetry} />}
         <Figures data={data} readCaveat={readCaveat} />
