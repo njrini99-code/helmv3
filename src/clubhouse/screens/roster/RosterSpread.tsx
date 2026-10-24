@@ -58,7 +58,7 @@ export function RosterSpread({ players, teamAvg, onOpen }: { players: ChRosterPl
           {layout.placed.map(({ p, x, lane }) => (
             <li key={p.id} style={{ '--ch-sp-x': x, top: lane * LANE, ['--ch-sp-size' as string]: `${COIN}px` } as CSSProperties}>
               <button type="button" tabIndex={-1} onClick={() => onOpen(p.id)}>
-                <Avatar name={p.name} size={COIN} />
+                <Avatar name={p.name} id={p.id} size={COIN} />
                 <b className="ch-num">{formatAvg(p.avg)}</b>
                 <em>{p.firstName}</em>
               </button>

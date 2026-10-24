@@ -335,7 +335,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
       <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} aria-label={`People: ${label}`}>
         <span className="ch-pp__stack">
           {stack.map((p) => (
-            <Avatar key={p.id} name={p.name} size={26} />
+            <Avatar key={p.id} name={p.name} id={p.id} size={26} />
           ))}
           {count > 4 && <span className="ch-pp__more">+{count - 4}</span>}
         </span>
@@ -370,7 +370,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
               const on = sel.includes(p.id);
               return (
                 <button key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
-                  <Avatar name={p.name} size="sm" />
+                  <Avatar name={p.name} id={p.id} size="sm" />
                   <span className="ch-pp__name">
                     <b>{p.name}</b>
                     <span>{p.year ?? 'Player'}</span>

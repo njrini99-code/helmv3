@@ -210,7 +210,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
           <li key={p.id} className="ch-rs-face ch-rs-face--static">
             <span className="ch-rs-face__top" />
             <span className="ch-rs-face__av">
-              <Avatar name={p.name} size={76} />
+              <Avatar name={p.name} id={p.id} size={76} />
             </span>
             <span className="ch-rs-face__name">{p.name}</span>
             <span className="ch-rs-face__meta">{teammateLine(p) || ' '}</span>
@@ -237,7 +237,7 @@ function TeammateList({ rows, view, q, onClearSearch }: { rows: ChTeammate[]; vi
         <div key={p.id} role="row" className="ch-rs-row">
           <span role="cell" className="ch-rs-who__cell">
             <span className="ch-rs-who ch-rs-who--static">
-              <Avatar name={p.name} size="lg" />
+              <Avatar name={p.name} id={p.id} size="lg" />
               <span>
                 <b>{p.name}</b>
                 {p.isYou && <span className="ch-rs-who__m">You</span>}

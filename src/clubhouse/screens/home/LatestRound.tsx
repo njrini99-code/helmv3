@@ -125,7 +125,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                       <Icon icon={Flag} size={16} />
                     </span>
                   ) : (
-                    <Avatar name={r.playerName} size="md" />
+                    <Avatar name={r.playerName} id={r.playerId} size="md" />
                   )}
                   <div>
                     <div className="ch-h-round__name">{mine ? (r.meta.split(' · ')[0] ?? r.meta) : r.playerName}</div>
@@ -211,7 +211,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                     setI(j);
                   }}
                 >
-                  <Avatar name={x.playerName} size={26} />
+                  <Avatar name={x.playerName} id={x.playerId} size={26} />
                   <span className="ch-h-rail__who">
                     <span className="ch-h-rail__name">{x.playerName}</span>
                     <span className="ch-h-rail__meta">{x.meta.split(' · ').slice(0, 2).join(' · ')}</span>

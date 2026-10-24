@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { useRef, type CSSProperties, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { Icon } from './Icon';
 import { ScrollPager } from './ScrollPager';
 
@@ -29,8 +29,9 @@ export interface WeekStripDay {
  * seven days, the chosen day on the accent plate (it glides from day to day, CH-6606), today ringed, events as dots.
  *
  * Three ways to hold it:
- * - `onSelect`: the strip chooses a day (Hub, Calendar). Days are toggle buttons with one Tab stop; ← and → step a day,
- *   Home and End go to the ends, and at an end of the week ← or → turns the page when the strip pages.
+ * - `onSelect`: the strip chooses a day (Hub, Calendar). Days are toggle buttons with one Tab stop; the left and right
+ *   arrows step a day, Home and End go to the ends, and at an end of the week an arrow steps one day on into the week
+ *   beyond when the strip pages (Sat to the next Sun, not a week), with focus kept on the day it lands on.
  * - each day's `href`: the days are links (Home).
  * - neither: the days are read, not pressed.
  *
@@ -58,13 +59,26 @@ export function WeekStrip({
 }) {
   const list = useRef<HTMLOListElement | null>(null);
   const at = selected == null ? -1 : days.findIndex((d) => d.date === selected);
+  // A key that stepped past the week's end: the strip turns to the week beyond, its days (keyed by date) mount anew, and
+  // focus goes to the day the key chose once it is drawn, instead of falling to the page.
+  const refocus = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const want = refocus.current;
+    if (want == null || want !== selected) return;
+    refocus.current = null;
+    list.current?.querySelectorAll<HTMLButtonElement>('.ch-wks__d')[at]?.focus({ preventScroll: true });
+  }, [selected, at]);
   const keys = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     if (!onSelect || e.altKey || e.metaKey || e.ctrlKey) return;
     const to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? days.length - 1 : null;
     if (to == null) return;
     e.preventDefault();
     if (to < 0 || to >= days.length) {
-      if (onPage) onPage(to < 0 ? -1 : 1);
+      // One day on, not a week: the day beyond the end is the first (or last) of the week the strip pages to.
+      const beyond = onPage && around ? (to < 0 ? around.prev.at(-1) : around.next[0]) : undefined;
+      if (!beyond) return;
+      refocus.current = beyond.date;
+      onSelect(beyond.date);
       return;
     }
     onSelect(days[to]!.date);

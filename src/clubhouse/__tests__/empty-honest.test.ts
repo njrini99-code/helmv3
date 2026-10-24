@@ -9,7 +9,10 @@ import { hits, ratchet, ROOT, walk, type Hit } from './_scan';
  * restricted…) or draws a `shape`, or is a whole-page state (`size="page"`). The legacy section form (none of these)
  * is ratcheted per file and moves as each screen is read; the hand-rolled empty classes may only fall too.
  */
-function legacy(): Hit[] {
+type Attr = (name: string) => ts.JsxAttribute | undefined;
+
+/** Every `<EmptyState …>` in the source, with a reader for its attributes and a literal string attribute's text. */
+function empties(test: (attr: Attr, literal: (name: string) => string | null, source: (name: string) => string) => boolean): Hit[] {
   const out: Hit[] = [];
   for (const file of walk(ROOT, /\.tsx$/)) {
     const text = readFileSync(file, 'utf8');
@@ -18,12 +21,13 @@ function legacy(): Hit[] {
     const visit = (node: ts.Node) => {
       const open = ts.isJsxSelfClosingElement(node) ? node : ts.isJsxElement(node) ? node.openingElement : null;
       if (open && open.tagName.getText(src) === 'EmptyState') {
-        const attr = (name: string) => open.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === name) as ts.JsxAttribute | undefined;
-        const size = attr('size')?.initializer;
-        const page = size && ts.isStringLiteral(size) && size.text === 'page';
-        if (!attr('kind') && !attr('shape') && !page) {
-          out.push({ file: relative(ROOT, file), line: src.getLineAndCharacterOfPosition(open.getStart(src)).line + 1, text: '' });
-        }
+        const attr: Attr = (name) => open.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText(src) === name) as ts.JsxAttribute | undefined;
+        const literal = (name: string) => {
+          const v = attr(name)?.initializer;
+          return v && ts.isStringLiteral(v) ? v.text : null;
+        };
+        const source = (name: string) => attr(name)?.initializer?.getText(src) ?? '';
+        if (test(attr, literal, source)) out.push({ file: relative(ROOT, file), line: src.getLineAndCharacterOfPosition(open.getStart(src)).line + 1, text: '' });
       }
       ts.forEachChild(node, visit);
     };
@@ -31,6 +35,8 @@ function legacy(): Hit[] {
   }
   return out;
 }
+
+const legacy = () => empties((attr, literal) => !attr('kind') && !attr('shape') && literal('size') !== 'page');
 
 const ALLOW_LEGACY: Record<string, number> = {
   'preview/ComponentGallery.tsx': 1,
@@ -49,7 +55,7 @@ const ALLOW_LEGACY: Record<string, number> = {
   'screens/messages/MessagesPhone.tsx': 2,
   'screens/messages/MessagesView.tsx': 3,
   'screens/messages/RailEmpty.tsx': 1,
-  'screens/qualifiers/CoursePicker.tsx': 2,
+  'screens/qualifiers/CoursePicker.tsx': 1,
   'screens/qualifiers/QualifierDetail.tsx': 1,
   'screens/qualifiers/QualifierDetailPhone.tsx': 1,
   'screens/qualifiers/QualifierForm.tsx': 1,
@@ -89,6 +95,19 @@ describe('honest empty states (CONS-11)', () => {
     const r = ratchet(legacy(), ALLOW_LEGACY);
     expect(r.over).toEqual([]);
     expect(r.stale).toEqual([]);
+  });
+
+  /** Auditor on #2361: `icon={Flag}` on the phone's shaped first-run empties never drew; the shape is a first run's
+   *  picture, and EmptyState drops the glyph there (ui/States.tsx). */
+  it('a shaped first-run empty passes no icon, since it never draws one', () => {
+    expect(empties((attr, literal) => !!attr('shape') && (literal('kind') ?? 'first-run') === 'first-run' && !!attr('icon'))).toEqual([]);
+  });
+
+  /** Auditor on #2361: the Stats page filter empty had no kind; a page state was exempt from the guard. A state that
+   *  says nothing matches is a filtered one at any size. */
+  it('an empty that says nothing matches is kind="filtered", page states included', () => {
+    // Read from the source, so a title or kind chosen by a condition (a search, else a first run) is seen too.
+    expect(empties((_, __, source) => /\bmatch(es)?\b/i.test(source('title')) && !/['"]filtered['"]/.test(source('kind')))).toEqual([]);
   });
 
   it('no new hand-rolled empty classes', () => {

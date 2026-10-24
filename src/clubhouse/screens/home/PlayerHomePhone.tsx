@@ -183,7 +183,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
       {data.error ? (
         <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !r ? (
-        <EmptyState code="CH-2302" shape="rows" shapeCount={2} icon={Flag} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
+        <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
       ) : (
         <div className="ch-ph-card">
           <div className="ch-ph-rd">

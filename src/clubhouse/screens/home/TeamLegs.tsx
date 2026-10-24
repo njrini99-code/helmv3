@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Fragment } from 'react';
-import { ArrowRight, BarChart3 } from 'lucide-react';
+import { ArrowRight, ChartColumn } from 'lucide-react';
 import type { ChLegPeople, ChTeamLeg, ChTeamLegs } from '../../data/home';
 import { filterFor, statsHref } from '../../data/stats-filter';
 import { changeTone, formatFixed, formatPct, formatSigned, NO_DATA } from '../../lib/format';
@@ -76,7 +76,7 @@ function NoHoleRounds() {
     <EmptyState
       compact
       code="CH-2314"
-      icon={BarChart3}
+      icon={ChartColumn}
       title="No hole-by-hole rounds in the last 10 yet."
       body="The four parts fill in once players post rounds with hole scores."
     />

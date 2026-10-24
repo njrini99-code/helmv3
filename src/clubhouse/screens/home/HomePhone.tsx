@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, Flag, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -456,7 +456,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
       {data.error ? (
         <RefreshNotice code="CH-2202" title="Recent rounds didn’t load" body="Posted rounds are safe. Try again." covered={covered} />
       ) : !data.rounds.length ? (
-        <EmptyState code="CH-2302" shape="rows" shapeCount={2} icon={Flag} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
+        <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
         // B5: the rows' sparks share one range, so the same height is the same score down the list.
         <FormRange trends={data.rounds.map((r) => trendOf.get(r.playerId))} earlyBelow={3}>
@@ -474,7 +474,7 @@ function Rounds({ data, trends, onOpen, covered }: { data: ChCoachHome['latestRo
                       onOpen(r);
                     }}
                   >
-                    <Avatar name={r.playerName} size={38} />
+                    <Avatar name={r.playerName} id={r.playerId} size={38} />
                     <span className="ch-hm-rd__b">
                       <b>{r.playerName}</b>
                       <RoundMeta meta={r.meta} />
@@ -548,7 +548,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
               </Button>
             ) : (
               stats && (
-                <Button variant="primary" leftIcon={BarChart3} href={stats}>
+                <Button variant="primary" leftIcon={ChartColumn} href={stats}>
                   Player stats
                 </Button>
               )

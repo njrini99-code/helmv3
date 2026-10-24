@@ -1,4 +1,4 @@
-import { BarChart3, Medal } from 'lucide-react';
+import { ChartColumn, Medal } from 'lucide-react';
 import Link from 'next/link';
 import type { ChTeamStats } from '../../data/stats-team';
 import { isFiltered, previousWords, type ChFilter } from '../../data/stats-filter';
@@ -103,7 +103,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
           <EmptyState
             size="page"
             code={data.window === 'qualifiers' ? 'CH-4302' : 'CH-4301'}
-            icon={data.window === 'qualifiers' ? Medal : BarChart3}
+            icon={data.window === 'qualifiers' ? Medal : ChartColumn}
             title={data.window === 'qualifiers' ? 'No qualifier rounds this season yet' : 'No 18-hole rounds in this window yet'}
             body={data.window === 'qualifiers' ? 'Qualifier rounds appear here once they are posted as qualifying.' : 'Team stats fill in as players post countable rounds.'}
             action={data.window !== 'season' ? <ShowSeason /> : undefined}

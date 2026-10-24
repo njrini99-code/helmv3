@@ -140,7 +140,7 @@ function PeekBody({
       </div>
       <div className="ch-rs-peek__hero">
         <span className="ch-rs-peek__av">
-          <Avatar name={p.name} size={96} />
+          <Avatar name={p.name} id={p.id} size={96} />
         </span>
         <h2 className="ch-display">{p.name}</h2>
         <span className="ch-rs-peek__sub">

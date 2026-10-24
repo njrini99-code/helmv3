@@ -273,6 +273,14 @@ export interface ChMessagesApi {
 export const personOf = (api: ChMessagesApi, userId: string) =>
   api.directory.find((p) => p.userId === userId);
 
+/** B19: a direct conversation's coin takes the other person's tone, from the id their coin has everywhere (a player's
+ *  player id, else a coach's user id); a group has none. */
+export const convAvatarId = (api: ChMessagesApi, c: ChConv): string | null => {
+  if (c.group) return null;
+  const other = c.memberIds.find((id) => id !== api.viewer.userId);
+  return other ? (personOf(api, other)?.playerId ?? other) : null;
+};
+
 /**
  * P003-C1: for the coach, a player's avatar and name in a thread peek at the player, from the team directory Messages
  * already holds. The bubble keeps its own hold (message actions); coaches and people off the roster don't peek.
@@ -420,7 +428,7 @@ function ConvRowButton({ api, c, avatarSize, onOpen, bind }: { api: ChMessagesAp
           <Icon icon={Users} size={15} />
         </span>
       ) : (
-        <Avatar name={c.title} size={avatarSize} />
+        <Avatar name={c.title} id={convAvatarId(api, c)} size={avatarSize} />
       )}
       <span className="ch-ms-row__main">
         <span className="ch-ms-row__top">
@@ -974,7 +982,7 @@ export function Bubble({
         <span className="ch-ms-msg__av">
           {last && (
             <SenderPeek api={api} who={who}>
-              <Avatar name={who?.name ?? "Member"} size={30} />
+              <Avatar name={who?.name ?? "Member"} id={who ? (who.playerId ?? who.userId) : null} size={30} />
             </SenderPeek>
           )}
         </span>
@@ -1718,7 +1726,7 @@ function Thread({
               <Icon icon={Users} size={17} />
             </span>
           ) : (
-            <Avatar name={conv.title} size={38} />
+            <Avatar name={conv.title} id={convAvatarId(api, conv)} size={38} />
           )}
           <div style={{ minWidth: 0 }}>
             <b>{conv.title}</b>
@@ -1822,7 +1830,7 @@ function Thread({
           {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
             <div className="ch-ms-msg is-first" /* CH-7602: the typing dots */>
               {/* The realtime hook says someone is typing, not who: a direct thread knows, a group doesn't. */}
-              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} size={30} />}</span>
+              <span className="ch-ms-msg__av">{!conv.group && <Avatar name={conv.title} id={convAvatarId(api, conv)} size={30} />}</span>
               <div className="ch-ms-msg__col">
                 <div
                   className="ch-ms-typing"
@@ -2203,7 +2211,7 @@ function Details({
             <Icon icon={Users} size={22} />
           </span>
         ) : (
-          <Avatar name={conv.title} size="xl" ring />
+          <Avatar name={conv.title} id={convAvatarId(api, conv)} size="xl" ring />
         )}
         <b>{conv.title}</b>
         <span>
@@ -2255,7 +2263,7 @@ function Details({
           ) : (
             api.members.map((mb) => (
               <div key={mb.userId} className="ch-ms-mem">
-                <Avatar name={mb.name} size={30} />
+                <Avatar name={mb.name} id={personOf(api, mb.userId)?.playerId ?? mb.userId} size={30} />
                 <span style={{ minWidth: 0 }}>
                   <b>
                     {mb.name}

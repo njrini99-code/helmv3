@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
+import { ChartColumn, BrainCircuit, CalendarPlus, MessageSquare, TriangleAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatFixed, formatToPar, NO_DATA } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
@@ -37,7 +37,7 @@ export function playerPeekActions(p: Pick<ChPlayerPeek, 'id'>): PeekAction[] {
   const id = encodeURIComponent(p.id);
   return [
     { label: 'Message', icon: MessageSquare, href: rebuiltHref(`/golf/dashboard/messages?player=${id}`) },
-    { label: 'View stats', icon: BarChart3, href: rebuiltHref(`/golf/dashboard/stats?player=${id}`) },
+    { label: 'View stats', icon: ChartColumn, href: rebuiltHref(`/golf/dashboard/stats?player=${id}`) },
     { label: 'Plan 1:1', icon: CalendarPlus, href: rebuiltHref(`/golf/dashboard/calendar?new=1&with=${id}`) },
     { label: 'CoachHelm', icon: BrainCircuit, href: coachHelmPlayerHref(p.id) },
   ];
@@ -57,7 +57,7 @@ export function PlayerPeekCard({ p }: { p: ChPlayerPeek }) {
   return (
     <div className="ch-ppeek" data-ch-code="CH-1832">
       <div className="ch-ppeek__head">
-        <Avatar name={p.name} size={44} />
+        <Avatar name={p.name} id={p.id} size={44} />
         <div className="ch-ppeek__who">
           <b>{p.name}</b>
           {p.sub && <span>{p.sub}</span>}

@@ -6013,6 +6013,7 @@
       "group": "ui",
       "exports": [
         "AVATAR_SIZES",
+        "AVATAR_TONES",
         "Avatar"
       ],
       "styles": [
@@ -17755,6 +17756,21 @@
         },
         {
           "name": "--ch-av-bg",
+          "value": "#e4dfe6",
+          "scope": ".ch-avatar[data-tone='heather']"
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#51475a",
+          "scope": ".ch-avatar[data-tone='heather']"
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(81 71 90 / 0.22)",
+          "scope": ".ch-avatar[data-tone='heather']"
+        },
+        {
+          "name": "--ch-av-bg",
           "value": "var(--ch-avatar-neutral-bg)",
           "scope": "@media (max-width: 820px) → .ch-avatar[data-tone]"
         },
@@ -17842,6 +17858,21 @@
           "name": "--ch-av-ring",
           "value": "rgb(228 201 184 / 0.16)",
           "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='clay']"
+        },
+        {
+          "name": "--ch-av-bg",
+          "value": "#2d2833",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='heather']"
+        },
+        {
+          "name": "--ch-av-fg",
+          "value": "#d6cbe0",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='heather']"
+        },
+        {
+          "name": "--ch-av-ring",
+          "value": "rgb(214 203 224 / 0.16)",
+          "scope": "html[data-fw-theme='dark'] .ch-avatar[data-tone='heather']"
         },
         {
           "name": "--ch-av-bg",

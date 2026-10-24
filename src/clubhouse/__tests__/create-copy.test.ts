@@ -11,9 +11,18 @@ const ALLOW_CREATE: Record<string, number> = {
   'screens/rounds/setup/RoundSetup.tsx': 1,
 };
 
+/** A label in quotes, between tags, or as JSX text on a line of its own (`<Button>` / `  Start a round` / `</Button>`,
+ *  the form most CONS-38 fixes edited, which the quote-or-tag anchor alone missed: auditor on #2361). */
+const ENTRY = /(?:^\s*|['"`>])(Create (a )?qualifier|Start (a |a new |your first )?round|Add prospect)(?:\s*$|['"`<])/;
+
 describe('create and toast copy (CONS-38)', () => {
+  it('the pattern sees each way a label is written, and not the phrase inside a sentence', () => {
+    for (const line of ["'Create qualifier'", '<b>Start a round</b>', '            Start a round', '  Add prospect  ']) expect(ENTRY.test(line)).toBe(true);
+    expect(ENTRY.test('Start a round and track every shot.')).toBe(false);
+  });
+
   it('entry points say New, not Create or Start a', () => {
-    const r = ratchet(hits(/['"`>](Create (a )?qualifier|Start (a |a new |your first )?round|Add prospect)['"`<]/, walk(ROOT, /\.tsx?$/)), ALLOW_CREATE);
+    const r = ratchet(hits(ENTRY, walk(ROOT, /\.tsx?$/)), ALLOW_CREATE);
     expect(r.over).toEqual([]);
     expect(r.stale).toEqual([]);
   });

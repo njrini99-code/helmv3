@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ChartColumn, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
@@ -387,7 +387,7 @@ export function RosterPhoneRow({
     <PlayerPeek player={rosterPeek(p)}>
       <ViewTransition name={`ch-rsm-row-${p.id}`} update={slide ? 'ch-rsm-reorder' : 'none'} enter="none" exit="none" share="none" default="none">
         <button type="button" className="ch-rsm-row" aria-label={label} data-ch-code="CH-3806" onClick={() => onOpen(p.id)}>
-          <Avatar name={p.name} size="lg" />
+          <Avatar name={p.name} id={p.id} size="lg" />
           <span className="ch-rsm-row__b">
             <b>{p.name}</b>
             {/* The class year stays plain; only the note takes its tone (amber for a slide, green for a gain). */}
@@ -556,7 +556,7 @@ function PlayerActions({
           {statsHref && (
             <Link href={statsHref} className="ch-rsm-act">
               <span className="ch-rsm-act__ic" aria-hidden="true">
-                <Icon icon={BarChart3} size={16} />
+                <Icon icon={ChartColumn} size={16} />
               </span>
               <b>View stats</b>
             </Link>

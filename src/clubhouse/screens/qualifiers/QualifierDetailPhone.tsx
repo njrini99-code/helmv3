@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
+import { ChartColumn, Ellipsis, Flag, Lock, LockOpen, MessageSquare, Pencil, Users } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, ViewTransition, type MouseEvent, type ReactNode } from 'react';
 import type { ChQDetailCore, ChQDetailSecondary } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
@@ -425,7 +425,7 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow
               </Button>
             )}
             {statsHref && (
-              <Button leftIcon={BarChart3} href={statsHref}>
+              <Button leftIcon={ChartColumn} href={statsHref}>
                 Stats
               </Button>
             )}
