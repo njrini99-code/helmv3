@@ -12,7 +12,7 @@ import { Button, IconButton } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
 import { InlineNotice } from '../../ui/Notices';
 import { PageRefreshNotice } from '../../ui/RefreshNotice';
-import { FormLine, FormRange } from '../../ui/FormLine';
+import { FormLine, FormRange, formRangeWords } from '../../ui/FormLine';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { useContextMenu, type ContextMenuBind } from '../../ui/ContextMenu';
@@ -755,7 +755,8 @@ function RosterList({
                 Player
               </SortHeader>
               <span role="columnheader">Status</span>
-              <span role="columnheader">Last 7 rounds</span>
+              {/* The lines share one range (B5), and the header says its ends (row 102). */}
+              <span role="columnheader">{['Last 7 rounds', formRangeWords(rows.map((p) => p.trend), 3)].filter(Boolean).join(' · ')}</span>
               {!sortableAvg ? (
                 <span role="columnheader" className="r">
                   Avg

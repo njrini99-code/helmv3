@@ -233,24 +233,35 @@ function LegTrends({
 }) {
   const scale = legScale(legWeeks);
   return (
-    <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
-      {LEGS_LIST.map((l, i) => (
-        <LegTrend
-          key={l}
-          leg={l}
-          data={legWeeks[l]}
-          change={legHalves?.[l]}
-          mean={legTotals[i] ?? null}
-          scale={scale}
-          selected={leg === l}
-          onSelect={() => {
-            haptic('select');
-            setLeg(l);
-          }}
-        />
-      ))}
-    </section>
+    <>
+      <section className="ch-sgm-row" aria-label={`Strokes gained by leg, team. ${legScaleWords(scale)}.`}>
+        {LEGS_LIST.map((l, i) => (
+          <LegTrend
+            key={l}
+            leg={l}
+            data={legWeeks[l]}
+            change={legHalves?.[l]}
+            mean={legTotals[i] ?? null}
+            scale={scale}
+            selected={leg === l}
+            onSelect={() => {
+              haptic('select');
+              setLeg(l);
+            }}
+          />
+        ))}
+      </section>
+      {/* The four cards share one scale (B5); its ends are said once, under them (row 102). */}
+      <p className="ch-sv-note" aria-hidden="true">
+        {legScaleWords(scale)}
+      </p>
+    </>
   );
+}
+
+/** The leg cards' shared scale in words: "One scale for the four legs, −1.5 to +1.0 strokes gained a round". */
+export function legScaleWords(scale: { lo: number; hi: number }): string {
+  return `One scale for the four legs, ${formatSigned(scale.lo)} to ${formatSigned(scale.hi)} strokes gained a round`;
 }
 
 function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: string | null; setFocus: (id: string | null) => void }) {
@@ -654,7 +665,7 @@ function niceTicks(lo: number, hi: number): number[] {
 }
 
 /** The four leg charts' one scale: the handoff's range (−1.5 to +1), widened only when a week of any leg falls outside it. */
-function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
+export function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number } {
   const vals = LEGS_LIST.flatMap((l) => legWeeks[l]).filter((v): v is number => v != null);
   return { lo: Math.min(-1.5, Math.min(...vals) - 0.2), hi: Math.max(1, Math.max(...vals) + 0.2) };
 }

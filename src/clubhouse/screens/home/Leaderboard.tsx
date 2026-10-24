@@ -10,7 +10,7 @@ import { EmptyState } from '../../ui/States';
 import { changeTone, formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { rebuiltHref } from '../../shell/nav';
 import { LinkPending } from '../../shell/LinkPending';
-import { FormLine, FormRange } from '../../ui/FormLine';
+import { FormLine, FormRange, formRangeWords } from '../../ui/FormLine';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { PlayerPeek, type ChPlayerPeek } from '../../ui/PlayerPeek';
 import { SideScroll } from '../../ui/SideScroll';
@@ -180,7 +180,8 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
               <span className="ch-sr-only">Position</span>
             </span>
             <span role="columnheader">Player</span>
-            <span role="columnheader">Last 7 rounds</span>
+            {/* The lines share one range (B5), and the header says its ends (row 102). */}
+            <span role="columnheader">{['Last 7 rounds', formRangeWords(data.rows.map((p) => p.trend))].filter(Boolean).join(' · ')}</span>
             <span role="columnheader" className="r">Avg</span>
             <span role="columnheader" className="r">To par</span>
             <span role="columnheader" className="r">SG / rd</span>
