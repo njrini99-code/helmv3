@@ -4265,6 +4265,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   .ch-stm.is-team .ch-stm-line {
     --ch-line-ink: var(--ch-chart-gain);
   }
+  /* Row 69: green only when the team got better past the change's standard error; amber when worse; ink when no clear change. */
+  .ch-stm.is-team .ch-stm-line.is-loss {
+    --ch-line-ink: var(--ch-chart-loss);
+  }
+  .ch-stm.is-team .ch-stm-line.is-flat {
+    --ch-line-ink: var(--ch-ink-400);
+  }
   .ch-stm.is-team .ch-stm-line .ch-line__path {
     stroke-width: 2.2;
   }

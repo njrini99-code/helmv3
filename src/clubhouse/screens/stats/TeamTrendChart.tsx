@@ -11,10 +11,11 @@ type Day = { label: string; score: number | null; date?: string };
  * day marked. A day with no rounds is a gap in the line, not a bridge. A finger on the plot reads a round day in a tip.
  * The page writes the summary it is named by (StatsTeamPhone). Nothing animates.
  */
-export default function TeamTrendChart({ days, mean, label }: { days: Day[]; mean: number; label: string }) {
+export default function TeamTrendChart({ days, mean, label, tone = '' }: { days: Day[]; mean: number; label: string; tone?: '' | 'is-gain' | 'is-loss' }) {
   return (
     <Line
-      className="ch-stm-line"
+      // Its colour is the noise-tested change the summary words (row 69): green better, amber worse, ink no clear change.
+      className={'ch-stm-line ' + (tone || 'is-flat')}
       label={label}
       // Round days spaced by their dates (row 119): a quiet fortnight shows as a gap, not as the next day.
       points={days.map((d) => ({ x: d.label, y: d.score, ...(d.date ? { at: Date.parse(d.date) } : {}) }))}
@@ -24,6 +25,7 @@ export default function TeamTrendChart({ days, mean, label }: { days: Day[]; mea
       marks="last"
       wash
       readAt="tip"
+      // No value axis: the summary under the chart says the figures in words (the first and last day, the change and the mean).
       height={120}
       format={formatFixed}
       readout={(i) => `${days[i]!.label} · ${days[i]!.score == null ? 'No rounds' : formatFixed(days[i]!.score!)}`}

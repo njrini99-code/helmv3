@@ -240,8 +240,9 @@ function Trend({ data }: { data: ChTeamStats }) {
   // The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the
   // loader takes from the rounds behind each half: a day's mean of six rounds is not read as one round.
   const change = data.daysHalves;
+  const tone = known.length < 3 ? '' : halvesTone(change, true);
   const reading =
-    known.length < 3 || halvesTone(change, true) === ''
+    tone === ''
       ? 'No clear change across the window.'
       : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`;
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
@@ -253,6 +254,7 @@ function Trend({ data }: { data: ChTeamStats }) {
         <TeamTrendChart
           days={days}
           mean={mean}
+          tone={tone}
           label={`Team scoring average by round day, from ${formatFixed(known[0]!.score)} to ${formatFixed(known[known.length - 1]!.score)}. ${reading} Lower scores sit higher.`}
         />
       </div>

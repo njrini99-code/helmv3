@@ -655,6 +655,18 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
+  it('the phone team trend is green only past its standard error: amber when scoring rose, ink when no clear change (row 69)', () => {
+    const line = () => document.querySelector('.ch-stm .ch-stm-line')!;
+    const view = wrap(stats({ daysHalves: { delta: -1.2, se: 0.4 } }));
+    expect(line().classList.contains('is-gain')).toBe(true);
+    view.rerender(tree(stats({ daysHalves: { delta: 1.2, se: 0.4 } })));
+    expect(line().classList.contains('is-loss')).toBe(true);
+    view.rerender(tree(stats({ daysHalves: { delta: -0.3, se: 0.4 } })));
+    expect(line().classList.contains('is-flat')).toBe(true);
+    view.rerender(tree(stats({ daysHalves: null })));
+    expect(line().classList.contains('is-flat')).toBe(true);
+  });
+
   it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
     const data = stats();
     const view = wrap(data);
