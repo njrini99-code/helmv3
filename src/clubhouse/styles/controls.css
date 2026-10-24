@@ -294,7 +294,9 @@
   /* Surface, radius, glass and shadow come from .ch-popover (design system PopoverPanel). */
   position: fixed;
   box-sizing: border-box;
-  z-index: var(--ch-z-overlay);
+  /* A step over the popovers, so a menu opened from one (the bell's filter) is never under it. In a dialog the menu
+     portals into the dialog's top layer instead. */
+  z-index: calc(var(--ch-z-popover) + 1);
   transform-origin: top right;
   overflow-y: auto;
   overscroll-behavior: contain;

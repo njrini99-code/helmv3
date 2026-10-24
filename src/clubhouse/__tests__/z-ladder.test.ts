@@ -5,11 +5,12 @@ import { ROOT, walk } from './_scan';
 
 /**
  * CONS-35: stacking on one ladder (tokens.css --ch-z-*). A z-index is a step, a step's near neighbour (a step plus or
- * minus a few, for "just under the sticky bar"), or a local 0 to 5 inside one component. The literals left from before
- * the ladder only fall: each moves to a step once what it stacks against is checked, so no order changes by accident.
+ * minus 1 to 5, for "just under the sticky bar"), or a local -1 to 5 inside one component. Nothing is off the ladder:
+ * each old literal moved to a step once what it stacks against was checked (scripts/clubhouse/check.mjs holds the
+ * same rule).
  */
 const LADDER = { raised: 10, panel: 30, sticky: 40, dock: 50, popover: 60, overlay: 80, sheet: 90, toast: 100, skip: 110 };
-const LEFT = 7;
+const LEFT = 0;
 
 function zValues(): Array<{ file: string; value: string }> {
   const out: Array<{ file: string; value: string }> = [];
@@ -21,7 +22,7 @@ function zValues(): Array<{ file: string; value: string }> {
 }
 const onLadder = (v: string) =>
   /^var\(--ch-z-[a-z]+\)$/.test(v) ||
-  /^calc\(var\(--ch-z-[a-z]+\) [+-] (?:[1-9]|1[01])\)$/.test(v) ||
+  /^calc\(var\(--ch-z-[a-z]+\) [+-] [1-5]\)$/.test(v) ||
   /^-?[0-5]$/.test(v) ||
   v === 'auto' ||
   v === 'inherit';
@@ -39,8 +40,27 @@ describe('z-index ladder (CONS-35)', () => {
     }
   });
 
-  it(`literals off the ladder only fall (${LEFT} left)`, () => {
+  it(`nothing is off the ladder (${LEFT} left)`, () => {
     const off = zValues().filter((z) => !onLadder(z.value));
-    expect(off.length, off.map((z) => `${z.file}: ${z.value}`).join('\n')).toBeLessThanOrEqual(LEFT);
+    expect(off.map((z) => `${z.file}: ${z.value}`)).toEqual([]);
+    expect(off.length).toBe(LEFT);
+  });
+
+  const zOf = (file: string, selector: string) => {
+    const css = readFileSync(join(ROOT, 'styles', file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const at = css.indexOf(`${selector} {`);
+    expect(at, `${file} ${selector}`).toBeGreaterThanOrEqual(0);
+    return /z-index: ([^;]+);/.exec(css.slice(at, css.indexOf('}', at)))?.[1];
+  };
+
+  it('a menu is a popover a step over the popovers, so the bell’s filter menu opens above the bell', () => {
+    expect(zOf('controls.css', '.ch-menu')).toBe('calc(var(--ch-z-popover) + 1)');
+    expect(zOf('shell.css', '.ch-bellp')).toBe('var(--ch-z-popover)');
+    expect(zOf('messages.css', '.ch-rx')).toBe('var(--ch-z-popover)');
+  });
+
+  it('the dock kept over a pushed screen is one over the screen, not over the popovers', () => {
+    expect(zOf('shell.css', '  .ch-pscreen')).toBe('var(--ch-z-dock)');
+    expect(zOf('shell.css', '  .ch-root:has(.ch-pscreen[data-ch-keeps-dock]) .ch-dock')).toBe('calc(var(--ch-z-dock) + 1)');
   });
 });
