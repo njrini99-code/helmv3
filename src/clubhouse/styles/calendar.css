@@ -28,7 +28,7 @@
 .ch-cal-title {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin: -2px -6px;
   padding: 2px 6px;
   border: 0;
@@ -76,7 +76,7 @@
 .ch-cal-tools {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
@@ -164,7 +164,7 @@
 .ch-cal-viewctl {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-cal-step {
   display: inline-flex;
@@ -177,7 +177,7 @@
 .ch-cal-legend {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   margin-left: auto;
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
@@ -186,7 +186,7 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  margin-right: 7px;
+  margin-right: 8px;
   border-radius: 50%;
 }
 .ch-dot-practice,
@@ -220,7 +220,7 @@
   align-items: center;
   gap: 12px;
   height: 48px;
-  padding: 0 14px 0 8px;
+  padding: 0 16px 0 8px;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
@@ -260,14 +260,14 @@
 }
 /* 26px coins whose 9px initials run to 20px: an 8px overlap put the last stroke under the next coin (aesthetic audit C-2). */
 .ch-pp__stack > * + * {
-  margin-left: -5px;
+  margin-left: -4px;
 }
 .ch-pp__more {
   display: grid;
   place-items: center;
   height: 26px;
   min-width: 26px;
-  padding: 0 5px;
+  padding: 0 4px;
   border-radius: 999px;
   background: var(--ch-bg-inset);
   font: 600 11px/1 var(--ch-font-sans);
@@ -277,7 +277,7 @@
 .ch-pp__txt {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   max-width: 240px;
   text-align: left;
@@ -316,7 +316,7 @@
   margin: 2px 2px 6px;
 }
 .ch-pp__label {
-  padding: 10px 10px 4px;
+  padding: 8px 8px 4px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -331,9 +331,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-top: 6px;
-  padding: 10px 8px 4px;
+  padding: 8px 8px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
@@ -373,15 +373,15 @@
 
 /* Week and day grid. Clipped, not hidden: an overflow container would hold the pinned head below in place. */
 .ch-wk {
-  padding: 10px 10px 0;
+  padding: 8px 8px 0;
   overflow: clip;
 }
 .ch-wk__top {
   position: sticky;
   top: var(--ch-topbar-h);
   z-index: 3;
-  margin: -10px -10px 0;
-  padding: 10px 10px 0;
+  margin: -8px -8px 0;
+  padding: 8px 8px 0;
   border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
   background: var(--ch-bg-surface);
 }
@@ -395,8 +395,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 8px 0 7px;
+  gap: 4px;
+  padding: 8px 0 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: transparent;
@@ -449,7 +449,7 @@
 .ch-wk__allcell {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-wk__grid {
@@ -725,7 +725,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   background: var(--ch-info-600);
   color: var(--ch-on-fill-50);
 }
@@ -774,8 +774,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 11px;
-  padding: 9px 10px;
+  gap: 12px;
+  padding: 8px 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -834,7 +834,7 @@
 /* A cascaded block is edged in the sheet's ivory, so one lying over another reads as a separate card. Its title wraps
    at word boundaries only (two lines), never mid-word. */
 .ch-ev--lane {
-  padding: 5px 7px;
+  padding: 4px 8px;
   outline: 1.5px solid var(--ch-sheet-bg);
 }
 .ch-ev--lane .ch-ev__t {
@@ -958,8 +958,8 @@
   box-sizing: border-box;
   max-width: calc(100% - 6px);
   height: 26px;
-  margin: 0 3px;
-  padding: 0 10px;
+  margin: 0 4px;
+  padding: 0 8px;
   overflow: hidden;
   border: 0;
   border-radius: var(--ch-radius-sm);
@@ -981,14 +981,14 @@
 
 /* Month */
 .ch-mo {
-  padding: 10px;
+  padding: 8px;
 }
 .ch-mo__dow {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 .ch-mo__dow span {
-  padding: 4px 10px 10px;
+  padding: 4px 8px 8px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -1006,7 +1006,7 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  padding: 8px 8px 10px;
+  padding: 8px 8px 8px;
   border: 0;
   border-right: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
@@ -1064,7 +1064,7 @@
 .ch-mo__ev {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   min-width: 0;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-secondary);
@@ -1081,8 +1081,8 @@
   text-overflow: ellipsis;
 }
 .ch-mo__ev.is-major {
-  margin: 0 -3px;
-  padding: 4px 7px;
+  margin: 0 -4px;
+  padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-green-fill-700);
   color: var(--ch-on-fill-100);
@@ -1093,7 +1093,7 @@
 }
 .ch-mo__more {
   margin-top: 1px;
-  padding-left: 13px;
+  padding-left: 12px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -1103,7 +1103,7 @@
 .ch-ag {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
 }
 .ch-ag__day {
   display: grid;
@@ -1130,8 +1130,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-ag__when.is-today {
-  margin-left: -14px;
-  padding: 12px 14px;
+  margin-left: -16px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-green-50);
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.12);
@@ -1153,7 +1153,7 @@
   align-items: center;
   box-sizing: border-box;
   width: 100%;
-  padding: 12px 18px;
+  padding: 12px 16px;
   border: 0;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: transparent;
@@ -1223,7 +1223,7 @@
   display: flex;
   align-items: center;
   height: 0;
-  padding: 0 18px;
+  padding: 0 16px;
 }
 .ch-ag__now::before {
   content: '';
@@ -1235,7 +1235,7 @@
 .ch-ag__now span {
   position: relative;
   margin-left: auto;
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: 4px;
   background: var(--ch-green-fill-600);
   font: var(--ch-type-11-strong);
@@ -1265,8 +1265,8 @@
 .ch-in {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px 20px 18px;
+  gap: 16px;
+  padding: 20px 20px 16px;
 }
 .ch-in__up {
   margin: -4px 0 -4px -4px;
@@ -1292,12 +1292,12 @@
 .ch-in__facts {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
 }
 .ch-in__fact {
   display: grid;
   grid-template-columns: 18px minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   align-items: start;
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
@@ -1332,7 +1332,7 @@
 .ch-in__sec {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   padding-top: 16px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
@@ -1353,7 +1353,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
-  padding: 10px 0;
+  padding: 8px 0;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
@@ -1386,8 +1386,8 @@
 .ch-in__person {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 0;
+  gap: 8px;
+  padding: 8px 0;
 }
 /* Injured or away, beside a name on the coach's lists: plain tertiary ink, never the red of a state. */
 .ch-in__out {
@@ -1412,10 +1412,10 @@
 .ch-in__need {
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr) 14px;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   width: 100%;
-  padding: 10px 0;
+  padding: 8px 0;
   border: 0;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   background: transparent;
@@ -1477,7 +1477,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-green-fill-700);
@@ -1491,7 +1491,7 @@
   outline-offset: 2px;
 }
 .ch-in__at {
-  padding: 5px 8px;
+  padding: 4px 8px;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.14);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14);
@@ -1516,8 +1516,8 @@
 .ch-in__today {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 16px 14px;
+  gap: 8px;
+  padding: 16px 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-green-fill-700);
   color: var(--ch-stage-ink);
@@ -1536,7 +1536,7 @@
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 }
 .ch-in__sec .ch-in__need {
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-top: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
@@ -1580,8 +1580,8 @@
   --ch-plate: var(--ch-ink-700);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 16px 14px;
+  gap: 8px;
+  padding: 16px 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-light-sky), var(--ch-plate);
   color: var(--ch-stage-ink);
@@ -1623,7 +1623,7 @@
   color: var(--ch-stage-ink);
 }
 .ch-in__chip {
-  padding: 3px 9px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.18);
   font: var(--ch-type-12-strong);
@@ -1632,12 +1632,12 @@
 .ch-in__by {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   font: var(--ch-type-13-medium);
   color: rgb(255 255 255 / 0.84);
 }
 .ch-in__by b {
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.16);
   font-weight: 600;
@@ -1646,9 +1646,9 @@
 .ch-in__note {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 9px;
+  gap: 8px;
   margin: 0;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-info-100);
   font: var(--ch-type-caption);
@@ -1660,14 +1660,14 @@
 .ch-in__att {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   padding: 6px 0;
 }
 .ch-in__who {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   font: var(--ch-type-14-medium);
   color: var(--ch-text-primary);
@@ -1679,7 +1679,7 @@
 }
 .ch-in__att .ch-seg__b {
   height: 26px;
-  padding: 0 9px;
+  padding: 0 8px;
   font-size: calc(12 * var(--ch-type-k));
 }
 /* On the green chip the chosen mark is ivory whatever it is (amber ink on green was unreadable); absent keeps its strike. */
@@ -1846,7 +1846,7 @@
 .ch-ed__row {
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 /* On the phone three across left each time 99px, which clipped "07:00 AM": the date takes its own line, the times share
    the one under it. */
@@ -1869,7 +1869,7 @@
   display: flex;
   flex-direction: column;
   max-height: 208px;
-  padding: 4px 10px;
+  padding: 4px 8px;
   overflow: auto;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
@@ -1878,9 +1878,9 @@
 .ch-ed__inv label {
   display: grid;
   grid-template-columns: 18px 22px minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
   font: var(--ch-type-14-medium);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -1899,7 +1899,7 @@
 .ch-switch {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -1944,7 +1944,7 @@
 .ch-verify {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font: var(--ch-type-13-medium);
   color: var(--ch-text-secondary);
 }
@@ -1973,7 +1973,7 @@
   grid-template-columns: 84px minmax(0, 1fr);
   gap: 8px 12px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
@@ -2033,7 +2033,7 @@
   grid-column: 1 / -1;
   display: grid;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
@@ -2105,9 +2105,9 @@
 .ch-cal-warn {
   display: grid;
   grid-template-columns: 16px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: start;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
   box-shadow: inset 0 0 0 1px rgb(148 96 14 / 0.18);
@@ -2150,9 +2150,9 @@
 .ch-in__file {
   display: grid;
   grid-template-columns: 30px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
 }
 .ch-in__file a {
   color: inherit;
@@ -2242,7 +2242,7 @@
   .ch-calm-skel {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 24px;
   }
   .ch-calm-skel__week {
     display: grid;
@@ -2253,9 +2253,9 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     height: 64px;
-    padding-top: 11px;
+    padding-top: 12px;
   }
   .ch-calm-skel__day {
     display: flex;
@@ -2289,7 +2289,7 @@
   /* The week strip is ui/WeekStrip (B18, ui.css). */
   /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it. */
   .ch-calm-dayswap {
-    margin-top: 26px;
+    margin-top: 24px;
   }
   .ch-calm-dayk {
     display: flex;
@@ -2315,7 +2315,7 @@
     color: var(--ch-text-tertiary);
   }
   .ch-calm-dayk + .ch-empty {
-    margin-top: 14px;
+    margin-top: 16px;
   }
 
   /* P006-B2: the day pages sideways with native momentum, one day a page. The neighbours take the day's height (the
@@ -2378,12 +2378,12 @@
     position: relative;
     display: grid;
     grid-template-columns: 44px 12px minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
     width: calc(100% + 24px);
     min-height: 60px;
     margin: 0 -12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -2451,7 +2451,7 @@
     display: grid;
     place-items: center;
     align-self: stretch;
-    margin: -10px 0;
+    margin: -8px 0;
   }
   .ch-calm-ev__rail::before {
     position: absolute;
@@ -2489,7 +2489,7 @@
   .ch-calm-ev__b {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-calm-ev__b b,
@@ -2528,7 +2528,7 @@
     content: '';
   }
   .ch-calm-now span {
-    padding: 3px 7px;
+    padding: 4px 8px;
     border-radius: var(--ch-radius-sm);
     background: var(--ch-green-fill-600);
     font: var(--ch-type-12-strong);
@@ -2588,7 +2588,7 @@
     gap: 4px;
     width: 100%;
     height: 52px;
-    padding: 5px 0 0;
+    padding: 4px 0 0;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -2641,8 +2641,8 @@
   }
   .ch-calm-month__lg {
     display: flex;
-    gap: 18px;
-    margin-top: 10px;
+    gap: 16px;
+    margin-top: 8px;
     padding-top: 12px;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
     font: var(--ch-type-caption);
@@ -2661,7 +2661,7 @@
   /* List: the desktop agenda with each day a section on its own double rule (today's heading in green) and its
      events as rows on soft seams. */
   .ch-calm .ch-ag {
-    gap: 28px;
+    gap: 32px;
   }
   .ch-calm .ch-ag__day,
   .ch-calm .ch-ag__day.is-today {
@@ -2716,7 +2716,7 @@
     position: relative;
     /* The time column grows with Dynamic Type, so "10:15 AM" holds one line at the largest size. */
     grid-template-columns: calc(62 * var(--ch-type-k)) 8px minmax(0, 1fr) auto;
-    gap: 10px;
+    gap: 8px;
     width: calc(100% + 24px);
     min-height: 60px;
     margin: 0 -12px;
@@ -2770,7 +2770,7 @@
   }
   /* The sheet pads its own body: the panel adds none, so its content lines up with the sheet's title. */
   .ch-calm-sheet .ch-in {
-    gap: 14px;
+    gap: 16px;
     padding: 0 0 4px;
   }
 }
@@ -2831,7 +2831,7 @@
   .ch-cal[data-canopy] .ch-cal-body {
     position: relative;
     grid-template-columns: minmax(0, 1fr) 332px;
-    gap: 28px;
+    gap: 32px;
     margin-top: 8px;
   }
   .ch-cal[data-canopy] .ch-cal-body::before {
@@ -2879,7 +2879,7 @@
     padding: 0;
   }
   .ch-cal[data-canopy] .ch-mo__dow span {
-    padding: 4px 8px 10px;
+    padding: 4px 8px 8px;
   }
   .ch-cal[data-canopy] .ch-mo__grid {
     border-top: 1px solid var(--ch-ledger-rule);
@@ -2904,7 +2904,7 @@
     gap: 0;
   }
   .ch-cal[data-canopy] .ch-ag__day {
-    padding-bottom: 14px;
+    padding-bottom: 16px;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   .ch-cal[data-canopy] .ch-ag__when.is-today {
@@ -2953,10 +2953,10 @@
 
   /* The detail panel: a flush column; its sections open on the ledger's rule, its rows part on the soft one. */
   .ch-cal[data-canopy] .ch-in-wrap {
-    padding-left: 28px;
+    padding-left: 32px;
   }
   .ch-cal[data-canopy] .ch-in-wrap .ch-in {
-    padding: 4px 0 18px;
+    padding: 4px 0 16px;
   }
   .ch-cal[data-canopy] .ch-in-wrap .ch-in__sec {
     border-top-color: var(--ch-ledger-rule);
@@ -2973,13 +2973,13 @@
   @container (max-width: 1060px) {
     .ch-cal[data-canopy] .ch-cal-body {
       grid-template-columns: minmax(0, 1fr);
-      gap: 36px;
+      gap: 32px;
     }
     .ch-cal[data-canopy] .ch-cal-body::before {
       content: none;
     }
     .ch-cal[data-canopy] .ch-in-wrap.ch-cal-surface {
-      padding: 22px 0 0;
+      padding: 24px 0 0;
       box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
     }
   }

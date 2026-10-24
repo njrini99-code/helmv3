@@ -16,7 +16,7 @@
 .ch-hd {
   display: grid;
   grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
-  gap: 28px;
+  gap: 32px;
   align-items: start;
 }
 .ch-hd-rail {
@@ -24,11 +24,11 @@
   top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 20px 14px 10px;
+  padding: 20px 16px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -71,7 +71,7 @@
   gap: 12px;
   align-items: center;
   width: 100%;
-  padding: 12px 10px;
+  padding: 12px 8px;
   border-radius: var(--ch-radius-lg);
   transition: background var(--ch-dur-quick) var(--ch-ease);
 }
@@ -120,7 +120,7 @@
 .ch-hd-it__b {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hd-it__b em {
@@ -147,7 +147,7 @@
 /* What the number counts ("gap", "a round"), under it, so the column keeps its width. */
 .ch-hd-it__v small {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
@@ -171,7 +171,7 @@
   grid-template-columns: 8px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
-  padding: 12px 10px;
+  padding: 12px 8px;
 }
 .ch-hd-cl .ch-hd-it__d {
   margin-top: 6px;
@@ -223,8 +223,8 @@
 .ch-hd-dos {
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: 32px 34px 30px;
+  gap: 24px;
+  padding: 32px 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -232,7 +232,7 @@
 .ch-hd-dos__h {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-hd-dos h2 {
   font: var(--ch-type-serif-l);
@@ -250,8 +250,8 @@
 .ch-hd-read > div {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
-  gap: 14px;
-  padding: 11px 0;
+  gap: 16px;
+  padding: 12px 0;
   border-top: 1px solid var(--ch-ledger-rule-soft);
 }
 .ch-hd-read > div:last-child {
@@ -305,7 +305,7 @@
 .ch-hd-sec {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding-top: 24px;
   border-top: 1px solid rgb(28 25 18 / 0.08);
 }
@@ -329,7 +329,7 @@
   --ch-hd-fig: var(--ch-ink-700);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-hd-meas.is-good {
   --ch-hd-fig: var(--ch-green-700);
@@ -358,7 +358,7 @@
 .ch-hd-meas__s {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 18px;
+  gap: 4px 16px;
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
@@ -381,9 +381,9 @@
 .ch-hd-tr > li {
   display: grid;
   grid-template-columns: 168px minmax(0, 1fr);
-  gap: 4px 18px;
+  gap: 4px 16px;
   align-items: baseline;
-  padding: 13px 0;
+  padding: 12px 0;
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
 .ch-hd-tr > li:first-child {
@@ -453,10 +453,10 @@
 .ch-hd-where__i {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   min-height: 52px;
-  padding: 10px 8px;
+  padding: 8px 8px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
   color: inherit;
   text-decoration: none;
@@ -488,7 +488,7 @@
 .ch-hd-where__b {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hd-where__b b {
@@ -513,10 +513,10 @@
 .ch-hd-r {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) auto 54px;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   min-height: 52px;
-  padding: 10px 8px;
+  padding: 8px 8px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
   color: inherit;
   text-decoration: none;
@@ -549,7 +549,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 2px 10px;
+  gap: 2px 8px;
   min-width: 0;
   font: var(--ch-type-14-medium);
 }
@@ -593,14 +593,14 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
 }
 .ch-hd-dx__lvl {
   align-self: flex-start;
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
@@ -629,7 +629,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 9px 0;
+  padding: 8px 0;
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
 .ch-hd-dx__d dt {
@@ -673,7 +673,7 @@
 .ch-hd-plan {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -681,10 +681,10 @@
 .ch-hd-plan__i {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   min-height: 64px;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-50);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.06);
@@ -741,7 +741,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hd-plan__w {
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   background: var(--ch-ivory-150);
   font: var(--ch-type-12-strong);
@@ -762,7 +762,7 @@
 .ch-hd-sk__col {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-hd-sk__grp {
   display: flex;
@@ -770,7 +770,7 @@
   gap: 4px;
 }
 .ch-hd-sk__grp > .ch-skel {
-  margin: 0 6px 10px;
+  margin: 0 6px 8px;
 }
 .ch-hd-sk__it {
   display: grid;
@@ -778,14 +778,14 @@
   gap: 12px;
   align-items: center;
   height: 64px;
-  padding: 0 10px;
+  padding: 0 8px;
 }
 .ch-hd-sk__dos {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-height: 900px;
-  padding: 32px 34px;
+  padding: 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -801,10 +801,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     align-items: start;
-    gap: 14px 28px;
+    gap: 16px 32px;
     max-height: none;
     overflow: visible;
-    padding-bottom: 18px;
+    padding-bottom: 16px;
   }
   .ch-hd-sk__dos {
     min-height: 760px;
@@ -818,7 +818,7 @@
   }
   .ch-hd-dos {
     padding: 20px;
-    gap: 22px;
+    gap: 24px;
     border-radius: var(--ch-radius-xl);
   }
   .ch-hd-dos h2 {
@@ -835,7 +835,7 @@
   }
   .ch-hd-r {
     grid-template-columns: 52px minmax(0, 1fr) auto 48px;
-    gap: 10px;
+    gap: 8px;
     min-height: 56px;
   }
   .ch-hd-r.is-link {
@@ -850,19 +850,19 @@
   max-height: none;
   overflow: visible;
   padding: 0;
-  gap: 14px;
+  gap: 16px;
   background: none;
   box-shadow: none;
 }
 :is(.ch-hl.is-phone) .ch-hd-grp {
-  padding: 16px 14px 6px;
+  padding: 16px 16px 6px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
 }
 :is(.ch-hl.is-phone) .ch-hd-it {
   min-height: 64px;
-  padding: 10px 6px;
+  padding: 8px 6px;
   border-radius: 0;
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
@@ -881,7 +881,7 @@
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 14px 14px calc(24px + env(safe-area-inset-bottom));
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
 }
 
 /* The Ledger (owner, 2026-10-07: "flush, not so card heavy"). On desktop what CoachHelm has found is one sentence on
@@ -899,12 +899,12 @@
   /* The list of reads keeps its own scroll. Its padding sits outside the column, so the heads align with the column's
      edge and a read's tint reaches 10px past it without being clipped. */
   main[data-canopy] .ch-hd {
-    gap: 44px;
+    gap: 48px;
   }
   main[data-canopy] .ch-hd-rail {
-    gap: 28px;
-    margin-inline: -10px;
-    padding: 0 10px 10px;
+    gap: 32px;
+    margin-inline: -8px;
+    padding: 0 8px 8px;
   }
   main[data-canopy] .ch-hd-grp {
     gap: 0;
@@ -917,7 +917,7 @@
   }
   main[data-canopy] .ch-hd-it {
     width: calc(100% + 20px);
-    margin-inline: -10px;
+    margin-inline: -8px;
   }
   @media (hover: hover) {
     main[data-canopy] .ch-hd-it:hover {
@@ -942,7 +942,7 @@
   /* The open read: its head is the Board's ruled category line; its parts on soft rules; the plan as rows, as the
      rounds are. */
   main[data-canopy] .ch-hd-dos__h {
-    gap: 18px;
+    gap: 16px;
   }
   main[data-canopy] :is(.ch-hd-sec, .ch-hd-tr > li, .ch-hd-r, .ch-hd-where__i, .ch-hd-dx__d > div) {
     border-top-color: var(--ch-ledger-rule-soft);
@@ -982,13 +982,13 @@
     background: linear-gradient(var(--ch-ledger-rule), var(--ch-ledger-rule)) 0 33px / 100% 1px no-repeat;
   }
   main[data-canopy] .ch-hd-sk__grp > .ch-skel {
-    margin: 9px 0 57px;
+    margin: 8px 0 57px;
   }
   main[data-canopy] .ch-hd-sk__it {
-    margin-inline: -10px;
+    margin-inline: -8px;
   }
   main[data-canopy] .ch-hd-sk__dos > .ch-skel:first-child {
-    margin: 11px 0 12px;
+    margin: 12px 0 12px;
   }
 }
 
@@ -1022,7 +1022,7 @@
     color: var(--ch-ledger-ink);
   }
   :is(.ch-hl.is-phone) .ch-hd-it {
-    padding: 10px 0;
+    padding: 8px 0;
     border-top-color: var(--ch-ledger-rule-soft);
   }
   :is(.ch-hl.is-phone) .ch-hd-it:is(:active, [data-ch-pressed]) {
@@ -1037,7 +1037,7 @@
     padding: 16px var(--ch-page-x-phone) calc(28px + env(safe-area-inset-bottom));
   }
   .ch-hd-dos {
-    gap: 28px;
+    gap: 32px;
     padding: 0;
     border-radius: 0;
     background: none;
@@ -1045,7 +1045,7 @@
   }
   .ch-hd-dos__h {
     gap: 8px;
-    padding: 18px;
+    padding: 16px;
     border-radius: var(--ch-radius-lg);
     color: var(--ch-on-green-ink);
     background: var(--ch-feature-bg);
@@ -1067,7 +1067,7 @@
     color: var(--ch-on-green-ink-soft);
   }
   .ch-hd-dos__h .ch-hl-stale {
-    padding: 10px 0 0;
+    padding: 8px 0 0;
     border-radius: 0;
     background: none;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
@@ -1207,7 +1207,7 @@
    has found is one sentence in the field green (chs-35 retired the board and its counts); the read ledger is a bright
    panel with a green edge and the open read lit green; each section of a read heads in the field green. */
 main[data-canopy] .ch-hd-rail {
-  padding: 18px 12px 10px;
+  padding: 16px 12px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow:

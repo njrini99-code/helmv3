@@ -38,7 +38,7 @@ export function SkeletonDeskHead() {
           <Skeleton width={400} height={38} radius={10} />
         </Line>
         {!player && (
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, height: 49.6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, height: 49.6 }}>
             <Skeleton width="90%" height={14} />
             <Skeleton width="60%" height={14} />
           </div>

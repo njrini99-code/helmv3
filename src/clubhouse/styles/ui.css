@@ -2,12 +2,12 @@
 
 .ch-btn {
   /* The button's inline padding at its size; flush modifiers (controls.css) cancel it with a negative margin. */
-  --ch-btn-pad-x: 14px;
+  --ch-btn-pad-x: 16px;
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   height: 36px;
   padding: 0 var(--ch-btn-pad-x);
   border: 0;
@@ -34,7 +34,7 @@
   filter: saturate(0.6);
 }
 .ch-btn--sm {
-  --ch-btn-pad-x: 11px;
+  --ch-btn-pad-x: 12px;
   height: 30px;
   padding: 0 var(--ch-btn-pad-x);
   gap: 6px;
@@ -126,8 +126,8 @@
   place-items: center;
   min-width: 18px;
   height: 18px;
-  margin-right: -5px;
-  padding: 0 5px;
+  margin-right: -4px;
+  padding: 0 4px;
   border-radius: var(--ch-radius-xs);
   font: var(--ch-type-mono);
   background: rgb(28 25 18 / 0.05);
@@ -378,10 +378,10 @@
   animation: ch-toast-in var(--ch-dur-base) var(--ch-ease) backwards;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 300px;
   max-width: 420px;
-  padding: 10px 10px 10px 14px;
+  padding: 8px 8px 8px 16px;
   border-radius: 12px;
   background: var(--ch-ink-900);
   color: #f4f2ec;
@@ -400,7 +400,7 @@
 .ch-toast__action {
   height: 26px;
   margin-left: auto;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.08);
@@ -489,7 +489,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px 0;
+  padding: 16px 20px 0;
 }
 .ch-surface__title {
   margin: 0;
@@ -510,7 +510,7 @@
 }
 .ch-surface__rule {
   height: 1px;
-  margin: 14px 0 0;
+  margin: 16px 0 0;
   background: var(--ch-border-hairline);
 }
 .ch-surface__body {
@@ -540,7 +540,7 @@
 
 /* Inset (design system: surfaces/Inset) */
 .ch-inset {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: 12px;
   background: #efece3;
   box-shadow: inset 0 1px 3px rgb(28 25 18 / 0.09), inset 0 0 0 1px rgb(28 25 18 / 0.05), 0 1px 0 rgb(255 255 255 / 0.7);
@@ -548,20 +548,20 @@
 
 /* Popover panel: an overlay over content, opaque (owner 2026-10-01: glass only on the floating navigation). */
 .ch-popover {
-  padding: 5px;
+  padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: #faf8f2;
   box-shadow: var(--ch-elevation-overlay);
 }
 .ch-popover__label {
-  padding: 8px 10px 6px;
+  padding: 8px 8px 6px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-popover__sep {
   height: 1px;
-  margin: 5px 6px;
+  margin: 4px 6px;
   background: rgb(28 25 18 / 0.08);
 }
 
@@ -651,7 +651,7 @@
 .ch-sec__titles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-sec__title {
@@ -731,10 +731,10 @@
 .ch-lgr__row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
   min-height: 58px;
-  padding: 10px 0;
+  padding: 8px 0;
   border: 0;
   background: none;
   color: inherit;
@@ -776,7 +776,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-lgr__title {
@@ -862,7 +862,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 18px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
@@ -900,7 +900,7 @@ button.ch-feat {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 4px;
 }
 .ch-feat__kicker {
@@ -912,7 +912,7 @@ button.ch-feat {
   color: var(--ch-on-green-ink-muted);
 }
 .ch-feat__chip {
-  padding: 5px 8px;
+  padding: 6px 8px;
   border-radius: 6px;
   background: rgb(255 255 255 / 0.09);
   font: var(--ch-type-12-strong);
@@ -936,8 +936,8 @@ button.ch-feat {
 .ch-feat__foot {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 8px;
   padding-top: 12px;
   border-top: 1px solid rgb(255 255 255 / 0.1);
   font: var(--ch-type-13);
@@ -947,8 +947,8 @@ button.ch-feat {
 .ch-intro {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-top: 14px;
+  gap: 8px;
+  padding-top: 16px;
   border-top: var(--ch-ledger-rule-double);
 }
 /* 12px, the phone text floor (F09): PageIntro opens a page on the phone (lead, 2026-10-08). */
@@ -1209,7 +1209,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   left: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   max-width: 420px;
   margin: 0 auto;
 }
@@ -1259,7 +1259,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   position: fixed;
   z-index: var(--ch-z-overlay);
   box-sizing: border-box;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
   color: var(--ch-text-primary);
@@ -1376,7 +1376,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-ppeek__figs > div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-ppeek__figs dt {
@@ -1421,13 +1421,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-set-course {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-set-course__where {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 10px;
+  gap: 8px 8px;
   font: var(--ch-type-body);
   color: var(--ch-text-primary);
 }
@@ -1475,7 +1475,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-zns__note {
   margin: 0;
-  padding: 0 0 14px;
+  padding: 0 0 16px;
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
@@ -1483,7 +1483,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 48px;
-  padding: 36px 36px 40px;
+  padding: 32px 32px 40px;
   background: var(--ch-ivory-25);
   box-shadow: inset 0 3px 0 var(--ch-champagne-500);
 }
@@ -1500,7 +1500,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   align-self: start;
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-zn__n {
   display: inline-grid;
@@ -1543,7 +1543,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   display: grid;
   gap: 8px;
   margin-top: 4px;
-  padding: 18px 18px 16px;
+  padding: 16px 16px 16px;
   border-radius: var(--ch-radius-card);
   background: var(--ch-bg-surface);
   box-shadow: inset 0 0 0 1px rgb(176 149 96 / 0.3), var(--ch-elevation-plate);
@@ -1559,7 +1559,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: transparent;
 }
 .ch-znbig small {
-  margin-left: 3px;
+  margin-left: 4px;
   font-size: 28px;
   letter-spacing: 0;
   -webkit-text-fill-color: var(--ch-text-secondary);
@@ -1586,7 +1586,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-zn__vis {
   display: grid;
   align-content: start;
-  gap: 28px;
+  gap: 32px;
   min-width: 0;
 }
 .ch-zn__vis > * {
@@ -1600,14 +1600,14 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-primary);
 }
 .ch-znb > p {
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   max-width: 62ch;
   font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
 .ch-znmiss {
   margin: 0;
-  padding: 18px 20px;
+  padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
   font: var(--ch-type-14);
@@ -1636,8 +1636,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 @container chzn (max-width: 900px) {
   .ch-zn {
     grid-template-columns: minmax(0, 1fr);
-    gap: 22px;
-    padding: 26px 18px 30px;
+    gap: 24px;
+    padding: 24px 16px 32px;
   }
   .ch-zn__id {
     position: static;
@@ -1689,7 +1689,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   left: 4px;
   z-index: var(--ch-z-raised);
   margin: 0;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
   color: var(--ch-bg-surface);
@@ -1809,7 +1809,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   gap: 6px;
   width: 100%;
   height: 64px;
-  padding: 11px 0 0;
+  padding: 12px 0 0;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -1938,13 +1938,13 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   display: flex;
   align-items: flex-start;
   gap: 12px 24px;
-  padding: 18px 0 16px;
+  padding: 16px 0 16px;
 }
 .ch-es--page > .ch-es__copy {
-  padding: 28px 0 24px;
+  padding: 32px 0 24px;
 }
 .ch-es--line > .ch-es__copy {
-  padding: 10px 0 8px;
+  padding: 8px 0 8px;
 }
 .ch-es--shaped > .ch-es__copy {
   border-bottom: 1px solid var(--ch-ledger-rule-soft);
@@ -1953,7 +1953,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   flex: 1 1 0;
   min-width: 0;
   display: grid;
-  row-gap: 3px;
+  row-gap: 4px;
 }
 .ch-es__glyph {
   display: grid;
@@ -2038,7 +2038,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es-shape--people > .ch-es-shape__u::before {
   width: 34px;
   height: 34px;
-  margin-top: -17px;
+  margin-top: -16px;
   border-radius: 50%;
   border: 1px solid var(--ch-border-control);
 }
@@ -2049,7 +2049,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es-shape--rows > .ch-es-shape__u::before {
   width: 10px;
   height: 10px;
-  margin-top: -5px;
+  margin-top: -4px;
   border-radius: 50%;
   border: 1px solid var(--ch-border-control);
 }

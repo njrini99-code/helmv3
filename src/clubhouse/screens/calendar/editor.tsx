@@ -710,7 +710,7 @@ export function EventEditor({
           </div>
           {!allDay && !multiTimed && invited.length > 0 && (
             <div>
-              <div className="ch-in__sechead" style={{ marginBottom: 10 }}>
+              <div className="ch-in__sechead" style={{ marginBottom: 8 }}>
                 <span className="ch-ed__lbl" style={{ margin: 0 }}>
                   Find a time · {dowOf(date)} {dayNum(date)}
                 </span>

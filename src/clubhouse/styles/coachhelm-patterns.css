@@ -1,6 +1,6 @@
 /* Coach: Team patterns (CoachHelm supercharge Slice 7b, flag coachhelm_team_pattern_v1). The pulse's card, one column. */
 .ch-hl-tp {
-  padding: 22px 26px 12px;
+  padding: 24px 24px 12px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-elevation-reading);
@@ -69,7 +69,7 @@
 .ch-hl-tp__t {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hl-tp__t b {
@@ -81,13 +81,13 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hl-tp .ch-hl-tp__next {
-  margin: 0 0 8px 42px;
+  margin: 0 0 8px 40px;
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
 .ch-hl-tp__row ul {
-  margin: 0 0 12px 42px;
+  margin: 0 0 12px 40px;
 }
 .ch-hl-tp__row ul li {
   display: grid;

@@ -3,7 +3,7 @@
 
 /* Early read: some measures have enough rounds, the rest do not yet. */
 .ch-hg-early {
-  padding: 14px 18px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-champagne-100);
   box-shadow: inset 0 0 0 1px var(--ch-champagne-ring);
@@ -76,9 +76,9 @@
   --ch-hg-ink: var(--ch-ink-700);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding: 22px 24px 18px;
+  padding: 24px 24px 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
   box-shadow: var(--ch-elevation-reading);
@@ -101,14 +101,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   min-height: 22px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
 .ch-hg-tag {
-  padding: 5px 10px;
+  padding: 4px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
@@ -141,7 +141,7 @@
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: 4px 8px;
 }
 .ch-hg-m__fig b {
   font: var(--ch-type-20-strong);
@@ -183,7 +183,7 @@
   display: flex;
   align-items: center;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
   font: var(--ch-type-12);
   line-height: var(--ch-lead-tight);
@@ -233,7 +233,7 @@
   --ch-hg-tone: var(--ch-ink-500);
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
   padding: 6px 0 2px;
 }
 .ch-hg-m.is-good .ch-hg-sc {
@@ -303,7 +303,7 @@
     gap: 12px;
   }
   .ch-hg-m {
-    padding: 18px 18px 14px;
+    padding: 16px 16px 16px;
     border-radius: var(--ch-radius-lg);
   }
   .ch-hg-m__word {
@@ -425,7 +425,7 @@
     gap: 0;
   }
   .ch-hg-grid > .ch-hg-m {
-    padding: 20px 0 14px;
+    padding: 20px 0 16px;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -490,7 +490,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 26px 0 10px;
+  margin: 24px 0 8px;
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
@@ -501,7 +501,7 @@
   place-items: center;
   min-width: 22px;
   height: 22px;
-  padding: 0 7px;
+  padding: 0 8px;
   border-radius: 999px;
   background: var(--ch-green-fill-600);
   font: 700 12px/1 var(--ch-font-sans);
@@ -526,7 +526,7 @@ main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m,
 main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m:nth-child(n),
 .ch-hg-grid.is-locked > .ch-hg-m {
   gap: 6px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: color-mix(in srgb, var(--ch-green-100) 45%, var(--ch-bg-surface));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ch-green-fill-600) 18%, transparent);
@@ -535,7 +535,7 @@ main[data-canopy] .ch-hg-grid.is-locked > .ch-hg-m:nth-child(n),
   font-size: calc(15 * var(--ch-type-k));
 }
 .ch-hg-grid.is-locked .ch-hg-m__lock {
-  gap: 5px;
+  gap: 4px;
   font: var(--ch-type-13-strong);
   letter-spacing: 0;
   color: var(--ch-green-700);
@@ -573,7 +573,7 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
 [data-ui='clubhouse'] .ch-hg-sc__d {
   width: 18px;
   height: 18px;
-  margin: -9px 0 0 -9px;
+  margin: -8px 0 0 -8px;
   background: var(--ch-hg-tone);
   box-shadow:
     0 0 0 3px var(--ch-ivory-25),

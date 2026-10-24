@@ -672,7 +672,7 @@ function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
             {Array.from({ length: 5 }, (_, i) => (
               <div key={i} className="ch-ms-row" style={{ cursor: "default" }}>
                 <Skeleton width={36} height={36} radius={18} />
-                <span style={{ display: "grid", gap: 7 }}>
+                <span style={{ display: "grid", gap: 8 }}>
                   <Skeleton width="60%" height={13} />
                   <Skeleton width="85%" height={12} />
                 </span>
@@ -2259,7 +2259,7 @@ export function AddMembersModal({ api, conv, open, onClose }: { api: ChMessagesA
           onRetry={() => setAttempt((n) => n + 1)}
         />
       ) : !people ? (
-        <div style={{ display: "grid", gap: 10 }} aria-busy="true" data-ch-code="CH-7410">
+        <div style={{ display: "grid", gap: 8 }} aria-busy="true" data-ch-code="CH-7410">
           <Skeleton height={30} />
           <Skeleton height={30} />
           <Skeleton height={30} />
@@ -2385,7 +2385,7 @@ function Details({
             />
           ) : !api.members ? (
             <div
-              style={{ display: "grid", gap: 10 }}
+              style={{ display: "grid", gap: 8 }}
               aria-busy="true"
               data-ch-code="CH-7405"
             >

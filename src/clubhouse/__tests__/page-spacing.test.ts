@@ -59,7 +59,8 @@ const ROOTS: [file: string, context: string, selector: string][] = [
 ];
 
 /** Today's values (R7 section 13). Changing one is the owner's call (OQ-63); this pins it so it is not a side effect. The
- * phone edge is settled (owner, 2026-10-24, decision 5): 16px, and 20px on a large phone (below). */
+ * phone edge is settled (owner, 2026-10-24, decision 5): 16px, and 20px on a large phone (below). The gap tokens are on
+ * the 4pt scale (row 33, 2026-10-24): 18 -> 16, 22 -> 24, 28 -> 32. */
 const TOKENS: Record<string, string> = {
   '--ch-page-top-no-eyebrow': 'calc(var(--ch-page-head-top) + 24px)',
   '--ch-page-top-eyebrow-short-2': 'calc(var(--ch-page-head-top) + 2px)',
@@ -74,16 +75,16 @@ const TOKENS: Record<string, string> = {
   '--ch-page-bottom-short': '64px',
   '--ch-page-bottom-tall': '96px',
   '--ch-page-bottom-setup': '24px',
-  '--ch-gap-grid': '18px',
-  '--ch-gap-section': '28px',
+  '--ch-gap-grid': 'var(--ch-space-4)',
+  '--ch-gap-section': 'var(--ch-space-8)',
   '--ch-gap-section-loose': 'var(--ch-space-8)',
   '--ch-page-x-phone': 'var(--ch-space-4)',
   '--ch-page-top-phone': '26px',
   '--ch-page-bottom-phone': 'var(--ch-space-8)',
   '--ch-page-top-phone-docked': '14px',
   '--ch-page-bottom-phone-docked': '110px',
-  '--ch-gap-section-phone': '28px',
-  '--ch-gap-section-phone-snug': '22px',
+  '--ch-gap-section-phone': 'var(--ch-space-8)',
+  '--ch-gap-section-phone-snug': 'var(--ch-space-6)',
   '--ch-gap-section-phone-tight': 'var(--ch-space-4)',
   '--ch-gap-group': 'var(--ch-space-3)',
 };

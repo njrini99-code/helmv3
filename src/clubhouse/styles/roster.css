@@ -21,7 +21,7 @@
 .ch-rs-head > div:first-child {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-rs-head h1 {
   font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
@@ -62,8 +62,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: 8px;
+  padding: 16px 16px;
   border-bottom: 1px solid rgb(176 149 96 / 0.22);
   background: var(--ch-ivory-100);
 }
@@ -93,7 +93,7 @@
   grid-template-columns: 32px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
-  padding: 12px 18px;
+  padding: 12px 16px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rs-req__head + .ch-rs-req__row {
@@ -130,7 +130,7 @@
   align-items: center;
   gap: 8px;
   height: 34px;
-  padding: 0 12px 0 5px;
+  padding: 0 12px 0 4px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-ivory-25);
@@ -184,7 +184,7 @@
 .ch-rs-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 16px;
   align-items: start;
 }
 .ch-rs-body.has-peek {
@@ -192,7 +192,7 @@
 }
 /* The player's roster of one (CH-3309): one quiet line under their own row. */
 .ch-rs-solo {
-  margin: 14px 2px 0;
+  margin: 16px 2px 0;
   font: var(--ch-type-body-s);
   color: var(--ch-text-tertiary);
 }
@@ -247,7 +247,7 @@
 .ch-rs-faces {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 14px;
+  gap: 16px;
 }
 .ch-rs-face {
   position: relative;
@@ -255,7 +255,7 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 14px 16px 16px;
+  padding: 16px 16px 16px;
   border: 0;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
@@ -343,7 +343,7 @@
   grid-template-columns: repeat(3, 1fr);
   align-self: stretch;
   margin-top: 4px;
-  padding: 10px 0;
+  padding: 8px 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
@@ -381,10 +381,10 @@
 .ch-rs-figs {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-self: stretch;
   margin-top: 6px;
-  padding: 12px 12px 10px;
+  padding: 12px 12px 8px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-well-soft-bg);
   box-shadow: var(--ch-well-soft-shadow);
@@ -394,7 +394,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: 'k v' 'viz viz' 'm m';
-  row-gap: 5px;
+  row-gap: 4px;
   align-items: baseline;
 }
 .ch-rs-fig__k {
@@ -503,10 +503,10 @@
 .ch-rs-row {
   display: grid;
   grid-template-columns: minmax(240px, 1.6fr) 104px 128px 56px 56px 64px 56px 36px;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   min-width: 820px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-md);
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -632,7 +632,7 @@
   align-items: center;
   gap: 6px;
   height: 26px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 999px;
   font: 500 13px/1 var(--ch-font-sans);
 }
@@ -664,7 +664,7 @@
   top: 72px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding: 0 0 20px;
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
@@ -680,7 +680,7 @@
   align-items: center;
   justify-content: space-between;
   margin: 0;
-  padding: 14px 16px 0;
+  padding: 16px 16px 0;
   background: var(--ch-ivory-150);
 }
 .ch-rs-peek__hero {
@@ -688,8 +688,8 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  margin: -18px 0 0;
-  padding: 6px 20px 18px;
+  margin: -16px 0 0;
+  padding: 6px 20px 16px;
   border-bottom: 1px solid rgb(176 149 96 / 0.22);
   background: linear-gradient(180deg, var(--ch-ivory-150) 0, var(--ch-ivory-150) 58px, transparent 58px);
   text-align: center;
@@ -720,10 +720,10 @@
 .ch-rs-peek__facts {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 14px;
+  gap: 12px 16px;
   margin-top: 0;
   margin-bottom: 0;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
   box-shadow: inset 0 0 0 1px rgb(28 25 18 / 0.05);
@@ -732,7 +732,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -800,9 +800,9 @@
 .ch-rs-peek__rd {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 32px 32px;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 7px 0;
+  padding: 8px 0;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-rs-peek__rd b {
@@ -831,12 +831,12 @@
 }
 .ch-rs-peek__dev {
   display: flex;
-  gap: 18px;
+  gap: 16px;
   font: var(--ch-type-body-s);
   color: var(--ch-text-secondary);
 }
 .ch-rs-peek__dev b {
-  margin-right: 3px;
+  margin-right: 4px;
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -926,7 +926,7 @@ a.ch-rs-peek__dev:focus-visible,
 .ch-rs-inv {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 .ch-rs-inv__code {
   display: grid;
@@ -935,7 +935,7 @@ a.ch-rs-peek__dev:focus-visible,
   column-gap: 12px;
   row-gap: 4px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 16px 16px;
 }
 .ch-rs-inv__code > span {
   font: var(--ch-type-caption);
@@ -996,7 +996,7 @@ a.ch-rs-peek__dev:focus-visible,
   align-items: center;
   gap: 4px;
   max-width: 100%;
-  padding: 3px 4px 3px 10px;
+  padding: 4px 4px 4px 8px;
   border-radius: 999px;
   background: var(--ch-green-100);
   color: var(--ch-forest-800);
@@ -1102,7 +1102,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
 }
 .ch-rs-remove {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   box-shadow: inset 0 0 0 1px var(--ch-border-hairline);
@@ -1121,7 +1121,7 @@ a.ch-rs-peek__dev:focus-visible,
 }
 @container (max-width: 640px) {
   .ch-rs {
-    padding: 28px 16px 60px;
+    padding: 32px 16px 60px;
   }
   .ch-rs-head h1 {
     font-size: calc(34 * var(--ch-type-k));
@@ -1177,7 +1177,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-page {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 24px;
   }
   /* P003-A3: no rule above the kicker; the top bar already closes the page's top. */
   .ch-rsm-head {
@@ -1220,7 +1220,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* The list hangs from a hairline just under the sort, and each row sits on a seam. */
   .ch-rsm-sort + .ch-rsm-list {
-    margin-top: -10px;
+    margin-top: -8px;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   .ch-rsm-list > li + li {
@@ -1229,7 +1229,7 @@ a.ch-rs-peek__dev:focus-visible,
   /* Inactive is a section of its own: the double rule, then its heading, then the rows. Under .ch-rsm-page so base.css's
      heading reset doesn't drop its margins. */
   .ch-rsm-page > .ch-rsm-sec {
-    margin: 14px 0 -20px;
+    margin: 16px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
     font: var(--ch-type-20-strong);
@@ -1242,7 +1242,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-row {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     box-sizing: border-box;
     width: calc(100% + 24px);
     min-height: 72px;
@@ -1267,17 +1267,17 @@ a.ch-rs-peek__dev:focus-visible,
   }
   /* Inset by the ring's 3px, so the ring (not the coin) meets the column's edge; the skeleton's coin sits there too. */
   .ch-rsm-row .ch-avatar {
-    margin-inline-start: 3px;
+    margin-inline-start: 4px;
     box-shadow: 0 0 0 2px var(--ch-workspace), 0 0 0 3px var(--ch-champagne-rule);
   }
   .ch-rsm-row > .ch-skel:first-child {
-    margin-inline-start: 3px;
+    margin-inline-start: 4px;
   }
   .ch-rsm-row__b {
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-rsm-row__b b {
@@ -1344,12 +1344,12 @@ a.ch-rs-peek__dev:focus-visible,
     min-height: 0;
     overflow: auto;
     overscroll-behavior: contain;
-    padding: 26px 20px calc(32px + env(safe-area-inset-bottom));
+    padding: 24px 20px calc(32px + env(safe-area-inset-bottom));
   }
   .ch-rsm-prof {
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 32px;
   }
   .ch-rsm-hero {
     display: flex;
@@ -1439,7 +1439,7 @@ a.ch-rs-peek__dev:focus-visible,
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
   }
@@ -1461,7 +1461,7 @@ a.ch-rs-peek__dev:focus-visible,
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    margin: -13px -8px -13px 0;
+    margin: -12px -8px -12px 0;
     padding: 0 8px;
     border-radius: var(--ch-radius-md);
     font: var(--ch-type-13-medium);
@@ -1486,7 +1486,7 @@ a.ch-rs-peek__dev:focus-visible,
     margin-top: -20px;
   }
   .ch-rsm-trend {
-    padding: 14px 0 0;
+    padding: 16px 0 0;
   }
   .ch-rsm-trend .ch-line__path {
     stroke-width: 2.2;
@@ -1494,7 +1494,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rsm-trend__lg {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     margin-top: 8px;
     font: var(--ch-type-caption);
     color: var(--ch-text-secondary);
@@ -1511,7 +1511,7 @@ a.ch-rs-peek__dev:focus-visible,
     align-items: center;
     gap: 12px;
     min-height: 60px;
-    padding: 10px 0;
+    padding: 8px 0;
   }
   .ch-rsm-panel__h + .ch-rsm-rd {
     margin-top: 4px;
@@ -1533,7 +1533,7 @@ a.ch-rs-peek__dev:focus-visible,
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-rsm-rd__b b {
@@ -1617,7 +1617,7 @@ a.ch-rs-peek__dev:focus-visible,
     position: relative;
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     box-sizing: border-box;
     width: calc(100% + 24px);
     min-height: 68px;
@@ -1686,7 +1686,7 @@ a.ch-rs-peek__dev:focus-visible,
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
     min-width: 0;
   }
   .ch-rsm-banner__b b {
@@ -1788,7 +1788,7 @@ a.ch-rs-peek__dev:focus-visible,
     justify-content: space-between;
     gap: 12px;
     margin-top: 8px;
-    padding: 14px 0;
+    padding: 16px 0;
     box-shadow:
       inset 0 1px 0 var(--ch-ledger-rule),
       inset 0 -1px 0 var(--ch-ledger-rule-soft);
@@ -1815,7 +1815,7 @@ a.ch-rs-peek__dev:focus-visible,
     min-height: 44px;
   }
   .ch-rsm-reqs__note {
-    padding: 10px 2px 6px;
+    padding: 8px 2px 6px;
     font: var(--ch-type-caption);
     color: var(--ch-text-tertiary);
   }
@@ -1948,7 +1948,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
 
   .ch-rs[data-canopy] .ch-rs-req {
-    margin-top: 14px;
+    margin-top: 16px;
     overflow: visible;
     border-radius: 0;
     background: none;
@@ -1957,7 +1957,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-req__head {
     flex-direction: column;
     align-items: flex-start;
-    gap: 3px;
+    gap: 4px;
     padding: 0 0 12px;
     border-bottom: 0;
     background: none;
@@ -1979,7 +1979,7 @@ a.ch-rs-peek__dev:focus-visible,
     font-variant-numeric: tabular-nums;
   }
   .ch-rs[data-canopy] .ch-rs-req__row {
-    padding: 14px 0;
+    padding: 16px 0;
     border-top: 0;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);
   }
@@ -1987,19 +1987,19 @@ a.ch-rs-peek__dev:focus-visible,
     box-shadow: none;
   }
   .ch-rs[data-canopy] .ch-rs-attn {
-    margin-top: 10px;
+    margin-top: 8px;
   }
 
   /* The toolbar heads the players: an engraved rule under it, as under a section title, and the players hang from
      that rule (the faces' column lines start on it). */
   .ch-rs[data-canopy] .ch-rs-bar {
-    margin-top: 18px;
+    margin-top: 16px;
     padding-bottom: 16px;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-rs[data-canopy] .ch-rs-body,
   .ch-rs[data-canopy] .ch-rs-bar + .ch-rs-faces {
-    margin-top: -18px;
+    margin-top: -16px;
   }
 
   /* Faces: portraits on a ruled page. Hairlines run only between the cells (each face draws the line to its left and
@@ -2015,7 +2015,7 @@ a.ch-rs-peek__dev:focus-visible,
      one sun. The rims are on the rules, never on a figure, and they are gone in dark, Increase Contrast and noon's
      side light. */
   .ch-rs[data-canopy] .ch-rs-face {
-    padding: 22px 20px 26px;
+    padding: 24px 20px 24px;
     border-radius: 0;
     background: none;
     box-shadow:
@@ -2028,7 +2028,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   @media (hover: hover) {
     .ch-rs[data-canopy] .ch-rs-face:not(.ch-rs-face--static):hover {
-      padding: 22px 20px 26px;
+      padding: 24px 20px 24px;
       border-radius: 0;
       background: none;
       box-shadow:
@@ -2157,7 +2157,7 @@ a.ch-rs-peek__dev:focus-visible,
      text while the names line up with the toolbar. */
   .ch-rs[data-canopy] .ch-rs-list {
     margin-inline: -12px;
-    padding: 14px 0 0;
+    padding: 16px 0 0;
   }
   .ch-rs[data-canopy] .ch-rs-row {
     border-bottom-color: var(--ch-ledger-rule-soft);
@@ -2212,7 +2212,7 @@ a.ch-rs-peek__dev:focus-visible,
   .ch-rs[data-canopy] .ch-rs-peek {
     gap: 20px;
     max-height: calc(100dvh - 96px);
-    padding: 22px 0 24px 32px;
+    padding: 24px 0 24px 32px;
     overflow: hidden auto;
     overscroll-behavior: contain;
     border-radius: 0;
@@ -2227,14 +2227,14 @@ a.ch-rs-peek__dev:focus-visible,
     background: none;
   }
   .ch-rs[data-canopy] .ch-rs-peek__hero {
-    margin-top: -14px;
-    padding: 0 0 22px;
+    margin-top: -16px;
+    padding: 0 0 24px;
     border-bottom: 0;
     background: none;
     box-shadow: inset 0 -1px 0 var(--ch-ledger-rule);
   }
   .ch-rs[data-canopy] .ch-rs-peek__av {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     box-shadow: var(--ch-elevation-floating);
     outline: 1px solid var(--ch-ledger-rule);
     outline-offset: 4px;
@@ -2246,7 +2246,7 @@ a.ch-rs-peek__dev:focus-visible,
     box-shadow: none;
   }
   .ch-rs[data-canopy] .ch-rs-peek__figs {
-    padding: 14px 0;
+    padding: 16px 0;
     border-top-color: var(--ch-ledger-rule-soft);
     border-bottom-color: var(--ch-ledger-rule-soft);
   }
@@ -2259,8 +2259,8 @@ a.ch-rs-peek__dev:focus-visible,
   @container (max-width: 1080px) {
     /* The panel follows the players: its hairline runs across the top instead. */
     .ch-rs[data-canopy] .ch-rs-peek {
-      margin-top: 14px;
-      padding: 28px 0 24px;
+      margin-top: 16px;
+      padding: 32px 0 24px;
       box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
     }
   }
@@ -2345,9 +2345,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 /* P003: where the team sits (RosterSpread). Coins on one scoring axis under a gold team line; flat ground, the picture is the point. */
 .ch-rs-sp {
   display: grid;
-  gap: 14px;
-  margin: 8px 0 22px;
-  padding: 22px 24px 8px;
+  gap: 16px;
+  margin: 8px 0 24px;
+  padding: 24px 24px 8px;
   overflow-x: clip;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
@@ -2366,7 +2366,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 }
 .ch-rs-sp__plot {
   position: relative;
-  margin: 0 22px;
+  margin: 0 24px;
 }
 /* The team line and the coins sit on still, full-width rows that are their size containers; each moves along its row by
    `translate` in container units (--ch-sp-x, 0 to 100), so a change glides on the compositor. WebKit kept a translated
@@ -2398,7 +2398,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   transform: translateX(-50%);
   translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
   transition: translate var(--ch-dur-base) var(--ch-ease);
-  padding: 3px 9px;
+  padding: 4px 8px;
   border-radius: 99px;
   background: var(--ch-champagne-500);
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
@@ -2429,7 +2429,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   justify-items: center;
   gap: 2px;
   width: 76px;
-  margin-left: -38px;
+  margin-left: -40px;
   padding: 0;
   border: 0;
   background: none;
@@ -2666,5 +2666,5 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 
 /* The coach-only reason under the availability control: a little air, the same field as the Coach's note. */
 .ch-rs-avail__note {
-  margin-top: 10px;
+  margin-top: 8px;
 }

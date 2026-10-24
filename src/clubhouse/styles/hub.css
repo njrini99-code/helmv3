@@ -16,7 +16,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 22px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--ch-champagne-rule);
 }
 .ch-hb-role {
@@ -24,14 +24,14 @@
   align-items: center;
   gap: 6px;
   height: 24px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 999px;
   box-shadow: inset 0 0 0 1px rgb(21 90 57 / 0.3);
   font: var(--ch-type-12-strong);
   color: var(--ch-green-700);
 }
 .ch-hb-h h1 {
-  margin: 10px 0 6px;
+  margin: 8px 0 6px;
   font: 400 calc(54 * var(--ch-type-k))/1 var(--ch-font-serif);
   letter-spacing: -0.01em;
 }
@@ -42,10 +42,10 @@
 }
 .ch-hb-tabs {
   display: flex;
-  gap: 22px;
+  gap: 24px;
   /* Room inside the scroller for the focus ring, taken back by the margins so the row doesn't move. */
   max-width: calc(100% + 8px);
-  margin: -14px -4px -4px;
+  margin: -16px -4px -4px;
   padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -105,7 +105,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 18px 10px;
+  padding: 16px 16px 8px;
 }
 .ch-hb-card__h h2 {
   display: flex;
@@ -119,13 +119,13 @@
 .ch-hb-home {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  gap: 26px;
+  gap: 24px;
   align-items: start;
 }
 .ch-hb-col {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   min-width: 0;
 }
 .ch-hb-eyebrow {
@@ -158,13 +158,13 @@
 /* RSVPs */
 .ch-hb-rsvp__list {
   margin: 0;
-  padding: 0 18px 10px;
+  padding: 0 16px 8px;
   list-style: none;
 }
 .ch-hb-rsvp__list li {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   padding: 12px 0;
   border-top: 1px solid rgb(28 25 18 / 0.06);
@@ -174,7 +174,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   height: 46px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-50);
@@ -197,7 +197,7 @@
 .ch-hb-rsvp__b {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   color: inherit;
   text-decoration: none;
@@ -216,7 +216,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hb-req {
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
   background: var(--ch-green-50);
   font: var(--ch-type-11-strong);
@@ -242,14 +242,14 @@
 .ch-hb-rsvp__a {
   display: flex;
   gap: 2px;
-  padding: 3px;
+  padding: 4px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-inset);
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.12);
 }
 .ch-hb-rsvp__a button {
   height: 30px;
-  padding: 0 11px;
+  padding: 0 12px;
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
@@ -310,7 +310,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 26px 28px;
+  padding: 24px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: var(--ch-sheet-shadow);
@@ -337,15 +337,15 @@
 .ch-hb-ann__h {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding-top: 14px;
+  gap: 8px;
+  padding-top: 16px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
 }
 .ch-hb-ann__h > div {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-hb-ann__h b {
   font: var(--ch-type-14-strong);
@@ -363,7 +363,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-hb-ann__f:empty {
   display: none;
@@ -411,7 +411,7 @@
   gap: 12px;
   width: 100%;
   min-height: 44px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-hover);
@@ -462,7 +462,7 @@
 .ch-hb-reads {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font: var(--ch-type-13-medium);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -519,14 +519,14 @@
 .ch-hb-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   max-width: 760px;
 }
 .ch-hb-new {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
@@ -572,7 +572,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 20px 22px;
+  padding: 20px 24px;
 }
 /* The eyebrow, and a coach's menu at its end; the menu's 32px button sits in the line without making it taller. */
 .ch-hb-pass__top {
@@ -582,7 +582,7 @@
   gap: 8px;
 }
 .ch-hb-pass__top .ch-hb-iconbtn {
-  margin: -8px -10px -8px 0;
+  margin: -8px -8px -8px 0;
 }
 .ch-hb-pass__main > b {
   margin-top: 4px;
@@ -596,7 +596,7 @@
 .ch-hb-pass__f {
   display: flex;
   flex-wrap: wrap;
-  gap: 26px;
+  gap: 24px;
   margin: 12px 0 0;
   padding-top: 12px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
@@ -605,7 +605,7 @@
   display: none;
 }
 .ch-hb-pass__f dt {
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -619,8 +619,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 20px 22px;
+  gap: 8px;
+  padding: 20px 24px;
   border-left: 2px dashed rgb(28 25 18 / 0.14);
 }
 .ch-hb-pass__stub::before,
@@ -679,7 +679,7 @@
 /* Updates */
 .ch-hb-feed ol {
   margin: 0;
-  padding: 0 18px 12px;
+  padding: 0 16px 12px;
   list-style: none;
 }
 .ch-hb-feed li {
@@ -690,9 +690,9 @@
 .ch-hb-feed li > .ch-hb-feed__row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 12px 0 12px 14px;
+  padding: 12px 0 12px 16px;
   color: inherit;
   text-decoration: none;
 }
@@ -709,7 +709,7 @@
 .ch-hb-feed__b {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hb-feed__b b {
@@ -737,12 +737,12 @@
 .ch-hb-tasks {
   display: flex;
   flex-direction: column;
-  padding: 0 18px 12px;
+  padding: 0 16px 12px;
 }
 .ch-hb-task {
   display: grid;
   grid-template-columns: 32px minmax(0, 1fr) auto auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   padding: 12px 0;
 }
@@ -752,7 +752,7 @@
 .ch-hb-task > div {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hb-task b {
@@ -829,10 +829,10 @@
   grid-column: 1 / -1;
   grid-template-columns: 44px 1fr;
   grid-template-rows: auto auto;
-  column-gap: 14px;
+  column-gap: 16px;
   row-gap: 4px;
   align-items: center;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border: 2px dashed rgb(21 90 57 / 0.3);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-green-25);
@@ -869,7 +869,7 @@
 .ch-hb-files {
   display: flex;
   flex-direction: column;
-  padding: 0 8px 10px;
+  padding: 0 8px 8px;
 }
 .ch-hb-file {
   display: flex;
@@ -882,7 +882,7 @@
   align-items: center;
   gap: 12px;
   min-width: 0;
-  padding: 10px;
+  padding: 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -930,7 +930,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hb-file__b b {
@@ -950,7 +950,7 @@
 .ch-hb-form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .ch-hb-aud {
   display: flex;
@@ -959,7 +959,7 @@
 }
 .ch-hb-aud button {
   height: 34px;
-  padding: 0 13px;
+  padding: 0 12px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
@@ -1007,7 +1007,7 @@
 .ch-hb-picks button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   height: 40px;
   padding: 0 12px 0 6px;
   border: 0;
@@ -1046,7 +1046,7 @@
   gap: 6px;
   max-width: 100%;
   height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-green-50);
@@ -1072,7 +1072,7 @@
 }
 .ch-hb-dp__f {
   display: block;
-  padding: 8px 10px 4px;
+  padding: 8px 8px 4px;
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -1080,10 +1080,10 @@
 .ch-hb-dp__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   min-height: 44px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
@@ -1103,7 +1103,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .ch-hb-dp__b b {
@@ -1133,7 +1133,7 @@
   box-shadow: none;
 }
 .ch-hb-opts {
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-50);
 }
@@ -1180,7 +1180,7 @@
   }
   .ch-hb-rsvp__list li {
     grid-template-columns: 40px minmax(0, 1fr);
-    row-gap: 10px;
+    row-gap: 8px;
   }
   .ch-hb-rsvp__choice,
   .ch-hb-rsvp__c {
@@ -1198,7 +1198,7 @@
     width: 100%;
   }
   .ch-hb-ann {
-    padding: 18px;
+    padding: 16px;
   }
   .ch-hb-ann h3 {
     font-size: calc(28 * var(--ch-type-k));
@@ -1217,7 +1217,7 @@
   }
   .ch-hb-h {
     gap: 16px;
-    padding: 14px 0 0;
+    padding: 16px 0 0;
     border-top: var(--ch-ledger-rule-double);
     border-bottom: 0;
   }
@@ -1241,12 +1241,12 @@
   .ch-hb-skelm {
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: 24px;
   }
   /* The opening's first line at its loaded height: the role chip's 24px, or a player's team line alone (16px), then
      the large title's block under it. */
   .ch-hb-skelm .ch-hb-h > div.is-player > .ch-skel {
-    margin-block: 3px;
+    margin-block: 4px;
   }
   .ch-hb-skelm__tab {
     display: flex;
@@ -1257,7 +1257,7 @@
     padding: 0;
   }
   .ch-hb-skelm .ch-hb-card + .ch-hb-card {
-    margin-top: 14px;
+    margin-top: 16px;
   }
   .ch-hb-skelm .ch-hb-card__h {
     align-items: center;
@@ -1306,10 +1306,10 @@
     box-shadow: none;
   }
   .ch-hb-home {
-    gap: 36px;
+    gap: 32px;
   }
   .ch-hb-col {
-    gap: 36px;
+    gap: 32px;
   }
   .ch-hb-card__h {
     align-items: baseline;
@@ -1332,14 +1332,14 @@
   }
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own double rule. */
   .ch-hb-part {
-    padding-top: 14px;
+    padding-top: 16px;
     border-top: var(--ch-ledger-rule-double);
   }
   /* A failed or empty section's line stands a step under its heading, where the first row would start. */
   .ch-hb-card__h + [role='alert'],
   .ch-hb-card__h + .ch-notice,
   .ch-hb-card__h + .ch-empty {
-    margin-top: 14px;
+    margin-top: 16px;
   }
 
   /* RSVPs: rows on seams, the date in a quiet engraved tile. */
@@ -1348,7 +1348,7 @@
     padding: 0;
   }
   .ch-hb-rsvp__list li {
-    padding: 14px 0;
+    padding: 16px 0;
     border-top: 0;
   }
   .ch-hb-rsvp__list li + li {
@@ -1383,8 +1383,8 @@
   /* The latest announcement: the screen's one green feature card (ui.css .ch-feat, in the announcement's own markup so
      its byline, menu, Got it and reads stay). */
   .ch-hb-ann.is-featured {
-    gap: 10px;
-    padding: 18px;
+    gap: 8px;
+    padding: 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
@@ -1476,7 +1476,7 @@
   }
   .ch-hb-new {
     margin-bottom: 6px;
-    padding: 14px 16px;
+    padding: 16px 16px;
     border-radius: var(--ch-radius-md);
     background: var(--ch-sheet-bg);
     box-shadow: 0 0 0 1px var(--ch-ledger-rule);
@@ -1486,8 +1486,8 @@
     background-color: var(--ch-bg-hover);
   }
   .ch-hb-list > .ch-hb-ann {
-    gap: 10px;
-    padding: 22px 0;
+    gap: 8px;
+    padding: 24px 0;
   }
   .ch-hb-list > .ch-hb-ann + .ch-hb-ann {
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
@@ -1533,7 +1533,7 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    margin: 10px 0 0;
+    margin: 8px 0 0;
     padding: 12px 0;
     border-top: 1px solid var(--ch-ledger-rule);
     border-bottom: 1px solid var(--ch-ledger-rule);
@@ -1553,8 +1553,8 @@
     overflow-wrap: anywhere;
   }
   .ch-hb-pass__stub {
-    gap: 10px;
-    padding: 14px 0 0;
+    gap: 8px;
+    padding: 16px 0 0;
     border: 0;
   }
   .ch-hb-pass__stub::before,
@@ -1568,12 +1568,12 @@
     border-top: 0;
   }
   .ch-hb-travel {
-    gap: 22px;
+    gap: 24px;
     max-width: none;
   }
   .ch-hb-travel .ch-hb-pass:not(.is-big) .ch-hb-pass__main {
     gap: 4px;
-    padding: 14px 0 0;
+    padding: 16px 0 0;
     border-top: 0;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
@@ -1600,11 +1600,11 @@
   .ch-hb-feed li > a,
   .ch-hb-feed li > .ch-hb-feed__row {
     min-height: 58px;
-    padding: 10px 0 10px 16px;
+    padding: 8px 0 8px 16px;
   }
   .ch-hb-feed li > a {
     margin: 0 -12px;
-    padding: 10px 12px 10px 28px;
+    padding: 8px 12px 8px 32px;
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
@@ -1628,7 +1628,7 @@
   }
   .ch-hb-task {
     min-height: 58px;
-    padding: 10px 0;
+    padding: 8px 0;
   }
   .ch-hb-task + .ch-hb-task {
     border-top: 0;
@@ -1641,7 +1641,7 @@
 
   /* Documents: the drop zone keeps its material; a folder is a section, its files rows on seams that tint on the press. */
   .ch-hb-docs {
-    gap: 28px;
+    gap: 32px;
   }
   .ch-hb-files {
     margin-top: 4px;
@@ -1653,7 +1653,7 @@
   .ch-hb-file__open {
     min-height: 58px;
     margin-left: -12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-radius: var(--ch-radius-md);
     transition: background-color var(--ch-dur-press) var(--ch-ease);
   }
@@ -1679,7 +1679,7 @@
 }
 .ch-hb-steps li {
   height: 24px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: 999px;
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -1708,8 +1708,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 3px;
-  padding: 11px 14px;
+  gap: 4px;
+  padding: 12px 16px;
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
@@ -1737,7 +1737,7 @@
 .ch-hb-tripsum div {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 .ch-hb-tripsum dt {
   font: var(--ch-type-13-medium);
@@ -1759,8 +1759,8 @@
 }
 .ch-hb-clash {
   display: flex;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
   color: var(--ch-warning-600);
@@ -1843,7 +1843,7 @@
 }
 /* The route skeleton's cards carry the loaded cards' padding (the Ledger below lays them flush on desktop). */
 .ch-hb[aria-busy='true'] .ch-hb-card {
-  padding: 18px;
+  padding: 16px;
 }
 
 /* Loading in the framed page head (desktop): the skeleton draws the loaded head's own parts (chip, title, team line, the
@@ -1887,12 +1887,12 @@
   /* A failed part with no heading of its own (the latest post, the next trip) stands on its own engraved rule, so it
      never reads as a part of the section above it. */
   .ch-hb[data-canopy] .ch-hb-part {
-    padding-top: 14px;
+    padding-top: 16px;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
   /* A section that didn't load: its notice stands a step under the rule, where the first row would start. */
   .ch-hb[data-canopy] .ch-hb-card__h + [role='alert'] {
-    margin-top: 14px;
+    margin-top: 16px;
   }
 
   /* Home: two columns on one soft rule, sections a generous step apart. */
@@ -1921,8 +1921,8 @@
     color: var(--ch-ledger-ink);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-featured {
-    margin-left: -22px;
-    padding: 2px 0 2px 22px;
+    margin-left: -24px;
+    padding: 2px 0 2px 24px;
     box-shadow: inset 2px 0 0 var(--ch-champagne-500);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-featured h3 {
@@ -1988,10 +1988,10 @@
     gap: 0;
   }
   .ch-hb[data-canopy] .ch-hb-travel__plan {
-    margin-bottom: 28px;
+    margin-bottom: 32px;
   }
   .ch-hb[data-canopy] .ch-hb-travel > .ch-hb-pass {
-    padding: 28px 0;
+    padding: 32px 0;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule);
   }
 
@@ -2001,7 +2001,7 @@
     gap: 40px;
   }
   .ch-hb[data-canopy] .ch-hb-files {
-    margin: 4px -10px 0;
+    margin: 4px -8px 0;
     padding: 0;
   }
   .ch-hb[data-canopy] .ch-hb-file {
@@ -2160,7 +2160,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb[data-canopy] .ch-hb-pass.is-next {
     padding: 0;
     overflow: hidden;
-    margin-bottom: 28px;
+    margin-bottom: 32px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-light-paper), var(--ch-sheet-bg);
     box-shadow:
@@ -2171,7 +2171,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__main,
   .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
-    padding: 22px 24px;
+    padding: 24px 24px;
   }
   /* The perforation: a dashed hairline down the join, notched where it meets the pass's edges. */
   .ch-hb[data-canopy] .ch-hb-pass.is-next .ch-hb-pass__stub {
@@ -2349,7 +2349,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     display: block;
     width: 100%;
     min-height: 44px;
-    margin: -10px 0 -6px;
+    margin: -8px 0 -6px;
     padding: 0;
     border: 0;
     background: none;
@@ -2474,7 +2474,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-strip li + li::before {
   width: 1px;
   height: 14px;
-  margin: 0 14px;
+  margin: 0 16px;
   background: var(--ch-ledger-rule-strong);
   content: '';
 }
@@ -2524,8 +2524,8 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   place-items: center;
   min-width: 18px;
   height: 18px;
-  margin-left: 7px;
-  padding: 0 5px;
+  margin-left: 8px;
+  padding: 0 4px;
   border-radius: 9px;
   background: var(--ch-green-50);
   font: 600 11px/1 var(--ch-font-sans);
@@ -2568,7 +2568,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 /* The Announcements lead (desktop): the same green as Home's trip tile, so the newest post is the tab's anchor. */
 @media (min-width: 821px) {
   .ch-hb[data-canopy] .ch-hb-ann.is-lead {
-    padding: 32px 36px;
+    padding: 32px 32px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
     box-shadow: var(--ch-elevation-feature);
@@ -2707,8 +2707,8 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-board {
   display: grid;
   gap: 16px;
-  margin-bottom: 28px;
-  padding: 24px 28px;
+  margin-bottom: 32px;
+  padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
@@ -2717,7 +2717,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-board__f {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 44px;
+  gap: 16px 48px;
   margin: 0;
 }
 .ch-hb-board__f > div {
@@ -2814,7 +2814,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   /* On a phone the strip sits between the team line and a coach's action, and a rule between items gives way to a gap. */
   .ch-hb-h > .ch-hb-strip {
     order: 1;
-    gap: 18px;
+    gap: 16px;
     /* A clipped figure fades over 28px, not 14, so the edge reads as more to scroll to, and the row settles on a
        figure, not half of one (A24). */
     --ch-hs-fade: var(--ch-edge-fade);
@@ -2863,9 +2863,9 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   display: flex;
   flex-direction: column;
   grid-column: span var(--ch-hw-span, 6);
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
-  padding: 20px 22px 18px;
+  padding: 20px 24px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-ledger-rule-strong);
@@ -2897,7 +2897,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-more {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 0;
   border: 0;
   background: none;
@@ -2944,8 +2944,8 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 
 /* The trip: the dark tile. */
 .ch-hw--dark {
-  gap: 18px;
-  padding: 24px 26px 22px;
+  gap: 16px;
+  padding: 24px 24px 24px;
   background: var(--ch-feature-bg);
   box-shadow: var(--ch-elevation-feature);
   color: var(--ch-on-green-ink);
@@ -3074,7 +3074,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   padding-top: 24px;
 }
@@ -3132,7 +3132,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   place-items: center;
   width: 28px;
   height: 28px;
-  margin-left: -7px;
+  margin-left: -8px;
   border-radius: 50%;
   background: var(--ch-on-dark-raised-bg);
   box-shadow: 0 0 0 2px var(--ch-green-800);
@@ -3152,7 +3152,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-on-green-ink-soft);
 }
 .ch-hw-stack em {
-  margin-left: 10px;
+  margin-left: 8px;
 }
 .ch-hw-you {
   display: inline-flex;
@@ -3172,7 +3172,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   grid-template-columns: 64px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 12px;
-  padding: 11px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--ch-ledger-rule);
 }
 .ch-hw-agenda li:first-child {
@@ -3233,7 +3233,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-meter {
   display: grid;
   justify-items: end;
-  gap: 5px;
+  gap: 4px;
 }
 .ch-hw-meter__t {
   display: flex;
@@ -3417,7 +3417,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   color: var(--ch-text-tertiary);
 }
 .ch-hw-led__more > td {
-  padding: 4px 0 14px 22px;
+  padding: 4px 0 16px 24px;
   text-align: left;
   background: none;
 }
@@ -3504,7 +3504,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   grid-column: 3;
 }
 .ch-hw-ledm li > div {
-  padding: 0 0 14px;
+  padding: 0 0 16px;
 }
 
 /* The latest post. */
@@ -3604,7 +3604,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 /* Tasks. */
 .ch-hw-figs {
   display: flex;
-  gap: 28px;
+  gap: 32px;
   margin: 0;
 }
 .ch-hw-figs > div {
@@ -3679,7 +3679,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw-mini {
   display: grid;
   justify-items: end;
-  gap: 5px;
+  gap: 4px;
 }
 .ch-hw-mini b {
   font: var(--ch-type-13-strong);
@@ -3713,7 +3713,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px 14px;
+  gap: 8px 16px;
   padding: 12px 0;
   border-top: 1px solid var(--ch-ledger-rule);
 }
@@ -3877,10 +3877,10 @@ html[data-fw-theme='dark'] .ch-hw--dark {
   }
   .ch-hw {
     grid-column: auto;
-    padding: 18px 16px 16px;
+    padding: 16px 16px 16px;
   }
   .ch-hw--dark {
-    padding: 20px 18px;
+    padding: 20px 16px;
   }
   .ch-hw-count {
     grid-template-columns: minmax(0, 1fr);
@@ -3888,7 +3888,7 @@ html[data-fw-theme='dark'] .ch-hw--dark {
   .ch-hw-count__n {
     flex-direction: row;
     align-items: baseline;
-    gap: 10px;
+    gap: 8px;
   }
   .ch-hw-count__n b {
     font-size: calc(56 * var(--ch-type-k));

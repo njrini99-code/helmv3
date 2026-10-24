@@ -34,7 +34,7 @@
 
 /* Archival mat: a lighter mat with a fine inner line, set like a museum caption. */
 .ch-hero[data-tone='archival'] {
-  padding: 24px 28px 26px;
+  padding: 24px 32px 24px;
   border-radius: var(--ch-radius-lg);
   background: #f7f4ea;
   box-shadow: 0 0 0 1px var(--ch-hero-rule), inset 0 0 0 6px #f7f4ea, inset 0 0 0 7px rgb(157 130 73 / 0.32);
@@ -42,7 +42,7 @@
 
 /* Clubhouse plaque: a mounted plate; a forest rule stands at the title. */
 .ch-hero[data-tone='plaque'] {
-  padding: 22px 26px 24px 30px;
+  padding: 24px 24px 24px 32px;
   border-radius: var(--ch-radius-xl);
   background: #f2efe4;
   box-shadow: 0 0 0 1px rgb(93 99 76 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.8);
@@ -53,12 +53,12 @@
 }
 .ch-hero[data-tone='plaque'] .ch-hero__line,
 .ch-hero[data-tone='plaque'] .ch-hero__eyebrow {
-  padding-left: 18px;
+  padding-left: 16px;
 }
 
 /* Scorecard: ruled top and bottom like a club card, the bottom a double rule. */
 .ch-hero[data-tone='scorecard'] {
-  padding: 16px 0 18px;
+  padding: 16px 0 16px;
   border-top: 1px solid var(--ch-hero-rule);
   border-bottom: 3px double rgb(35 55 45 / 0.3);
 }
@@ -94,7 +94,7 @@
 
 /* Tournament board: a thin forest rail, the title in engraved capitals, the page's numbers in the head. */
 .ch-hero[data-tone='board'] {
-  padding: 18px 0 18px;
+  padding: 16px 0 16px;
   border-bottom: 1px solid var(--ch-hero-rule);
   box-shadow: inset 0 3px 0 var(--ch-green-800);
 }
@@ -105,7 +105,7 @@
 .ch-hero__figs {
   display: flex;
   grid-column: 1;
-  gap: 28px;
+  gap: 32px;
   margin: 8px 0 0;
 }
 .ch-hero__figs div {

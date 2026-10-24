@@ -20,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 20px 10px 24px;
+  padding: 12px 20px 8px 24px;
   border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-ask-top .ch-ask-tabs {
@@ -126,7 +126,7 @@
 }
 .ch-ask-foot.is-home {
   flex: none;
-  padding: 0 24px 18px;
+  padding: 0 24px 16px;
 }
 .ch-ask-ev {
   min-width: 0;
@@ -149,8 +149,8 @@
   flex: none;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 12px 40px 14px;
+  gap: 8px;
+  padding: 12px 40px 16px;
   background: var(--ch-workspace);
 }
 /* The thread fades into the dock as it scrolls under it: a short wash of the canvas above the dock, not a shadow. */
@@ -175,7 +175,7 @@
   gap: 12px;
   min-width: 0;
   min-height: 0;
-  padding: 14px 12px 16px;
+  padding: 16px 12px 16px;
   box-sizing: border-box;
   overflow: hidden;
   background: var(--ch-bg-page);
@@ -240,7 +240,7 @@
   display: flex;
   flex: none;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   height: 42px;
   padding: 0 12px;
   border: 0;
@@ -277,7 +277,7 @@
 }
 .ch-ask-hist__group {
   margin: 0;
-  padding: 10px 10px 6px;
+  padding: 8px 8px 6px;
   font: var(--ch-type-12-medium);
   color: var(--ch-text-tertiary);
 }
@@ -285,7 +285,7 @@
 .ch-ask-hist__row {
   display: block;
   height: 36px;
-  padding: 0 10px;
+  padding: 0 8px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-14);
@@ -310,7 +310,7 @@
 }
 .ch-ask-hist__nomatch {
   margin: 0;
-  padding: 10px;
+  padding: 8px;
   font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
@@ -357,7 +357,7 @@
 .ch-ask-home {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 32px;
   width: min(720px, 100%);
   margin: 0 auto;
   padding: 72px 0 24px;
@@ -366,7 +366,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   text-align: center;
 }
 .ch-ask-greet h2 {
@@ -393,7 +393,7 @@
 }
 .ch-ask-pill {
   min-height: 36px;
-  padding: 0 14px;
+  padding: 0 16px;
   border: 0;
   border-radius: 999px;
   background: var(--ch-bg-surface);
@@ -431,7 +431,7 @@
 .ch-ask-nothing__t {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
 }
@@ -491,8 +491,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px 18px 12px;
+  gap: 16px;
+  padding: 16px 16px 12px;
   border-radius: 24px;
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-floating);
@@ -612,7 +612,7 @@
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 10px;
+  padding: 8px;
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__bar,
 .ch-ask-cmp.is-phone .ch-ask-cmp__bar {
@@ -624,7 +624,7 @@
   flex: 1;
   min-width: 0;
   min-height: 36px;
-  padding: 7px 6px;
+  padding: 8px 6px;
   font-size: calc(16 * var(--ch-type-k));
 }
 .ch-ask-cmp.is-dock .ch-ask-cmp__round:not(.is-quiet),
@@ -694,7 +694,7 @@
 }
 /* Group headings: the quiet word over each kind of row, in sentence case. */
 .ch-ask-pick [cmdk-group-heading] {
-  padding: 10px 10px 4px;
+  padding: 8px 8px 4px;
   font: var(--ch-type-13-medium);
   color: var(--ch-text-tertiary);
 }
@@ -706,9 +706,9 @@
 .ch-ask-pick__row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   border-radius: var(--ch-radius-md);
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
@@ -746,7 +746,7 @@
   display: flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 10px;
+  padding: 0 8px;
   font: var(--ch-type-14);
   color: var(--ch-text-tertiary);
 }
@@ -756,13 +756,13 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 12px 10px;
+  padding: 12px 8px;
 }
 .ch-ask-sk__mid {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: min(720px, 100%);
   margin: 80px auto 0;
 }
@@ -863,7 +863,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     flex-direction: column;
   }
   .ch-ask-dock {
-    padding: 8px 12px 10px;
+    padding: 8px 12px 8px;
     box-shadow: 0 -1px 0 var(--ch-border-hairline);
     background: var(--ch-phone-composer-bg);
   }
@@ -908,7 +908,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
   .ch-ask-home.is-phone .ch-ask-greet {
     align-items: stretch;
     gap: 8px;
-    padding: 0 0 22px;
+    padding: 0 0 24px;
     text-align: left;
   }
   .ch-ask-greet h2 {
@@ -947,7 +947,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     width: calc(100% + 24px);
     min-height: 60px;
     margin-inline: -12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
@@ -998,13 +998,13 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
     margin-top: auto;
-    padding: 0 20px 10px;
+    padding: 0 20px 8px;
   }
   .ch-ask-sk__phgreet {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 0 0 22px;
+    gap: 8px;
+    padding: 0 0 24px;
   }
   .ch-ask-sk__phrows {
     margin: 0 0 12px;
@@ -1016,7 +1016,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 7px;
+    gap: 8px;
     min-height: 58px;
   }
   .ch-ask-sk__phrows li + li {
@@ -1059,7 +1059,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     padding: 16px 20px;
   }
   .ch-ask-nothing {
-    padding: 14px 0 0;
+    padding: 16px 0 0;
     border-radius: 0;
     background: none;
     box-shadow: inset 0 1px 0 var(--ch-ledger-rule-soft);

@@ -41,7 +41,7 @@
 }
 .ch-rcv-note {
   margin: 0;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
@@ -65,19 +65,19 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 18px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-shadow-sm);
 }
 .ch-rcv.is-phone .ch-rcv-card {
-  padding: 14px 16px;
+  padding: 16px 16px;
 }
 .ch-rcv-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-rcv-top h2 {
   min-width: 0;

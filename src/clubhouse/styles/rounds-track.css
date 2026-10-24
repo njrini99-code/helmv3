@@ -11,11 +11,11 @@
   flex-direction: column;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 18px 28px 24px;
+  padding: 16px 32px 24px;
   color: var(--ch-text-primary);
 }
 .ch-rt--empty {
-  padding: 60px 28px;
+  padding: 60px 32px;
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
@@ -43,7 +43,7 @@
   align-items: center;
   gap: 6px;
   height: 36px;
-  padding: 0 14px 0 10px;
+  padding: 0 16px 0 8px;
   border-radius: 999px;
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
@@ -51,7 +51,7 @@
   box-shadow: var(--ch-elevation-control);
 }
 .ch-rt-pill--card {
-  padding: 0 14px 0 12px;
+  padding: 0 16px 0 12px;
   color: var(--ch-green-700);
 }
 .ch-rt-pill__s {
@@ -107,8 +107,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 10px 0 0;
-  padding: 4px 10px;
+  margin: 8px 0 0;
+  padding: 4px 8px;
   border-radius: 999px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
@@ -128,9 +128,9 @@
 .ch-rt-strip {
   display: grid;
   grid-template-columns: repeat(var(--ch-rt-holes, 18), minmax(0, 1fr)) 64px;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  margin-top: 14px;
+  margin-top: 16px;
   padding: 6px;
   border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, #0e432b, var(--ch-green-800));
@@ -142,9 +142,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
-  padding: 5px 0 6px;
+  padding: 4px 0 6px;
   border-radius: var(--ch-radius-md);
 }
 button.ch-rt-strip__h {
@@ -228,7 +228,7 @@ button.ch-rt-strip__h {
 .ch-rt-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
-  gap: 18px;
+  gap: 16px;
   align-items: start;
   padding-top: 16px;
 }
@@ -237,9 +237,9 @@ button.ch-rt-strip__h {
   top: 16px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 170px;
-  gap: 18px;
+  gap: 16px;
   min-width: 0;
-  padding: 22px;
+  padding: 24px;
   border-radius: var(--ch-radius-xl);
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
@@ -520,7 +520,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border: 1px dashed rgb(28 25 18 / 0.14);
   background: transparent;
   box-shadow: none;
@@ -540,7 +540,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
 }
 .ch-rt-log__dots {
   flex: none;
@@ -590,7 +590,7 @@ button.ch-rt-strip__h {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-log__t b {
   font: var(--ch-type-14-strong);
@@ -619,7 +619,7 @@ button.ch-rt-strip__h {
 .ch-rt-log__r {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 12px;
   border-top: 1px solid rgb(28 25 18 / 0.06);
 }
@@ -668,7 +668,7 @@ button.ch-rt-strip__h {
   color: var(--ch-ink-600);
 }
 .ch-rt-log__r strong {
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: 999px;
   font: 700 calc(11 * var(--ch-type-k))/1 var(--ch-font-sans);
   background: var(--ch-warning-100);
@@ -688,11 +688,11 @@ button.ch-rt-strip__h {
 }
 .ch-rt-sec {
   min-width: 0;
-  padding: 14px 18px;
+  padding: 16px 16px;
   border-bottom: 1px solid rgb(28 25 18 / 0.07);
 }
 .ch-rt-card > .ch-rt-sec:first-child {
-  padding-top: 18px;
+  padding-top: 16px;
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
 }
 .ch-rt-sec.is-tint {
@@ -702,7 +702,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .ch-rt-sec__h > span,
 .ch-rt-sec__h > label {
@@ -741,7 +741,7 @@ button.ch-rt-strip__h {
 .ch-rt-sub > em,
 .ch-rt-sub > label {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -865,7 +865,7 @@ button.ch-rt-strip__h {
   all: unset;
   cursor: pointer;
   height: 44px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: 999px;
   font: var(--ch-type-13-medium);
   background: var(--ch-bg-surface);
@@ -882,14 +882,14 @@ button.ch-rt-strip__h {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ch-rt-dist input {
   all: unset;
   box-sizing: border-box;
   width: 120px;
   height: 58px;
-  padding: 0 14px;
+  padding: 0 16px;
   border-radius: var(--ch-radius-lg);
   text-align: right;
   font: 500 34px/58px var(--ch-font-sans);
@@ -937,7 +937,7 @@ button.ch-rt-strip__h {
   box-shadow: none;
 }
 .ch-rt-shotlen {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font: var(--ch-type-13);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
@@ -951,8 +951,8 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  margin: 10px 0 0;
+  gap: 4px 8px;
+  margin: 8px 0 0;
 }
 .ch-rt-tapin > .ch-btn {
   min-height: 44px;
@@ -975,8 +975,8 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 10px 0 0;
-  padding: 10px 12px;
+  margin: 8px 0 0;
+  padding: 8px 12px;
   border-radius: var(--ch-radius-lg);
   font: var(--ch-type-13-medium);
   background: var(--ch-green-50);
@@ -998,16 +998,16 @@ button.ch-rt-strip__h {
   color: var(--ch-danger-600);
 }
 .ch-rt-note--flat {
-  margin: 12px 18px 0;
+  margin: 12px 16px 0;
 }
 /* CH-11960 to CH-11962: CoachHelm's one-tap data prompts, first in the entry card. A question with Skip on its right (a
    44px target held inside the header's line), the chips, and one quiet line under them; never the card's primary. */
 .ch-rt-ask .ch-rt-sec__h > .ch-btn {
   min-height: 44px;
-  margin: -10px -8px -10px 0;
+  margin: -8px -8px -8px 0;
 }
 .ch-rt-ask__s {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   font: var(--ch-type-13);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
@@ -1018,7 +1018,7 @@ button.ch-rt-strip__h {
 /* In the Round complete sheet: a quiet inset under the card, not a section of the entry. */
 .ch-rt-sec.ch-rt-ask--sheet {
   margin: 16px 0 0;
-  padding: 14px 16px;
+  padding: 16px 16px;
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-subtle);
@@ -1040,7 +1040,7 @@ button.ch-rt-strip__h {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  margin: 12px 18px 0;
+  margin: 12px 16px 0;
   padding: 12px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-warning-100);
@@ -1051,7 +1051,7 @@ button.ch-rt-strip__h {
   flex: 1 1 100%;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-confirm b {
   font: var(--ch-type-14-strong);
@@ -1076,7 +1076,7 @@ button.ch-rt-strip__h {
   bottom: 0;
   z-index: 1;
   margin-top: auto;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
   background: rgb(253 252 248 / 0.92);
   -webkit-backdrop-filter: blur(var(--ch-glass-blur));
@@ -1141,7 +1141,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 18px 18px 10px;
+  padding: 16px 16px 8px;
 }
 .ch-rt-review__h b {
   font: var(--ch-type-16-strong);
@@ -1167,7 +1167,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 12px;
   min-height: 56px;
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-top: 1px solid rgb(28 25 18 / 0.07);
   color: var(--ch-text-tertiary);
 }
@@ -1191,7 +1191,7 @@ button.ch-rt-strip__h {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-rs__b b {
   font: var(--ch-type-14-strong);
@@ -1206,7 +1206,7 @@ button.ch-rt-strip__h {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
-  padding: 14px;
+  padding: 16px;
   border-top: 1px solid rgb(28 25 18 / 0.08);
 }
 .ch-rt-review__f .ch-btn--primary {
@@ -1220,7 +1220,7 @@ button.ch-rt-strip__h {
   gap: 6px;
 }
 .ch-rt-opts + .ch-rt-opts {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .ch-rt-opts__k {
   margin: 0 0 2px;
@@ -1235,7 +1235,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-0);
   box-shadow: var(--ch-elevation-control);
@@ -1243,7 +1243,7 @@ button.ch-rt-strip__h {
 .ch-rt-opt > span:last-child {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-opt b {
   font: var(--ch-type-14-strong);
@@ -1272,7 +1272,7 @@ button.ch-rt-strip__h {
   flex-direction: column;
 }
 .ch-rt-edit .ch-rt-sub + .ch-rt-sub {
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .ch-rt-delq {
   margin: 0;
@@ -1290,8 +1290,8 @@ button.ch-rt-strip__h {
 .ch-rt-exitc {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  gap: 16px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
@@ -1300,7 +1300,7 @@ button.ch-rt-strip__h {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-exitc b {
   display: block;
@@ -1358,7 +1358,7 @@ button.ch-rt-strip__h {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 14px;
+  margin-top: 16px;
 }
 .ch-rt-xopt {
   all: unset;
@@ -1367,7 +1367,7 @@ button.ch-rt-strip__h {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px;
+  padding: 16px;
   border-radius: var(--ch-radius-lg);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
@@ -1376,7 +1376,7 @@ button.ch-rt-strip__h {
 .ch-rt-xopt > span {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ch-rt-xopt b {
   font: var(--ch-type-15-strong);
@@ -1418,7 +1418,7 @@ button.ch-rt-strip__h {
 .ch-rt-mcw {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   overflow-x: auto;
 }
 /* Even hole columns between a fixed label column and a fixed Tot. When the card is wider than its sheet (a phone),
@@ -1521,10 +1521,10 @@ button.ch-rt-strip__h {
 .ch-rt-sum {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 18px;
+  gap: 16px;
   align-items: center;
-  margin-bottom: 14px;
-  padding: 16px 18px;
+  margin-bottom: 16px;
+  padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   color: var(--ch-on-fill-100);
   background: radial-gradient(120% 140% at 100% 0%, rgb(123 199 154 / 0.18), transparent 60%), var(--ch-green-800);
@@ -1559,7 +1559,7 @@ button.ch-rt-strip__h {
 .ch-rt-sum__f {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px 18px;
+  gap: 12px 16px;
   margin: 0;
 }
 .ch-rt-sum__f dt {
@@ -1568,7 +1568,7 @@ button.ch-rt-strip__h {
   color: rgb(244 241 232 / 0.62);
 }
 .ch-rt-sum__f dd {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   font: var(--ch-type-20-medium);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
@@ -1611,7 +1611,7 @@ button.ch-rt-strip__h {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 28px 24px 24px;
+  padding: 32px 24px 24px;
   border-radius: 24px;
   text-align: center;
   background: var(--ch-green-800);
@@ -1672,8 +1672,8 @@ button.ch-rt-strip__h {
   .ch-rt-hero {
     position: static;
     grid-template-columns: minmax(0, 1fr) 96px;
-    gap: 14px;
-    padding: 16px 18px;
+    gap: 16px;
+    padding: 16px 16px;
   }
   .ch-rt-hero__map {
     width: 96px;
@@ -1692,7 +1692,7 @@ button.ch-rt-strip__h {
   .ch-rt-review__f {
     position: sticky;
     bottom: 0;
-    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
     border-radius: 0 0 26px 26px;
     background: rgb(244 242 234 / 0.96);
   }
@@ -1983,7 +1983,7 @@ button.ch-rt-strip__h {
   gap: 8px;
   min-width: 0;
   margin: 0;
-  padding: 0 14px;
+  padding: 0 16px;
   white-space: nowrap;
 }
 .ch-rtcv__t b {
@@ -2034,7 +2034,7 @@ button.ch-rt-strip__h {
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   max-height: 46%;
   min-height: 236px;
   box-sizing: border-box;
@@ -2071,7 +2071,7 @@ button.ch-rt-strip__h {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 10px;
+  column-gap: 8px;
   min-height: 44px;
   border-bottom: 1px solid var(--ch-ivory-300);
 }
@@ -2146,7 +2146,7 @@ button.ch-rt-strip__h {
   }
   .ch-rt-pill {
     height: 44px;
-    padding: 0 14px 0 12px;
+    padding: 0 16px 0 12px;
     border-radius: 22px;
     font: var(--ch-type-14-strong);
     line-height: var(--ch-lead-tight);
@@ -2155,7 +2155,7 @@ button.ch-rt-strip__h {
     box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
   }
   .ch-rt-pill--card {
-    padding: 0 14px 0 12px;
+    padding: 0 16px 0 12px;
     color: var(--ch-on-green-ink);
   }
   .ch-rt-pill--card .ch-rt-pill__l {
@@ -2208,8 +2208,8 @@ button.ch-rt-strip__h {
     align-self: flex-end;
     align-items: flex-start;
     justify-content: flex-end;
-    gap: 5px;
-    margin: 0 0 3px;
+    gap: 4px;
+    margin: 0 0 4px;
     white-space: nowrap;
     padding: 0;
     border-radius: 0;
@@ -2384,7 +2384,7 @@ button.ch-rt-strip__h {
     flex: 1;
     align-items: stretch;
     gap: 0;
-    padding-top: 10px;
+    padding-top: 8px;
   }
   /* The hero takes whatever height the entry leaves, so the entry sheet always sits on the dock (board 3). The drawn
      hole, its readout and the shot log sit centred in that green field (owner, 2026-10-08: "center this, way too much
@@ -2432,7 +2432,7 @@ button.ch-rt-strip__h {
     grid-area: stage;
     justify-content: space-between;
     gap: 12px;
-    padding: 8px 20px 10px;
+    padding: 8px 20px 8px;
     text-shadow: var(--ch-on-green-text-shadow-s);
     pointer-events: none;
   }
@@ -2608,7 +2608,7 @@ button.ch-rt-strip__h {
      bottom in every state (a short card before a result, the proximity row after, putting details, the holed review). */
   .ch-rt-panel {
     flex: none;
-    margin-top: 10px;
+    margin-top: 8px;
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -2616,7 +2616,7 @@ button.ch-rt-strip__h {
   .ch-rt-card {
     display: flex;
     flex-direction: column;
-    padding: 14px 14px 12px;
+    padding: 16px 16px 12px;
     border-radius: var(--ch-radius-card);
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
@@ -2697,7 +2697,7 @@ button.ch-rt-strip__h {
     background: var(--ch-ivory-150);
   }
   .ch-rt-dist {
-    gap: 8px 10px;
+    gap: 8px 8px;
   }
   .ch-rt-dist input {
     width: 112px;
@@ -2723,7 +2723,7 @@ button.ch-rt-strip__h {
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    gap: 5px;
+    gap: 4px;
     width: 100%;
     margin-left: 0;
   }
@@ -2796,7 +2796,7 @@ button.ch-rt-strip__h {
   .ch-rt-bar__i {
     width: 60px;
     height: 56px;
-    gap: 3px;
+    gap: 4px;
     border-radius: var(--ch-radius-xl);
     font: var(--ch-type-12-strong);
     line-height: var(--ch-lead-tight);
