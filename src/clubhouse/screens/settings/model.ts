@@ -205,21 +205,21 @@ export interface ChProblem {
 const problem = (code: string, text: string, field?: string): ChProblem => (field ? { code, text, field } : { code, text });
 
 export function profileProblem(role: 'coach' | 'player', p: { fullName: string; firstName: string; lastName: string }): ChProblem | null {
-  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.');
-  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.');
+  if (role === 'coach') return p.fullName.trim() ? null : problem('CH-8101', 'Add your name.', 'set-fullname');
+  return p.firstName.trim() && p.lastName.trim() ? null : problem('CH-8102', 'Add your first and last name.', p.firstName.trim() ? 'set-last' : 'set-first');
 }
 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
-  if (!current) return problem('CH-8105', 'Enter your current password.');
-  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.');
-  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.");
+  if (!current) return problem('CH-8105', 'Enter your current password.', 'set-pw-cur');
+  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.', 'set-pw-new');
+  if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.", 'set-pw-confirm');
   return null;
 }
 
 export function emailProblem(next: string, current: string | null): ChProblem | null {
   const v = next.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.');
-  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return problem('CH-8103', 'Enter a valid email address.', 'set-newemail');
+  if (current && v.toLowerCase() === current.toLowerCase()) return problem('CH-8104', 'That is already your email.', 'set-newemail');
   return null;
 }
 

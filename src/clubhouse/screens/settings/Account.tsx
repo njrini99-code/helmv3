@@ -11,7 +11,7 @@ import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
 import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, type ChSettingsData, type ChSettingsWrites } from './model';
 import { SAVE_COPY, useAvatarUpload, useDeleteAccount, useReportProblem, useSignOut } from './hooks';
-import { Card, Field, ReadFailed, Row, useDraft, useReportDirty, useSaveAction } from './parts';
+import { Card, Field, focusProblemField, ReadFailed, Row, useDraft, useReportDirty, useSaveAction } from './parts';
 
 export function AccountSection({ data, writes, onDeleted }: { data: ChSettingsData; writes: ChSettingsWrites; onDeleted: () => void }) {
   return (
@@ -150,6 +150,7 @@ function EmailCard({ email, writes }: { email: string | null; writes: ChSettings
           setTouched(true);
           if (problem || !next.trim()) {
             haptic('warning');
+            focusProblemField(problem);
             return;
           }
           void send.run(next.trim());
@@ -198,6 +199,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
     setChangedAt(Date.now());
   });
   const problem = passwordProblem(cur, next, confirm);
+  const pwErrorAt = (id: string) => (tried && problem?.field === id ? problem : null);
   return (
     <Card
       id="set-password"
@@ -215,6 +217,7 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
           setTried(true);
           if (problem) {
             haptic('warning');
+            focusProblemField(problem);
             return;
           }
           void change.run(cur, next);
@@ -222,9 +225,10 @@ function PasswordCard({ writes, hasEmail }: { writes: ChSettingsWrites; hasEmail
       }}
     >
       <div className="ch-set-grid">
-        <Field id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" span={2} value={cur} onChange={(e) => setCur(e.target.value)} />
-        <Field id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." value={next} onChange={(e) => setNext(e.target.value)} />
-        <Field id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+        {/* The field a refused save's problem names says it too, as the save bar does (as Team's fields do). */}
+        <Field id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" span={2} error={pwErrorAt('set-pw-cur')} value={cur} onChange={(e) => setCur(e.target.value)} />
+        <Field id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="At least 8 characters." error={pwErrorAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
+        <Field id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" error={pwErrorAt('set-pw-confirm')} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       </div>
     </Card>
   );
