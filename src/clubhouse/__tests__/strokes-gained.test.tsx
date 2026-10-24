@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -212,6 +212,20 @@ describe('bar scale', () => {
     showPlayer(player({ viewer: 'coach', id: 'p9' }));
     const link = screen.getByRole('link', { name: /CoachHelm/ });
     expect(link.getAttribute('href')).toContain('coachhelm?player=p9');
+  });
+
+  it('desktop player: a new window glides the same leg bars to their new lengths (row 5, B9); the figure beside them changes at once', async () => {
+    const win = (approach: number) => ({ ...PREVIEW_PLAYER.win, sgLegs: { tee: 0.3, approach, around: 0.1, putting: -1.9 } });
+    const view = showPlayer(player({ win: win(-2.6) }));
+    const bar = () => document.querySelectorAll<HTMLElement>('.ch-lb__bar')[1]!;
+    const before = bar();
+    const was = parseFloat(before.style.width);
+    view.rerender(shell(<StatsPlayer data={player({ win: win(-1.0) })} coachId="c1" />));
+    // The page kept the chart (no remount on a window change), so the bar starts where it was; it ends on the new scale (2).
+    expect(bar()).toBe(before);
+    expect(parseFloat(bar().style.width)).toBeCloseTo(was, 5);
+    expect(document.querySelectorAll('.ch-lb__v')[1]!.textContent).toBe('−1.0');
+    await waitFor(() => expect(parseFloat(bar().style.width)).toBeCloseTo((1.0 / 2) * 50, 1), { timeout: 2000 });
   });
 
   it('desktop player: the leg bars draw a −2.6 leg at 2.6 of 3 on one scale from the zero line, not clamped at 1.4', () => {
