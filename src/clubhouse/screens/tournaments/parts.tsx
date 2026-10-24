@@ -4,6 +4,8 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useChPhone } from '../../lib/use-phone';
+import { PhoneTop } from '../../shell/phone-chrome';
 import { Icon } from '../../ui/Icon';
 import { PageIntro } from '../../ui/Ledger';
 import { Segmented } from '../../ui/Segmented';
@@ -18,6 +20,26 @@ import '../../styles/tournaments.css';
  * head, the Events / Compare / History switch, the loading and failed page states, the crumb back to the season, and the
  * small marks (chips, coverage, a to-par that is red only under par).
  */
+
+/** The layout a view draws: the prop when a caller forces one (a test, the preview), else the viewport's. */
+export function useTourPhone(forced?: boolean): boolean {
+  const auto = useChPhone();
+  return forced ?? auto;
+}
+
+/**
+ * The phone's top bar. A root (Events, Compare, History) is the section's name at the left; a pushed page (an event)
+ * goes back to the season. Desktop ignores it.
+ */
+export function TourPhoneTop({ phone, title, back }: { phone: boolean; title: string; back?: { label: string; href: string } }) {
+  const router = useRouter();
+  if (!phone) return null;
+  return back ? (
+    <PhoneTop heading={false} title={title} back={{ label: back.label, onBack: () => router.push(back.href) }} />
+  ) : (
+    <PhoneTop heading={false} start title={title} />
+  );
+}
 
 export type ChTourView = 'home' | 'desk' | 'review' | 'history' | 'links' | 'compare' | 'lineup' | 'form' | 'live' | 'player';
 

@@ -4,10 +4,12 @@
  * Dates are the team's `yyyy-mm-dd`, read at noon so a server render and its hydration land on the same day whatever
  * the machine's zone. "Today" is always the view's `data.now`, never the clock.
  */
-import { formatToPar, MINUS, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar, MINUS, NO_DATA } from '../../lib/format';
 import type { ChTourEvent, ChTourRecord, TourFormat } from './types';
+import { formatPct } from './standings';
 
-export { formatToPar, MINUS, NO_DATA };
+/** The kit's number formatters, re-exported so a view takes every figure from here (no `.toFixed(` in a view). */
+export { formatFixed, formatPct, formatSigned, formatToPar, MINUS, NO_DATA };
 
 const at = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00`);
 
@@ -56,6 +58,14 @@ export function holesLabel(e: Pick<ChTourEvent, 'rounds' | 'format'>): string {
   return `${e.rounds.length * e.format.holes} holes`;
 }
 
+/** "stroke play" or "match play": the words the event line uses for how the event is scored. */
+export function playLabel(f: TourFormat): string {
+  return f.kind === 'match' || f.kind === 'medal_match' ? 'match play' : 'stroke play';
+}
+
+/** Whether a team score is made of counting scores (the 5-count-4 family), so "each round" belongs after it. */
+export const countsEachRound = (f: TourFormat) => f.kind !== 'individual' && f.kind !== 'match' && f.kind !== 'medal_match';
+
 /** "5 count 4", or the format's own words where nobody counts. */
 export function countLabel(f: TourFormat): string {
   if (f.kind === 'individual') return 'Individuals only';
@@ -72,21 +82,6 @@ export function countShort(f: TourFormat): string {
 /** "3–1–0". */
 export function recordText(r: ChTourRecord): string {
   return `${r.w}–${r.l}–${r.t}`;
-}
-
-/** ".625", "1.000", or no data. */
-export function pctText(pct: number | null): string {
-  if (pct == null) return NO_DATA;
-  const s = pct.toFixed(3);
-  return s.startsWith('0') ? s.slice(1) : s;
-}
-
-/** A signed one-decimal figure with the true minus: "+0.9", "−1.4", "0.0". */
-export function signed1(v: number | null | undefined): string {
-  if (v == null || Number.isNaN(v)) return NO_DATA;
-  const r = Math.round(v * 10) / 10;
-  if (r === 0) return '0.0';
-  return `${r > 0 ? '+' : MINUS}${Math.abs(r).toFixed(1)}`;
 }
 
 /** First names, joined: "Theo, Sofia, Ava". */

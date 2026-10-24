@@ -9,7 +9,7 @@ ten. The split it kept still holds, so the files stay separable:
 
 | View | File | Sheet | Class prefix | Catalog serials |
 | --- | --- | --- | --- | --- |
-| shared pieces | `parts.tsx`, `paths.tsx`, `format.ts` | `tournaments.css` | `.ch-tour-` | 01–09 |
+| shared pieces | `parts.tsx`, `paths.tsx`, `format.ts`, `SeasonLedger.tsx` (Home and History) | `tournaments.css` | `.ch-tour-` | 01–09 |
 | season home | `TournamentsHome.tsx` | `tournaments-home.css` | `.ch-tour-home-` | 10–19 |
 | event desk, who counted, holes, evidence drawer | `EventDesk.tsx` | `tournaments-desk.css` | `.ch-tour-desk-` | 20–34 |
 | review, history, link inbox | `Review.tsx`, `History.tsx`, `LinkInbox.tsx` | `tournaments-review.css` | `.ch-tour-rev-` | 35–44 |

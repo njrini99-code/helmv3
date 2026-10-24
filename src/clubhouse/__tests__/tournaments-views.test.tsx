@@ -20,9 +20,9 @@ afterEach(cleanup);
 
 /**
  * Every Tournaments view keeps its final props contract from the start (README.md), and draws the page states the
- * real view keeps: loading CH-16401, the page's one read failed CH-16201, and, until its lane builds it, the honest
- * "isn't built yet" CH-16301. A lane that replaces a placeholder keeps CH-16401 and CH-16201 (or retires them in the
- * catalog) and updates its row here.
+ * real view keeps: loading CH-16401, the page's one read failed CH-16201, and, until it is built, the honest "isn't
+ * built yet" CH-16301. A built view moves from PLACEHOLDERS to BUILT in the commit that builds it, where the page
+ * states stay and CH-16301 must be gone (its own file, tournaments-<view>.test.tsx, tests its content).
  */
 const f = tourFixture('ready');
 const VIEWS: Array<[string, (load: ChTourLoad) => ReactElement]> = [
@@ -38,8 +38,32 @@ const VIEWS: Array<[string, (load: ChTourLoad) => ReactElement]> = [
   ['player', (load) => <PlayerEvent data={f.player.events.e33!} load={load} />],
 ];
 
+const BUILT = new Set(['home']);
+const BUILT_VIEWS = VIEWS.filter(([v]) => BUILT.has(v));
+const PLACEHOLDERS = VIEWS.filter(([v]) => !BUILT.has(v));
+
+describe('Tournaments views (built)', () => {
+  it.each(BUILT_VIEWS)('%s draws its loading (CH-16401) and failed (CH-16201) states and is no longer a placeholder', (view, draw) => {
+    const loading = render(draw('loading')).container;
+    const main = loading.querySelector(`[data-ch-tour-view="${view}"]`);
+    expect(main).toHaveAttribute('data-ch-code', 'CH-16401');
+    expect(main).toHaveAttribute('aria-busy', 'true');
+    cleanup();
+
+    const failed = render(draw('failed')).container;
+    const alert = failed.querySelector('[data-ch-code="CH-16201"]');
+    expect(alert).toHaveAttribute('role', 'alert');
+    expect(alert?.textContent).toContain('Tournaments didn’t load');
+    cleanup();
+
+    const ready = render(draw('ready')).container;
+    expect(ready.querySelector(`[data-ch-tour-view="${view}"] h1`)).not.toBeNull();
+    expect(ready.querySelector('[data-ch-code="CH-16301"]')).toBeNull();
+  });
+});
+
 describe('Tournaments views (base placeholders)', () => {
-  it.each(VIEWS)('%s draws its loading (CH-16401), failed (CH-16201) and not-built (CH-16301) states', (view, draw) => {
+  it.each(PLACEHOLDERS)('%s draws its loading (CH-16401), failed (CH-16201) and not-built (CH-16301) states', (view, draw) => {
     const loading = render(draw('loading')).container;
     const main = loading.querySelector(`[data-ch-tour-view="${view}"]`);
     expect(main).toHaveAttribute('data-ch-code', 'CH-16401');

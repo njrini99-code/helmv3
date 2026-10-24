@@ -19224,6 +19224,39 @@
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },
   {
+    "id": 160402,
+    "page": "P016",
+    "category": 4,
+    "item": 2,
+    "name": "HOME_NO_EVENT_IN_THE_SEASON_NOTHING",
+    "chCode": "CH-16310",
+    "meaning": "Home: no event in the season, nothing failed",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160403,
+    "page": "P016",
+    "category": 4,
+    "item": 3,
+    "name": "THE_SEASON_LEDGER_THE_SEASON_HAS_NO",
+    "chCode": "CH-16311",
+    "meaning": "The season ledger (Home, History): the season has no finished event yet",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160404,
+    "page": "P016",
+    "category": 4,
+    "item": 4,
+    "name": "HOME_NO_EVENT_IS_UPCOMING_OR_LIVE",
+    "chCode": "CH-16312",
+    "meaning": "Home: no event is upcoming or live",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
     "id": 160601,
     "page": "P016",
     "category": 6,
@@ -19231,6 +19264,17 @@
     "name": "A_TOURNAMENTS_VIEWS_ONE_READ_FAILS",
     "chCode": "CH-16201",
     "meaning": "A Tournaments view's one read fails (any view; `load: 'failed'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160602,
+    "page": "P016",
+    "category": 6,
+    "item": 2,
+    "name": "HOME_THE_EVENTS_READ_FAILS_WHILE_THE",
+    "chCode": "CH-16210",
+    "meaning": "Home: the events read fails while the page itself loads (`errors.events`)",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/tournaments.md"
   },

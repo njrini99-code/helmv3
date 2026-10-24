@@ -37,6 +37,9 @@ Until a lane builds its view, the view says so honestly (CH-16301, preview only)
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 160401 | CH-16301 | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
+| 160402 | CH-16310 | `HOME_NO_EVENT_IN_THE_SEASON_NOTHING` | Home: no event in the season, nothing failed |
+| 160403 | CH-16311 | `THE_SEASON_LEDGER_THE_SEASON_HAS_NO` | The season ledger (Home, History): the season has no finished event yet |
+| 160404 | CH-16312 | `HOME_NO_EVENT_IS_UPCOMING_OR_LIVE` | Home: no event is upcoming or live |
 
 ## 05 — Validation
 
@@ -51,6 +54,7 @@ A view whose one read failed draws its head and "Tournaments didn’t load" with
 | Bridge ID | Code | Name | Meaning |
 | --- | --- | --- | --- |
 | 160601 | CH-16201 | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | A Tournaments view's one read fails (any view; `load: 'failed'`) |
+| 160602 | CH-16210 | `HOME_THE_EVENTS_READ_FAILS_WHILE_THE` | Home: the events read fails while the page itself loads (`errors.events`) |
 
 ## 07 — Network / offline
 
