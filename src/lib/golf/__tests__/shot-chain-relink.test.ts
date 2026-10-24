@@ -208,15 +208,33 @@ describe('relinkAfterEdit', () => {
     expect(out[3]).toMatchObject({ lieBefore: 'rough', distanceToHoleBefore: 160 });
   });
 
-  it('turns a putt that now starts off the green into an approach', () => {
+  it('turns a putt that now starts just off the green into an around-the-green shot', () => {
     const before = PAR4();
+    const putt = { ...before[2]!, clubType: 'putter' as const, puttBreak: 'left_to_right' as const, puttSlope: 'uphill' as const };
     const edited = { ...before[1]!, result: 'rough' as const, distanceToHoleAfter: 10, distanceUnitAfter: 'yards' as const };
 
-    const { history: out, changed } = relinkAfterEdit([before[0]!, edited, before[2]!], 1, before[1]!);
+    const { history: out, changed } = relinkAfterEdit([before[0]!, edited, putt], 1, before[1]!);
 
     expect(changed).toEqual([2]);
-    expect(out[2]).toMatchObject({ shotType: 'approach', lieBefore: 'rough', distanceToHoleBefore: 10, distanceUnitBefore: 'yards' });
+    expect(out[2]).toMatchObject({
+      shotType: 'around_green',
+      clubType: 'non_driver',
+      lieBefore: 'rough',
+      distanceToHoleBefore: 10,
+      distanceUnitBefore: 'yards',
+    });
     expect(out[2]!.puttDistanceFeet).toBeUndefined();
+    expect(out[2]!.puttBreak).toBeUndefined();
+    expect(out[2]!.puttSlope).toBeUndefined();
+  });
+
+  it('turns a putt that now starts 50 yd or more out into an approach', () => {
+    const before = PAR4();
+    const edited = { ...before[1]!, result: 'rough' as const, distanceToHoleAfter: 60, distanceUnitAfter: 'yards' as const };
+
+    const { history: out } = relinkAfterEdit([before[0]!, edited, before[2]!], 1, before[1]!);
+
+    expect(out[2]).toMatchObject({ shotType: 'approach', lieBefore: 'rough', distanceToHoleBefore: 60 });
   });
 
   it('changes nothing around an edit that keeps the shot\'s start and end', () => {

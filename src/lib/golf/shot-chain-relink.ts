@@ -85,10 +85,15 @@ function placePenalty(row: ShotRecord, spot: Spot): ShotRecord {
   };
 }
 
+/** Live entry files a shot from inside this distance as around-the-green (use-shot-state-machine). */
+const AROUND_GREEN_THRESHOLD_YARDS = 50;
+
 /**
  * Start a real shot at `spot`, keeping a recovery lie the player chose ('other'
  * after rough). A putt whose start is now off the green becomes what live entry
- * writes for a shot from there (an approach), without its putt-only fields.
+ * writes for a shot from there: around the green inside 50 yd, an approach from
+ * farther (use-shot-state-machine's split), hit with a non-driver, and without
+ * its putt-only fields.
  */
 function startShotAt(shot: ShotRecord, spot: Spot, previousLieAfter: string | null): ShotRecord {
   const keepLie = previousLieAfter !== null && liesChain(previousLieAfter, shot.lieBefore);
@@ -99,8 +104,19 @@ function startShotAt(shot: ShotRecord, spot: Spot, previousLieAfter: string | nu
     distanceUnitBefore: spot.unit,
   };
   if (moved.shotType === 'putting' && moved.lieBefore !== 'green') {
-    const { puttDistanceFeet: _feet, puttMissTags: _tags, ...rest } = moved;
-    moved = { ...rest, shotType: 'approach' };
+    const {
+      puttDistanceFeet: _feet,
+      puttMissTags: _tags,
+      puttBreak: _break,
+      puttSlope: _slope,
+      ...rest
+    } = moved;
+    const yards = spot.unit === 'feet' ? spot.distance / 3 : spot.distance;
+    moved = {
+      ...rest,
+      shotType: yards < AROUND_GREEN_THRESHOLD_YARDS ? 'around_green' : 'approach',
+      clubType: 'non_driver',
+    };
   }
   if (moved.shotType === 'putting') {
     const feet = spot.unit === 'yards' ? spot.distance * 3 : spot.distance;
