@@ -15715,6 +15715,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-ink-press",
+          "value": "color-mix(in oklab, var(--ch-ink-900) 82%, var(--ch-bg-surface))",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-ledger-avatar-ring",
           "value": "0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4)",
           "scope": "[data-ui='clubhouse']"

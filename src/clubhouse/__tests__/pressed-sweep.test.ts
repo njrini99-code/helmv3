@@ -52,9 +52,10 @@ describe('the pressed state (B6)', () => {
         if (!/:active(?![\w-])/.test(sel)) return;
         active += 1;
         let hover = false;
-        for (let p = rule.parent; p; p = p.parent) if (p.type === 'atrule' && (p as postcss.AtRule).name === 'media' && /hover:\s*hover/.test((p as postcss.AtRule).params)) hover = true;
+        for (let p: postcss.Node | undefined = rule.parent; p; p = p.parent) {
+          if (p.type === 'atrule' && (p as postcss.AtRule).name === 'media' && /hover:\s*hover/.test((p as postcss.AtRule).params)) hover = true;
+        }
         if (!hover) off.push(`${f}: ${rule.selector}`);
-        // The touch half: the same selector with the controller's mark in place of :active.
         // The touch half sits just before the hover query: the same selectors with the controller's mark, drawing the same.
         const twin = rule.parent?.type === 'atrule' ? rule.parent.prev() : undefined;
         for (const s of rule.selectors.filter((x) => /:active(?![\w-])/.test(x))) {

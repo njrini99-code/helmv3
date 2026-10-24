@@ -41,9 +41,7 @@ for (const file of positionals) {
     const inner = body.replace(/\n/g, '\n  ');
     edits.push([start, end, `${head.split(BOTH).join('[data-ch-pressed]')}${body}\n${indent}@media (hover: hover) {\n${indent}  ${copy} ${inner}\n${indent}}`]);
   });
-  for (const [a, b, t] of edits.sort((x, y) => y[0] - x[0])) {
-    if (!values.apply) console.log(`${file}: ${src.slice(a, src.indexOf('{', a)).trim().split('\n').pop()}`);
-  }
+  if (!values.apply) for (const [a] of edits) console.log(`${file}: ${src.slice(a, src.indexOf('{', a)).trim().split('\n').pop()}`);
   let out = src;
   for (const [a, b, t] of edits.sort((x, y) => y[0] - x[0])) out = out.slice(0, a) + t + out.slice(b);
   console.log(`${file}: ${edits.length} pressed rules split${values.apply ? '' : ' (dry run; pass --apply)'}`);
