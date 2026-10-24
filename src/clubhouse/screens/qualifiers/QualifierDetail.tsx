@@ -488,7 +488,7 @@ function Leaderboard({
                       <Pos position={r.position} tied={r.tied} move={r.move} />
                     </span>
                     <span role="rowheader" className="ch-qf-who">
-                      <Avatar name={r.name} size={38} />
+                      <Avatar name={r.name} id={r.playerId} size={38} />
                       <span>
                         {coach ? (
                           // P003-C1: resting on a name shows the player's card; the row still opens the scorecards.
@@ -566,7 +566,7 @@ function Leaderboard({
                 <Pos position={null} tied={false} move={null} />
               </span>
               <span role="rowheader" className="ch-qf-who">
-                <Avatar name={r.name} size={32} />
+                <Avatar name={r.name} id={r.playerId} size={32} />
                 <span>
                   <b>
                     {r.name}

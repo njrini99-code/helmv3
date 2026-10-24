@@ -127,7 +127,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
           {squad.map((s, i) => (
             <li key={s.playerId}>
               <span className="ch-qf-list__n">{i + 1}</span>
-              <Avatar name={s.name} size={26} />
+              <Avatar name={s.name} id={s.playerId} size={26} />
               <b>{s.name}</b>
               {s.type === 'coach_pick' && <Badge tone="accent">Pick</Badge>}
             </li>
@@ -162,7 +162,7 @@ export function Selections({ data, status, topScore }: { data: ChQDetailCore; st
             {qualifying.map((r, i) => (
               <li key={r.playerId}>
                 <span className="ch-qf-list__n">{i + 1}</span>
-                <Avatar name={r.name} size={26} />
+                <Avatar name={r.name} id={r.playerId} size={26} />
                 <b>{r.name}</b>
                 <ToPar value={r.toPar} />
               </li>

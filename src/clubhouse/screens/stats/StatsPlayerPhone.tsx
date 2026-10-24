@@ -152,7 +152,7 @@ export function StatsPlayerPhone({
       )}
 
       <header className="ch-spm-head">
-        <Avatar name={data.name} size={48} />
+        <Avatar name={data.name} id={data.id} size={48} />
         <span className="ch-spm-head__id">
           <LargeTitle>{data.name}</LargeTitle>
           <p className="ch-num">
