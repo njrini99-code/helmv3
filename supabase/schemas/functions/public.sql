@@ -9610,18 +9610,29 @@ ALTER FUNCTION "public"."select_stalest_teams"("p_limit" integer) OWNER TO "post
 -- Clubhouse A+ rows 104/105/121 (2026-10-24, held): 20261024150000 and 20261024151000.
 CREATE OR REPLACE FUNCTION public.clear_dirty_standing_teams(p_team_ids uuid[], p_marked_ats timestamptz[])
   RETURNS integer
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path = pg_catalog, public
 AS $$
-  WITH cleared AS (
-    DELETE FROM public.golf_standing_refresh_queue q
-     USING unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at)
-     WHERE q.team_id = seen.team_id
-       AND q.marked_at <= seen.marked_at
-    RETURNING 1
-  )
-  SELECT count(*)::integer FROM cleared;
+DECLARE
+  v_cleared integer;
+BEGIN
+  -- Lock the rows first, in team order (the mark's order), so a clear and a
+  -- mark on overlapping teams cannot lock them in opposite orders.
+  PERFORM 1
+     FROM public.golf_standing_refresh_queue q
+     JOIN unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at) ON seen.team_id = q.team_id
+    WHERE q.marked_at <= seen.marked_at
+    ORDER BY q.team_id
+      FOR UPDATE OF q;
+
+  DELETE FROM public.golf_standing_refresh_queue q
+   USING unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at)
+   WHERE q.team_id = seen.team_id
+     AND q.marked_at <= seen.marked_at;
+  GET DIAGNOSTICS v_cleared = ROW_COUNT;
+  RETURN v_cleared;
+END;
 $$;
 
 ALTER FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) OWNER TO "postgres";
@@ -9666,7 +9677,7 @@ AS $$
     SELECT DISTINCT tm.team_id
       FROM public.golf_team_members tm
      WHERE tm.player_id = p_player_id
-       AND tm.status = 'active'::team_member_status
+       AND tm.status = 'active'::public.team_member_status
   ),
   marked AS (
     INSERT INTO public.golf_standing_refresh_queue AS q (team_id)
@@ -9705,19 +9716,26 @@ BEGIN
 
   RETURN QUERY
   WITH
-  zones AS (
+  -- golf_season_start reads pg_timezone_names (tens to hundreds of ms a
+  -- call), so it runs once per distinct zone and once for the default, never
+  -- per member (MATERIALIZED, so neither is inlined and re-run per row).
+  zones AS MATERIALIZED (
     SELECT tz.timezone, public.golf_season_start(tz.timezone) AS season_start
       FROM (SELECT DISTINCT s.timezone FROM public.golf_team_settings s) tz
+  ),
+  default_start AS MATERIALIZED (
+    SELECT public.golf_season_start('America/New_York') AS d
   ),
   -- Every active membership app-wide: the cohort is app-wide.
   members AS (
     SELECT tm.player_id, tm.team_id, COALESCE(t.gender, 'mens') AS gender,
-           COALESCE(z.season_start, public.golf_season_start(NULL::text)) AS season_start
+           COALESCE(z.season_start, ds.d) AS season_start
       FROM public.golf_team_members tm
       JOIN public.golf_teams t ON t.id = tm.team_id
+      CROSS JOIN default_start ds
       LEFT JOIN public.golf_team_settings s ON s.team_id = tm.team_id
       LEFT JOIN zones z ON z.timezone IS NOT DISTINCT FROM s.timezone
-     WHERE tm.status = 'active'::team_member_status
+     WHERE tm.status = 'active'::public.team_member_status
   ),
   player_season AS (
     SELECT m.player_id, MIN(m.season_start) AS season_start
@@ -9985,16 +10003,28 @@ BEGIN
    GROUP BY u.metric_id
    ORDER BY u.metric_id;
 
-  -- The chunk's players' rows this run did not rewrite: under a floor now, or
-  -- last season's. now() is this transaction's start, so every row written
-  -- above carries it.
+  -- The chunk's players' rows this run did not rewrite: under a floor now,
+  -- last season's, or a member who is no longer active on any team. now() is
+  -- this transaction's start, so every row written above carries it. A
+  -- player inactive here but active on a team outside the chunk keeps their
+  -- rows (that team's run writes them).
   DELETE FROM public.golf_player_standing_season s
    WHERE s.computed_at < now()
-     AND s.player_id IN (
-       SELECT tm.player_id
-         FROM public.golf_team_members tm
-        WHERE tm.team_id = ANY (p_team_ids)
-          AND tm.status = 'active'::team_member_status
+     AND (
+       s.player_id IN (
+         SELECT tm.player_id
+           FROM public.golf_team_members tm
+          WHERE tm.team_id = ANY (p_team_ids)
+            AND tm.status = 'active'::public.team_member_status
+       )
+       OR (
+         s.player_id IN (SELECT tm.player_id FROM public.golf_team_members tm WHERE tm.team_id = ANY (p_team_ids))
+         AND NOT EXISTS (
+           SELECT 1 FROM public.golf_team_members a
+            WHERE a.player_id = s.player_id
+              AND a.status = 'active'::public.team_member_status
+         )
+       )
      );
 END;
 $$;
@@ -10025,7 +10055,6 @@ $$;
 ALTER FUNCTION public.select_dirty_standing_teams(integer, integer, integer) OWNER TO "postgres";
 
 COMMENT ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) IS 'Read-only. Up to p_limit dirty teams that have been quiet for p_quiet_seconds since their last mark (the debounce), or dirty for longer than p_max_wait_seconds (the cap), oldest mark first, with the marked_at the caller must hand back to clear_dirty_standing_teams. service_role only.';
-
 
 CREATE OR REPLACE FUNCTION "public"."set_calendar_feed_token"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER

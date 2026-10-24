@@ -9,7 +9,8 @@
  *
  * It does no more than that: no lifetime `golf_player_standing` refresh, no percentile notifications, no weekly digest and no goal
  * progress (all Fairway-visible, and the nightly run's). The season RPC takes a transaction advisory lock, so this pass and the
- * nightly run queue behind each other instead of deadlocking (40P01).
+ * nightly run never upsert the same rows at once (40P01). They do not queue for long: a caller waits up to its lock_timeout
+ * (authenticator: 8s) and then gets 55P03, which this pass treats as a quiet skip (marks kept, retried next tick, logged as an event).
  *
  * An idle tick is one read. Until the held migrations are applied (20261024150000 for the queue, 20261024151000 for the season
  * RPC) the pass answers 200 and does nothing; marks stay in place until the season RPC exists.
@@ -18,12 +19,12 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { recordJobRun } from '@/lib/admin/job-log';
 import { describeError } from '@/lib/utils/describe-error';
 import { TEAMS_PER_CHUNK } from '@/lib/coachhelm/v3/standing/refresh';
-import { isStandingQueueMissing, STANDING_DIRTY_MAX_WAIT_SECONDS, STANDING_DIRTY_QUIET_SECONDS } from '@/lib/coachhelm/v3/standing/refresh-queue';
+import { isStandingQueueMissing, isStandingRefreshBusy, STANDING_DIRTY_MAX_WAIT_SECONDS, STANDING_DIRTY_QUIET_SECONDS } from '@/lib/coachhelm/v3/standing/refresh-queue';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -35,7 +36,7 @@ interface DirtyPassSummary {
   rpc_rows: Array<{ metric_id: string; rows_upserted: number }>;
   marks_cleared: number;
   /** Why the pass did nothing: a held migration is not applied yet. */
-  skipped?: 'queue-not-applied' | 'season-not-applied';
+  skipped?: 'queue-not-applied' | 'season-not-applied' | 'refresh-busy';
   duration_ms: number;
   error?: string;
 }
@@ -86,6 +87,12 @@ async function handle(): Promise<NextResponse> {
     if (res.error) {
       // The marks stay: the next tick (or, failing that, the nightly run) covers these teams.
       if (isStandingQueueMissing(res.error)) return summary({ teams_in_chunk: teamIds.length, team_ids: teamIds, skipped: 'season-not-applied' });
+      // The nightly run (or another tick) holds the season RPC's advisory lock past this caller's lock_timeout: not a failure.
+      // The marks stay and the next tick retries; an event, not an error.
+      if (isStandingRefreshBusy(res.error)) {
+        await logServerEvent('standing-refresh-dirty: another refresh holds the season lock; retrying next tick', { action: 'cron.v3.standing-refresh-dirty.busy', extra: { teams: teamIds.length } });
+        return summary({ teams_in_chunk: teamIds.length, team_ids: teamIds, skipped: 'refresh-busy' });
+      }
       await logServerError(`standing-refresh-dirty season RPC: ${res.error.message ?? 'unknown'}`, { action: 'cron.v3.standing-refresh-dirty.rpc' });
       return summary({ teams_in_chunk: teamIds.length, team_ids: teamIds, error: res.error.message ?? 'rpc-error' }, 500);
     }

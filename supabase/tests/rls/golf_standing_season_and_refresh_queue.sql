@@ -14,7 +14,7 @@
 BEGIN;
 \ir _helpers.sql
 
-SELECT plan(26);
+SELECT plan(27);
 
 -- ============================================================================
 -- Part 1: tables are RLS-on and closed to anon / authenticated.
@@ -50,6 +50,7 @@ SELECT ok(
 );
 SELECT col_type_is('public', 'golf_player_standing_season', 'rounds_n', 'integer', 'rounds_n is an integer');
 SELECT col_not_null('public', 'golf_player_standing_season', 'season_start', 'season_start is required');
+SELECT has_index('public', 'golf_player_standing_season', 'idx_golf_player_standing_season_metric', 'golf_player_standing_season is indexed on metric_id');
 
 -- ============================================================================
 -- Part 2: every new function is service_role only.

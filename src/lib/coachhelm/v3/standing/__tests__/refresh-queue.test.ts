@@ -7,7 +7,7 @@ const logServerError = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc }) }));
 vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
 
-import { isStandingQueueMissing, markTeamStandingDirty } from '../refresh-queue';
+import { isStandingQueueMissing, isStandingRefreshBusy, markTeamStandingDirty } from '../refresh-queue';
 
 beforeEach(() => {
   rpc.mockReset();
@@ -42,15 +42,22 @@ describe('markTeamStandingDirty', () => {
 });
 
 describe('isStandingQueueMissing', () => {
+  // Only PostgREST's "no such function" means the migration is not applied. 42883 / 42P01 come from inside a function that
+  // exists (its body calls something missing): a real failure, which must surface.
   it.each([
     [{ code: 'PGRST202' }, true],
-    [{ code: 'PGRST205' }, true],
-    [{ code: '42883' }, true],
-    [{ code: '42P01' }, true],
-    [{ message: 'function public.select_dirty_standing_teams(integer) does not exist' }, true],
-    [{ code: '57014', message: 'statement timeout' }, false],
+    [{ code: '42883' }, false],
+    [{ code: '42P01' }, false],
+    [{ code: 'PGRST205' }, false],
+    [{ code: '57014' }, false],
     [null, false],
   ])('%j -> %s', (error, expected) => {
     expect(isStandingQueueMissing(error)).toBe(expected);
+  });
+
+  it('55P03 (the season lock is held past lock_timeout) is busy, nothing else is', () => {
+    expect(isStandingRefreshBusy({ code: '55P03' })).toBe(true);
+    expect(isStandingRefreshBusy({ code: '40P01' })).toBe(false);
+    expect(isStandingRefreshBusy(null)).toBe(false);
   });
 });

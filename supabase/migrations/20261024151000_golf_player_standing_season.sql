@@ -75,12 +75,18 @@
 --   PGA value, read-only check 2026-10-24).
 --
 -- SINGLE FLIGHT. The function takes a transaction advisory lock first, so
--- the nightly run and the short-interval dirty pass (20261024150000) queue
--- behind each other instead of upserting the same rows in different orders
--- (40P01).
+-- the nightly run and the short-interval dirty pass (20261024150000) never
+-- upsert the same rows at once in different orders (40P01). They do not
+-- queue indefinitely: a second caller waits only up to its role's
+-- lock_timeout (authenticator: 8s) and then fails with 55P03. The dirty
+-- pass treats 55P03 as a quiet skip (its marks stay, the next tick
+-- retries); the nightly run logs it and the dirty pass covers marked teams.
 --
--- SAFETY. New table and functions only; no existing object changes and no
--- lock on any existing table. RLS is enabled with no policy and anon /
+-- SAFETY. New table, index and functions only; no existing object changes.
+-- The player_id and metric_id foreign keys take SHARE ROW EXCLUSIVE locks on
+-- golf_players and golf_metrics for the apply's transaction (writes to them
+-- wait; reads do not); lock_timeout 3s caps that wait, so a busy table
+-- fails the apply instead of queueing writes behind it. RLS is enabled with no policy and anon /
 -- authenticated lose the default privileges, so only service_role reads or
 -- writes the table (tighter than golf_player_standing, whose coach and
 -- player read policies no caller of this table needs: the Clubhouse loader
@@ -88,8 +94,8 @@
 -- Both functions are revoked from PUBLIC, anon and authenticated and granted
 -- to service_role; the RPC is SECURITY DEFINER with a pinned search_path.
 --
--- AFTER APPLY (owner, service role), once, so the table is not empty until
--- the next nightly run:
+-- AFTER APPLY (owner, service role), in the same session, once, so the table
+-- is not empty until the next nightly run:
 --   SELECT public.refresh_player_standing_season(ARRAY(SELECT id FROM public.golf_teams));
 --
 -- ROLLBACK: DROP FUNCTION IF EXISTS public.refresh_player_standing_season(uuid[]);
@@ -100,6 +106,7 @@
 -- VERIFY: select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname = 'golf_player_standing_season' and c.relrowsecurity
 -- VERIFY: select 1 where not has_table_privilege('authenticated', 'public.golf_player_standing_season', 'select') and not has_table_privilege('anon', 'public.golf_player_standing_season', 'select')
 -- VERIFY: select 1 where has_function_privilege('service_role', 'public.refresh_player_standing_season(uuid[])', 'execute') and not has_function_privilege('authenticated', 'public.refresh_player_standing_season(uuid[])', 'execute')
+-- VERIFY: select 1 from pg_indexes where schemaname = 'public' and indexname = 'idx_golf_player_standing_season_metric'
 -- VERIFY: select 1 where public.golf_season_start('America/Los_Angeles', timestamptz '2026-08-01 05:00+00') = date '2025-08-01' and public.golf_season_start('America/New_York', timestamptz '2026-08-01 05:00+00') = date '2026-08-01'
 
 DO $guard$
@@ -110,6 +117,10 @@ BEGIN
   END IF;
 END
 $guard$;
+
+-- The foreign keys below take SHARE ROW EXCLUSIVE locks on golf_players and
+-- golf_metrics for this transaction; cap the wait so writes are never queued.
+set lock_timeout = '3s';
 
 CREATE OR REPLACE FUNCTION public.golf_season_start(p_tz text, p_at timestamptz DEFAULT now())
   RETURNS date
@@ -157,6 +168,9 @@ CREATE TABLE IF NOT EXISTS public.golf_player_standing_season (
   CONSTRAINT golf_player_standing_season_rounds_n_check CHECK (rounds_n >= 0)
 );
 
+-- Metric-wide reads (a cohort across players) without a scan.
+CREATE INDEX IF NOT EXISTS idx_golf_player_standing_season_metric ON public.golf_player_standing_season (metric_id);
+
 ALTER TABLE public.golf_player_standing_season ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.golf_player_standing_season FROM PUBLIC, anon, authenticated;
@@ -189,19 +203,26 @@ BEGIN
 
   RETURN QUERY
   WITH
-  zones AS (
+  -- golf_season_start reads pg_timezone_names (tens to hundreds of ms a
+  -- call), so it runs once per distinct zone and once for the default, never
+  -- per member (MATERIALIZED, so neither is inlined and re-run per row).
+  zones AS MATERIALIZED (
     SELECT tz.timezone, public.golf_season_start(tz.timezone) AS season_start
       FROM (SELECT DISTINCT s.timezone FROM public.golf_team_settings s) tz
+  ),
+  default_start AS MATERIALIZED (
+    SELECT public.golf_season_start('America/New_York') AS d
   ),
   -- Every active membership app-wide: the cohort is app-wide.
   members AS (
     SELECT tm.player_id, tm.team_id, COALESCE(t.gender, 'mens') AS gender,
-           COALESCE(z.season_start, public.golf_season_start(NULL::text)) AS season_start
+           COALESCE(z.season_start, ds.d) AS season_start
       FROM public.golf_team_members tm
       JOIN public.golf_teams t ON t.id = tm.team_id
+      CROSS JOIN default_start ds
       LEFT JOIN public.golf_team_settings s ON s.team_id = tm.team_id
       LEFT JOIN zones z ON z.timezone IS NOT DISTINCT FROM s.timezone
-     WHERE tm.status = 'active'::team_member_status
+     WHERE tm.status = 'active'::public.team_member_status
   ),
   player_season AS (
     SELECT m.player_id, MIN(m.season_start) AS season_start
@@ -469,16 +490,28 @@ BEGIN
    GROUP BY u.metric_id
    ORDER BY u.metric_id;
 
-  -- The chunk's players' rows this run did not rewrite: under a floor now, or
-  -- last season's. now() is this transaction's start, so every row written
-  -- above carries it.
+  -- The chunk's players' rows this run did not rewrite: under a floor now,
+  -- last season's, or a member who is no longer active on any team. now() is
+  -- this transaction's start, so every row written above carries it. A
+  -- player inactive here but active on a team outside the chunk keeps their
+  -- rows (that team's run writes them).
   DELETE FROM public.golf_player_standing_season s
    WHERE s.computed_at < now()
-     AND s.player_id IN (
-       SELECT tm.player_id
-         FROM public.golf_team_members tm
-        WHERE tm.team_id = ANY (p_team_ids)
-          AND tm.status = 'active'::team_member_status
+     AND (
+       s.player_id IN (
+         SELECT tm.player_id
+           FROM public.golf_team_members tm
+          WHERE tm.team_id = ANY (p_team_ids)
+            AND tm.status = 'active'::public.team_member_status
+       )
+       OR (
+         s.player_id IN (SELECT tm.player_id FROM public.golf_team_members tm WHERE tm.team_id = ANY (p_team_ids))
+         AND NOT EXISTS (
+           SELECT 1 FROM public.golf_team_members a
+            WHERE a.player_id = s.player_id
+              AND a.status = 'active'::public.team_member_status
+         )
+       )
      );
 END;
 $$;

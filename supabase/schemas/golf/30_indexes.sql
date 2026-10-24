@@ -661,3 +661,5 @@ CREATE INDEX "idx_putt_details_shot_id" ON "public"."putt_details" USING "btree"
 CREATE INDEX "idx_standing_computed_at" ON "public"."golf_player_standing" USING "btree" ("computed_at" DESC);
 
 CREATE INDEX "idx_standing_team_metric" ON "public"."golf_player_standing" USING "btree" ("metric_id", "team_pct") INCLUDE ("player_id");
+
+CREATE INDEX "idx_golf_player_standing_season_metric" ON "public"."golf_player_standing_season" USING "btree" ("metric_id");

@@ -17,14 +17,18 @@ export const STANDING_DIRTY_QUIET_SECONDS = 180;
 /** …but never waits longer than this from its first mark, so a team saving every few minutes still refreshes. */
 export const STANDING_DIRTY_MAX_WAIT_SECONDS = 1800;
 
-const MIGRATION_NOT_APPLIED_CODES = new Set(['PGRST202', 'PGRST205', '42883', '42P01']);
+/**
+ * The RPC is not there yet (its held migration is not applied): PostgREST's PGRST202, "no function with this name and these
+ * arguments in the schema cache". Only that: a 42883 or 42P01 comes from INSIDE a function that does exist (a body calling
+ * something missing) and is a real failure, never "not applied". The loader's table read keeps its own PGRST205 / 42P01 check.
+ */
+export function isStandingQueueMissing(error: { code?: string | null } | null | undefined): boolean {
+  return error?.code === 'PGRST202';
+}
 
-/** The RPC or table is not there yet (its held migration is not applied): PostgREST's and Postgres's "does not exist" shapes. */
-export function isStandingQueueMissing(error: { code?: string | null; message?: string | null } | null | undefined): boolean {
-  if (!error) return false;
-  if (error.code && MIGRATION_NOT_APPLIED_CODES.has(error.code)) return true;
-  const message = (error.message ?? '').toLowerCase();
-  return message.includes('could not find the function') || (message.includes('does not exist') && (message.includes('function') || message.includes('relation')));
+/** Another refresh holds the season RPC's advisory lock and this caller's lock_timeout ran out (55P03, lock_not_available). */
+export function isStandingRefreshBusy(error: { code?: string | null } | null | undefined): boolean {
+  return error?.code === '55P03';
 }
 
 export type MarkStandingDirtyResult = { status: 'marked'; teams: number } | { status: 'not_applied' } | { status: 'failed' };

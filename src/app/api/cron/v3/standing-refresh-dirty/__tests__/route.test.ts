@@ -8,8 +8,9 @@ import type { NextRequest } from 'next/server';
 
 const rpc = vi.hoisted(() => vi.fn());
 const logServerError = vi.hoisted(() => vi.fn(async () => undefined));
+const logServerEvent = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ rpc }) }));
-vi.mock('@/lib/server-error-logger', () => ({ logServerError }));
+vi.mock('@/lib/server-error-logger', () => ({ logServerError, logServerEvent }));
 vi.mock('@/lib/admin/job-log', () => ({ recordJobRun: (_job: string, fn: () => Promise<unknown>) => fn() }));
 
 import { GET } from '../route';
@@ -23,6 +24,7 @@ beforeEach(() => {
   process.env.CRON_SECRET = 'test-secret';
   rpc.mockReset();
   logServerError.mockClear();
+  logServerEvent.mockClear();
 });
 
 describe('GET /api/cron/v3/standing-refresh-dirty', () => {
@@ -82,6 +84,32 @@ describe('GET /api/cron/v3/standing-refresh-dirty', () => {
     expect(res.status).toBe(500);
     expect(rpc.mock.calls.map((c) => c[0])).not.toContain('clear_dirty_standing_teams');
     expect(logServerError).toHaveBeenCalledWith(expect.stringMatching(/deadlock/), expect.objectContaining({ action: 'cron.v3.standing-refresh-dirty.rpc' }));
+  });
+
+  it('a 42883 raised inside the season RPC is a real failure, never "season not applied"', async () => {
+    answer({
+      select_dirty_standing_teams: { data: [{ team_id: 't1', marked_at: '2026-10-24T12:00:00Z' }] },
+      refresh_player_standing_season: { error: { code: '42883', message: 'function public.golf_round_is_countable(text, integer) does not exist' } },
+    });
+    const res = await GET(req());
+    const body = await res.json();
+    expect(res.status).toBe(500);
+    expect(body.skipped).toBeUndefined();
+    expect(rpc.mock.calls.map((c) => c[0])).not.toContain('clear_dirty_standing_teams');
+    expect(logServerError).toHaveBeenCalledWith(expect.stringMatching(/golf_round_is_countable/), expect.objectContaining({ action: 'cron.v3.standing-refresh-dirty.rpc' }));
+  });
+
+  it('the season lock held by another run (55P03) is a quiet skip: 200, marks kept, an event and no error', async () => {
+    answer({
+      select_dirty_standing_teams: { data: [{ team_id: 't1', marked_at: '2026-10-24T12:00:00Z' }] },
+      refresh_player_standing_season: { error: { code: '55P03', message: 'canceling statement due to lock timeout' } },
+    });
+    const res = await GET(req());
+    expect(res.status).toBe(200);
+    expect((await res.json()).skipped).toBe('refresh-busy');
+    expect(rpc.mock.calls.map((c) => c[0])).not.toContain('clear_dirty_standing_teams');
+    expect(logServerEvent).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ action: 'cron.v3.standing-refresh-dirty.busy' }));
+    expect(logServerError).not.toHaveBeenCalled();
   });
 
   it('a clear that fails is only a warning: Standing is already fresh', async () => {

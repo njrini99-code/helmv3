@@ -31,7 +31,11 @@
 -- migration (20261024151000) is applied, the cron's dirty pass finds no
 -- refresh function to call, leaves every mark in place and returns.
 --
--- SAFETY. New table and new functions only; no lock on any existing table.
+-- SAFETY. New table and new functions only; no existing object changes.
+-- The team_id foreign key takes a SHARE ROW EXCLUSIVE lock on golf_teams
+-- for the apply's transaction (writes to golf_teams wait; reads do not).
+-- lock_timeout 3s caps that wait: a busy golf_teams fails the apply
+-- instead of queueing team writes behind it.
 -- RLS is enabled with no policy, and anon / authenticated lose the default
 -- privileges Supabase grants on new public tables, so only service_role
 -- reaches the table. The three functions are SECURITY DEFINER with a pinned
@@ -51,6 +55,10 @@
 -- VERIFY: select 1 where has_function_privilege('service_role', 'public.mark_team_standing_dirty(uuid)', 'execute') and not has_function_privilege('authenticated', 'public.mark_team_standing_dirty(uuid)', 'execute')
 -- VERIFY: select 1 where has_function_privilege('service_role', 'public.select_dirty_standing_teams(integer, integer, integer)', 'execute') and not has_function_privilege('anon', 'public.select_dirty_standing_teams(integer, integer, integer)', 'execute')
 -- VERIFY: select 1 where has_function_privilege('service_role', 'public.clear_dirty_standing_teams(uuid[], timestamptz[])', 'execute') and not has_function_privilege('authenticated', 'public.clear_dirty_standing_teams(uuid[], timestamptz[])', 'execute')
+
+-- The team_id foreign key takes a SHARE ROW EXCLUSIVE lock on golf_teams for
+-- this transaction; cap the wait so team writes are never queued behind it.
+set lock_timeout = '3s';
 
 CREATE TABLE IF NOT EXISTS public.golf_standing_refresh_queue (
   team_id uuid PRIMARY KEY REFERENCES public.golf_teams (id) ON DELETE CASCADE,
@@ -79,7 +87,7 @@ AS $$
     SELECT DISTINCT tm.team_id
       FROM public.golf_team_members tm
      WHERE tm.player_id = p_player_id
-       AND tm.status = 'active'::team_member_status
+       AND tm.status = 'active'::public.team_member_status
   ),
   marked AS (
     INSERT INTO public.golf_standing_refresh_queue AS q (team_id)
@@ -116,18 +124,29 @@ COMMENT ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer
 
 CREATE OR REPLACE FUNCTION public.clear_dirty_standing_teams(p_team_ids uuid[], p_marked_ats timestamptz[])
   RETURNS integer
-  LANGUAGE sql
+  LANGUAGE plpgsql
   SECURITY DEFINER
   SET search_path = pg_catalog, public
 AS $$
-  WITH cleared AS (
-    DELETE FROM public.golf_standing_refresh_queue q
-     USING unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at)
-     WHERE q.team_id = seen.team_id
-       AND q.marked_at <= seen.marked_at
-    RETURNING 1
-  )
-  SELECT count(*)::integer FROM cleared;
+DECLARE
+  v_cleared integer;
+BEGIN
+  -- Lock the rows first, in team order (the mark's order), so a clear and a
+  -- mark on overlapping teams cannot lock them in opposite orders.
+  PERFORM 1
+     FROM public.golf_standing_refresh_queue q
+     JOIN unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at) ON seen.team_id = q.team_id
+    WHERE q.marked_at <= seen.marked_at
+    ORDER BY q.team_id
+      FOR UPDATE OF q;
+
+  DELETE FROM public.golf_standing_refresh_queue q
+   USING unnest(p_team_ids, p_marked_ats) AS seen(team_id, marked_at)
+   WHERE q.team_id = seen.team_id
+     AND q.marked_at <= seen.marked_at;
+  GET DIAGNOSTICS v_cleared = ROW_COUNT;
+  RETURN v_cleared;
+END;
 $$;
 
 COMMENT ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) IS 'Clears the marks a refresh run has covered: a team''s row goes only if its marked_at is not later than the value the run read, so a round saved during the refresh keeps its team dirty. Returns the rows removed. service_role only.';
