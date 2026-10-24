@@ -287,6 +287,31 @@ describe('G then a letter, / and ?', () => {
     expect(within(sheet).queryByText('New event')).toBeNull();
   });
 
+  it('Cmd or Ctrl and a digit goes to that sidebar section, from a field too, and not while a dialog is open', () => {
+    mount('coach', <input aria-label="Notes" />);
+    key('2', { metaKey: true });
+    expect(push).toHaveBeenLastCalledWith('/golf/dashboard/coachhelm', { scroll: false });
+    const field = screen.getByLabelText('Notes');
+    field.focus();
+    key('6', { ctrlKey: true }, field);
+    expect(push).toHaveBeenLastCalledWith('/golf/dashboard/roster', { scroll: false });
+    push.mockClear();
+    key('?', { shiftKey: true });
+    key('1', { metaKey: true }, screen.getByRole('dialog', { name: 'Keyboard shortcuts' }));
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('the shortcuts sheet draws each section\'s digit beside its letter, and none for the tenth', () => {
+    mount('coach');
+    key('?', { shiftKey: true });
+    const sheet = screen.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    const row = (label: string) => within(sheet).getByText(label, { selector: 'dt' }).closest('.ch-cmd-row') as HTMLElement;
+    const caps = (label: string) => Array.from(row(label).querySelectorAll('kbd')).map((k) => k.textContent);
+    expect(caps('Home')).toEqual(['G', 'H', 'Ctrl', '1']);
+    expect(caps('Qualifiers')).toEqual(['G', 'Q', 'Ctrl', '9']);
+    expect(caps('Recruiting')).toEqual(['G', 'E']);
+  });
+
   it('does nothing on a phone', () => {
     desktop = false;
     mount('coach');

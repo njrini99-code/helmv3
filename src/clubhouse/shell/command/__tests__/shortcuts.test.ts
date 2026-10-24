@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { CH_NAV_COACH, CH_NAV_PLAYER } from '../../nav';
-import { interpretKey, isInOverlay, isTypingTarget, itemForLetter, letterFor, modalOpen, navLetters, SEQUENCE_WINDOW_MS, type ChKeyInput } from '../shortcuts';
+import { CH_NAV_SECTIONS } from '../../nav';
+import { digitFor, interpretKey, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, letterFor, modalOpen, navLetters, SEQUENCE_WINDOW_MS, sidebarOrder, type ChKeyInput } from '../shortcuts';
 
 const key = (k: string, extra: Partial<ChKeyInput> = {}): ChKeyInput => ({
   key: k,
@@ -141,5 +142,50 @@ describe('the letter map', () => {
     expect(itemForLetter('coach', 'o')?.id).toBe('rounds');
     expect(itemForLetter('coach', 'l')).toBeUndefined();
     expect(itemForLetter('coach', 'R')?.id).toBe('roster');
+  });
+});
+
+describe('Cmd or Ctrl and 1 to 9 (owner, decision 13)', () => {
+  it('reaches a section with either modifier, from a field too, but not over a dialog', () => {
+    expect(interpretKey(key('1', { metaKey: true }), free, null, 0).outcome).toEqual({ kind: 'section', digit: 1 });
+    expect(interpretKey(key('9', { ctrlKey: true }), free, null, 0).outcome).toEqual({ kind: 'section', digit: 9 });
+    expect(interpretKey(key('3', { metaKey: true }), { typing: true, overlay: false }, null, 0).outcome).toEqual({ kind: 'section', digit: 3 });
+    expect(interpretKey(key('3', { metaKey: true }), { typing: false, overlay: true }, null, 0).outcome.kind).toBe('none');
+  });
+
+  it('is only the bare chord: 0, Shift, Alt, a held key and a plain digit do nothing, and it ends a pending G', () => {
+    expect(interpretKey(key('0', { metaKey: true }), free, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('!', { metaKey: true, shiftKey: true }), free, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, shiftKey: true }), free, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, altKey: true }), free, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1', { metaKey: true, repeat: true }), free, null, 0).outcome.kind).toBe('none');
+    expect(interpretKey(key('1'), free, null, 0).outcome.kind).toBe('none');
+    const fromArmed = interpretKey(key('2', { metaKey: true }), free, 100, 200);
+    expect(fromArmed.outcome).toEqual({ kind: 'section', digit: 2 });
+    expect(fromArmed.armedAt).toBeNull();
+  });
+
+  it('follows the sidebar: its groups in order, each group\'s sections in order, never Settings', () => {
+    for (const nav of [CH_NAV_COACH, CH_NAV_PLAYER]) {
+      const role = nav === CH_NAV_COACH ? 'coach' : 'player';
+      const grouped = CH_NAV_SECTIONS.flatMap((section) => nav.filter((i) => i.section === section)).map((i) => i.id);
+      expect(sidebarOrder(role).map((i) => i.id)).toEqual(grouped);
+      expect(sidebarOrder(role).map((i) => i.id)).not.toContain('settings');
+    }
+  });
+
+  it('numbers a coach\'s and a player\'s first nine sections; the tenth has only its letter', () => {
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('coach', d)?.id)).toEqual([
+      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'stats', 'rounds', 'qualifiers',
+    ]);
+    expect(digitFor('coach', 'recruiting')).toBeUndefined();
+    expect(letterFor('coach', 'recruiting')).toBe('e');
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => itemForDigit('player', d)?.id)).toEqual([
+      'home', 'coachhelm', 'calendar', 'messages', 'hub', 'roster', 'qualifiers', 'rounds', 'stats',
+    ]);
+    expect(digitFor('player', 'classes')).toBeUndefined();
+    expect(itemForDigit('coach', 0)).toBeUndefined();
+    expect(itemForDigit('coach', 10)).toBeUndefined();
+    expect(digitFor('coach', 'settings')).toBeUndefined();
   });
 });
