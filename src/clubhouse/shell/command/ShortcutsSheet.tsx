@@ -5,7 +5,7 @@ import type { ChRole } from '../nav';
 import { Modal } from '../../ui/Modal';
 import { Keys } from './Keys';
 import { usePageKeysNow } from './page-keys';
-import { modKey, navLetters } from './shortcuts';
+import { digitFor, modKey, navLetters } from './shortcuts';
 
 interface Row {
   label: string;
@@ -45,18 +45,29 @@ export function ShortcutsSheet({ open, onClose, role, apple }: { open: boolean; 
         <section aria-labelledby="ch-cmd-goto">
           <h3 id="ch-cmd-goto">Go to a section</h3>
           <dl className="ch-cmd-rows is-two">
-            {goTo.map(({ letter, item }) => (
-              <div key={item.id} className="ch-cmd-row">
-                <dt>{item.label}</dt>
-                <dd>
-                  <span className="ch-cmd-keys" aria-hidden="true">
-                    <kbd className="ch-cmd-kbd">G</kbd>
-                    <span className="ch-cmd-then">then</span>
-                    <kbd className="ch-cmd-kbd">{letter.toUpperCase()}</kbd>
-                  </span>
-                </dd>
-              </div>
-            ))}
+            {goTo.map(({ letter, item }) => {
+              // The first nine sidebar sections also answer Cmd or Ctrl and their digit (owner, decision 13).
+              const digit = digitFor(role, item.id);
+              return (
+                <div key={item.id} className="ch-cmd-row">
+                  <dt>{item.label}</dt>
+                  <dd>
+                    <span className="ch-cmd-keys" aria-hidden="true">
+                      <kbd className="ch-cmd-kbd">G</kbd>
+                      <span className="ch-cmd-then">then</span>
+                      <kbd className="ch-cmd-kbd">{letter.toUpperCase()}</kbd>
+                      {digit !== undefined && (
+                        <>
+                          <span className="ch-cmd-then">or</span>
+                          <kbd className="ch-cmd-kbd">{mod}</kbd>
+                          <kbd className="ch-cmd-kbd">{digit}</kbd>
+                        </>
+                      )}
+                    </span>
+                  </dd>
+                </div>
+              );
+            })}
           </dl>
         </section>
         {/* B11: the open screen's own keys, as it registered them (shell/command/page-keys.ts). */}

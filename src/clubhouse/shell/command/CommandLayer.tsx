@@ -5,24 +5,37 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { chTrail } from '../../lib/track';
 import { haptic } from '../../lib/haptics';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
-import type { ChRecent } from './commands';
-import { setPeopleScope, usePeople } from './people';
+import type { ChPerson, ChRecent } from './commands';
+import { seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
 import { Palette } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
-import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
+import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
 
 /**
  * Desktop keyboard layer, mounted once in the frame: Cmd or Ctrl K (or the top bar's search pill, palette-open.ts) opens
- * the command palette, G then a letter goes to a
+ * the command palette, G then a letter (or Cmd or Ctrl and 1 to 9, in sidebar order) goes to a
  * section, `/` focuses the page's search field and `?` shows the shortcuts. Nothing is listened for on a phone.
  *
  * It also remembers the sections the person has been in (the palette's Recent) and hands the roster a place to publish
  * the players it has already loaded (people.ts). Its keys never fire while typing in a field or inside a dialog, a
  * menu or a list (shortcuts.ts); the sidebar's Cmd or Ctrl \ and Home's N keep their own handlers.
  */
-export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole; pathname: string; userId: string; teamId: string | null }) {
+export function CommandLayer({
+  role,
+  pathname,
+  userId,
+  teamId,
+  shellPeople = null,
+}: {
+  role: ChRole;
+  pathname: string;
+  userId: string;
+  teamId: string | null;
+  /** A coach's players, names and ids, loaded with the shell data (decision 16): People works before Roster opens. */
+  shellPeople?: readonly ChPerson[] | null;
+}) {
   const router = useRouter();
   const desktop = useCommandDesktop();
   const people = usePeople();
@@ -40,8 +53,14 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
   live.current = { palette, help, role, router };
 
   // A layout effect: every layout effect runs before any passive one, so a team switch empties the old team's names before the
-  // page (the Roster) publishes the new team's in its own effect, never after it.
-  useLayoutEffect(() => setPeopleScope(teamId), [teamId]);
+  // page (the Roster) publishes the new team's in its own effect, never after it. The scope is the person and the team, so a
+  // different account on the same browser never inherits the last one's list. The shell's names are then seeded for the new
+  // scope; a page's own list still takes precedence (people.ts). Only a coach's are ever seeded.
+  const peopleScope = `${userId}:${teamId ?? ''}`;
+  useLayoutEffect(() => {
+    setPeopleScope(peopleScope);
+    seedPeople(role === 'coach' && shellPeople ? shellPeople : []);
+  }, [peopleScope, role, shellPeople]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
   }, [userId, role, pathname]);
@@ -103,6 +122,16 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           e.preventDefault();
           field.focus();
           field.select();
+          break;
+        }
+        case 'section': {
+          // Cmd or Ctrl and a digit: the sidebar's sections in order (owner, decision 13).
+          const item = itemForDigit(live.current.role, o.digit);
+          if (!item) break;
+          e.preventDefault();
+          haptic('select');
+          chTrail('command section (keyboard)', { to: item.id });
+          live.current.router.push(item.href, { scroll: false });
           break;
         }
         case 'go': {

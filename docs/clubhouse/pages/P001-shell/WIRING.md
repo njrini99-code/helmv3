@@ -26,8 +26,9 @@ Frame:                   src/clubhouse/shell/ClubhouseFrame.tsx (Sidebar, TopBar
                          Sidebar and TabBar from teamSwitchFor(userData), 10803; RouteFrame keyed by pathname and team, 10103)
 Server loader:           src/clubhouse/data/shell.ts loadClubhouseShell (next event, join requests, timezone in parallel,
                          then, for a player, the invites of any upcoming meetings (D2-8: one nobody is invited to is
-                         skipped), then the event's attendance; each failed read logs through chLogServer('shell', …) and
-                         hides its UI)
+                         skipped), then the event's attendance; for a coach, the team's players as id and name only for
+                         the palette's People (decision 16, loadPalettePeople); each failed read logs through
+                         chLogServer('shell', …) and hides its UI)
 Route errors:            src/components/errors/RouteErrorBoundary.tsx → RouteErrorView inside Clubhouse (10603 to 10607)
 ```
 
@@ -101,7 +102,7 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 | --- | --- | --- | --- |
 | getUnifiedNotifications | actions/unified-notifications.ts | Existing | the bell's list |
 | markNotificationRead, markAllNotificationsRead | actions/unified-notifications.ts | Existing | read state |
-| loadClubhouseShell | src/clubhouse/data/shell.ts | Existing (Clubhouse) | next event and the Roster badge |
+| loadClubhouseShell | src/clubhouse/data/shell.ts | Existing (Clubhouse) | next event, the Roster badge and, for a coach, the palette's player names and ids (decision 16) |
 | setActiveTeam | actions/team-switcher.ts | Existing (shared with Fairway) | the switch: head coach on more than one team only, the team must be one the coach is staffed on; writes the `golf_active_team` cookie and revalidates `/golf/dashboard` |
 
 ## Data resources
@@ -109,7 +110,9 @@ the whole list is in `docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md`.
 ### DATA-SHELL
 
 ```text
-Tables:   golf_events, golf_event_attendance, golf_team_join_requests, golf_team_settings
+Tables:   golf_events, golf_event_attendance, golf_team_join_requests, golf_team_settings; for a coach only,
+          golf_team_members with golf_players (id, first_name, last_name), sent to the client as { id, name } and held
+          in memory by shell/command/people.ts, cleared on a team or person change (decision 16)
 RPCs:     none
 Storage:  none
 Realtime: none in the frame (the badge context keeps its own counts)
