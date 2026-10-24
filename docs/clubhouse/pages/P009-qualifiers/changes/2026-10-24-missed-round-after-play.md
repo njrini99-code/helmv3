@@ -1,6 +1,6 @@
 # 2026-10-24 — "Missed a round" waits for the event to end (Clubhouse A+ S2)
 
-## 2026-10-24 — A card a round short is flagged only once the qualifier is complete (decision 10, review of #2361)
+## 2026-10-24 — A short card is flagged only once the qualifier is complete
 
 ```text
 Design package: none (Clubhouse A+ review of #2361, owner decision 10)
@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-s2
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     Fairway's live board and the workspace still rank on what is in (owner decision A)
+Held items:     Fairway's live board and the workspace still rank on what is in
+                (owner decision A)
 ```
 
 ### Changed

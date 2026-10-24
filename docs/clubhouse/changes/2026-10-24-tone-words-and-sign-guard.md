@@ -1,6 +1,6 @@
-# 2026-10-24 — Roster and Rounds speak gain and loss; a toned figure says which way (Clubhouse A+ S2)
+# 2026-10-24 — Roster and Rounds say gain and loss; toned figures say which way
 
-## 2026-10-24 — Row 48 leftovers: the last tone words, and the sign-or-word guard (CONS-20)
+## 2026-10-24 — Row 48: the last tone words and the sign-or-word guard (CONS-20)
 
 ```text
 Design package: none (Clubhouse A+ row 48, CONS-20)
@@ -8,7 +8,9 @@ PR/commit:      agent/aplus-s2
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     CoachHelm's good/warn words (owner decision M); the debrief's moved number and Stats profile counts are ratcheted, not yet zero
+Held items:     CoachHelm's good/warn words (owner decision M); the debrief's
+                moved number and Stats profile counts are ratcheted, not yet
+                zero
 ```
 
 ### Changed

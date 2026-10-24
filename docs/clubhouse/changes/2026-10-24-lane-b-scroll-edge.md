@@ -8,12 +8,15 @@ PR/commit:      b493234ef (agent/clubhouse-aplus-phase2, #2361)
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     the desktop top bar was finished by S1 on 2026-10-24 (2026-10-24-desktop-topbar-edge.md)
+Held items:     the desktop top bar was finished by S1 on 2026-10-24
+                (2026-10-24-desktop-topbar-edge.md)
 ```
 
 ### Changed
 
-- tokens.css: `--ch-scroll-edge-h` (14px) and `--ch-scroll-edge-down` / `-up`, one frame-tinted shade. The phone top bar's scrolled shade reads it; Track's sticky bar and the phone setup dock drop their hard hairline for the shade.
+- tokens.css: `--ch-scroll-edge-h` (14px) and `--ch-scroll-edge-down` / `-up`,
+  one frame-tinted shade. The phone top bar's scrolled shade reads it; Track's
+  sticky bar and the phone setup dock drop their hard hairline for the shade.
 - New scroll-edge.test.ts.
 
 ### Why

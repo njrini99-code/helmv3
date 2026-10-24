@@ -104,6 +104,10 @@ describe('the genome as the profile draws it', () => {
     const m = toMeasure('scoring_trend', 'Scoring trend', { value: -0.64, confidence: 1, label: 'Improving' }, null);
     expect(m).toMatchObject({ headline: 'No clear change', tone: 'plain', figure: '−0.64' });
     expect(toMeasure('scoring_trend', 'Scoring trend', { value: 1.2, confidence: 0.5, label: 'Regressing' }, null)).toMatchObject({ headline: 'No clear change', tone: 'plain' });
+    // A row with the engine's own standard error is tested against it, so a real change can be said (review of #2361).
+    expect(toMeasure('scoring_trend', 'Scoring trend', { value: -1.4, confidence: 1, label: 'Improving', se: 0.9 }, null)).toMatchObject({ headline: 'Improving', tone: 'good' });
+    expect(toMeasure('scoring_trend', 'Scoring trend', { value: 1.4, confidence: 1, label: 'Regressing', se: 0.9 }, null)).toMatchObject({ headline: 'Regressing', tone: 'warn' });
+    expect(toMeasure('scoring_trend', 'Scoring trend', { value: -0.64, confidence: 1, label: 'Improving', se: 0.9 }, null)).toMatchObject({ headline: 'No clear change', tone: 'plain' });
     // The persona's call still colours it.
     expect(toMeasure('scoring_trend', 'Scoring trend', { value: -0.64, confidence: 1, label: 'Improving' }, 'strength').tone).toBe('good');
     // Another measure's word is untouched.

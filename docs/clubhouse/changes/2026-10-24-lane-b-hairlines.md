@@ -8,13 +8,19 @@ PR/commit:      e0703f724, fa775cd71 (agent/clubhouse-aplus-phase2, #2361)
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     `--ch-border-subtle` is a step above decision 6 (light 0.10 -> 0.13, dark 0.11 -> 0.15; decision J); lane A's `.ch-sidebar__foot`
+Held items:     `--ch-border-subtle` is a step above decision 6 (light 0.10 ->
+                0.13, dark 0.11 -> 0.15; decision J); lane A's
+                `.ch-sidebar__foot`
 ```
 
 ### Changed
 
-- `scripts/clubhouse/hairlines.mjs` (codemod/lines.md Appendix A) put 578 of 579 lines on `var(--ch-hairline-w)` and 164 raw colours on their token. `--ch-hairline-w` is 0.333px at 3dppx; new `--ch-stage-rule-soft` and `--ch-champagne-rule-strong`.
-- hairlines.test.ts: exact per-file ratchets on full-pixel separators (67 deliberate) and 1px line elements (51), and the token pins.
+- `scripts/clubhouse/hairlines.mjs` (codemod/lines.md Appendix A) put 578 of 579
+  lines on `var(--ch-hairline-w)` and 164 raw colours on their token.
+  `--ch-hairline-w` is 0.333px at 3dppx; new `--ch-stage-rule-soft` and
+  `--ch-champagne-rule-strong`.
+- hairlines.test.ts: exact per-file ratchets on full-pixel separators (67
+  deliberate) and 1px line elements (51), and the token pins.
 
 ### Why
 
@@ -22,4 +28,5 @@ Held items:     `--ch-border-subtle` is a step above decision 6 (light 0.10 -> 0
 
 ### Verification
 
-- hairlines.test.ts. Needs an iPhone look (row 43): ledger rules at one device pixel, and 36 raw light-mode lines that now draw in dark.
+- hairlines.test.ts. Needs an iPhone look (row 43): ledger rules at one device
+  pixel, and 36 raw light-mode lines that now draw in dark.

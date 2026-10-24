@@ -1,6 +1,6 @@
 # 2026-10-24 — Qualifiers: you vs the line follows the row's state
 
-## 2026-10-24 — The viewer card says Tie at cut, and after confirm gives the squad's outcome instead of the lines
+## 2026-10-24 — Viewer card: Tie at cut, and the squad's outcome after confirm
 
 ```text
 Design package: none (Clubhouse A+ Round 1, S3 item 1; #2361 follow-up review)
@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-s3
 Contract IDs:   CH-09908
 Actions:        none
 Data impact:    none
-Held items:     before confirm, a Bubble player still reads "Inside" the travel cut (see Why)
+Held items:     before confirm, a Bubble player still reads "Inside" the travel
+                cut (see Why)
 ```
 
 ### Changed

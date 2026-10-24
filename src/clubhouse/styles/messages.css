@@ -116,7 +116,7 @@
     background var(--ch-dur-quick) var(--ch-ease),
     transform var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-ms-row + .ch-ms-row::before {
+.ch-ms-row ~ .ch-ms-row::before {
   position: absolute;
   top: -1px;
   right: 12px;
@@ -127,12 +127,16 @@
   pointer-events: none;
 }
 .ch-ms-row.is-sel::before,
-.ch-ms-row.is-sel + .ch-ms-row::before {
+.ch-ms-row.is-sel + .ch-ms-row::before,
+.ch-ms-row.is-sel + dialog + .ch-ms-row::before,
+.ch-ms-row.is-sel + dialog + dialog + .ch-ms-row::before {
   opacity: 0;
 }
 @media (hover: hover) {
   .ch-ms-row:hover::before,
-  .ch-ms-row:hover + .ch-ms-row::before {
+  .ch-ms-row:hover + .ch-ms-row::before,
+  .ch-ms-row:hover + dialog + .ch-ms-row::before,
+  .ch-ms-row:hover + dialog + dialog + .ch-ms-row::before {
     opacity: 0;
   }
 }
@@ -273,7 +277,7 @@
   background: transparent;
   box-shadow: none;
 }
-.ch-ms-row + .ch-ms-row::before {
+.ch-ms-row ~ .ch-ms-row::before {
   top: 0;
   right: 12px;
   left: 69px;
@@ -331,7 +335,9 @@
   box-shadow: none;
 }
 .ch-ms-row.is-sel::before,
-.ch-ms-row.is-sel + .ch-ms-row::before {
+.ch-ms-row.is-sel + .ch-ms-row::before,
+.ch-ms-row.is-sel + dialog + .ch-ms-row::before,
+.ch-ms-row.is-sel + dialog + dialog + .ch-ms-row::before {
   opacity: 0;
 }
 .ch-ms-row.is-sel .ch-ms-row__top b,

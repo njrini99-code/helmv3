@@ -3,7 +3,8 @@
 ## 2026-10-24 — The phone gets the coach's More menu
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 Calendar: "the coach's More menu is desktop only")
+Design package: none (Clubhouse A+ handoff, section 0.4 Calendar: "the coach's
+                More menu is desktop only")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   61901
 Actions:        none
@@ -27,6 +28,6 @@ Held items:     none
 
 ### Verification
 
-- calendar.test › row 81 (the items without Print; Add busy time opens its sheet;
-  none for a player). Wants an iPhone look at 390px: the switch and More share
-  the month's line.
+- calendar.test › row 81 (the items without Print; Add busy time opens its
+  sheet; none for a player). Wants an iPhone look at 390px: the switch and More
+  share the month's line.

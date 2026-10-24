@@ -177,7 +177,8 @@ export function ViewerLineCard({
     <section className="ch-qf-you-line" aria-labelledby="ch-qf-you-line-h" data-ch-code="CH-09908">
       <h3 id="ch-qf-you-line-h">You vs the line</h3>
       <p className="ch-qf-you-line__me ch-num">
-        <b>{positionLabel(me)}</b>
+        {/* The place is named, as the board's Pos column names it, so the line never opens on a bare number (Round 3). */}
+        <b>Place {positionLabel(me)}</b>
         <ToParPlate value={me.toPar} size="card" />
         <span>
           {me.played} of {plural(numRounds, 'round')}
@@ -190,7 +191,7 @@ export function ViewerLineCard({
           </li>
         )}
         {gaps.map((g) => (
-          <li key={g.line} className={g.tie ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
+          <li key={g.line} className={g.tie || g.picks ? 'is-tie' : g.inside ? 'is-inside' : 'is-outside'}>
             <b>{g.label}</b> {lineGapText(g, me, numRounds, firstName)}
           </li>
         ))}

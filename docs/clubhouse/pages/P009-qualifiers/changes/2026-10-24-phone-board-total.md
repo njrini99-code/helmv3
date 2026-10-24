@@ -3,12 +3,14 @@
 ## 2026-10-24 — The phone board shows Total and desktop's ranking sentence
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 Qualifiers: "The phone board drops Total and the tiebreak caption")
+Design package: none (Clubhouse A+ handoff, section 0.4 Qualifiers: "The phone
+                board drops Total and the tiebreak caption")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   P009-A1
 Actions:        none
 Data impact:    none
-Held items:     decision 10 (complete cards rank first, row 115) is not built yet; RANK_RULE changes with it
+Held items:     decision 10 (complete cards rank first, row 115) is not built
+                yet; RANK_RULE changes with it
 ```
 
 ### Changed
@@ -27,5 +29,5 @@ Held items:     decision 10 (complete cards rank first, row 115) is not built ye
 
 ### Verification
 
-- qualifiers-premium.test › phone board (header, total, caption). Wants an iPhone
-  look at 390px: the plate's column is 52px with the total under it.
+- qualifiers-premium.test › phone board (header, total, caption). Wants an
+  iPhone look at 390px: the plate's column is 52px with the total under it.

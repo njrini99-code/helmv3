@@ -1,14 +1,18 @@
 # 2026-10-24 — Failure copy: a save template, and no guessed cause
 
-## 2026-10-24 — "Couldn’t save. Your changes are kept." and no more "Check your connection" on a guess
+## 2026-10-24 — "Couldn’t save. Your changes are kept."; no guessed causes
 
 ```text
 Design package: none (Clubhouse A+ Round 1, S3 item 4; B10.3, row 62 remainder)
 PR/commit:      agent/aplus-s3
-Contract IDs:   CH-1205, CH-1002, CH-8001, CH-8002, CH-8005, CH-8011, CH-8022, CH-8024, CH-8029, CH-11005, CH-11010, CH-12001, CH-12004, CH-12005, CH-14001, CH-14002, CH-14004, CH-14005, CH-14007, CH-14201, CH-15014, CH-15031, CH-15033, CH-15034, CH-15962
+Contract IDs:   CH-1205, CH-1002, CH-8001, CH-8002, CH-8005, CH-8011, CH-8022,
+                CH-8024, CH-8029, CH-11005, CH-11010, CH-12001, CH-12004,
+                CH-12005, CH-14001, CH-14002, CH-14004, CH-14005, CH-14007,
+                CH-14201, CH-15014, CH-15031, CH-15033, CH-15034, CH-15962
 Actions:        none
 Data impact:    none
-Held items:     the reset password line keeps "Check your connection" where the code classified a fetch failure, on a ratchet that only falls
+Held items:     the reset password line keeps "Check your connection" where the
+                code classified a fetch failure, on a ratchet that only falls
 ```
 
 ### Changed

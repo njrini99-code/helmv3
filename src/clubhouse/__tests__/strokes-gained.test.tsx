@@ -806,8 +806,8 @@ describe('player profile · phone', () => {
     expect(figures.nextElementSibling!.nextElementSibling).toBe(footer);
     const change = footer.querySelector('.ch-sgchg')!;
     expect(change.querySelector('.ch-delta')!.textContent).toBe('−1.3');
-    // P005-D6: away from the SG figure, the chip names what it measures.
-    expect(change.lastElementChild!.textContent).toBe('SG a round · No clear change vs previous 10');
+    // P005-D6: away from the SG figure, the chip names what it measures, and that it is a change, not a second SG figure (Round 3 review).
+    expect(change.lastElementChild!.textContent).toBe('Change in SG a round · No clear change vs previous 10');
     const rows = [...document.querySelectorAll('.ch-spm-round')];
     expect(rows[0]!.querySelector('.ch-loss')!.textContent).toBe('−1.1 SG');
     expect(rows[1]!.querySelector('.ch-gain')!.textContent).toBe('+0.6 SG');

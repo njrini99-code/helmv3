@@ -3,7 +3,8 @@
 ## 2026-10-24 — Focus moves to the field a refused save names
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 Settings: "the first invalid field getting focus")
+Design package: none (Clubhouse A+ handoff, section 0.4 Settings: "the first
+                invalid field getting focus")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   CH-8101, CH-8102, CH-8103, CH-8104, CH-8105, CH-8106, CH-8107
 Actions:        none

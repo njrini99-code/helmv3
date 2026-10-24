@@ -3,11 +3,13 @@
 ## 2026-10-24 — The course plan's player version can be sent to the player's thread
 
 ```text
-Design package: none (Clubhouse A+ handoff, section 0.4 CoachHelm: "Course plan can only be copied; add Send to Messages")
+Design package: none (Clubhouse A+ handoff, section 0.4 CoachHelm: "Course plan
+                can only be copied; add Send to Messages")
 PR/commit:      agent/aplus-lane-d
 Contract IDs:   none
 Actions:        none (navigation to Messages; nothing is sent or written)
-Data impact:    none (the draft waits in this tab's sessionStorage under an opaque key, prefill.ts)
+Data impact:    none (the draft waits in this tab's sessionStorage under an
+                opaque key, prefill.ts)
 Held items:     none
 ```
 

@@ -3,12 +3,15 @@
 ## 2026-10-24 — Cmd or Ctrl 1 to 9, and the palette's People before Roster opens
 
 ```text
-Design package: none (Clubhouse A+ handoff, B11; owner decisions 13 and 16, 2026-10-24)
+Design package: none (Clubhouse A+ handoff, B11; owner decisions 13 and 16,
+                2026-10-24)
 PR/commit:      feat/decisions-keys
 Contract IDs:   none
 Actions:        none
-Data impact:    reads only: for a coach, golf_team_members with golf_players (id, first_name, last_name) in the shell load
-Held items:     a security review of the People list (decision 16 asks for one before it ships); Cmd 1 to 9 in a browser tab
+Data impact:    reads only: for a coach, golf_team_members with golf_players
+                (id, first_name, last_name) in the shell load
+Held items:     a security review of the People list (decision 16 asks for one
+                before it ships); Cmd 1 to 9 in a browser tab
 ```
 
 ### Changed

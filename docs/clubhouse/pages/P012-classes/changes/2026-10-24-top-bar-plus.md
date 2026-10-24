@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-lane-d
 Contract IDs:   121901, CH-12201
 Actions:        none
 Data impact:    none
-Held items:     the Add class / Add a class / Add classes wording stays with the owner (CONS-38)
+Held items:     the Add class / Add a class / Add classes wording stays with the
+                owner (CONS-38)
 ```
 
 ### Changed

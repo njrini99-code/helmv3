@@ -1,6 +1,6 @@
-# 2026-10-24 — Tones, the women's Tour, the phone team trend (Clubhouse A+ lane C2, logged by S2)
+# 2026-10-24 — Tones, the women's Tour, the phone team trend (lane C2)
 
-## 2026-10-24 — Better and worse tokens, the women's Tour named, the phone trend's axis and noise colour (lane C2)
+## 2026-10-24 — Better/worse tokens, women's Tour, phone trend axis and colour
 
 ```text
 Design package: none (Clubhouse A+ phase 2, lane C2; merged in faa69f7c4)
@@ -8,7 +8,8 @@ PR/commit:      12d59b396, 1ee85e5c8, 95f6a61fb
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     rows 105 and 121 and Standing's window (owner decision I); row 107 was already done (formatSG at one decimal)
+Held items:     rows 105 and 121 and Standing's window (owner decision I); row
+                107 was already done (formatSG at one decimal)
 ```
 
 ### Changed

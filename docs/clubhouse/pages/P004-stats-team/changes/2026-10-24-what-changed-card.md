@@ -1,9 +1,10 @@
 # 2026-10-24 — What changed, first (Clubhouse A+ S2, row 70)
 
-## 2026-10-24 — The insight-first card at the top of Stats, phone and desktop (row 70)
+## 2026-10-24 — The insight-first card at the top of Stats (row 70)
 
 ```text
-Design package: none (Clubhouse A+ row 70, in the manner of Apple Health's Trends; no owner board)
+Design package: none (Clubhouse A+ row 70, in the manner of Apple Health's
+                Trends; no owner board)
 PR/commit:      agent/aplus-s2
 Contract IDs:   none (the card's two states have no CH code yet)
 Actions:        none
@@ -21,7 +22,9 @@ Held items:     no mini chart in the card; no CH codes for its states
   "No clear change" ("Nothing has moved past its usual round-to-round spread
   vs previous 10."). With nothing to compare (the season, the qualifiers, a
   date range, too few earlier rounds) there is no card.
-- Team stats reads every team figure the page draws with a change (scoring, strokes gained, greens, putts, scrambling, birdies), against the previous window.
+- Team stats reads every team figure the page draws with a change (scoring,
+  strokes gained, greens, putts, scrambling, birdies), against the previous
+  window.
 
 ### Why
 

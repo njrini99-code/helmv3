@@ -240,7 +240,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
             <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Avatar name={b.name} size={26} />
+              <Avatar name={b.name} id={b.playerId} size={26} />
               <span>
                 <b>{b.name}</b>
                 <span className="ch-who__m">{b.meta}</span>

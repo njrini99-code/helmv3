@@ -1,6 +1,6 @@
 # 2026-10-24 — Owner decisions: phone gutter, hairlines, button corners
 
-## 2026-10-24 — One phone gutter, darker hairlines, button corners kept (decisions 5 to 7)
+## 2026-10-24 — One phone gutter, darker hairlines, corners kept (decisions 5-7)
 
 ```text
 Design package: none (owner decisions 2026-10-24: 5 phone gutter, OQ-63 / B2;

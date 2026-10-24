@@ -184,6 +184,9 @@ describe('Qualifiers · the standings model', () => {
       expect(card).not.toBeNull();
       expect(within(card as HTMLElement).getByRole('heading', { name: 'You vs the line' })).toBeTruthy();
       expect(card!.textContent).toMatch(/Top-score line (Inside|Outside)/);
+      // The place is named, never a bare number before the to-par plate (Round 3).
+      const me = previewDetail(0, 'player').board!.rows.find((x) => x.playerId === previewDetail(0, 'player').viewerPlayerId)!;
+      expect(card!.querySelector('.ch-qf-you-line__me b')!.textContent).toBe(`Place ${(me.tied ? 'T' : '') + me.position}`);
       cleanup();
       const real = window.matchMedia;
       window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
@@ -241,8 +244,9 @@ describe('Qualifiers · the standings model', () => {
       };
       expect(say('b')[0]).toBe('Top-score line: Tie at cut, level with Jonah on to par and total strokes: your coach decides.');
       expect(say('c')[0]).toBe('Top-score line: Tie at cut, level with Eli on to par and total strokes: your coach decides.');
-      // The travel cut is not the tie's line: C is still inside it.
-      expect(say('c')[1]).toBe('Travel cut: Inside by 4 strokes. Maya is first below it.');
+      // Between the two lines before confirm, the places are the coach's picks: C is neither inside nor outside the travel cut.
+      expect(say('c')[1]).toBe('Travel cut: In the coach’s pick places: your coach chooses who fills them.');
+      expect(say('a')[1]).toBe('Travel cut: Inside by 6 strokes. Maya is first below it.');
     });
     it('draws the outcome on a confirmed board for the player, desktop and phone', () => {
       const data = previewDetail(DETAIL_INDEX.selected!, 'player');

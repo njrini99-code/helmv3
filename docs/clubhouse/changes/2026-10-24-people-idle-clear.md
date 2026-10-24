@@ -8,7 +8,8 @@ PR/commit:      agent/aplus-s3
 Contract IDs:   none
 Actions:        none
 Data impact:    none
-Held items:     RLS for the People read checked while signed in as a real coach and player (unchanged, still open)
+Held items:     RLS for the People read checked while signed in as a real coach
+                and player (unchanged, still open)
 ```
 
 ### Changed

@@ -253,7 +253,7 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
 
         <section className="ch-pf-hero" aria-label={data.name} data-canopy-head="">
           <span className="ch-pf-hero__av">
-            <Avatar name={data.name} size={84} />
+            <Avatar name={data.name} id={data.id} size={84} />
           </span>
           <div className="ch-pf-hero__id">
             <div className="ch-pf-hero__tags">
