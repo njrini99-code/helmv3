@@ -6,7 +6,7 @@ import { chLogServer } from '../lib/track-server';
 import { loadFocusLoops } from './focus-loop';
 import type { ChFocusLoop } from './focus-loop-shape';
 import type { ChSgTour } from '../lib/sg';
-import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, MIN_SG_ROUNDS, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
+import { classYearLabel, displayHandicap, fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, MIN_SG_ROUNDS, seasonStartDate, shortDate, summarizePlayer, type ChPlayerSeason, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -248,7 +248,11 @@ export async function loadPlayerProfile(input: {
   );
   // Coaches compare against the active team and page through it; players see only themselves.
   const teamMembersRead = coach ? Promise.resolve(supabase.from('golf_team_members').select('player_id').eq('team_id', input.teamId).eq('status', 'active')) : null;
-  const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f) });
+  // The season turns on 1 August in the team's zone (owner decision 9). The rounds don't wait for the zone: they are read from the
+  // earliest the season can start anywhere (UTC−12) and trimmed to the team's own start once the zone is in (below).
+  const tzRead = loadTeamZone(supabase, input.teamId, 'stats');
+  const wide = seasonStartDate(now, 'Etc/GMT+12');
+  const ownRoundsRead = loadSeasonRounds(supabase, [input.playerId], { surface: 'stats', since: loadSince(f, wide) });
   // The personal-best card's attesting coach (P005-C2): the team's primary coach on staff. A failed read only drops the line.
   const coachRead = attestingCoachName(supabase, input.teamId);
   const focusRead = Promise.resolve(
@@ -292,21 +296,25 @@ export async function loadPlayerProfile(input: {
   });
   const othersRoundsRead = teamIdsRead.then((ids) => {
     const others = ids.filter((id) => id !== input.playerId);
-    return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f) }) : { rounds: [] as ChRound[], error: false };
+    return others.length ? loadSeasonRounds(supabase, others, { surface: 'stats', since: loadSince(f, wide) }) : { rounds: [] as ChRound[], error: false };
   });
   // The teammates' cache rows: the window's rounds of every other player on the team (the comparisons' team column).
-  const othersCacheRead = Promise.all([teamIdsRead, othersRoundsRead]).then(([ids, others]) => {
+  const othersCacheRead = Promise.all([teamIdsRead, othersRoundsRead, tzRead]).then(([ids, others, tz]) => {
     if (!coach || others.error) return { byRound: new Map<string, ChRoundCache>(), error: false };
     const grouped = groupByPlayer(others.rounds);
-    const teamHole = holeRounds(ids.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(grouped.get(id) ?? [], f)));
+    const teamHole = holeRounds(ids.filter((id) => id !== input.playerId).flatMap((id) => roundsInFilter(grouped.get(id) ?? [], f, seasonStartDate(now, tz))));
     return loadRoundCache(supabase, teamHole.map((r) => r.id), 'stats');
   });
 
   // These are awaited a little later; a rejection in the meantime is theirs to raise there, not an unhandled one here.
-  for (const pending of [ownRoundsRead, othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, sharedContext]) pending.catch(() => undefined);
+  for (const pending of [tzRead, ownRoundsRead, othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, sharedContext]) pending.catch(() => undefined);
   suggestionsRead?.catch(() => undefined);
 
-  const [teamRes, playerRes, memberRes] = await Promise.all([teamRead, playerRead, memberRead]);
+  const [teamRes, playerRes, memberRes, tz] = await Promise.all([teamRead, playerRead, memberRead, tzRead]);
+  const start = seasonStartDate(now, tz);
+  // What a read from the team's own start would have returned: the wide read less the days before it.
+  const since = loadSince(f, start);
+  const trim = <T extends { rounds: ChRound[] }>(res: T): T => (since ? { ...res, rounds: res.rounds.filter((r) => r.round_date.slice(0, 10) >= since) } : res);
   if (playerRes.error) chLogServer('stats', 'player', playerRes.error);
   if (teamRes.error) chLogServer('stats', 'team', teamRes.error, 'teams');
   if (memberRes.error) chLogServer('stats', 'membership', memberRes.error, 'teams');
@@ -318,12 +326,13 @@ export async function loadPlayerProfile(input: {
 
   // CH-5208 again: the tour is the team's.
   const tour = teamRes.error ? null : tourForGender(teamRes.data?.gender);
-  const [ownRes, teamIds] = await Promise.all([ownRoundsRead, teamIdsRead]);
+  const [ownRead, teamIds] = await Promise.all([ownRoundsRead, teamIdsRead]);
+  const ownRes = trim(ownRead);
 
   // The heavy reads need only the player's own rounds (the window's ids), so they start now; the teammates' rounds, the Tour's
   // averages and the player's focus areas and goals are still on their way and are awaited after.
   const ownByPlayer = groupByPlayer(ownRes.rounds);
-  const ownWin = roundsInFilter(ownByPlayer.get(input.playerId) ?? [], f);
+  const ownWin = roundsInFilter(ownByPlayer.get(input.playerId) ?? [], f, start);
   const ownHole = holeRounds(ownWin);
   // Every shot-level figure counts exactly the window's own rounds with their holes (the ones the Rounds table lists, of the lengths the filter chose),
   // newest 100 at most: the detail read is given these ids instead of a date preset, which would count a different set.
@@ -345,7 +354,8 @@ export async function loadPlayerProfile(input: {
     loadApproachShots(supabase, scopeIds),
     scopeIds.length ? inStatsContext(sharedContext, () => loadSpray(input.playerId, scopeIds)) : Promise.resolve({ spray: null, error: false }),
   ]);
-  const [othersRes, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
+  const [othersRead, cacheOthers, benchRes, focusRes, goalsRes, suggestionsRes] = await Promise.all([othersRoundsRead, othersCacheRead, benchRead, focusRead, goalsRead, suggestionsRead]);
+  const othersRes = trim(othersRead);
   const bench = benchRes ?? new Map<string, number>();
   if (focusRes.error) chLogServer('stats', 'focusAreas', focusRes.error, 'development');
   if (goalsRes.error) chLogServer('stats', 'goals', goalsRes.error, 'development');
@@ -370,15 +380,15 @@ export async function loadPlayerProfile(input: {
 
   const byPlayer = groupByPlayer(seasonRes.rounds);
   const mine = byPlayer.get(input.playerId) ?? [];
-  const winRounds = roundsInFilter(mine, f);
+  const winRounds = roundsInFilter(mine, f, start);
   // A custom range, and Last 10, can read rounds from before the season: the season's own figures count this season only.
-  const season = summarizePlayer(seasonOnly(mine));
+  const season = summarizePlayer(seasonOnly(mine, start));
   const win = summarizeWindow(winRounds);
   // Q-123: a round posted as a total only is a score and nothing else. Every hole-level figure reads the window's rounds with their holes.
   const holeWin = holeRounds(winRounds);
 
   // Team rounds in the same window, for coach comparisons only (scores: all of them; hole-level: those with their holes).
-  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(byPlayer.get(id) ?? [], f)) : [];
+  const teamWin = coach ? teamIds.flatMap((id) => roundsInFilter(byPlayer.get(id) ?? [], f, start)) : [];
   const teamHole = holeRounds(teamWin);
   // The player's own cache rows and the teammates' (the comparisons' team column), one lookup as before.
   const cache = { byRound: new Map([...cacheOwn.byRound, ...cacheOthers.byRound]), error: cacheOwn.error || cacheOthers.error };
@@ -421,11 +431,11 @@ export async function loadPlayerProfile(input: {
   const s = detailFailed || !detail.stats ? null : perEighteen(detail.stats, winRounds);
 
   // Strokes gained against the previous 10 matching rounds; only the newest-ten cut has one (not a range, not picked rounds).
-  const prevList = previousInFilter(mine, f);
+  const prevList = previousInFilter(mine, f, start);
   // The change is painted only when it clears its standard error, from both windows' per-18 rounds with strokes gained (Q4).
   const sgOf = (r: ChRound) => r.strokes_gained_total;
   const sgSe = prevList ? windowChangeSe(holeWin, holeRounds(prevList), sgOf, 'sg') : null;
-  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f), sgSe, f.last);
+  const sgDelta = sgChange(win.sgPerRound, prevList ? summarizeWindow(prevList).sgPerRound : null, effectiveWindow(f), earlierInFilter(mine, f, start), sgSe, f.last);
   const puttBands = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench);
   const puttBandsNine = putts.error || !putts.rows.length ? null : bandPutts(putts.rows, bench, PUTT_BANDS_NINE);
   const approach = approachShots.error || !approachShots.rows.length ? null : approachBands(approachShots.rows, bench);
@@ -527,7 +537,7 @@ export async function loadPlayerProfile(input: {
   let nav: ChPlayerProfile['nav'] = null;
   if (input.viewer === 'coach') {
     const order = teamIds
-      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(byPlayer.get(id) ?? [])).avg }))
+      .map((id) => ({ id, avg: summarizePlayer(seasonOnly(byPlayer.get(id) ?? [], start)).avg }))
       .sort((a, b) => (a.avg ?? 999) - (b.avg ?? 999));
     const i = order.findIndex((o) => o.id === input.playerId);
     if (order.length > 1 && i >= 0) {
@@ -547,7 +557,7 @@ export async function loadPlayerProfile(input: {
     window: f.window,
     last: f.last,
     filter: f,
-    filterOptions: filterOptions(mine),
+    filterOptions: filterOptions(mine, undefined, start),
     id: p.id,
     name: fullName(p),
     firstName: p.first_name || fullName(p),

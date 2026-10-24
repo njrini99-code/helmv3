@@ -16,7 +16,9 @@ import {
   groupByPlayer,
   isFull18,
   loadSeasonRounds,
+  loadTeamZone,
   mean,
+  seasonStartDate,
   shortDate,
   summarizePlayer,
   type ChForm,
@@ -159,7 +161,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
   const supabase = await createClient();
   const now = new Date();
 
-  const [teamRes, membersRes, requestsRes] = await Promise.all([
+  const [teamRes, membersRes, requestsRes, tz] = await Promise.all([
     supabase.from('golf_teams').select('name, join_code, season').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
@@ -167,6 +169,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
       .eq('team_id', input.teamId)
       .in('status', ['active', 'inactive']),
     getTeamJoinRequests().catch((e: unknown) => ({ success: false as const, error: e instanceof Error ? e.message : String(e), data: undefined })),
+    loadTeamZone(supabase, input.teamId, 'roster'),
   ]);
 
   if (teamRes.error) chLogServer('roster', 'team', teamRes.error, 'teams');
@@ -198,7 +201,7 @@ export async function loadRoster(input: { teamId: string; coachId: string }): Pr
 
   // Rounds, focus areas, goals, this coach's notes and CoachHelm's counts, in parallel.
   const [season, focus, goals, notes, helm, availNotes] = await Promise.all([
-    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster' }) : Promise.resolve({ rounds: [], error: false }),
+    ids.length ? loadSeasonRounds(supabase, ids, { surface: 'roster', since: seasonStartDate(now, tz) /* the team's zone, owner decision 9 */ }) : Promise.resolve({ rounds: [], error: false }),
     // Open focus areas are `active` or `in_progress`, as Fairway's roster counts them (wiring audit, 2026-10-17).
     countBy('golf_player_focus_areas', ids, (chunk) =>
       supabase.from('golf_player_focus_areas').select('player_id').in('player_id', chunk).in('status', ['active', 'in_progress']),

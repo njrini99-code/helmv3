@@ -94,6 +94,22 @@ beforeEach(() => {
   tables.current = seasonTables();
 });
 
+describe('Stats team · the season turns in the team’s zone (row 116, owner decision 9)', () => {
+  it('at 11 PM on 31 July in Los Angeles a Pacific team’s round that day is this season; on New York’s clock it would not be', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-08-01T06:00:00Z'));
+    try {
+      const round = { ...(seasonTables().golf_rounds as { data: Array<Record<string, unknown>> }).data[0], round_date: '2026-07-31' };
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/Los_Angeles' } } };
+      expect((await load()).roundCount).toBe(1);
+      tables.current = { ...seasonTables(), golf_rounds: { data: [round] }, golf_team_settings: { data: { timezone: 'America/New_York' } } };
+      expect((await load()).roundCount).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('Stats team · saves that fail', () => {
   it('CH-4001 CH-4702 42301 the export is blocked by the browser: a specific toast, the error tick, and a low-severity report', async () => {
     const user = userEvent.setup();

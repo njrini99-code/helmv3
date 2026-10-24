@@ -6,7 +6,7 @@ import { CLASS_EVENT_TYPE } from '@/lib/calendar/class-events';
 import { eventDaySpan } from '@/lib/calendar/timezone';
 import { chLogServer } from '../lib/track-server';
 import { homeClock, ymd } from './home-clock';
-import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, summarizePlayer, type ChForm, type ChRound } from './season';
+import { classYearLabel, fullName, groupByPlayer, isFull18, lastTenFloor, loadSeasonRounds, mean, MIN_SG_ROUNDS, seasonStartDate, summarizePlayer, type ChForm, type ChRound } from './season';
 import { LEGS, sgLegs, teamGrid, type ChLeg } from './stats-team';
 import { legRows } from './leg-rows';
 import { loadCoachQueue, type ChCoachQueue } from './home-queue';
@@ -328,8 +328,10 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
     return loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'home', since: lastTenFloor() });
   });
   const playerById = rosterRead.then((res) => new Map(rosterOf(res).map((p) => [p.id, p])));
-  const latestRead = Promise.all([roundsRead, playerById]).then(([res, byId]) =>
-    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18)), (id) => {
+  // The season turns on 1 August in the team's zone (owner decision 9), the clock's.
+  const startRead = clockRead.then((c) => seasonStartDate(now, c.tz));
+  const latestRead = Promise.all([roundsRead, playerById, startRead]).then(([res, byId, start]) =>
+    latestWithHoles(supabase, seasonOnly(res.rounds.filter(isFull18), start), (id) => {
       const p = byId.get(id);
       return p ? nameOf(p) : 'Former player';
     }),
@@ -378,8 +380,9 @@ export async function loadCoachHome(input: { teamId: string; coachName: string; 
   // ── Season rounds ──
   const { rounds, error: roundsError } = seasonRead;
   const full = rounds.filter(isFull18);
-  const seasonRounds = seasonOnly(rounds);
-  const seasonFull = seasonOnly(full);
+  const start = seasonStartDate(now, tz);
+  const seasonRounds = seasonOnly(rounds, start);
+  const seasonFull = seasonOnly(full, start);
 
   // ── Latest rounds with hole-by-hole (read above, as soon as the rounds were in) ──
   const { rounds: latestRounds, holesError } = latest;

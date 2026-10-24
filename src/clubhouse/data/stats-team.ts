@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
-import { fullName, groupByPlayer, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, type ChRound } from './season';
+import { fullName, groupByPlayer, loadSeasonRounds, loadTeamZone, mean, MIN_SG_ROUNDS, seasonStartDate, shortDate, type ChRound } from './season';
 import {
   bandPutts,
   cachedPutts,
@@ -182,14 +182,17 @@ export function sgLegs(r: ChRound): Array<number | null> {
 export async function loadTeamStats(input: { teamId: string; window: ChWindow; filter?: ChFilter }): Promise<ChTeamStats> {
   const f = input.filter ?? filterFor(input.window);
   const supabase = await createClient();
-  const [teamRes, membersRes] = await Promise.all([
+  const [teamRes, membersRes, tz] = await Promise.all([
     supabase.from('golf_teams').select('name, gender, season').eq('id', input.teamId).maybeSingle(),
     supabase
       .from('golf_team_members')
       .select('player:golf_players(id, first_name, last_name)')
       .eq('team_id', input.teamId)
       .eq('status', 'active'),
+    loadTeamZone(supabase, input.teamId, 'stats'),
   ]);
+  // The season turns on 1 August in the team's zone (owner decision 9), never the server's.
+  const start = seasonStartDate(new Date(), tz);
   if (teamRes.error) chLogServer('stats', 'team', teamRes.error, 'teams');
   if (membersRes.error) chLogServer('stats', 'members', membersRes.error, 'teams');
 
@@ -201,7 +204,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const benchPromise = tour ? loadTourBenchmarks(supabase, tour, 'stats') : Promise.resolve(new Map<string, number>());
 
   const season = players.length
-    ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f) })
+    ? await loadSeasonRounds(supabase, players.map((p) => p.id), { surface: 'stats', since: loadSince(f, start) })
     : { rounds: [], error: !!membersRes.error };
   const byPlayer = groupByPlayer(season.rounds);
 
@@ -212,9 +215,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   let hasPrev = hasPrevious(f);
   for (const p of players) {
     const list = byPlayer.get(p.id) ?? [];
-    const cur = roundsInFilter(list, f);
+    const cur = roundsInFilter(list, f, start);
     windowRounds.push(...cur);
-    const prev = previousInFilter(list, f);
+    const prev = previousInFilter(list, f, start);
     if (prev && prev.length) {
       prevRounds.push(...prev);
       windowPaired.push(...cur);
@@ -231,7 +234,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   // reaches before the season): only the rounds with their holes, and only the ones a figure reads, so Last 10's wider read does not
   // pull a year of putts. The season's bests are 18-hole rounds (`seasonFull`).
   const seasonFull = season.rounds.filter((r) => (r.holes_played ?? 18) === 18);
-  const seasonRounds = seasonOnly(season.rounds);
+  const seasonRounds = seasonOnly(season.rounds, start);
   const figureIds = [...new Set([...holeWindow, ...holePrev, ...holeRounds(seasonRounds)].map((r) => r.id))];
   const [cache, putts, longest, bench] = await Promise.all([
     loadRoundCache(supabase, figureIds, 'stats'),
@@ -297,7 +300,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const sgWindow = holeWindow.filter((r) => sgReady.has(r.player_id));
   const sgNow = sgWindow.map(sgOf).filter((v): v is number => v != null);
   const sgTotal = weightedMean(sgWindow, sgOf);
-  const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f), 0);
+  const earlier = players.reduce((a, p) => a + earlierInFilter(byPlayer.get(p.id) ?? [], f, start), 0);
   // The change is like for like (A4, Q-112): the same players on both sides, each at the floor in the window and in their own
   // previous stretch, so a floored window is never set against an unfloored one (a player's two earlier rounds count nowhere).
   const sgBoth = new Set([...atFloor(holePrev)].filter((id) => sgReady.has(id)));
@@ -360,7 +363,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
 
   const playerSeries = players
     .map((p) => {
-      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
+      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f, start);
       const mineHoles = holeRounds(mine);
       return {
         id: p.id,
@@ -387,7 +390,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
-  const grid = teamGrid(players, season.rounds, f);
+  const grid = teamGrid(players, season.rounds, f, start);
 
   // Putting make rate by distance.
   let putting: ChTeamStats['putting'] = null;
@@ -396,7 +399,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   }
 
   // Season bests stay season-wide whatever the filter (and a custom range that reads earlier rounds): the section says so.
-  const bests = seasonBests(seasonOnly(seasonFull), players, cache.byRound, longest.error ? null : { longest: longest.longest, rounds: seasonRounds });
+  const bests = seasonBests(seasonOnly(seasonFull, start), players, cache.byRound, longest.error ? null : { longest: longest.longest, rounds: seasonRounds });
 
   return {
     teamName: teamRes.data?.name ?? 'Your team',
@@ -404,7 +407,7 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     window: f.window,
     last: f.last,
     filter: f,
-    filterOptions: filterOptions(season.rounds, new Map(players.map((p) => [p.id, fullName(p)]))),
+    filterOptions: filterOptions(season.rounds, new Map(players.map((p) => [p.id, fullName(p)])), start),
     activeCount: players.length,
     roundCount: windowRounds.length,
     holeRoundCount: holeWindow.length,
@@ -449,11 +452,11 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
  * the late-half against early-half change, the scoring average and each figure's sample. Pure: the rounds are the
  * loaded ones of `players` (the active roster), grouped by player here, and nothing outside `players` is counted.
  */
-export function teamGrid(players: Array<{ id: string; first_name: string | null; last_name: string | null }>, rounds: ChRound[], f: ChFilter): ChTeamStats['grid'] {
+export function teamGrid(players: Array<{ id: string; first_name: string | null; last_name: string | null }>, rounds: ChRound[], f: ChFilter, start?: string): ChTeamStats['grid'] {
   const byPlayer = groupByPlayer(rounds);
   return players
     .map((p) => {
-      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f);
+      const mine = roundsInFilter(byPlayer.get(p.id) ?? [], f, start);
       const mineHoles = holeRounds(mine);
       const s = summarizeWindow(mine);
       const legs = LEGS.map((_, i) => (effectiveCount(mineHoles, (r) => sgLegs(r)[i]) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => sgLegs(r)[i]) : null));

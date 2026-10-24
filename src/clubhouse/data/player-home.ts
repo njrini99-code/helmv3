@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
 import type { ChSgTour } from '../lib/sg';
 import { homeClock, latestWithHoles, loadHomeWeek, type ChHomeClock, type ChHomeEvent, type ChHomeWeek, type ChLatestRound } from './home';
-import { isFull18, lastTenFloor, loadSeasonRounds, mean, summarizePlayer, type ChRound } from './season';
+import { isFull18, lastTenFloor, loadSeasonRounds, mean, seasonStartDate, summarizePlayer, type ChRound } from './season';
 import { holeRounds } from './round-scope';
 import { legRows, type ChPlayerLeg } from './leg-rows';
 import { replyClosedAt } from '../screens/calendar/model';
@@ -140,7 +140,8 @@ export async function loadPlayerHome(input: { teamId: string; playerId: string; 
   const window = windowOf(roundsRes);
 
   // Strokes gained is the season's ("Season, per round"; each leg's "this season").
-  const season = summarizePlayer(seasonOnly(full));
+  // The season turns on 1 August in the team's zone (owner decision 9).
+  const season = summarizePlayer(seasonOnly(full, seasonStartDate(now, tz)));
   const legs = roundsRes.error ? null : { rows: legRows(window, cache.byRound, bench, season.sgLegs), cacheError: cache.error, benchError: bench === null || bench.size === 0 };
 
   const points: ChScoringPoint[] = full

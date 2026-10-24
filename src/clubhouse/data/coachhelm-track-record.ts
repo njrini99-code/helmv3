@@ -11,7 +11,7 @@ import { chLogServer } from '../lib/track-server';
 import { loadCoachHelmGate } from './coachhelm';
 import { toChTrackRecord, type ChTrackRecord } from './coachhelm-track-record-shape';
 import type { ChViewLoad } from './coachhelm-views-shape';
-import { seasonStartDate } from './season';
+import { loadTeamZone, seasonStartDate } from './season';
 
 export type * from './coachhelm-track-record-shape';
 
@@ -120,7 +120,8 @@ export async function loadCoachTrackRecord(input: { coachId: string; teamId: str
   const teamOff = await loadTeamOff(supabase, input.teamId);
   if (teamOff === 'failed') return { status: 'failed' };
   if (teamOff) return { status: 'off', reason: teamOff.reason };
-  const since = seasonStartDate(input.now);
+  // The season turns on 1 August in the team's zone (owner decision 9).
+  const since = seasonStartDate(input.now, await loadTeamZone(supabase, input.teamId, 'coachhelm'));
 
   const shown = await loadShownReads(supabase, input.teamId, since);
   if (shown.error) {
