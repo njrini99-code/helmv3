@@ -187,6 +187,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
     return (
       <EmptyState
         size="page"
+        kind="filtered"
         code={code}
         icon={SlidersHorizontal}
         title="No rounds match these filters."
