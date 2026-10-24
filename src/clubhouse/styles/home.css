@@ -3,7 +3,7 @@
 .ch-h-main {
   display: flex;
   flex-direction: column;
-  max-width: 1120px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   padding: var(--ch-page-top-home) var(--ch-page-gutter) var(--ch-page-bottom-tall);
 }

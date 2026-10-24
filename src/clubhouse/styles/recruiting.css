@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
-  max-width: 1320px;
+  max-width: var(--ch-measure-wide);
   margin: 0 auto;
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }
@@ -32,7 +32,7 @@
 }
 /* No team (CH-14306): the page state alone, in the page's frame. Not .ch-rec, which is hidden under 820px until the phone view takes over. */
 .ch-rec-none {
-  max-width: 1240px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   padding: var(--ch-page-head-top) var(--ch-page-gutter) 80px;
 }

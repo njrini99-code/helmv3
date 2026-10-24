@@ -9,7 +9,7 @@
 .ch-rt {
   display: flex;
   flex-direction: column;
-  max-width: 1240px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   padding: 16px 32px 24px;
   color: var(--ch-text-primary);

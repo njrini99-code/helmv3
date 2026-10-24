@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--ch-gap-grid);
-  max-width: 1360px;
+  max-width: var(--ch-measure-wide);
   margin: 0 auto;
   /* No eyebrow line over the week's title: its 24px is added to the head's top (tokens.css). */
   padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom-short);

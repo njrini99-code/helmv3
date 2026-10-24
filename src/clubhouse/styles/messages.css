@@ -14,7 +14,7 @@
   flex-direction: column;
   gap: 26px;
   height: auto;
-  max-width: 1200px;
+  max-width: var(--ch-measure-page);
   margin: 0 auto;
   /* No eyebrow line over the title: its 24px is added to the head's top (tokens.css). */
   padding: calc(var(--ch-page-head-top) + 24px) var(--ch-page-gutter) 80px;
@@ -461,7 +461,7 @@
 .ch-ms-msgs {
   display: flex;
   flex-direction: column;
-  max-width: 760px;
+  max-width: var(--ch-measure-reading);
   margin: 0 auto;
   padding: 0 32px;
 }

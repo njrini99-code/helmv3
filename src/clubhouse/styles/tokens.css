@@ -349,8 +349,11 @@
   --ch-space-12: 48px;
   /* Reading widths: running text, a form, a page's content. */
   --ch-measure-text: 68ch;
-  --ch-measure-form: 640px;
+  /* Row 39: three page widths. Reading for one column (a thread, a list, a form), standard for a page, wide for the
+     two data-dense desks (Calendar, Recruiting). Every page main and form takes one. */
+  --ch-measure-reading: 760px;
   --ch-measure-page: 1200px;
+  --ch-measure-wide: 1360px;
   --ch-gutter: 40px;
   /* The desktop page (wave 3, design #5): every tab's main sets its framed head on one line, so the title holds still
      between tabs. The gutter is each main's side padding (the head's 4px inset puts the title 44px in from the frame);
