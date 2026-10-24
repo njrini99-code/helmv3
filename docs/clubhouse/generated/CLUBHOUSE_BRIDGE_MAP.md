@@ -122,6 +122,7 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | P013 | 7 | 15 |  | 36 | 1 | 45 | 71 | 7 | 3 |  |  | 1 |  | 3 | 4 | 4 | 9 | 18 | 1 |  | 1 |  | 1 |  |  | 227 |
 | P014 | 1 | 3 | 4 | 7 | 11 | 10 | 4 | 2 | 4 |  | 2 | 1 | 1 | 1 | 1 | 4 | 3 | 8 | 1 | 1 |  |  |  |  |  | 69 |
 | P015 |  | 7 | 2 | 3 | 12 | 21 | 27 | 2 | 2 |  |  | 3 |  | 1 |  | 17 | 7 | 6 | 2 | 1 | 1 |  | 1 |  |  | 115 |
+| P016 |  | 1 |  | 1 |  | 1 |  |  |  |  |  |  |  |  |  | 1 |  | 1 |  |  |  |  |  |  |  | 5 |
 
 ## P001 Shell
 
@@ -1878,6 +1879,16 @@ Every Bridge ID (D-68: namespace, two-digit category, two-digit item), its catal
 | 152001 | CH-15910 | 20 Keyboard / input | `THE_KEYBOARD` | implemented | The keyboard |
 | 152101 | CH-15907 | 21 Performance | `EITHER_SCREEN_LOADS_ON_A_SLOW_PHONE` | implemented | Either screen loads, on a slow phone or a fast desktop |
 | 152301 | CH-15908 | 23 Logging / observability | `A_READ_FAILS_OR_THE_COURSE_CRASHES` | implemented | A read fails, or the course crashes |
+
+## P016 Tournaments
+
+| Bridge ID | Code | Category | Name | Status | Meaning |
+| --- | --- | --- | --- | --- | --- |
+| 160201 | CH-16401 | 02 Initial loading / skeleton | `A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY` | implemented | A Tournaments view is on its way (`load: 'loading'`) |
+| 160401 | CH-16301 | 04 Empty | `A_VIEW_ITS_LANE_HASNT_BUILT_YET` | deprecated | A view its lane hasn't built yet (preview only: no route serves Tournaments yet) |
+| 160601 | CH-16201 | 06 Server / system error | `A_TOURNAMENTS_VIEWS_ONE_READ_FAILS` | implemented | A Tournaments view's one read fails (any view; `load: 'failed'`) |
+| 161601 | CH-16601 | 16 Micro animation | `A_VALUE_CHANGES_AFTER_FIRST_PAINT` | reserved | A value changes after first paint (a live score, a team total, a place) |
+| 161801 | CH-16801 | 18 Accessibility | `A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE` | reserved | A signed difference or a trust state is read |
 
 ## Tombstones
 

@@ -674,7 +674,8 @@ Phone, on `agent/clubhouse-messages-mobile` (local, not yet merged):
 | Classes | /golf/dashboard/classes (player; boards `Player - Classes.html`, phone) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Recruiting | /golf/dashboard/recruiting (coach; boards in the Clubhouse Recruiting canvas, Q-87) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
 | Auth | /golf/login, /golf/welcome, /golf/signup, /golf/player (signed out; boards design/handoff/auth, Q-96; flag golf_clubhouse_front_door) | done | doing | done | doing | doing | done | doing | doing | doing | doing | todo |
-| Practice, Lineups, Events, Scouting | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Tournaments | /golf/dashboard/tournaments with /new, /compare, /history, /links, /[id], /[id]/edit, /[id]/lineup, /[id]/live (coach; player list and event view; boards `Coach - Tournaments.html`, phone; plan 4.33, D-80 to D-101; HELD-DATA, routes not wired, preview only) | done | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
+| Practice, Scouting (Lineups and Events now live inside Tournaments, D-80) | various | blocked (no design yet) | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 | Player app (all screens) | /golf/dashboard (player role; built: Home, Stats, Calendar, Messages, Qualifiers, Team Hub, Settings; next: Rounds, CoachHelm, Classes) | doing | todo | todo | todo | todo | todo | todo | todo | todo | todo | todo |
 <!-- clubhouse:screens:end -->
 
@@ -1156,6 +1157,157 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   - D-79: A finished round is a scorecard to keep: it settles in once after a
     submit, prints on one page and exports an image drawn on the device (player,
     course, Golfhelm foot). No share endpoint or public URL.
+
+- Decisions of 2026-10-23 (P016 Tournaments, the handoff's section 4.33). Approved by
+  the owner as written, 2026-10-23 (Nick: "yeah approve. whatever you think";
+  OQ-65). The approval covers the product decisions only: applying migrations,
+  flipping flags, merging and deploying stay with the owner, and every SQL
+  block stays HOLD. Plan text: section 4.33, 0.1 (the table) and 0.2 (why).
+  - D-80: Tournaments becomes Clubhouse page P016. Coach: sidebar Team group,
+    right after Qualifiers, and a phone More row below Qualifiers. Player:
+    sidebar Team group after Qualifiers, a phone More row, and the Home "Up
+    next" card when the next event is a tournament. Lineups live inside
+    Tournaments, not as their own nav entry. This supersedes the D-33 and Q-15
+    hold on "Lineups" and "Events" for tournaments only, and inserts P016 into
+    the D-67 v2 order, which needs the owner's word because D-62 and D-63 say
+    new designs wait for the gold standard.
+  - D-81: A tournament is a `golf_tournaments` row for one GolfHelm team (one
+    gender). Each competition round is an ordinary `golf_events` row
+    (`event_type = 'tournament'`) tied to it through `golf_tournament_rounds`,
+    so the calendar shows one entry per round with no calendar schema change.
+    `parent_event_id` is not used (it means a recurring series,
+    `EventDetailModal.tsx:527,616`). Round titles name the event and round only,
+    never the lineup, because every player can read tournament events. A
+    combined men's and women's event is two tournaments joined by
+    `event_group_id` (D-92).
+  - D-82: Each player's score in a tournament round is one
+    `golf_tournament_player_rounds` row, and `golf_rounds` is never updated, so
+    the lifecycle guard stays untouched. Every row records where the score came
+    from (`score_source`). Live hole scores go into an append-only ledger
+    (`golf_tournament_hole_entries`, resolved into
+    `golf_tournament_hole_scores`) keyed to that row. The player's own holes
+    reach the ledger through an AFTER trigger on `golf_holes` that writes only
+    to the ledger and never raises. Needs the owner: it adds a trigger to a hot
+    existing table. When the card and the official total differ, the desk shows
+    the difference and never picks one silently.
+  - D-83: v1 has no API sync with Scoreboard by Clippd, Golfstat or BlueGolf.
+    Field results and official totals, live or final, arrive by coach entry or
+    by a paste of the official results text or CSV, parsed in the browser into a
+    preview diff the coach confirms. The server never fetches a results URL.
+    Each number keeps its source and time. A sync adapter is later and gated on
+    a provider agreement.
+  - D-84: Trust has three public states, per score, per round and per event: Live
+    (provisional), Final (our cards are returned and our numbers are settled;
+    the field can still move) and Official (the coach marked the host's
+    published results, or an official paste marked "Published"). Inside Live,
+    each player has a Card returned step that Final requires unless forced with
+    a reason, and a coach-side Card check compares each card hole by hole before
+    the player signs. Source (Card, Coach, Estimate, Pasted) is a separate,
+    quieter label. Reopening a Final or Official round needs a reason and is
+    logged.
+  - D-85: What players see, and when. Players see the published lineup, tee times,
+    the trip and their own scores at any time. They see teammates' scores for a
+    round only once that round is Final and they are outside their own
+    competition window (D-87). They never see the coach's lineup reasoning, the
+    review, unshared debrief lines, other players' reflections or another
+    player's private line. Enforced by loaders, by RLS on the new tournament
+    tables and by tests. It is not a hard boundary over `golf_rounds` and
+    `golf_holes`, which teammates can read under D-36; tightening that is a
+    separate decision.
+  - D-86: The comparison is asked with one question bar (a sentence with a pair of
+    subjects, shared context and period, and per-side overrides) and answered by
+    a rule-based, tiered verdict (D-101), never AI text. The design's
+    side-by-side scope cards become the result's identity plates
+    (`ComparePlates`), which the picker's tokens morph into on desktop. Each
+    comparison pair (player vs player, player vs team, event vs event, this
+    season vs last, fifth spot) has its own hero chart. The results screen after
+    the pick is a premium visual screen, not a table (6.5). The design's
+    timeline, divider, evidence drawer and presets stay. On phone, the paired
+    A/B plates and the Edit comparison sheet stay, and the sheet closes over the
+    result.
+  - D-87: Record-only competition window. From 30 minutes before a player's first
+    tee time of a competition day until they post that day's last round (or the
+    round goes Final, or 12 hours after the first tee), the player app records
+    but does not interpret. Players may enter their own hole scores (Rule 4.3a
+    "recording"), with `app_scoring = 'record_only'` by default and a per-round
+    coach switch to turn app scoring off for host rules. They see paper-card
+    parity only: strokes per hole and nine totals, no to-par, score names,
+    statistics, team or leaderboard. Analytics, comparisons, teammates' scores,
+    CoachHelm (an advice source) and performance pushes are held. Group thread
+    composers are locked until they post; one-to-one with an advice giver stays
+    open. Server loaders enforce it, not only screens.
+  - D-88: Who enters scores and which value wins. GolfHelm is never the official
+    scorer. One append-only hole ledger takes three sources: the player's own
+    GolfHelm round, coach entry (walking with a group, or keyed from the host's
+    live page) and the official paste. For a hole, official beats coach and
+    coach beats the player app. Two different values are a visible dispute,
+    never resolved silently. When no hole scores exist, a coach quick score
+    (thru and to par) shows as an Estimate until holes or a card arrive. Players
+    link only their own rounds; coaches link, enter and correct for anyone on
+    the team.
+  - D-89: Notifications. Players: one push catalogue (5.11.9) behind a new
+    `push_tournaments` preference (held migration 5). Lineup and selection
+    pushes carry neutral lock-screen text, and performance pushes wait for a
+    player's window to end. Coaches: nine opt-in live alert kinds (5L.6) with a
+    per-coach rate limit (90 s spacing, 8 an hour, then a digest), collapse ids
+    per player, silence while the live screen is open, and quiet hours
+    overridden only for card risk, team at risk and suspensions. Time-sensitive
+    delivery only for departure or a tee-time change within the hour. Adds a
+    `tournament_live` notification type and a job kind on `/api/jobs/consume`.
+  - D-90: The lineup reveal. Publishing tells every player on the roster at the
+    same moment, or at a time the coach sets. Each player sees only their own
+    status in the app. The team chat post names the travelling players in order
+    and never lists who stays home. The coach may add one private line per
+    player. The coach sees "Seen by 7 of 9".
+  - D-91: Divisions and genders. The season path shows only the rules that apply
+    to the team's division and gender that season. D1 gets the .500 line against
+    D1 opponents, the 15-round minimum and 24 dates, with the men's three
+    2026-27 checkpoints and the women's single check. Other divisions get the
+    record, rounds and an entered ranking, with "Eligibility rules for your
+    division aren't tracked yet" until each set is verified.
+  - D-92: A and B squads, individuals and combined events. Entries carry a squad.
+    Only the A squad feeds team stats, the season record and the .500 line; a B
+    squad gets its own team score labelled "B team · not in the season record".
+    Individuals never count in a team score. Combined events are two tournaments
+    joined by `event_group_id`.
+  - D-93: Honest estimates. Projected team totals are ranges, never one number.
+    Count chance shows in bands on screen, with the exact figure only in the
+    evidence drawer. Lineup and pre-event estimates need 6 eligible rounds;
+    in-round projections need 3 countable rounds with holes, because they lean
+    on the holes already played. The lineup builder never says who "should"
+    play. No generated prose.
+  - D-94: Review into practice. A debrief line becomes a focus area
+    (`golf_player_focus_areas`, new `from_tournament_id`) only when the coach
+    presses "Make it a focus". Lines are shared one by one, none by default. A
+    player's reflection is read by coaches only, and the screen says so.
+  - D-95: Live realtime is Broadcast from the database on private
+    `tour:<round_event_id>` topics, with a `seq` per round, a snapshot and a
+    backfill RPC, Presence for the two advice givers and an IndexedDB outbox for
+    coach entries on bad signal. It adds the first policy on
+    `realtime.messages`. Plan 11.5's publication additions and 12.4's
+    `golf_holes` and `golf_rounds` subscriptions are withdrawn.
+  - D-96: Live Activity later. One coach Live Activity per round once a native
+    build ships `liveActivityV1`. Until then, collapse-id alert pushes plus the
+    in-app dock.
+  - D-97: One-way coach broadcasts. Coach messages to the team during a round go
+    to a no-reply conversation, which needs a staff-only posting mode in team
+    messaging if none exists.
+  - D-98: Desktop shared-element morphs: ledger row to desk header, desk to
+    event-scoped compare, and picker tokens to result plates, on the smooth
+    spring inside the existing page crossfade. Phone keeps the push. New motion
+    inside the owner's "crossfade, never a slide" rule (2026-10-01).
+  - D-99: Comparison share cards (player vs player, player progress, event recap)
+    with audience-based redaction for recruits and parents, as a PNG through the
+    existing `BestCard` share path. No links and no server rendering.
+  - D-100: No digit rolling anywhere in P016, live included (confirms the owner
+    rule of 2026-10-21). A changed value takes its new value in place with a 520
+    ms changed-wash. NumberFlow stays out of Clubhouse.
+  - D-101: Comparison statistics. Verdict tiers Clear (|z| ≥ 2.5), Likely (2 to
+    2.5), Leaning (1 to 2) and Level, where only Clear and Likely may enter the
+    headline. Paired comparisons where rounds are shared, round-clustered
+    standard errors for rates, and floors from `lib/stats-signal.ts`. A one-SE
+    gate across about 24 metrics would report about 7 false differences between
+    two identical players.
 
 ## Open owner questions
 
@@ -1828,6 +1980,102 @@ decision named.
   current staff), the distance unit picker row and the Team Hub trip menu (Edit,
   Delete). They reuse the approved phone grammar. Recommended: review on a phone
   and keep. Kept: built as described.
+- Q-180 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should
+  individuals (non-counting) appear in NeedsYou? Default, built to until the
+  owner answers: Yes, with the bubble weight at zero.
+- Q-179 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Expected time
+  per hole for the quiet alert: a fixed 14 minutes, or the event's pace chart?
+  Default, built to until the owner answers: 14 minutes, editable per event.
+- Q-178 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should a coach
+  be able to score for a player who **is** scoring in GolfHelm, or only correct
+  finished holes? Default, built to until the owner answers: Allowed. A
+  different value becomes a dispute.
+- Q-177 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) A "course mode"
+  with heavier numerals for sunlight, as a toggle, without new type sizes?
+  Default, built to until the owner answers: No toggle. The live screen uses the
+  heaviest existing weights and 7:1 targets.
+- Q-176 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should the
+  projection's count odds ("Counts 78%") show to coaches, or only the projected
+  total? Default, built to until the owner answers: Show both, behind the
+  3-round gate, labelled Projected.
+- Q-175 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) May a player
+  card go to a recruit with the counting line drawn from teammates' scores (as
+  an aggregate)? Default, built to until the owner answers: Yes as an aggregate
+  line, never with names; owner to confirm under D-99.
+- Q-174 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Saved player
+  groups ("Freshmen"): is there a table, or are class years enough? Default,
+  built to until the owner answers: Class-year groups from the roster in v1.
+- Q-173 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does
+  `golf_holes` carry putts and GIR per hole for putts per GIR? Default, built to
+  until the owner answers: Drop putts per GIR from v1, and show putts per round
+  and three-putts.
+- Q-172 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should
+  CoachHelm for players be locked during the window, or only its advice answers?
+  Default, built to until the owner answers: Fully locked (simplest to prove).
+- Q-171 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the coach
+  want the team debrief view (meeting-room sequence) in v1? Default, built to
+  until the owner answers: Yes, desktop only, team-level content only.
+- Q-170 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Verify the .500
+  tie treatment and the D2, D3, NAIA and NJCAA eligibility rules before showing
+  any line for them. Default, built to until the owner answers: Ties count half;
+  other divisions show "not tracked yet".
+- Q-169 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Can coaches
+  read a player's hole notes? Default, built to until the owner answers: No in
+  v1. The player owns their book.
+- Q-168 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) The itinerary
+  RLS lets every team member read room assignments and the hotel confirmation.
+  Tighten it? Default, built to until the owner answers: Screens show only the
+  player's own room. The RLS change is the owner's call (a separate held
+  migration).
+- Q-167 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Show count
+  chance as exact percentages to coaches? Default, built to until the owner
+  answers: Bands on the screen, the exact figure in the evidence drawer.
+- Q-166 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) May an advice
+  giver's quick score show on the coach live board as an estimate? Default,
+  built to until the owner answers: Yes, labelled Estimate, replaced by the card
+  when posted.
+- Q-165 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Combined men's
+  and women's events: one shared trip and one desk view, or two separate
+  tournaments only? Default, built to until the owner answers: Two tournaments
+  linked by `event_group_id`, sharing one itinerary if the coach links it. A
+  combined desk view comes later.
+- Q-164 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should players
+  who aren't travelling hear before the rest, or everyone at the same moment?
+  Default, built to until the owner answers: Same moment, with an optional time.
+- Q-163 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) On a 36-hole
+  day, does the player's record-only window stay closed between rounds (lunch
+  turnaround)? Default, built to until the owner answers: Yes. Closed until the
+  day's last post (safest reading of the device rule).
+- Q-162 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Match-play
+  events: does the team want bracket entry in v1, or W/L/T only? Default, built
+  to until the owner answers: W/L/T only in v1; bracket in v2.
+- Q-161 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Weather on the
+  event desk: which source, if any? Default, built to until the owner answers:
+  None in v1.
+- Q-160 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should player
+  reflections be visible to teammates if the player chooses? Default, built to
+  until the owner answers: No in v1; coach only.
+- Q-159 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should "Top 25
+  benchmark" exist? It needs a benchmark table GolfHelm does not have. Default,
+  built to until the owner answers: Hidden until a table exists.
+- Q-158 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Division and
+  conference: set once per team, or per season? Default, built to until the
+  owner answers: Per season (`golf_team_seasons`).
+- Q-157 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should the
+  lineup publish post to team chat automatically or ask each time? Default,
+  built to until the owner answers: Ask each time with the message previewed.
+- Q-156 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Does the coach
+  want a TV or "clubhouse screen" mode for the live board (auto-cycling, large
+  type)? Default, built to until the owner answers: Out of v1; leave a route
+  slot.
+- Q-155 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should players
+  be able to link their own tournament rounds, or only coaches? Default, built
+  to until the owner answers: Both; the player link is limited by RLS to their
+  own round.
+- Q-154 (open, 2026-10-23; P016 Tournaments, plan 4.33 section 18) Should field
+  results (other teams) ever sync from Scoreboard by Clippd, Golfstat or
+  BlueGolf, or stay coach-entered? Default, built to until the owner answers:
+  Coach-entered and pasted in v1 (D-83).
 - Q-152 (answered 2026-10-02, owner: keep the built version, b359c0414) Past
   events fade to 0.45 to 0.55 opacity (the board: `m.css` `.m-ev.is-past` 0.55,
   `.m-ag.is-past` 0.5, `m-home.css` `.mh-tl__r.is-past` 0.45), so their text

@@ -160,3 +160,16 @@ test('an auth page (sign in, welcome) lives outside the dashboard, in the (auth)
   // A dashboard page is unchanged: its routes are still refused outside /golf/dashboard.
   assert.ok(checkRegistry(ctx({ manifests: [page({ routes: ['/golf/login'] })] })).some((x) => x.includes('is not under /golf/dashboard')));
 });
+
+test('a page built in the preview before its routes are wired lists them as plannedRoutes, with no page.tsx yet (P016)', () => {
+  const planned = (over = {}, exists = () => false) => checkRegistry({ ...ctx({ manifests: [page({ routes: [], plannedRoutes: ['/golf/dashboard/messages'], ...over })] }), exists: (p) => !p.endsWith('page.tsx') || exists(p) });
+  assert.deepEqual(planned(), []);
+  // No routes at all is still refused.
+  assert.ok(planned({ plannedRoutes: [] }).some((x) => x.includes('no routes')));
+  // Once a page.tsx exists the route is wired: it moves to routes.
+  assert.ok(planned({}, () => true).some((x) => x.includes('move it to routes')));
+  // Planned routes stay under the dashboard, never double as routes, and never sit beside a complete implementation.
+  assert.ok(planned({ plannedRoutes: ['/golf/login'] }).some((x) => x.includes('planned route /golf/login is not under /golf/dashboard')));
+  assert.ok(checkRegistry(ctx({ manifests: [page({ plannedRoutes: ['/golf/dashboard/messages'] })] })).some((x) => x.includes('in both routes and plannedRoutes')));
+  assert.ok(planned({ status: { ...page().status, implementation: 'complete' } }).some((x) => x.includes('planned routes still unwired')));
+});

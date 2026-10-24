@@ -1,0 +1,3 @@
+/* P016 Tournaments, event desk (EventDesk, DeskHeader, DeskOverview, FieldTable, FindingCard, StoryCard, WhoCounted, HoleGrid, EvidenceDrawer).
+   Owned by the desk area (src/clubhouse/screens/tournaments/README.md). Every class here starts .ch-tour-desk-; shared
+   pieces (the view root .ch-tour, the changed-wash) live in tournaments.css. Tokens only. */

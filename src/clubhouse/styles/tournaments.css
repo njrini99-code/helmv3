@@ -1,0 +1,59 @@
+/* P016 Tournaments, the base sheet: what every Tournaments view shares. Base-owned (src/clubhouse/screens/tournaments/
+   README.md); each area styles its own view in its own sheet under its own prefix:
+     tournaments-home.css    .ch-tour-home-*     season home
+     tournaments-desk.css    .ch-tour-desk-*     event desk, who counted, holes, evidence drawer
+     tournaments-review.css  .ch-tour-rev-*      review, history, link inbox
+     tournaments-compare.css .ch-tour-cmp-*      the comparison workspace
+     tournaments-lineup.css  .ch-tour-lu-*       event form and lineup builder
+     tournaments-live.css    .ch-tour-live-*     the live round
+     tournaments-player.css  .ch-tour-pl-*       the player's event view
+   A class is anchored by one sheet only (clubhouse:check, css-owners.mjs). Tokens only, no literal durations. */
+
+/* A view's root. */
+.ch-tour {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* The changed-wash (D-100, 8.5): a value that changed after first paint takes its new value in place and its cell is
+   washed. `useChangedWash` holds the class for the reveal duration; when it comes off, the wash fades on the same
+   duration. Under reduced motion and Animations off the duration token is 0: the wash still shows for its hold and
+   only the fade is skipped. Put `.ch-tour-washable` on the cell and toggle `.ch-tour-changed`. */
+.ch-tour-washable {
+  border-radius: var(--ch-radius-xs);
+  transition: background-color var(--ch-dur-reveal) var(--ch-ease);
+}
+.ch-tour-changed {
+  background-color: var(--ch-bg-selected);
+  transition: none;
+}
+
+/* A view's head, as the boards draw it (tour.css .tr-head): the eyebrow, the title, then the view's actions on the
+   right. Shared so every view's head lines up; a view adds its own actions inside .ch-tour-head__a. */
+.ch-tour-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.ch-tour-head__k {
+  font: var(--ch-type-label-s);
+  color: var(--ch-text-tertiary);
+}
+.ch-tour-head h1 {
+  margin: 0;
+  font: var(--ch-type-display-l);
+  letter-spacing: -0.02em;
+  color: var(--ch-text-primary);
+  overflow-wrap: anywhere;
+}
+.ch-tour.is-phone .ch-tour-head h1 {
+  font: var(--ch-type-display-s);
+}
+
+/* The base's placeholder for a view its lane hasn't built (TourPlaceholder): the one line read from the data. */
+.ch-tour-ph__detail {
+  color: var(--ch-text-primary);
+}

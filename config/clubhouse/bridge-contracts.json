@@ -19200,5 +19200,60 @@
     "meaning": "A read fails, or the course crashes",
     "status": "implemented",
     "catalog": "docs/clubhouse/catalog/auth.md"
+  },
+  {
+    "id": 160201,
+    "page": "P016",
+    "category": 2,
+    "item": 1,
+    "name": "A_TOURNAMENTS_VIEW_IS_ON_ITS_WAY",
+    "chCode": "CH-16401",
+    "meaning": "A Tournaments view is on its way (`load: 'loading'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160401,
+    "page": "P016",
+    "category": 4,
+    "item": 1,
+    "name": "A_VIEW_ITS_LANE_HASNT_BUILT_YET",
+    "chCode": "CH-16301",
+    "meaning": "A view its lane hasn't built yet (preview only: no route serves Tournaments yet)",
+    "status": "deprecated",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 160601,
+    "page": "P016",
+    "category": 6,
+    "item": 1,
+    "name": "A_TOURNAMENTS_VIEWS_ONE_READ_FAILS",
+    "chCode": "CH-16201",
+    "meaning": "A Tournaments view's one read fails (any view; `load: 'failed'`)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161601,
+    "page": "P016",
+    "category": 16,
+    "item": 1,
+    "name": "A_VALUE_CHANGES_AFTER_FIRST_PAINT",
+    "chCode": "CH-16601",
+    "meaning": "A value changes after first paint (a live score, a team total, a place)",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
+  },
+  {
+    "id": 161801,
+    "page": "P016",
+    "category": 18,
+    "item": 1,
+    "name": "A_SIGNED_DIFFERENCE_OR_A_TRUST_STATE",
+    "chCode": "CH-16801",
+    "meaning": "A signed difference or a trust state is read",
+    "status": "reserved",
+    "catalog": "docs/clubhouse/catalog/tournaments.md"
   }
 ]
