@@ -1024,12 +1024,12 @@
     }
   }
   .ch-hl[data-canopy] .ch-hl-pl.is-on {
-    background: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+    background: var(--ch-selected-tint);
     box-shadow: none;
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-pl.is-on:hover {
-      background: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
+      background: var(--ch-selected-tint-hover);
     }
   }
   /* CH-13602: a press deepens the tint over the press beat, as every flush row does (the shell's CH-1606). */

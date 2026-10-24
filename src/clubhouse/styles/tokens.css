@@ -148,6 +148,9 @@
   --ch-selected-ink: var(--ch-green-700);
   /* A chosen key drawn as a solid plate (a day, a chip, a filter on the green): the strong selected fill. */
   --ch-selected-strong: var(--ch-green-800);
+  /* A chosen row on the canopy's glass: a tint of the green, not a plate (CoachHelm's players and Deep dive items). */
+  --ch-selected-tint: color-mix(in oklab, var(--ch-green-600) 7%, transparent);
+  --ch-selected-tint-hover: color-mix(in oklab, var(--ch-green-600) 9%, transparent);
   --ch-text-primary: var(--ch-ink-900);
   --ch-text-secondary: var(--ch-ink-700);
   --ch-text-tertiary: var(--ch-ink-600);
