@@ -29,7 +29,20 @@ export interface SwipeAction {
  * revealed buttons are real buttons, inert while the row is shut. Reduced motion snaps instead of springing; the swipe
  * itself still works, being input. The root is the row's `PresenceRow`, so a list's arrivals and departures still run.
  */
-export function SwipeRow({ leading, trailing, className, children }: { leading?: SwipeAction | null; trailing?: SwipeAction | null; className?: string; children: ReactNode }) {
+export function SwipeRow({
+  leading,
+  trailing,
+  className,
+  onClaim,
+  children,
+}: {
+  leading?: SwipeAction | null;
+  trailing?: SwipeAction | null;
+  className?: string;
+  /** Runs once a drag is claimed as a swipe, e.g. to cancel the row's long press (its events stop reaching it). */
+  onClaim?: () => void;
+  children: ReactNode;
+}) {
   const reduced = useChReducedMotion();
   const root = useRef<HTMLElement | null>(null);
   const content = useRef<HTMLDivElement | null>(null);
@@ -122,6 +135,7 @@ export function SwipeRow({ leading, trailing, className, children }: { leading?:
           if (d.axis !== 'x') return;
           // Claimed: the row is the finger's now, not the list's scroll or the tap underneath.
           (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+          onClaim?.();
           swallow.current = true;
           setOpen(null);
         }

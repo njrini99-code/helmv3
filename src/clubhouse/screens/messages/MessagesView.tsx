@@ -450,6 +450,7 @@ export function ConvRow({ api, c, avatarSize = 36, phone = false }: { api: ChMes
     <>
       <SwipeRow
         className="ch-ms-swipe"
+        onClaim={ctx.cancelHold}
         leading={{ label: unread ? "Read" : "Unread", icon: unread ? MailOpen : Mail, tone: "accent", run: toggleRead }}
         trailing={askDelete && { label: "Delete", icon: Trash2, tone: "danger", run: askDelete }}
       >

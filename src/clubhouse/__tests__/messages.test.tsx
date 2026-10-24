@@ -330,7 +330,7 @@ describe('Messages · actions that fail', () => {
     await waitFor(() => expect(a.hideGolfConversation).toHaveBeenCalledTimes(2));
   });
 
-  it('CH-7026 Mark as read from a row clears the server count, and a failed one says so and keeps it unread', async () => {
+  it('CH-7026 Mark as read from a row writes the server read, and a failed one says so and keeps the row unread', async () => {
     const user = userEvent.setup();
     a.markGolfMessagesAsRead.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
     live.convs.conversations = [{ ...team, unread_count: 2 }];
@@ -340,6 +340,7 @@ describe('Messages · actions that fail', () => {
     await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Mark as read' }));
     await expectCode('CH-7026', /Couldn’t mark the conversation read/);
     expect(a.markGolfMessagesAsRead).toHaveBeenCalledWith('team');
+    expect(row.className).toMatch(/\bis-unread\b/);
     fireEvent.contextMenu(row, { clientX: 120, clientY: 120 });
     await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Mark as read' }));
     await waitFor(() => expect(a.markGolfMessagesAsRead).toHaveBeenCalledTimes(2));
