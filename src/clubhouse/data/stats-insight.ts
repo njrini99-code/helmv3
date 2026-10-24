@@ -41,7 +41,8 @@ export function statsInsight(changes: ReadonlyArray<ChInsightChange | null>, mos
   const toned = known
     .map((c) => ({ c, tone: halvesTone({ delta: c.delta, se: c.se ?? null }, c.lowerIsBetter, c.digits) }))
     .filter((x): x is { c: ChInsightChange; tone: 'is-gain' | 'is-loss' } => x.tone !== '')
-    // The clearest first: how many standard errors each change is.
+    // The clearest first: how many standard errors each change is. `se` is set here: halvesTone returns '' for a null
+    // se, and those were filtered out above.
     .sort((a, b) => Math.abs(b.c.delta) / b.c.se! - Math.abs(a.c.delta) / a.c.se!);
   if (!toned.length) return { state: 'none', against: known[0]!.against };
   return {

@@ -91,7 +91,8 @@ function PaletteBody({
   // Worked out here, not read from cmdk's list: the nearest-section row is itself an item, and a list is never "empty" with it in.
   const noMatches = searching && !commands.some((c) => shown.includes(c.group) && defaultFilter(textOf(c), q.trim()) > 0);
   // Only a coach's search waits on players; with nothing typed, People isn't shown at all.
-  const peopleLine = role === 'coach' && searching ? PEOPLE_LINE[peopleState] : undefined;
+  // A failed seed says nothing once the Roster has published players: the list is there to search.
+  const peopleLine = role === 'coach' && searching && !(peopleState === 'failed' && people.length > 0) ? PEOPLE_LINE[peopleState] : undefined;
 
   // A pick goes somewhere, and navigation is silent (D-70, A14).
   const go = (c: ChCommand) => {

@@ -183,6 +183,16 @@ describe('the palette (Cmd or Ctrl K)', () => {
     expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
   });
 
+  it('a failed read says nothing once the Roster has published players to search', async () => {
+    publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]);
+    mount('coach', null, vi.fn(async () => null));
+    key('k', { metaKey: true });
+    await settle();
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
+  });
+
   it('a player\'s search never waits on players', () => {
     mount('player');
     key('k', { metaKey: true });
