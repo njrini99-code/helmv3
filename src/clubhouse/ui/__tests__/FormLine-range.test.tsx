@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }));
 
-import { FormLine, FormRange, formDomain, formRangeWords } from '../FormLine';
+import { FormLine, FormRange, formDomain } from '../FormLine';
+import { formRangeWords } from '../form-range';
 
 afterEach(cleanup);
 
