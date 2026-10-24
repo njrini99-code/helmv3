@@ -22,6 +22,35 @@ describe('real time on date axes (row 119)', () => {
     expect(slotPositions(2, [day('2026-09-01'), day('2026-09-01')])).toEqual([0.25, 0.75]);
   });
 
+  it('slotPositions: rounds on the same day each keep a slot, at least half the even gap apart, in their given order (review of #2361)', () => {
+    const n = 5;
+    const p = slotPositions(n, [day('2026-09-01'), day('2026-09-01'), day('2026-09-08'), day('2026-09-08'), day('2026-09-29')]);
+    const evenGap = 1 / n;
+    for (let i = 1; i < n; i++) expect(p[i]! - p[i - 1]!).toBeGreaterThan(0);
+    // The narrowest gap is half the even one, scaled into the plot with the rest.
+    const gaps = p.slice(1).map((v, i) => v - p[i]!);
+    expect(Math.min(...gaps)).toBeGreaterThan(0.25 * evenGap);
+    // The ends stay at the first and last slots' middles, and the real-time gaps keep their order: three weeks is wider than one.
+    expect(p[0]).toBeCloseTo(1 / (2 * n), 9);
+    expect(p[n - 1]).toBeCloseTo(1 - 1 / (2 * n), 9);
+    expect(p[4]! - p[3]!).toBeGreaterThan(p[2]! - p[1]!);
+  });
+
+  it('Line draws two same-day rounds at two places, not one', () => {
+    render(
+      <Line
+        label="Scores."
+        points={[
+          { x: 'Sep 1', y: 74, at: day('2026-09-01') },
+          { x: 'Sep 1', y: 71, at: day('2026-09-01') },
+          { x: 'Sep 22', y: 72, at: day('2026-09-22') },
+        ]}
+      />,
+    );
+    const xs = [...document.querySelectorAll('circle')].map((c) => Number(c.getAttribute('cx')));
+    expect(new Set(xs).size).toBe(3);
+  });
+
   it('Line draws dated points at unequal spacing for unequal gaps', () => {
     render(
       <Line
