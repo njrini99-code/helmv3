@@ -1122,6 +1122,26 @@ REVOKE ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) FROM P
 
 GRANT ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "service_role";
 
+REVOKE ALL ON FUNCTION public.golf_season_start(text, timestamptz) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.golf_season_start(text, timestamptz) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.mark_team_standing_dirty(uuid) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.mark_team_standing_dirty(uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.select_dirty_standing_teams(integer, integer, integer) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.clear_dirty_standing_teams(uuid[], timestamptz[]) TO "service_role";
+
+REVOKE ALL ON FUNCTION public.refresh_player_standing_season(uuid[]) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION public.refresh_player_standing_season(uuid[]) TO "service_role";
+
 REVOKE ALL ON FUNCTION "public"."set_calendar_feed_token"() FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "public"."set_calendar_feed_token"() TO "service_role";
