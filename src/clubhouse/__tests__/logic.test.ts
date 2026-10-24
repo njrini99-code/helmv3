@@ -122,7 +122,7 @@ describe('roster attention', () => {
   it('praises four straight rounds under a player’s average', () => {
     const scores = [70, 71, 70, 71, 76, 77, 76, 77];
     const s = summarizePlayer(scores.map((x, i) => round(`r${i}`, `2026-10-${String(13 - i).padStart(2, '0')}`, x)));
-    expect(attentionFor(s, now, false)).toEqual({ tone: 'positive', text: '4 rounds under average' });
+    expect(attentionFor(s, now, false)).toEqual({ tone: 'gain', text: '4 rounds under average' });
   });
   it('keeps strokes gained null below three rounds with SG', () => {
     const s = summarizePlayer([round('a', '2026-10-01', 72, { strokes_gained_total: 1 }), round('b', '2026-09-30', 72, { strokes_gained_total: 2 })]);
