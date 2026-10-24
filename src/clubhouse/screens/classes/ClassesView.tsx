@@ -277,6 +277,14 @@ export function ClassesView({ data, writes }: { data: ChClassesPage; writes: ChC
     chTrail('classes add');
     setForm({ editing: null, id: newClassId() });
   };
+  // `?new=1` (the command palette's Add class, A16) opens the add form once, then leaves the address plain, so Back or a
+  // reload never opens it again. After hydration, so the server's page and the first client render agree.
+  useEffect(() => {
+    if (new URL(window.location.href).searchParams.get('new') !== '1') return;
+    router.replace('/golf/dashboard/classes', { scroll: false });
+    setForm({ editing: null, id: newClassId() });
+    // Once, on arrival.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const startImport = () => {
     chTrail('classes import');
     setImported(null);

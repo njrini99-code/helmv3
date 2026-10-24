@@ -39,7 +39,9 @@ vi.mock('@/app/golf/actions/announcements', () => ({
   deleteAnnouncement: vi.fn(),
   updateAnnouncement: vi.fn(),
 }));
-vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: actions.docs, createGolfDocument: actions.create, deleteGolfDocument: vi.fn(), getPreviewUrl: vi.fn(), uploadGolfDocument: actions.upload }));
+vi.mock('@/app/golf/actions/documents', () => ({ getDocuments: actions.docs, createGolfDocument: actions.create, deleteGolfDocument: vi.fn(), getPreviewUrl: vi.fn(), prepareGolfDocumentUpload: actions.upload }));
+// UP-1: the file goes to Storage on the signed URL; here the transfer always lands.
+vi.mock('../screens/recruiting/upload', () => ({ putWithProgress: vi.fn(async () => ({ status: 200, body: '' })) }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: actions.notifs, markNotificationRead: actions.markRead, markAllNotificationsRead: vi.fn() }));
 vi.mock('@/app/golf/actions/communication', () => ({ acknowledgeAnnouncement: vi.fn() }));
 vi.mock('@/app/golf/actions/calendar-events', () => ({ respondToEvent: vi.fn(), updateGolfEvent: vi.fn() }));
@@ -175,7 +177,7 @@ describe('Updates: only links inside GolfHelm, and opening one marks it read', (
 
 describe('documents: the stored type is the MIME type, and the label reads it', () => {
   it('a Clubhouse upload stores the MIME type, as Fairway’s Documents does', async () => {
-    actions.upload.mockResolvedValue({ success: true, file_url: 'https://x/golf-documents/t1/a.docx', storage_path: 'golf-documents/t1/a.docx' });
+    actions.upload.mockResolvedValue({ success: true, data: { signedUrl: 'https://x/sign', fileUrl: 'https://x/golf-documents/t1/a.docx', storagePath: 'golf-documents/t1/a.docx', contentType: 'application/octet-stream' } });
     actions.create.mockResolvedValue({ success: true });
     const file = new File(['x'], 'Waiver.docx', { type: '' });
     await LIVE_HUB_WRITES.uploadDocument({ teamId: 't1', file, folder: null });

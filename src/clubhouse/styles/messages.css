@@ -958,7 +958,7 @@
   resize: none;
 }
 .ch-ms-comp__field textarea::placeholder {
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-placeholder);
 }
 .ch-ms-send {
   display: grid;
@@ -2380,6 +2380,8 @@
   .ch-msp-to.is-name {
     align-items: center;
   }
+  /* No field fill here: the To line sits on the phone page, where the placeholder token is under 4.5:1, so it keeps the
+     tertiary ink (A18). */
   .ch-msp-to__in::placeholder {
     color: var(--ch-text-tertiary);
   }

@@ -509,6 +509,9 @@
   /* A row's pressed tint waits this long after the finger lands (UIKit delays a cell's highlight the same way), so a
      scroll that starts on a row never flashes it; letting go clears it at once. Kept with reduced motion: it isn't motion. */
   --ch-dur-press-delay: 50ms;
+  /* Stats dims for a window change only after this beat (A11), so a fast answer never flickers; leaving busy clears at
+     once. Kept with reduced motion and Animations off: it is a wait, not motion. */
+  --ch-dur-busy-delay: 150ms;
   /* The smooth spring (D-64 extension, 2026-10-08; lib/motion.ts CH_SPRINGS, base, no bounce) for a one-shot CSS entry
      that moves an anchored part, such as a sheet rising. Where linear() is missing it is the ease-out over base. An
      interruptible state change keeps a curve: a CSS spring would restart from rest when retargeted, so those springs
@@ -857,7 +860,7 @@ html:has([data-ui='clubhouse']) {
 
 /* The document under Clubhouse (high-fidelity audit F05): the overscroll bounce and the frame before first paint show
    <html> and <body>, which carry Fairway's canvas. Where Clubhouse is on screen they take its own colour: the frame on
-   desktop, the page on a phone. The native launch colour (#F2E6D2, capacitor.config.ts) is Q-140. */
+   desktop, the page on a phone. The native launch colour is config/native-canvas.json (A15, Q-140): the phone page. */
 html:has([data-ui='clubhouse']),
 html:has([data-ui='clubhouse']) body {
   background: #0a331f;

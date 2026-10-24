@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { ChPlayerProfile } from '../../data/stats-player';
 import type { ChStatsReads } from '../../data/stats-reads';
-import { basisWords, clearFilters, hasRange, isFiltered, per18, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
+import { basisWords, clearFilters, hasRange, isFiltered, rangeOf, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -16,7 +16,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { useToast } from '../../ui/Toast';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeInk, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { sgBaseline } from '../../lib/sg';
 import { deltaTone, halvesChange } from '../../lib/stats-signal';
 import { rebuiltHref } from '../../shell/nav';
@@ -257,9 +257,8 @@ export function StatsPlayerPhone({
  */
 function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: ReactNode }) {
   const w = data.win;
-  const sgTone = w.sgPerRound == null ? '' : w.sgPerRound >= 0 ? ' ch-gain' : ' ch-loss';
+  const sgTone = ' ' + changeInk(w.sgPerRound);
   const form = w.formChange;
-  const flat = form != null && Math.abs(form) < 0.05;
   // The rounds in each half of the trend the change compares (summarizeWindow's own split).
   const half = Math.floor(w.trend.length / 2);
   // Coloured only when the change clears its standard error (Q4): three scores a half rarely do, so it mostly reads as no clear change.
@@ -267,9 +266,8 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
   const formTone = formSignal === 'is-gain' ? ' ch-gain' : formSignal === 'is-loss' ? ' ch-loss' : '';
   const halves = half === 1 ? 'Newest round vs first' : `Newest ${half} vs first ${half}`;
   const d = data.sgChange.delta;
-  // The scoring average against par, per 18 holes over the window's rounds that carry a par (owner, 2026-10-07: no bare numbers).
-  const pars = data.rounds.filter((r) => r.toPar != null).map((r) => per18(r.toPar as number, r.holes));
-  const toPar = pars.length ? pars.reduce((a, b) => a + b, 0) / pars.length : null;
+  // The scoring average against par (owner, 2026-10-07: no bare numbers): the window's weighted value per 18 (A6), as the Overview shows it.
+  const toPar = w.toPar;
   return (
     <div className="ch-stm-overview">
       <dl className="ch-stm-figs is-three is-line">
@@ -289,9 +287,10 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
         <div>
           <dt>Scoring trend</dt>
           {/* Scores, so "higher" is worse (amber) and "lower" better; the sub-line names the halves compared (summarizeWindow). */}
-          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : flat ? 'level' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
+          {/* A change inside its standard error is no change (A1): the headline says so instead of "2.1 higher", and the sub-line
+              names the halves it compared, so the cell never says a number and "No clear change" at once. */}
+          <dd className={'ch-num is-words' + formTone}>{form == null ? NO_DATA : formSignal === '' ? 'No clear change' : `${Math.abs(form).toFixed(1)} ${form < 0 ? 'lower' : 'higher'}`}</dd>
           <dd>
-            {form != null && formSignal === '' && <span className="ch-stm-figs__clear">No clear change</span>}
             {form == null ? 'After three rounds' : halves}
           </dd>
         </div>
@@ -300,7 +299,7 @@ function Figures({ data, readCaveat }: { data: ChPlayerProfile; readCaveat: Reac
           the Tour's zero. The trend is already words. */}
       <div className="ch-stm-gauges" aria-hidden="true">
         <span>{w.avg != null && toPar != null && <FigureGauge gauge={{ kind: 'par', toPar }} n={w.avg} />}</span>
-        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg' }} n={w.sgPerRound} />}</span>
+        <span>{w.sgPerRound != null && <FigureGauge gauge={{ kind: 'sg', tour: data.tour }} n={w.sgPerRound} />}</span>
         <span />
       </div>
       <div className="ch-stm-overview__meta">
@@ -388,7 +387,7 @@ function Trend({ data }: { data: ChPlayerProfile }) {
             <h2 id="ch-spm-sgtrend">Strokes gained by round</h2>
             <span className="ch-num">Per 18 holes</span>
           </div>
-          <RoundTrend rounds={sgRounds} kind="sg" openHref={openHref} label="Strokes gained in each round of the window." />
+          <RoundTrend rounds={sgRounds} kind="sg" tour={data.tour} openHref={openHref} label="Strokes gained in each round of the window." />
         </section>
       )}
     </>
@@ -424,7 +423,7 @@ function Rounds({ rounds, open }: { rounds: ChPlayerProfile['rounds']; open: boo
                 <span className="ch-stm-row__v ch-num">
                   <b>{r.score}</b>
                   <span className={'ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                  <span className={r.sg == null ? '' : r.sg >= 0 ? 'ch-gain' : 'ch-loss'}>{formatSigned(r.sg)} SG</span>
+                  <span className={changeInk(r.sg)}>{formatSigned(r.sg)} SG</span>
                 </span>
               </li>
             ))}

@@ -29,12 +29,14 @@ export function trendState(kind: TrendKind, rounds: TrendRound[]): SampleState {
   return sampleState(kind === 'score' ? 'score' : 'sgLong', withValue(rounds).length);
 }
 
-/** The par the score trend draws its reference at: the typical par of the rounds (score minus to par), when every round has one. */
+/**
+ * The par the score trend draws its reference at: only when every round in view has a par and they are all the same (A8.11). A
+ * mix of par-71 and par-72 courses has no one line that is par for all of them, so none is drawn.
+ */
 export function parLine(rounds: TrendRound[]): number | null {
   const pars = withValue(rounds).map((r) => (r.toPar == null ? null : (r.value as number) - r.toPar));
   if (!pars.length || pars.some((p) => p == null)) return null;
-  const sorted = (pars as number[]).sort((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)]!;
+  return new Set(pars).size === 1 ? pars[0]! : null;
 }
 
 /** The trailing mean for each round (null before the third round with a figure). */
@@ -55,6 +57,11 @@ export function niceTicks(lo: number, hi: number, want = 3): number[] {
   const out: number[] = [];
   for (let v = first; v <= hi + 1e-9; v += step) out.push(Number(v.toFixed(2)));
   return out;
+}
+
+/** The decimals a tick label needs (A8.2): one when the ticks step by less than a whole stroke, so no two print alike. */
+export function tickDigits(ticks: number[]): number {
+  return ticks.length > 1 && ticks[1]! - ticks[0]! < 1 ? 1 : 0;
 }
 
 /** What the readout says for a round: "Sep 23 · Lonnie Poole GC · 73, +1 · 5-round average 74.2" or "... · +0.6 strokes gained". */

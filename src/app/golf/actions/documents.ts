@@ -12,6 +12,7 @@ import { validateCoachTeamAccess } from '@/lib/golf/resolve-team';
 import { withAdminObserved } from '@/lib/admin/observed-action';
 import { describeError } from '@/lib/utils/describe-error';
 import { resolveMimeType } from '@/lib/storage/mime';
+import { isUuid } from '@/lib/utils/uuid';
 import { observeStorageResult } from '@/lib/observability/supabase/observe-storage';
 
 // Type helper for golf_document_versions table (until types are regenerated)
@@ -1314,6 +1315,93 @@ export async function uploadGolfDocument(
   return observedUploadGolfDocument(file, teamId);
 }
 
+/** The `documents` bucket's file_size_limit (26214400, read from production 2026-10-17). */
+const DOCUMENT_MAX_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Where to send a team document's bytes (UP-1). A server action carries its arguments in one request body, which
+ * Vercel caps near 4.5 MB, so a large file goes straight to Storage on a signed URL instead: this checks the caller
+ * coaches the team, builds the object path on the server (`golf-documents/{teamId}/{uuid}.{ext}`, as
+ * uploadGolfDocument does), and signs that one path. The page PUTs the file to `signedUrl`, then records it with
+ * createGolfDocument, passing back `storagePath` and `fileUrl`. The bucket still enforces its own type and size rules
+ * on the transfer.
+ */
+export interface GolfDocumentUploadTicket {
+  signedUrl: string;
+  storagePath: string;
+  fileUrl: string;
+  contentType: string;
+}
+
+async function prepareGolfDocumentUploadImpl(
+  teamId: string,
+  meta: { fileName: string; fileType: string; fileSize: number },
+): Promise<{ success: boolean; data?: GolfDocumentUploadTicket; error?: string; refused?: 'size' | 'type' }> {
+  // The team id goes into the object path, so it is a UUID or nothing.
+  if (!isUuid(teamId)) return { success: false, error: 'Team id required' };
+  if (!meta || !(meta.fileSize > 0) || !meta.fileName) return { success: false, error: 'Choose a file to upload' };
+  if (meta.fileSize > DOCUMENT_MAX_BYTES) return { success: false, refused: 'size', error: 'File is too large (max 25 MB)' };
+  // No type from the browser and none its extension implies: the bucket would refuse it, so say so before signing.
+  const contentType = resolveMimeType({ name: meta.fileName, type: meta.fileType ?? '' });
+  if (!contentType) return { success: false, refused: 'type', error: 'That type of file can’t be shared' };
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error('Not authenticated');
+    // Coach-only, scoped to the caller-supplied team (Q-74), before anything is signed.
+    const role = await resolveTeamRole(supabase, user.id, teamId);
+    if (role !== 'coach') return { success: false, error: 'Only a coach on this team can upload documents' };
+
+    const ext = (meta.fileName.split('.').pop() ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const storagePath = `golf-documents/${teamId}/${crypto.randomUUID()}${ext ? `.${ext}` : ''}`;
+    const { data: signed, error: signError } = await supabase.storage.from('documents').createSignedUploadUrl(storagePath);
+    observeStorageResult({
+      error: signError,
+      operation: 'upload',
+      feature: 'documents',
+      action: 'sign_golf_document_upload',
+      bucketClass: 'documents/golf_document',
+      accessDeniedOnOwnPath: true,
+    });
+    if (signError || !signed?.signedUrl) {
+      await logServerError(`prepareGolfDocumentUpload sign failed: ${signError?.message ?? 'no url'}`, {
+        action: 'documents.prepareGolfDocumentUpload',
+        featureArea: 'documents',
+      });
+      return { success: false, error: "Couldn't start the upload. Try again." };
+    }
+    const { data: urlData } = supabase.storage.from('documents').getPublicUrl(storagePath);
+    return {
+      success: true,
+      data: {
+        signedUrl: signed.signedUrl,
+        storagePath,
+        fileUrl: urlData.publicUrl,
+        contentType,
+      },
+    };
+  } catch (error) {
+    await logServerError(`Unexpected error in prepareGolfDocumentUpload: ${describeError(error)}`, {
+      action: 'documents.prepareGolfDocumentUpload',
+      featureArea: 'documents',
+    });
+    return { success: false, error: handleError(error) };
+  }
+}
+
+const observedPrepareGolfDocumentUpload = withAdminObserved(
+  'prepareGolfDocumentUpload',
+  { demoSafe: true, sport: 'golf', feature: 'documents' },
+  prepareGolfDocumentUploadImpl,
+);
+
+export async function prepareGolfDocumentUpload(
+  teamId: string,
+  meta: { fileName: string; fileType: string; fileSize: number },
+): Promise<{ success: boolean; data?: GolfDocumentUploadTicket; error?: string; refused?: 'size' | 'type' }> {
+  return observedPrepareGolfDocumentUpload(teamId, meta);
+}
+
 /**
  * Create a document record (after file has been uploaded)
  * Returns { success, data, error }
@@ -1351,6 +1439,17 @@ async function createGolfDocumentImpl(data: {
     const role = await resolveTeamRole(supabase, user.id, data.team_id);
     if (role !== 'coach') {
       return { success: false, error: 'Only a coach on this team can add documents' };
+    }
+
+    // The object path comes back from the browser (uploadGolfDocument and prepareGolfDocumentUpload both build it on
+    // the server, as `golf-documents/{team}/{name}`): it must still name an object in this team's own folder, so a
+    // coach staffed on two teams can't attach one team's file to the other's documents (UP-1 review).
+    if (data.storage_path !== undefined) {
+      const prefix = `golf-documents/${data.team_id}/`;
+      const name = data.storage_path.startsWith(prefix) ? data.storage_path.slice(prefix.length) : '';
+      if (!name || name.includes('/') || name.includes('..')) {
+        return { success: false, error: 'That file isn’t in this team’s documents' };
+      }
     }
 
     // Create document record
