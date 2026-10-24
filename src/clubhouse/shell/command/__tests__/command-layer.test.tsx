@@ -50,7 +50,7 @@ const loaderOf = (list: { id: string; name: string }[] | null) => vi.fn(async ()
 /** Lets the palette's People load settle after it opens. */
 const settle = () => act(async () => {});
 
-function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf(null)) {
+function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf([])) {
   return render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
@@ -136,15 +136,58 @@ describe('the palette (Cmd or Ctrl K)', () => {
     expect(push).toHaveBeenCalledWith('/golf/dashboard/roster', { scroll: false });
   });
 
-  it('says nothing matched and offers the nearest section, which Enter takes', () => {
+  it('says nothing matched and offers the nearest section, which Enter takes', async () => {
     mount('coach');
     key('k', { metaKey: true });
+    await settle();
     search('rostr');
     expect(options()[0]).toBe('Roster');
     search('zzzqxw');
     expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches/);
-    expect(within(palette()).getByRole('status').textContent).toMatch(/Players appear here once you have opened the Roster/);
+    // Players were read as it opened (decision 16), so it no longer sends the coach to the Roster first.
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/Roster|your players/i);
     expect(within(palette()).queryAllByRole('option')).toHaveLength(0);
+  });
+
+  it('while a coach\'s players are on their way, a search says so quietly, under results or in the no-match line, and stops once they land', async () => {
+    let answer: (list: { id: string; name: string }[]) => void = () => {};
+    mount('coach', null, vi.fn(() => new Promise<{ id: string; name: string }[]>((done) => (answer = done))));
+    key('k', { metaKey: true });
+    // Nothing typed: the launcher shows no People, so nothing waits.
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('rost');
+    expect(options()).toContain('Roster');
+    expect(within(palette()).getByRole('status').textContent).toBe('Looking up your players…');
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Nothing matches.*Looking up your players…/);
+    await act(async () => answer([{ id: 'p1', name: 'Mae Lindqvist' }]));
+    expect(within(palette()).queryByText('Looking up your players…')).toBeNull();
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByRole('status')).toBeNull();
+  });
+
+  it('players that didn\'t load are said in a search, and the next opening asks again', async () => {
+    const load = vi.fn<() => Promise<{ id: string; name: string }[] | null>>().mockResolvedValueOnce(null).mockResolvedValueOnce([{ id: 'p1', name: 'Mae Lindqvist' }]);
+    mount('coach', null, load);
+    key('k', { metaKey: true });
+    await settle();
+    search('mae');
+    expect(within(palette()).getByRole('status').textContent).toMatch(/Your players didn’t load\. Close this and open it again to try again\./);
+    key('k', { metaKey: true });
+    key('k', { metaKey: true });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(2);
+    search('mae');
+    expect(options()).toContain('Mae Lindqvist');
+    expect(within(palette()).queryByText(/didn’t load/)).toBeNull();
+  });
+
+  it('a player\'s search never waits on players', () => {
+    mount('player');
+    key('k', { metaKey: true });
+    search('zzzqxw');
+    expect(within(palette()).getByRole('status').textContent).not.toMatch(/your players/i);
   });
 
   it('draws the new-event key only where it works, on Home', () => {

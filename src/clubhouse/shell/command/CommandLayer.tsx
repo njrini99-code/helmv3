@@ -9,7 +9,7 @@ import type { ChPerson, ChRecent } from './commands';
 import { getPalettePeople } from '../../data/palette-people';
 import { clearPeople, seedPeople, setPeopleScope, usePeople } from './people';
 import { CH_PALETTE_EVENT, useCommandDesktop } from './palette-open';
-import { Palette } from './Palette';
+import { Palette, type ChPeopleState } from './Palette';
 import { noteVisit, readRecent } from './recent';
 import { ShortcutsSheet } from './ShortcutsSheet';
 import { interpretKey, isApple, isInOverlay, isTypingTarget, itemForDigit, itemForLetter, modalOpen, navLetters, pageSearchField, SEQUENCE_WINDOW_MS, type ChKeyOutcome } from './shortcuts';
@@ -61,9 +61,12 @@ export function CommandLayer({
   // different account on the same browser never inherits the last one's list.
   const peopleScope = `${userId}:${teamId ?? ''}`;
   const seededFor = useRef<string | null>(null);
+  // Whether the coach's names are on their way (the palette's quiet loading line) or didn't come.
+  const [peopleState, setPeopleState] = useState<ChPeopleState>('idle');
   useLayoutEffect(() => {
     setPeopleScope(peopleScope);
     seededFor.current = null;
+    setPeopleState('idle');
   }, [peopleScope]);
   // Leaving the signed-in frame drops the names, and any reply still on its way. Sign-out ends in a page load, which
   // empties memory anyway; the idle timeout's sign-out (useSessionActivity) goes to login as a client navigation, which
@@ -81,13 +84,21 @@ export function CommandLayer({
     if (role !== 'coach' || seededFor.current === peopleScope) return;
     seededFor.current = peopleScope;
     const forScope = peopleScope;
+    setPeopleState('loading');
+    // No list (null) or a throw: the next opening asks again.
+    const failed = () => {
+      if (seededFor.current !== forScope) return;
+      seededFor.current = null;
+      setPeopleState('failed');
+    };
     void loadPeople()
       .then((list) => {
-        if (list && seededFor.current === forScope) seedPeople(list);
+        if (seededFor.current !== forScope) return;
+        if (!list) return failed();
+        seedPeople(list);
+        setPeopleState('ready');
       })
-      .catch(() => {
-        if (seededFor.current === forScope) seededFor.current = null;
-      });
+      .catch(failed);
   }, [role, peopleScope, loadPeople]);
   useEffect(() => {
     setRecent(noteVisit(userId, role, pathname));
@@ -196,7 +207,7 @@ export function CommandLayer({
   return (
     <>
       {waiting && <GoHint role={role} />}
-      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} recent={recent} keyword={opens} />}
+      {used.palette && <Palette open={palette} onClose={() => setPalette(false)} role={role} pathname={pathname} people={people} peopleState={peopleState} recent={recent} keyword={opens} />}
       {used.help && <ShortcutsSheet open={help} onClose={() => setHelp(false)} role={role} apple={apple} />}
     </>
   );
