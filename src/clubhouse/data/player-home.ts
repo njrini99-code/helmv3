@@ -11,6 +11,7 @@ import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notificatio
 import { parsePlayerHubEvents } from '@/lib/golf/player-hub-events';
 import { chunkIds } from '@/lib/supabase/chunk-ids';
 import { loadRoundCache, loadTourBenchmarks, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
+import { formatFixed } from '../lib/format';
 
 export { legRows } from './leg-rows';
 export type { ChLegKey, ChPlayerLeg } from './leg-rows';
@@ -206,9 +207,9 @@ export function briefFor(full: ChRound[], legs: ChPlayerLeg[]): string | null {
   const withSg = legs.filter((l): l is ChPlayerLeg & { sg: number } => l.sg != null).sort((a, b) => b.sg - a.sg);
   const best = withSg[0];
   if (!best) return first;
-  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${best.sg.toFixed(1)} strokes a round.`;
+  if (best.sg > 0.05) return `${first} ${best.label} is gaining you ${formatFixed(best.sg, 1)} strokes a round.`;
   const worst = withSg[withSg.length - 1]!;
-  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${Math.abs(worst.sg).toFixed(1)} strokes a round.` : first;
+  return worst.sg < -0.05 ? `${first} ${worst.label} is costing the most, ${formatFixed(Math.abs(worst.sg), 1)} strokes a round.` : first;
 }
 
 type Client = Awaited<ReturnType<typeof createClient>>;

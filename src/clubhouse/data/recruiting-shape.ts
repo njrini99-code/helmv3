@@ -13,6 +13,7 @@ import type { ChDivision, ChProgramGender } from './recruiting-calendar';
 import { RECRUIT_FILM_ENABLED } from './recruiting-film';
 import { plural } from '../lib/plural';
 import { isoDay } from '../lib/dates';
+import { formatFixed } from '../lib/format';
 
 /**
  * Recruiting (P014): the coach's prospect list, in the shapes the screen draws. Client-safe (only types come from
@@ -502,7 +503,7 @@ export function sizeLabel(bytes: number | null): string {
   if (!bytes || bytes <= 0) return '';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${formatFixed(bytes / (1024 * 1024), 1)} MB`;
 }
 
 export const stripExtension = (name: string) => {

@@ -1,7 +1,7 @@
 import 'server-only';
 import { createClient } from '@/lib/supabase/server';
 import { chLogServer } from '../lib/track-server';
-import { formatSigned } from '../lib/format';
+import { formatFixed, formatSigned } from '../lib/format';
 import { sgBaseline, type ChSgTour } from '../lib/sg';
 import { fullName, groupByPlayer, loadSeasonRounds, mean, MIN_SG_ROUNDS, shortDate, type ChRound } from './season';
 import {
@@ -507,7 +507,7 @@ function seasonBests(
     if (change < 0 && (!best || change < best.change)) best = { id, change };
   }
   if (best) {
-    out.push({ label: 'Most improved', playerId: best.id, name: name.get(best.id)!, value: `−${Math.abs(best.change).toFixed(1)}`, meta: 'Scoring avg, first five rounds to latest five' });
+    out.push({ label: 'Most improved', playerId: best.id, name: name.get(best.id)!, value: `−${formatFixed(Math.abs(best.change), 1)}`, meta: 'Scoring avg, first five rounds to latest five' });
   }
   return out;
 }

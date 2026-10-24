@@ -61,8 +61,8 @@ export function formNote(first: string, scores: number[]): string {
   const half = Math.floor(scores.length / 2);
   const m = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const c = m(scores.slice(scores.length - half)) - m(scores.slice(0, half));
-  if (c <= -FORM_STEADY) return `${first} is scoring ${Math.abs(c).toFixed(1)} lower in the newer half of these rounds.`;
-  if (c >= FORM_STEADY) return `${first} is scoring ${c.toFixed(1)} higher in the newer half of these rounds.`;
+  if (c <= -FORM_STEADY) return `${first} is scoring ${formatFixed(Math.abs(c), 1)} lower in the newer half of these rounds.`;
+  if (c >= FORM_STEADY) return `${first} is scoring ${formatFixed(c, 1)} higher in the newer half of these rounds.`;
   return `${first} is holding steady across these rounds.`;
 }
 

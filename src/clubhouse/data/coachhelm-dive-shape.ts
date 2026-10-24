@@ -7,7 +7,7 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
-import { formatSigned, formatToPar } from '../lib/format';
+import { formatFixed, formatSigned, formatToPar } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, type ChRead } from './coachhelm-read-shape';
@@ -389,7 +389,7 @@ function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeep
   const cause = themes?.themes.flatMap((t) => t.causes).find((c) => c.insight_id === raw.id);
   if (!cause || cause.counterfactualSuppressed || !(cause.strokesSavedPerRound > 0)) return null;
   const team = cause.standingTeamAvgValue != null && cause.standingPlayerValue != null && cause.standingPgaValue != null;
-  return { strokes: cause.strokesSavedPerRound.toFixed(1), anchor: team ? 'team' : 'tour' };
+  return { strokes: formatFixed(cause.strokesSavedPerRound, 1), anchor: team ? 'team' : 'tour' };
 }
 
 function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme {

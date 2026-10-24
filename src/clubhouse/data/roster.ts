@@ -21,6 +21,7 @@ import {
   summarizePlayer,
   type ChForm,
 } from './season';
+import { formatFixed } from '../lib/format';
 
 /**
  * Coach Roster (Clubhouse). Server-read, final on first paint, every section
@@ -145,7 +146,7 @@ export function attentionFor(
     if (days >= QUIET_DAYS) return { tone: 'warning', text: `No rounds in ${days} days` };
   }
   if (s.formChange != null && s.formChange >= 1.5) {
-    return { tone: 'warning', text: `Scoring up ${s.formChange.toFixed(1)}` };
+    return { tone: 'warning', text: `Scoring up ${formatFixed(s.formChange, 1)}` };
   }
   const last4 = s.recent.slice(0, 4).map((r) => r.total_score as number);
   if (s.avg != null && s.rounds >= 8 && last4.length === 4 && last4.every((x) => x < s.avg!)) {

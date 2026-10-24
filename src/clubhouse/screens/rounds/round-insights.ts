@@ -1,5 +1,5 @@
 import type { ChReviewHole, ChReviewShot, ChRoundReview } from '../../data/round-review-shape';
-import { formatSigned } from '../../lib/format';
+import { formatFixed, formatSigned } from '../../lib/format';
 import { plural } from '../../lib/plural';
 
 /**
@@ -197,7 +197,7 @@ export function headline(r: ChRoundReview): string | null {
       const best = legs.reduce((a, b) => (b[1] > a[1] ? b : a));
       const worst = legs.reduce((a, b) => (b[1] < a[1] ? b : a));
       if (best[1] > 0) parts.push(`${best[0]} gained ${formatSigned(best[1])}`);
-      if (worst[1] < 0) parts.push(`${worst[0].toLowerCase()} gave back ${Math.abs(worst[1]).toFixed(1)}`);
+      if (worst[1] < 0) parts.push(`${worst[0].toLowerCase()} gave back ${formatFixed(Math.abs(worst[1]), 1)}`);
     }
   }
   if (!parts.length && points.length) {
