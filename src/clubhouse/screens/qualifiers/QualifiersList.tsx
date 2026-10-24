@@ -171,6 +171,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
             {!active.length && !concluded.length ? (
               <div className="ch-qf-empty ch-sheet">
                 <EmptyState
+                  kind="filtered"
                   compact
                   code="CH-09302"
                   icon={Search}

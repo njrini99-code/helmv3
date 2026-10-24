@@ -414,7 +414,7 @@ function Rounds({ rounds, open, role }: { rounds: ChPlayerProfile['rounds']; ope
         <span>Countable, newest first</span>
       </div>
       {rounds.length === 0 ? (
-        <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
+        <EmptyState code="CH-5302" kind="filtered" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (
         <>
           <ul className="ch-stm-list">

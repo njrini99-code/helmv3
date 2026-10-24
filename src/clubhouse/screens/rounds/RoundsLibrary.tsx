@@ -254,7 +254,7 @@ export function RoundsLibrary({ data: fresh, playerId, writes = LIVE_ROUNDS_WRIT
                 />
               </div>
               {groups.length === 0 ? (
-                <EmptyState code="CH-11303" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
+                <EmptyState code="CH-11303" kind="filtered" compact title={`No rounds at “${q.trim()}”`} body="Check the spelling, or search part of the course name." />
               ) : (
                 groups.map((g) => {
                   const full = g.rounds.filter((r) => r.holes === 18);

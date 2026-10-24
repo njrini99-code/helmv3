@@ -438,7 +438,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
   return (
     <div role="group" className="ch-zt" aria-label={`Rounds: countable ${HOLES_ADJ[holes]} rounds, newest first, strokes gained ${baseline.vs}`}>
       {rounds.length === 0 ? (
-        <EmptyState code="CH-5302" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
+        <EmptyState code="CH-5302" kind="filtered" compact title="No rounds in this window." body="Try This season to see every round posted since August." />
       ) : (
         <ScrollRegion label="Rounds, scrolls sideways" className="ch-tbl">
           <div role="table" aria-label="Rounds">

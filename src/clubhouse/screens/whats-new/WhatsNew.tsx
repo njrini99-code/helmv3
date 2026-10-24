@@ -126,7 +126,7 @@ export function WhatsNew({ data: fresh }: { data: ChWhatsNew }) {
             />
           </div>
           {days.length === 0 ? (
-            <EmptyState code="CH-13331" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
+            <EmptyState code="CH-13331" kind="filtered" compact title="Nothing of this kind this week" body="Pick All to see the rest of the week." />
           ) : (
             <Days days={days} />
           )}
