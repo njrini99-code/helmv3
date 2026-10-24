@@ -26,7 +26,7 @@ import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
-import { useRovingRows } from '../../lib/roving';
+import { RovingRows } from '../../lib/roving';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
@@ -148,10 +148,6 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
-  // B11: on the desktop table, Up and Down walk the players' rows (their name buttons), Home and End go to the ends,
-  // and the table is one Tab stop. The cards view and the phone are left alone.
-  const deskMain = useRef<HTMLElement>(null);
-  useRovingRows(deskMain, '.ch-rs-list .ch-rs-who', !phone);
   usePageKeys('Roster', phone ? null : ROW_KEYS);
   useEffect(() => {
     if (!focusRequests || phone) return;
@@ -463,7 +459,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const failed = rosterFailedParts(data);
   const covered = failed.length > 1;
   return (
-    <main ref={deskMain} className="ch-rs" data-canopy="">
+    <main className="ch-rs" data-canopy="">
       <header className="ch-rs-head" data-canopy-head="tight">
         <div>
           <span className="ch-rs-team">
@@ -758,6 +754,10 @@ function RosterList({
             ))}
           </div>
         ) : (
+          <>
+          {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
+              one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
+          <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
           <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
             <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
               <SortHeader k="name" sort={sortBy} onSort={onSort}>
@@ -832,6 +832,7 @@ function RosterList({
               </div>
             ))}
           </SideScroll>
+          </>
         )}
     </FormRange>
   );

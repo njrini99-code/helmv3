@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type RefObject } from 'react';
 
 /** A link or an enabled button: what a row must be to take focus. */
 const isControl = (r: HTMLElement) => (r.matches('a[href]') || r.matches('button')) && !(r as HTMLButtonElement).disabled;
@@ -57,3 +57,17 @@ export function useRovingRows(root: RefObject<HTMLElement | null>, selector: str
     };
   }, [root, selector, shown]);
 }
+
+/**
+ * `useRovingRows` from inside the list's own Suspense boundary (a SectionBoundary). The hook on a page's outer element
+ * runs as soon as the page hydrates, while a boundary's server HTML can still be waiting to hydrate, and React reports
+ * the tab stops it finds there as a mismatch. Drawn inside the boundary, this runs once that boundary has hydrated. It
+ * draws one hidden span and walks `selector` inside its nearest `within` ancestor.
+ */
+export function RovingRows({ selector, within }: { selector: string; within: string }) {
+  const [root, setRoot] = useState<HTMLElement | null>(null);
+  const ref = useMemo(() => ({ current: root }), [root]);
+  useRovingRows(ref, selector, !!root);
+  return <span hidden ref={(el) => setRoot(el?.parentElement?.closest<HTMLElement>(within) ?? null)} />;
+}
+

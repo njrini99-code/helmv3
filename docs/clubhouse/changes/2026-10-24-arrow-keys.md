@@ -20,6 +20,10 @@ Held items:     the Stats player list (lane C's files); Cmd N (see Why)
   rounds and the Qualifiers list (the hero, then the cards); Home and End go to
   the ends; each list is one Tab stop. Each registers its keys with the
   shortcuts sheet ("Move between players", "rounds", "qualifiers").
+- `RovingRows` (lib/roving.tsx) runs the walk from inside a list's own
+  SectionBoundary, so its tab stops land after that boundary hydrates; set from
+  the page's outer element they hit server HTML still hydrating, and React
+  reported a mismatch (qualifiers-hydration.test).
 
 ### Why
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowRight, Flag, Medal, Play, Plus, Search } from 'lucide-react';
-import { useMemo, useRef, type MouseEvent } from 'react';
+import { useMemo, type MouseEvent } from 'react';
 import type { ChQList, ChQListItem } from '../../data/qualifiers';
 import { Button } from '../../ui/Button';
 import { EmptyState } from '../../ui/States';
@@ -13,7 +13,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
-import { useRovingRows } from '../../lib/roving';
+import { RovingRows } from '../../lib/roving';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
@@ -43,10 +43,6 @@ const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys
 
 export function QualifiersList({ data }: { data: ChQList }) {
   const { refresh, refreshing } = useRefresh();
-  // B11: Up and Down walk the qualifiers (the hero, then the cards, in reading order), Home and End go to the ends; the
-  // list is one Tab stop.
-  const list = useRef<HTMLElement>(null);
-  useRovingRows(list, '.ch-qf-hero, .ch-qf-card');
   usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
@@ -80,7 +76,7 @@ export function QualifiersList({ data }: { data: ChQList }) {
   const lede = listLede(coach, data.mode);
 
   return (
-    <main ref={list} className="ch-qf ch-qf--list" data-canopy="">
+    <main className="ch-qf ch-qf--list" data-canopy="">
       {/* Phone (board 01): Qualifiers opens from More (D-66), so the top bar goes back there. */}
       <PhoneTop heading={false} title={data.mode === 'mine' ? 'My qualifiers' : 'Qualifiers'} start />
       <header className="ch-qf-head" data-canopy-head="">
@@ -179,6 +175,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
           )}
 
           <SectionBoundary surface="qualifiers.list" label="The qualifiers" code="CH-09211">
+            {/* B11: Up and Down walk the qualifiers (the hero, then the cards, in reading order), Home and End go to the
+                ends; the list is one Tab stop. */}
+            <RovingRows selector=".ch-qf-hero, .ch-qf-card" within=".ch-qf--list" />
             {!active.length && !concluded.length ? (
               <div className="ch-qf-empty ch-sheet">
                 <EmptyState
