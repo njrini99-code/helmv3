@@ -45,6 +45,7 @@ vi.mock('@/hooks/golf/use-golf-messages', () => ({ useGolfConversations: () => l
 vi.mock('@/hooks/golf/use-message-reactions', async (orig) => ({ ...(await orig<object>()), useMessageReactions: () => live.reactions }));
 vi.mock('@/hooks/golf/use-message-attachments', () => ({ useMessageAttachments: () => live.files }));
 const a = vi.hoisted(() => ({
+  markGolfMessagesAsRead: vi.fn(),
   createGolfConversation: vi.fn(),
   createGolfTeamBroadcast: vi.fn(),
   getGolfConversationParticipantIdentities: vi.fn(),
@@ -65,6 +66,7 @@ const a = vi.hoisted(() => ({
   hideGolfConversation: vi.fn(),
 }));
 vi.mock('@/app/golf/actions/messages', () => ({
+  markGolfMessagesAsRead: a.markGolfMessagesAsRead,
   createGolfConversation: a.createGolfConversation,
   createGolfTeamBroadcast: a.createGolfTeamBroadcast,
   getGolfConversationParticipantIdentities: a.getGolfConversationParticipantIdentities,
@@ -326,6 +328,21 @@ describe('Messages · actions that fail', () => {
     expect(a.hideGolfConversation).toHaveBeenCalledWith('team');
     await user.click(within(code('CH-7503') as HTMLElement).getByRole('button', { name: 'Delete conversation' }));
     await waitFor(() => expect(a.hideGolfConversation).toHaveBeenCalledTimes(2));
+  });
+
+  it('CH-7026 Mark as read from a row clears the server count, and a failed one says so and keeps it unread', async () => {
+    const user = userEvent.setup();
+    a.markGolfMessagesAsRead.mockResolvedValueOnce({ success: false, error: 'nope' }).mockResolvedValueOnce({ success: true });
+    live.convs.conversations = [{ ...team, unread_count: 2 }];
+    show();
+    const row = await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ });
+    fireEvent.contextMenu(row, { clientX: 120, clientY: 120 });
+    await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Mark as read' }));
+    await expectCode('CH-7026', /Couldn’t mark the conversation read/);
+    expect(a.markGolfMessagesAsRead).toHaveBeenCalledWith('team');
+    fireEvent.contextMenu(row, { clientX: 120, clientY: 120 });
+    await user.click(within(screen.getByRole('menu', { name: 'Actions for Varsity team' })).getByRole('menuitem', { name: 'Mark as read' }));
+    await waitFor(() => expect(a.markGolfMessagesAsRead).toHaveBeenCalledTimes(2));
   });
 
   it('CH-1902 the Messages progress notice ends when mute settles and its failure stays visible', async () => {
