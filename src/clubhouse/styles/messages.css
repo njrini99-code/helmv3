@@ -3226,7 +3226,8 @@ html[data-fw-theme='dark'] .ch-ms-sec.is-ann {
   background: var(--ch-green-100);
   transform: scaleX(var(--ch-poll-share, 0));
   transform-origin: left center;
-  transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  /* Interruptible (it moves on every vote), so it keeps a curve, not the one-shot spring. */
+  transition: transform var(--ch-dur-release) var(--ch-ease);
 }
 .ch-ms-poll__opt.is-lead .ch-ms-poll__fill {
   background: color-mix(in srgb, var(--ch-green-100) 70%, var(--ch-green-fill-500) 30%);

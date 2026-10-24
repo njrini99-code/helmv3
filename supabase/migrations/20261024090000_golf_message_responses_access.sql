@@ -25,8 +25,11 @@
 -- golf_message_responses_unique UNIQUE (message_id, user_id),
 -- golf_message_responses_message_id_fkey and _user_id_fkey ON DELETE CASCADE;
 -- policies golf_message_responses_select / _insert / _update / _delete, all
--- for authenticated, bodies as below; in supabase_realtime; anon holds no
--- grant.
+-- for authenticated, bodies as below except _update, whose production body
+-- checks only user_id; in supabase_realtime; anon holds no grant. This file
+-- creates _update with the same membership check as _insert (a fresh database
+-- gets the stricter body); held 20261025020000 brings that body to
+-- production, where this file leaves the existing policy alone.
 --
 -- VERIFY: SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'golf_message_responses' HAVING count(*) = 4;
 -- VERIFY: SELECT 1 FROM pg_constraint WHERE conname = 'golf_message_responses_unique';
@@ -116,8 +119,20 @@ BEGIN
     CREATE POLICY golf_message_responses_update
       ON public.golf_message_responses
       FOR UPDATE TO authenticated
-      USING (user_id = (SELECT auth.uid()))
-      WITH CHECK (user_id = (SELECT auth.uid()));
+      USING (
+        user_id = (SELECT auth.uid()) AND EXISTS (
+          SELECT 1 FROM public.golf_messages m
+          WHERE m.id = golf_message_responses.message_id
+            AND public.golf_conversation_has_me(m.conversation_id)
+        )
+      )
+      WITH CHECK (
+        user_id = (SELECT auth.uid()) AND EXISTS (
+          SELECT 1 FROM public.golf_messages m
+          WHERE m.id = golf_message_responses.message_id
+            AND public.golf_conversation_has_me(m.conversation_id)
+        )
+      );
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public'
     AND tablename = 'golf_message_responses'

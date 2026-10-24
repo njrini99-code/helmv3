@@ -10,7 +10,7 @@ const state = vi.hoisted(() => ({
   rows: [] as PollResponseRow[],
   saveError: null as { message: string; code?: string } | null,
   readError: null as { message: string; code?: string } | null,
-  events: [] as (() => void)[],
+  events: [] as ((payload?: unknown) => void)[],
   upserts: [] as { value: Record<string, string>; options: unknown }[],
   deletes: [] as Record<string, string>[],
   reads: 0,
@@ -50,7 +50,7 @@ vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({
   },
   channel: (name: string) => {
     state.channels.push(name);
-    const channel = { on: (_: string, _filter: unknown, cb: () => void) => { state.events.push(cb); return channel; }, subscribe: () => channel };
+    const channel = { on: (_: string, _filter: unknown, cb: (payload?: unknown) => void) => { state.events.push(cb); return channel; }, subscribe: () => channel };
     return channel;
   },
   removeChannel: vi.fn(),
@@ -100,11 +100,21 @@ describe('useMessageResponses', () => {
     const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
     await waitFor(() => expect(result.current.ready).toBe(true));
     state.rows.push({ message_id: 'poll-1', user_id: 'ben', choice: 'o2' });
-    await act(async () => { state.events[0]!(); });
+    await act(async () => { state.events[0]!({ eventType: 'INSERT', new: { message_id: 'poll-1' } }); });
     await waitFor(() => expect(result.current.rows).toHaveLength(1));
     state.rows.push({ message_id: 'poll-1', user_id: 'cal', choice: 'o1' });
     await act(async () => { state.authListeners[0]!('TOKEN_REFRESHED'); });
     await waitFor(() => expect(result.current.rows).toHaveLength(2));
+  });
+
+  it('ignores a vote on a poll outside this thread, but re-reads on any delete', async () => {
+    const { result } = renderHook(() => useMessageResponses('conv-1', IDS, 'me'));
+    await waitFor(() => expect(result.current.ready).toBe(true));
+    const before = state.reads;
+    await act(async () => { state.events[0]!({ eventType: 'UPDATE', new: { message_id: 'elsewhere' } }); });
+    expect(state.reads).toBe(before);
+    await act(async () => { state.events[0]!({ eventType: 'DELETE', new: {}, old: { id: 7 } }); });
+    await waitFor(() => expect(state.reads).toBeGreaterThan(before));
   });
 
   it('a vote is an upsert on the voter’s own row; changing it replaces the row; null takes it back', async () => {
