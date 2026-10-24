@@ -121,7 +121,7 @@ function EventCard({ e, live, now, today }: { e: ChHomeEvent; live: boolean; now
             </Link>
           )}
           {directions && (
-            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="" onClick={() => haptic('select')}>
+            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="">
               <Icon icon={Navigation} size={16} />
               Directions
             </a>
@@ -364,7 +364,7 @@ export function SinceYouLooked({ rounds, event, onOpenRound }: { rounds: ChLates
           return c.round ? (
             <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
           ) : (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} onClick={() => haptic('select')} />
+            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} href={c.href ?? CALENDAR} />
           );
         })}
       </LedgerList>

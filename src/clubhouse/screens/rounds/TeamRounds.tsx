@@ -4,13 +4,13 @@ import { useMemo } from 'react';
 import { Flag, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
 import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';
 import { rebuiltHref } from '../../shell/nav';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { FigureRow, LedgerList, LedgerRow } from '../../ui/Ledger';
 import { InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -57,6 +57,8 @@ function dayLead(iso: string) {
 
 function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
   const href = teamRoundsLinks.review(r.id);
+  // The review is fetched whole as a finger lands on the row (A13), as the player's library does.
+  const press = usePressPrefetch();
   const under = r.toPar != null && r.toPar < 0;
   const meta = (
     <>
@@ -82,8 +84,9 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
         </span>
       }
       href={href ?? undefined}
+      {...press(href)}
+      // Opening a round is navigation, so it is silent (D-70, A14).
       onClick={href ? (e) => {
-        haptic('select');
         // Only a same-tab open leaves the note (a new-tab click would leave a stale one for a later deep link), as the player library does.
         if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) noteOpenedFromLibrary(r.id);
       } : undefined}

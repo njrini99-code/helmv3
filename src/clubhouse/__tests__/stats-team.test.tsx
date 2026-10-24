@@ -40,6 +40,11 @@ import { StatsSkeleton } from '../screens/stats/StatsSkeleton';
 import { ToastProvider } from '../ui/Toast';
 import { PREVIEW_PLAYER, PREVIEW_TEAM_STATS } from '../preview/fixtures-stats';
 import { filterFor } from '../data/stats-filter';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
+import type { ContextType } from 'react';
+import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
+import { teamPlayerHref } from '../screens/stats/links';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -553,6 +558,20 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   });
   afterEach(() => {
     window.matchMedia = real;
+  });
+
+  it('A13 a finger landing on a player row fetches their stats whole, once', () => {
+    resetPrefetchTabsForTests();
+    const prefetch = vi.fn();
+    const appRouter = { prefetch, push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn() } as unknown as NonNullable<ContextType<typeof AppRouterContext>>;
+    const data = stats();
+    render(<AppRouterContext.Provider value={appRouter}>{tree(data)}</AppRouterContext.Provider>);
+    const theo = data.grid.find((p) => p.name === 'Theo Marchetti')!;
+    const row = screen.getByRole('link', { name: /Theo Marchetti/ });
+    expect(row.getAttribute('href')).toBe(teamPlayerHref(theo.id, data.filter));
+    fireEvent.pointerDown(row);
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith(teamPlayerHref(theo.id, data.filter), { kind: PrefetchKind.FULL });
   });
 
   it('CH-4310 on the phone the first run has nothing to switch, so the window switch steps aside; older rounds keep it', () => {

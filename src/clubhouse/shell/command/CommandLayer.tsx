@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { chTrail } from '../../lib/track';
-import { haptic } from '../../lib/haptics';
 import type { ChRole } from '../nav';
 import type { ChRecent } from './commands';
 import { setPeopleScope, usePeople } from './people';
@@ -117,7 +116,7 @@ export function CommandLayer({ role, pathname, userId, teamId }: { role: ChRole;
           const item = itemForLetter(live.current.role, o.letter);
           if (!item) break;
           e.preventDefault();
-          haptic('select');
+          // A jump is navigation, so it is silent (D-70, A14).
           chTrail('command go (keyboard)', { to: item.id });
           live.current.router.push(item.href, { scroll: false });
           break;

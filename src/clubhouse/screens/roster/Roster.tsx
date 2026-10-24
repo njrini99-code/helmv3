@@ -30,6 +30,7 @@ import { chTrail } from '../../lib/track';
 import { changeTone, formatFixed, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
 import { rebuiltHref } from '../../shell/nav';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { InviteByEmail } from './InviteByEmail';
 import { RosterRequests } from './RosterRequests';
 import { useJoinRequests } from './useJoinRequests';
@@ -210,13 +211,13 @@ export function Roster({ data }: { data: ChRoster }) {
     haptic('select');
     setSel((s) => (s === id ? null : id));
   }, []);
-  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek. */
+  /** A player's face or name goes to their profile (owner, 2026-10-08); where that page isn't rebuilt it opens the peek.
+   *  Going there is navigation, so it is silent (D-70, A14); the peek, which opens in place, still ticks. */
   const openProfile = useCallback(
     (id: string) => {
-      const href = rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+      const href = profileHref(id);
       if (!href) return select(id);
       chTrail('roster open profile');
-      haptic('select');
       router.push(href);
     },
     [router, select],
@@ -640,6 +641,9 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 }
 
+/** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
+const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
+
 /**
  * The roster itself, as cards or a table. Its own component so the
  * roster.list boundary contains everything it computes.
@@ -668,6 +672,8 @@ function RosterList({
   bind: (p: ChRosterPlayer) => ContextMenuBind;
   onShowEveryone: () => void;
 }) {
+  // The profile is fetched whole as the pointer goes down on a face or a name (A13).
+  const press = usePressPrefetch();
   return (
     <>
       {rows.length === 0 ? (
@@ -687,6 +693,7 @@ function RosterList({
               className={'ch-rs-face' + (sel === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
               aria-label={`${faceLabel(p, standings.byId.get(p.id))}. Open profile`}
               onClick={() => openProfile(p.id)}
+              {...press(profileHref(p.id))}
               {...bind(p)}
             >
               <span className="ch-rs-face__top">
@@ -743,6 +750,7 @@ function RosterList({
                   type="button"
                   className="ch-rs-who"
                   onClick={() => openProfile(p.id)}
+                  {...press(profileHref(p.id))}
                   aria-label={`${p.name}. Open profile`}
                 >
                   <Avatar name={p.name} size={40} />

@@ -44,6 +44,7 @@ export function LedgerRow({
   trail,
   href,
   onClick,
+  onPointerDown,
   current = false,
   className,
   code,
@@ -56,6 +57,8 @@ export function LedgerRow({
   href?: string;
   /** Runs on press; it gets the click, so a caller can ignore a Ctrl/Cmd/Shift/Alt click that opens a new tab. */
   onClick?: (e: MouseEvent<HTMLElement>) => void;
+  /** Runs as a finger or the mouse goes down on a linked row: a page fetches its push target ahead (A13, usePressPrefetch). */
+  onPointerDown?: () => void;
   /** The row that is happening now or selected: its lead and title take the green. */
   current?: boolean;
 }) {
@@ -74,7 +77,7 @@ export function LedgerRow({
   return (
     <li className="ch-lgr__item" aria-label={href || onClick ? undefined : label}>
       {href ? (
-        <Link href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick}>
+        <Link href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick} onPointerDown={onPointerDown}>
           {body}
         </Link>
       ) : onClick ? (
