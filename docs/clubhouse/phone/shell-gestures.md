@@ -42,6 +42,29 @@ that starts at the left edge, the way every iOS push can.
   back where it was at once, and the existing `hasUAVisualTransition` handling (`lib/ua-pop.ts`) lets the pop that follows
   leave without a second animation.
 
+### A pushed route page, and a push you can grab (C1, rows 2 and 89)
+
+A drill-in to another route (a roster row to a player page) gets the same swipe
+(`shell/use-route-swipe.ts`), with the same start, mark, haptic, release and
+"not while" rules, with two differences:
+
+- **The push is drawn by the page itself.** The view transition swaps at once;
+  the new page (`#ch-content`, under the bars) slides in from the right over a
+  copy of the page it left, which draws back by the parallax share and dims, on
+  the smooth spring (`lib/nav-motion.ts playPush`). The copy is kept beneath the
+  pushed page (up to four deep) so a swipe back shows what is under the finger.
+  It goes with a Back to its page, a section switch, a crossfade or a team
+  switch.
+- **No settle wait.** A finger at the edge while the push is still sliding in
+  takes the page where it stands (`grabPush`): its travel adds to the page's
+  place, so a push taken past the mark and let go commits. A Back mid-push
+  reverses from where it stood (`takeRunningPush`). A pushed screen
+  (`PhoneScreen`) keeps its 480ms settle wait.
+
+Phone only, with motion full: Reduce Motion keeps the crossfade and Animations
+off the swap. Owed: an iPhone pass (the drag, the copy beneath in dark mode, a
+grab mid-push) before this is called done.
+
 ### Who runs it: the capability check
 
 | Where | Web gesture |

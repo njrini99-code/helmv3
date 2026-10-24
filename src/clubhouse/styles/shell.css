@@ -1929,17 +1929,6 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
    (PhoneScreen): the new page slides in from the right edge on the smooth spring while the one under it draws back by
    a parallax share and dims as a pushed screen's page does (B16, --ch-vt-push-dim), and Back plays it in reverse with
    the leaving page on top. Transform and a filter on the snapshot, no layout. Phone only: desktop keeps the crossfade. */
-@keyframes ch-vt-push-in {
-  from {
-    transform: translateX(100%);
-  }
-}
-@keyframes ch-vt-push-out {
-  to {
-    transform: translateX(var(--ch-vt-parallax));
-    filter: var(--ch-vt-push-dim);
-  }
-}
 @keyframes ch-vt-pop-in {
   from {
     transform: translateX(var(--ch-vt-parallax));
@@ -1956,11 +1945,11 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
   html[data-ch-nav] [data-ui='clubhouse'] .ch-frame-route {
     background: var(--ch-bg-page);
   }
-  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-out;
-  }
+  /* C1: a drill-in is drawn by the live page sliding over a copy of the one it left (lib/nav-motion.ts playPush), so a
+     finger can take it mid-flight; the view transition swaps at once, so the two never both slide. */
+  html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-old(ch-page),
   html[data-ch-nav='push']:has([data-ui='clubhouse'])::view-transition-new(ch-page) {
-    animation: var(--ch-dur-vt-push) var(--ch-ease-vt-push) both ch-vt-push-in;
+    animation: none;
   }
   html[data-ch-nav='pop']:has([data-ui='clubhouse'])::view-transition-old(ch-page) {
     z-index: 1;
@@ -1976,6 +1965,21 @@ html[data-ch-tab][data-ch-vt-hold]:has([data-ui='clubhouse'])::view-transition-o
     overflow: hidden;
     background: var(--ch-bg-page);
     pointer-events: none;
+  }
+  /* C1: the copy of the page beneath a pushed one (lib/nav-motion.ts unders): below the page, which slides over it, and
+     under the bars. Inert; only drawn while a push plays or a finger drags the page back. */
+  .ch-root.ch-frame-under {
+    z-index: calc(var(--ch-z-sticky) - 2);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--ch-bg-page);
+    pointer-events: none;
+  }
+  /* The page moving over that copy, by the push or under a finger: opaque, and above it. */
+  [data-ui='clubhouse'] .ch-frame-route[data-ch-pushing] {
+    position: relative;
+    z-index: calc(var(--ch-z-sticky) - 1);
+    background: var(--ch-bg-page);
   }
 }
 /* Reduce Motion (owner decision 2, 2026-10-24, OQ-15): a page change crossfades, the old page out and the new one in
