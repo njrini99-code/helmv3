@@ -363,7 +363,6 @@
 }
 .ch-rs-face__figs b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -610,7 +609,6 @@
 }
 .ch-rs-num {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1758,7 +1756,6 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-rq__h span {
     font: var(--ch-type-11-medium);
-
     letter-spacing: var(--ch-track-11);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-tertiary);
@@ -1858,7 +1855,6 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rsm-act b {
     font: var(--ch-type-15-medium);
-
     letter-spacing: var(--ch-track-15);
   }
   .ch-rsm-act__ic {

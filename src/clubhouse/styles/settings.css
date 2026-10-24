@@ -1118,12 +1118,10 @@
   }
   .ch-setm-row.is-slider .ch-slider__l {
     font: var(--ch-type-16);
-
     letter-spacing: var(--ch-track-16);
   }
   .ch-setm-row.is-slider .ch-slider__v {
     font: var(--ch-type-16-strong);
-
     letter-spacing: var(--ch-track-16);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-primary);
@@ -1422,7 +1420,6 @@
   }
   .ch-setm-rank__txt > span:first-child {
     font: var(--ch-type-16);
-
     letter-spacing: var(--ch-track-16);
   }
   .ch-setm-rank__txt > span:last-child {
@@ -1665,7 +1662,6 @@
   }
   .ch-set[data-canopy] .ch-surface__title {
     font: var(--ch-type-20-strong);
-
     letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }

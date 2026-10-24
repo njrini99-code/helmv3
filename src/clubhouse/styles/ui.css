@@ -1737,7 +1737,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-line__t {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   font-variant-numeric: tabular-nums;
   fill: var(--ch-text-tertiary);
@@ -1854,7 +1853,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d b {
   font: var(--ch-type-17-medium);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1877,7 +1875,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d.is-today b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
@@ -1887,7 +1884,6 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-wks__d.is-on b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);

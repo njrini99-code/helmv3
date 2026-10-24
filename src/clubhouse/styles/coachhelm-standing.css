@@ -421,7 +421,6 @@
   }
   main[data-canopy] .ch-hs-g h2 {
     font: var(--ch-type-20-strong);
-
     letter-spacing: var(--ch-track-20);
   }
   main[data-canopy] :is(.ch-hs-r:first-child, .ch-hs-sk__g > :nth-child(2)) {

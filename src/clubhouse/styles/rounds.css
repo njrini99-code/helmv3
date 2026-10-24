@@ -133,7 +133,6 @@
 }
 .ch-rd-strip span.is-played em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -179,7 +178,6 @@
 }
 .ch-rd-unf__f b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -463,7 +461,6 @@
 }
 .ch-rd-rib__t {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   fill: var(--ch-ink-500);
 }
@@ -472,7 +469,6 @@
 }
 .ch-rd-rib__v {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
@@ -482,7 +478,6 @@
 }
 .ch-rd-rib__d {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   fill: var(--ch-text-secondary);
   font-variant-numeric: tabular-nums;
@@ -804,7 +799,6 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__grid em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -812,7 +806,6 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rd-sc__grid b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1108,7 +1101,6 @@ a.ch-rd-sc:focus-visible {
 }
 .ch-rv-hero__s em {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2475,7 +2467,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rv[data-canopy] .ch-rv-hero__m {
     font: var(--ch-type-15);
-
     letter-spacing: var(--ch-track-15);
     color: var(--ch-text-secondary);
   }
@@ -2518,7 +2509,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   .ch-rv[data-canopy] .ch-rv-card__h h2,
 .ch-rv[data-canopy] .ch-rv-card__h h3 {
     font: var(--ch-type-20-strong);
-
     letter-spacing: var(--ch-track-20);
     color: var(--ch-ledger-ink);
   }
@@ -2697,7 +2687,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-recap p {
   font: var(--ch-type-15);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -3193,7 +3182,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost__t {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
 
   font-variant-numeric: tabular-nums;
@@ -3267,7 +3255,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzhit__c em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -3336,7 +3323,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzpt__c em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -4466,7 +4452,6 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-h__s em {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
 

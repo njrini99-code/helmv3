@@ -1139,7 +1139,6 @@ button.ch-more__row[disabled] {
 }
 .ch-more__me-t b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }

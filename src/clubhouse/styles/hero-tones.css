@@ -115,7 +115,6 @@
 }
 .ch-hero__figs dt {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   color: var(--ch-hero-brass, var(--ch-ledger-eyebrow));

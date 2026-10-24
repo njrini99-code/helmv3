@@ -160,7 +160,6 @@
 }
 .ch-hl-bars b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   text-align: right;
@@ -259,7 +258,6 @@
 }
 .ch-hl-ledger b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
 }
@@ -571,7 +569,6 @@
 }
 .ch-hl-row__v {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -632,7 +629,6 @@
 }
 .ch-hl-prop__t b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }

@@ -341,7 +341,6 @@
   }
   main[data-canopy] .ch-hg-sec h2 {
     font: var(--ch-type-section);
-
     letter-spacing: var(--ch-track-section);
   }
   /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a

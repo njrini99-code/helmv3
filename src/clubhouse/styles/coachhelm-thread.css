@@ -108,7 +108,6 @@
 }
 .ch-th-p {
   font: var(--ch-type-16);
-
   letter-spacing: var(--ch-track-16);
   text-wrap: pretty;
 }
@@ -461,7 +460,6 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-reads__b b {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
   transition: color var(--ch-dur-quick) var(--ch-ease);
@@ -492,7 +490,6 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-tile__value {
   font: var(--ch-type-22-strong);
-
   letter-spacing: var(--ch-track-22);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -792,7 +789,6 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-act__title b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
 }
 .ch-th-act__title span {
@@ -939,7 +935,6 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-receipt__title {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
 }
 .ch-th-receipt__body {
@@ -1016,7 +1011,6 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-evp__titles b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
 }
 .ch-th-evp__titles span {

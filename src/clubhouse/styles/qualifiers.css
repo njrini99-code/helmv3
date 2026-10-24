@@ -1423,7 +1423,6 @@
   }
   .ch-qf--list .ch-qf-head p {
     font: var(--ch-type-15);
-
     letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
@@ -2064,7 +2063,6 @@
   }
   .ch-qfm-rdh b {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
@@ -2102,7 +2100,6 @@
   .ch-qf--form .ch-qf-head p,
   .ch-qfs .ch-qf-head p {
     font: var(--ch-type-15);
-
     letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-secondary);
@@ -2388,7 +2385,6 @@
 }
 .ch-qf-move {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2794,7 +2790,6 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rank) {
   }
   .ch-qf--form[data-canopy] .ch-qf-fs__h h2 {
     font: var(--ch-type-20-strong);
-
     letter-spacing: var(--ch-track-20);
   }
   .ch-qf--form[data-canopy] .ch-qf-sticky {
@@ -3695,7 +3690,6 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__hole small {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -3712,7 +3706,6 @@ button.ch-qf-prounds__r.is-open {
 }
 .ch-qf-rv__sum small {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);

@@ -160,7 +160,6 @@
 }
 .ch-cl-tb__wk span {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -175,7 +174,6 @@
 }
 .ch-cl-tb__wk em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -230,7 +228,6 @@
 }
 .ch-cl-tb__over b {
   font: var(--ch-type-22-strong);
-
   letter-spacing: var(--ch-track-22);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -422,7 +419,6 @@
 }
 .ch-cl-card__week em {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -444,7 +440,6 @@
 }
 .ch-cl-card__week b {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -526,7 +521,6 @@
 }
 .ch-cl-add b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-950);
@@ -936,7 +930,6 @@
 }
 .ch-cl-drop b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
 }
 .ch-cl-drop > em {
@@ -979,7 +972,6 @@
 }
 .ch-cl-read > b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
 }
 .ch-cl-read > span {
@@ -1061,7 +1053,6 @@
 }
 .ch-cl-err > b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
 }
 .ch-cl-err > p {
@@ -1098,7 +1089,6 @@
 }
 .ch-cl-rv__sum dt {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   color: rgb(244 241 232 / 0.62);
@@ -2558,7 +2548,6 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   }
   .ch-cl[data-canopy] .ch-cl-over__h h2 {
     font: var(--ch-type-20-strong);
-
     letter-spacing: var(--ch-track-20);
   }
   .ch-cl[data-canopy] .ch-cl-over__ic {

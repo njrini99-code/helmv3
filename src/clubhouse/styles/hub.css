@@ -182,7 +182,6 @@
 }
 .ch-hb-rsvp__d em {
   font: var(--ch-type-11-strong);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -855,7 +854,6 @@
 }
 .ch-hb-drop b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -2330,7 +2328,6 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   }
   .ch-hb-margin__t {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
     color: var(--ch-ledger-ink);
     text-wrap: balance;
@@ -3480,7 +3477,6 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-ledm b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
 }
 .ch-hw-ledm button > span {
@@ -3738,7 +3734,6 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 .ch-hw-q b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }

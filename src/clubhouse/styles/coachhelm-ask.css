@@ -326,7 +326,6 @@
 }
 .ch-ask-hist__empty b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   color: var(--ch-text-primary);
 }
@@ -437,7 +436,6 @@
 }
 .ch-ask-nothing__t b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }

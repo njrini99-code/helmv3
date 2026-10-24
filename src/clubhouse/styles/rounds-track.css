@@ -154,7 +154,6 @@ button.ch-rt-strip__h {
    audit X-4. */
 .ch-rt-strip__h em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -207,7 +206,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-strip__tot em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
 
@@ -217,7 +215,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-strip__tot b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -333,7 +330,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-hero__dist > em {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
 
@@ -693,7 +689,7 @@ button.ch-rt-strip__h {
 }
 .ch-rt-card > .ch-rt-sec:first-child {
   padding-top: 16px;
-  border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
+  border-radius: var(--ch-radius-card) var(--ch-radius-card) 0 0;
 }
 .ch-rt-sec.is-tint {
   background: #f7f5ef;
@@ -780,7 +776,6 @@ button.ch-rt-strip__h {
 /* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
   font: var(--ch-type-11);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -1156,7 +1151,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-review__h b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
 }
@@ -1338,13 +1332,11 @@ button.ch-rt-strip__h {
 }
 .ch-rt-exitc__n b {
   font: var(--ch-type-22-strong);
-
   letter-spacing: var(--ch-track-22);
   line-height: var(--ch-lead-tight);
 }
 .ch-rt-exitc__n em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -1391,7 +1383,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-xopt b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -1558,7 +1549,6 @@ button.ch-rt-strip__h {
 }
 .ch-rt-sum__hero em {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -1999,7 +1989,6 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__t b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);
@@ -2118,7 +2107,6 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__f {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2836,7 +2824,6 @@ button.ch-rt-strip__h {
   }
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go.is-blocked {
     font: var(--ch-type-15-medium);
-
     letter-spacing: var(--ch-track-15);
     color: var(--ch-on-green-ink-soft);
   }

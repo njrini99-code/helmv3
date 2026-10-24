@@ -57,7 +57,6 @@
 }
 .ch-cal-title__yr {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
 
@@ -745,7 +744,6 @@
 }
 .ch-cg__title b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
 }
 .ch-cg__title span {
@@ -1121,7 +1119,6 @@
 }
 .ch-ag__when b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }

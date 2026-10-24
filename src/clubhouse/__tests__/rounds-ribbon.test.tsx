@@ -1,4 +1,6 @@
 import { render } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Ribbon } from '../screens/rounds/parts';
 
@@ -21,5 +23,10 @@ describe('Rounds season ribbon', () => {
     const figures = [...container.querySelectorAll('text.ch-rd-rib__d, text.ch-rd-rib__t')].filter((t) => /\d/.test(t.textContent ?? ''));
     expect(figures.length).toBeGreaterThan(0);
     for (const t of figures) expect(t.classList.contains('ch-num'), t.textContent ?? '').toBe(true);
+  });
+
+  it('keeps those digits even although the ribbon text sets its own font shorthand later', () => {
+    const base = readFileSync(join(__dirname, '../styles/base.css'), 'utf8');
+    expect(base).toMatch(/\.ch-num,\s*svg \.ch-num \{\s*font-variant-numeric: tabular-nums;/);
   });
 });

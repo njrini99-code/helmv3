@@ -561,7 +561,6 @@
 }
 .ch-sgt__team b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -924,7 +923,6 @@
 }
 .ch-lg__tot {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1069,7 +1067,6 @@
 }
 .ch-best__v {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1363,7 +1360,6 @@
 }
 .ch-n {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1620,7 +1616,6 @@
 }
 .ch-fws__z b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1775,7 +1770,6 @@
 }
 .ch-gmiss__c b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1785,7 +1779,6 @@
 .ch-gmiss__c em,
 .ch-gmiss__g em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -1836,7 +1829,6 @@
 }
 .ch-cup__lbl b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -2177,7 +2169,6 @@
   }
   .ch-stm-panel__h h2 {
     font: var(--ch-type-22);
-
     letter-spacing: var(--ch-track-22);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
@@ -2412,7 +2403,6 @@
   }
   .ch-stm-row__v b {
     font: var(--ch-type-17-strong);
-
     letter-spacing: var(--ch-track-17);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
@@ -2810,7 +2800,6 @@
 }
 .ch-gx-sec__c b {
   font: var(--ch-type-17-strong);
-
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -3246,7 +3235,6 @@
   }
   .ch-gd.is-phone .ch-gm-p__t {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
   }
   .ch-gd.is-phone .ch-gx-more > summary {
@@ -3523,7 +3511,6 @@
 }
 .ch-brow__v b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -3721,7 +3708,6 @@
   /* The team's context line over the title: plain sentence case, never tracked (doctrine; direction A, 2026-10-08). */
   .ch-stm .ch-stm-head span {
     font: var(--ch-type-15);
-
     letter-spacing: var(--ch-track-15);
     font-variant-numeric: tabular-nums;
     color: var(--ch-text-tertiary);
@@ -4375,7 +4361,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-tip b {
     font: var(--ch-type-16-strong);
-
     letter-spacing: var(--ch-track-16);
     line-height: var(--ch-lead-tight);
   }
@@ -4609,7 +4594,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-leg b {
     font: var(--ch-type-16-strong);
-
     letter-spacing: var(--ch-track-16);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
@@ -4710,7 +4694,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   }
   .ch-stm.is-team .ch-stm-putt__r b {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
@@ -4811,7 +4794,6 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
 }
 .ch-st[data-canopy] .ch-sgt__scrub text {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   fill: var(--ch-text-primary);
 }
@@ -5302,7 +5284,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-sgt__best text {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   fill: var(--ch-champagne-300);
   paint-order: stroke;
@@ -5903,7 +5884,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-sv-rt__t {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -6273,7 +6253,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__t p {
   font: var(--ch-type-15);
-
   letter-spacing: var(--ch-track-15);
 }
 .ch-st[data-canopy] .ch-gd:not(.is-phone) .ch-gm__head > .ch-gm__sub {
@@ -6850,7 +6829,6 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
 }
 .ch-sv-pb__lab b {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);

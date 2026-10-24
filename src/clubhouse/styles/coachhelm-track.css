@@ -119,13 +119,11 @@
 }
 .ch-htr-fam__n {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-fam__l {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-align: right;

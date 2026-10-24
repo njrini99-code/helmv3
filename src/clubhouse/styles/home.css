@@ -181,7 +181,6 @@
 }
 .ch-h-day__n {
   font: var(--ch-type-16-strong);
-
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -346,7 +345,6 @@
 }
 .ch-h-topar {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -753,7 +751,6 @@
 }
 .ch-h-lb__num {
   font: var(--ch-type-15-medium);
-
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1307,7 +1304,6 @@
   }
   .ch-hm-tl__b b {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
     color: var(--ch-ink-950);
   }
@@ -1353,7 +1349,6 @@
   }
   .ch-hm-empty b {
     font: var(--ch-type-15-strong);
-
     letter-spacing: var(--ch-track-15);
   }
   .ch-hm-empty span span {
@@ -1578,7 +1573,6 @@
   }
   .ch-hm-score em {
     font: var(--ch-type-11-strong);
-
     letter-spacing: var(--ch-track-11);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
@@ -1612,7 +1606,6 @@
   }
   .ch-hm-strip dd {
     font: var(--ch-type-16-medium);
-
     letter-spacing: var(--ch-track-16);
     line-height: var(--ch-lead-tight);
     font-variant-numeric: tabular-nums;
@@ -1710,7 +1703,6 @@
 }
 .ch-cd em {
   font: var(--ch-type-11-medium);
-
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -3920,7 +3912,6 @@ html[data-fw-theme='dark'] .ch-ph-legs-sec.is-phone .ch-ph-leg + .ch-ph-leg {
 }
 .ch-h-form__figs dd.ch-num:first-of-type {
   font: var(--ch-type-20-strong);
-
   letter-spacing: var(--ch-track-20);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -4143,7 +4134,6 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-h-legs__t td.ch-h-legs__sg {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);

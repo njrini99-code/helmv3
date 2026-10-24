@@ -26,7 +26,6 @@
 }
 .ch-rec-head p {
   font: var(--ch-type-15);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -180,7 +179,6 @@
 }
 .ch-rec-pipe__txt b {
   font: var(--ch-type-15-strong);
-
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }

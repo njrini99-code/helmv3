@@ -183,11 +183,11 @@ describe('type roles (B1)', () => {
 
 /**
  * Raw `font:` shorthands per stylesheet left after the second codemod pass (2026-10-24, scripts/clubhouse/type-roles.mjs):
- * sizes off the steps, 700, italics, the mono face, and step-sized px on chart, badge and count text or in a fixed-height
- * box. Only falls.
+ * sizes off the steps, 700, italics, the mono face, step-sized px on chart, badge and count text or in a fixed-height
+ * box, and the sign-in pages (auth.css keeps the owner's ported type, as the first pass decided). Only falls.
  */
 const RAW_FONT: Record<string, number> = {
-  'styles/auth.css': 7,
+  'styles/auth.css': 32,
   'styles/base.css': 1,
   'styles/calendar.css': 8,
   'styles/classes.css': 12,
@@ -273,7 +273,7 @@ const RAW_LONGHAND: Record<string, number> = {
 
 /** Off-role `letter-spacing` left after the tracking pass (2026-10-23): positive tracking on codes, initials and badges, large figures off the steps, and the sign-in pages. Only falls. */
 const OFF_TRACK: Record<string, number> = {
-  'styles/auth.css': 2,
+  'styles/auth.css': 7,
   'styles/base.css': 2,
   'styles/classes.css': 1,
   'styles/coachhelm-ask.css': 1,

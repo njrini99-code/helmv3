@@ -12,6 +12,7 @@
  *      - chart, tick, axis, badge, count and keycap text, and a rule with a fixed px `height` or `block-size`: a box
  *        sized to its text at one size would clip it at a larger one;
  *      - lane A's selectors (the sidebar fold), so merges stay hunk-local.
+ *    The sign-in pages (auth.css) keep the owner's ported type and are not passed to it.
  * 2. Leading (row 27). Multi-line text (leading over 1.15) takes the role's own leading: wrapped text gets air. A single
  *    line (leading 1.15 or under, or a px leading that close: pills, tabs, figures) keeps one tight leading on the next
  *    line, `line-height: var(--ch-lead-tight)` (1.1), unless the rule sets its own line-height after the font. `--lead`
@@ -91,7 +92,7 @@ for (const file of positionals) {
       });
     }
     if (mode === 'track-fill') {
-      const m = /^(\s*)font: var\(--ch-type-(\d+)(?:-medium|-strong)?\);$/m.exec(body);
+      const m = /^([ \t]*)font: var\(--ch-type-(\d+)(?:-medium|-strong)?\);$/m.exec(body);
       if (!m || !TRACKED.has(Number(m[2])) || /letter-spacing:/.test(body)) return body;
       moved += 1;
       log(`${selector}: + letter-spacing: var(--ch-track-${m[2]})`);
