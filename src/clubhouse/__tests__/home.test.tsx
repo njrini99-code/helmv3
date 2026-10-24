@@ -752,15 +752,24 @@ describe('Home · the team’s form (teamForm)', () => {
   });
 
   it('§10-1 a figure resting on fewer rounds than the average says how many', () => {
-    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 }), r(73, null, 31, { back: 2 })], 0)!;
-    expect(f.basis).toMatchObject({ rounds: 3, girRounds: 1, puttsRounds: 2 });
-    // Greens pool the holes of the one round that has them; putts average the two that do.
-    expect(f.gir.pct).toBeCloseTo((12 / 18) * 100, 10);
+    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, 10, null, { back: 1 }), r(73, null, 31, { back: 2 }), r(75, null, null, { back: 3 })], 0)!;
+    expect(f.basis).toMatchObject({ rounds: 4, girRounds: 2, puttsRounds: 2 });
+    // Greens pool the holes of the two rounds that have them; putts average the two that do.
+    expect(f.gir.pct).toBeCloseTo((22 / 36) * 100, 10);
     expect(f.putts.avg).toBe(30.5);
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
     const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
-    expect(figs[1]).toMatch(/1 of 3 rounds/);
-    expect(figs[2]).toMatch(/2 of 3 rounds/);
+    expect(figs[1]).toMatch(/2 of 4 rounds/);
+    expect(figs[2]).toMatch(/2 of 4 rounds/);
+  });
+
+  it('A7 the team’s greens from one round are not a share: they say what they need', () => {
+    const f = teamForm([r(72, 12, 30, { back: 0 }), r(74, null, null, { back: 1 })], 0)!;
+    expect(f.gir).toMatchObject({ pct: null, needs: 'Needs 2 rounds', delta: null });
+    wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...PREVIEW_HOME.phone, form: f } }} now={PREVIEW_HOME_NOW} />);
+    const figs = [...document.querySelectorAll('.ch-hm-form__figs > div')].map((d) => d.textContent);
+    expect(figs[1]).toMatch(/Needs 2 rounds/);
+    expect(figs[1]).not.toMatch(/67%/);
   });
 });
 

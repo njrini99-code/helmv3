@@ -16,7 +16,7 @@ import { hasHoleScores, holeRounds, recordedPutts } from './round-scope';
 import { loadRoundCache, previousInFilter, readTourBenchmarks, roundsInFilter, seasonOnly, tourForGender, type ChRoundCache } from './stats-common';
 import { filterFor } from './stats-filter';
 import { effectiveCount, weightedMean, windowChangeSe } from './stats-weight';
-import { changeSe } from '../lib/stats-signal';
+import { changeSe, floorRate } from '../lib/stats-signal';
 import { rsvpOf } from './calendar';
 import { parseAvailability, type ChAvailability } from './availability';
 import { playerMine, playerSeesMeeting, replyClosedAt, type ChRsvp } from '../screens/calendar/model';
@@ -166,7 +166,8 @@ export interface ChTeamForm {
   /** What the average, greens and putts rest on: the rounds, their first and last dates, and how many carry greens and putts. */
   basis: { rounds: number; from: string; to: string; girRounds: number; puttsRounds: number };
   /** Greens in regulation, percent; delta in points. */
-  gir: { pct: number | null; delta: number | null; se?: number | null };
+  /** Under its floor (two rounds with greens, A7) the share is null and `needs` says what it needs. */
+  gir: { pct: number | null; delta: number | null; se?: number | null; needs?: string };
   /** Per 18 holes, over the rounds with putts recorded (`recordedPutts`: a round written 0 putts has none), as Stats counts them. */
   putts: { avg: number | null; delta: number | null; se?: number | null };
 }
@@ -189,7 +190,7 @@ export interface ChTeamLeg {
   /** Team Stats' leg name, verbatim (`LEGS`). */
   label: ChLeg;
   /** The part's plain stat over the same rounds: Fairways, Greens, Up and down (a rate) or Putts (per round), with the Tour's mark. */
-  stat: { label: 'Fairways' | 'Greens' | 'Up and down' | 'Putts'; value: number | null; unit: '%' | ''; digits: number; tour: number | null };
+  stat: { label: 'Fairways' | 'Greens' | 'Up and down' | 'Putts'; value: number | null; unit: '%' | ''; digits: number; tour: number | null; needs?: string; early?: string };
   /** The team's strokes gained per round in the part over its hole-by-hole rounds; null under MIN_SG_ROUNDS. */
   sg: number | null;
   /** Against each player's previous ten (the same players, Q-112); null with no earlier ten to compare. */
@@ -822,7 +823,9 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
   const avg = weightedMean(last, scoreOf) as number;
   const prevAvg = comparable ? weightedMean(prev, scoreOf) : null;
   const pairedAvg = comparable ? weightedMean(lastPaired, scoreOf) : null;
-  const gir = girOf(last);
+  // Greens hold to Stats' floor (A7): under two rounds with greens there is no share, only what it needs.
+  const girFloor = floorRate('fraction', last.filter(hasGir).length, girOf(last));
+  const gir = girFloor.value;
   const prevGir = comparable ? girOf(prev) : null;
   const pairedGir = comparable ? girOf(lastPaired) : null;
   const putts = weightedMean(last, puttsOf);
@@ -843,7 +846,7 @@ export function teamForm(full: ChRound[], roundsThisWeek: number): ChTeamForm | 
     line,
     roundsThisWeek,
     basis: { rounds: last.length, from: dates[0]!, to: dates[dates.length - 1]!, girRounds: last.filter(hasGir).length, puttsRounds: last.filter((r) => puttsOf(r) != null).length },
-    gir: { pct: gir, delta: pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
+    gir: { pct: gir, ...(girFloor.needs ? { needs: girFloor.needs } : {}), delta: gir != null && pairedGir != null && prevGir != null ? pairedGir - prevGir : null, se: comparable ? changeSe(girRates(lastPaired), girRates(prev), null) : null },
     putts: { avg: putts, delta: pairedPutts != null && prevPutts != null ? pairedPutts - prevPutts : null, se: comparable ? windowChangeSe(lastPaired, prev, puttsOf, null) : null },
   };
 }
@@ -911,7 +914,7 @@ export function teamLegs(input: {
     return {
       key,
       label: LEGS[i]!,
-      stat: { label: LEG_STATS[key].label, value: stat.value, unit: stat.unit, digits: stat.digits, tour: marks ? stat.bench : null },
+      stat: { label: LEG_STATS[key].label, value: stat.value, unit: stat.unit, digits: stat.digits, tour: marks ? stat.bench : null, ...(stat.needs ? { needs: stat.needs } : {}), ...(stat.early ? { early: stat.early } : {}) },
       sg,
       delta,
       se: delta != null ? windowChangeSe(holePaired, holePrev, pick, 'sg') : null,

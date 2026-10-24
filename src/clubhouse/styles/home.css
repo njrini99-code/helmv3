@@ -2038,6 +2038,10 @@
 .ch-ph-bench__t i.is-loss {
   background: var(--ch-chart-loss);
 }
+/* Level with the Tour as printed, or an early read: neither a gain nor a loss (A2, A7). */
+.ch-ph-bench__t i:not(.is-gain, .is-loss) {
+  background: var(--ch-ink-400);
+}
 .ch-ph-bench__t em {
   position: absolute;
   top: -4px;

@@ -313,7 +313,7 @@ function ScoreChart({ points, phone }: { points: ChScoringPoint[]; phone: boolea
 
 function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour: ChSgTour; phone: boolean; covered: boolean }) {
   if (!legs) return null;
-  const any = legs.rows.some((l) => l.value != null);
+  const any = legs.rows.some((l) => l.value != null || l.needs);
   return (
     <section className={phone ? 'ch-hm-sec ch-ph-legs-sec is-phone' : 'ch-ph-legs-sec'} aria-labelledby="ch-ph-legs">
       {phone ? (
@@ -354,7 +354,8 @@ function Leg({ g }: { g: ChPlayerLeg }) {
   const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
   // The benchmark bar: a share of the scale for percentages, or a putts band (fewer is further right).
   const pos = (v: number) => (g.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
-  const better = g.value != null && g.bench != null ? (g.lowerIsBetter ? g.value <= g.bench : g.value >= g.bench) : null;
+  // Against the Tour as the two figures print (a whole percent, putts to a tenth): level is neither, and an early read is never toned.
+  const against = g.value != null && g.bench != null && !g.early ? changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) : '';
   return (
     <article className="ch-ph-leg" aria-labelledby={`ch-ph-leg-${g.key}`}>
       <div className="ch-ph-leg__h">
@@ -368,13 +369,13 @@ function Leg({ g }: { g: ChPlayerLeg }) {
       </div>
       <div className="ch-ph-leg__v">
         <span className="ch-num">{g.value == null ? NO_DATA : fmt(g.value)}</span>
-        <em>{g.stat}</em>
+        <em>{g.needs ? `${g.stat} · ${g.needs}` : g.early ? `${g.stat} · ${g.early}` : g.stat}</em>
       </div>
       <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
       {g.value != null && g.bench != null && (
         <div className="ch-ph-bench">
           <span className="ch-ph-bench__t" aria-hidden="true">
-            <i className={better ? 'is-gain' : 'is-loss'} style={{ width: `${pos(g.value)}%` }} />
+            <i className={against} style={{ width: `${pos(g.value)}%` }} />
             <em style={{ left: `${pos(g.bench)}%` }} />
           </span>
           <span className="ch-ph-bench__k ch-num">

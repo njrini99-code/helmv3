@@ -22,7 +22,9 @@ export function legPlayerHref(id: string): string | null {
 /** "Fairways 61% · Tour 66%", "Putts 30.4 · Tour 29.0"; without a Tour mark, "Fairways 61%". */
 export function legStatText(stat: ChTeamLeg['stat']): string {
   const fmt = (v: number | null) => (stat.unit === '%' ? formatPct(v, 0) : formatFixed(v, stat.digits));
-  return [`${stat.label} ${fmt(stat.value)}`, stat.tour != null ? `Tour ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
+  // A rate under its floor says what it needs; an early read says so (A7).
+  if (stat.value == null && stat.needs) return `${stat.label} · ${stat.needs}`;
+  return [`${stat.label} ${fmt(stat.value)}`, stat.early ?? null, stat.tour != null ? `Tour ${fmt(stat.tour)}` : null].filter(Boolean).join(' · ');
 }
 
 /** The change's tone and words: inside its standard error it is "No clear change vs previous 10" in plain ink. */
