@@ -898,6 +898,8 @@ describe('CoachHelm for the coach, on screen', () => {
       '2 players are scoring worse over their last three rounds Jonah Okafor +2.1 strokes · Eli Brandt +0.8 strokes',
       '1 active focus area has no recent progress Priya Natarajan: Lag putting',
     ]);
+    // B11: the open line is a way into What's new.
+    expect(within(list).getByRole('link', { name: 'Everything in What’s new' }).getAttribute('href')).toBe('/golf/dashboard/whats-new');
     // No block of its own comes before the decision: the header, then By player.
     expect(screen.queryByRole('region', { name: 'Program pulse' })).toBeNull();
     // The pulse's own signals item is left out: the header says it.

@@ -338,6 +338,10 @@
   padding-top: 6px;
   color: var(--ch-text-tertiary);
 }
+.ch-hl-since__all {
+  display: inline-block;
+  margin-top: 6px;
+}
 
 /* CH-13942: reads rated Not enough yet, one collapsed line under the board that opens in place (round 2C). */
 .ch-hl-ney {

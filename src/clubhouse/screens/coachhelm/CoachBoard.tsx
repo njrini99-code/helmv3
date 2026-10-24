@@ -373,6 +373,10 @@ function SinceLine({ pulse }: { pulse: ChPulse }) {
             {gaps} didn’t load, so anything made from {pulse.missing.length === 1 ? 'it' : 'them'} is missing here and was not checked.
           </div>
         )}
+        {/* B11: the way into What's new, which had none but the palette. */}
+        <Link className="ch-hl-note__a ch-hl-since__all" href="/golf/dashboard/whats-new">
+          Everything in What’s new
+        </Link>
       </div>
     </div>
   );
