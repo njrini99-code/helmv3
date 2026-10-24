@@ -142,7 +142,7 @@ describe('Qualifier form reads', () => {
     expect(result).toMatchObject({ mode: 'edit', playersError: false, coursesError: false });
   });
 
-  it('creating reads the roster and the team's zone, in the one wave', async () => {
+  it('creating reads the roster and the team’s zone, in the one wave', async () => {
     const waves = readWaves();
     tables.gate = waves.gate;
     tables.current = { golf_team_members: { data: [{ player: entry.player }] } };
