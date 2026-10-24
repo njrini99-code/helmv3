@@ -16,9 +16,11 @@ import { buildPollPayload, parsePollPayload, pollFallbackText, type PollDraft } 
  * preview, search and the older Fairway app. Votes are `golf_message_responses` rows that the voter writes directly
  * under RLS (own row only, members of the conversation only), as reactions do; see use-message-responses.ts.
  *
- * No migration: `kind`, `payload`, `golf_message_responses`, its policies and its realtime publication are all live
- * in production (catalog read 2026-10-24). Closing a poll is the sender's own UPDATE of `payload`, which
- * `golf_messages_update_v2` allows (sender_id = auth.uid()).
+ * No migration in production: `kind`, `payload`, `golf_message_responses`, its policies, unique constraint and
+ * realtime publication are all live there (catalog read 2026-10-24). A fresh database replayed from migrations lacks
+ * the response table's access contract until held 20261024090000_golf_message_responses_access.sql is applied.
+ * Closing a poll is the sender's own UPDATE of `payload`, which `golf_messages_update_v2` allows (sender_id =
+ * auth.uid()).
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
