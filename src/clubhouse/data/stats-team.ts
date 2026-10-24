@@ -29,7 +29,9 @@ import {
 } from './stats-common';
 import { holeCoverage, holeRounds } from './round-scope';
 import { effectiveWindow, filterFor, hasPrevious, previousWords, type ChFilter, type ChFilterOptions, type ChLast } from './stats-filter';
-import { effectiveCount, effectiveRounds, roundValues, summarizeWindow, weightedMean, windowChangeSe } from './stats-weight';
+import { effectiveCount, effectiveRounds, roundHalves, roundValues, summarizeWindow, weightedMean, windowChangeSe, type ChHalves } from './stats-weight';
+
+export type { ChHalves } from './stats-weight';
 import { changeSe, floorRate, meanSe, needsText, type SpreadKind } from '../lib/stats-signal';
 
 /**
@@ -117,10 +119,21 @@ export interface ChTeamStats {
   weeks: string[];
   /** The phone's scoring trend (m-stats.jsx: "Team avg · 10 rounds"): the team's average on each of its last ten round days, oldest first. */
   days: Array<{ label: string; score: number | null; n?: number }>;
-  /** Weekly averages, and the window's own mean (strokes gained per round, scoring average), which is what the headline and the sort read. */
-  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null };
-  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null }>;
+  /**
+   * The round days' newer half against their older half (A1), from the rounds behind each half (`roundHalves`), never one round's
+   * spread set on a day's mean. Null under three days; absent, unmeasured, so no change is claimed.
+   */
+  daysHalves?: ChHalves | null;
+  /**
+   * Weekly averages, and the window's own mean (strokes gained per round, scoring average), which is what the headline and the sort read.
+   * `sgHalves` and `scoreHalves`: the weeks' newer half against their older half, from the rounds behind each half (A1); null under
+   * three weeks, absent when unmeasured (no change is then claimed).
+   */
+  team: { sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null };
+  players: Array<{ id: string; name: string; first: string; sg: Array<number | null>; score: Array<number | null>; sgMean: number | null; scoreMean: number | null; sgHalves?: ChHalves | null; scoreHalves?: ChHalves | null }>;
   legWeeks: Record<ChLeg, Array<number | null>>;
+  /** Each leg's weeks, newer half against older half, from the rounds behind each half (A1), as `team.sgHalves`. */
+  legHalves?: Partial<Record<ChLeg, ChHalves | null>>;
   grid: Array<{
     id: string;
     name: string;
@@ -352,6 +365,9 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
         first: p.first_name || fullName(p),
         sg: weekKeys.map((wk) => avgOf(inWeek(mineHoles, wk), (r) => r.strokes_gained_total)),
         score: weekKeys.map((wk) => avgOf(inWeek(mine, wk), (r) => r.total_score)),
+        // The note on a chosen player's line (A1): their weeks' halves, from the rounds behind them.
+        sgHalves: roundHalves(weekKeys.map((wk) => inWeek(mineHoles, wk)), sgOf, 'sg'),
+        scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(mine, wk)), (r) => r.total_score, 'score'),
         // The window's own mean (what the list is sorted by), not the last week's: strokes gained needs three rounds, as in the grid.
         sgMean: effectiveCount(mineHoles, (r) => r.strokes_gained_total) >= MIN_SG_ROUNDS ? weightedMean(mineHoles, (r) => r.strokes_gained_total) : null,
         scoreMean: weightedMean(mine, (r) => r.total_score),
@@ -362,6 +378,10 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
   const legWeeks = Object.fromEntries(
     LEGS.map((leg, i) => [leg, weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), (r) => sgLegs(r)[i] ?? null))]),
   ) as Record<ChLeg, Array<number | null>>;
+  const legHalves = Object.fromEntries(LEGS.map((leg, i) => [leg, roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), (r) => sgLegs(r)[i] ?? null, 'sg')])) as Record<ChLeg, ChHalves | null>;
+  // The phone's round days: the last ten with a round, and the rounds behind each.
+  const dayKeys = [...new Set(windowRounds.map((r) => r.round_date))].sort().slice(-10);
+  const onDay = (d: string) => windowRounds.filter((r) => r.round_date === d);
 
   // Player x leg grid.
   const grid = teamGrid(players, season.rounds, f);
@@ -388,22 +408,23 @@ export async function loadTeamStats(input: { teamId: string; window: ChWindow; f
     roundsEffective: effectiveRounds(windowRounds),
     figures,
     weeks: weekKeys.map(weekLabel),
-    days: [...new Set(windowRounds.map((r) => r.round_date))]
-      .sort()
-      .slice(-10)
-      .map((d) => {
-        const on = windowRounds.filter((r) => r.round_date === d);
-        // `n`: the whole rounds the day's average rests on, so the phone's mean weighs a day of six rounds above a day of one (A8.10).
-        return { label: shortDate(d), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
-      }),
+    days: dayKeys.map((d) => {
+      const on = onDay(d);
+      // `n`: the whole rounds the day's average rests on, so the phone's mean weighs a day of six rounds above a day of one (A8.10).
+      return { label: shortDate(d), score: avgOf(on, (r) => r.total_score), n: effectiveCount(on, (r) => r.total_score) };
+    }),
+    daysHalves: roundHalves(dayKeys.map(onDay), (r) => r.total_score, 'score'),
     team: {
       sg: weekKeys.map((wk) => avgOf(inWeek(sgWindow, wk), sgOf)),
       score: weekKeys.map((wk) => avgOf(inWeek(windowRounds, wk), (r) => r.total_score)),
       sgMean: sgTotal,
       scoreMean: scoring,
+      sgHalves: roundHalves(weekKeys.map((wk) => inWeek(sgWindow, wk)), sgOf, 'sg'),
+      scoreHalves: roundHalves(weekKeys.map((wk) => inWeek(windowRounds, wk)), (r) => r.total_score, 'score'),
     },
     players: playerSeries,
     legWeeks,
+    legHalves,
     grid,
     legTotals: LEGS.map((_, i) => avgOf(sgWindow, (r) => sgLegs(r)[i] ?? null)),
     putting,

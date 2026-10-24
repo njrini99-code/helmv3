@@ -158,6 +158,16 @@ export function deltaTone(delta: number | null | undefined, se: number | null | 
   return delta < 0 === lowerIsBetter ? 'is-gain' : 'is-loss';
 }
 
+/**
+ * A trend's halves (A1: the newer half against the older half, with the standard error of the rounds behind them) as a tone: signed
+ * only when the change clears its standard error and still prints at `digits`, else '' and the words are "No clear change".
+ * Unmeasured halves (null or absent) are never a change.
+ */
+export function halvesTone(h: { delta: number; se: number | null } | null | undefined, lowerIsBetter: boolean, digits = 1): DeltaTone {
+  if (!h || Math.abs(h.delta) < 0.5 * 10 ** -digits) return '';
+  return deltaTone(h.delta, h.se, lowerIsBetter);
+}
+
 /** The words for a change, which never claim more than the tone does. */
 export function deltaWords(delta: number | null | undefined, tone: DeltaTone, against: string): string {
   if (delta == null || Number.isNaN(delta)) return '';

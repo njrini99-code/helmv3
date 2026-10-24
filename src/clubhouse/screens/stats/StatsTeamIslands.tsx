@@ -6,7 +6,7 @@ import { ArrowDownRight, ArrowUpRight, CalendarRange, Download, Minus, TrendingD
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useId, useMemo, useState, useTransition, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ChLeg, ChTeamStats } from '../../data/stats-team';
+import type { ChHalves, ChLeg, ChTeamStats } from '../../data/stats-team';
 import { LEGS_LIST } from './legs';
 import { basisWords, clearFilters, filterFor, isFiltered, isWindowChange, hasRange, statsHref, rangeOf, withScope, type ChFilter, type ChRange } from '../../data/stats-filter';
 import { Avatar } from '../../ui/Avatar';
@@ -26,7 +26,7 @@ import { chReport, chTrail } from '../../lib/track';
 import { CH_SLOW_SAVE_AFTER, isOffline } from '../../lib/use-action';
 import { firstValue, gappedPath, lastValue } from '../../lib/chart';
 import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
-import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
 import { sgBaseline, sgScale } from '../../lib/sg';
 import { changeWords, UpdatingNote, WindowSwitch } from './WindowSwitch';
 import { FilterEmpty, StatsFilter } from './StatsFilter';
@@ -49,7 +49,7 @@ type Lens = 'sg' | 'score';
 const asText = (s: string) => (/^[=+\-@\t\r]/.test(s) ? `'${s}` : s);
 
 /** What the trend, the leg cards and the grid read; the rest of the page stays on the server. */
-export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
+export type ChTeamCharts = Pick<ChTeamStats, 'window' | 'filter' | 'weeks' | 'team' | 'players' | 'legWeeks' | 'legHalves' | 'legTotals' | 'grid' | 'tour' | 'roundCount' | 'figures'>;
 
 /** The filter in force and the one way to change it: the frame's offline refusal and slow notice, then the new address. */
 const GoFilter = createContext<{ filter: ChFilter; go: (next: ChFilter) => void; shown: ChRange }>({ filter: filterFor(), go: () => {}, shown: 'last10' });
@@ -206,14 +206,26 @@ export function TeamCharts({ data, tape }: { data: ChTeamCharts; tape?: ReactNod
       </SectionBoundary>
 
       <SectionBoundary surface="stats.team.legs" label="Strokes gained by leg" code="CH-4206">
-        <LegTrends legWeeks={data.legWeeks} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
+        <LegTrends legWeeks={data.legWeeks} legHalves={data.legHalves} legTotals={data.legTotals} leg={leg} setLeg={setLeg} />
         <LegGrid data={data} leg={leg} focus={focus} setFocus={setFocus} />
       </SectionBoundary>
     </>
   );
 }
 
-function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats['legWeeks']; legTotals: ChTeamStats['legTotals']; leg: ChLeg; setLeg: (l: ChLeg) => void }) {
+function LegTrends({
+  legWeeks,
+  legHalves,
+  legTotals,
+  leg,
+  setLeg,
+}: {
+  legWeeks: ChTeamStats['legWeeks'];
+  legHalves: ChTeamStats['legHalves'];
+  legTotals: ChTeamStats['legTotals'];
+  leg: ChLeg;
+  setLeg: (l: ChLeg) => void;
+}) {
   const scale = legScale(legWeeks);
   return (
     <section className="ch-sgm-row" aria-label="Strokes gained by leg, team">
@@ -222,6 +234,7 @@ function LegTrends({ legWeeks, legTotals, leg, setLeg }: { legWeeks: ChTeamStats
           key={l}
           leg={l}
           data={legWeeks[l]}
+          change={legHalves?.[l]}
           mean={legTotals[i] ?? null}
           scale={scale}
           selected={leg === l}
@@ -284,18 +297,17 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
   const tFirst = firstValue(team);
   const tLast = lastValue(team);
   const tMean = isSg ? data.team.sgMean : data.team.scoreMean;
-  // A change reads as a change ("up about 1.0 a round since Aug 30"), never as a level the team has "gained".
   // What the weeks say, from the weekly line itself: the best week, the latest, and how many of them beat the reference.
   const known = team.flatMap((v, i) => (v == null ? [] : [{ v, i }]));
   const best = known.length ? known.reduce((a, b) => ((isSg ? b.v > a.v : b.v < a.v) ? b : a)) : null;
   const beats = (v: number) => ref != null && (isSg ? v >= ref : v <= ref);
   const ahead = ref != null ? known.filter((t) => beats(t.v)).length : null;
-  // One change rule (A1): the newer half of the weeks against the older half, said as a change only past its standard error.
-  // Two end points are noise as often as not, so the first and last week are never compared.
-  const halvesNote = (subject: string, verb: 'is' | 'are', weeks: Array<number | null>) => {
-    const h = halvesChange(weeks.filter((v): v is number => v != null), isSg ? 'sg' : 'score');
-    if (!h) return null;
-    if (deltaTone(h.delta, h.se, !isSg) === '') return `No clear change in ${subject} across this window.`;
+  // One change rule (A1): the newer half of the weeks against the older half, said as a change only past its standard error, which
+  // the loader takes from the rounds behind each half (`roundHalves`: a week's mean of eight rounds is not one round). A change is
+  // worded as one ("up 1.0 a round"), never as a level the team has "gained", and the first and last week are never compared.
+  const halvesNote = (subject: string, verb: 'is' | 'are', weeks: Array<number | null>, h: ChHalves | null | undefined) => {
+    if (weeks.filter((v) => v != null).length < 3) return null;
+    if (!h || halvesTone(h, !isSg) === '') return `No clear change in ${subject} across this window.`;
     const by = `${Math.abs(h.delta).toFixed(1)} ${isSg ? 'a round' : 'strokes a round'}`;
     return `${subject.charAt(0).toUpperCase() + subject.slice(1)} ${verb} ${h.delta > 0 ? 'up' : 'down'} ${by}, newer half vs older half.`;
   };
@@ -305,12 +317,15 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
       const b = lastValue(sel.v);
       if (!a || !b || a.i === b.i) return `${sel.p.first} has one week in this window so far.`;
       return (
-        halvesNote(isSg ? `${sel.p.first}’s strokes gained` : `${sel.p.first}’s scoring`, isSg ? 'are' : 'is', sel.v) ??
+        halvesNote(isSg ? `${sel.p.first}’s strokes gained` : `${sel.p.first}’s scoring`, isSg ? 'are' : 'is', sel.v, isSg ? sel.p.sgHalves : sel.p.scoreHalves) ??
         `${sel.p.first} has two weeks in this window so far; a change needs three.`
       );
     }
     if (!tFirst || !tLast || tFirst.i === tLast.i) return 'The trend needs rounds in at least two weeks.';
-    return halvesNote(isSg ? 'the team’s strokes gained' : 'team scoring', isSg ? 'are' : 'is', team) ?? 'The team has two weeks in this window so far; a change needs three.';
+    return (
+      halvesNote(isSg ? 'the team’s strokes gained' : 'team scoring', isSg ? 'are' : 'is', team, isSg ? data.team.sgHalves : data.team.scoreHalves) ??
+      'The team has two weeks in this window so far; a change needs three.'
+    );
   })();
   const sorted = [...lines].sort((a, b) => {
     const av = a.m ?? (isSg ? -99 : 999);
@@ -640,6 +655,7 @@ function legScale(legWeeks: ChTeamStats['legWeeks']): { lo: number; hi: number }
 function LegTrend({
   leg,
   data,
+  change,
   mean,
   scale,
   selected,
@@ -647,6 +663,8 @@ function LegTrend({
 }: {
   leg: ChLeg;
   data: Array<number | null>;
+  /** The weeks' newer half against their older half, from the rounds behind each half (A1); absent, unmeasured. */
+  change: ChHalves | null | undefined;
   mean: number | null;
   /** Shared by the four legs, so the same height means the same strokes on every card (A1). */
   scale: { lo: number; hi: number };
@@ -667,8 +685,7 @@ function LegTrend({
   const tone = meanTone === 'is-gain' ? 'var(--ch-chart-gain)' : meanTone === 'is-loss' ? 'var(--ch-chart-loss)' : 'var(--ch-ink-400)';
   const d = gappedPath(data, x, y);
   // The newer half of the weeks against the older half, worded only past its standard error (A1), never first against last.
-  const ch = a && b && a.i !== b.i ? halvesChange(vals, 'sg') : null;
-  const chWords = ch == null ? null : deltaTone(ch.delta, ch.se, false) === '' ? 'No clear change' : `${ch.delta > 0 ? 'Up' : 'Down'} ${Math.abs(ch.delta).toFixed(1)} a round, newer half vs older half`;
+  const chWords = vals.length < 3 ? null : halvesTone(change, false) === '' ? 'No clear change' : `${change!.delta > 0 ? 'Up' : 'Down'} ${Math.abs(change!.delta).toFixed(1)} a round, newer half vs older half`;
   return (
     <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">
