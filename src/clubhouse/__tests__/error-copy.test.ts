@@ -16,14 +16,10 @@ describe('error copy (B10)', () => {
     expect(hits(/display problem|usually clears/i, src)).toEqual([]);
   });
   it('nothing tells the person to check their connection on a guess; offline has its own line (row 62)', () => {
-    // Only where the code saw a network failure (a fetch error it classified, "Network error", "Unable to reach the
-    // server"). A ratchet: these may only go.
+    // Only where the code classified a network failure (reset password: AuthRetryableFetchError, status 0, a fetch
+    // message). A catch-all is a guess. A ratchet: these may only go.
     const { over, stale } = ratchet(hits(/check your (connection|signal)/i, src), {
-      'screens/auth/join-team-state.ts': 1,
-      'screens/auth/StaffInvite.tsx': 2,
       'screens/auth/reset-state.ts': 1,
-      'screens/onboard/writes.ts': 1,
-      'preview/PreviewOnboard.tsx': 1,
     });
     expect(over).toEqual([]);
     expect(stale).toEqual([]);

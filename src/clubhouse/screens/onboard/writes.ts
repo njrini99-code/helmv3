@@ -126,7 +126,7 @@ export async function sendRequest(d: RequestDetails): Promise<{ ok: true } | { o
     return r.success ? { ok: true } : { ok: false, error: r.error || 'Your request didn’t send. Try again.' };
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.request', severity: 'medium' });
-    return { ok: false, error: 'Unable to reach the server. Your details are still here. Check your connection and try again.' };
+    return { ok: false, error: 'Your request didn’t send. Your details are still here. Try again.' };
   }
 }
 

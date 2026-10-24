@@ -1372,7 +1372,8 @@ describe('Settings · what is reported', () => {
 
 // ── The phone (docs/clubhouse/phone/settings.md, owner-approved 2026-09-30) ──
 
-describe('Settings · a refused save says why; a save that got no answer says the changes are kept, with no guessed cause (VERIFY 2026-10-17, row 62)', () => {
+describe('Settings · a refused save says why; a save that got no answer guesses no cause, and a form says its changes are kept (VERIFY 2026-10-17, row 62)', () => {
+  const toastBody = (c: string) => code(c)!.querySelector('.ch-toast__body')!.textContent;
   const RLS = 'new row violates row-level security policy for table "notification_preferences"';
 
   it('CH-8005 a switch the database refuses flips back and says the account has no access, not the connection', async () => {
@@ -1384,14 +1385,16 @@ describe('Settings · a refused save says why; a save that got no answer says th
     expect(screen.getByRole('switch', { name: 'Messages by email' })).toBeChecked();
   });
 
-  it('CH-8005 a switch whose save never got an answer (a throw, or the browser’s "Load failed") says the changes are kept and to try again', async () => {
+  it('CH-8005 a switch whose save never got an answer (a throw, or the browser’s "Load failed") goes back and says to try again, no cause guessed', async () => {
     const first = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => Promise.reject(new TypeError('Load failed'))) } });
     await first.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
-    await expectCode('CH-8005', /Your changes are kept\. Try again\./);
+    await expectCode('CH-8005');
+    expect(toastBody('CH-8005')).toBe('It is back where it was. Try again.');
     first.unmount();
     const second = setup({ section: 'notifications', writes: { setDelivery: vi.fn(() => fail('TypeError: Load failed')) } });
     await second.user.click(screen.getByRole('switch', { name: 'Messages by email' }));
-    await expectCode('CH-8005', /Your changes are kept\. Try again\./);
+    await expectCode('CH-8005');
+    expect(toastBody('CH-8005')).toBe('It is back where it was. Try again.');
   });
 
   it('CH-8021 a refusal the server words itself is shown as it is; a technical one is still a refusal, not the connection', async () => {
@@ -1401,18 +1404,20 @@ describe('Settings · a refused save says why; a save that got no answer says th
     first.unmount();
     const second = setup({ section: 'coachhelm', writes: { setCoachHelmTeam: vi.fn(() => fail('PGRST116: JSON object requested, multiple (or no) rows returned')) } });
     await second.user.click(screen.getByRole('switch', { name: 'CoachHelm for the whole team' }));
-    await expectCode('CH-8021', /The server didn’t accept the change\./);
+    await expectCode('CH-8021');
+    expect(toastBody('CH-8021')).toBe('It is back where it was. The server didn’t accept the change.');
     expect(code('CH-8021')!.textContent).not.toMatch(/connection/);
   });
 
-  it('CH-8022 a CoachHelm autosave the database refuses says so; one that threw says the change is kept and to try again', async () => {
+  it('CH-8022 a CoachHelm autosave the database refuses says so; one that threw goes back and says to try again, no cause guessed', async () => {
     const first = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.resolve({ success: false, error: RLS })) } });
     await first.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
     await expectCode('CH-8022', /It’s back where it was\. Your account doesn’t have access to do this\./);
     first.unmount();
     const second = setup({ section: 'coachhelm', writes: { savePhilosophy: vi.fn(() => Promise.reject(new TypeError('Failed to fetch'))) } });
     await second.user.click(screen.getByRole('switch', { name: 'Performance plateau' }));
-    await expectCode('CH-8022', /Your changes are kept\. Try again\./);
+    await expectCode('CH-8022');
+    expect(toastBody('CH-8022')).toBe('It’s back where it was. Try again.');
   });
 
   it('CH-8011 a form save refused by a policy (an error, not zero rows) says the account has no access; one that never reached the server says the changes are kept', async () => {
@@ -1426,7 +1431,9 @@ describe('Settings · a refused save says why; a save that got no answer says th
     const second = setup({ section: 'team', writes: { saveTeam: vi.fn(() => fail('TypeError: Failed to fetch')) } });
     await second.user.type(screen.getByLabelText('Team name'), ' A');
     await second.user.click(within(card('Team details')).getByRole('button', { name: 'Save changes' }));
-    await expectCode('CH-8011', /Your changes are kept\. Try again\./);
+    await expectCode('CH-8011');
+    // A form keeps what was typed, so it says so.
+    expect(toastBody('CH-8011')).toBe('Your changes are kept. Try again.');
   });
 
   it('CH-8018 a refusal with no plain reason keeps the card’s own next step', async () => {

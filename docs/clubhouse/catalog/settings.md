@@ -23,8 +23,9 @@ seconds, errors for 8 with Retry.
 
 The second line of an 80xx error toast is chosen by cause (`saveFailureBody` in
 `parts.tsx`). A save that got no answer (it threw, gave no reason, or failed
-with the browser's network wording) says "Your changes are kept. Try again.",
-with no guess at the cause (row 62). A save the server refused says why: "Your account doesn't have access to
+with the browser's network wording) guesses no cause (row 62): a form, which
+keeps what was typed, says "Your changes are kept. Try again."; a switch or an
+autosave, which has gone back, says "It is back where it was. Try again." A save the server refused says why: "Your account doesn't have access to
 do this." for a policy or a missing grant (also when the database words it as
 "violates row-level security"), the session line for an expired sign-in, the
 server's own short sentence as written, and "The server didn't accept the
@@ -69,7 +70,7 @@ are the "Settings · phone" group in `settings.test.tsx`.
 | CH-8021 | The team CoachHelm switch doesn't save (head coach) | "Couldn't change CoachHelm for the team" | `useInstantSave` | settings.test › CH-8021 |
 | CH-8022 | A CoachHelm priority, threshold, alert or display change doesn't save | "Couldn't save that CoachHelm setting" + "It's back where it was…"; the control reverts; the status line says "A change didn't save" | ordered save queue in `CoachHelm.tsx` | settings.test › CH-8022 |
 | CH-8023 | Deleting the account fails | "Couldn't delete your account" + the server's reason (for example data that needs an admin) | `useAction('settings.deleteAccount')` | settings.test › CH-8023 |
-| CH-8024 | Signing out fails | "Couldn't sign you out" + "You’re still signed in. Try again." | `SessionCard` | settings.test › CH-8024 |
+| CH-8024 | Signing out fails | "Couldn't sign you out" + "Try again." | `SessionCard` | settings.test › CH-8024 |
 | CH-8025 | Report a problem can't open the in-app form (info, not an error) | "Opening email" + "The in-app report form isn't available right now." then the mail app opens | Sentry feedback, `mailto:` fallback | settings.test › CH-8025 |
 | CH-8026 | Approving an assistant coach request fails (head coach) | "Couldn't approve Avery Lee" + the reason (for example "Only a head coach of this team can do that."), Retry; the request stays. On success: "Avery Lee is now an assistant coach", the request leaves and the staff list reads again | `useAction('settings.approveAssistant')` (`useCoachingStaff`) → `approvePendingAssistantCoach`; Approve on desktop, the Approve pill on the phone | settings-staff.test › CH-8026 |
 | CH-8027 | Declining an assistant coach request fails (head coach) | "Couldn't decline Avery Lee" + the reason, Retry; the request stays. On success: "Declined Avery Lee" and the request leaves. The person is detached from the program, not deleted | `useAction('settings.declineAssistant')` (`useCoachingStaff`) → `declinePendingAssistantCoach` | settings-staff.test › CH-8027 |
