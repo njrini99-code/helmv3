@@ -1136,6 +1136,39 @@ describe('Stats team · the figures by hand (swap audit §10)', () => {
     expect(data.team.sgMean).toBeCloseTo(1.0, 10);
     expect(sg.state).toBeUndefined();
     expect(data.legTotals.map((v) => Number(v!.toFixed(2)))).toEqual([0.4, 0.3, 0.2, 0.1]);
+    // The weekly lines under the headline read the same players: no week carries the one-round player's −4.0.
+    const known = (xs: Array<number | null>) => xs.filter((v): v is number => v != null).map((v) => Number(v.toFixed(2)));
+    expect(new Set(known(data.team.sg))).toEqual(new Set([1]));
+    expect(new Set(known(sg.series))).toEqual(new Set([1]));
+    expect(['Off the tee', 'Approach', 'Around green', 'Putting'].map((l) => [...new Set(known(data.legWeeks[l as keyof typeof data.legWeeks]))])).toEqual([[0.4], [0.3], [0.2], [0.1]]);
+  });
+
+  it('A4 the change against the previous 10 sets the same players at the floor against each other, never a floored window against an unfloored one', async () => {
+    const noSg = (r: ReturnType<typeof round>) => ({ ...r, strokes_gained_total: null });
+    tables.current = {
+      ...seasonTables(),
+      golf_team_members: { data: [{ player: { id: 'p1', first_name: 'Theo', last_name: 'Marchetti' } }, { player: { id: 'p2', first_name: 'Jonah', last_name: 'Okafor' } }] },
+      golf_rounds: {
+        data: [
+          // p1: ten at +1.0, three before them at 0.0: at the floor on both sides.
+          ...Array.from({ length: 10 }, (_, i) => round(`a${i}`, 'p1', i + 1, 72, 1.0)),
+          ...[11, 12, 13].map((n) => round(`ap${n}`, 'p1', n, 72, 0)),
+          // p2: ten at 0.0, and three before them of which one has shots (−6.0): one round with shots is under the floor.
+          ...Array.from({ length: 10 }, (_, i) => round(`b${i}`, 'p2', i + 1, 72, 0)),
+          round('bp11', 'p2', 11, 72, -6),
+          noSg(round('bp12', 'p2', 12, 72, 0)),
+          noSg(round('bp13', 'p2', 13, 72, 0)),
+        ],
+      },
+      golf_round_stats_cache: { data: [] },
+    };
+    const data = await loadTeamStats({ teamId: 't1', window: 'last10' });
+    const sg = data.figures.find((f) => f.key === 'sg')!;
+    // The headline is both players' window (+0.5); the change is p1's own, +1.0 against 0.0. Pooling p2's one earlier round
+    // into the previous stretch would read −1.5 there, and a change of +2.0.
+    expect(sg.value).toBeCloseTo(0.5, 10);
+    expect(sg.delta).toBeCloseTo(1.0, 10);
+    expect(data.sgChange.delta).toBeCloseTo(1.0, 10);
   });
 
   // Swap audit C-24(a): a cache row with no hole scored holds zero birdies; it is no figure, not a round without a birdie.

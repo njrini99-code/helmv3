@@ -125,6 +125,7 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
                   team: data.team,
                   players: data.players,
                   legWeeks: data.legWeeks,
+                  legHalves: data.legHalves,
                   grid: data.grid,
                   legTotals: data.legTotals,
                   tour: data.tour,

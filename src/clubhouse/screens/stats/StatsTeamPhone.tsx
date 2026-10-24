@@ -13,7 +13,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { Icon } from '../../ui/Icon';
 import { SectionBoundary, SectionGroup, SectionGroupNotice } from '../../ui/SectionBoundary';
 import { Segmented } from '../../ui/Segmented';
-import { deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
+import { deltaTone, deltaWords, halvesTone } from '../../lib/stats-signal';
 import { changeInk, changeTone, formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
 import { TERMS } from '../../lib/glossary';
 import { haptic } from '../../lib/haptics';
@@ -233,12 +233,13 @@ function Trend({ data }: { data: ChTeamStats }) {
         </p>
       </section>
     );
-  // The newer half of the round days against the older half, worded as a change only past its standard error (A1).
-  const change = halvesChange(known.map((d) => d.score), 'score');
+  // The newer half of the round days against the older half, worded as a change only past its standard error (A1), which the
+  // loader takes from the rounds behind each half: a day's mean of six rounds is not read as one round.
+  const change = data.daysHalves;
   const reading =
-    change == null || deltaTone(change.delta, change.se, true) === ''
+    known.length < 3 || halvesTone(change, true) === ''
       ? 'No clear change across the window.'
-      : `${change.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change.delta))} strokes a round, newer half vs older half.`;
+      : `${change!.delta < 0 ? 'Down' : 'Up'} ${formatFixed(Math.abs(change!.delta))} strokes a round, newer half vs older half.`;
   // The mean of the rounds behind the line, each counted once (A8.10): a day weighs its whole rounds, not one point a day.
   const mean = teamDaysMean(known);
   return (
