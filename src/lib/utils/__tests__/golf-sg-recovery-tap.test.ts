@@ -81,6 +81,18 @@ describe('recovery tap (golf_shots.lie_after_recovery)', () => {
     });
   });
 
+  it('only a row flagged is_penalty clears the tap, as in the SQL', () => {
+    const hole = blockedHole(true);
+    const typedOnly: RawShot[] = [
+      hole[0]!,
+      makeRawShot({ id: 'pen', shot_number: 2, shot_type: 'penalty', is_penalty: false, result: 'penalty',
+        lie_before: 'other', distance_to_hole_before: 150 }),
+      ...hole.slice(1).map((s) => ({ ...s, shot_number: s.shot_number + 1 })),
+    ];
+    expect(withRecoveryStart(typedOnly[2]!, typedOnly).lie_before).toBe('recovery');
+    expect(withNextShotStart(typedOnly[0]!, typedOnly).lie_after).toBe('recovery');
+  });
+
   it('round review per-shot SG agrees with the Stats engine', () => {
     const hole = blockedHole(true);
     const reviewed = attachShotStrokesGained(hole);

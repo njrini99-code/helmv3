@@ -1003,7 +1003,9 @@ function nextShotStart(shot: RawShot, holeShots: readonly RawShot[]): RawShot | 
  * penalty drop after a shot the player marked blocked moves the ball, so the
  * next shot is no longer the punch-out the tap described: the recovery start
  * and the blocked shot's recovery end both drop away (SQL: the penalty clause
- * of rc and nb in 20261023170000).
+ * of rc and nb in 20261023170000). It reads `is_penalty` alone, as that SQL
+ * and CoachHelm's `penaltyBetween` do, not the broader isPenaltyRow, so the
+ * page and the stored SG agree on which drop clears the tap.
  * @internal - exported for the round-review mirror and tests
  */
 export function hasPenaltyRowBetween(
@@ -1013,7 +1015,7 @@ export function hasPenaltyRowBetween(
 ): boolean {
   return holeShots.some((m) => m.hole_number === from.hole_number
     && m.shot_number > from.shot_number && m.shot_number < to.shot_number
-    && isPenaltyRow(m));
+    && m.is_penalty === true);
 }
 
 /** The player marked this shot's finish as blocked, and the ball sits in a lie
