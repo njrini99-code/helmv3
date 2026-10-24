@@ -1483,12 +1483,14 @@ describe('Stats player · tests', () => {
  * (Game detail's figures and table, Overview's zone reads); these counts may only fall, toward none.
  */
 describe('toned figures say which way (row 48)', () => {
-  const ALLOWED: Record<string, number> = { overview: 8, game: 29, rounds: 1, dev: 0 };
+  const ALLOWED: Record<string, number> = { overview: 8, game: 24, rounds: 1, dev: 0 };
   for (const [tab, most] of Object.entries(ALLOWED)) {
-    it(`${tab}: at most ${most} figures in colour alone`, async () => {
+    it(`${tab}: ${most} figures in colour alone`, async () => {
       wrap(<StatsPlayer data={player()} coachId="c1" initialTab={tab} />);
-      await act(async () => {});
-      expect(unsignedTones().length).toBeLessThanOrEqual(most);
+      // The tab has drawn its figures (a positive control, so an empty page can't pass), then the count is exact: lower it as they go.
+      await waitFor(() => expect(document.querySelector('[role="tabpanel"]')?.textContent?.length ?? 0).toBeGreaterThan(40));
+      if (most > 0) await waitFor(() => expect(document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss').length).toBeGreaterThan(0));
+      expect(unsignedTones().length).toBe(most);
     });
   }
 });

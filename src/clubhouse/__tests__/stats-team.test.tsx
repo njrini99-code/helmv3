@@ -673,7 +673,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
     // The phone's make rates below the Tour (StatsTeamPhone Putting) are amber with no word yet: may only fall, toward none.
     expect(unsignedTones().filter((t) => !/^b\.ch-num ch-loss :: \d+%$/.test(t))).toEqual([]);
-    expect(unsignedTones().length).toBeLessThanOrEqual(4);
+    expect(unsignedTones().length).toBe(4);
   });
 
   it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
