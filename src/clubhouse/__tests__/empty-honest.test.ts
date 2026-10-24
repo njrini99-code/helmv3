@@ -66,7 +66,6 @@ const ALLOW_LEGACY: Record<string, number> = {
   'screens/rounds/TeamRounds.tsx': 1,
   'screens/stats/GameDetail.tsx': 6,
   'screens/stats/OverviewZones.tsx': 1,
-  'screens/stats/PlayerStage.tsx': 1,
   'screens/stats/RoundTrend.tsx': 1,
   'screens/stats/StatsPlayer.tsx': 3,
   'screens/stats/StatsPlayerPhone.tsx': 4,
