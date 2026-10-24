@@ -1064,7 +1064,7 @@ them would bury everything above.
 | `src/app/golf/actions/ACTIONS.md` | current | - | - | - | - |
 | `src/clubhouse/AGENTS.md` | current | yes | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 6 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 2 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 3 |
 | `tests/golf/qualifier-hell/.momentic-mcp/step-authoring-guide-1787628324409-30568958-fbbd-4cb0-8f55-b90fd56cc3d7.md` | current | - | - | - | - |
 | `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
 | `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
