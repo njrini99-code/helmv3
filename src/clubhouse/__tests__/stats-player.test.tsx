@@ -613,6 +613,23 @@ describe('Stats player · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-gm__reads')).toBeNull();
   });
 
+  it('C2: the coach’s reads stream in behind the profile: the page paints first, the reads’ line lands when they do', async () => {
+    let land!: (r: typeof PREVIEW_READS_FAILED) => void;
+    const streamed = new Promise<typeof PREVIEW_READS_FAILED>((r) => (land = r));
+    wrap(
+      <PhoneChromeProvider>
+        <SlotHost />
+        <StatsPlayer data={player()} coachId="c1" initialTab="game" reads={streamed} />
+      </PhoneChromeProvider>,
+    );
+    // Game detail is drawn while the reads are still on their way, with no reads line yet.
+    expect(document.querySelector('.ch-gm, .ch-gd, [id^="gm-"]')).not.toBeNull();
+    expect(code('CH-5215')).toBeNull();
+    await act(async () => land(PREVIEW_READS_FAILED));
+    expect(code('CH-5215')).not.toBeNull();
+    expect(document.querySelectorAll('[data-ch-code="CH-5215"]')).toHaveLength(1);
+  });
+
   it('CH-5302 no rounds in the window', () => {
     phone(player({ rounds: [] }));
     expect(code('CH-5302')).not.toBeNull();
@@ -684,6 +701,8 @@ describe('Stats player · who may open what', () => {
     expect(ok.type).toBe(StatsPlayer);
     expect(ok.props.coachId).toBe('c1');
     expect(ok.props.initialTab).toBe('rounds');
+    // C2: CoachHelm's reads are handed over as a promise that streams in behind the profile, never awaited first.
+    expect(typeof (ok.props as { reads?: PromiseLike<unknown> }).reads?.then).toBe('function');
     expect(loadPlayerProfile).toHaveBeenCalledWith({ viewer: 'coach', teamId: 't1', playerId: OTHER, window: 'qualifiers', filter: filterFor('qualifiers') });
     // Another team's player, or a removed one: the loader answers null.
     vi.mocked(loadPlayerProfile).mockResolvedValue(null);
