@@ -100,7 +100,7 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
           return (
             <li
               key={i}
-              className={'ch-fm__c' + (tone === 'is-gain' ? ' is-up' : tone === 'is-loss' ? ' is-down' : '') + (i === n - 1 ? ' is-last' : '') + (i === at ? ' is-read' : '')}
+              className={'ch-fm__c' + (tone ? ' ' + tone : '') + (i === n - 1 ? ' is-last' : '') + (i === at ? ' is-read' : '')}
               style={{ ['--ch-bar' as string]: `${(Math.abs(dev) / widest) * 100}%` }}
               aria-label={`${r.label}: ${r.score}, ${formatToPar(r.toPar)}, ${tone === '' ? 'at' : `${formatSigned(dev, 1)} against`} the average`}
             >
@@ -119,8 +119,8 @@ export function PlayerStage({ rounds, first, coach, teamAvg, meta, note }: { rou
         })}
       </ol>
       <p className="ch-fm__key" aria-hidden="true">
-        <span className="is-up">Better than average</span>
-        <span className="is-down">Worse</span>
+        <span className="is-gain">Better than average</span>
+        <span className="is-loss">Worse</span>
         <span>{meta} · lower is better</span>
       </p>
     </section>

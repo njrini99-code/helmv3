@@ -37,6 +37,7 @@ import { deltaTone } from '../lib/stats-signal';
 import { PlayerHome } from '../screens/home/PlayerHome';
 import { RoundReview } from '../screens/rounds/RoundReview';
 import { StatsPlayer } from '../screens/stats/StatsPlayer';
+import { ParTiles } from '../screens/stats/charts';
 import { puttingNote } from '../screens/stats/notes';
 import { StatsTeam } from '../screens/stats/StatsTeam';
 import { legScale, legScaleWords } from '../screens/stats/StatsTeamIslands';
@@ -107,9 +108,9 @@ beforeEach(() => {
 describe('the strokes gained baseline', () => {
   it('names the Tour for a men’s team, the women’s Tour baseline for a women’s team, and claims none when the tour is unknown', () => {
     // `mark` and `zero` name the gauge's zero mark and the trend's zero line (A8.3).
-    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', zero: 'Zero is the Tour' });
-    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", zero: "Zero is the women's Tour" });
-    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', zero: 'Zero is the baseline' });
+    expect(sgBaseline('pga')).toEqual({ vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour' });
+    expect(sgBaseline('lpga')).toEqual({ vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour" });
+    expect(sgBaseline(null)).toEqual({ vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline' });
   });
 
   it('the player profile says vs Tour (never vs D1) on the hero, on the phone figure and in the comparison table; a women’s team says so', () => {
@@ -124,6 +125,15 @@ describe('the strokes gained baseline', () => {
     expect(document.querySelector('.ch-pf-hero__figs')!.textContent).toContain("Per round vs the women's Tour baseline");
     expect(document.querySelector('.ch-zn__def')!.textContent).toContain("Zero is the women's Tour baseline");
     expect(document.querySelector('.ch-lb__axis')!.textContent).toContain("Zero is the women's Tour baseline");
+    // Row 110: the gauge's legend, its title and the round-by-round note name the women's Tour too, never a bare Tour.
+    expect(document.querySelector('.ch-zlegend')!.textContent).toContain("Women's Tour 0.0");
+    expect(document.querySelector('.ch-zns')!.textContent).toMatch(/Against the team and the women's Tour|Against the women's Tour/);
+    expect(document.querySelector('.ch-zns')!.textContent).toContain("per 18 holes. Zero is the women's Tour baseline;");
+  });
+
+  it('the par tiles name the bench they are against: the women’s Tour for a women’s team (row 110)', () => {
+    render(<ParTiles rows={[{ par: 3, avg: 3.2, bench: 3.05 }]} mark={sgBaseline('lpga').mark} />);
+    expect(document.querySelector('.ch-par3__d')!.textContent).toBe("Women's Tour 3.05");
   });
 
   describe('on the phone', () => {
@@ -1014,6 +1024,11 @@ describe('the Tour is the only benchmark (Q-88)', () => {
     wrap(<PlayerHome data={PREVIEW_PLAYER_HOME} now={PREVIEW_HOME_NOW} />);
     expect(document.querySelector('.ch-ph-bench__k')!.textContent).toContain('Tour 66');
     expect(everythingSaid()).not.toMatch(BENCHMARK_WORDS);
+  });
+
+  it('a women’s team’s Home names the women’s Tour on that mark (row 110)', () => {
+    wrap(<PlayerHome data={{ ...PREVIEW_PLAYER_HOME, tour: 'lpga' }} now={PREVIEW_HOME_NOW} />);
+    expect(document.querySelector('.ch-ph-bench__k')!.textContent).toContain("Women's Tour 66");
   });
 
   describe('the benchmark read', () => {

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports } from '../check.mjs';
+import { checkSource, checkProgress, checkCatalog, checkScreens, readRebuiltRoutes, checkServerOnlyImports, offToneDeclarations } from '../check.mjs';
 
 test('flags Fairway imports and tokens', () => {
   const v = checkSource('src/clubhouse/x.tsx', "import { Button } from '@/components/fairway/controls';\nconst s = { color: 'var(--fw-ink)' };");
@@ -199,4 +199,11 @@ test('a card, panel or tile takes its corner from the radius scale; its children
   // A named exception is the file and the subject.
   assert.deepEqual(checkSource('src/clubhouse/styles/settings.css', '.ch-setm-tile { border-radius: 8px; }'), []);
   assert.ok(checkSource('src/clubhouse/styles/other.css', '.ch-setm-tile { border-radius: 8px; }').some((x) => x.includes('CONS-32')));
+});
+
+test('a gain or loss tone paints only with the chart pair; its shape is not paint (CONS-20)', () => {
+  assert.deepEqual(offToneDeclarations('.ch-x.is-gain', 'background: var(--ch-chart-gain-fill); border-radius: var(--ch-radius-mark); border-width: 1px'), []);
+  assert.deepEqual(offToneDeclarations('.ch-x.is-loss', 'border-top-color: var(--ch-chart-loss); border: 1px solid var(--ch-chart-loss)'), []);
+  assert.deepEqual(offToneDeclarations('.ch-x.is-gain', 'color: var(--ch-green-600); border-inline-start: 2px solid #fff'), ['color: var(--ch-green-600)', 'border-inline-start: 2px solid #fff']);
+  assert.deepEqual(offToneDeclarations('.ch-x:not(.is-gain)', 'color: var(--ch-ink-400)'), []);
 });

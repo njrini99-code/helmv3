@@ -995,8 +995,8 @@ describe('Stats player · the page', () => {
     // The overview opens on the scoring ribbon: one column a round, each a bar from the player's own average.
     expect(document.querySelector('.ch-fm__head h2')!.textContent).toBe('Scoring form');
     expect(document.querySelectorAll('.ch-fm__c')).toHaveLength(10);
-    const ups = document.querySelectorAll('.ch-fm__c.is-up').length;
-    const downs = document.querySelectorAll('.ch-fm__c.is-down').length;
+    const ups = document.querySelectorAll('.ch-fm__c.is-gain').length;
+    const downs = document.querySelectorAll('.ch-fm__c.is-loss').length;
     expect(ups + downs).toBeGreaterThan(0);
     expect(document.querySelector('.ch-fm__c.is-last')).not.toBeNull();
     expect(screen.getByRole('link', { name: 'Team stats' })).toBeTruthy();

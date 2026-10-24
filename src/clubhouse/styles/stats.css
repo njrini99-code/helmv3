@@ -4371,9 +4371,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* The team trend on the one line chart (B5): the gain green, its newest day marked larger on a workspace ring. */
+  /* The team trend on the one line chart (B5), its newest day marked larger on a workspace ring. The ink is neutral until the
+     summary's noise-tested change says better (gain) or worse (loss), as its words do (row 69). */
   .ch-stm.is-team .ch-stm-line {
+    --ch-line-ink: var(--ch-ink-500);
+  }
+  .ch-stm.is-team .ch-stm-line.is-gain {
     --ch-line-ink: var(--ch-chart-gain);
+  }
+  .ch-stm.is-team .ch-stm-line.is-loss {
+    --ch-line-ink: var(--ch-chart-loss);
   }
   .ch-stm.is-team .ch-stm-line .ch-line__path {
     stroke-width: 2.2;
@@ -5078,14 +5085,18 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   gap: 4px;
   align-self: center;
 }
+/* The trend's deep-green stage: a gain mark is the light green that reads on it, not the page's fill (CONS-20). */
+.ch-st[data-canopy] .ch-sgt {
+  --ch-chart-gain-fill: var(--ch-green-200);
+}
 .ch-st[data-canopy] .ch-sgt__pips i {
   width: 7px;
   height: 14px;
   border-radius: var(--ch-radius-mark);
   background: rgb(255 255 255 / 0.16);
 }
-.ch-st[data-canopy] .ch-sgt__pips i.is-up {
-  background: var(--ch-green-200);
+.ch-st[data-canopy] .ch-sgt__pips i.is-gain {
+  background: var(--ch-chart-gain-fill);
 }
 .ch-st[data-canopy] .ch-sgt__legend {
   color: var(--ch-ivory-300);
@@ -5350,8 +5361,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   background: var(--ch-champagne-300);
   content: '';
 }
-.ch-st[data-canopy] .ch-sgt__bar.is-up::after {
-  background: var(--ch-green-200);
+.ch-st[data-canopy] .ch-sgt__bar.is-gain::after {
+  background: var(--ch-chart-gain-fill);
 }
 .ch-st[data-canopy] .ch-tp__v {
   font-size: 38px;
@@ -5559,18 +5570,18 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   transform: translateX(-50%);
   border-radius: 999px;
 }
-.ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__bar {
+.ch-st[data-canopy] .ch-fm__c.is-gain .ch-fm__bar {
   bottom: 50%;
-  background: linear-gradient(0deg, var(--ch-green-600), var(--ch-green-400));
+  background: var(--ch-chart-gain-fill);
   box-shadow: var(--ch-elevation-mark);
 }
-.ch-st[data-canopy] .ch-fm__c.is-down .ch-fm__bar {
+.ch-st[data-canopy] .ch-fm__c.is-loss .ch-fm__bar {
   top: 50%;
-  background: linear-gradient(180deg, var(--ch-champagne-500), var(--ch-champagne-300));
+  background: var(--ch-chart-loss-fill);
   box-shadow: var(--ch-elevation-mark-warn);
 }
-.ch-st[data-canopy] .ch-fm__c:not(.is-up,
-.is-down) .ch-fm__bar {
+.ch-st[data-canopy] .ch-fm__c:not(.is-gain,
+.is-loss) .ch-fm__bar {
   top: 50%;
   height: 3px;
   background: var(--ch-ink-400);
@@ -5585,16 +5596,16 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
 }
-.ch-st[data-canopy] .ch-fm__c.is-up .ch-fm__score {
+.ch-st[data-canopy] .ch-fm__c.is-gain .ch-fm__score {
   bottom: calc(50% + var(--ch-bar, 0%) * 0.82 * 0.5 + 6px);
-  color: var(--ch-green-700);
+  color: var(--ch-chart-gain);
 }
-.ch-st[data-canopy] .ch-fm__c.is-down .ch-fm__score {
+.ch-st[data-canopy] .ch-fm__c.is-loss .ch-fm__score {
   top: calc(50% + var(--ch-bar, 0%) * 0.82 * 0.5 + 6px);
-  color: var(--ch-warning-600);
+  color: var(--ch-chart-loss);
 }
-.ch-st[data-canopy] .ch-fm__c:not(.is-up,
-.is-down) .ch-fm__score {
+.ch-st[data-canopy] .ch-fm__c:not(.is-gain,
+.is-loss) .ch-fm__score {
   top: calc(50% + 10px);
 }
 .ch-st[data-canopy] .ch-fm__c.is-last .ch-fm__d {
@@ -5656,8 +5667,8 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   font: var(--ch-type-caption);
   color: var(--ch-text-tertiary);
 }
-.ch-st[data-canopy] .ch-fm__key .is-up::before,
-.ch-st[data-canopy] .ch-fm__key .is-down::before {
+.ch-st[data-canopy] .ch-fm__key .is-gain::before,
+.ch-st[data-canopy] .ch-fm__key .is-loss::before {
   display: inline-block;
   width: 9px;
   height: 9px;
@@ -5665,11 +5676,11 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   border-radius: var(--ch-radius-mark);
   content: '';
 }
-.ch-st[data-canopy] .ch-fm__key .is-up::before {
-  background: var(--ch-green-500);
+.ch-st[data-canopy] .ch-fm__key .is-gain::before {
+  background: var(--ch-chart-gain-fill);
 }
-.ch-st[data-canopy] .ch-fm__key .is-down::before {
-  background: var(--ch-champagne-500);
+.ch-st[data-canopy] .ch-fm__key .is-loss::before {
+  background: var(--ch-chart-loss-fill);
 }
 .ch-st[data-canopy] .ch-fm__empty {
   margin: 0;
@@ -6147,7 +6158,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   transform: translateX(calc((var(--ch-z-p, 0) - 1) * 100%));
   background: var(--ch-ivory-400);
 }
-.ch-st[data-canopy] .ch-zfn .r > div i.is-win {
+.ch-st[data-canopy] .ch-zfn .r > div i.is-made {
   background: var(--ch-green-500);
 }
 .ch-st[data-canopy] .ch-zfn .r > div i.is-sand {
@@ -6160,7 +6171,7 @@ html[data-fw-theme='dark'] .ch-st .ch-sgt {
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
 }
-.ch-st[data-canopy] .ch-zfn .r > b.is-win {
+.ch-st[data-canopy] .ch-zfn .r > b.is-made {
   color: var(--ch-green-600);
 }
 

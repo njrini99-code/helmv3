@@ -149,7 +149,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
         title="Strokes gained"
         def={
           <>
-            Strokes gained or lost a round, shot by shot, against a benchmark. <b>Zero is {baseline.noun}.</b> Below zero is normal for most players; what matters is the gap {coach ? 'to the team' : 'to the Tour'} and which leg it comes from.
+            Strokes gained or lost a round, shot by shot, against a benchmark. <b>Zero is {baseline.noun}.</b> Below zero is normal for most players; what matters is the gap {coach ? 'to the team' : `to ${baseline.name}`} and which leg it comes from.
           </>
         }
         read={
@@ -179,7 +179,7 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
           </Vis>
         )}
         {sg != null && (
-          <Vis title={coach ? 'Against the team and the Tour' : 'Against the Tour'} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
+          <Vis title={coach ? `Against the team and ${baseline.name}` : `Against ${baseline.name}`} note={`Total strokes gained a round, ${formatSigned(sgLo, 0)} to ${formatSigned(sgHi, 0)}.`}>
             <div className="ch-zpin">
               <span style={{ left: `${pos(sg, sgLo, sgHi)}%` }}>You {formatSigned(sg)}</span>
             </div>
@@ -193,13 +193,13 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
               )}
               <span>
                 <i className="is-tour" />
-                Tour 0.0
+                {baseline.mark} 0.0
               </span>
             </div>
           </Vis>
         )}
         {withValue(sgTrend).length >= 3 && (
-          <Vis title="Round by round" note="Strokes gained in each round, per 18 holes. Zero is the Tour baseline; the line is the five-round average.">
+          <Vis title="Round by round" note={`Strokes gained in each round, per 18 holes. Zero is ${baseline.noun}; the line is the five-round average.`}>
             <RoundTrend rounds={sgTrend} kind="sg" tour={data.tour} size="desktop" openHref={openHref} label="Strokes gained in each round of the window." />
           </Vis>
         )}
@@ -452,9 +452,9 @@ export function OverviewZones({ data, coach, ribbon, onOpenLeg }: { data: ChPlay
                   Saved par or better<small>The scramble</small>
                 </span>
                 <div>
-                  <i className="is-win" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
+                  <i className="is-made" style={{ '--ch-z-p': scrMade / scrAtt } as CSSProperties} />
                 </div>
-                <b className="ch-num is-win">{scrMade}</b>
+                <b className="ch-num is-made">{scrMade}</b>
               </div>
               {sandAtt > 0 && (
                 <>

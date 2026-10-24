@@ -15,14 +15,16 @@ export interface ChSgBaseline {
   noun: string;
   /** The zero mark on a gauge: "Tour", "Women's Tour" (A8.3). */
   mark: string;
+  /** For a sentence, the benchmark itself: "the Tour", "the women's Tour" (row 110). */
+  name: string;
   /** The zero line on a trend: "Zero is the Tour", "Zero is the women's Tour" (A8.3). */
   zero: string;
 }
 
 export function sgBaseline(tour: ChSgTour): ChSgBaseline {
-  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', zero: 'Zero is the Tour' };
-  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", zero: "Zero is the women's Tour" };
-  return { vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', zero: 'Zero is the baseline' };
+  if (tour === 'pga') return { vs: 'vs Tour', noun: 'the Tour baseline', mark: 'Tour', name: 'the Tour', zero: 'Zero is the Tour' };
+  if (tour === 'lpga') return { vs: "vs the women's Tour baseline", noun: "the women's Tour baseline", mark: "Women's Tour", name: "the women's Tour", zero: "Zero is the women's Tour" };
+  return { vs: 'vs the baseline', noun: 'the baseline', mark: 'Baseline', name: 'the baseline', zero: 'Zero is the baseline' };
 }
 
 /**
