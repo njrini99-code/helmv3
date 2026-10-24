@@ -639,6 +639,14 @@
 .ch-ask-cmp__send.is-stop {
   background: var(--ch-ink-900);
 }
+.ch-ask-cmp__send.is-stop[data-ch-pressed] {
+  background: var(--ch-ink-press);
+}
+@media (hover: hover) {
+  .ch-ask-cmp__send.is-stop:active {
+    background: var(--ch-ink-press);
+  }
+}
 .ch-ask-cmp__note {
   margin: 8px 0 0;
   font: var(--ch-type-13);

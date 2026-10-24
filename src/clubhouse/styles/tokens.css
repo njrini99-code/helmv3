@@ -600,6 +600,9 @@
   --ch-elevation-face-hover: var(--ch-light-drift-near) 3px 6px rgb(28 25 18 / 0.1), var(--ch-light-drift-mid) 22px 36px -12px rgb(28 25 18 / 0.34),
     var(--ch-light-drift) 40px 56px -24px rgb(21 90 57 / 0.3);
   --ch-ledger-row-press: color-mix(in oklab, var(--ch-green-600) 11%, transparent);
+  /* An ink-filled key's pressed tone (Ask's stop key): the ink drawn a step toward the surface, so it reads in both
+     themes (near-black lifts by day, ivory dims at night). */
+  --ch-ink-press: color-mix(in oklab, var(--ch-ink-900) 82%, var(--ch-bg-surface));
   /* A portrait set into the page head: a canvas gap, a fine engraved ring, a soft green drop. */
   --ch-ledger-avatar-ring: 0 0 0 3px var(--ch-workspace), 0 0 0 4px var(--ch-ledger-rule), 0 10px 22px -12px rgb(11 58 37 / 0.4);
   /* Hover depth, tokenised when the hover rules moved behind @media (hover: hover) (2026-10-07). */

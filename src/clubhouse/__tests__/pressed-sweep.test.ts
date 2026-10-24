@@ -34,6 +34,11 @@ describe('the pressed state (B6)', () => {
     expect(css('coachhelm-ask.css')).toMatch(new RegExp(`${esc}\\[data-ch-pressed\\][^{]*\\{[^}]*background`));
   });
 
+  it('the Ask stop key, ink-filled, presses to the ink-press tone', () => {
+    expect(css('tokens.css')).toMatch(/--ch-ink-press: color-mix\(in oklab, var\(--ch-ink-900\) \d+%, var\(--ch-bg-surface\)\);/);
+    expect(css('coachhelm-ask.css')).toMatch(/\.ch-ask-cmp__send\.is-stop\[data-ch-pressed\] \{\s*background: var\(--ch-ink-press\);/);
+  });
+
   it('no pressed style reads :active outside a hover query, and each one has its [data-ch-pressed] rule', () => {
     // Every stylesheet, so a new one can't bring back a pressed look a scroll flashes or a quick tap never shows.
     const files = readdirSync(join(ROOT, 'styles')).filter((f) => f.endsWith('.css'));
