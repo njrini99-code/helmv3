@@ -341,7 +341,7 @@ function Board({
               </span>
             </>
           );
-          const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}, ${r.played} of ${plural(data.numRounds, 'round')}`;
+          const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}, ${r.played} of ${plural(data.numRounds, 'round')}${r.missed ? ', missed a round' : ''}`;
           const slideRow = (
             <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
               {canOpen(r) ? (
