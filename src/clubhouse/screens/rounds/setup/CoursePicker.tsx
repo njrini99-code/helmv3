@@ -5,6 +5,7 @@ import { Flag, Plus, Search } from 'lucide-react';
 import { haptic } from '../../../lib/haptics';
 import { useChPhone } from '../../../lib/use-phone';
 import { Icon } from '../../../ui/Icon';
+import { Button } from '../../../ui/Button';
 import { InlineNotice } from '../../../ui/Notices';
 import { Modal } from '../../../ui/Modal';
 import { TeeSwatch } from '../parts';
@@ -92,10 +93,9 @@ export function CoursePicker({
       action={
         course || !onAddCourse ? undefined : (
           // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
-          <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" aria-label="Add a course" onClick={onAddCourse}>
-            <Icon icon={Plus} size={14} />
-            <span>{phone ? 'Add' : 'Add a course'}</span>
-          </button>
+          <Button size="sm" leftIcon={Plus} aria={{ label: 'Add a course' }} onClick={onAddCourse}>
+            {phone ? 'Add' : 'Add a course'}
+          </Button>
         )
       }
     >

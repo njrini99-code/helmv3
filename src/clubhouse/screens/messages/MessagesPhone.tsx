@@ -39,6 +39,7 @@ import { Avatar } from "../../ui/Avatar";
 import { EmptyState, Skeleton } from "../../ui/States";
 import { RailEmpty } from "./RailEmpty";
 import { Icon } from "../../ui/Icon";
+import { Button } from "../../ui/Button";
 import { InlineNotice } from "../../ui/Notices";
 import { Modal } from "../../ui/Modal";
 import { PhoneBar, PhoneIconAction, PhoneTextAction } from "../../ui/PhoneBar";
@@ -308,9 +309,9 @@ function PhoneInbox({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) {
           title="No conversations yet"
           body={api.viewer.role === "coach" ? "Start one with a player, or create a team group." : "Message a coach or a teammate to start."}
           action={
-            <button type="button" className="ch-btn ch-btn--secondary ch-btn--sm" onClick={onNew}>
+            <Button size="sm" onClick={onNew}>
               New message
-            </button>
+            </Button>
           }
         />
       ) : (
