@@ -22,6 +22,14 @@ describe('real time on date axes (row 119)', () => {
     expect(slotPositions(2, [day('2026-09-01'), day('2026-09-01')])).toEqual([0.25, 0.75]);
   });
 
+  it('two rounds on one day (a 36-hole day) are two dots half a slot apart, and the pointer reaches each', () => {
+    const p = slotPositions(4, [day('2026-09-01'), day('2026-09-08'), day('2026-09-08'), day('2026-09-22')]);
+    expect(p[2]! - p[1]!).toBeGreaterThanOrEqual(0.5 / 4 - 1e-9);
+    expect(p[0]).toBeCloseTo(1 / 8, 9);
+    expect(p[3]).toBeCloseTo(7 / 8, 9);
+    expect([...p].sort((a, b) => a - b)).toEqual(p);
+  });
+
   it('Line draws dated points at unequal spacing for unequal gaps', () => {
     render(
       <Line

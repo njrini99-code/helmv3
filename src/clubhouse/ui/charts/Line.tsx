@@ -25,16 +25,22 @@ export interface ChLinePoint {
 
 /**
  * Where each of `n` points sits across a plot, as a share of its width: evenly by index (the middle of each of `n` slots),
- * or, given every point's time, by real time between the first slot's middle and the last's, so a two-week gap is twice a
- * one-week gap. Times that are all equal, or missing, fall back to the index.
+ * or, given every point's time (oldest first), by real time between the first slot's middle and the last's, so a two-week gap
+ * is twice a one-week gap. Points closer than half a slot (two rounds on one day, a 36-hole day) are pushed that far apart, so
+ * each stays its own dot and the pointer can reach it. Times that are all equal, or missing, fall back to the index.
  */
+export const MIN_SLOT_GAP = 0.5;
 export function slotPositions(n: number, at?: ReadonlyArray<number | null | undefined>): number[] {
   const even = Array.from({ length: n }, (_, i) => (i + 0.5) / Math.max(n, 1));
   if (!at || n < 2 || at.length !== n || at.some((t) => t == null || !Number.isFinite(t))) return even;
   const t0 = Math.min(...(at as number[]));
   const t1 = Math.max(...(at as number[]));
   if (t1 === t0) return even;
-  return (at as number[]).map((t) => (0.5 + (n - 1) * ((t - t0) / (t1 - t0))) / n);
+  // In slot units (0 to n − 1): by time, then each at least MIN_SLOT_GAP past the one before, then back inside the span.
+  const units = (at as number[]).map((t) => (n - 1) * ((t - t0) / (t1 - t0)));
+  for (let i = 1; i < n; i++) units[i] = Math.max(units[i]!, units[i - 1]! + MIN_SLOT_GAP);
+  const scale = (n - 1) / units[n - 1]!;
+  return units.map((u) => (0.5 + u * scale) / n);
 }
 
 /** Room for the value ticks at the left; without them the line runs nearly edge to edge. */
