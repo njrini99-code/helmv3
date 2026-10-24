@@ -1254,11 +1254,13 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
   });
   const legsTable = () => screen.getByRole('table', { name: 'The team’s game' });
 
-  it('20105 the four parts sit under the team’s form, before the week: each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
+  it('20105 the four parts sit under the team’s form, and the week (today’s events) comes before both (row 79): each stat with its Tour mark, strokes gained, the change and who gains and loses most', () => {
     wrap(<CoachHome data={PREVIEW_HOME} now={PREVIEW_HOME_NOW} />);
     const legs = document.querySelector('.ch-h-legs')!;
     expect(legs.previousElementSibling?.className).toMatch(/ch-h-form|ch-hf/);
-    expect(legs.nextElementSibling?.className).toMatch(/ch-h-sheet/);
+    const sheet = document.querySelector('.ch-h-sheet')!;
+    expect(sheet.compareDocumentPosition(legs.previousElementSibling!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sheet.previousElementSibling?.className ?? '').not.toMatch(/ch-h-form|ch-hf|ch-h-legs/);
     const rows = within(legsTable()).getAllByRole('row').slice(1);
     expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual(['Off the tee', 'Approach', 'Around green', 'Putting']);
     expect(rows[0]!.textContent).toContain('Fairways 61% · Tour 66%');
