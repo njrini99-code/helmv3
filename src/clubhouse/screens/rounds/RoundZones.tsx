@@ -3,6 +3,7 @@
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ChReviewHole } from '../../data/round-review-shape';
 import { formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { ZoneBlock } from '../../ui/Zone';
 import { costliest, flow, puttBands, puttSplit, trail, type HoleResult } from './round-insights';
 import { afterRailMove } from '../../lib/rail-fold';
@@ -260,7 +261,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
         <div className="ch-rzpt" role="img" aria-label={`Putts by hole: ${holes.map((h) => `${h.n} ${h.putts ?? 'none'}`).join(', ')}`}>
           {holes.map((h) => (
             <span key={h.n} className="ch-rzpt__c">
-              <b className="ch-num">{h.putts ?? NO_DATA}</b>
+              <b className="ch-num">{h.putts ?? <NoData />}</b>
               <i className={h.putts == null ? '' : h.putts <= 1 ? 'is-one' : h.putts === 2 ? 'is-two' : 'is-three'} style={{ '--ch-rz-p': h.putts == null ? 0 : h.putts / max } as CSSProperties} />
               <em>{h.n}</em>
             </span>
@@ -287,7 +288,7 @@ export function PuttingViz({ holes }: { holes: ChReviewHole[] }) {
                 <div className="ch-rzrow__t" aria-hidden="true">
                   {b.attempts > 0 && <i style={{ '--ch-rz-p': b.made / b.attempts } as CSSProperties} />}
                 </div>
-                <b className="ch-num">{b.attempts > 0 ? `${b.made} of ${b.attempts}` : NO_DATA}</b>
+                <b className="ch-num">{b.attempts > 0 ? `${b.made} of ${b.attempts}` : <NoData />}</b>
               </div>
             ))}
           </div>

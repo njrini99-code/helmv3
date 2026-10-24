@@ -8,6 +8,7 @@ import { Icon } from '../../ui/Icon';
 import { RefreshNotice } from '../../ui/RefreshNotice';
 import { Segmented } from '../../ui/Segmented';
 import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
 import { monotonePath } from '../../lib/chart';
@@ -368,7 +369,7 @@ function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
         )}
       </div>
       <div className="ch-ph-leg__v">
-        <span className="ch-num">{g.value == null ? NO_DATA : fmt(g.value)}</span>
+        <span className="ch-num">{g.value == null ? <NoData /> : fmt(g.value)}</span>
         <em>{g.needs ? `${g.stat} · ${g.needs}` : g.early ? `${g.stat} · ${g.early}` : g.stat}</em>
       </div>
       <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />

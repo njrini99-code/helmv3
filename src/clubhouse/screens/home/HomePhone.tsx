@@ -16,7 +16,8 @@ import { coachHelmPlayerHref, PlayerPeek, type ChPlayerPeek } from '../../ui/Pla
 import { SectionBoundary } from '../../ui/SectionBoundary';
 import { WeekStrip as DayStrip } from '../../ui/WeekStrip';
 import { withPointSpan } from '../../ui/point-span';
-import { formatFixed, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { deltaTone, deltaWords } from '../../lib/stats-signal';
 import { haptic } from '../../lib/haptics';
 import { chTrail } from '../../lib/track';
@@ -376,12 +377,12 @@ function Form({ form }: { form: ChTeamForm }) {
         </div>
         <div>
           <dt>GIR</dt>
-          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? NO_DATA)}</dd>
+          <dd className="ch-num">{form.gir.pct != null ? `${Math.round(form.gir.pct)}%` : (form.gir.needs ?? <NoData />)}</dd>
           <dd className={'ch-num ' + deltaTone(form.gir.delta, form.gir.se, false)}>{form.gir.delta != null ? `${formatSigned(form.gir.delta, 0)} pts` : partOf(form.basis.girRounds, form.basis.rounds)}</dd>
         </div>
         <div>
           <dt>Putts</dt>
-          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : NO_DATA}</dd>
+          <dd className="ch-num">{form.putts.avg != null ? formatFixed(form.putts.avg) : <NoData />}</dd>
           <dd className={'ch-num ' + deltaTone(form.putts.delta, form.putts.se, true)}>{form.putts.delta != null ? formatSigned(form.putts.delta) : partOf(form.basis.puttsRounds, form.basis.rounds)}</dd>
         </div>
       </dl>
@@ -573,15 +574,15 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
             </div>
             <div>
               <dt>GIR</dt>
-              <dd className="ch-num">{round.gir ?? NO_DATA}</dd>
+              <dd className="ch-num">{round.gir ?? <NoData />}</dd>
             </div>
             <div>
               <dt>Putts</dt>
-              <dd className="ch-num">{round.putts ?? NO_DATA}</dd>
+              <dd className="ch-num">{round.putts ?? <NoData />}</dd>
             </div>
             <div>
               <dt>SG</dt>
-              <dd className="ch-num">{round.sg != null ? formatSigned(round.sg) : NO_DATA}</dd>
+              <dd className="ch-num">{round.sg != null ? formatSigned(round.sg) : <NoData />}</dd>
             </div>
           </dl>
           {holesError ? (

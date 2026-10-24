@@ -407,7 +407,7 @@
   background: var(--ch-ink-900);
   color: #f4f2ec;
   font: var(--ch-type-14-medium);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
+  box-shadow: var(--ch-drop-ink);
   pointer-events: auto;
   /* It follows the finger toward its edge (CH-1614): a drag on it is the toast's, not the page's scroll. */
   touch-action: none;
@@ -481,7 +481,8 @@
   --ch-line-ink: var(--ch-chart-loss);
 }
 .ch-form-empty {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 
@@ -521,7 +522,8 @@
 }
 .ch-surface__sub {
   margin-top: 2px;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-surface__actions {
@@ -547,7 +549,8 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: 0 0 var(--ch-radius-card) var(--ch-radius-card);
   background: var(--ch-bg-inset);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-surface__note {
@@ -683,7 +686,8 @@
   color: var(--ch-ledger-ink);
 }
 .ch-sec__meta {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-sec__actions {
@@ -774,6 +778,12 @@
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */
+/* Hover first: a row pressed under the pointer is also hovered, and the press must win. */
+@media (hover: hover) {
+  .ch-lgr__row.is-link:hover {
+    background: var(--ch-ledger-row-hover);
+  }
+}
 .ch-lgr__row.is-link[data-ch-pressed] {
   background: var(--ch-ledger-row-press);
   transition-delay: var(--ch-dur-press-delay);
@@ -782,11 +792,6 @@
   .ch-lgr__row.is-link:active {
     background: var(--ch-ledger-row-press);
     transition-delay: var(--ch-dur-press-delay);
-  }
-}
-@media (hover: hover) {
-  .ch-lgr__row.is-link:hover {
-    background: var(--ch-ledger-row-hover);
   }
 }
 .ch-lgr__row.is-link:focus-visible {
@@ -817,7 +822,8 @@
 }
 .ch-lgr__meta {
   overflow: hidden;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -881,7 +887,8 @@
   color: var(--ch-score-under);
 }
 .ch-fgr .ch-fgr__note {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -1337,7 +1344,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   border-radius: var(--ch-radius-sm);
   background: var(--ch-raised-bg);
   color: var(--ch-text-primary);
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   text-decoration: none;
   white-space: nowrap;
   box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
@@ -1401,7 +1409,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-ppeek__who span,
 .ch-ppeek__m {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-ppeek__why {
@@ -1430,7 +1439,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   min-width: 0;
 }
 .ch-ppeek__figs dt {
-  font: var(--ch-type-label-s);
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
 .ch-ppeek__figs dd {
@@ -1441,7 +1451,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-primary);
 }
 .ch-ppeek__figs dd small {
-  font: var(--ch-type-label);
+  font: var(--ch-type-14-medium);
+  line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
 .ch-ppeek__line {
@@ -1493,7 +1504,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-secondary);
 }
 .ch-set-course__state {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-set-course__acts {
@@ -2042,7 +2054,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-es__prog {
   margin: 8px 0 0;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 /* The action sits where the row's trailing value will be. */

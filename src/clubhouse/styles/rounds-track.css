@@ -266,7 +266,7 @@ button.ch-rt-strip__h {
   letter-spacing: -0.03em;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
-  box-shadow: 0 8px 16px -10px rgb(11 58 37 / 0.8);
+  box-shadow: var(--ch-drop-green-3);
 }
 .ch-rt-hno em {
   margin-bottom: 2px;
@@ -1155,7 +1155,8 @@ button.ch-rt-strip__h {
   line-height: var(--ch-lead-tight);
 }
 .ch-rt-review__h span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-rt-rs-list {
@@ -1577,7 +1578,8 @@ button.ch-rt-strip__h {
 }
 .ch-rt-sum__n {
   margin: 12px 0 0;
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 

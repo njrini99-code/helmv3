@@ -3,7 +3,8 @@
 import { useMemo } from 'react';
 import { Flag, Users } from 'lucide-react';
 import type { ChTeamRound, ChTeamRounds } from '../../data/team-rounds-shape';
-import { formatFixed, formatToPar, NO_DATA } from '../../lib/format';
+import { formatFixed, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
@@ -81,7 +82,7 @@ function TeamRoundRow({ r, by }: { r: ChTeamRound; by: Group }) {
       meta={<span className="ch-trd-meta">{meta}</span>}
       trail={
         <span className={'ch-trd-score' + (under ? ' is-under' : '')}>
-          <b>{r.toPar == null ? NO_DATA : formatToPar(r.toPar)}</b>
+          <b>{r.toPar == null ? <NoData /> : formatToPar(r.toPar)}</b>
           <em>{r.score}</em>
         </span>
       }
@@ -156,10 +157,10 @@ export function TeamRounds({ data: fresh, teamId }: { data: ChTeamRounds; teamId
               label="The team this season"
               code="CH-11319"
               items={[
-                { label: 'Rounds', value: s.rounds ? s.rounds : NO_DATA, note: s.players ? `${plural(s.players, 'player')}` : undefined },
-                { label: 'Average', value: s.avg == null ? NO_DATA : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
-                { label: 'Under par', value: s.rounds ? s.underPar : NO_DATA, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
-                { label: 'Low round', value: best ? best.score : NO_DATA, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
+                { label: 'Rounds', value: s.rounds ? s.rounds : <NoData />, note: s.players ? `${plural(s.players, 'player')}` : undefined },
+                { label: 'Average', value: s.avg == null ? <NoData /> : formatFixed(s.avg, 1), note: s.avg == null ? undefined : '18 holes' },
+                { label: 'Under par', value: s.rounds ? s.underPar : <NoData />, tone: s.underPar ? 'under' : undefined, note: s.rounds ? `of ${s.rounds}` : undefined },
+                { label: 'Low round', value: best ? best.score : <NoData />, note: best ? `${best.player.split(' ')[0]} · ${best.toPar == null ? shortDay(best.date) : formatToPar(best.toPar)}` : undefined },
               ]}
             />
           </SectionBoundary>

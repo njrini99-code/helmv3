@@ -516,7 +516,8 @@
   color: var(--ch-text-primary);
 }
 .ch-set-matrix__what > span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-set-matrix__row.is-dim .ch-set-matrix__what b {
@@ -622,7 +623,8 @@
   font: var(--ch-type-14-medium);
 }
 .ch-set-rank__txt span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-set-rank__acts {
@@ -659,7 +661,8 @@
   font: var(--ch-type-14-medium);
 }
 .ch-set-request span span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-set-request > svg {

@@ -10,7 +10,8 @@ import { Icon } from '../../ui/Icon';
 import { Nine } from '../../ui/Nine';
 import { PageRefreshNotice, RefreshNotice } from '../../ui/RefreshNotice';
 import { SectionBoundary } from '../../ui/SectionBoundary';
-import { changeTone, formatSigned, formatToPar, NO_DATA } from '../../lib/format';
+import { changeTone, formatSigned, formatToPar } from '../../lib/format';
+import { NoData } from '../../ui/NoData';
 import { haptic } from '../../lib/haptics';
 import { useNow } from '../../lib/use-now';
 import { usePhoneHero } from '../../shell/phone-chrome';
@@ -212,8 +213,8 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
           {/* The round's three figures between hairlines (the Ledger's FigureRow), each drawn under its value. */}
           <FigureRow
             items={[
-              { label: 'GIR', value: r.gir ?? NO_DATA, note: <GirViz gir={r.gir} /> },
-              { label: 'Putts', value: r.putts ?? NO_DATA, note: <PuttsViz putts={r.putts} /> },
+              { label: 'GIR', value: r.gir ?? <NoData />, note: <GirViz gir={r.gir} /> },
+              { label: 'Putts', value: r.putts ?? <NoData />, note: <PuttsViz putts={r.putts} /> },
               { label: 'SG', value: formatSigned(r.sg), tone: figureTone(changeTone(r.sg, false)), note: <SgViz sg={r.sg} /> },
             ]}
           />

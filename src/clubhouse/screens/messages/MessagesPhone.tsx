@@ -705,6 +705,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                     <PersonRow
                       key={mb.userId}
                       name={mb.name}
+                      id={personOf(api, mb.userId)?.playerId ?? mb.userId}
                       you={mb.userId === api.viewer.userId}
                       sub={[mb.subtitle, mb.userId === conv.creatorId ? "Admin" : null].filter(Boolean).join(" · ")}
                       onMessage={mb.userId === api.viewer.userId ? undefined : () => void message(mb.userId)}
@@ -716,8 +717,8 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
               </Panel>
             ) : (
               <Panel title="People">
-                <PersonRow name={api.viewer.name} you sub={coach ? "Coach" : "Player"} />
-                <PersonRow name={conv.title} sub={conv.subtitle} onMessage={() => void message(conv.memberIds[0] ?? "")} />
+                <PersonRow name={api.viewer.name} id={personOf(api, api.viewer.userId)?.playerId ?? api.viewer.userId} you sub={coach ? "Coach" : "Player"} />
+                <PersonRow name={conv.title} id={convAvatarId(api, conv)} sub={conv.subtitle} onMessage={() => void message(conv.memberIds[0] ?? "")} />
                 {statsHref && other?.playerId && (
                   <Link className="ch-msp-row is-btn" href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}>
                     <span className="ch-msp-row__ic">
@@ -786,10 +787,10 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
   );
 }
 
-function PersonRow({ name, sub, you = false, onMessage, onRemove }: { name: string; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
+function PersonRow({ name, id, sub, you = false, onMessage, onRemove }: { name: string; id?: string | null; sub: string; you?: boolean; onMessage?: () => void; onRemove?: () => void }) {
   return (
     <div className="ch-msp-row">
-      <Avatar name={name} size="md" />
+      <Avatar name={name} id={id} size="md" />
       <span className="ch-msp-row__b">
         <b>
           {name}
@@ -1065,7 +1066,7 @@ function PhoneNewMessage({
                 const on = to.includes(p.userId);
                 return (
                   <button key={p.userId} type="button" role="option" aria-selected={on} className="ch-msp-row is-btn" onClick={() => toggle(p.userId)}>
-                    <Avatar name={p.name} size="lg" />
+                    <Avatar name={p.name} id={p.playerId ?? p.userId} size="lg" />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
                       <span>{p.subtitle}</span>

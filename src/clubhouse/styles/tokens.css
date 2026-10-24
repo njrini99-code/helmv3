@@ -314,6 +314,10 @@
   --ch-track-34: -0.03em;
   /* A single-line label (a pill, a tab, a figure's caption on one line) takes this leading in place of its step's. */
   --ch-lead-tight: 1.1;
+  /* The legacy caption and label leadings (1.4, 1.3), kept as tokens so the rules moved off --ch-type-caption, -label and
+     -label-s onto the step roles render exactly as before (S1 item 5). A ratio, so it follows a rule's own font-size. */
+  --ch-lead-caption: 1.4;
+  --ch-lead-label: 1.3;
   /* Two widths only (B1): 96 for display text, 88 for dense numbers and condensed titles. */
   --ch-wdth-display: 'wdth' 96;
   --ch-wdth-dense: 'wdth' 88;
@@ -546,6 +550,13 @@
   --ch-elevation-floating: var(--ch-elevation-raised);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-raised);
+  /* Row 40: tinted drops. A surface on the green or ink casts its shadow in its own colour (an ink shadow greys on
+     green): three green steps by size (a chip that is on, a pill, a key) and one for an ink pill. One value in both
+     themes; a surface with its own dark lift (cast, control, raised) keeps it. */
+  --ch-drop-green-1: 0 1px 2px rgb(11 58 37 / 0.3);
+  --ch-drop-green-2: 0 4px 12px -4px rgb(11 58 37 / 0.45);
+  --ch-drop-green-3: 0 10px 20px -10px rgb(11 58 37 / 0.8);
+  --ch-drop-ink: 0 0 0 1px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.35);
   /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
   --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
     var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);

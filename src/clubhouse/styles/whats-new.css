@@ -11,7 +11,7 @@
 }
 .ch-wn-detail {
   color: var(--ch-text-secondary);
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
   line-height: 1.45;
   white-space: normal;
   display: -webkit-box;

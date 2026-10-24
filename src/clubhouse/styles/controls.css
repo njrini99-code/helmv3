@@ -214,7 +214,8 @@
   color: var(--ch-green-700);
 }
 .ch-field__help {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-field__help.is-error {
@@ -664,7 +665,8 @@
   color: var(--ch-forest-800);
 }
 .ch-pp__name span {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-pp__box {
@@ -834,7 +836,8 @@
   color: var(--ch-green-700);
 }
 .ch-slider__d {
-  font: var(--ch-type-caption);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
