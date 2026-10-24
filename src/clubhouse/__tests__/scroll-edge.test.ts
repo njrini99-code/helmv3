@@ -35,6 +35,13 @@ describe('scroll edge under floating bars (row 41)', () => {
     // The night bar no longer puts the hairline back.
     expect(shell).not.toMatch(/html\[data-fw-theme='dark'\] \.ch-topbar \{[^}]*border-bottom-color/);
   });
+  it('Increase Contrast keeps the desktop bar\'s line at rest (review of #2361)', () => {
+    const shell = read('shell.css');
+    const at = shell.indexOf('@media (min-width: 821px) and (prefers-contrast: more) {');
+    expect(at).toBeGreaterThan(-1);
+    expect(shell.slice(at, shell.indexOf('}\n}', at))).toMatch(/\.ch-topbar \{\s*border-bottom-color: var\(--ch-border-hairline\);/);
+  });
+
   it('the Track bar has no hard top hairline', () => {
     expect(rule(read('rounds-track.css'), '\n.ch-rt-bar')).toMatch(/box-shadow: none;/);
   });

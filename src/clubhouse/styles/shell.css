@@ -3093,6 +3093,13 @@ html[data-fw-theme='dark'] .ch-offline {
     transition: none;
   }
 }
+/* Increase Contrast (P001-D7) keeps the desktop bar's line at rest: the raised hairline is what that setting asks for, and
+   the scroll-edge shade alone is too faint a boundary there. */
+@media (min-width: 821px) and (prefers-contrast: more) {
+  [data-ui='clubhouse'] .ch-topbar {
+    border-bottom-color: var(--ch-border-hairline);
+  }
+}
 @media (min-width: 821px) and (prefers-reduced-motion: reduce) {
   [data-ui='clubhouse'] .ch-topbar::before {
     transition: none;

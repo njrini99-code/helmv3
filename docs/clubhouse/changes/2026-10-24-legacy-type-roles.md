@@ -47,3 +47,6 @@ Held items:     111 rules stay on legacy roles: body (21), body-s (49), body-l
   unchanged run showed the full-page PNGs differ run to run (the time-of-day
   light), so pixels were not usable as proof; the computed styles were.
 - look-feel-pass-css.test.ts and legacy-type-roles.test.ts.
+- The record: commit `fe519fe36`'s message calls this diff "still owed"; it
+  was committed before the run finished. The run above (S1, 2026-10-24) is
+  the record. A device check at the largest Text Size is still owed.
