@@ -17,7 +17,7 @@ import { useRefresh } from '../../lib/use-refresh';
 import { chTrail } from '../../lib/track';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneTop } from '../../shell/phone-chrome';
-import { bubbleNote, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
+import { boardCaption, dayLabel, plural, positionLabel, sampleNote, shortRange, type ChQRound, type ChQRow, type ChQStatus } from './model';
 import { PrintHead } from './PrintHead';
 import { Pos, qualifierPeek, StateBadge, StatusPill, ThruDots, ToParPlate } from './parts';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -313,7 +313,9 @@ function Board({
       <div className="ch-qfm-lbhead" aria-hidden="true">
         <span>Pos</span>
         <span>Player</span>
-        <span>To par</span>
+        <span className="ch-qfm-lbhead__stack">
+          To par<small>Total</small>
+        </span>
         <span>Thru</span>
       </div>
       <ol className="ch-qfm-lb">
@@ -335,13 +337,17 @@ function Board({
                   </span>
                 )}
               </span>
-              <ToParPlate value={r.toPar} />
+              {/* Row 75: the strokes under the plate, as desktop's Total column (they break a tie on to par). */}
+              <span className="ch-qfm-lb__score">
+                <ToParPlate value={r.toPar} />
+                <em className="ch-qfm-lb__tot ch-num">{r.total ?? '—'}</em>
+              </span>
               <span className="ch-qfm-lb__thru ch-num">
                 <ThruDots played={r.played} total={data.numRounds} />
               </span>
             </>
           );
-          const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}, ${r.played} of ${plural(data.numRounds, 'round')}`;
+          const label = `${r.name}, ${positionLabel(r)}, ${formatToPar(r.toPar)}${r.total != null ? `, ${r.total} strokes` : ''}, ${r.played} of ${plural(data.numRounds, 'round')}`;
           const slideRow = (
             <ViewTransition name={`ch-rank-${r.playerId}`} update={slide ? 'ch-rank' : 'none'} enter="none" exit="none" share="none" default="none">
               {canOpen(r) ? (
@@ -393,7 +399,7 @@ function Board({
         ))}
       </ol>
       <p className="ch-qf-cap">
-        Ranked by total to par. Top {b.topScore} qualify on score{data.picks ? `; ${plural(data.picks, 'coach’s pick', 'coach’s picks')}` : ''}.{bubbleNote(data.numRounds, status)}
+        {boardCaption(b, data.picks, data.numRounds, status)}
       </p>
     </section>
   );

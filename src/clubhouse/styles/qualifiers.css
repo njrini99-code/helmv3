@@ -1984,6 +1984,24 @@
   .ch-qfm-lb__row > .ch-qf-dash {
     justify-self: end;
   }
+  /* Row 75: the plate with the round's strokes under it, as desktop's Total column; the header names both. */
+  .ch-qfm-lb__score,
+  .ch-qfm-lbhead__stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--ch-space-1);
+    justify-self: end;
+  }
+  .ch-qfm-lbhead__stack small {
+    font: inherit;
+  }
+  .ch-qfm-lb__tot {
+    font: var(--ch-type-caption);
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    color: var(--ch-text-tertiary);
+  }
   .ch-qfm-lb__thru {
     justify-self: end;
     font: var(--ch-type-14-medium);

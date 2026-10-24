@@ -274,6 +274,14 @@ export function buildBoard(input: {
 }
 
 /** P009-C2, the board's caption: why a player below the line isn't on the Bubble yet, when one round isn't enough to say so. */
+/** The board's order, as `compareStandings` (lib/coachhelm/v3/qualifying/ranking.ts) sorts it: one sentence for desktop and the phone. */
+export const RANK_RULE = 'Ranked by total to par, then total strokes, then more rounds played.';
+
+/** The caption under a board, the same words on desktop and the phone (row 75, CONS-37): the order, who qualifies, the bubble. */
+export function boardCaption(b: Pick<ChQBoard, 'topScore'>, picks: number, numRounds: number, status: ChQStatus): string {
+  return `${RANK_RULE} Top ${b.topScore} qualify on score${picks ? `; ${plural(picks, 'coach’s pick', 'coach’s picks')}` : ''}.${bubbleNote(numRounds, status)}`;
+}
+
 export function bubbleNote(numRounds: number, status: ChQStatus): string {
   const min = bubbleMinRounds(numRounds);
   return status === 'in_progress' && min > 1 ? ` The bubble needs ${min} of ${plural(numRounds, 'round')} in.` : '';

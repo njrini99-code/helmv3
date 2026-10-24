@@ -253,20 +253,23 @@ describe('P009-A1 standings on hand-hung plates', () => {
     expect(t[0]!.parentElement!.textContent).toBe('T2');
   });
 
-  it('phone: one header for the board, then a row a player with Pos, Player, the plate and Thru; no labels repeated in the rows', () => {
+  it('phone: one header for the board, then a row a player with Pos, Player, the plate over its Total (row 75) and Thru; no labels repeated in the rows', () => {
     const real = window.matchMedia;
     window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
     try {
       wrap(<QualifierDetail data={live()} writes={fakeWrites()} live={false} />);
       const heads = document.querySelectorAll('.ch-qfm-lbhead');
       expect(heads).toHaveLength(1);
-      expect([...heads[0]!.children].map((c) => c.textContent)).toEqual(['Pos', 'Player', 'To par', 'Thru']);
+      expect([...heads[0]!.children].map((c) => c.textContent)).toEqual(['Pos', 'Player', 'To parTotal', 'Thru']);
       expect(heads[0]!.getAttribute('aria-hidden')).toBe('true');
       const rows = [...document.querySelectorAll('.ch-qfm-lb__row')];
       expect(rows.length).toBe(8);
       for (const r of rows) expect(r.textContent).not.toMatch(/Rounds|Avg|Total/);
-      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 6, \+8, 1 of 3 rounds\. Show their rounds$/ });
+      const luca = screen.getByRole('button', { name: /^Luca Ferraro, 6, \+8, \d+ strokes, 1 of 3 rounds\. Show their rounds$/ });
       expect(luca.querySelector('.ch-qf-plate')!.textContent).toBe('+8');
+      expect(luca.querySelector('.ch-qfm-lb__tot')!.textContent).toMatch(/^\d+$/);
+      // The same ranking sentence as desktop's caption (row 75).
+      expect(document.querySelector('.ch-qf-cap')!.textContent).toMatch(/^Ranked by total to par, then total strokes, then more rounds played\. Top \d+ qualify on score/);
       expect(luca.querySelector('.ch-qf-thin')!.textContent).toBe('1 of 3 rounds');
     } finally {
       window.matchMedia = real;
