@@ -11,6 +11,7 @@ import { canvasScrollNow } from '../lib/smooth-scroll';
 import '../lib/ua-pop';
 // Sets which way a phone navigation moves (push, pop or the crossfade) as the tap or the Back happens.
 import { chNavKind, chNavShown } from '../lib/nav-motion';
+import { useRouteSwipe } from './use-route-swipe';
 
 /**
  * The page frame. Each page mounts fresh on navigation (keyed by route) and is shown as soon as it is ready: the
@@ -152,7 +153,9 @@ export function RouteFrame({ routeKey, scrollKey = routeKey, children }: { route
   const [cameByNavigation] = useState(() => frameHydrated);
   const [navigated, setNavigated] = useState(false);
   if (!navigated && routeKey !== loadedKey) setNavigated(true);
-  useLayoutEffect(() => chNavShown(routeKey.split('\u0000')[0] ?? routeKey), [routeKey]);
+  useLayoutEffect(() => chNavShown(routeKey.split('\u0000')[0] ?? routeKey, routeKey), [routeKey]);
+  // A pushed page can be dragged back from the left edge, a push in flight included (C1, use-route-swipe.ts).
+  useRouteSwipe(mode === 'full', routeKey);
   useSkeletonReveal(frame, routeKey, (cameByNavigation || navigated) && !reduced);
   useEffect(() => {
     markAppRunning();
