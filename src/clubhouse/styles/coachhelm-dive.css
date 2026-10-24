@@ -1096,8 +1096,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hd-sec h3 {
-    font: var(--ch-type-20-strong);
-    letter-spacing: var(--ch-track-20);
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

@@ -1697,9 +1697,9 @@
     margin: 0;
     padding: 12px 0 0;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-section);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-20);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }
@@ -2541,9 +2541,9 @@
   .ch-msp-ann .ch-ms-ann__sec > .ch-ms-det__l {
     padding: 12px 0 6px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-section);
     line-height: var(--ch-lead-tight);
-    letter-spacing: var(--ch-track-20);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

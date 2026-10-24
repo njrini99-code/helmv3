@@ -493,8 +493,8 @@
 }
 .ch-surface__title {
   margin: 0;
-  font: var(--ch-type-title);
-  letter-spacing: -0.012em;
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
   color: var(--ch-text-primary);
 }
 .ch-surface__sub {
@@ -656,8 +656,8 @@
 }
 .ch-sec__title {
   margin: 0;
-  font: var(--ch-type-20-strong);
-  letter-spacing: var(--ch-track-20);
+  font: var(--ch-type-section);
+  letter-spacing: var(--ch-track-section);
   color: var(--ch-ledger-ink);
 }
 .ch-sec__meta {

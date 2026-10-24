@@ -292,8 +292,33 @@ const OFF_TRACK: Record<string, number> = {
   'styles/settings.css': 1,
   'styles/shell.css': 5,
   'styles/stats.css': 8,
-  'styles/ui.css': 5,
+  'styles/ui.css': 4,
 };
+
+/**
+ * Row 32: one section-header style and one card-title style. The shared primitives and every screen's section head
+ * (a selector naming a section, set at 20 semibold) and card title (a card's title or head, at 17 semibold) read the
+ * roles, with their tracking.
+ */
+describe('section and card titles (row 32)', () => {
+  it('the primitives are the roles', () => {
+    const ui = read('ui.css');
+    const rule = (sel: string) => ui.slice(ui.indexOf(`\n${sel} {`), ui.indexOf('}', ui.indexOf(`\n${sel} {`)));
+    expect(rule('.ch-sec__title')).toMatch(/font: var\(--ch-type-section\);\s*letter-spacing: var\(--ch-track-section\);/);
+    expect(rule('.ch-surface__title')).toMatch(/font: var\(--ch-type-card-title\);\s*letter-spacing: var\(--ch-track-card-title\);/);
+  });
+  it('no section head or card title hand-sets the same step', () => {
+    const off: string[] = [];
+    for (const f of readdirSync(dir).filter((x) => x.endsWith('.css'))) {
+      for (const [, sel, body] of read(f).replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
+        const last = sel!.split(',').pop()!;
+        if (/font: var\(--ch-type-20-strong\);/.test(body!) && /sec|section/.test(last)) off.push(`${f} ${sel!.trim()}`);
+        if (/font: var\(--ch-type-17-strong\);/.test(body!) && /card[^ ]*(title|__t\b|__h\b|-t\b|-h\b)/.test(last)) off.push(`${f} ${sel!.trim()}`);
+      }
+    }
+    expect(off).toEqual([]);
+  });
+});
 
 describe('eyebrows (CONS-30)', () => {
   it('every eyebrow and kicker is the one role, 13/500 with no tracking, or sets no type at all', () => {

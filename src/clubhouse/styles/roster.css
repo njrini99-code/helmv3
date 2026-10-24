@@ -1232,8 +1232,8 @@ a.ch-rs-peek__dev:focus-visible,
     margin: 16px 0 -20px;
     padding-top: 12px;
     border-top: var(--ch-ledger-rule-double);
-    font: var(--ch-type-20-strong);
-    letter-spacing: var(--ch-track-20);
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

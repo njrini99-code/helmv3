@@ -1186,9 +1186,9 @@ a.ch-rd-sc:focus-visible {
 .ch-rv-card__h h2,
 .ch-rv-card__h h3 {
   margin: 0 0 4px;
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-card-title);
   line-height: var(--ch-lead-tight);
-  letter-spacing: var(--ch-track-17);
+  letter-spacing: var(--ch-track-card-title);
 }
 .ch-rv-card__h span {
   font: var(--ch-type-caption);
@@ -4438,8 +4438,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rcard-h h2 {
   margin: 0;
-  font: var(--ch-type-17-strong);
-  letter-spacing: var(--ch-track-17);
+  font: var(--ch-type-card-title);
+  letter-spacing: var(--ch-track-card-title);
   color: var(--ch-text-primary);
 }
 .ch-rcard-h__m {

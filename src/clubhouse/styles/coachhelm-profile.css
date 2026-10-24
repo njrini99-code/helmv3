@@ -340,9 +340,9 @@
     align-items: flex-end;
   }
   main[data-canopy] .ch-hg-sec h2 {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-section);
 
-    letter-spacing: var(--ch-track-20);
+    letter-spacing: var(--ch-track-section);
   }
   /* The measures: one table. A cell's figures align to the section's edge; columns split on a soft rule and rows on a
      soft seam, as the profile's figure line does. One column on a narrow canvas. */
@@ -413,8 +413,8 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hg-sec h2 {
-    font: var(--ch-type-20-strong);
-    letter-spacing: var(--ch-track-20);
+    font: var(--ch-type-section);
+    letter-spacing: var(--ch-track-section);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
   }

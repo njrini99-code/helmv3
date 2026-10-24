@@ -146,9 +146,9 @@
 }
 .ch-rsu-card__h h2 {
   margin: 0 0 4px;
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-card-title);
   line-height: var(--ch-lead-tight);
-  letter-spacing: var(--ch-track-17);
+  letter-spacing: var(--ch-track-card-title);
 }
 .ch-rsu-card__h span {
   font: var(--ch-type-caption);
