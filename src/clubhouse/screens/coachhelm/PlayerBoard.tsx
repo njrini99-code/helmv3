@@ -20,7 +20,7 @@ import { useHydrated } from './use-hydrated';
 import { useViewSwitch } from './use-view-switch';
 import { PlayerHelmTabs } from './views/PlayerHelmTabs';
 import { LIVE_MY_COURSE_PLAN_READS, LIVE_PLAYER_WRITES, type ChMyCoursePlanReads, type ChPlayerWrites } from './writes';
-import { plural, pluralWord } from '../../lib/plural';
+import { plural } from '../../lib/plural';
 
 /** Where each control goes. A target that isn't rebuilt yet isn't drawn (nav.rebuiltHref), never a dead button. */
 export const coachHelmLinks = {
@@ -119,7 +119,7 @@ export function PlayerBoard({ data, writes = LIVE_PLAYER_WRITES, coursePlanReads
               title="No insights yet"
               body={
                 short != null
-                  ? `Post ${short} more ${pluralWord(short, 'round')} and CoachHelm starts reading your game.`
+                  ? `Post ${short} more ${short === 1 ? 'round' : 'rounds'} and CoachHelm starts reading your game.`
                   : `${data.rounds ? `You’ve posted ${plural(data.rounds, 'round')}. ` : ''}CoachHelm needs enough rounds to find a pattern worth acting on. Every round you post sharpens the read.`
               }
               action={
