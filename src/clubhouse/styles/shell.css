@@ -1201,7 +1201,7 @@ button.ch-more__row[disabled] {
   .ch-topbar {
     gap: 8px;
     height: calc(var(--ch-phone-topbar-h) + env(safe-area-inset-top));
-    padding: env(safe-area-inset-top) 8px 6px 16px;
+    padding: env(safe-area-inset-top) 8px 6px var(--ch-page-x-phone);
     background: var(--ch-light-bar), var(--ch-phone-bar-bg);
   }
   .ch-topbar__crumbs,
@@ -3290,11 +3290,11 @@ html[data-fw-theme='dark'] .ch-offline {
   .ch-strip__row {
     display: flex;
     gap: 8px;
-    padding: 2px 16px 12px;
+    padding: 2px var(--ch-page-x-phone) 12px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
-    scroll-padding-inline: 16px;
+    scroll-padding-inline: var(--ch-page-x-phone);
     scrollbar-width: none;
   }
   .ch-strip__row::-webkit-scrollbar {
