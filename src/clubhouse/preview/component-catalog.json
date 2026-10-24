@@ -13561,6 +13561,16 @@
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line"
         },
         {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-chart-loss)",
+          "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line.is-loss"
+        },
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-ink-400)",
+          "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line.is-flat"
+        },
+        {
           "name": "--ch-stm-inset",
           "value": "64px",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-list"
