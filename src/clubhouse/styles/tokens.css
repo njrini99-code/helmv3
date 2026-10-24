@@ -474,12 +474,17 @@
   --ch-skel-base: #e2dbca;
   --ch-skel-sheen: #ece6d8;
   --ch-topbar-paper: #f7f2e6;
-  /* Radius */
-  --ch-radius-xs: 5px;
-  --ch-radius-sm: 7px;
-  --ch-radius-md: 10px;
-  --ch-radius-lg: 14px;
+  /* Radius (row 35): four steps, 8 / 12 / 16 / 20. xs is the floor for keycaps, badges, checkboxes and the nested rule,
+     not a step. Capsules are 999px, circles 50%. Inner corner = outer step less the padding between, floored at xs:
+     max(var(--ch-radius-xs), calc(var(--ch-radius-<outer>) - var(--ch-space-<pad>))). Buttons sit on sm and md, the
+     owner's 8 and 12 (decision 7). */
+  --ch-radius-xs: 4px;
+  --ch-radius-sm: 8px;
+  --ch-radius-md: 12px;
+  --ch-radius-lg: 16px;
   --ch-radius-xl: 20px;
+  --ch-radius-mark: 2px; /* chart marks, ticks, thin bars */
+  --ch-radius-tail: 6px; /* the Messages bubble tail corner */
   /* B3: a card's corner (X-4: 16, as .ch-surface already drew it) and a bottom sheet's top corners (X-3: 20). An inner
      corner is the card's less the padding between them, floored at --ch-radius-xs. */
   --ch-radius-card: 16px;

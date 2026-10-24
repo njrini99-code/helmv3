@@ -96,7 +96,7 @@
   top: 27px;
   width: calc(25% - 64px);
   height: 3px;
-  border-radius: 2px;
+  border-radius: 999px;
 }
 .ch-rec-pipe__seg.is-1 {
   left: calc(12.5% + 32px);

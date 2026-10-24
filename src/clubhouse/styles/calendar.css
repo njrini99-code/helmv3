@@ -575,7 +575,7 @@
   top: -9px;
   transform: translateY(-100%);
   padding: 2px 4px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-bg-surface);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -1236,7 +1236,7 @@
   position: relative;
   margin-left: auto;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-green-fill-600);
   font: var(--ch-type-11-strong);
   letter-spacing: var(--ch-track-11);
@@ -1322,7 +1322,7 @@
 .ch-in__trip:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 @media (hover: hover) {
   .ch-in__trip:hover b {

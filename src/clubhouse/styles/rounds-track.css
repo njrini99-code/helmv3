@@ -718,7 +718,7 @@ button.ch-rt-strip__h {
   content: '';
   width: 3px;
   height: 12px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-green-fill-600);
 }
 .ch-rt-hint {
@@ -1345,13 +1345,13 @@ button.ch-rt-strip__h {
   height: 4px;
   margin-top: 6px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 999px;
   background: rgb(255 255 255 / 0.14);
 }
 .ch-rt-exitc__bar i {
   display: block;
   height: 100%;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-hero-mint);
 }
 .ch-rt-exit__opts {
@@ -1501,16 +1501,16 @@ button.ch-rt-strip__h {
   pointer-events: none;
 }
 .ch-rt-mc thead tr > :first-child {
-  border-top-left-radius: 12px;
+  border-top-left-radius: var(--ch-radius-md);
 }
 .ch-rt-mc thead tr > :last-child {
-  border-top-right-radius: 12px;
+  border-top-right-radius: var(--ch-radius-md);
 }
 .ch-rt-mc tbody tr:last-child > :first-child {
-  border-bottom-left-radius: 12px;
+  border-bottom-left-radius: var(--ch-radius-md);
 }
 .ch-rt-mc tbody tr:last-child > :last-child {
-  border-bottom-right-radius: 12px;
+  border-bottom-right-radius: var(--ch-radius-md);
 }
 .ch-rt-mc b {
   font: 700 14px/1 var(--ch-font-sans);
@@ -1612,7 +1612,7 @@ button.ch-rt-strip__h {
   align-items: center;
   gap: 12px;
   padding: 32px 24px 24px;
-  border-radius: 24px;
+  border-radius: var(--ch-radius-xl);
   text-align: center;
   background: var(--ch-green-800);
   color: var(--ch-on-fill-100);
@@ -1693,7 +1693,7 @@ button.ch-rt-strip__h {
     position: sticky;
     bottom: 0;
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    border-radius: 0 0 26px 26px;
+    border-radius: 0 0 var(--ch-radius-xl) var(--ch-radius-xl);
     background: rgb(244 242 234 / 0.96);
   }
   .ch-rt-sum {
@@ -1955,7 +1955,7 @@ button.ch-rt-strip__h {
 }
 .ch-rtcv__glass {
   height: 44px;
-  border-radius: 22px;
+  border-radius: 999px;
   background: rgb(7 38 25 / 0.62);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
@@ -1969,7 +1969,7 @@ button.ch-rt-strip__h {
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 22px;
+  border-radius: 999px;
   background: rgb(7 38 25 / 0.62);
   -webkit-backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
   backdrop-filter: blur(calc(var(--ch-glass-blur) * 0.8));
@@ -2122,7 +2122,7 @@ button.ch-rt-strip__h {
     width: 430px;
     height: min(880px, calc(100dvh - 48px));
     margin: auto;
-    border-radius: 28px;
+    border-radius: var(--ch-radius-xl);
     box-shadow: var(--ch-elevation-overlay);
   }
 }
@@ -2147,7 +2147,7 @@ button.ch-rt-strip__h {
   .ch-rt-pill {
     height: 44px;
     padding: 0 16px 0 12px;
-    border-radius: 22px;
+    border-radius: 999px;
     font: var(--ch-type-14-strong);
     line-height: var(--ch-lead-tight);
     color: var(--ch-on-green-ink);
@@ -2806,7 +2806,7 @@ button.ch-rt-strip__h {
   }
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go {
     height: 56px;
-    border-radius: 28px;
+    border-radius: 999px;
     font: var(--ch-type-17-strong);
     letter-spacing: var(--ch-track-17);
     line-height: var(--ch-lead-tight);

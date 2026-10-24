@@ -550,22 +550,22 @@
   text-wrap: pretty;
 }
 .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub {
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--ch-radius-tail);
 }
 .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub {
-  border-top-left-radius: 6px;
+  border-top-left-radius: var(--ch-radius-tail);
 }
 .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub {
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--ch-radius-tail);
 }
 .ch-ms-msg.is-mine .ch-ms-bub {
-  border-bottom-right-radius: 6px;
+  border-bottom-right-radius: var(--ch-radius-tail);
   background: var(--ch-bubble-mine-bg);
   box-shadow: var(--ch-elevation-bubble-mine);
   color: #f7fbf8;
 }
 .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub {
-  border-top-right-radius: 6px;
+  border-top-right-radius: var(--ch-radius-tail);
 }
 /* P007 D2: a message that didn't send must be read to retry it: full-ink text on a muted fill inside a dashed edge,
    beside the "Not sent · Retry" line, never faded (0.6 measured about 2.8:1). */
@@ -905,7 +905,7 @@
   gap: 4px;
   padding: 12px 16px;
   border-radius: var(--ch-radius-xl);
-  border-bottom-left-radius: 6px;
+  border-bottom-left-radius: var(--ch-radius-tail);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-bubble);
 }
@@ -1967,11 +1967,11 @@
   }
   /* The outer corners start a run; close corners join messages from the same sender. */
   .ch-msp-thread .ch-ms-bub { position: relative; border-radius: var(--ch-radius-xl); }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: 6px; }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: 6px; }
-  .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: 6px; }
-  .ch-msp-thread .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub { border-top-right-radius: 6px; }
-  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub { border-bottom-right-radius: 6px; }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-first) .ch-ms-bub { border-top-left-radius: var(--ch-radius-tail); }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine):not(.is-last) .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
+  .ch-msp-thread .ch-ms-msg:not(.is-mine).is-last .ch-ms-bub { border-bottom-left-radius: var(--ch-radius-tail); }
+  .ch-msp-thread .ch-ms-msg.is-mine:not(.is-first) .ch-ms-bub { border-top-right-radius: var(--ch-radius-tail); }
+  .ch-msp-thread .ch-ms-msg.is-mine .ch-ms-bub { border-bottom-right-radius: var(--ch-radius-tail); }
   .ch-msp-thread .ch-ms-msg.is-last .ch-ms-bub:not(.ch-ms-bub--file):not(.is-deleted)::after {
     content: '';
     position: absolute;
@@ -2647,12 +2647,12 @@
 .ch-ms-link:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
 }
 /* A search hit's match, marked in its row (wave 5 #11). */
 .ch-ms-hit {
   padding: 0 1px;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: color-mix(in srgb, var(--ch-champagne-500) 34%, transparent);
   color: inherit;
 }

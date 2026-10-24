@@ -48,7 +48,7 @@
 .ch-hl-tp__row summary:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-hl-tp__row summary > svg {
   color: var(--ch-text-tertiary);

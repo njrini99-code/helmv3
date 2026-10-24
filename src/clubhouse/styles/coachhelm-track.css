@@ -101,7 +101,7 @@
   bottom: -4px;
   width: 2px;
   margin-left: -1px;
-  border-radius: 1px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-text-primary);
 }
 

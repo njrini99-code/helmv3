@@ -463,7 +463,7 @@
   position: absolute;
   top: 2px;
   bottom: 2px;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
 }
 .ch-rs-sgbar i.is-gain {
   background: var(--ch-chart-gain-fill);
@@ -2399,7 +2399,7 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   translate: calc(var(--ch-sp-x, 0) * 1cqw) 0;
   transition: translate var(--ch-dur-base) var(--ch-ease);
   padding: 4px 8px;
-  border-radius: 99px;
+  border-radius: 999px;
   background: var(--ch-champagne-500);
   /* Dark ink on the gold in both themes: the gold stays light at night, where --ch-ink-950 turns ivory (1.9:1). */
   color: #141412;

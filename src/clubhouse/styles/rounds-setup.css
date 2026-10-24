@@ -81,7 +81,7 @@
 .ch-rsu-spine i {
   display: block;
   height: 4px;
-  border-radius: 2px;
+  border-radius: 999px;
   background: linear-gradient(90deg, #7bc79a var(--ch-rsu-fill, 0%), rgb(255 255 255 / 0.12) var(--ch-rsu-fill, 0%));
 }
 .ch-rsu-spine .is-done i {
@@ -905,7 +905,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   display: block;
   width: 52%;
   height: 12px;
-  border-radius: 6px;
+  border-radius: 999px;
   background: var(--ch-skel-base);
 }
 .ch-cpk.is-skel .ch-cpk__b i + i {
@@ -1121,13 +1121,13 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   grid-area: bar;
   display: block;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 999px;
   background: rgb(21 90 57 / 0.08);
 }
 .ch-rsu-tee__bar i {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: rgb(21 90 57 / 0.4);
 }
 
@@ -2008,7 +2008,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   height: 2px;
   min-width: 14px;
   margin: 0 12px;
-  border-radius: 1px;
+  border-radius: 999px;
   background: rgb(255 255 255 / 0.16);
   content: '';
 }

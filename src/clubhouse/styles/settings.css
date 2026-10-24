@@ -1012,7 +1012,7 @@
     place-items: center;
     width: 30px;
     height: 30px;
-    border-radius: 8px;
+    border-radius: var(--ch-radius-sm);
     background: var(--ch-green-50);
     color: var(--ch-green-600);
   }
@@ -1365,7 +1365,7 @@
      land, and the row itself rides above the list as the drag overlay, the one elevated object. */
   .ch-setm-rank__i.is-held {
     margin: 0 4px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-bg-inset);
     box-shadow: var(--ch-well-soft-shadow);
   }
@@ -1381,7 +1381,7 @@
      Animations off, where the duration tokens are zero and the drop does not animate. */
   .ch-setm-rank__i.is-lifted {
     margin: 0 4px;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: var(--ch-green-50);
     box-shadow: var(--ch-elevation-overlay);
     cursor: grabbing;
@@ -1437,7 +1437,7 @@
     height: 44px;
     padding: 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: var(--ch-radius-md);
     background: none;
     color: var(--ch-ink-400);
     cursor: grab;

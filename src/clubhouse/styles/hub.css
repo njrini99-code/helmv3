@@ -76,7 +76,7 @@
   bottom: 0;
   left: 0;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 999px;
   background: var(--ch-green-800);
 }
 .ch-hb-tabs button {
@@ -93,7 +93,7 @@
 .ch-hb-tabs button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-hb-card {
   border-radius: var(--ch-radius-xl);
@@ -288,7 +288,7 @@
   width: 180px;
   height: 8px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.06);
 }
 .ch-hb-rsvp__bar .is-going {
@@ -503,14 +503,14 @@
   width: 90px;
   height: 6px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.08);
 }
 .ch-hb-reads__t i {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-green-fill-600);
   /* Full width, slid in from the left by its share (--ch-hb-p, 0 to 1): a change moves on transform and the rounded end
      stays round; the track's clip draws the start. */
@@ -2367,7 +2367,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb-ann__fold:focus-visible {
     outline: 2px solid var(--ch-border-focus);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: var(--ch-radius-xs);
   }
 }
 
@@ -2504,7 +2504,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-strip button:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--ch-radius-mark);
 }
 .ch-hb-strip .is-warn,
 .ch-hb-strip .is-warn b {
@@ -2526,7 +2526,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   height: 18px;
   margin-left: 8px;
   padding: 0 4px;
-  border-radius: 9px;
+  border-radius: 999px;
   background: var(--ch-green-50);
   font: 600 11px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
@@ -2742,14 +2742,14 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 .ch-hb-board__t {
   height: 6px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 999px;
   background: rgb(255 255 255 / 0.16);
 }
 .ch-hb-board__t i {
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-champagne-300);
   transform: translateX(calc((var(--ch-hb-p, 0) - 1) * 100%));
   transition: transform var(--ch-dur-base) var(--ch-ease);
@@ -2779,7 +2779,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   display: block;
   height: 4px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.12);
 }
 .ch-hb-prog i::after {
@@ -2916,19 +2916,19 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 .ch-hw :focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-hw-track {
   display: block;
   height: 6px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 999px;
   background: var(--ch-ledger-rule);
 }
 .ch-hw-track i {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-green-fill-600);
   transform: scaleX(var(--ch-hw-p, 0));
   transform-origin: left center;
@@ -3241,7 +3241,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   width: 88px;
   height: 6px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 999px;
 }
 .ch-hw-meter__t .is-going {
   background: var(--ch-green-fill-600);
@@ -3691,7 +3691,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   width: 100%;
   height: 4px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 999px;
   background: var(--ch-ledger-rule);
 }
 .ch-hw-mini i::after {

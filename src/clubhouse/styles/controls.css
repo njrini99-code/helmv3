@@ -16,7 +16,7 @@
   padding: 0 16px;
   border: 0;
   /* Concentric with the track: its radius less its padding. */
-  border-radius: calc(var(--ch-radius-lg) - 4px);
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
   background: transparent;
   /* The unselected label sits on the well's gradient: #6f6a5f measured 4.1:1 there, on every segmented control in
      Clubhouse (aesthetic audit X-1); secondary ink holds 5.4:1 and still reads lighter than the selected green. */
@@ -31,7 +31,7 @@
     background var(--ch-dur-press) var(--ch-ease);
 }
 .ch-seg--sm .ch-seg__b {
-  border-radius: calc(var(--ch-radius-lg) - 3px);
+  border-radius: max(var(--ch-radius-xs), calc(var(--ch-radius-lg) - var(--ch-space-1)));
   height: 26px;
   padding: 0 12px;
   font-size: calc(13 * var(--ch-type-k));
@@ -850,7 +850,7 @@
 .ch-slider input:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--ch-radius-sm);
 }
 .ch-slider.is-disabled {
   opacity: 0.5;
@@ -1432,7 +1432,7 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
   width: 36px;
   height: 5px;
   margin-inline: auto;
-  border-radius: 2.5px;
+  border-radius: 999px;
   background: var(--ch-grab-bg);
   touch-action: none;
 }

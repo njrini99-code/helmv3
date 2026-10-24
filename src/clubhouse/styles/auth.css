@@ -513,7 +513,7 @@
 .ch-au-alt a {
   position: relative;
   font-weight: 500;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   outline-offset: 2px;
 }
 /* 44px tall: 19.6px of line plus 12px above and below. */
@@ -640,7 +640,7 @@
 /* Text links take a rounded focus ring a step off the words, not a square box on them. */
 .ch-au-forgot,
 .ch-au-foot a {
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   outline-offset: 2px;
 }
 .ch-au-forgot--below {
@@ -1381,7 +1381,7 @@
   .ch-au-input {
     height: 52px;
     padding: 0 8px 0 16px;
-    border-radius: 13px;
+    border-radius: var(--ch-radius-md);
   }
   .ch-au-input input {
     font: 400 max(16px, calc(16 * var(--ch-type-k)))/1.25 var(--ch-font-sans);
@@ -1412,7 +1412,7 @@
   }
   .ch-au-submit .ch-btn {
     height: 52px;
-    border-radius: 13px;
+    border-radius: var(--ch-radius-md);
     font-size: calc(16 * var(--ch-type-k));
   }
   .ch-au-bottom {
@@ -1497,7 +1497,7 @@
   .ch-au-wl-cta .ch-btn {
     flex: 1;
     height: 52px;
-    border-radius: 13px;
+    border-radius: var(--ch-radius-md);
     font-size: calc(16 * var(--ch-type-k));
   }
   .ch-au-wl-hint {
@@ -1735,7 +1735,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
 }
 .ch-au-meter i {
   height: 4px;
-  border-radius: 2px;
+  border-radius: 999px;
   /* An empty step is a visible track (3:1 against the paper), not ivory on ivory. */
   background: var(--ch-border-strong);
   transition: background var(--ch-dur-quick) var(--ch-ease);
@@ -1795,7 +1795,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   justify-self: center;
   width: 8px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 999px;
   background: var(--ch-border-strong);
 }
 .ch-au-slot {
@@ -1826,7 +1826,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   content: '';
   width: 2px;
   height: 24px;
-  border-radius: 1px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-text-primary);
   opacity: 0;
 }
@@ -1958,7 +1958,7 @@ html[data-fw-theme='dark'] .ch-au-code[data-focus] .ch-au-slot[data-cur] {
   font: inherit;
   font-weight: 500;
   color: var(--ch-green-700);
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   outline-offset: 2px;
   cursor: pointer;
 }

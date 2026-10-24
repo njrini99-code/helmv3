@@ -219,7 +219,7 @@
 .ch-hg-m__how summary:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
 }
 .ch-hg-m__how p {
   margin: 0 0 8px;
@@ -245,14 +245,14 @@
 .ch-hg-sc__t {
   position: relative;
   height: 8px;
-  border-radius: 4px;
+  border-radius: 999px;
   background: rgb(28 25 18 / 0.08);
 }
 .ch-hg-sc__f {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-radius: 4px;
+  border-radius: var(--ch-radius-xs);
   background: var(--ch-hg-tone);
   opacity: 0.38;
 }
@@ -262,7 +262,7 @@
   bottom: -5px;
   width: 2px;
   margin-left: -1px;
-  border-radius: 1px;
+  border-radius: var(--ch-radius-mark);
   background: var(--ch-ink-400);
 }
 .ch-hg-sc__d {

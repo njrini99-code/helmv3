@@ -493,7 +493,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px 16px 12px;
-  border-radius: 24px;
+  border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-floating);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
@@ -868,7 +868,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     background: var(--ch-phone-composer-bg);
   }
   .ch-ask-cmp__box {
-    border-radius: 24px;
+    border-radius: var(--ch-radius-xl);
   }
   .ch-ask-cmp.is-dock .ch-ask-cmp__box,
   .ch-ask-cmp.is-phone .ch-ask-cmp__box {
