@@ -1,10 +1,11 @@
 'use client';
 
-import { changeInk, changeTone, formatSigned, NO_DATA } from '../../lib/format';
+import { changeInk, changeTone, formatSigned } from '../../lib/format';
 import { useGlide } from '../../lib/motion-glide';
 import { sgScale, sgShare } from '../../lib/sg';
 import { useChartPin } from '../../lib/use-chart-pin';
 import { legReadout, type SgLegRow } from './leg-rows';
+import { NoData } from '../../ui/NoData';
 
 export type SgBarRow = Pick<SgLegRow, 'label' | 'value'> & Partial<Pick<SgLegRow, 'team' | 'n' | 'se' | 'state' | 'tag' | 'total'>>;
 
@@ -65,7 +66,7 @@ export function SgBars({ rows }: { rows: SgBarRow[] }) {
               {lo != null && hi != null && <i className={'ch-sv-whisk' + (lo <= 0 ? ' is-clip-l' : '') + (hi >= 100 ? ' is-clip-r' : '')} style={{ left: `${lo}%`, width: `${hi - lo}%` }} />}
               {v == null && tag && <span className="ch-sv-needs">{tag}</span>}
             </span>
-            <b className={'ch-num ' + (muted ? '' : changeInk(v))}>{v == null ? NO_DATA : formatSigned(v)}</b>
+            <b className={'ch-num ' + (muted ? '' : changeInk(v))}>{v == null ? <NoData /> : formatSigned(v)}</b>
           </div>
         );
       })}

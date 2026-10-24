@@ -238,26 +238,56 @@ describe('Qualifiers · the standings model', () => {
     expect(b.rows.map((r) => r.state)).toEqual(['qualifying', 'tie', 'tie', null, null]);
     expect(b.submitted).toBe(5);
   });
-  it('owner decision 10: complete cards rank first; a card a round short goes below them, flagged, whatever its total', () => {
-    const b = buildBoard({
+  // A skipped round two with a −4 opening; B and C played both; D played both at the same total as C.
+  const decision10 = (status: 'in_progress' | 'completed') =>
+    buildBoard({
       entrants: ['a', 'b', 'c', 'd'].map(e),
-      // A skipped round two with a −4 opening; B and C played both; D played both at the same total as C.
       rounds: [rd('a', 1, 68, -4), rd('b', 1, 74, 2), rd('b', 2, 75, 3), rd('c', 1, 72, 0), rd('c', 2, 72, 0), rd('d', 1, 70, -2), rd('d', 2, 74, 2)],
       squad: 2,
       picks: 0,
-      status: 'in_progress',
+      status,
       selectionState: 'scoring',
       selections: null,
       numRounds: 3,
     });
-    expect(b.rows.map((r) => [r.playerId, r.position, r.tied, r.missed])).toEqual([
+  it('owner decision 10: complete cards rank first; a card a round short goes below them whatever its total, and is flagged once the event is complete', () => {
+    const done = decision10('completed');
+    expect(done.rows.map((r) => [r.playerId, r.position, r.tied, r.missed])).toEqual([
       ['c', 1, true, false],
       ['d', 1, true, false],
       ['b', 3, false, false],
       ['a', 4, false, true],
     ]);
-    expect(sampleNote(b.rows[3]!, b, 3)).toBe('Missed a round · 1 of 3 rounds');
-    expect(sampleNote(b.rows[0]!, b, 3)).toBeNull();
+    expect(sampleNote(done.rows[3]!, done, 3)).toBe('Missed a round · 1 of 3 rounds');
+    expect(sampleNote(done.rows[0]!, done, 3)).toBeNull();
+  });
+  it('owner decision 10 during play: the same order, but a card a round short is not "Missed a round" yet, only its pace', () => {
+    const live = decision10('in_progress');
+    // Decision 10's order holds while the event is on: complete cards by to par, then strokes, then rounds; the short card below.
+    expect(live.rows.map((r) => [r.playerId, r.position, r.tied])).toEqual(decision10('completed').rows.map((r) => [r.playerId, r.position, r.tied]));
+    expect(live.rows.map((r) => r.missed)).toEqual([false, false, false, false]);
+    expect(sampleNote(live.rows[3]!, live, 3)).toBe('1 of 3 rounds');
+    expect(sampleNote(live.rows[0]!, live, 3)).toBeNull();
+  });
+  it('a short card and a complete card level on to par and strokes are never tied, during play or after (decision 10 groups)', () => {
+    for (const status of ['in_progress', 'completed'] as const) {
+      const b = buildBoard({
+        entrants: ['a', 'b', 'c'].map(e),
+        // A and B played both rounds at 144 (E); C played one round at 144 strokes, E: level on to par and strokes, a round short.
+        rounds: [rd('a', 1, 72, 0), rd('a', 2, 72, 0), rd('b', 1, 70, -2), rd('b', 2, 74, 2), rd('c', 1, 144, 0)],
+        squad: 2,
+        picks: 0,
+        status,
+        selectionState: 'scoring',
+        selections: null,
+        numRounds: 2,
+      });
+      expect(b.rows.map((r) => [r.playerId, r.position, r.tied, r.state === 'tie'])).toEqual([
+        ['a', 1, true, false],
+        ['b', 1, true, false],
+        ['c', 3, false, false],
+      ]);
+    }
   });
   it('averages full rounds only, and counts the shorter ones it left out', () => {
     const b = buildBoard({ entrants: [e('a')], rounds: [rd('a', 1, 72, 0), rd('a', 2, 38, 2, 9)], squad: 5, picks: 1, status: 'in_progress', selectionState: 'open', selections: null });

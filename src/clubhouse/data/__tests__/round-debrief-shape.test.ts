@@ -25,11 +25,11 @@ const round = (over: Partial<ChRoundReview> = {}): ChRoundReview => ({ ...PREVIE
 describe('the one number that moved', () => {
   it('names the measure furthest from the player’s own average, with the average and how many rounds it is over', () => {
     const history = past({}).map((h, i) => ({ ...h, total_gir: 8 + (i % 3) }));
-    expect(movedNumber(round({ putts: 28 }), history)).toEqual({ value: '28 putts', line: 'Your average over your last 6 rounds: 32.5.', tone: 'good' });
+    expect(movedNumber(round({ putts: 28 }), history)).toEqual({ value: '28 putts', line: 'Your average over your last 6 rounds: 32.5.', tone: 'gain' });
   });
 
   it('says a move the wrong way too, in its own tone', () => {
-    expect(movedNumber(round({ toPar: 12 }), past({}))).toMatchObject({ value: '+12 to par', tone: 'bad' });
+    expect(movedNumber(round({ toPar: 12 }), past({}))).toMatchObject({ value: '+12 to par', tone: 'loss' });
   });
 
   it('says nothing under three earlier rounds, or when nothing sits a full spread from the average', () => {

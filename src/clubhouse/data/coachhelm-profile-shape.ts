@@ -5,6 +5,7 @@ import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { GENOME_WINDOW_DAYS, type DimensionResult } from '@/lib/coachhelm/v3/genome/types';
 import { formatSigned } from '../lib/format';
+import { diffSe, halvesTone, POOLED_SD, standardError } from '../lib/stats-signal';
 import { speak, type ChViewer } from './coachhelm-voice';
 
 /**
@@ -276,10 +277,22 @@ const clamp100 = (v: number) => Math.min(100, Math.max(0, v));
  * for. `role`: whose page it is on; a coach's reads the measure's words in no one's voice (`COACH_WORDS`).
  */
 /**
- * Measures whose word is a change between two windows (Momentum: the last 30 days against the 60 before). The stored result
- * carries no standard error, so its word is never painted on its own (A1, the one change rule); the persona's call still is.
+ * Momentum's word, through the one change rule (A1, row 93) instead of the dimension's fixed 0.3 cut: the change in score to par
+ * (last 30 days against the 60 before, lower is better) said only past its standard error. The stored result carries no round
+ * counts, only its confidence (the smaller window's rounds over six, capped at one), so each window is taken at that smaller
+ * count, at most six, at the pooled score spread: a conservative error, never a smaller one than the rounds can give.
+ * "No clear change" otherwise, in plain ink; the persona's call still colours it.
  */
-const UNMEASURED_CHANGE = new Set(['scoring_trend']);
+const CHANGE_WORDS: Readonly<Record<string, { gain: string; loss: string }>> = { scoring_trend: { gain: 'Improving', loss: 'Regressing' } };
+
+function testedChange(id: string, value: number, confidence: number | null): { word: string; tone: ChMeasureTone } | null {
+  const words = CHANGE_WORDS[id];
+  if (!words) return null;
+  const n = Math.max(1, Math.round(Math.min(1, Math.max(0, confidence ?? 0)) * 6));
+  const se = diffSe(standardError(POOLED_SD.score, n), standardError(POOLED_SD.score, n));
+  const tone = halvesTone({ delta: value, se }, true, 2);
+  return tone === 'is-gain' ? { word: words.gain, tone: 'good' } : tone === 'is-loss' ? { word: words.loss, tone: 'warn' } : { word: 'No clear change', tone: 'plain' };
+}
 
 export function toMeasure(id: string, label: string, r: DimensionResult | undefined, stance: ChMeasureStance | null, role: ChViewer['role'] = 'player'): ChMeasure {
   const copy = COPY[id];
@@ -290,15 +303,16 @@ export function toMeasure(id: string, label: string, r: DimensionResult | undefi
   // A measure with no copy has no unit to put a number in, so it shows the word it gave and nothing else.
   const shown = copy?.figure(value) ?? null;
   const atEdge = copy?.clamp != null && Math.abs(value) >= copy.clamp;
+  const change = testedChange(id, value, r?.confidence ?? null);
   return {
     ...base,
     locked: false,
-    headline: r?.label?.trim() || null,
+    headline: change?.word ?? (r?.label?.trim() || null),
     figure: shown?.figure ?? null,
     figureNote: shown?.note || null,
     bound: atEdge ? 'This is the edge of the scale, so the real gap may be larger.' : null,
     stance,
-    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (r?.label && !UNMEASURED_CHANGE.has(id) ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
+    tone: stance === 'strength' ? 'good' : stance === 'watch' ? 'warn' : (change ? change.tone : r?.label ? LABEL_TONE[r.label.trim()] : undefined) ?? 'plain',
     pos: copy ? clamp100(((value - copy.scale.min) / (copy.scale.max - copy.scale.min)) * 100) : null,
     read: readOf(r?.confidence ?? null),
   };

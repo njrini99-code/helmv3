@@ -45,6 +45,7 @@ import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-
 import type { ContextType } from 'react';
 import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
 import { teamPlayerHref } from '../screens/stats/links';
+import { unsignedTones } from './_tone-sign';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -676,6 +677,14 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(router.push).toHaveBeenCalledWith('/golf/dashboard/stats?window=season', { scroll: false });
   });
 
+  it('a toned figure on the team page carries a sign or a word; only the phone putting rates are still colour alone (row 48, CONS-20)', async () => {
+    wrap(stats());
+    await waitFor(() => expect(document.querySelector('.ch-stm .ch-stm-leg__v')).not.toBeNull());
+    // The phone's make rates below the Tour (StatsTeamPhone Putting) are amber with no word yet: may only fall, toward none.
+    expect(unsignedTones().filter((t) => !/^b\.ch-num ch-loss :: \d+%$/.test(t))).toEqual([]);
+    expect(unsignedTones().length).toBeLessThanOrEqual(4);
+  });
+
   it('a phone window change keeps the legs and the rank mounted, so their bars glide instead of being redrawn (B9)', async () => {
     const data = stats();
     const view = wrap(data);
@@ -1292,5 +1301,75 @@ describe('Team stats phone · window switch', () => {
     const src = readFileSync('src/clubhouse/screens/stats/StatsTeamPhone.tsx', 'utf8');
     expect(src).not.toMatch(/useShownWindow|useGoWindow/);
     expect(src).toMatch(/<PhoneWindowSwitch /);
+  });
+});
+
+/** Row 70: the insight-first card at the top of Team stats, desktop and phone. */
+describe('Stats team · what changed (row 70)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  const asPhone = () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+  };
+  const card = () => screen.queryByRole('region', { name: /^(What changed|No clear change)$/ });
+  /** Each line the card states is toned the same way where the page draws that change: the same signed figure in the same ink. */
+  const agreesWithPage = (box: HTMLElement) => {
+    for (const b of box.querySelectorAll('b')) {
+      const ink = b.classList.contains('ch-gain') ? /\b(ch-gain|is-gain)\b/ : /\b(ch-loss|is-loss)\b/;
+      const twins = [...document.querySelectorAll('.ch-gain, .ch-loss, .is-gain, .is-loss')].filter((el) => !box.contains(el) && el.textContent?.includes(b.textContent!));
+      expect(twins.some((el) => ink.test(el.getAttribute('class') ?? '')), `${b.textContent} toned alike below`).toBe(true);
+    }
+  };
+
+  for (const surface of ['desktop', 'phone'] as const) {
+    it(`${surface}: states the changes past their standard error, clearest first, each toned as the page tones it`, async () => {
+      if (surface === 'phone') asPhone();
+      wrap(stats());
+      // Greens +3% (1.25 errors) and the scoring average −0.9 (1.18); strokes gained, putts, scrambling and birdies are inside theirs.
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('What changed');
+      expect([...box.querySelectorAll('p')].map((p) => p.textContent)).toEqual(['+3 Greens in regulation, better vs previous 10', '−0.9 Scoring average, better vs previous 10']);
+      expect(unsignedTones(box)).toEqual([]);
+      agreesWithPage(box);
+    });
+
+    it(`${surface}: nothing past its error says "No clear change"; nothing to compare draws no card`, async () => {
+      if (surface === 'phone') asPhone();
+      const inside = PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, se: f.delta == null ? f.se : Math.abs(f.delta) * 2 }));
+      const view = wrap(stats({ figures: inside }));
+      const box = await waitFor(() => card()!);
+      expect(within(box).getByRole('heading').textContent).toBe('No clear change');
+      expect(box.textContent).toContain('Nothing has moved past its usual round-to-round spread vs previous 10.');
+      view.unmount();
+      wrap(stats({ figures: PREVIEW_TEAM_STATS.figures.map((f) => ({ ...f, delta: null, se: null })) }));
+      await waitFor(() => expect(document.querySelector('.ch-st, .ch-stm')).not.toBeNull());
+      expect(card()).toBeNull();
+    });
+  }
+});
+
+describe('Stats team · phone putting rates (A2)', () => {
+  const real = window.matchMedia;
+  afterEach(() => {
+    window.matchMedia = real;
+  });
+  it('a make rate is amber only when it prints below the Tour’s: 69.6% against 70% is level, 68.8% is below', async () => {
+    window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+    const bands = [
+      { label: '5–10 ft', made: 87, attempts: 125, bench: 70 },
+      { label: '10–15 ft', made: 86, attempts: 125, bench: 70 },
+    ];
+    wrap(stats({ putting: { ...PREVIEW_TEAM_STATS.putting!, bands } }));
+    const rows = await waitFor(() => {
+      const r = [...document.querySelectorAll('.ch-stm-putt__r')];
+      expect(r).toHaveLength(2);
+      return r;
+    });
+    expect(rows.map((r) => [r.querySelector('b')!.textContent, r.querySelector('b')!.classList.contains('ch-loss')])).toEqual([
+      ['70%', false],
+      ['69%', true],
+    ]);
   });
 });

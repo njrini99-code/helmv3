@@ -20,6 +20,7 @@ import { LinkPending } from '../../shell/LinkPending';
 import { StatsTeamPhone } from './StatsTeamPhone';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 import { pluralWord } from '../../lib/plural';
+import { TeamInsight } from './StatsInsight';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -111,6 +112,10 @@ export function StatsTeam({ data }: { data: ChTeamStats }) {
         ) : (
           !data.roundsError && (
             <>
+              {/* Row 70: what changed, in words, before any figure. */}
+              <SectionBoundary surface="stats.team.insight" label="What changed" code="CH-4204">
+                <TeamInsight figures={data.figures} last={data.last} />
+              </SectionBoundary>
               <TeamCharts
                 tape={
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">

@@ -117,7 +117,9 @@ describe('LegBars: read, pin, keys', () => {
     expect(putting.querySelector('.ch-sv-needs')!.textContent).toBe('Needs 5 rounds');
     expect(putting.querySelector('.ch-lb__bar')).toBeNull();
     expect(putting.querySelector('.ch-sv-whisk')).toBeNull();
-    expect(putting.querySelector('.ch-lb__v')!.textContent).toBe('—');
+    // The dash to the eye, "No data" to a screen reader (row 46, ui/NoData).
+    expect(putting.querySelector('.ch-lb__v [aria-hidden="true"]')!.textContent).toBe('—');
+    expect(putting.querySelector('.ch-lb__v .ch-sr-only')!.textContent).toBe('No data');
   });
 
   it('keeps the bar on the data’s own scale: a whisker never moves it', () => {

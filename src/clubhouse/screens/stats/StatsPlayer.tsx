@@ -53,6 +53,8 @@ import { Zone, ZoneBig as Big, Zones } from '../../ui/Zone';
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { devMetric, devProgress, devTitle, devValue, goalLine } from './dev-format';
 import { pluralWord } from '../../lib/plural';
+import { PlayerInsight } from './StatsInsight';
+import { NoData } from '../../ui/NoData';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -343,6 +345,13 @@ export function StatsPlayer({ data, coachId, initialTab, reads }: { data: ChPlay
           <InlineNotice code="CH-5201" title="Rounds didn’t load." body="Posted rounds are safe. Every figure that reads them would be incomplete, so they’re hidden. Try again." onRetry={() => router.refresh()} />
         )}
 
+        {/* Row 70: what changed, in words, before the tabs' figures; the same on every tab. */}
+        {!emptyFilter && !failed && (
+          <SectionBoundary surface="stats.player.insight" label="What changed" code="CH-5204">
+            <PlayerInsight data={data} />
+          </SectionBoundary>
+        )}
+
         {/* The tab's panel swaps (CH-5603) behind the underline that already moved (CH-5601). */}
         <Swap swapKey={shownTab}>
           <div role="tabpanel" id={`panel-${shownTab}`} aria-labelledby={`tab-${shownTab}`} className="ch-st-panel">
@@ -483,8 +492,8 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                 <span role="cell" className="ch-n2">{r.date}</span>
                 <span role="cell" className="r ch-num ch-n">{r.score}</span>
                 <span role="cell" className={'r ch-num ch-topar' + (r.toPar != null && r.toPar < 0 ? ' is-under' : '')}>{formatToPar(r.toPar)}</span>
-                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? NO_DATA}</span>
-                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? NO_DATA}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.gir ?? <NoData />}</span>
+                <span role="cell" className="r ch-num ch-n2 ch-tr__x">{r.putts ?? <NoData />}</span>
                 <span role="cell" className={'r ch-num ch-n2 ' + changeInk(r.sg)}>{formatSigned(r.sg)}</span>
                 {r.sgLegs.map((v, i) => (
                   <span key={i} role="cell" className={'r ch-num ch-n2 ' + changeInk(v)}>
@@ -511,7 +520,7 @@ function DevTrack({ title, state, line, baseline, current, target, metric, done 
           <span>{state ?? line}</span>
           {extra}
         </div>
-        <em className="ch-num">{done ? 'Achieved' : progress == null ? NO_DATA : `${progress}% of the way`}</em>
+        <em className="ch-num">{done ? 'Achieved' : progress == null ? <NoData /> : `${progress}% of the way`}</em>
       </div>
       {progress != null && (
         <div className="ch-dv__rail" role="img" aria-label={`${title}: ${devValue(baseline, metric)} to start, ${devValue(current, metric)} now, ${devValue(target, metric)} target, ${progress} percent of the way`}>

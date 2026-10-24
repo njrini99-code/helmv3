@@ -73,7 +73,8 @@ describe('the genome as the profile draws it', () => {
     expect(by.pressure_delta).toMatchObject({ headline: 'Tightens up', figure: '+0.82', figureNote: 'strokes per 18 holes, tournaments against practice' });
     expect(by.scrambling_rate).toMatchObject({ headline: 'Reliable', figure: '35%' });
     expect(by.par3_proficiency).toMatchObject({ figure: '−0.84', figureNote: 'strokes to par per par 3' });
-    expect(by.scoring_trend).toMatchObject({ headline: 'Improving', figure: '−0.64' });
+    // Momentum's word goes through the one change rule, not the dimension's 0.3 cut: −0.64 is inside its error (row 93).
+    expect(by.scoring_trend).toMatchObject({ headline: 'No clear change', figure: '−0.64' });
     expect(by.driver_usage).toMatchObject({ headline: 'Mixed', figure: '62%' });
   });
 
@@ -91,10 +92,22 @@ describe('the genome as the profile draws it', () => {
     expect(PREVIEW_PROFILE.courseProfile).toBe('Mixed off the tee · thrives on par-3 holes · tendency to miss left.');
   });
 
-  // Momentum's Improving is a change with no standard error stored beside it, so its word is not painted (A1).
+  // Momentum's change is judged by the one change rule; inside its standard error it is "No clear change", in plain ink (A1).
   it('a measure is coloured by the persona’s call, else by the verdict in its own word; a bias, a profile and an unmeasured change are plain', () => {
     const tone = Object.fromEntries(PREVIEW_PROFILE.measures.map((m) => [m.id, m.tone]));
     expect(tone).toEqual({ miss_side_bias: 'plain', pressure_delta: 'warn', scrambling_rate: 'plain', par3_proficiency: 'good', back_nine_delta: 'warn', scoring_trend: 'plain', driver_usage: 'plain' });
+  });
+
+  it('Momentum never prints the dimension’s untested word: its change is said only past its standard error (row 93, review of #2361)', () => {
+    // The dimension calls −0.64 "Improving" at its fixed 0.3 cut; with the windows at six rounds each and the pooled score
+    // spread the change's error is about 2.1 strokes, so it is no clear change, and the signed figure still says which way.
+    const m = toMeasure('scoring_trend', 'Scoring trend', { value: -0.64, confidence: 1, label: 'Improving' }, null);
+    expect(m).toMatchObject({ headline: 'No clear change', tone: 'plain', figure: '−0.64' });
+    expect(toMeasure('scoring_trend', 'Scoring trend', { value: 1.2, confidence: 0.5, label: 'Regressing' }, null)).toMatchObject({ headline: 'No clear change', tone: 'plain' });
+    // The persona's call still colours it.
+    expect(toMeasure('scoring_trend', 'Scoring trend', { value: -0.64, confidence: 1, label: 'Improving' }, 'strength').tone).toBe('good');
+    // Another measure's word is untouched.
+    expect(toMeasure('back_nine_delta', 'Back nine', { value: 0.4, confidence: 1, label: 'Fades late' }, null)).toMatchObject({ headline: 'Fades late', tone: 'warn' });
   });
 
   it('every word the tone list names is a word a dimension can give (the dimension files are read, so a rename cannot drop one silently)', () => {
