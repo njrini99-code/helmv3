@@ -33,10 +33,11 @@ describe('one number voice', () => {
     expect(formatPct(88.46, 1)).toBe('88.5%');
   });
 
-  it('one precision per metric (CONS-15)', () => {
-    expect(formatSG(0.844)).toBe('+0.84');
-    expect(formatSG(-1.2)).toBe(`${MINUS}1.20`);
-    expect(formatSG(0.001)).toBe('0.00');
+  it('one precision per metric (CONS-15); strokes gained at one decimal (owner decision 11)', () => {
+    expect(formatSG(0.844)).toBe('+0.8');
+    expect(formatSG(-1.2)).toBe(`${MINUS}1.2`);
+    expect(formatSG(0.001)).toBe('0.0');
+    expect(formatSG(-0.04)).toBe('0.0');
     expect(formatHcp(-1.2)).toBe('+1.2');
     expect(formatHcp(4)).toBe('4.0');
     expect(formatHcp(-0.04)).toBe('0.0');

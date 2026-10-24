@@ -1,7 +1,7 @@
 import type { UIMessage } from 'ai';
 import type { ActionProposal, ActionReceipt } from '@/lib/coachhelm/v3/chat/action-types';
 import type { Measurement, MeasurementSeries, ToolEnvelope } from '@/lib/coachhelm/v3/chat/provenance';
-import { formatFixed, MINUS, NO_DATA } from '../lib/format';
+import { formatFixed, formatSG, MINUS, NO_DATA } from '../lib/format';
 import { plural } from '../lib/plural';
 
 /**
@@ -31,7 +31,8 @@ export function formatValue(value: number | null, unit: Measurement['unit']): st
     case 'percent':
       return `${sign(value)}${Math.abs(Math.round(value))}%`;
     case 'strokes':
-      return `${value > 0 ? '+' : sign(value)}${formatFixed(Math.abs(value), 2)}`;
+      // Strokes gained at one decimal, as every screen prints it (owner decision 11).
+      return formatSG(value);
     case 'score':
     case 'count':
     case 'ratio':

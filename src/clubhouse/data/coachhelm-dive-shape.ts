@@ -7,7 +7,7 @@ import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { shortDate } from '@/lib/coachhelm/v3/lifecycle/delivery-shape';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import type { AssembledThemes, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
-import { formatFixed, formatSigned, formatToPar } from '../lib/format';
+import { formatFixed, formatSG, formatToPar } from '../lib/format';
 import { rebuiltHref } from '../shell/nav';
 import { formatComparison } from './coachhelm-map';
 import { toChRead, type ChRead } from './coachhelm-read-shape';
@@ -394,10 +394,10 @@ function closesFor(raw: EvidenceInsight, themes: AssembledThemes | null): ChDeep
 
 function themeRead(t: ThemeNode, role: ChViewer['role'] = 'player'): ChDiveTheme {
   const trend = t.trend;
-  const sg = t.sgPerRound != null ? formatSigned(t.sgPerRound, 2) : null;
+  const sg = t.sgPerRound != null ? formatSG(t.sgPerRound) : null;
   if (!trend) return { label: t.displayLabel, state: t.state, sg, trend: null };
   const word = trend.direction === 'improving' ? 'Improving' : trend.direction === 'declining' ? 'Slipping' : 'Steady';
-  const span = `strokes gained averaged ${formatSigned(trend.recentAvg, 2)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSigned(trend.priorAvg, 2)} over the ${trend.priorN} before`;
+  const span = `strokes gained averaged ${formatSG(trend.recentAvg)} a round over ${role === 'coach' ? 'the' : 'your'} last ${trend.recentN} rounds, against ${formatSG(trend.priorAvg)} over the ${trend.priorN} before`;
   return { label: t.displayLabel, state: t.state, sg, trend: { word, tone: trend.direction === 'improving' ? 'good' : trend.direction === 'declining' ? 'warn' : 'plain', text: `${t.displayLabel}: ${span}` } };
 }
 

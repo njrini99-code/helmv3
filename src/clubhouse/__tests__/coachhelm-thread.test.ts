@@ -247,8 +247,8 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
     const [b] = evidenceBlocks(sg);
     expect(b?.kind).toBe('legs');
     if (b?.kind === 'legs') {
-      expect(b.rows.map((r) => [r.label, r.display])).toEqual([['putting', '−1.90'], ['approach', '+0.30']]);
-      expect(b.takeaway).toBe('Largest loss: Strokes gained: putting at −1.90.');
+      expect(b.rows.map((r) => [r.label, r.display])).toEqual([['putting', '−1.9'], ['approach', '+0.3']]);
+      expect(b.takeaway).toBe('Largest loss: Strokes gained: putting at −1.9.');
     }
   });
   it('a single team figure is a tile; a partial read keeps its note', () => {
@@ -281,7 +281,8 @@ describe('evidenceBlocks: the shape decides the drawing, and nothing is dropped'
   });
   it('values use a true minus and an em dash for none', () => {
     expect(formatValue(-3, 'score')).toBe('−3');
-    expect(formatValue(-0.5, 'strokes')).toBe('−0.50');
+    expect(formatValue(-0.5, 'strokes')).toBe('−0.5');
+    expect(formatValue(0.42, 'strokes')).toBe('+0.4');
     expect(formatValue(58.4, 'percent')).toBe('58%');
     expect(formatValue(null, 'percent')).toBe('—');
     expect(formatValue(12, 'feet')).toBe('12 ft');
