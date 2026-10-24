@@ -726,7 +726,7 @@ describe('the welcome', () => {
     const { ui } = welcome(PREVIEW_WELCOME_COACH);
     render(ui);
     expect(screen.getByText('Since you last signed in')).toBeInTheDocument();
-    expect(screen.getByText(/^Sunday at 9:12 ?pm$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Sunday at 9:12 PM$/)).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
     expect(screen.getByText('4 new messages')).toBeInTheDocument();
     expect(screen.getByText('Sofia, Eli and 2 others')).toBeInTheDocument();

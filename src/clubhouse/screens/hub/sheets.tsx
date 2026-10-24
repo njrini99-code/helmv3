@@ -18,6 +18,7 @@ import { normalise, useAction } from '../../lib/use-action';
 import { ClassClashes, useClassCheck } from './TravelerClasses';
 import type { ChHubWrites, ChTripInput } from './writes';
 import { radioKeys, rovingRadios } from './radio';
+import { isoDay } from '../../lib/dates';
 
 /*
  * Team Hub's forms, each a Modal (a bottom sheet on the phone). A form keeps
@@ -140,7 +141,7 @@ function PickAll({ players, picked, onChange }: { players: ChTeamHub['players'];
 }
 
 /** Today on this device (YYYY-MM-DD), the earliest a due date can be picked. */
-const localToday = () => new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const localToday = () => isoDay(new Date());
 
 /** Focus moved to a field after the render that shows it (a refused Publish goes back to Logistics first). */
 function useFocusAfter() {

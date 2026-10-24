@@ -7,6 +7,7 @@ import { playerMine, playerSeesMeeting, replyClosedAt } from '../screens/calenda
 import { CLASS_EVENT_TYPE, isClassEvent } from '@/lib/calendar/class-events';
 import { isCoachHelmEnabledForCoach } from '@/lib/coachhelm/v2/gate';
 import { todayIsoInZone } from '@/lib/golf/timezone';
+import { isoDay } from '../lib/dates';
 
 export interface ChNextEvent {
   id: string;
@@ -225,8 +226,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
 }
 
 function dayNumber(d: Date, timezone: string): number {
-  const [y, m, day] = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
-    .format(d)
+  const [y, m, day] = isoDay(d, timezone)
     .split('-')
     .map(Number);
   return Date.UTC(y ?? 1970, (m ?? 1) - 1, day ?? 1) / 86_400_000;

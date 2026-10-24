@@ -76,11 +76,11 @@ describe('recruiting calendar · Division I golf', () => {
 });
 
 describe('recruiting calendar · Division II, III, NAIA, NJCAA', () => {
-  it('Division II: the signing dead period runs 7 a.m. Nov 9 to 7 a.m. Nov 11; outside it, no golf periods', () => {
+  it('Division II: the signing dead period runs 7 AM Nov 9 to 7 AM Nov 11; outside it, no golf periods', () => {
     expect(line('ncaa-d2', 'mens', '2026-11-09', '06:59')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
-    expect(line('ncaa-d2', 'mens', '2026-11-09', '07:00')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
-    expect(line('ncaa-d2', 'womens', '2026-11-10')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
-    expect(line('ncaa-d2', 'mens', '2026-11-11', '06:30')).toBe('Dead period · no in-person contact or visits until 7 a.m. Nov 11');
+    expect(line('ncaa-d2', 'mens', '2026-11-09', '07:00')).toBe('Dead period · no in-person contact or visits until 7 AM Nov 11');
+    expect(line('ncaa-d2', 'womens', '2026-11-10')).toBe('Dead period · no in-person contact or visits until 7 AM Nov 11');
+    expect(line('ncaa-d2', 'mens', '2026-11-11', '06:30')).toBe('Dead period · no in-person contact or visits until 7 AM Nov 11');
     expect(line('ncaa-d2', 'mens', '2026-11-11', '15:00')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
     expect(line('ncaa-d2', 'mens', '2026-10-08')).toBe('No golf recruiting periods in Division II · in-person contact from June 15 before junior year');
   });

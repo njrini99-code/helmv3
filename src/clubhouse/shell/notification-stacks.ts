@@ -1,4 +1,5 @@
 import { isUnread, type NotificationCategoryId, type UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
+import { relativeTime } from '../lib/dates';
 
 /**
  * The phone notification feed as stacks (owner 2026-10-12, the "lock screen stack" drop; section-strip.md). Pure, so the
@@ -74,16 +75,7 @@ export function markLocallyRead(items: readonly UnifiedNotificationItem[], keys:
 
 /** A notification's age as the feed shows it: Now, 9m, 2h, 3d, then the date. */
 export function ago(iso: string, now = Date.now()): string {
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return '';
-  const mins = Math.max(0, Math.round((now - t) / 60000));
-  if (mins < 1) return 'Now';
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.round(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.round(hrs / 24);
-  if (days < 7) return `${days}d`;
-  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return relativeTime(iso, 'short', now);
 }
 
 /** "2 more" under a folded stack's top card. */
