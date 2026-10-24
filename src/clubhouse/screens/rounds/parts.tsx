@@ -239,7 +239,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className={v === 0 ? 'is-par' : undefined} />
-            <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t' + (v === 0 ? ' is-par' : '')}>
+            <text x={L - 8} y={y(v) + 4} textAnchor="end" className={'ch-rd-rib__t ch-num' + (v === 0 ? ' is-par' : '')}>
               {v === 0 ? 'Par' : formatToPar(v)}
             </text>
           </g>
@@ -247,7 +247,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
         <line x1={L} x2={W - R} y1={y(avg)} y2={y(avg)} className="ch-rd-rib__avg" />
         <g transform={`translate(${W - R + 8},${y(avg)})`}>
           <rect x="0" y="-11" width={compact ? 64 : 90} height="22" rx="11" className="ch-rd-rib__chip" />
-          <text x={compact ? 32 : 45} y="4.5" textAnchor="middle" className="ch-rd-rib__t is-avg">
+          <text x={compact ? 32 : 45} y="4.5" textAnchor="middle" className="ch-rd-rib__t ch-num is-avg">
             {compact ? 'Avg' : 'Your avg'} {formatToPar(avg, 1)}
           </text>
         </g>
@@ -286,7 +286,7 @@ export function Ribbon({ rounds, avg, compact = false }: { rounds: ChRoundsSeaso
               {/* A day is labelled once, under the first of its rounds: "2 Aug 2 Aug 2 Aug" said nothing (F-57). */}
               {(i === 0 || rounds[i - 1]!.date.slice(0, 10) !== x.date.slice(0, 10)) && (
                 <>
-                  <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d">
+                  <text x={cx} y={H - 18} textAnchor="middle" className="ch-rd-rib__d ch-num">
                     {dateOf(x.date).getUTCDate()}
                   </text>
                   <text x={cx} y={H - 5} textAnchor="middle" className="ch-rd-rib__t">

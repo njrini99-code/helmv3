@@ -125,7 +125,7 @@ export function ScoreFlow({
         {ticks.map((v) => (
           <g key={v}>
             <line x1={X0 - 8} y1={y(v)} x2={X1 + 10} y2={y(v)} stroke={v === 0 ? 'var(--ch-stage-ink-soft)' : 'var(--ch-stage-rule)'} strokeWidth={v === 0 ? 1.5 : 1} />
-            <text className={tickAlt(v) ? 'ch-rzsvg__alt' : undefined} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
+            <text className={tickAlt(v) ? 'ch-rzsvg__alt ch-num' : 'ch-num'} x={X0 - 14} y={y(v) + 4} textAnchor="end" fontSize={12} fontWeight={v === 0 ? 700 : 500} fill="var(--ch-stage-ink-soft)">
               {label(v)}
             </text>
           </g>

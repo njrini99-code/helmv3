@@ -14,4 +14,12 @@ describe('Rounds season ribbon', () => {
     // Every round still has its bar and its score.
     expect(container.querySelectorAll('rect.is-under, rect.is-over, rect.is-even, rect.is-q')).toHaveLength(5);
   });
+
+  it('sets its figures in even-width digits (row 113): the ticks, the day numbers and the average chip', () => {
+    const r = (id: string, date: string, score: number) => ({ id, date, score, toPar: score - 72, type: 'practice' as const });
+    const { container } = render(<Ribbon rounds={[r('a', '2026-08-02', 69), r('b', '2026-08-09', 74)]} avg={-0.5} compact={false} />);
+    const figures = [...container.querySelectorAll('text.ch-rd-rib__d, text.ch-rd-rib__t')].filter((t) => /\d/.test(t.textContent ?? ''));
+    expect(figures.length).toBeGreaterThan(0);
+    for (const t of figures) expect(t.classList.contains('ch-num'), t.textContent ?? '').toBe(true);
+  });
 });
