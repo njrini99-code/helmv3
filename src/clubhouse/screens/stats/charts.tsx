@@ -184,7 +184,8 @@ export function PuttingRings({ bands }: { bands: Array<{ label: string; made: nu
   );
 }
 
-export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | null; bench: number | null }> }) {
+/** `mark`: the bench's name, the team's own Tour ("Women's Tour" for a women's team, row 110). */
+export function ParTiles({ rows, mark = 'Tour' }: { rows: Array<{ par: number; avg: number | null; bench: number | null }>; mark?: string }) {
   return (
     <div className="ch-par3">
       {rows.map((r) => (
@@ -195,7 +196,9 @@ export function ParTiles({ rows }: { rows: Array<{ par: number; avg: number | nu
           <span className={'ch-par3__to ch-num' + (r.avg == null || r.bench == null || Math.abs(r.avg - r.bench) < 0.005 ? '' : r.avg < r.bench ? ' ch-gain' : ' ch-loss')}>
             {r.avg == null ? 'No holes' : `${formatSigned(r.avg - r.par, 2)} to par`}
           </span>
-          {r.bench != null && <span className="ch-par3__d ch-num">Tour {formatFixed(r.bench, 2)}</span>}
+          {r.bench != null && <span className="ch-par3__d ch-num">
+              {mark} {formatFixed(r.bench, 2)}
+            </span>}
         </div>
       ))}
     </div>

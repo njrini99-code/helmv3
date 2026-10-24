@@ -27,6 +27,7 @@ import { Empty, More, Panel, Rule, RULE_WINDOW } from './detail';
 import { ApproachMore, PuttingMore, ScoringMore, ShortMore, TeeMore } from './GameMore';
 import { readsLineParts, READS_FAILED } from './reads-line';
 import { plural } from '../../lib/plural';
+import { sgBaseline, type ChSgTour } from '../../lib/sg';
 
 type Tone = 'gain' | 'loss' | undefined;
 const pct = formatPct;
@@ -184,6 +185,7 @@ export function GameDetail({
   s,
   x,
   bench,
+  tour = null,
   first,
   rounds,
   window: win,
@@ -199,6 +201,8 @@ export function GameDetail({
   x: ChProfileExtra;
   /** The Tour's averages by metric id (the team's own tour). */
   bench: Record<string, number>;
+  /** Whose Tour `bench` is, so its marks name it ("Women's Tour", row 110). */
+  tour?: ChSgTour;
   first: string;
   rounds: number;
   window: ChWindow;
@@ -439,7 +443,7 @@ export function GameDetail({
           <ScoreMixBar counts={totals} perRound={dist} triple={x.triplePlus} label="Every hole, by result" />
         </Panel>
         <Panel title="Scoring by par" wide>
-          <ParTiles rows={pars} />
+          <ParTiles rows={pars} mark={sgBaseline(tour).mark} />
         </Panel>
       </Sec>
 
