@@ -4,8 +4,12 @@
 -- supabase/migrations/HELD.md; the owner applies it. Plan:
 -- docs/clubhouse/held/data/tournaments.md.
 --
--- ORDER: after 20261024100000 (tables). 20261024100300 replaces four of the
--- player read rules below (entries, round lineups and field scores become
+-- APPLY ALL SIX TOGETHER, IN THIS ORDER, IN ONE SESSION: 20261024100000
+-- (tables), 100100 (this), 100200 (RPCs), 100300 (player moments), 100400
+-- (push_tournaments preference), 100500 (live round); each through
+-- npm run db:apply, no BEGIN/COMMIT in any of them. Never leave this file
+-- applied without 100300 once players use the flag. 20261024100300 replaces
+-- four of the player read rules below (entries, round lineups and field scores become
 -- reveal-gated and window-gated, player rounds window-gated; finding 3 in
 -- 0-R.3, D-85, D-87) and the player notes read rule (unshared lines).
 --
@@ -25,6 +29,11 @@
 --   * coach presence: team coaches read, each coach writes only their own;
 --   * link dismissals: coaches; saved comparisons: the owner (a coach), and
 --     the team's coaches read the shared ones.
+-- TEAM SCOPING (Round 6): every player branch, including a player's own
+-- rows, also requires is_golf_team_player(team_id) (an active
+-- golf_team_members row on that team), so no policy admits anyone by
+-- identity alone. Cross-row consistency (the player is on the team, the
+-- event is the team's) is the trigger in 100000.
 -- Teammates can already read each other's golf_rounds and golf_holes (D-36,
 -- policies/golf.sql golf_rounds_select). These policies are the second line
 -- for tournament rows; loaders are the first (11.3, D-85).
@@ -133,15 +142,17 @@ create policy golf_tpr_select on public.golf_tournament_player_rounds
 for select to authenticated
 using (
     public.is_golf_team_coach(team_id)
-    or exists (
-        select 1 from public.golf_players as gp
-        where
-            gp.id = golf_tournament_player_rounds.player_id
-            and gp.user_id = (select auth.uid())
-    )
     or (
         public.is_golf_team_player(team_id)
-        and public.golf_tournament_round_is_final(round_event_id)
+        and (
+            exists (
+                select 1 from public.golf_players as gp
+                where
+                    gp.id = golf_tournament_player_rounds.player_id
+                    and gp.user_id = (select auth.uid())
+            )
+            or public.golf_tournament_round_is_final(round_event_id)
+        )
     )
 );
 drop policy if exists golf_tpr_coach_write
@@ -243,6 +254,7 @@ create policy golf_tpn_player_read on public.golf_tournament_player_notes
 for select to authenticated
 using (
     shared_at is not null
+    and public.is_golf_team_player(team_id)
     and exists (
         select 1 from public.golf_players as gp
         where
@@ -256,7 +268,8 @@ drop policy if exists golf_tref_own on public.golf_tournament_reflections;
 create policy golf_tref_own on public.golf_tournament_reflections
 for all to authenticated
 using (
-    exists (
+    public.is_golf_team_player(team_id)
+    and exists (
         select 1 from public.golf_players as gp
         where
             gp.id = golf_tournament_reflections.player_id

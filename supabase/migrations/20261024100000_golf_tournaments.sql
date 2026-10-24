@@ -1,6 +1,7 @@
 -- STATUS: WRITTEN — HOLD — NOT APPLIED
 -- P016 Clubhouse Tournaments, held migration 1 of 6: the tables. Written
--- 2026-10-23 from handoff 4.33 section 11.2. Registered in
+-- 2026-10-23 from handoff 4.33 section 11.2; revised 2026-10-24 (Round 6:
+-- delete-safe foreign keys, team scoping trigger). Registered in
 -- supabase/migrations/HELD.md; the owner applies it (OQ-65: D-80 to D-101
 -- approve the product, not the apply). Plan:
 -- docs/clubhouse/held/data/tournaments.md.
@@ -9,28 +10,69 @@
 -- an ordinary golf_events row), D-82 (one player-round row per player per
 -- round; golf_rounds is never updated).
 --
--- ORDER: 20261024100000 (this), 100100 (RLS policies), 100200 (RPCs and the
--- lineup guard), 100300 (player moments), 100400 (push_tournaments
--- preference), 100500 (live round). Apply all six in that order, in one
--- session. Nothing reads these tables until golf_tournaments_v1 is on.
+-- APPLY ALL SIX TOGETHER, IN THIS ORDER, IN ONE SESSION:
+--   1 20261024100000_golf_tournaments.sql (this file)
+--   2 20261024100100_golf_tournaments_rls.sql
+--   3 20261024100200_golf_tournaments_rpcs.sql
+--   4 20261024100300_golf_tournaments_player_moments.sql
+--   5 20261024100400_notification_preferences_push_tournaments.sql
+--   6 20261024100500_golf_tournament_live.sql
+-- Each through npm run db:apply (it wraps the file in one transaction; no
+-- BEGIN/COMMIT here), each file's VERIFY passing before the next. Nothing
+-- reads these tables until golf_tournaments_v1 is on.
 --
--- Risk: LOW on its own. New tables only. Two new foreign keys point at live
--- tables (golf_events from golf_tournament_rounds with ON DELETE RESTRICT,
--- and golf_rounds from golf_tournament_player_rounds with ON DELETE SET
--- NULL); a round-day calendar event cannot be deleted while a tournament
--- owns it. RLS is enabled here with no policy (deny all) so the tables are
--- closed until 100100 adds the policies.
+-- Risk: LOW on its own. New tables only, no data. RLS is enabled here with
+-- no policy (deny all) so the tables are closed until 100100.
 --
--- Changes from the 11.2 text, all additive: no BEGIN/COMMIT (the apply path
--- wraps the file); IF NOT EXISTS guards; RLS on at creation; anon and PUBLIC
--- revoked; an index on every foreign key; golf_tournament_rounds.
--- event_adopted (a calendar event adopted as round 1 is not deleted with
--- the tournament); golf_tournament_result_marks.round_event_id and reason
--- (a forced Final or a reopen says which round and why); the round_id
--- unique constraint serves the link lookup, so 11.2's extra partial index
--- on it is not created.
+-- FOREIGN KEYS, ON DELETE, one by one (why each):
+--   * golf_tournaments.team_id -> golf_teams CASCADE: a tournament is the
+--     team's; deleting the team deletes its tournaments and, through the
+--     composite (tournament_id, team_id) keys, every child row (CASCADE on
+--     all of them). Nothing outlives its tournament.
+--   * golf_tournament_rounds.round_event_id -> golf_events NO ACTION
+--     DEFERRABLE INITIALLY DEFERRED (was RESTRICT). Tested on the local
+--     stack 2026-10-24: with RESTRICT, and also with plain NO ACTION, a team
+--     delete fails whenever the golf_teams cascade reaches golf_events before
+--     it reaches the rounds (the cascaded delete's check runs at the end of
+--     that inner statement). Deferred to commit, a team delete removes both
+--     sides and passes, while deleting a round-day event on its own still
+--     fails at commit, so the calendar cannot silently drop a round with its
+--     lineups and scores (CASCADE would). SET NULL is impossible: it is the
+--     primary key. golf_tournament_delete (100200) deletes the tournament
+--     first, then the events it owns.
+--   * course_id, tee_id -> golf_courses, golf_course_tees SET NULL: a course
+--     edit must not delete results; the round keeps its scores.
+--   * every player_id -> golf_players CASCADE: a deleted player (account
+--     deletion of a minor) takes their tournament rows with them, as their
+--     golf_rounds already go. substituted_for and with_player_id SET NULL:
+--     the row is about someone else and stays.
+--   * golf_tournament_player_rounds.round_id -> golf_rounds SET NULL: a
+--     deleted GolfHelm round leaves an unlinked slot ("no score yet"), never
+--     a deleted tournament row (golf_tpr_one_source allows both empty).
+--   * golf_tournament_result_marks (round_event_id, team_id) ->
+--     golf_tournament_rounds SET NULL (round_event_id): the append-only
+--     trust log survives a removed round; only the round reference is
+--     cleared, team_id stays (plain SET NULL would null the NOT NULL team_id).
+--   * created_by, updated_by, dismissed_by -> auth.users SET NULL: authorship
+--     is cleared, the record stays. owner_id, user_id, coach_user_id ->
+--     auth.users CASCADE: the row is that person's (a saved comparison,
+--     advice-giver seat, presence) and means nothing without them.
+--   * golf_tournament_link_dismissals.round_id -> golf_rounds CASCADE: a
+--     dismissal of a deleted round is meaningless.
 --
--- ROLLBACK: drop the tables in reverse dependency order, then the function:
+-- TEAM SCOPING. Every table carries team_id; the policies (100100) gate on
+-- is_golf_team_coach / is_golf_team_player (golf_team_coach_staff and
+-- golf_team_members). Composite keys stop a child claiming another team's
+-- tournament or round. helm_private.guard_tournament_team() (below) closes
+-- the remaining cross-references, for every role including service_role:
+-- a round's golf_events row is the same team's; every player_id,
+-- substituted_for and with_player_id has a golf_team_members row on that
+-- team (any status, so alumni rows stay editable); a linked golf_rounds row
+-- is that player's; a dismissed round is a team player's; advice givers and
+-- presence rows are coaches of the team; a result mark's round is in its
+-- tournament.
+--
+-- ROLLBACK: drop the tables in reverse dependency order, then the functions:
 --   drop table if exists public.golf_tournament_link_dismissals,
 --     public.golf_team_seasons, public.golf_saved_comparisons,
 --     public.golf_tournament_coach_presence,
@@ -43,6 +85,9 @@
 --     public.golf_tournament_round_lineups, public.golf_tournament_entries,
 --     public.golf_tournament_rounds, public.golf_tournaments;
 --   drop function if exists helm_private.touch_tournament_version();
+--   drop function if exists helm_private.guard_tournament_team(),
+--     helm_private.tournament_assert_member(uuid, uuid),
+--     helm_private.tournament_assert(boolean, text);
 -- Nothing else references them, and no existing row changes.
 --
 -- VERIFY: select 1 where to_regclass('public.golf_tournaments') is not null;
@@ -53,6 +98,9 @@
 -- VERIFY: and relrowsecurity;
 -- VERIFY: select 1 where not has_table_privilege('anon',
 -- VERIFY: 'public.golf_tournaments', 'SELECT');
+-- VERIFY: select 1 from pg_constraint where conname =
+-- VERIFY: 'golf_tournament_rounds_round_event_id_fkey' and confdeltype = 'a'
+-- VERIFY: and condeferred;
 
 -- The auth.users and golf_* references lock those tables briefly while the
 -- foreign keys are created; cap the wait so sign-in and round saves are
@@ -114,12 +162,13 @@ create table if not exists public.golf_tournaments (
 );
 
 -- 2. Competition rounds. Each is an ordinary golf_events row
--- (event_type 'tournament', parent_event_id left NULL). RESTRICT: a
--- round-day event cannot be deleted from the calendar while it belongs to a
--- tournament; golf_tournament_delete removes them in order.
+-- (event_type 'tournament', parent_event_id left NULL). Deferred NO ACTION
+-- (see the header): a round-day event cannot be deleted from the calendar on
+-- its own while it belongs to a tournament, but a team delete removes both.
 create table if not exists public.golf_tournament_rounds (
     round_event_id uuid primary key
-    references public.golf_events (id) on delete restrict,
+    references public.golf_events (id) on delete no action
+    deferrable initially deferred,
     tournament_id uuid not null,
     team_id uuid not null,
     round_number smallint not null check (round_number between 1 and 6),
@@ -247,16 +296,17 @@ create table if not exists public.golf_tournament_result_marks (
     id uuid primary key default gen_random_uuid(),
     tournament_id uuid not null,
     team_id uuid not null,
-    round_event_id uuid
-    references public.golf_tournament_rounds (round_event_id)
-    on delete set null,
+    round_event_id uuid,
     state text not null check (state in ('final', 'official', 'reopened')),
     reason text check (char_length(reason) <= 280),
     snapshot jsonb not null default '{}'::jsonb,
     created_by uuid references auth.users (id) on delete set null,
     created_at timestamptz not null default now(),
     foreign key (tournament_id, team_id)
-    references public.golf_tournaments (id, team_id) on delete cascade
+    references public.golf_tournaments (id, team_id) on delete cascade,
+    constraint golf_trm_round_fkey foreign key (round_event_id, team_id)
+    references public.golf_tournament_rounds (round_event_id, team_id)
+    on delete set null (round_event_id)
 );
 
 -- 8. Coach-only reasoning and review; per-player debrief; the player's own
@@ -426,7 +476,7 @@ on public.golf_tournament_result_marks (tournament_id, team_id);
 create index if not exists golf_trm_team_idx
 on public.golf_tournament_result_marks (team_id);
 create index if not exists golf_trm_round_idx
-on public.golf_tournament_result_marks (round_event_id);
+on public.golf_tournament_result_marks (round_event_id, team_id);
 create index if not exists golf_trm_created_by_idx
 on public.golf_tournament_result_marks (created_by);
 create index if not exists golf_ten_parent_idx
@@ -516,6 +566,163 @@ for each row execute function public.touch_updated_at();
 create or replace trigger golf_tcp_touch
 before update on public.golf_tournament_coach_presence
 for each row execute function public.touch_updated_at();
+
+-- 12b. Team scoping for cross-references the composite keys cannot express
+-- (header, TEAM SCOPING). SECURITY DEFINER so the check reads the roster and
+-- calendar whatever the caller may see, and binds service_role too. On
+-- UPDATE it re-checks only when a checked column changes, so a player who
+-- later leaves the roster does not freeze their old rows.
+create or replace function helm_private.tournament_assert(
+    p_ok boolean, p_message text
+)
+returns void
+language plpgsql
+immutable
+set search_path = ''
+as $$
+BEGIN
+  IF NOT coalesce(p_ok, false) THEN
+    RAISE EXCEPTION '%', p_message USING ERRCODE = '23514';
+  END IF;
+END $$;
+revoke all on function helm_private.tournament_assert(boolean, text)
+from public, anon, authenticated;
+
+create or replace function helm_private.tournament_assert_member(
+    p_team_id uuid, p_player_id uuid
+)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.golf_team_members m
+    WHERE m.team_id = p_team_id AND m.player_id = p_player_id) THEN
+    RAISE EXCEPTION 'player % is not on team %', p_player_id, p_team_id
+      USING ERRCODE = '23514';
+  END IF;
+END $$;
+revoke all on function helm_private.tournament_assert_member(uuid, uuid)
+from public, anon, authenticated;
+
+create or replace function helm_private.guard_tournament_team()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+DECLARE
+  v_ins boolean := TG_OP = 'INSERT';
+  v_team_changed boolean := TG_OP = 'INSERT' OR NEW.team_id IS DISTINCT FROM OLD.team_id;
+BEGIN
+  -- Field access on NEW is only evaluated inside the branch for a table that
+  -- has the field (plpgsql resolves record fields per expression).
+  CASE TG_TABLE_NAME
+  WHEN 'golf_tournament_rounds' THEN
+    IF v_team_changed OR NEW.round_event_id IS DISTINCT FROM OLD.round_event_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_events e
+        WHERE e.id = NEW.round_event_id AND e.team_id = NEW.team_id),
+        format('tournament round %s is not an event of team %s',
+          NEW.round_event_id, NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_advice_givers' THEN
+    IF v_team_changed OR NEW.user_id IS DISTINCT FROM OLD.user_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_team_coach_staff s
+        JOIN public.golf_coaches c ON c.id = s.coach_id
+        WHERE s.team_id = NEW.team_id AND c.user_id = NEW.user_id),
+        format('user %s is not a coach of team %s', NEW.user_id, NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_coach_presence' THEN
+    IF v_team_changed OR NEW.coach_user_id IS DISTINCT FROM OLD.coach_user_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_team_coach_staff s
+        JOIN public.golf_coaches c ON c.id = s.coach_id
+        WHERE s.team_id = NEW.team_id AND c.user_id = NEW.coach_user_id),
+        format('user %s is not a coach of team %s', NEW.coach_user_id,
+          NEW.team_id));
+    END IF;
+    IF NEW.with_player_id IS NOT NULL AND (v_team_changed
+        OR NEW.with_player_id IS DISTINCT FROM OLD.with_player_id) THEN
+      PERFORM helm_private.tournament_assert_member(NEW.team_id,
+        NEW.with_player_id);
+    END IF;
+
+  WHEN 'golf_tournament_link_dismissals' THEN
+    IF v_team_changed OR NEW.round_id IS DISTINCT FROM OLD.round_id THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_rounds r
+        JOIN public.golf_team_members m ON m.player_id = r.player_id
+        WHERE r.id = NEW.round_id AND m.team_id = NEW.team_id),
+        format('round %s is not a round of a team %s player', NEW.round_id,
+          NEW.team_id));
+    END IF;
+
+  WHEN 'golf_tournament_result_marks' THEN
+    IF NEW.round_event_id IS NOT NULL THEN
+      PERFORM helm_private.tournament_assert(EXISTS (
+        SELECT 1 FROM public.golf_tournament_rounds r
+        WHERE r.round_event_id = NEW.round_event_id
+          AND r.tournament_id = NEW.tournament_id),
+        format('round %s is not in tournament %s', NEW.round_event_id,
+          NEW.tournament_id));
+    END IF;
+
+  ELSE
+    -- entries, round lineups, player rounds, entry notes, player notes,
+    -- reflections: player_id is on the team.
+    IF v_team_changed OR NEW.player_id IS DISTINCT FROM OLD.player_id THEN
+      PERFORM helm_private.tournament_assert_member(NEW.team_id,
+        NEW.player_id);
+    END IF;
+    IF TG_TABLE_NAME = 'golf_tournament_round_lineups' THEN
+      IF NEW.substituted_for IS NOT NULL AND (v_team_changed
+          OR NEW.substituted_for IS DISTINCT FROM OLD.substituted_for) THEN
+        PERFORM helm_private.tournament_assert_member(NEW.team_id,
+          NEW.substituted_for);
+      END IF;
+    ELSIF TG_TABLE_NAME = 'golf_tournament_player_rounds' THEN
+      IF NEW.round_id IS NOT NULL AND (v_ins
+          OR NEW.round_id IS DISTINCT FROM OLD.round_id
+          OR NEW.player_id IS DISTINCT FROM OLD.player_id) THEN
+        PERFORM helm_private.tournament_assert(EXISTS (
+          SELECT 1 FROM public.golf_rounds r
+          WHERE r.id = NEW.round_id AND r.player_id = NEW.player_id),
+          format('round %s is not player %s''s', NEW.round_id,
+            NEW.player_id));
+      END IF;
+    END IF;
+  END CASE;
+  RETURN NEW;
+END $$;
+revoke all on function helm_private.guard_tournament_team()
+from public, anon, authenticated;
+
+do $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'golf_tournament_rounds', 'golf_tournament_entries',
+    'golf_tournament_round_lineups', 'golf_tournament_player_rounds',
+    'golf_tournament_result_marks', 'golf_tournament_entry_notes',
+    'golf_tournament_player_notes', 'golf_tournament_reflections',
+    'golf_tournament_advice_givers', 'golf_tournament_coach_presence',
+    'golf_tournament_link_dismissals'
+  ]
+  LOOP
+    EXECUTE format(
+      'create or replace trigger %I before insert or update on public.%I '
+      || 'for each row execute function helm_private.guard_tournament_team()',
+      t || '_team_guard', t);
+  END LOOP;
+END $$;
 
 -- 13. Closed until 100100 adds the policies: RLS on with no policy denies
 -- every row to authenticated. anon and PUBLIC hold nothing on any of them.
