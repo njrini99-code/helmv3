@@ -31,13 +31,14 @@ const row = () => (
 );
 
 describe('Messages conversation row, right-click', () => {
-  it('offers the row\'s one action, opening it, the same handler as a tap', async () => {
+  it('offers the row\'s actions (owner decision 14), and Open is the same handler as a tap', async () => {
     const user = userEvent.setup();
     render(row());
     fireEvent.contextMenu(screen.getByRole('button', { name: /Maya Reyes/ }), { clientX: 120, clientY: 120 });
     const menu = screen.getByRole('menu', { name: 'Actions for Maya Reyes' });
-    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Open conversation']);
-    await user.click(within(menu).getByRole('menuitem'));
+    // d-messages: Mark as read/unread and Mute join Open; Delete only when the api can delete.
+    expect(within(menu).getAllByRole('menuitem').map((i) => i.textContent)).toEqual(['Open conversation', 'Mark as unread', 'Mute…']);
+    await user.click(within(menu).getByRole('menuitem', { name: 'Open conversation' }));
     expect(select).toHaveBeenCalledWith('c1');
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
   });

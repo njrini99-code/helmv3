@@ -6104,7 +6104,9 @@
     {
       "file": "src/clubhouse/ui/ContextMenu.tsx",
       "group": "ui",
-      "exports": [],
+      "exports": [
+        "CTX_HOLD_MS"
+      ],
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
@@ -6781,6 +6783,18 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/SwipeRow.tsx",
+      "group": "ui",
+      "exports": [
+        "SwipeRow"
+      ],
+      "styles": [
+        "src/clubhouse/styles/controls.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -9222,6 +9236,7 @@
         "ch-cmd-rows",
         "ch-cmd-sheet",
         "ch-cmd-then",
+        "ch-ctx-sheet",
         "ch-modal",
         "ch-modal__body",
         "ch-modal__head",
@@ -9359,6 +9374,10 @@
         "ch-spinner--mint",
         "ch-spinner--sm",
         "ch-spm-head__msg",
+        "ch-swipe",
+        "ch-swipe__act",
+        "ch-swipe__acts",
+        "ch-swipe__c",
         "ch-switch",
         "ch-switch__thumb",
         "ch-switch__track",
@@ -10070,6 +10089,7 @@
         "ch-ms-sec__card",
         "ch-ms-sec__l",
         "ch-ms-send",
+        "ch-ms-swipe",
         "ch-ms-th",
         "ch-ms-th__act",
         "ch-ms-th__who",

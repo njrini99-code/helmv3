@@ -820,8 +820,8 @@ describe('Messages · group members (D-45, D-47)', () => {
 describe('Messages · phone', () => {
   const openThread = async (user: User) => {
     // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
-    await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-    await user.click(screen.getByRole('button', { name: /Varsity team/ }));
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+    await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     return screen.findByRole('region', { name: /Varsity team/ });
   };
 
@@ -1336,7 +1336,7 @@ describe('Messages · desktop Schedule and shared files (clickables 10, 13)', ()
     const schedule = async () => (await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href');
     // The team thread is the newest and opens first.
     expect(await schedule()).toBe('/golf/dashboard/calendar?new=1');
-    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Jonah$/ });
     expect(await schedule()).toBe('/golf/dashboard/calendar?new=1&with=p-jonah');
     await user.click(screen.getAllByRole('button', { name: /Dana Cole/ })[0]!);
@@ -1449,10 +1449,10 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     show();
     const box = await screen.findByRole('textbox', { name: /Message Varsity team/ });
     await user.type(box, 'Half-written note');
-    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ })[0]!);
     const other = (await screen.findByRole('textbox', { name: /Message Jonah$/ })) as HTMLTextAreaElement;
     expect(other.value).toBe('');
-    await user.click(screen.getAllByRole('button', { name: /Varsity team/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
     expect(((await screen.findByRole('textbox', { name: /Message Varsity team/ })) as HTMLTextAreaElement).value).toBe('Half-written note');
   });
 
@@ -1463,7 +1463,7 @@ describe('Messages · behaviour contracts (P007, docs/clubhouse/pages/P007-messa
     const leaving = () => document.querySelector('.ch-ms-pane .ch-swap__body[aria-hidden]');
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     expect(leaving()).toBeNull();
-    await user.click(screen.getAllByRole('button', { name: /Jonah Okafor/ })[0]!);
+    await user.click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Jonah$/ });
     // Varsity team fades out behind Jonah's thread (jsdom never finishes the fade), hidden from assistive tech.
     expect(leaving()?.querySelector('[aria-label="Conversation with Varsity team"]')).not.toBeNull();
@@ -1785,8 +1785,8 @@ describe('Messages · wave 5 feedback', () => {
   describe('phone', () => {
     const openThread = async (user: User) => {
       // A thread popped by Back is still on screen until its exit settles, slower on a loaded runner.
-      await waitFor(() => expect(screen.getAllByRole('button', { name: /Varsity team/ })).toHaveLength(1), { timeout: 5000 });
-      await user.click(screen.getByRole('button', { name: /Varsity team/ }));
+      await waitFor(() => expect(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })).toHaveLength(1), { timeout: 5000 });
+      await user.click(screen.getByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
       return screen.findByRole('region', { name: /Varsity team/ });
     };
 
@@ -1832,7 +1832,7 @@ describe('Messages · wave 5 feedback', () => {
       live.convs.conversations = [{ ...dmJonah, last_message: { content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', sender_id: 'jonah' } }];
       live.msgs.messages = [{ id: 'j2', conversation_id: 'dm-jonah', sender_id: 'jonah', content: 'See you at 6', created_at: '2026-10-14T17:00:00Z', isRead: true }];
       showPhone();
-      await user.click(await screen.findByRole('button', { name: /Jonah Okafor/ }));
+      await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ }));
       const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
       await user.click(within(thread).getByRole('button', { name: 'Details' }));
       const details = await screen.findByRole('region', { name: 'Details' });

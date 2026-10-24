@@ -310,7 +310,7 @@ describe('P007 wiring · deep links (70102)', () => {
     // The address is cleaned; the same link tapped again later is taken again.
     params.current = new URLSearchParams();
     view.rerender(tree(data));
-    await userEvent.setup().click(screen.getAllByRole('button', { name: /Varsity team/ })[0]!);
+    await userEvent.setup().click(screen.getAllByRole('button', { name: /^(?!Actions for ).*Varsity team/ })[0]!);
     await screen.findByRole('textbox', { name: /Message Varsity team/ });
     params.current = new URLSearchParams('conversation=dm');
     view.rerender(tree(data));
@@ -403,7 +403,7 @@ describe('P007 wiring · the group’s creator removes a member (removeGolfGroup
     const user = userEvent.setup();
     a.removeGolfGroupMember.mockResolvedValue({ success: true });
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const thread = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     await user.click(await screen.findByRole('button', { name: 'Remove Jonah Okafor' }));
@@ -488,13 +488,13 @@ describe('P007 wiring · the phone’s Schedule invites the direct thread’s pl
     const user = userEvent.setup();
     live.convs.conversations = [team, dm];
     const first = showPhone();
-    await user.click(await screen.findByRole('button', { name: /Jonah Okafor/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Jonah Okafor/ }));
     const thread = await screen.findByRole('region', { name: /Jonah Okafor/ });
     await user.click(within(thread).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1&with=p-jonah');
     first.unmount();
     showPhone();
-    await user.click(await screen.findByRole('button', { name: /Varsity team/ }));
+    await user.click(await screen.findByRole('button', { name: /^(?!Actions for ).*Varsity team/ }));
     const group = await screen.findByRole('region', { name: /Varsity team/ });
     await user.click(within(group).getByRole('button', { name: 'Details' }));
     expect((await screen.findByRole('link', { name: 'Schedule' })).getAttribute('href')).toBe('/golf/dashboard/calendar?new=1');
