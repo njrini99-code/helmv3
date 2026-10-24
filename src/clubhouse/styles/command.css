@@ -49,6 +49,12 @@
 .ch-root .ch-cmd-ctx:focus-visible {
   outline: none;
 }
+/* The same menu as a phone sheet (a long press, C8): its rows stacked in the sheet's body, 44px each (controls.css). */
+.ch-ctx-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
 /* ── After G: the sections it reaches, for the second it waits ──────────────────────────────────────────────────────────── */
 .ch-popover.ch-cmd-hint {

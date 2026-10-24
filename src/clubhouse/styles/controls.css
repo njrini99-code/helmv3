@@ -1670,3 +1670,60 @@ html[data-fw-theme='dark'] .ch-slider input::-moz-range-thumb {
     background: rgb(36 42 37 / 0.97);
   }
 }
+
+/* Swipe rows (ui/SwipeRow.tsx, C8 and owner decision 14): the row slides over one action on each side. The row keeps
+   the list's vertical scroll; the actions show only while it is moving or open, and stretch with the finger. */
+.ch-swipe {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+.ch-swipe__c {
+  position: relative;
+}
+.ch-swipe[data-side] .ch-swipe__c {
+  background: var(--ch-bg-page);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.ch-swipe__acts {
+  position: absolute;
+  inset-block: 0;
+  display: flex;
+  width: max(var(--ch-swipe-reveal, 0px), 74px);
+  visibility: hidden;
+}
+.ch-swipe__acts.is-leading {
+  left: 0;
+}
+.ch-swipe__acts.is-trailing {
+  right: 0;
+}
+.ch-swipe[data-side='leading'] .ch-swipe__acts.is-leading,
+.ch-swipe[data-side='trailing'] .ch-swipe__acts.is-trailing {
+  visibility: visible;
+}
+.ch-swipe__act {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  padding: 0 8px;
+  border: 0;
+  font: var(--ch-type-12-medium);
+  cursor: pointer;
+}
+.ch-swipe__act.is-accent {
+  background: var(--ch-green-fill-600);
+  color: var(--ch-text-on-accent);
+}
+.ch-swipe__act.is-danger {
+  background: var(--ch-danger-fill-bottom);
+  color: var(--ch-danger-ink);
+}
+.ch-swipe__act:focus-visible {
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: -4px;
+}
