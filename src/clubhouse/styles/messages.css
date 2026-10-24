@@ -474,7 +474,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   background: var(--ch-bg-surface);
-  box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  box-shadow: 0 1px 2px rgb(28 25 18 / 0.05), 0 0 0 1px var(--ch-border-hairline);
   font: var(--ch-type-12-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);

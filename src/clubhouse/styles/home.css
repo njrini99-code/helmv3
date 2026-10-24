@@ -4315,3 +4315,14 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     color: var(--ch-text-tertiary);
   }
 }
+
+/* Row 50: the attribute half of the today tile's solid fallback above (WebKit has no media query; the app's bridge sets
+   html[data-reduce-transparency]). */
+:root[data-reduce-transparency] .ch-h-day--today {
+  background: #fff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-reduce-transparency][data-fw-theme='dark'] .ch-h-day--today {
+  background: var(--ch-ivory-200);
+}

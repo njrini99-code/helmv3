@@ -309,7 +309,7 @@
   background: linear-gradient(180deg, var(--ch-ivory-25), var(--ch-on-green-plate));
   color: var(--ch-text-primary);
   text-decoration: none;
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
+  box-shadow: 0 0 0 1px rgb(176 149 96 / 0.4), 0 8px 18px -10px rgb(0 0 0 / 0.5), inset 0 1px 0 #fff;
   transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 @media (hover: hover) {

@@ -244,7 +244,7 @@ button.ch-rt-strip__h {
   background: radial-gradient(90% 70% at 100% 0%, rgb(123 199 154 / 0.1), transparent 60%), var(--ch-bg-surface);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule),
-    0 18px 40px -30px rgb(28 25 18 / 0.4);
+    var(--ch-elevation-cast);
 }
 .ch-rt-hero__main {
   display: flex;
@@ -513,7 +513,7 @@ button.ch-rt-strip__h {
   background: var(--ch-ivory-0);
   box-shadow:
     0 0 0 var(--ch-hairline-w) var(--ch-border-subtle),
-    0 6px 14px -10px rgb(28 25 18 / 0.25);
+    var(--ch-elevation-cast);
   overflow: hidden;
 }
 .ch-rt-log.is-empty {
@@ -2959,4 +2959,37 @@ button.ch-rt-strip__h {
 .ch-rt-xopt:is(:active, [data-ch-pressed]):not(:disabled),
 .ch-rt-rs:is(:active, [data-ch-pressed]):not(:disabled) {
   background-image: linear-gradient(var(--ch-ledger-row-press), var(--ch-ledger-row-press));
+}
+
+/* Row 50: under Reduce Transparency the frosted Track bar turns solid, not just unblurred: the media query, or
+   html[data-reduce-transparency] where WebKit lacks it (the iPhone app's bridge sets it). In a narrow pane the bar is
+   already solid green (its own gradient, no blur), so the rule holds only where the bar is frosted. */
+@container chrt (min-width: 641px) {
+  @media (prefers-reduced-transparency: reduce) {
+    :root .ch-rt-bar,
+    html[data-fw-theme='dark'] .ch-rt-bar {
+      background: var(--ch-bg-surface);
+    }
+  }
+  :root[data-reduce-transparency] .ch-rt-bar,
+  :root[data-reduce-transparency][data-fw-theme='dark'] .ch-rt-bar {
+    background: var(--ch-bg-surface);
+  }
+}
+
+/* Row 50: under Reduce Transparency the course view's glass controls turn solid, not just unblurred: the media query, or
+   html[data-reduce-transparency] where WebKit lacks it (the iPhone app's bridge sets it). */
+@media (prefers-reduced-transparency: reduce) {
+  :root .ch-rtcv__glass,
+  :root .ch-rtcv__back,
+  html[data-fw-theme='dark'] .ch-rtcv__glass,
+  html[data-fw-theme='dark'] .ch-rtcv__back {
+    background: var(--ch-green-900);
+  }
+}
+:root[data-reduce-transparency] .ch-rtcv__glass,
+:root[data-reduce-transparency] .ch-rtcv__back,
+:root[data-reduce-transparency][data-fw-theme='dark'] .ch-rtcv__glass,
+:root[data-reduce-transparency][data-fw-theme='dark'] .ch-rtcv__back {
+  background: var(--ch-green-900);
 }
