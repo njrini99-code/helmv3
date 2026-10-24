@@ -13,7 +13,7 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
-import { RovingRows } from '../../lib/roving';
+import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';

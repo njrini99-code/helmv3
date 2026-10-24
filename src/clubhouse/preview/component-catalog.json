@@ -1,16 +1,6 @@
 {
   "components": [
     {
-      "file": "src/clubhouse/lib/roving.tsx",
-      "group": "lib",
-      "exports": [
-        "RovingRows"
-      ],
-      "styles": [],
-      "examples": [],
-      "fixture": "Contextual module"
-    },
-    {
       "file": "src/clubhouse/lib/use-clock.tsx",
       "group": "lib",
       "exports": [
@@ -6574,6 +6564,16 @@
       "styles": [
         "src/clubhouse/styles/shell.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/RovingRows.tsx",
+      "group": "ui",
+      "exports": [
+        "RovingRows"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },

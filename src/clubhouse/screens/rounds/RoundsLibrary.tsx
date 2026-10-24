@@ -10,7 +10,7 @@ import { normalise, useAction } from '../../lib/use-action';
 import { useChSessionState } from '../../lib/session-state';
 import { useLastGood } from '../../lib/use-last-good';
 import { useChPhone } from '../../lib/use-phone';
-import { RovingRows } from '../../lib/roving';
+import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { useRefresh } from '../../lib/use-refresh';
 import { PhoneTop } from '../../shell/phone-chrome';

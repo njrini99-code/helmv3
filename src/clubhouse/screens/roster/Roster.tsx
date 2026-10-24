@@ -26,7 +26,7 @@ import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
-import { RovingRows } from '../../lib/roving';
+import { RovingRows } from '../../ui/RovingRows';
 import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
