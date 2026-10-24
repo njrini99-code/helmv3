@@ -11,13 +11,24 @@ const UA_POP_MS = 1000;
 let uaPopAt = -Infinity;
 let clearAt = 0;
 
-function onPopState(e: PopStateEvent) {
-  if (!(e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition) return;
+function mark() {
   uaPopAt = performance.now();
   const root = document.documentElement;
   root.setAttribute('data-ch-ua-pop', '');
   window.clearTimeout(clearAt);
   clearAt = window.setTimeout(() => root.removeAttribute('data-ch-ua-pop'), UA_POP_MS);
+}
+
+function onPopState(e: PopStateEvent) {
+  if ((e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition) mark();
+}
+
+/**
+ * A Back that Clubhouse's own swipe already drew (use-route-swipe.ts, C1): the same as one the browser animated, so the
+ * pop and the page crossfade that would follow it don't run a second time.
+ */
+export function markHandPop(): void {
+  if (typeof window !== 'undefined') mark();
 }
 
 // Capture, so it is known before the router and usePhoneStackHistory act on the same popstate.

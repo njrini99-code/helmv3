@@ -19,8 +19,6 @@ export const CH_EDGE_FLICK_PX_PER_MS = 0.5;
 export const CH_EDGE_SLOP_PX = 8;
 /** …and a flick counts only after the screen has moved this much. */
 const FLICK_MIN_PX = 10;
-/** The entry spring is still settling for this long after the screen mounts (462ms): the gesture waits for it. */
-export const CH_EDGE_ENTRY_SETTLE_MS = 480;
 
 export type EdgePhase = 'idle' | 'pending' | 'dragging' | 'refused';
 export type EdgeOutcome = 'commit' | 'cancel';
@@ -57,8 +55,11 @@ const NONE: EdgeMove = { claim: false, frame: null, crossed: false };
  * One touch's worth of state. `start` arms it when the finger lands in the edge zone; `move` decides, after a few
  * pixels, whether the touch is a swipe (mostly rightward) or a scroll (anything else, which then wins for the rest of
  * the touch); `end` reads the release. Vertical scroll always wins when the first travel is vertical.
+ *
+ * `from` is where the screen already is when the finger lands, in pixels: a push still sliding in is grabbed where it
+ * stands (C1, rows 2 and 89), so the finger's travel adds to that rather than starting the screen from rest.
  */
-export function createEdgeSwipe(width: number) {
+export function createEdgeSwipe(width: number, from = 0) {
   let phase: EdgePhase = 'idle';
   let x0 = 0;
   let y0 = 0;
@@ -66,6 +67,7 @@ export function createEdgeSwipe(width: number) {
   let past = false;
   let samples: Array<[number, number]> = [];
   const mark = Math.max(1, width) * CH_EDGE_COMMIT;
+  const base = Math.min(Math.max(0, width), Math.max(0, from));
 
   const reset = () => {
     phase = 'idle';
@@ -88,7 +90,9 @@ export function createEdgeSwipe(width: number) {
       }
       x0 = x;
       y0 = y;
-      samples = [[t, 0]];
+      offset = base;
+      past = base >= mark;
+      samples = [[t, base]];
       phase = 'pending';
       return true;
     },
@@ -105,7 +109,7 @@ export function createEdgeSwipe(width: number) {
         }
         phase = 'dragging';
       }
-      offset = Math.min(width, Math.max(0, dx));
+      offset = Math.min(width, Math.max(0, base + dx));
       samples.push([t, offset]);
       if (samples.length > 12) samples.shift();
       const nowPast = offset >= mark;
