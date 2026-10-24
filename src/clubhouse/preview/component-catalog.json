@@ -2318,7 +2318,6 @@
         "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/ui.css"
       ],
@@ -2919,6 +2918,7 @@
         "src/clubhouse/styles/coachhelm.css",
         "src/clubhouse/styles/controls.css",
         "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
@@ -2980,6 +2980,7 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
@@ -3204,8 +3205,7 @@
         "RecruitingSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/recruiting.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/recruiting.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -3485,7 +3485,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3592,7 +3591,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3613,6 +3611,7 @@
         "src/clubhouse/styles/coachhelm-standing.css",
         "src/clubhouse/styles/coachhelm-views.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-recover.css",
@@ -3640,7 +3639,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
@@ -3653,8 +3651,7 @@
         "TeamRoundsSkeleton"
       ],
       "styles": [
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/rounds.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4247,7 +4244,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -4476,8 +4472,7 @@
         "SettingsPhone"
       ],
       "styles": [
-        "src/clubhouse/styles/settings.css",
-        "src/clubhouse/styles/shell.css"
+        "src/clubhouse/styles/settings.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -5236,7 +5231,6 @@
         "src/clubhouse/styles/messages.css",
         "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css",
         "src/clubhouse/styles/whats-new.css"
       ],
@@ -5251,7 +5245,6 @@
       ],
       "styles": [
         "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/whats-new.css"
       ],
       "examples": [],
@@ -5586,9 +5579,12 @@
       "file": "src/clubhouse/shell/NotRebuilt.tsx",
       "group": "shell",
       "exports": [
+        "AliasWait",
+        "CH_ALIAS_WAIT_MS",
         "NotRebuilt"
       ],
       "styles": [
+        "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm-ask.css",
         "src/clubhouse/styles/shell.css"
       ],
@@ -5941,13 +5937,11 @@
       "styles": [
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/hub.css",
         "src/clubhouse/styles/qualifiers.css",
-        "src/clubhouse/styles/recruiting.css",
         "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/rounds-setup.css",
         "src/clubhouse/styles/rounds-track.css",
-        "src/clubhouse/styles/rounds.css",
-        "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats.css"
       ],
@@ -6213,6 +6207,21 @@
         "Icon"
       ],
       "fixture": "Shared gallery example"
+    },
+    {
+      "file": "src/clubhouse/ui/LargeTitle.tsx",
+      "group": "ui",
+      "exports": [
+        "LargeTitle",
+        "LargeTitleSkeleton"
+      ],
+      "styles": [
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
     },
     {
       "file": "src/clubhouse/ui/Ledger.tsx",
@@ -8102,6 +8111,7 @@
         "ch-cl-tb__top",
         "ch-cl-tb__wk",
         "ch-cl-tb__wkb",
+        "ch-cl-title",
         "ch-cl-today",
         "ch-cl-today__m",
         "ch-cl-today__n",
@@ -9110,6 +9120,7 @@
         "ch-hl-why",
         "ch-hl-why__b",
         "ch-hv-tabs",
+        "ch-large-title",
         "ch-notice",
         "ch-num",
         "ch-scoreboard",
@@ -9960,8 +9971,10 @@
         "ch-hw-you",
         "ch-hw__h",
         "ch-hw__k",
+        "ch-large-title",
         "ch-notice",
         "ch-num",
+        "ch-skel",
         "ch-skel-rows"
       ],
       "tokens": [
@@ -10145,6 +10158,7 @@
         "ch-msp-to__k",
         "ch-msp-tok",
         "ch-msp-tools",
+        "ch-msp-top",
         "ch-msp-who",
         "ch-notice",
         "ch-num",
@@ -11616,7 +11630,6 @@
         "ch-rsm-sec",
         "ch-rsm-skel",
         "ch-rsm-sort",
-        "ch-rsm-title",
         "ch-rsm-trend",
         "ch-rsm-trend__empty",
         "ch-rsm-trend__lg",
@@ -12711,13 +12724,14 @@
         "ch-hero__eyebrow",
         "ch-hero__line",
         "ch-hero__title",
-        "ch-hl-h__t",
         "ch-hl-role",
         "ch-iconbtn",
         "ch-identity",
         "ch-identity__meta",
         "ch-identity__name",
         "ch-identity__txt",
+        "ch-large-title",
+        "ch-large-title--skel",
         "ch-lp",
         "ch-lp__bar",
         "ch-more",
@@ -12773,21 +12787,16 @@
         "ch-pscrim",
         "ch-ptr",
         "ch-ptr__spin",
-        "ch-qf-head",
         "ch-railtip",
         "ch-railtoggle",
-        "ch-rd-h",
-        "ch-recm-title",
         "ch-resume",
         "ch-resume__go",
         "ch-resume__ic",
         "ch-resume__m",
         "ch-resume__t",
         "ch-root",
-        "ch-rsm-title",
         "ch-scrim",
         "ch-serif-num",
-        "ch-setm-title",
         "ch-sheet",
         "ch-sidebar",
         "ch-sidebar__card",
@@ -12801,7 +12810,6 @@
         "ch-skel-rule",
         "ch-skip",
         "ch-sr-only",
-        "ch-stm-head",
         "ch-strip",
         "ch-strip-catch",
         "ch-strip__count",

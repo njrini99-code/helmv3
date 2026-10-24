@@ -10,7 +10,8 @@ const FILES = walk(undefined, /\.(tsx|css)$/);
 const GROUPS = {
   chips: /ch-(qfm-chip|th-chip|ask-pill|th-pill|hv-chip|msp-chip|hb-chip|rt-pill|setm-pill|bst-pill|qf-pill)\b/,
   segmented: /ch-(rt-seg|hb-aud|rsu-opts|rsu-par|rsu-sw|rt-opts|rt-amiss|recm-stages)\b/,
-  tabs: /ch-(tabs|pf-tabs|hb-tabs|hv-tabs|ask-tabs|stm-legs)\b/,
+  // Not the shell's use-prefetch-tabs module, whose import path ends the same way.
+  tabs: /(?<!prefet)ch-(tabs|pf-tabs|hb-tabs|hv-tabs|ask-tabs|stm-legs)\b/,
 };
 
 const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
@@ -58,18 +59,11 @@ const ALLOW: Record<keyof typeof GROUPS, Record<string, number>> = {
     'screens/hub/HubSkeleton.tsx': 1,
     'screens/hub/HubSkeletonTop.tsx': 1,
     'screens/hub/TeamHub.tsx': 1,
-    'screens/qualifiers/QualifiersList.tsx': 1,
-    'screens/roster/RosterPeek.tsx': 1,
-    'screens/rounds/RoundReview.tsx': 1,
-    'screens/rounds/entry/RoundRuntime.tsx': 1,
-    'screens/rounds/parts.tsx': 1,
     'screens/stats/SgBars.tsx': 1,
     'screens/stats/StatsPhoneSkeleton.tsx': 1,
     'screens/stats/StatsPlayer.tsx': 2,
     'screens/stats/StatsSkeleton.tsx': 2,
-    'screens/stats/StatsTeamIslands.tsx': 1,
     'screens/stats/StatsTeamPhone.tsx': 4,
-    'shell/SectionStrip.tsx': 1,
     'styles/coachhelm-ask.css': 4,
     'styles/coachhelm-views.css': 2,
     'styles/coachhelm.css': 3,

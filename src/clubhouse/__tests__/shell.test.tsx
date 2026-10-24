@@ -1039,7 +1039,7 @@ describe('Shell · phone chrome', () => {
     expect(routerSpy.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${id}`);
   });
 
-  it('CH-1402 Settings is a section root (its title the switcher); a Settings section keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
+  it('CH-1402 Settings is a section root (its title the switcher); a Settings section keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', async () => {
     let view = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" forceRebuilt>
         <p aria-busy="true">Loading</p>
@@ -1057,13 +1057,14 @@ describe('Shell · phone chrome', () => {
     expect(title.textContent).toBe('Notifications');
     expect(title.firstElementChild!.className).toBe('ch-sr-only');
     view.unmount();
-    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar.
+    // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
+    // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
     render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
         <p>My qualifiers body</p>
       </ClubhouseFrame>,
     );
-    expect(code('CH-1301')).not.toBeNull();
+    await waitFor(() => expect(code('CH-1301')).not.toBeNull(), { timeout: 4000 });
     expect(code('CH-1402')).toBeNull();
     expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
   });
