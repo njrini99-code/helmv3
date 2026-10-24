@@ -279,17 +279,19 @@ const clamp100 = (v: number) => Math.min(100, Math.max(0, v));
 /**
  * Momentum's word, through the one change rule (A1, row 93) instead of the dimension's fixed 0.3 cut: the change in score to par
  * (last 30 days against the 60 before, lower is better) said only past its standard error. The stored result carries no round
- * counts, only its confidence (the smaller window's rounds over six, capped at one), so each window is taken at that smaller
- * count, at most six, at the pooled score spread: a conservative error, never a smaller one than the rounds can give.
+ * counts, only its confidence, so a row stored before the engine kept the change's own standard error (`se`) takes each window
+ * at the smaller window's count, at most six, at the pooled score spread: a conservative error. A row with `se` uses it.
  * "No clear change" otherwise, in plain ink; the persona's call still colours it.
  */
 const CHANGE_WORDS: Readonly<Record<string, { gain: string; loss: string }>> = { scoring_trend: { gain: 'Improving', loss: 'Regressing' } };
 
-function testedChange(id: string, value: number, confidence: number | null): { word: string; tone: ChMeasureTone } | null {
+function testedChange(id: string, value: number, confidence: number | null, storedSe?: number): { word: string; tone: ChMeasureTone } | null {
   const words = CHANGE_WORDS[id];
   if (!words) return null;
   const n = Math.max(1, Math.round(Math.min(1, Math.max(0, confidence ?? 0)) * 6));
-  const se = diffSe(standardError(POOLED_SD.score, n), standardError(POOLED_SD.score, n));
+  // The engine's own error from both windows' rounds when the row has it (review of #2361: the fallback, capped at six rounds
+  // at the pooled spread, is never below 2.08 strokes, so a change clamped to ±2 could never be said).
+  const se = storedSe != null && Number.isFinite(storedSe) && storedSe > 0 ? storedSe : diffSe(standardError(POOLED_SD.score, n), standardError(POOLED_SD.score, n));
   const tone = halvesTone({ delta: value, se }, true, 2);
   return tone === 'is-gain' ? { word: words.gain, tone: 'good' } : tone === 'is-loss' ? { word: words.loss, tone: 'warn' } : { word: 'No clear change', tone: 'plain' };
 }
@@ -303,7 +305,7 @@ export function toMeasure(id: string, label: string, r: DimensionResult | undefi
   // A measure with no copy has no unit to put a number in, so it shows the word it gave and nothing else.
   const shown = copy?.figure(value) ?? null;
   const atEdge = copy?.clamp != null && Math.abs(value) >= copy.clamp;
-  const change = testedChange(id, value, r?.confidence ?? null);
+  const change = testedChange(id, value, r?.confidence ?? null, r?.se);
   return {
     ...base,
     locked: false,
