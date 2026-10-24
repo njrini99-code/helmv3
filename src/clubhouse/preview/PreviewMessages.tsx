@@ -5,6 +5,7 @@ import type { ChMessagesApi } from '../screens/messages/MessagesView';
 import { MessagesView } from '../screens/messages/MessagesScreen';
 import type { ChAnnouncement, ChConv, ChFile, ChMember, ChMsg, ChMute, ChPerson, ChReaction, ChReactionKey } from '../screens/messages/model';
 import { useToast } from '../ui/Toast';
+import { buildPollPayload, encodeChoice, parsePollPayload, pollFallbackText, tallyPoll, type Poll, type PollResponseRow } from '@/lib/golf/message-polls';
 
 /**
  * The handoff's Messages sample (design/handoff/msg-data.js), driven by local
@@ -51,6 +52,25 @@ const msg = (id: string, senderId: string, when: string, text: string, extra: Pa
   ...extra,
 });
 
+/** Premium features P-2: a coach's van poll in the travel group, five of eight in, ending tomorrow at 6 PM. */
+const vanPoll: Poll = {
+  question: 'Which van are you riding in Thursday?',
+  options: [
+    { id: 'o1', label: 'Van 1 with Coach Reyes' },
+    { id: 'o2', label: 'Van 2 with Coach Whitfield' },
+  ],
+  multi: false,
+  closesAt: at(15, 18, 0),
+  closedAt: null,
+};
+const baseVotes: PollResponseRow[] = [
+  { message_id: 'v3', user_id: 'theo', choice: 'o1' },
+  { message_id: 'v3', user_id: 'sofia', choice: 'o2' },
+  { message_id: 'v3', user_id: 'ava', choice: 'o1' },
+  { message_id: 'v3', user_id: 'dan', choice: 'o2' },
+  { message_id: 'v3', user_id: 'priya', choice: 'o1' },
+];
+
 const baseThreads: Record<string, ChMsg[]> = {
   team: [
     msg('t1', 'me', at(13, 18, 12), 'Pairings for Thursday are posted in Documents. First tee 8:42.'),
@@ -69,6 +89,7 @@ const baseThreads: Record<string, ChMsg[]> = {
   travel: [
     msg('v1', 'me', at(14, 11, 2), '', { hasAttachments: true }),
     msg('v2', 'me', at(14, 11, 4), 'Room list is pinned. Two to a room, same as Wolfpack.'),
+    msg('v3', 'me', at(14, 11, 6), 'Poll: Which van are you riding in Thursday?\n1. Van 1 with Coach Reyes\n2. Van 2 with Coach Whitfield\nVote in GolfHelm.', { poll: vanPoll }),
   ],
   dan: [msg('d1', 'dan', at(14, 9, 20), 'I can run the short-game block if you take Jonah.')],
   eli: [msg('e1', 'me', at(13, 16, 10), 'You need two posted rounds before Thursday.')],
@@ -144,6 +165,7 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
   const [convs, setConvs] = useState<ChConv[]>(state === 'empty' ? [] : cast.convs);
   const [threads, setThreads] = useState(cast.threads);
   const [reactions, setReactions] = useState(baseReactions);
+  const [votes, setVotes] = useState<PollResponseRow[]>(baseVotes);
   // P007 D4: as the live screen does, only desktop opens the team thread beside the rail, after hydration; the phone
   // stays on the inbox instead of pushing the thread in over it.
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -226,6 +248,33 @@ export function PreviewMessages({ state, role = 'coach' }: { state?: string; rol
         return { ...r, [messageId]: list.filter((x) => x.count > 0) };
       }),
     attachments: previewAttachments,
+    polls: {
+      tally: (messageId, poll) => tallyPoll(poll, votes, messageId, 'me'),
+      vote: (messageId, poll, optionIds) => {
+        const choice = optionIds.length ? encodeChoice(poll, optionIds) : null;
+        setVotes((v) => [...v.filter((r) => !(r.message_id === messageId && r.user_id === 'me')), ...(choice ? [{ message_id: messageId, user_id: 'me', choice }] : [])]);
+      },
+      pending: null,
+      error: null,
+      retry: () => undefined,
+      send: async (conversationId, draft) => {
+        const built = buildPollPayload(draft);
+        if (!built.ok) return { ok: false, error: 'Check the question and choices.' };
+        const text = pollFallbackText(built.payload);
+        const m = msg(`n${Date.now()}`, 'me', NOW, text, { seen: false, poll: parsePollPayload(built.payload) });
+        setThreads((t) => ({ ...t, [conversationId]: [...(t[conversationId] ?? []), m] }));
+        setConvs((cs) => {
+          const c = cs.find((x) => x.id === conversationId)!;
+          return [{ ...c, lastAt: NOW, lastSenderId: 'me', lastText: `Poll: ${built.payload.question}` }, ...cs.filter((x) => x.id !== conversationId)];
+        });
+        return { ok: true };
+      },
+      close: async (messageId) => {
+        setThreads((t) => Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v.map((m) => (m.id === messageId && m.poll ? { ...m, poll: { ...m.poll, closedAt: NOW } } : m))])));
+        toast({ title: 'Poll closed' });
+        return true;
+      },
+    },
     members: members.filter((m) => m.userId === 'me' || all.includes(m.userId)),
     membersError: false,
     retryMembers: () => {},

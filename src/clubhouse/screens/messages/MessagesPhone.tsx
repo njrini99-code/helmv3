@@ -545,7 +545,7 @@ function PhoneThread({
               {acting.text && (
                 <SheetRow icon={Copy} label="Copy" onClick={() => (setActing(null), void copy(acting))} />
               )}
-              {acting.mine && acting.text && (
+              {acting.mine && acting.text && !acting.poll && (
                 <SheetRow icon={Pencil} label="Edit" onClick={() => (setActing(null), setEditing(acting))} />
               )}
               {acting.mine && (

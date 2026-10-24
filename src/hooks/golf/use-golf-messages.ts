@@ -212,7 +212,7 @@ export type MessageWithReadStatus = GolfMessage;
  * thread would not stay where scroll-to-bottom had just put it.
  */
 export function applyRealtimeMessageUpdate<
-  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null },
+  T extends { id: string; content: string; edited_at: string | null; is_deleted?: boolean | null; payload?: unknown },
 >(prev: T[], updated: T): T[] {
   if (updated.is_deleted) {
     if (!prev.some((msg) => msg.id === updated.id)) return prev;
@@ -223,12 +223,20 @@ export function applyRealtimeMessageUpdate<
   if (idx === -1) return prev;
 
   const current = prev[idx]!;
-  if (current.content === updated.content && current.edited_at === updated.edited_at) {
+  // A poll's sender closing it changes only `payload` (closeGolfPoll), so it is compared too; without it the card
+  // would keep taking votes on every screen but the sender's until a refetch.
+  const payloadChanged = 'payload' in updated && JSON.stringify(current.payload ?? null) !== JSON.stringify(updated.payload ?? null);
+  if (current.content === updated.content && current.edited_at === updated.edited_at && !payloadChanged) {
     return prev;
   }
 
   const next = prev.slice();
-  next[idx] = { ...current, content: updated.content, edited_at: updated.edited_at };
+  next[idx] = {
+    ...current,
+    content: updated.content,
+    edited_at: updated.edited_at,
+    ...(payloadChanged ? { payload: updated.payload } : {}),
+  };
   return next;
 }
 

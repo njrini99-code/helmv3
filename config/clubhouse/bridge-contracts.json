@@ -6707,6 +6707,39 @@
     "catalog": "docs/clubhouse/catalog/messages.md"
   },
   {
+    "id": 70638,
+    "page": "P007",
+    "category": 6,
+    "item": 38,
+    "name": "A_VOTE_ON_A_POLL_ISNT_SAVED",
+    "chCode": "CH-7026",
+    "meaning": "A vote on a poll isn't saved (tap a choice in a poll card)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70639,
+    "page": "P007",
+    "category": 6,
+    "item": 39,
+    "name": "CLOSING_A_POLL_FAILS",
+    "chCode": "CH-7027",
+    "meaning": "Closing a poll fails (the sender's Close poll, after the confirm)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
+    "id": 70640,
+    "page": "P007",
+    "category": 6,
+    "item": 40,
+    "name": "SENDING_A_POLL_FAILS",
+    "chCode": "CH-7028",
+    "meaning": "Sending a poll fails (New poll › Send poll)",
+    "status": "implemented",
+    "catalog": "docs/clubhouse/catalog/messages.md"
+  },
+  {
     "id": 70701,
     "page": "P007",
     "category": 7,
