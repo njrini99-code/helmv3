@@ -2153,7 +2153,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 @media (min-width: 821px) {
   .ch-cl[data-canopy] {
     --ch-cl-codew: 116px;
-    gap: 32px;
+    gap: var(--ch-gap-section-loose);
   }
   /* The head: the term line is set like the framed head's date line, the title is the shell's 44px sans. */
   .ch-cl[data-canopy] .ch-cl-h > div:first-child {

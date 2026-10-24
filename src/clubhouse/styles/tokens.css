@@ -366,6 +366,7 @@
   /* Desktop gaps: cards in a grid, and sections down a page. */
   --ch-gap-grid: 18px;
   --ch-gap-section: 28px;
+  --ch-gap-section-loose: var(--ch-space-8); /* Classes on the canopy */
   /* Phone page roots (max-width 820px). Docked: a page with a bar docked at its foot clears it at the bottom. */
   --ch-page-x-phone: var(--ch-space-5);
   --ch-page-top-phone: 26px;
