@@ -20,6 +20,7 @@ import { useChPhone } from '../../lib/use-phone';
 import { tabListKeys } from '../../lib/tabs';
 import { HUB_TABS, type ChHubTab } from '../../lib/hub-tabs';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PhoneIconAction } from '../../ui/PhoneBar';
 import { HubStrip, TaskBoard } from './band';
 import { hubStrip, queueOf, tabAttention, taskFigures } from './hub-summary';
 import { Announcement, Documents, NewAnnouncementLine, Tasks, TripPass, Updates } from './parts';
@@ -529,7 +530,11 @@ export function TeamHub({
   return (
     <main className={'ch-hb' + (phone ? ' is-phone' : '')} aria-labelledby="ch-hb-title" data-canopy={phone ? undefined : ''}>
       {phone && !coach && <PhoneTop start title="Team Hub" heading={false} />}
-      {phone && coach && <PhoneTop title="Team Hub" start heading={false} />}
+      {/* B10.1: a coach's create action is the top bar's plus, following the tab as the desktop head's primary does
+          (a post, a trip, a task; none on Documents or a tab whose read failed). */}
+      {phone && coach && (
+        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={primary.icon} label={primary.label} onClick={primary.run} /> : undefined} />
+      )}
       <header className="ch-hb-h" data-canopy-head="">
         <div>
           {/* Coach only (wave 7): a player is never told their own role. */}
@@ -544,7 +549,7 @@ export function TeamHub({
           <LargeTitle id="ch-hb-title">Team Hub</LargeTitle>
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
-        {primary && (
+        {primary && !phone && (
           <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
             {primary.label}
           </Button>
