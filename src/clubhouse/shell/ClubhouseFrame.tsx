@@ -25,7 +25,7 @@ import { SectionSwitchProvider, useSectionSwitch } from './section-switch';
 import { RouteFrame } from './RouteFrame';
 import { PullToRefresh } from './PullToRefresh';
 import { teamSwitchFor } from './team-switch';
-import { NotRebuilt } from './NotRebuilt';
+import { AliasWait, NotRebuilt } from './NotRebuilt';
 import { useRelinkEpoch } from './relink';
 import { ClubhouseMarker } from './context';
 import { LightProvider } from './light';
@@ -170,7 +170,12 @@ export function ClubhouseFrame({
                               children
                             ) : (
                               <>
-                                <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                {/* An old address on its way somewhere draws a blank canvas, not "not rebuilt" (A30). */}
+                                {isAliased(pathname) ? (
+                                  <AliasWait label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                ) : (
+                                  <NotRebuilt label={item?.label ?? routeLabel(pathname) ?? 'This page'} />
+                                )}
                                 {/* An old address Clubhouse moved redirects from inside its segment, and that redirect fires
                                     only once the segment renders: dropped, the page stood on "not rebuilt" (2026-10-14). */}
                                 {isAliased(pathname) && <div hidden>{children}</div>}

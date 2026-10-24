@@ -5,7 +5,6 @@ import { ArrowRight, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { chTrail } from '../../lib/track';
-import { haptic } from '../../lib/haptics';
 import type { ChRole } from '../nav';
 import { Avatar } from '../../ui/Avatar';
 import { Icon } from '../../ui/Icon';
@@ -65,8 +64,8 @@ function PaletteBody({ onClose, role, pathname, people, recent }: { onClose: () 
   // Worked out here, not read from cmdk's list: the nearest-section row is itself an item, and a list is never "empty" with it in.
   const noMatches = searching && !commands.some((c) => shown.includes(c.group) && defaultFilter(textOf(c), q.trim()) > 0);
 
+  // A pick goes somewhere, and navigation is silent (D-70, A14).
   const go = (c: ChCommand) => {
-    haptic('select');
     chTrail('command palette go', { group: c.group });
     onClose();
     router.push(c.href, { scroll: false });

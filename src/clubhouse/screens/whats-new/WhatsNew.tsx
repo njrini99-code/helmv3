@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { ChWhatsNew, ChWhatsNewDay, ChWhatsNewItem, ChWhatsNewKind } from '../../data/whats-new-shape';
-import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useChClockText } from '../../lib/use-clock';
 import { useLastGood } from '../../lib/use-last-good';
@@ -46,7 +45,6 @@ function WhatsNewRow({ it }: { it: ChWhatsNewItem }) {
         </span>
       }
       href={href ?? undefined}
-      onClick={href ? () => haptic('select') : undefined}
       label={`${it.what}: ${it.title}, ${it.player}, ${time}`}
     />
   );

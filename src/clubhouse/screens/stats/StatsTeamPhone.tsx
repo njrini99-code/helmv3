@@ -22,6 +22,7 @@ import { sgBaseline, sgScale, sgShare } from '../../lib/sg';
 import { gridPeek, teamPlayerHref } from './links';
 import { PlayerPeek } from '../../ui/PlayerPeek';
 import { LinkPending } from '../../shell/LinkPending';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import { TeamRank } from './TeamRank';
 import { puttingNote } from './notes';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
@@ -396,6 +397,8 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
   const i = legIndex(leg);
   // On SG the list ranks by the chosen leg (the team total by default); on Avg it shows each player's total.
   const sgOf = (p: ChTeamStats['grid'][number]) => (sort === 'sg' && i >= 0 ? (p.legs[i] ?? null) : p.total);
+  // A player's stats are fetched whole as a finger lands on the row (A13), as the desktop grid's are.
+  const press = usePressPrefetch();
   const rows = useMemo(
     () =>
       [...data.grid].sort((a, b) => {
@@ -436,7 +439,7 @@ function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: ChLegPic
               <li key={p.id}>
                 {/* P003-C1: a hold peeks at the player; a tap still opens their stats. */}
                 <PlayerPeek player={gridPeek(p)}>
-                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row">
+                  <Link href={teamPlayerHref(p.id, data.filter)} className="ch-stm-row" {...press(teamPlayerHref(p.id, data.filter))}>
                     <Avatar name={p.name} id={p.id} size="md" />
                     <span className="ch-stm-row__b">
                       <b>{p.name}</b>

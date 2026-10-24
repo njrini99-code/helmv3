@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -54,6 +54,18 @@ import { nameList, useJoinRequests } from '../screens/roster/useJoinRequests';
 import { ToastProvider } from '../ui/Toast';
 import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { PREVIEW_ROSTER, PREVIEW_ROSTER_AVAILABILITY, PREVIEW_ROSTER_FAILED, PREVIEW_ROSTER_PARTIAL } from '../preview/fixtures-roster';
+import { AppRouterContext } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { PrefetchKind } from 'next/dist/client/components/router-reducer/router-reducer-types';
+import type { ContextType, ReactNode } from 'react';
+import { resetPrefetchTabsForTests } from '../shell/use-prefetch-tabs';
+
+/** The app router's context with a prefetch spy, which the press prefetch (A13) reads; outside it a row stays a plain link. */
+function withAppRouter(node: ReactNode) {
+  resetPrefetchTabsForTests();
+  const prefetch = vi.fn();
+  const appRouter = { prefetch, push: vi.fn(), replace: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn() } as unknown as NonNullable<ContextType<typeof AppRouterContext>>;
+  return { prefetch, node: <AppRouterContext.Provider value={appRouter}>{node}</AppRouterContext.Provider> };
+}
 
 /** The team line's figure as loadRoster pools it (A3), from the fixture's own players: each active player's rounds at their average. */
 const POOLED = (() => {
@@ -511,6 +523,20 @@ describe('Roster · loading, haptics, accessibility', () => {
     expect(router.push).toHaveBeenCalledTimes(2);
   });
 
+  it('A13 A14 a face or a name fetches the profile whole as the pointer goes down, and going there is silent', async () => {
+    const user = userEvent.setup();
+    profile.rebuilt = true;
+    const { prefetch, node } = withAppRouter(tree(roster()));
+    render(node);
+    const face = screen.getByRole('button', { name: new RegExp(`^${theo.name}.*Open profile`) });
+    fireEvent.pointerDown(face);
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith(`/golf/dashboard/stats?player=${theo.id}`, { kind: PrefetchKind.FULL });
+    await user.click(face);
+    expect(router.push).toHaveBeenLastCalledWith(`/golf/dashboard/stats?player=${theo.id}`);
+    expect(hapticSpy).not.toHaveBeenCalledWith('select');
+  });
+
   it('CH-3401 the route skeleton is busy', () => {
     render(<RosterSkeleton />);
     expect(code('CH-3401')!.getAttribute('aria-busy')).toBe('true');
@@ -781,6 +807,30 @@ describe('Roster · phone (docs/clubhouse/phone/roster.md)', () => {
     expect(profileHeading('Mia Thornton')).toBeTruthy();
     expect(screen.getByText('Junior · Class of 2028 · Inactive')).toBeTruthy();
     expect(window.location.search).toBe('');
+  });
+
+  it('A13 View stats in the ⋯ sheet fetches the player’s stats whole as a finger lands on it', async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, '', '/golf/dashboard/roster?player=theo');
+    const { prefetch, node } = withAppRouter(
+      <LazyMotion features={domAnimation}>
+        <ToastProvider>
+          <PhoneChromeProvider>
+            <div className="ch-root" data-ui="clubhouse">
+              <SlotHost />
+              <Roster data={roster()} />
+            </div>
+          </PhoneChromeProvider>
+        </ToastProvider>
+      </LazyMotion>,
+    );
+    render(node);
+    await user.click(screen.getByRole('button', { name: 'More actions' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Theo Marchetti' });
+    prefetch.mockClear();
+    fireEvent.pointerDown(within(sheet).getByRole('link', { name: 'View stats' }));
+    expect(prefetch).toHaveBeenCalledTimes(1);
+    expect(prefetch).toHaveBeenCalledWith('/golf/dashboard/stats?player=theo', { kind: PrefetchKind.FULL });
   });
 
   it("CH-3501 ⋯ opens the action sheet; Remove from team asks first, and a removed player's profile closes", async () => {

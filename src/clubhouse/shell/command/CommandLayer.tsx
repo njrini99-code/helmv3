@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chTrail } from '../../lib/track';
-import { haptic } from '../../lib/haptics';
 import { CH_SETTINGS_ITEM, type ChRole } from '../nav';
 import type { ChPerson, ChRecent } from './commands';
 import { seedPeople, setPeopleScope, usePeople } from './people';
@@ -129,7 +128,7 @@ export function CommandLayer({
           const item = itemForDigit(live.current.role, o.digit);
           if (!item) break;
           e.preventDefault();
-          haptic('select');
+          // A jump is navigation, so it is silent (D-70, A14).
           chTrail('command section (keyboard)', { to: item.id });
           live.current.router.push(item.href, { scroll: false });
           break;
@@ -138,7 +137,7 @@ export function CommandLayer({
           const item = itemForLetter(live.current.role, o.letter);
           if (!item) break;
           e.preventDefault();
-          haptic('select');
+          // A jump is navigation, so it is silent (D-70, A14).
           chTrail('command go (keyboard)', { to: item.id });
           live.current.router.push(item.href, { scroll: false });
           break;

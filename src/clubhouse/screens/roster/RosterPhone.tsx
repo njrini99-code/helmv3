@@ -22,6 +22,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { rebuiltHref } from '../../shell/nav';
 import { PhoneScreen } from '../../shell/PhoneScreen';
 import { PhoneTop, usePhoneStackHistory } from '../../shell/phone-chrome';
+import { usePressPrefetch } from '../../shell/use-prefetch-tabs';
 import type { AvailabilityControl, NoteSaved } from './RosterPeek';
 import { RosterProfile } from './RosterProfile';
 import { PlayerPeek } from '../../ui/PlayerPeek';
@@ -549,12 +550,14 @@ function PlayerActions({
   onStatus: (p: ChRosterPlayer) => void;
 }) {
   const statsHref = p ? rebuiltHref(`/golf/dashboard/stats?player=${p.id}`) : null;
+  // The player's stats are fetched whole as a finger lands on View stats (A13).
+  const press = usePressPrefetch();
   return (
     <Modal open={!!p} onClose={onClose} title={p?.name ?? 'Player'}>
       {p && (
         <div className="ch-rsm-panel ch-rsm-acts">
           {statsHref && (
-            <Link href={statsHref} className="ch-rsm-act">
+            <Link href={statsHref} className="ch-rsm-act" {...press(statsHref)}>
               <span className="ch-rsm-act__ic" aria-hidden="true">
                 <Icon icon={ChartColumn} size={16} />
               </span>
