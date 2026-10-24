@@ -370,8 +370,10 @@
   --ch-gap-grid: 18px;
   --ch-gap-section: 28px;
   --ch-gap-section-loose: var(--ch-space-8); /* Classes on the canopy */
-  /* Phone page roots (max-width 820px). Docked: a page with a bar docked at its foot clears it at the bottom. */
-  --ch-page-x-phone: var(--ch-space-5);
+  /* Phone page roots (max-width 820px). Docked: a page with a bar docked at its foot clears it at the bottom. The side
+     edge is the one phone gutter (owner, 2026-10-24, decision 5): 16px as iOS draws it, 20px on a large phone (below);
+     every phone page, its skeleton and its full-bleed pieces take it, so the edge never moves between sections. */
+  --ch-page-x-phone: var(--ch-space-4);
   --ch-page-top-phone: 26px;
   --ch-page-bottom-phone: var(--ch-space-8);
   --ch-page-top-phone-docked: 14px;
@@ -1103,6 +1105,12 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 
 /* Increase Contrast (P001-D7): the engraved rules, hairlines and the champagne eyebrow gain definition, and glass is
    opaque. One block, so every surface on the tokens follows. */
+/* Decision 5: a large phone (Plus and Pro Max, 414pt and wider) keeps the 20px edge, as iOS widens its margins there. */
+@media (min-width: 414px) {
+  [data-ui='clubhouse'] {
+    --ch-page-x-phone: var(--ch-space-5);
+  }
+}
 /* B3: on a Retina screen a separator is one device pixel, as iOS draws it (it was two or three). Increase Contrast
    keeps the full pixel (below). */
 @media (min-resolution: 2dppx) {

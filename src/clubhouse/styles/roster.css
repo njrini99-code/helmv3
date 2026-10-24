@@ -1248,7 +1248,7 @@ a.ch-rs-peek__dev:focus-visible,
     outline: 2px solid var(--ch-border-focus);
     outline-offset: -2px;
   }
-  /* Inset by the ring's 3px, so the ring (not the coin) meets the column's 20px edge; the skeleton's coin sits there too. */
+  /* Inset by the ring's 3px, so the ring (not the coin) meets the column's edge; the skeleton's coin sits there too. */
   .ch-rsm-row .ch-avatar {
     margin-inline-start: 3px;
     box-shadow: 0 0 0 2px var(--ch-workspace), 0 0 0 3px var(--ch-champagne-rule);

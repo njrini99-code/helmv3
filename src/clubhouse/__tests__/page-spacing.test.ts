@@ -58,7 +58,8 @@ const ROOTS: [file: string, context: string, selector: string][] = [
   ['rounds.css', PHONE, ".ch-rd[data-ch-code='CH-11401'], .ch-rv[data-ch-code='CH-11406']"],
 ];
 
-/** Today's values (R7 section 13). Changing one is the owner's call (OQ-63); this pins it so it is not a side effect. */
+/** Today's values (R7 section 13). Changing one is the owner's call (OQ-63); this pins it so it is not a side effect. The
+ * phone edge is settled (owner, 2026-10-24, decision 5): 16px, and 20px on a large phone (below). */
 const TOKENS: Record<string, string> = {
   '--ch-page-top-no-eyebrow': 'calc(var(--ch-page-head-top) + 24px)',
   '--ch-page-top-eyebrow-short-2': 'calc(var(--ch-page-head-top) + 2px)',
@@ -76,7 +77,7 @@ const TOKENS: Record<string, string> = {
   '--ch-gap-grid': '18px',
   '--ch-gap-section': '28px',
   '--ch-gap-section-loose': 'var(--ch-space-8)',
-  '--ch-page-x-phone': 'var(--ch-space-5)',
+  '--ch-page-x-phone': 'var(--ch-space-4)',
   '--ch-page-top-phone': '26px',
   '--ch-page-bottom-phone': 'var(--ch-space-8)',
   '--ch-page-top-phone-docked': '14px',
@@ -86,6 +87,59 @@ const TOKENS: Record<string, string> = {
   '--ch-gap-section-phone-tight': 'var(--ch-space-4)',
   '--ch-gap-group': 'var(--ch-space-3)',
 };
+
+/**
+ * Decision 5 (owner, 2026-10-24; OQ-63, B2): one phone gutter. Every phone page's side edge is `--ch-page-x-phone`,
+ * including the roots and pushed screens the CONS-34 list above does not take whole (their tops and bottoms stay as they
+ * are), the skeletons that stand in for them, and the pieces that run full bleed to the screen edge and back in. Every
+ * rule with the selector in that context is checked, so an earlier rule a later one overrides cannot keep a raw edge.
+ */
+const PHONE_EDGES: [file: string, context: string, selector: string][] = [
+  ...ROOTS.filter(([, ctx, sel]) => ctx === PHONE || sel.includes('is-phone')),
+  ['stats.css', PHONE, '.ch-stm'],
+  ['stats.css', PHONE, '.ch-stm.is-team'],
+  ['home.css', PHONE, '.ch-h-main'],
+  ['home.css', PHONE, '.ch-h-main--first'],
+  ['home.css', PHONE, '.ch-hm-hero'],
+  ['home.css', PHONE, '.ch-hm-body'],
+  ['home.css', PHONE, '.ch-hm-skel__hero'],
+  ['home.css', PHONE, '.ch-hm-skel__body'],
+  ['rounds-recover.css', DESK, '.ch-rcv.is-phone'],
+  ['coachhelm.css', DESK, '.ch-hl.is-phone'],
+  ['rounds-setup.css', PHONE, '.ch-rsu'],
+  ['messages.css', PHONE, '.ch-msp-page'],
+  ['messages.css', PHONE, '.ch-msp-skel'],
+  ['messages.css', PHONE, '.ch-msp-to'],
+  ['messages.css', PHONE, '.ch-msp-ann .ch-ms-ann'],
+  ['messages.css', PHONE, '.ch-msp-ann .ch-ms-ann.is-letter'],
+  ['coachhelm-ask.css', PHONE, '.ch-ask-top'],
+  ['coachhelm-ask.css', PHONE, '.ch-ask-scroll'],
+  ['coachhelm-dive.css', PHONE, '.ch-hd-scroll'],
+];
+/** Full-bleed pieces: out to the screen edge by the gutter, and their content back in by it. */
+const PHONE_BLEEDS: [file: string, context: string, selector: string][] = [
+  ['hub.css', PHONE, '.ch-hb-tabs'],
+  ['coachhelm.css', PHONE, '.ch-hl.is-phone .ch-hl-plist'],
+  ['coachhelm-views.css', PHONE, '.ch-hv-chips'],
+  ['rounds.css', PHONE, '.ch-rv.is-phone .ch-rv-cardw'],
+  ['stats.css', PHONE, '.ch-stm .ch-gd.is-phone .ch-gd__nav'],
+  ['rounds-setup.css', PHONE, ".ch-rsu[data-ui='clubhouse'] .ch-rsu-band"],
+  ['rounds-setup.css', PHONE, ".ch-rsu[data-ui='clubhouse'] .ch-rsu-dock"],
+];
+const GUTTER = 'var(--ch-page-x-phone)';
+const BLEED = 'calc(-1 * var(--ch-page-x-phone))';
+
+/** The left and right parts of every `<box>`, `<box>-inline`, `<box>-left` and `<box>-right` declaration in `rule`. */
+function sides(rule: Rule, box: 'padding' | 'margin'): string[] {
+  const out: string[] = [];
+  rule.walkDecls((d) => {
+    if (d.parent !== rule) return;
+    const parts = postcss.list.space(d.value);
+    if (d.prop === box) out.push(...(parts.length === 1 ? [parts[0]!] : parts.length === 4 ? [parts[1]!, parts[3]!] : [parts[1]!]));
+    else if (d.prop === `${box}-inline` || d.prop === `${box}-left` || d.prop === `${box}-right`) out.push(...parts);
+  });
+  return out;
+}
 
 const SPACING = /^(padding(-[a-z-]+)?|gap|row-gap|column-gap)$/;
 const PART = /^(0|var\(--ch-(page|gap)-[a-z0-9-]+\))$/;
@@ -126,5 +180,30 @@ describe('page spacing tokens (CONS-34)', () => {
     }
     expect(off).toEqual([]);
     for (const name of used) expect(Object.keys(TOKENS).concat('--ch-page-gutter', '--ch-page-head-top'), `${name} is a page spacing token`).toContain(name);
+  });
+
+  it('the phone gutter is 16px, and 20px on a large phone (Plus and Pro Max widths)', () => {
+    const css = readFileSync(join(ROOT, 'styles/tokens.css'), 'utf8');
+    expect(css).toMatch(/@media \(min-width: 414px\) \{\s*\[data-ui='clubhouse'\] \{\s*--ch-page-x-phone: var\(--ch-space-5\);\s*\}\s*\}/);
+    expect(css.match(/--ch-page-x-phone:/g)).toHaveLength(2);
+  });
+
+  it.each(PHONE_EDGES)('%s %s %s sets its side edge on the phone gutter', (file, ctx, selector) => {
+    const found = rules(file, ctx, selector);
+    expect(found.length, 'the listed rule exists').toBeGreaterThan(0);
+    const edges = found.flatMap((r) => sides(r, 'padding'));
+    expect(edges.length, 'the rule sets a side edge').toBeGreaterThan(0);
+    expect(edges.filter((v) => v !== GUTTER)).toEqual([]);
+  });
+
+  it.each(PHONE_BLEEDS)('%s %s %s runs full bleed by the phone gutter', (file, ctx, selector) => {
+    // A later rule that only adds room at the end (the scorecard's fade) is not the bleed.
+    const found = rules(file, ctx, selector).filter((r) => sides(r, 'margin').length > 0);
+    expect(found.length, 'the listed rule exists').toBeGreaterThan(0);
+    const out = found.flatMap((r) => sides(r, 'margin'));
+    const back = found.flatMap((r) => sides(r, 'padding'));
+    expect(out.length * back.length, 'the rule bleeds out and back').toBeGreaterThan(0);
+    expect(out.filter((v) => v !== BLEED)).toEqual([]);
+    expect(back.filter((v) => v !== GUTTER)).toEqual([]);
   });
 });

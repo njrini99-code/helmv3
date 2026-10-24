@@ -1020,7 +1020,7 @@
 
   /* The read on its pushed screen. */
   .ch-hd-scroll {
-    padding: 16px 20px calc(28px + env(safe-area-inset-bottom));
+    padding: 16px var(--ch-page-x-phone) calc(28px + env(safe-area-inset-bottom));
   }
   .ch-hd-dos {
     gap: 28px;

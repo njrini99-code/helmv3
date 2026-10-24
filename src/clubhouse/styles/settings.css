@@ -892,7 +892,7 @@
     line-height: 1;
     transition: opacity var(--ch-dur-base) var(--ch-ease);
   }
-  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's 20px edge. */
+  /* Inset by the ring's 4px, so the ring (not the coin) meets the column's edge. */
   .ch-setm-id > .ch-setm-coin {
     margin-inline-start: 4px;
     box-shadow: var(--ch-ledger-avatar-ring);

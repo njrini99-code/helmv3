@@ -11,7 +11,7 @@
   color: var(--ch-text-primary);
 }
 .ch-hl.is-phone {
-  padding: 14px 16px 110px;
+  padding: 14px var(--ch-page-x-phone) 110px;
   gap: 18px;
 }
 
@@ -1210,8 +1210,8 @@
     gap: 18px;
   }
   .ch-hl.is-phone .ch-hl-plist {
-    margin: 0 -20px;
-    padding: 2px 20px;
+    margin: 0 calc(-1 * var(--ch-page-x-phone));
+    padding: 2px var(--ch-page-x-phone);
   }
   .ch-hl.is-phone .ch-hl-pl {
     background: none;
