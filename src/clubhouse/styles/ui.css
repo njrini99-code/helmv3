@@ -414,11 +414,12 @@
     background: rgb(255 255 255 / 0.14);
   }
 }
-/* A mouse can't swipe a toast away (CH-1614), so hover-capable devices get a ghost Dismiss X (Toast.tsx). */
+/* A mouse can't swipe a toast away (CH-1614), so hover-capable devices get a ghost Dismiss X (Toast.tsx); touch shows it
+   too (row 38), so a toast can be closed without knowing the swipe. */
 .ch-toast__close {
   display: none;
 }
-@media (hover: hover) {
+@media (hover: hover), (pointer: coarse) {
   .ch-toast__close {
     display: inline-flex;
     flex: none;
@@ -2201,5 +2202,34 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   .ch-hscroll[data-end='true'] {
     -webkit-mask-image: none;
     mask-image: none;
+  }
+}
+
+/* Row 38 (AX-11): a control drawn under 44pt keeps its look and takes a 44pt tap on touch, through an invisible ::before
+   centred on it. The toast's two sit side by side, so theirs grow only in height. */
+@media (pointer: coarse) {
+  .ch-toast__action,
+  .ch-toast__close,
+  .ch-asks__open,
+  .ch-ask-cmp__send,
+  .ch-rv-back {
+    position: relative;
+  }
+  .ch-toast__action::before,
+  .ch-toast__close::before,
+  .ch-asks__open::before,
+  .ch-ask-cmp__send::before,
+  .ch-rv-back::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .ch-toast__action::before,
+  .ch-toast__close::before {
+    width: 100%;
   }
 }
