@@ -6,7 +6,7 @@ import {
   ArrowUp,
   Bell,
   BellOff,
-  BarChart3,
+  ChartColumn,
   CalendarDays,
   CalendarPlus,
   Check,
@@ -710,7 +710,7 @@ function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: ChConv;
                 {statsHref && other?.playerId && (
                   <Link className="ch-msp-row is-btn" href={`${statsHref}?player=${encodeURIComponent(other.playerId)}`}>
                     <span className="ch-msp-row__ic">
-                      <Icon icon={BarChart3} size={16} />
+                      <Icon icon={ChartColumn} size={16} />
                     </span>
                     <span className="ch-msp-row__b">
                       <b>View stats</b>

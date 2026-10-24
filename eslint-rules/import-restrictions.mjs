@@ -71,8 +71,10 @@ const CLUBHOUSE_PATHS = [
   // CONS-19: one icon per meaning (Clubhouse A+ handoff, section 9).
   {
     name: 'lucide-react',
-    importNames: ['ChartColumn', 'RefreshCw', 'MoreHorizontal', 'ExternalLink', 'SquareArrowOutUpRight', 'Share2', 'PenLine'],
-    message: 'Clubhouse icon map (CONS-19): use BarChart3, RotateCw, Ellipsis, ArrowUpRight, Share or Pencil.',
+    // BarChart3 and MoreHorizontal are lucide's deprecated aliases of ChartColumn and Ellipsis (the same glyphs): the
+    // canonical names are the ones to use (auditor on #2361).
+    importNames: ['BarChart3', 'RefreshCw', 'MoreHorizontal', 'ExternalLink', 'SquareArrowOutUpRight', 'Share2', 'PenLine'],
+    message: 'Clubhouse icon map (CONS-19): use ChartColumn, RotateCw, Ellipsis, ArrowUpRight, Share or Pencil.',
   },
 ];
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ChartColumn, Check, ChevronRight, Clock, Copy, Ellipsis, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 import { startTransition, useCallback, useEffect, useRef, useState, ViewTransition, type ReactNode } from 'react';
@@ -556,7 +556,7 @@ function PlayerActions({
           {statsHref && (
             <Link href={statsHref} className="ch-rsm-act">
               <span className="ch-rsm-act__ic" aria-hidden="true">
-                <Icon icon={BarChart3} size={16} />
+                <Icon icon={ChartColumn} size={16} />
               </span>
               <b>View stats</b>
             </Link>

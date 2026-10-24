@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, BarChart3, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, Flag, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
+import { ArrowRight, ChartColumn, BrainCircuit, CalendarDays, CalendarPlus, ChevronRight, Flag, MessageSquare, Plus, Sun, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
 import type { ChCoachHome, ChHomeEvent, ChLatestRound, ChTeamForm } from '../../data/home';
@@ -548,7 +548,7 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
               </Button>
             ) : (
               stats && (
-                <Button variant="primary" leftIcon={BarChart3} href={stats}>
+                <Button variant="primary" leftIcon={ChartColumn} href={stats}>
                   Player stats
                 </Button>
               )

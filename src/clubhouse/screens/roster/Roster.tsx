@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowDown, ArrowUp, Bandage, BarChart3, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
+import { ArrowDown, ArrowUp, Bandage, ChartColumn, CircleCheck, Copy, Download, Ellipsis, LayoutGrid, List, MessageSquare, Plane, Share, Sparkles, UserCheck, UserMinus, UserPlus, UserX } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useChSessionState } from '../../lib/session-state';
 import { useRouter } from 'next/navigation';
@@ -354,7 +354,7 @@ export function Roster({ data }: { data: ChRoster }) {
     const insights = rebuiltHref(coachPlayerHref('deep-dive', p.id), 'coach');
     if (insights) items.push({ label: 'View insights', icon: Sparkles, href: insights });
     const s = statsHref(p);
-    if (s) items.push({ label: 'View stats', icon: BarChart3, href: s });
+    if (s) items.push({ label: 'View stats', icon: ChartColumn, href: s });
     const messagesHref = rebuiltHref(`/golf/dashboard/messages?player=${encodeURIComponent(p.id)}`);
     if (messagesHref) items.push({ label: 'Message', icon: MessageSquare, href: messagesHref });
     if (items.length) items.push({ kind: 'separator' });
