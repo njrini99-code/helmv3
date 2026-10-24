@@ -2437,7 +2437,7 @@
 .ch-rviz--putts i.is-gain {
   background: var(--ch-green-fill-500);
 }
-.ch-rviz--putts i.is-over {
+.ch-rviz--putts i.is-loss {
   background: var(--ch-chart-loss);
 }
 .ch-rviz--putts b,
