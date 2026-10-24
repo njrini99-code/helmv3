@@ -288,6 +288,11 @@ export interface ChQLineGap {
   label: 'Top-score line' | 'Travel cut';
   /** The viewer is above the line. */
   inside: boolean;
+  /**
+   * The viewer shares the board's "Tie at cut" at the top-score line (Q-114): level on to par and total strokes with the
+   * last place on score and the next player, so neither side of the line is theirs until the coach chooses.
+   */
+  tie: boolean;
   /** The row on the far side of the line the viewer is measured against: the first below it, or the last above it. */
   against: ChQRow;
   /**
@@ -298,17 +303,46 @@ export interface ChQLineGap {
 }
 
 /**
+ * Where the squad stands for the card: `open` until the coach confirms, `confirmed` once the selections are in, and
+ * `unknown` when they were confirmed but the selections didn't load (the loader's null), so nothing is said on a guess.
+ */
+export type ChQViewerSelection = 'open' | 'confirmed' | 'unknown';
+
+export function viewerSelection(selectionState: ChQSelectionState, selections: readonly unknown[] | null): ChQViewerSelection {
+  return selectionState !== 'selected' ? 'open' : selections ? 'confirmed' : 'unknown';
+}
+
+/**
+ * After confirm the squad, not the lines, says where the viewer stands, by the rule the player's notice uses
+ * (selectionOutcomeFor, lib/coachhelm/v3/qualifying/player-notify.ts): picked is selected, on score or as the coach's
+ * pick; a ranked player who wasn't picked is not selected. An entrant with no score has no row, so no card (its
+ * `not_scored`). Copied rather than imported: that module sends email and push, and this one ships to the browser.
+ */
+export type ChQViewerOutcome = 'selected' | 'pick' | 'not_selected';
+
+/**
  * The viewer against the board's lines (row 74): where the top-score line and the travel cut sit relative to their
  * row, and by how many strokes. Read from the board's own order and the indices it draws its lines at (the phone and
  * desktop boards draw the top-score line before row `topScore` and the travel cut before row `squad`), never a sort of
- * its own, so it follows the board's ranking rule wherever that goes (decision 10, row 115). Null when the viewer has no
- * ranked row or the board draws no line.
+ * its own, so it follows the board's ranking rule wherever that goes (decision 10, row 115). A viewer in the board's
+ * "Tie at cut" is level at the top-score line, not inside or outside it (Q-114).
+ *
+ * Once the squad is confirmed the lines decide nothing: the card gives the outcome instead, and no line, so a picked
+ * player is never "Outside" and an unpicked one never "Inside". Null when the viewer has no ranked row, when the squad
+ * was confirmed but its selections didn't load, or, before confirm, when the board draws no line.
  */
-export function viewerVsLines(b: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>, viewerId: string | null | undefined): { me: ChQRow; gaps: ChQLineGap[] } | null {
-  if (!viewerId) return null;
+export function viewerVsLines(
+  b: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>,
+  viewerId: string | null | undefined,
+  selection: ChQViewerSelection,
+): { me: ChQRow; gaps: ChQLineGap[]; outcome: ChQViewerOutcome | null } | null {
+  if (!viewerId || selection === 'unknown') return null;
   const i = b.rows.findIndex((r) => r.playerId === viewerId);
   const me = b.rows[i];
   if (!me) return null;
+  if (selection === 'confirmed') {
+    return { me, gaps: [], outcome: me.state === 'pick' ? 'pick' : me.state === 'selected' ? 'selected' : 'not_selected' };
+  }
   const lines: Array<[ChQLineGap['line'], number, ChQLineGap['label']]> = [['score', b.topScore, 'Top-score line']];
   if (b.squad !== b.topScore) lines.push(['travel', b.squad, 'Travel cut']);
   const gaps: ChQLineGap[] = [];
@@ -317,20 +351,27 @@ export function viewerVsLines(b: Pick<ChQBoard, 'rows' | 'topScore' | 'squad'>, 
     const inside = i < cut;
     const against = b.rows[inside ? cut : cut - 1]!;
     const comparable = against.played === me.played && me.toPar != null && against.toPar != null;
-    gaps.push({ line, label, inside, against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
+    gaps.push({ line, label, inside, tie: line === 'score' && me.state === 'tie', against, strokes: comparable ? Math.abs(me.toPar! - against.toPar!) : null });
   }
-  return gaps.length ? { me, gaps } : null;
+  return gaps.length ? { me, gaps, outcome: null } : null;
 }
 
 /** A line gap in words: "Inside by 3 strokes. Eli is first below it." */
 export function lineGapText(g: ChQLineGap, me: Pick<ChQRow, 'played'>, numRounds: number, first: (name: string) => string): string {
   const who = first(g.against.name);
+  if (g.tie) return `Tie at cut, level with ${who} on to par and total strokes: your coach decides.`;
   const where = g.inside ? `${who} is first below it` : `${who} holds the last place above it`;
   if (g.strokes == null) {
     return `${g.inside ? 'Inside' : 'Outside'}. ${who} has played ${g.against.played} of ${plural(numRounds, 'round')} to your ${me.played}, so the gap isn’t comparable yet.`;
   }
   if (g.strokes === 0) return `${g.inside ? 'Inside' : 'Outside'}, level with ${who} on to par: total strokes decide.`;
   return `${g.inside ? 'Inside' : 'Outside'} by ${plural(g.strokes, 'stroke')}. ${where}.`;
+}
+
+/** The confirmed squad in words, for the card (the player notice's outcome, STATE_LABEL's names). */
+export function viewerOutcomeText(o: ChQViewerOutcome): { label: string; text: string } {
+  if (o === 'not_selected') return { label: 'Not selected', text: 'You were not selected this time.' };
+  return { label: STATE_LABEL[o === 'pick' ? 'pick' : 'selected'].label, text: 'You made the travel squad.' };
 }
 
 /**

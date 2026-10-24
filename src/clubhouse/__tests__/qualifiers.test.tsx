@@ -62,7 +62,7 @@ import { QualifierForm } from '../screens/qualifiers/QualifierForm';
 import { QualifierSelection } from '../screens/qualifiers/QualifierSelection';
 import { QualifierDetailSkeleton, QualifierFormSkeleton, QualifierSelectionSkeleton, QualifiersSkeleton } from '../screens/qualifiers/QualifiersSkeleton';
 import { useLiveStandings } from '../screens/qualifiers/live';
-import { buildBoard, lineGapText, roundPars, sampleNote, stageNoteText, validateForm, viewerVsLines, type ChQFormValues, type ChQRound, type ChQRow } from '../screens/qualifiers/model';
+import { buildBoard, lineGapText, roundPars, sampleNote, stageNoteText, validateForm, viewerOutcomeText, viewerSelection, viewerVsLines, type ChQFormValues, type ChQRound, type ChQRow } from '../screens/qualifiers/model';
 import { firstName } from '../lib/names';
 import { LIVE_SELECTION_WRITES, runEditPlan, selectionReason, startSelecting, type ChQSelectionWrites, type ChQWrites } from '../screens/qualifiers/writes';
 import { DETAIL_INDEX, PLAYER_ID, PREVIEW_COURSES, PREVIEW_TEES, previewCreateForm, previewDetail, previewEditForm, previewList, previewSelection } from '../preview/fixtures-qualifiers';
@@ -160,7 +160,7 @@ describe('Qualifiers · the standings model', () => {
     const rows = [r('a', 'Ava Chen', -2), r('b', 'Eli Park', 1), r('c', 'Jonah Okafor', 4), r('d', 'Maya Reyes', 4), r('e', 'Luca Ferraro', 9, 1)];
     const board = { rows, topScore: 2, squad: 4 };
     const say = (id: string) => {
-      const v = viewerVsLines(board, id)!;
+      const v = viewerVsLines(board, id, 'open')!;
       return v.gaps.map((g) => `${g.label}: ${lineGapText(g, v.me, 3, firstName)}`);
     };
     it('measures from the board’s own order and the rows its lines are drawn at', () => {
@@ -174,9 +174,9 @@ describe('Qualifiers · the standings model', () => {
     });
     it('gives no strokes across a different number of rounds, and nothing for a coach or a board with no line', () => {
       expect(say('e')).toEqual(['Top-score line: Outside. Eli has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.', 'Travel cut: Outside. Maya has played 2 of 3 rounds to your 1, so the gap isn’t comparable yet.']);
-      expect(viewerVsLines(board, null)).toBeNull();
-      expect(viewerVsLines({ rows, topScore: 0, squad: 0 }, 'a')).toBeNull();
-      expect(viewerVsLines({ rows: rows.slice(0, 2), topScore: 2, squad: 2 }, 'a')).toBeNull();
+      expect(viewerVsLines(board, null, 'open')).toBeNull();
+      expect(viewerVsLines({ rows, topScore: 0, squad: 0 }, 'a', 'open')).toBeNull();
+      expect(viewerVsLines({ rows: rows.slice(0, 2), topScore: 2, squad: 2 }, 'a', 'open')).toBeNull();
     });
     it('is drawn at the top of a player’s board, desktop and phone, and never for a coach', () => {
       wrap(<QualifierDetail data={previewDetail(0, 'player')} writes={fakeWrites()} live={false} />);
@@ -197,10 +197,71 @@ describe('Qualifiers · the standings model', () => {
       wrap(<QualifierDetail data={previewDetail(0, 'coach')} writes={fakeWrites()} live={false} />);
       expect(code('CH-09908')).toBeNull();
     });
-    it('a tie on to par across the line is level', () => {
-      const tie = { rows: [r('a', 'Ava Chen', 1), r('b', 'Eli Park', 1)], topScore: 1, squad: 1 };
-      const v = viewerVsLines(tie, 'b')!;
+    it('level on to par but not on strokes across the line: total strokes decide', () => {
+      const level = { rows: [r('a', 'Ava Chen', 1), { ...r('b', 'Eli Park', 1), total: 142 }], topScore: 1, squad: 1 };
+      const v = viewerVsLines(level, 'b', 'open')!;
       expect(lineGapText(v.gaps[0]!, v.me, 3, firstName)).toBe('Outside, level with Ava on to par: total strokes decide.');
+    });
+
+    // The card follows the board's row state and, after confirm, the squad (selectionOutcomeFor's rule), never the index
+    // its lines are drawn at. Built with buildBoard, so each row carries the state the board draws.
+    const ent = (id: string, name: string) => ({ playerId: id, name, classYear: null });
+    const rnd = (playerId: string, total: number, toPar: number): ChQRound => ({ id: `${playerId}1`, playerId, number: 1, total, toPar, date: '2026-09-22', course: 'Finley GC', holesPlayed: 18 });
+    const field = [ent('a', 'Ava Chen'), ent('b', 'Eli Park'), ent('c', 'Jonah Okafor'), ent('d', 'Maya Reyes')];
+    const scores = [rnd('a', 70, -2), rnd('b', 72, 0), rnd('c', 74, 2), rnd('d', 76, 4)];
+    const confirmed = (selections: { playerId: string; type: 'top_score' | 'coach_pick' }[]) =>
+      buildBoard({ entrants: field, rounds: scores, squad: 3, picks: 1, status: 'completed', selectionState: 'selected', selections: selections.map((x) => ({ ...x, reasoning: null })), numRounds: 1 });
+    const card = (b: ReturnType<typeof buildBoard>, id: string) => {
+      const v = viewerVsLines(b, id, 'confirmed')!;
+      return { outcome: v.outcome, gaps: v.gaps.length, words: viewerOutcomeText(v.outcome!) };
+    };
+    it('after confirm, a picked player is never Outside: a coach’s pick below the travel cut reads Coach’s pick', () => {
+      // Two on score (A, B), and the coach picks D from fourth, below the travel cut at three.
+      const b = confirmed([{ playerId: 'a', type: 'top_score' }, { playerId: 'b', type: 'top_score' }, { playerId: 'd', type: 'coach_pick' }]);
+      expect(card(b, 'd')).toEqual({ outcome: 'pick', gaps: 0, words: { label: 'Coach’s pick', text: 'You made the travel squad.' } });
+      expect(card(b, 'a')).toEqual({ outcome: 'selected', gaps: 0, words: { label: 'Selected', text: 'You made the travel squad.' } });
+    });
+    it('after confirm with coach’s picks, an unpicked player is never Inside, even above the travel cut', () => {
+      // C is third, inside a squad of three, but the coach picked D: C is not selected.
+      const b = confirmed([{ playerId: 'a', type: 'top_score' }, { playerId: 'b', type: 'top_score' }, { playerId: 'd', type: 'coach_pick' }]);
+      expect(b.rows.findIndex((x) => x.playerId === 'c')).toBeLessThan(b.squad);
+      expect(card(b, 'c')).toEqual({ outcome: 'not_selected', gaps: 0, words: { label: 'Not selected', text: 'You were not selected this time.' } });
+      // Confirmed, but the selections didn't load: nothing is said on a guess.
+      expect(viewerVsLines(b, 'c', 'unknown')).toBeNull();
+      expect(viewerSelection('selected', null)).toBe('unknown');
+      expect(viewerSelection('selected', [])).toBe('confirmed');
+      expect(viewerSelection('scoring', null)).toBe('open');
+    });
+    it('Q-114: players level on to par and strokes at the top-score line read Tie at cut, on either side of it', () => {
+      const b = buildBoard({ entrants: field, rounds: [rnd('a', 70, -2), rnd('b', 72, 0), rnd('c', 72, 0), rnd('d', 76, 4)], squad: 3, picks: 1, status: 'in_progress', selectionState: 'scoring', selections: null, numRounds: 1 });
+      expect(b.rows.map((x) => x.state)).toEqual(['qualifying', 'tie', 'tie', null]);
+      const say = (id: string) => {
+        const v = viewerVsLines(b, id, 'open')!;
+        return v.gaps.map((g) => `${g.label}: ${lineGapText(g, v.me, 1, firstName)}`);
+      };
+      expect(say('b')[0]).toBe('Top-score line: Tie at cut, level with Jonah on to par and total strokes: your coach decides.');
+      expect(say('c')[0]).toBe('Top-score line: Tie at cut, level with Eli on to par and total strokes: your coach decides.');
+      // The travel cut is not the tie's line: C is still inside it.
+      expect(say('c')[1]).toBe('Travel cut: Inside by 4 strokes. Maya is first below it.');
+    });
+    it('draws the outcome on a confirmed board for the player, desktop and phone', () => {
+      const data = previewDetail(DETAIL_INDEX.selected!, 'player');
+      expect(data.selectionState).toBe('selected');
+      expect(data.selections).not.toBeNull();
+      const me = data.board!.rows.find((x) => x.playerId === data.viewerPlayerId)!;
+      const words = viewerOutcomeText(me.state === 'pick' ? 'pick' : me.state === 'selected' ? 'selected' : 'not_selected');
+      wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+      expect(code('CH-09908')!.textContent).toContain(`${words.label} ${words.text}`);
+      expect(code('CH-09908')!.textContent).not.toMatch(/Inside|Outside|Top-score line/);
+      cleanup();
+      const real = window.matchMedia;
+      window.matchMedia = ((q: string) => ({ ...real(q), matches: q === '(max-width: 820px)' })) as typeof window.matchMedia;
+      try {
+        wrap(<QualifierDetail data={data} writes={fakeWrites()} live={false} />);
+        expect(code('CH-09908')!.textContent).toContain(`${words.label} ${words.text}`);
+      } finally {
+        window.matchMedia = real;
+      }
     });
   });
 
