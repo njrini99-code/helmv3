@@ -121,7 +121,7 @@ const RAW_SHADOW: Record<string, number> = {
   'styles/recruiting.css': 1,
   'styles/roster.css': 8,
   'styles/rounds-setup.css': 17,
-  'styles/rounds-track.css': 19,
+  'styles/rounds-track.css': 18,
   'styles/rounds.css': 22,
   'styles/settings.css': 3,
   'styles/shell.css': 20,

@@ -3007,8 +3007,8 @@ html[data-fw-theme='dark'] .ch-offline {
     top: 100%;
     right: 0;
     left: 0;
-    height: 14px;
-    background: linear-gradient(color-mix(in oklab, var(--ch-frame) 26%, transparent), transparent);
+    height: var(--ch-scroll-edge-h);
+    background: var(--ch-scroll-edge-down);
     opacity: 0;
     content: '';
     pointer-events: none;

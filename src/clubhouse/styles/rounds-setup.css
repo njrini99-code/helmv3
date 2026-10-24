@@ -1874,7 +1874,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   }
 
   /* The start dock: the screen's one action bar, a solid toolbar across the foot over the home indicator (the tab bar
-     is away on this screen). Its hairline is its edge; nothing shows through it. It runs into the canvas's own
+     is away on this screen). A soft shade above is its edge (row 41); nothing shows through it. It runs into the canvas's own
      safe-area padding, so the inset is not counted twice. */
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock {
     bottom: 0;
@@ -1884,7 +1884,18 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     background: var(--ch-bg-surface);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule);
+    box-shadow: none;
+  }
+  /* Row 41: the course list scrolling under the dock fades into it, one shade instead of the hairline. */
+  .ch-rsu[data-ui='clubhouse'] .ch-rsu-dock::before {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    left: 0;
+    height: var(--ch-scroll-edge-h);
+    background: var(--ch-scroll-edge-up);
+    content: '';
+    pointer-events: none;
   }
 
   /* The course picker and the tees (the sheet): rows on seams, not cards in the sheet. */

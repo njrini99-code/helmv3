@@ -1081,7 +1081,18 @@ button.ch-rt-strip__h {
   background: rgb(253 252 248 / 0.92);
   -webkit-backdrop-filter: blur(var(--ch-glass-blur));
   backdrop-filter: blur(var(--ch-glass-blur));
-  box-shadow: 0 -1px 0 rgb(28 25 18 / 0.08);
+  box-shadow: none;
+}
+/* Row 41: content scrolling under the bar fades into it, one shade instead of a hairline. */
+.ch-rt-bar::before {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  height: var(--ch-scroll-edge-h);
+  background: var(--ch-scroll-edge-up);
+  content: '';
+  pointer-events: none;
 }
 .ch-rt-bar__row {
   display: flex;
@@ -1860,7 +1871,7 @@ button.ch-rt-strip__h {
 }
 :where(html[data-fw-theme='dark']) .ch-rt-bar {
   background: rgb(27 32 28 / 0.92);
-  box-shadow: 0 -1px 0 var(--ch-border-hairline);
+  box-shadow: none;
 }
 :where(html[data-fw-theme='dark']) .ch-rt-bar__go:disabled {
   background: var(--ch-ivory-200);
@@ -2787,6 +2798,10 @@ button.ch-rt-strip__h {
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+  /* Its own gradient is the scroll edge here. */
+  .ch-rt-bar::before {
+    content: none;
   }
   .ch-rt-bar__row {
     display: grid;
