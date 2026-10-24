@@ -3032,7 +3032,8 @@
         "StatusPill",
         "ThruDots",
         "ToPar",
-        "ToParPlate"
+        "ToParPlate",
+        "ViewerLineCard"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -6129,7 +6130,8 @@
       "file": "src/clubhouse/ui/ContextMenu.tsx",
       "group": "ui",
       "exports": [
-        "CTX_HOLD_MS"
+        "CTX_HOLD_MS",
+        "MenuSheet"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -7968,6 +7970,7 @@
         "ch-in__trip",
         "ch-in__up",
         "ch-in__who",
+        "ch-intro__action",
         "ch-intro__row",
         "ch-lane",
         "ch-lane__b",
@@ -11085,6 +11088,8 @@
         "ch-qf-who",
         "ch-qf-why",
         "ch-qf-you",
+        "ch-qf-you-line",
+        "ch-qf-you-line__me",
         "ch-qfm",
         "ch-qfm-acts",
         "ch-qfm-chip",
@@ -11103,9 +11108,12 @@
         "ch-qfm-lb__n",
         "ch-qfm-lb__nm",
         "ch-qfm-lb__row",
+        "ch-qfm-lb__score",
         "ch-qfm-lb__sub",
         "ch-qfm-lb__thru",
+        "ch-qfm-lb__tot",
         "ch-qfm-lbhead",
+        "ch-qfm-lbhead__stack",
         "ch-qfm-line",
         "ch-qfm-muted",
         "ch-qfm-rdh",
