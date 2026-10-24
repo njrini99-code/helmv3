@@ -2404,7 +2404,6 @@ button.ch-rt-strip__h {
     height: auto;
     border-radius: 0;
     font: 600 64px/0.86 var(--ch-font-sans);
-    font-stretch: 80%;
     font-variation-settings: 'wdth' 88;
     letter-spacing: -0.06em;
     font-variant-numeric: tabular-nums;

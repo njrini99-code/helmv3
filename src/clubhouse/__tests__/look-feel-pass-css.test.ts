@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { hits, ratchet, ROOT, walk } from './_scan';
+import { join, relative } from 'node:path';
+import { code, hits, ratchet, ROOT, walk, type Hit } from './_scan';
 
 /**
  * The look-and-feel pass (2026-10-22, mot-04 to mot-07): the rules only a stylesheet can hold. Placeholder text reads
@@ -105,9 +105,28 @@ describe('type roles (B1)', () => {
     expect(stale).toEqual([]);
   });
 
-  it('two widths only, 88 for dense numbers and 96 for display (the sign-in pages keep theirs)', () => {
-    const off = hits(/'wdth'\s*\d+/, css).filter((h) => h.file !== 'styles/auth.css' && !/'wdth' (88|96)\b/.test(h.text));
+  it('two widths only, 88 for dense numbers and 96 for display, the sign-in pages too, and font-stretch as well', () => {
+    const off = [
+      ...hits(/'wdth'\s*\d+/, css).filter((h) => !/'wdth' (88|96)\b/.test(h.text)),
+      ...hits(/font-stretch:/, css).filter((h) => !/font-stretch:\s*(88|96)%;/.test(h.text)),
+    ];
     expect(off).toEqual([]);
+  });
+
+  /**
+   * The shorthand count can't be dodged by spelling a size or a weight as a longhand: a raw `font-size` or `font-weight`
+   * (anything but inherit, initial, unset or a token) is counted per file too, and may only fall.
+   */
+  it('raw font-size and font-weight longhands only fall, file by file', () => {
+    const found: Hit[] = [];
+    for (const f of css) {
+      for (const m of code(f).matchAll(/(?:^|[\s;{])(font-(?:size|weight):\s*(?!inherit|initial|unset|var\()[^;}]+);/g)) {
+        found.push({ file: relative(ROOT, f), line: 0, text: m[1]! });
+      }
+    }
+    const { over, stale } = ratchet(found, RAW_LONGHAND);
+    expect(over).toEqual([]);
+    expect(stale).toEqual([]);
   });
 
   it('the bar title is one role, pushed or at a tab’s root, and the shell’s stand-in matches it', () => {
@@ -157,6 +176,41 @@ const RAW_FONT: Record<string, number> = {
   'styles/shell.css': 27,
   'styles/stats.css': 148,
   'styles/ui.css': 10,
+};
+
+/** Raw `font-size` and `font-weight` longhands per stylesheet on 2026-10-24 (B1). Only falls. */
+const RAW_LONGHAND: Record<string, number> = {
+  'styles/auth.css': 22,
+  'styles/base.css': 3,
+  'styles/calendar.css': 20,
+  'styles/classes.css': 14,
+  'styles/coachhelm-ask.css': 9,
+  'styles/coachhelm-brief.css': 3,
+  'styles/coachhelm-dive.css': 11,
+  'styles/coachhelm-profile.css': 8,
+  'styles/coachhelm-standing.css': 15,
+  'styles/coachhelm-thread.css': 20,
+  'styles/coachhelm-track.css': 2,
+  'styles/coachhelm-views.css': 2,
+  'styles/coachhelm.css': 19,
+  'styles/command.css': 2,
+  'styles/controls.css': 18,
+  'styles/hero-tones.css': 2,
+  'styles/home.css': 47,
+  'styles/hub.css': 47,
+  'styles/messages.css': 12,
+  'styles/onboard.css': 23,
+  'styles/qualifiers.css': 52,
+  'styles/recruiting.css': 18,
+  'styles/roster.css': 8,
+  'styles/rounds-recover.css': 2,
+  'styles/rounds-setup.css': 15,
+  'styles/rounds-track.css': 27,
+  'styles/rounds.css': 71,
+  'styles/settings.css': 6,
+  'styles/shell.css': 22,
+  'styles/stats.css': 55,
+  'styles/ui.css': 22,
 };
 
 /** Off-role `letter-spacing` left after the tracking pass (2026-10-23): positive tracking on codes, initials and badges, large figures off the steps, and the sign-in pages. Only falls. */

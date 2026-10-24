@@ -938,7 +938,8 @@
 .ch-au-wl-mark span {
   font: 650 17px/1 var(--ch-font-sans);
   letter-spacing: -0.022em;
-  font-variation-settings: 'wdth' 92;
+  /* The wordmark's display width, as the 28px mark (B1: two widths). */
+  font-variation-settings: 'wdth' 96;
   color: var(--ch-text-primary);
 }
 .ch-au-wl-mark b {
@@ -1252,7 +1253,7 @@
   .ch-au-mark span {
     font: 600 17px/1 var(--ch-font-sans);
     letter-spacing: -0.022em;
-    font-variation-settings: 'wdth' 92;
+    font-variation-settings: 'wdth' 96;
     padding-top: 0;
   }
   .ch-au-panel {
@@ -1447,11 +1448,12 @@
   .ch-au-wl-body {
     margin-top: 34px;
   }
-  /* The board's 50px from a 390px phone, scaling down below it. One width step narrower (94) is what lets "Good
-     afternoon," hold one line there at the relaxed tracking: 341px of 346px at 390, 328px of 331px at 375. */
+  /* The board's 50px from a 390px phone, scaling down below it. The dense width (88, B1's two widths; it was 94, which
+     measured 341px of 346px at 390 and 328px of 331px at 375) is what lets "Good afternoon," hold one line there at the
+     relaxed tracking; 96 would not fit. */
   .ch-au-wl h1 {
     font-size: clamp(40px, 12.83vw, 50px);
-    font-variation-settings: 'wdth' 94;
+    font-variation-settings: 'wdth' 88;
     margin-top: 14px;
   }
   .ch-au-wl-card {
@@ -1787,7 +1789,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-control);
   font: 600 22px/1 var(--ch-font-sans);
-  font-variation-settings: 'wdth' 92;
+  font-variation-settings: 'wdth' 88;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
