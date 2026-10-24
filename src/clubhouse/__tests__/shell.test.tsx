@@ -39,7 +39,7 @@ import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notific
 import { ToastProvider, useToast } from '../ui/Toast';
 import { InlineNotice, RouteErrorView, type RouteErrorKind } from '../ui/Notices';
 import { Bell, BellSourceProvider, type ChBellApi } from '../shell/Bell';
-import { NotRebuilt } from '../shell/NotRebuilt';
+import { CH_ALIAS_WAIT_MS, NotRebuilt } from '../shell/NotRebuilt';
 import { ClubhouseNotFound } from '../shell/NotFound';
 import { OfflineBanner, pendingLine } from '../shell/OfflineBanner';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
@@ -1039,7 +1039,7 @@ describe('Shell · phone chrome', () => {
     expect(routerSpy.push).toHaveBeenCalledWith(`/golf/dashboard/qualifiers/${id}`);
   });
 
-  it('CH-1402 Settings is a section root (its title the switcher); a Settings section keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', async () => {
+  it('CH-1402 Settings is a section root (its title the switcher); a Settings section keeps its bar title for VoiceOver only; a route not rebuilt for the role keeps the plain bar', () => {
     let view = render(
       <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/settings" forceRebuilt>
         <p aria-busy="true">Loading</p>
@@ -1059,12 +1059,19 @@ describe('Shell · phone chrome', () => {
     view.unmount();
     // My qualifiers is the player's: a coach there gets the not-rebuilt notice under the plain bar, once the alias has had
     // its CH_ALIAS_WAIT_MS to redirect (A30: an old address on its way somewhere draws a blank canvas first).
-    render(
-      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
-        <p>My qualifiers body</p>
-      </ClubhouseFrame>,
-    );
-    await waitFor(() => expect(code('CH-1301')).not.toBeNull(), { timeout: 4000 });
+    vi.useFakeTimers();
+    try {
+      render(
+        <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard/my-qualifiers">
+          <p>My qualifiers body</p>
+        </ClubhouseFrame>,
+      );
+      expect(code('CH-1301')).toBeNull();
+      act(() => vi.advanceTimersByTime(CH_ALIAS_WAIT_MS));
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(code('CH-1301')).not.toBeNull();
     expect(code('CH-1402')).toBeNull();
     expect(document.querySelector('.ch-topbar')!.getAttribute('data-phone')).toBe('root');
   });
