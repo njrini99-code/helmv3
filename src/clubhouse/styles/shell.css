@@ -1687,6 +1687,12 @@ button.ch-more__row[disabled] {
   cursor: pointer;
   transition: background var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-quick) var(--ch-ease);
 }
+/* B8: a long feed draws only the rows near the panel's view; an off-screen row keeps the height it last drew. What a
+   row paints (its tint, its inset focus well) stays inside its box. */
+.ch-bellp__row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 64px;
+}
 .ch-bellp__row:focus-visible {
   /* .ch-menu__item hover: the design system's popover item */
   outline: none;

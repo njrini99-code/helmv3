@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
+import { hapticScrub } from './haptics';
 
 /**
  * One interaction for every stats chart (decisions Q2, Q12, Q13): the pointer over a mark, or an arrow key, reads it in the
@@ -15,6 +16,10 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Keyb
  * a finger dragged sideways after about 8 px (and mostly sideways) scrubs, a release after a drag keeps the last column
  * pinned, a tap pins the nearest. The plot's `touch-action: pan-y` lets a vertical swipe scroll the page, which cancels a
  * scrub. `inset` is the plot's share of the element's width, as [from, to] fractions (the axis labels sit outside it).
+ *
+ * A scrub ticks under the finger like a slider's detents (B5): 'start' warms the Taptic Engine as the scrub begins, a
+ * 'step' for each point it reads (the first included, so three points give three ticks), 'end' on release or cancel.
+ * Every chart that binds `area` ticks; a hover, a tap and the arrow keys do not.
  */
 export const SCRUB_START_PX = 8;
 
@@ -22,7 +27,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
   const [hover, setHover] = useState<number | null>(null);
   const [pin, setPin] = useState<number | null>(null);
   const root = useRef<HTMLElement | null>(null);
-  const drag = useRef<{ x: number; y: number; scrubbing: boolean } | null>(null);
+  const drag = useRef<{ x: number; y: number; scrubbing: boolean; at: number | null } | null>(null);
 
   // A chart whose marks changed under it (a new window) drops a pin that no longer exists.
   const pinned = pin != null && pin < count ? pin : null;
@@ -104,7 +109,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
   const area = {
     style: { touchAction: 'pan-y' } satisfies CSSProperties,
     onPointerDown: (e: PointerEvent<Element>) => {
-      drag.current = { x: e.clientX, y: e.clientY, scrubbing: false };
+      drag.current = { x: e.clientX, y: e.clientY, scrubbing: false, at: null };
     },
     onPointerMove: (e: PointerEvent<Element>) => {
       const d = drag.current;
@@ -116,9 +121,14 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
           d.scrubbing = true;
           // Keep the scrub when the finger leaves the plot's box mid-drag.
           e.currentTarget.setPointerCapture?.(e.pointerId);
+          hapticScrub('start');
         }
         const i = indexAt(e);
-        if (i >= 0) setHover(i);
+        if (i >= 0) {
+          if (i !== d.at) hapticScrub('step');
+          d.at = i;
+          setHover(i);
+        }
         return;
       }
       if (e.pointerType === 'mouse' || e.pointerType === 'pen') {
@@ -129,6 +139,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
     onPointerUp: (e: PointerEvent<Element>) => {
       const d = drag.current;
       drag.current = null;
+      if (d?.scrubbing) hapticScrub('end');
       const i = indexAt(e);
       if (i < 0) return;
       setHover(null);
@@ -137,6 +148,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
       else setPin((p) => (p === i ? null : i));
     },
     onPointerCancel: () => {
+      if (drag.current?.scrubbing) hapticScrub('end');
       drag.current = null;
       setHover(null);
     },

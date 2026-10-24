@@ -38,7 +38,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -1100,7 +1099,8 @@ export function Bubble({
     );
   }
   return (
-    <div
+    <PresenceRow
+      as="div"
       id={`ch-ms-message-${m.id}`}
       className={
         "ch-ms-msg" +
@@ -1281,7 +1281,7 @@ export function Bubble({
           )
         )}
       </div>
-    </div>
+    </PresenceRow>
   );
 }
 
@@ -1731,9 +1731,9 @@ export function useNewDivider(api: ChMessagesApi, conv: ChConv): string | null {
 /** Where the divider sits, before its message. */
 export function NewDivider() {
   return (
-    <div className="ch-ms-day is-new" role="separator" aria-label="New messages">
+    <PresenceRow as="div" className="ch-ms-day is-new" role="separator" aria-label="New messages">
       <span>New</span>
-    </div>
+    </PresenceRow>
   );
 }
 
@@ -1936,29 +1936,34 @@ function Thread({
           ) : !api.msgs.length ? (
             <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
           ) : (
-            items.map((it) =>
-              it.kind === "day" ? (
-                <div key={it.key} className="ch-ms-day">
-                  <span>{it.label}</span>
-                </div>
-              ) : (
-                <Fragment key={it.key}>
-                  {it.m.id === newId && <NewDivider />}
-                  <Bubble
-                    api={api}
-                    m={it.m}
-                    first={it.first}
-                    last={it.last}
-                    group={conv.group}
-                    picking={picking === it.m.id}
-                    setPicking={(v) => setPicking(v ? it.m.id : null)}
-                    onEdit={() => setEditing(it.m)}
-                    onDelete={() => setDeleting(it.m)}
-                    onReply={() => reply(it.m)}
-                  />
-                </Fragment>
-              ),
-            )
+            // B7: a message that arrives or is deleted opens or closes in place; the thread's scroll stays with
+            // useThreadAnchor (no FLIP), and another conversation is a new list, whose messages never arrive.
+            <ListPresence key={conv.id} flip={false}>
+              {items.flatMap((it) =>
+                it.kind === "day"
+                  ? [
+                      <PresenceRow as="div" key={it.key} className="ch-ms-day">
+                        <span>{it.label}</span>
+                      </PresenceRow>,
+                    ]
+                  : [
+                      ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
+                      <Bubble
+                        key={it.key}
+                        api={api}
+                        m={it.m}
+                        first={it.first}
+                        last={it.last}
+                        group={conv.group}
+                        picking={picking === it.m.id}
+                        setPicking={(v) => setPicking(v ? it.m.id : null)}
+                        onEdit={() => setEditing(it.m)}
+                        onDelete={() => setDeleting(it.m)}
+                        onReply={() => reply(it.m)}
+                      />,
+                    ],
+              )}
+            </ListPresence>
           )}
           {/* No dots under a thread that didn't load or is still loading (states audit c9): nothing to type into yet. */}
           {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (

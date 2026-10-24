@@ -10,27 +10,29 @@ import { useChReducedMotion } from '../lib/reduced-motion';
  * a `PresenceRow` (the row itself, so the list's sibling rules still hold): a new row opens its height and fades in, a
  * removed row stays mounted (`data-leaving`, hidden from assistive tech and focus) while its height, padding and rules
  * close, clipped, so the rows below slide up instead of jumping, and a row that moves slides to its new place (FLIP, by
- * transform). Rows are measured only when the list's keys change; first paint never animates. Reduced motion and
- * Animations off render plain rows that come and go at once, and so does a `PresenceRow` outside a `ListPresence`.
+ * transform). Rows are measured only when the list's keys change; first paint never animates. Under reduced motion and
+ * Animations off rows come and go at once (the same elements: turning the setting over mid-list remounts nothing), and
+ * a `PresenceRow` outside a `ListPresence` is a plain row.
+ * `flip={false}` keeps arrivals and leavings but not the slide to a new place, for a list inside a scroller that sets its
+ * own position as rows come (a message thread, use-thread-anchor.ts): FLIP would read that scroll as every row moving.
  *
  *   <ul><ListPresence>{trips.map((t) => <Trip key={t.id} …/>)}</ListPresence></ul>   // Trip's root: <PresenceRow as="li">
  */
 
 /** The list's keys in order, and whether it has painted (a row that mounts after is an arrival); null outside a ListPresence. */
-const ListCtx = createContext<{ keys: string; painted: RefObject<boolean> } | null>(null);
+const ListCtx = createContext<{ keys: string; painted: RefObject<boolean>; flip: boolean; reduced: boolean } | null>(null);
 
-export function ListPresence({ children }: { children: ReactNode }) {
+export function ListPresence({ children, flip = true }: { children: ReactNode; flip?: boolean }) {
   const reduced = useChReducedMotion();
   const painted = useRef(false);
   useEffect(() => {
     painted.current = true;
   }, []);
-  if (reduced) return <>{children}</>;
   const keys = Children.toArray(children)
     .map((c) => (isValidElement(c) ? String(c.key) : ''))
     .join('|');
   return (
-    <ListCtx.Provider value={{ keys, painted }}>
+    <ListCtx.Provider value={{ keys, painted, flip, reduced }}>
       <AnimatePresence initial={false}>{children}</AnimatePresence>
     </ListCtx.Provider>
   );
@@ -51,17 +53,18 @@ export function PresenceRow({ as = 'li', children, ref, ...rest }: { as?: RowTag
     );
   }
   return (
-    <Moving as={as} keys={list.keys} arrives={list.painted.current} rowRef={ref} {...rest}>
+    <Moving as={as} keys={list.keys} flip={list.flip && !list.reduced} still={list.reduced} arrives={list.painted.current} rowRef={ref} {...rest}>
       {children}
     </Moving>
   );
 }
 
-function Moving({ as, keys, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
+function Moving({ as, keys, flip, still, arrives, rowRef, children, ...rest }: { as: RowTag; keys: string; flip: boolean; still: boolean; arrives: boolean; rowRef?: Ref<HTMLElement>; children: ReactNode } & RowProps) {
   const present = useIsPresent();
   // A row there at first paint is never styled by the list; one that arrives later opens in, then hands its height,
-  // opacity and overflow back to its own stylesheet.
-  const [arriving] = useState(arrives);
+  // opacity and overflow back to its own stylesheet. Under reduced motion nothing opens, closes or slides.
+  const [arrived] = useState(arrives);
+  const arriving = arrived && !still;
   const el = useRef<HTMLElement | null>(null);
   const ref = useCallback(
     (node: HTMLElement | null) => {
@@ -80,15 +83,15 @@ function Moving({ as, keys, arrives, rowRef, children, ...rest }: { as: RowTag; 
     <Row
       {...(rest as object)}
       ref={ref}
-      layout="position"
-      layoutDependency={keys}
+      layout={flip ? 'position' : undefined}
+      layoutDependency={flip ? keys : undefined}
       data-leaving={present ? undefined : ''}
       aria-hidden={present ? rest['aria-hidden'] : true}
       inert={!present}
       initial={arriving ? ENTER : false}
       animate={arriving ? SHOWN : undefined}
       onAnimationComplete={arriving ? settle : undefined}
-      exit={LEAVE}
+      exit={still ? undefined : LEAVE}
       transition={MOVE}
     >
       {children}

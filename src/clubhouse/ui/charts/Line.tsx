@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { hapticScrub } from '../../lib/haptics';
+import { useId, type ReactNode } from 'react';
+import { useGlide } from '../../lib/motion-glide';
 import { useChartPin } from '../../lib/use-chart-pin';
 
 /**
@@ -9,7 +9,9 @@ import { useChartPin } from '../../lib/use-chart-pin';
  * `lowerIsBetter`), a missing value is a gap in the line, never a bridge or a zero, segments are straight, small multiples
  * share one `domain` so the same value sits at the same height in each, and ticks are a few round numbers in tabular
  * figures. A pointer, a finger dragged sideways or the arrow keys read a point in the line above the plot (`useChartPin`),
- * with a scrub tick under the finger. An early line (`early`) draws its points hollow. No draw-in animation (Q-153).
+ * with a scrub tick under the finger (useChartPin's). An early line (`early`) draws its points hollow. No draw-in animation (Q-153); when the
+ * figures change (a new window), the line, its points and its baseline glide to their new heights (useGlide, B9) while the
+ * ticks and labels take theirs at once.
  */
 
 export interface ChLinePoint {
@@ -185,9 +187,13 @@ export function Line({
   const x = (i: number) => PAD.l + ((i + 0.5) / Math.max(n, 1)) * plotW;
   const ticks = axis ? lineTicks(dom[0], dom[1]) : [];
   const newest = values.reduce<number>((at, v, i) => (v != null ? i : at), -1);
-  const path = linePath(values, x, y);
+  // The heights drawn, gliding from the old ones on a change (the baseline's last), so the path and the points move together.
+  const drawn = useGlide([...values.map((v) => (v == null ? null : y(v))), baseline ? y(baseline.value) : null]);
+  const py = (i: number) => drawn[i]!;
+  const baseY = drawn[n] ?? 0;
+  const path = linePath(drawn.slice(0, n), x, (v) => v);
   // The wash closes each segment down to the worse edge of the plot (the bottom, since better is up), or to the baseline.
-  const floor = wash === 'baseline' && baseline ? y(baseline.value).toFixed(1) : String(PAD.t + plotH);
+  const floor = wash === 'baseline' && baseline ? baseY.toFixed(1) : String(PAD.t + plotH);
   const washPath = wash
     ? path.replace(/M([\d.]+),([\d.]+)((?: L[\d.]+,[\d.]+)*)/g, (_m, x0, y0, rest: string) => {
         const xEnd = /L([\d.]+),[\d.]+$/.exec(rest)?.[1] ?? x0;
@@ -206,13 +212,6 @@ export function Line({
       )
     : null;
   const read = (i: number | null) => (i == null ? null : readout ? readout(i) : `${points[i]!.x} · ${points[i]!.y == null ? 'No figure' : format(points[i]!.y!)}`);
-
-  // A tick under the finger as the readout moves from point to point while it scrubs (the slider's detent).
-  const last = useRef<number | null>(null);
-  useEffect(() => {
-    if (pin.active != null && last.current != null && pin.active !== last.current) hapticScrub('step');
-    last.current = pin.active;
-  }, [pin.active]);
 
   const washId = `ch-line-wash-${useId().replace(/:/g, '')}`;
   const shown = read(pin.active);
@@ -233,7 +232,7 @@ export function Line({
       ))}
       {baseline && (
         <g>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(baseline.value)} y2={y(baseline.value)} className={'ch-line__ref' + (baseline.dashed ? ' is-dashed' : '')} />
+          <line x1={PAD.l} x2={W - PAD.r} y1={baseY} y2={baseY} className={'ch-line__ref' + (baseline.dashed ? ' is-dashed' : '')} />
           {refAt && (
             <text x={refAt.x} y={refAt.y} textAnchor={refAt.anchor} className="ch-line__t ch-line__ref-t">
               {refText}
@@ -261,7 +260,7 @@ export function Line({
           <circle
             key={`${p.x}-${i}`}
             cx={x(i)}
-            cy={y(p.y)}
+            cy={py(i)}
             r={i === pin.active ? 5 : marks === 'trail' && i === newest ? 4 : 3}
             className={'ch-line__dot' + (early || (marks === 'trail' && i !== newest) ? ' is-hollow' : '') + (i === pin.active ? ' is-active' : '')}
           />

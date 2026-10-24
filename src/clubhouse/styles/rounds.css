@@ -4770,8 +4770,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 
 /* B8: a season of rounds draws only the month groups near the screen; an off-screen group keeps the height it last drew
-   (a month's header and a few rows before it first draws). */
-.ch-rd-grp {
+   (a month's header and a few rows before it first draws). The phone's flat list only: the paint containment clips what
+   a group's rows draw outside it, and on the desktop that is the Ledger's row tint (its book bleeds 12px each side), a
+   card's shadow and its focus ring (auditor #12). */
+.ch-rd.is-phone .ch-rd-grp {
   content-visibility: auto;
   contain-intrinsic-size: auto 320px;
 }

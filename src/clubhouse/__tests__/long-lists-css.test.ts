@@ -8,14 +8,25 @@ const css = (f: string) => readFileSync(join(ROOT, 'styles', f), 'utf8');
 
 describe('long lists and fonts (B8)', () => {
   it.each([
+    ['messages.css', '.ch-ms-row'],
     ['messages.css', '.ch-ms-row.is-hit'],
-    ['rounds.css', '.ch-rd-grp'],
+    ['shell.css', '.ch-bellp__row'],
+    ['rounds.css', '.ch-rd.is-phone .ch-rd-grp'],
   ])('%s %s skips its off-screen work with an intrinsic size', (file, sel) => {
     const s = css(file);
     const at = s.lastIndexOf(`${sel} {`);
     const rule = s.slice(at, s.indexOf('}', at));
     expect(rule).toMatch(/content-visibility: auto;/);
     expect(rule).toMatch(/contain-intrinsic-size: auto \d+px;/);
+  });
+
+  it('the desktop rounds Ledger does not skip its groups: their containment would clip the row tint, card shadow and focus ring (auditor #12)', () => {
+    const s = css('rounds.css');
+    expect(s).not.toMatch(/(^|\})\s*\.ch-rd-grp \{[^}]*content-visibility/);
+  });
+
+  it('nothing that skips its off-screen work sits on a message bubble (thread heights vary too much for an estimate)', () => {
+    expect(css('messages.css')).not.toMatch(/\.ch-ms-msg[^{]*\{[^}]*content-visibility/);
   });
 
   it('JetBrains Mono is not preloaded', () => {

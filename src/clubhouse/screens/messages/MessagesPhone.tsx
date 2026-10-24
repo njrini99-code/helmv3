@@ -27,7 +27,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -99,7 +98,7 @@ import {
 import { useComposerInset } from "./composer-inset";
 import { useThreadAnchor } from "./use-thread-anchor";
 import { useFocusMessage } from "./use-focus-message";
-import { ListPresence } from "../../ui/ListPresence";
+import { ListPresence, PresenceRow } from "../../ui/ListPresence";
 import { pluralWord } from "../../lib/plural";
 import { LargeTitle } from "../../ui/LargeTitle";
 
@@ -465,30 +464,34 @@ function PhoneThread({
             ) : !api.msgs.length ? (
               <EmptyState compact code="CH-7304" title="No messages yet" body={`Say hello to ${conv.group ? "the group" : firstName(conv.title)}.`} />
             ) : (
-              items.map((it) =>
-                it.kind === "day" ? (
-                  <div key={it.key} className="ch-ms-day">
-                    <span>{it.label}</span>
-                  </div>
-                ) : (
-                  <Fragment key={it.key}>
-                    {it.m.id === newId && <NewDivider />}
-                    <Bubble
-                      api={api}
-                      m={it.m}
-                      first={it.first}
-                      last={it.last}
-                      group={conv.group}
-                      picking={false}
-                      setPicking={() => {}}
-                      onEdit={() => setEditing(it.m)}
-                      onDelete={() => setDeleting(it.m)}
-                      onActions={it.m.deleted ? undefined : () => setActing(it.m)}
-                      onReply={() => reply(it.m)}
-                    />
-                  </Fragment>
-                ),
-              )
+              // B7, as on desktop: arrivals and deletions open and close in place; the scroll stays with useThreadAnchor.
+              <ListPresence key={conv.id} flip={false}>
+                {items.flatMap((it) =>
+                  it.kind === "day"
+                    ? [
+                        <PresenceRow as="div" key={it.key} className="ch-ms-day">
+                          <span>{it.label}</span>
+                        </PresenceRow>,
+                      ]
+                    : [
+                        ...(it.m.id === newId ? [<NewDivider key={`new-${it.key}`} />] : []),
+                        <Bubble
+                          key={it.key}
+                          api={api}
+                          m={it.m}
+                          first={it.first}
+                          last={it.last}
+                          group={conv.group}
+                          picking={false}
+                          setPicking={() => {}}
+                          onEdit={() => setEditing(it.m)}
+                          onDelete={() => setDeleting(it.m)}
+                          onActions={it.m.deleted ? undefined : () => setActing(it.m)}
+                          onReply={() => reply(it.m)}
+                        />,
+                      ],
+                )}
+              </ListPresence>
             )}
             {/* CH-7602, as on desktop: no dots under a thread that didn't load or is still loading. */}
             {api.typing && !api.msgsError && !(api.msgsLoading && !api.msgs.length) && (
