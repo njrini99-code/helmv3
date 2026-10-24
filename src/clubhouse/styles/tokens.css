@@ -505,7 +505,7 @@
   /* Elevation */
   /* The older names, kept for their many uses, now read their role on the depth ladder below. */
   --ch-shadow-sm: var(--ch-elevation-reading);
-  --ch-shadow-md: var(--ch-elevation-floating);
+  --ch-shadow-md: var(--ch-elevation-raised);
   --ch-shadow-lg: var(--ch-elevation-overlay);
   /* B3: the Surface card's own lift (ui.css .ch-surface): a hairline ring, a contact shadow and a soft fall. */
   --ch-elevation-card: 0 0 0 1px rgb(28 25 18 / 0.07), 0 1px 2px rgb(28 25 18 / 0.04), 0 8px 20px -10px rgb(28 25 18 / 0.1);
@@ -534,9 +534,12 @@
     var(--ch-light-drift) 28px 48px -26px rgb(28 25 18 / 0.22);
   --ch-elevation-reading-accent: 0 1px 3px rgb(8 43 28 / 0.08), 0 4px 12px -6px rgb(8 43 28 / 0.12);
   --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(28 25 18 / 0.06);
-  --ch-elevation-floating: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
+  /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
+     overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
+  --ch-elevation-raised: var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.06), var(--ch-light-drift-mid) 8px 20px -8px rgb(28 25 18 / 0.12);
+  --ch-elevation-floating: var(--ch-elevation-raised);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
-    var(--ch-elevation-floating);
+    var(--ch-elevation-raised);
   /* The phone's floating tab bar: a lit edge, a hairline and a long soft shadow that separates it from the scrolling page. */
   --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim-soft), 0 0 0 1px rgb(28 25 18 / 0.07),
     var(--ch-light-drift-near) 2px 6px rgb(28 25 18 / 0.08), var(--ch-light-drift-mid) 14px 32px -12px rgb(28 25 18 / 0.32);
@@ -892,7 +895,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     var(--ch-light-drift) 28px 48px -26px rgb(0 0 0 / 0.55);
   --ch-elevation-reading-accent: 0 1px 3px rgb(0 0 0 / 0.35), 0 4px 12px -6px rgb(0 0 0 / 0.45);
   --ch-elevation-control: var(--ch-highlight), var(--ch-light-drift-near) 1px 2px rgb(0 0 0 / 0.35);
-  --ch-elevation-floating: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
+  --ch-elevation-floating: var(--ch-elevation-raised);
+  --ch-elevation-raised: 0 0 0 1px rgb(255 255 255 / 0.06), var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.35),
     var(--ch-light-drift-mid) 8px 20px -8px rgb(0 0 0 / 0.55);
   --ch-elevation-tabbar: inset var(--ch-light-rim-x) 1px 0 var(--ch-light-rim), 0 0 0 1px rgb(255 255 255 / 0.07),
     var(--ch-light-drift-near) 2px 6px rgb(0 0 0 / 0.4), var(--ch-light-drift-mid) 14px 32px -12px rgb(0 0 0 / 0.7);

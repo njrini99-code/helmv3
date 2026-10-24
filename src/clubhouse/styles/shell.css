@@ -2759,7 +2759,7 @@ html[data-fw-theme='dark'] .ch-offline {
     background: var(--ch-sheet-bg);
     color: var(--ch-text-primary);
     text-decoration: none;
-    box-shadow: var(--ch-elevation-floating), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
+    box-shadow: var(--ch-elevation-raised), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle), var(--ch-highlight);
     transition: transform var(--ch-dur-press) var(--ch-ease);
   }
   .ch-resume:is(:active, [data-ch-pressed]) {

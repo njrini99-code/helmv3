@@ -495,7 +495,7 @@
   padding: 16px 16px 12px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
   transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
 }
 .ch-ask-cmp__box:focus-within {
@@ -1160,7 +1160,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
       inset-inline-end: 0;
       z-index: 2;
       width: min(380px, 92%);
-      box-shadow: var(--ch-elevation-floating);
+      box-shadow: var(--ch-elevation-raised);
     }
   }
 }

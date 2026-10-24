@@ -1001,7 +1001,7 @@
   padding: 16px 16px 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-au-wl-news {
   display: flex;

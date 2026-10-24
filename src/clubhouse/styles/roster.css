@@ -2122,12 +2122,12 @@ a.ch-rs-peek__dev:focus-visible,
     opacity: 0.7;
   }
   .ch-rs[data-canopy] .ch-rs-face__av {
-    box-shadow: var(--ch-elevation-floating);
+    box-shadow: var(--ch-elevation-raised);
     outline: var(--ch-hairline-w) solid var(--ch-ledger-rule);
     outline-offset: 3px;
   }
   .ch-rs[data-canopy] .ch-rs-face.is-sel .ch-rs-face__av {
-    box-shadow: var(--ch-elevation-floating);
+    box-shadow: var(--ch-elevation-raised);
     outline: 2px solid var(--ch-green-600);
   }
   /* P003-A1: the open player's ring catches a gilt crescent on the side the light comes from. */
@@ -2235,7 +2235,7 @@ a.ch-rs-peek__dev:focus-visible,
   }
   .ch-rs[data-canopy] .ch-rs-peek__av {
     margin-bottom: 8px;
-    box-shadow: var(--ch-elevation-floating);
+    box-shadow: var(--ch-elevation-raised);
     outline: var(--ch-hairline-w) solid var(--ch-ledger-rule);
     outline-offset: 4px;
   }

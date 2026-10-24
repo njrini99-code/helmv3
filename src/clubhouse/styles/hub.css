@@ -316,7 +316,7 @@
   box-shadow: var(--ch-sheet-shadow);
 }
 .ch-hb-ann.is-featured {
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-hb-ann h3 {
   margin: 2px 0 0;
@@ -566,7 +566,7 @@
 }
 .ch-hb-pass.is-big {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-hb-pass__main {
   display: flex;

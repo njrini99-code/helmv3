@@ -2144,11 +2144,11 @@ html[data-fw-theme='dark'] .ch-ox {
 }
 html[data-fw-theme='dark'] .ch-ox-lock {
   background: rgb(27 32 28 / 0.88);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-floating);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
 }
 html[data-fw-theme='dark'] .ch-ox-rail {
   background: rgb(27 32 28 / 0.92);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-floating);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
 }
 html[data-fw-theme='dark'] .ch-ox-rail__s {
   color: var(--ch-text-tertiary);
@@ -2172,7 +2172,7 @@ html[data-fw-theme='dark'] .ch-ox-rail__m::after {
 }
 html[data-fw-theme='dark'] .ch-ox-signin {
   background: rgb(27 32 28 / 0.96);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-floating);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-raised);
   color: var(--ch-ink-700);
 }
 html[data-fw-theme='dark'] .ch-ox .ch-ox-signin a {

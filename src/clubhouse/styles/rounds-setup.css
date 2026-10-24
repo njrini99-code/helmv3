@@ -2316,7 +2316,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   .ch-rsu-dock {
     box-shadow:
       0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
-      var(--ch-elevation-floating);
+      var(--ch-elevation-raised);
   }
 }
 .ch-rsu-dock__s b {

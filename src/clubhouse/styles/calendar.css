@@ -627,7 +627,7 @@
   pointer-events: none;
   outline: 2px dashed var(--ch-border-focus);
   outline-offset: -2px;
-  box-shadow: var(--ch-elevation-floating);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-ev.is-clash {
   z-index: 5;
@@ -3045,7 +3045,7 @@ html[data-fw-theme='dark'] .ch-mo__cell.is-past .ch-mo__ev.is-major {
   background-color: color-mix(in srgb, var(--ch-green-fill-700) 50%, var(--ch-bg-page));
 }
 html[data-fw-theme='dark'] .ch-ev.is-sel {
-  box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-floating);
+  box-shadow: 0 0 0 2px var(--ch-green-600), var(--ch-elevation-raised);
 }
 html[data-fw-theme='dark'] .ch-ev__warn {
   box-shadow: 0 0 0 1px rgb(227 169 79 / 0.3);
