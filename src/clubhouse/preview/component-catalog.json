@@ -13573,8 +13573,18 @@
         },
         {
           "name": "--ch-line-ink",
-          "value": "var(--ch-chart-gain)",
+          "value": "var(--ch-ink-500)",
           "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line"
+        },
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-chart-gain)",
+          "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line.is-gain"
+        },
+        {
+          "name": "--ch-line-ink",
+          "value": "var(--ch-chart-loss)",
+          "scope": "@media (max-width: 820px) → .ch-stm.is-team .ch-stm-line.is-loss"
         },
         {
           "name": "--ch-stm-inset",

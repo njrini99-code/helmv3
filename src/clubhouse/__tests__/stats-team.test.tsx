@@ -634,6 +634,27 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect(document.querySelector('.ch-stm-head span')!.textContent).toBe('Varsity · 7 active players · countable rounds only');
   });
 
+  it('the phone trend draws its value axis and takes the gain or loss ink only from its noise-tested change (row 69)', () => {
+    const line = () => document.querySelector('.ch-stm-line')!;
+    // The fixture's newer half is 0.9 lower, past its standard error: better, the gain ink, and the ticks are drawn.
+    const view = wrap(stats());
+    expect(line().classList.contains('is-gain')).toBe(true);
+    expect(line().querySelectorAll('.ch-line__grid').length).toBeGreaterThan(0);
+    view.unmount();
+    // Higher scores past the noise are worse: the loss ink, the words say Up.
+    const worse = wrap(stats({ daysHalves: { delta: 1.2, se: 0.3 } }));
+    expect(line().classList.contains('is-loss')).toBe(true);
+    expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('Up 1.2 strokes a round');
+    worse.unmount();
+    // Inside the noise, and a change that prints as 0.0, are neither: the neutral ink, never a standing green.
+    for (const daysHalves of [{ delta: 0.4, se: 0.5 }, { delta: -0.04, se: 0.001 }]) {
+      const v = wrap(stats({ daysHalves }));
+      expect(line().classList.contains('is-gain') || line().classList.contains('is-loss')).toBe(false);
+      expect(document.querySelector('.ch-stm-trend')!.textContent).toContain('No clear change across the window.');
+      v.unmount();
+    }
+  });
+
   it('CH-4703 CH-4805 players sort by scoring average, or by strokes gained; a row opens the player and reads as one link', async () => {
     const user = userEvent.setup();
     wrap(stats());

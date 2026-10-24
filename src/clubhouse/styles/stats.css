@@ -4371,9 +4371,16 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
-  /* The team trend on the one line chart (B5): the gain green, its newest day marked larger on a workspace ring. */
+  /* The team trend on the one line chart (B5), its newest day marked larger on a workspace ring. The ink is neutral until the
+     summary's noise-tested change says better (gain) or worse (loss), as its words do (row 69). */
   .ch-stm.is-team .ch-stm-line {
+    --ch-line-ink: var(--ch-ink-500);
+  }
+  .ch-stm.is-team .ch-stm-line.is-gain {
     --ch-line-ink: var(--ch-chart-gain);
+  }
+  .ch-stm.is-team .ch-stm-line.is-loss {
+    --ch-line-ink: var(--ch-chart-loss);
   }
   .ch-stm.is-team .ch-stm-line .ch-line__path {
     stroke-width: 2.2;
