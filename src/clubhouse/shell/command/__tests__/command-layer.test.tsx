@@ -11,6 +11,8 @@ const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn(), back: vi.fn(), refresh: vi.fn() }), usePathname: () => '/golf/dashboard' }));
 vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn() }));
 vi.mock('@/hooks/golf/use-appearance-preferences', () => ({ useAppearancePreferences: () => ({ showAnimations: false }) }));
+// The real loader is a server action; each test hands CommandLayer its own (loadPeople).
+vi.mock('../../../data/palette-people', () => ({ getPalettePeople: vi.fn(async () => null) }));
 
 let desktop = true;
 beforeAll(() => {
@@ -39,12 +41,17 @@ afterEach(() => {
   cleanup();
 });
 
-function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, shellPeople: { id: string; name: string }[] | null = null) {
+/** A palette People loader that answers with `list` (the server action's stand-in). */
+const loaderOf = (list: { id: string; name: string }[] | null) => vi.fn(async () => list);
+/** Lets the palette's People load settle after it opens. */
+const settle = () => act(async () => {});
+
+function mount(role: 'coach' | 'player' = 'coach', extra: React.ReactNode = null, loadPeople = loaderOf(null)) {
   return render(
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         <main id="ch-canvas">{extra}</main>
-        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" shellPeople={shellPeople} />
+        <CommandLayer role={role} pathname="/golf/dashboard" userId="u1" teamId="t1" loadPeople={loadPeople} />
       </div>
     </LazyMotion>,
   );
@@ -145,43 +152,52 @@ describe('the palette (Cmd or Ctrl K)', () => {
   });
 });
 
-describe('people from the shell data, before Roster opens (owner, decision 16)', () => {
+describe('people read when the palette opens, before Roster opens (owner, decision 16)', () => {
   const SHELL = [{ id: 's1', name: 'Mae Lindqvist' }, { id: 's2', name: 'Theo Barros' }];
 
-  it('a coach finds a player cold, from the shell\'s names alone, and opens their stats', () => {
-    mount('coach', null, SHELL);
+  it('a coach finds a player cold, from the names read on opening, and opens their stats', async () => {
+    const load = loaderOf(SHELL);
+    mount('coach', null, load);
+    expect(load).not.toHaveBeenCalled();
     key('k', { metaKey: true });
+    await settle();
+    expect(load).toHaveBeenCalledTimes(1);
     search('lindqvist');
     expect(options()).toEqual(['Mae Lindqvist']);
     fireEvent.click(within(palette()).getByRole('option', { name: /Mae Lindqvist/ }));
     expect(push).toHaveBeenCalledWith('/golf/dashboard/stats?player=s1', { scroll: false });
   });
 
-  it('a player is never seeded, even if handed names', () => {
+  it('a player never reads them', async () => {
     let seen: readonly unknown[] = ['unset'];
     function Probe() {
       seen = usePeople();
       return null;
     }
-    mount('player', <Probe />, SHELL);
+    const load = loaderOf(SHELL);
+    mount('player', <Probe />, load);
     expect(seen).toEqual([]);
     key('k', { metaKey: true });
+    await settle();
+    expect(load).not.toHaveBeenCalled();
     search('mae');
     expect(options()).not.toContain('Mae Lindqvist');
   });
 
-  it('a page\'s own list wins over the seed, whether it publishes before or after', () => {
+  it('a page\'s own list wins over the seed, whether it publishes before or after', async () => {
     publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]);
-    mount('coach', null, SHELL);
+    mount('coach', null, loaderOf(SHELL));
     key('k', { metaKey: true });
+    await settle();
     search('theo');
     expect(options()).not.toContain('Theo Barros');
     cleanup();
     clearPeople();
 
-    mount('coach', null, SHELL);
+    mount('coach', null, loaderOf(SHELL));
     act(() => publishPeople([{ id: 'r1', name: 'Mae Lindqvist', detail: 'Junior' }]));
     key('k', { metaKey: true });
+    await settle();
     search('theo');
     expect(options()).not.toContain('Theo Barros');
     search('mae');
@@ -196,11 +212,11 @@ describe('people across a team switch', () => {
     useEffect(() => publishPeople(names.map((n, i) => ({ id: `p${i}`, name: n }))), [names]);
     return null;
   }
-  const tree = (teamId: string, names: string[], shellPeople: { id: string; name: string }[] | null = null, userId = 'u1') => (
+  const tree = (teamId: string, names: string[], loadPeople = loaderOf(null), userId = 'u1') => (
     <LazyMotion features={domAnimation}>
       <div className="ch-root" data-ui="clubhouse">
         {names.length > 0 && <Page names={names} />}
-        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId={userId} teamId={teamId} shellPeople={shellPeople} />
+        <CommandLayer role={COACH} pathname="/golf/dashboard/roster" userId={userId} teamId={teamId} loadPeople={loadPeople} />
       </div>
     </LazyMotion>
   );
@@ -217,10 +233,15 @@ describe('people across a team switch', () => {
     expect(options()).not.toContain('Jonah Okafor');
   });
 
-  it('a team switch drops the old team\'s shell names, and a Roster list published on the old team, for the new team\'s', () => {
-    const { rerender } = render(tree('t1', ['Jonah Okafor'], [{ id: 'a', name: 'Jonah Okafor' }]));
-    rerender(tree('t2', [], [{ id: 'b', name: 'Priya Natarajan' }]));
+  it('a team switch drops the old team\'s names, and a Roster list published on the old team, for the new team\'s', async () => {
+    const { rerender } = render(tree('t1', ['Jonah Okafor'], loaderOf([{ id: 'a', name: 'Jonah Okafor' }])));
     key('k', { metaKey: true });
+    await settle();
+    // Cmd K again closes it (the one chord that works over the palette).
+    key('k', { metaKey: true });
+    rerender(tree('t2', [], loaderOf([{ id: 'b', name: 'Priya Natarajan' }])));
+    key('k', { metaKey: true });
+    await settle();
     search('pri');
     expect(options()).toContain('Priya Natarajan');
     search('jon');
@@ -229,7 +250,7 @@ describe('people across a team switch', () => {
 
   it('another person signing in on the same team never sees the last one\'s list', () => {
     const { rerender } = render(tree('t1', ['Jonah Okafor']));
-    rerender(tree('t1', [], null, 'u2'));
+    rerender(tree('t1', [], loaderOf(null), 'u2'));
     key('k', { metaKey: true });
     search('jon');
     expect(options()).not.toContain('Jonah Okafor');
