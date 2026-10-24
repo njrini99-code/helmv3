@@ -163,7 +163,8 @@
   --ch-accent: var(--ch-green-600);
   --ch-accent-hover: var(--ch-green-700);
   --ch-accent-press: var(--ch-green-800);
-  --ch-border-hairline: rgb(28 25 18 / 0.07);
+  /* Decision 6 (owner, 2026-10-24): a touch darker than 0.07, so a one-device-pixel line still reads (B3). */
+  --ch-border-hairline: rgb(28 25 18 / 0.1);
   --ch-border-subtle: rgb(28 25 18 / 0.1);
   --ch-border-control: rgb(28 25 18 / 0.14);
   --ch-border-strong: rgb(28 25 18 / 0.24);
@@ -807,7 +808,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-accent: #23704a;
   --ch-accent-hover: #2a7d53;
   --ch-accent-press: #1d613f;
-  --ch-border-hairline: rgb(237 231 216 / 0.08);
+  --ch-border-hairline: rgb(237 231 216 / 0.12); /* decision 6, from 0.08 */
   --ch-border-subtle: rgb(237 231 216 / 0.11);
   --ch-border-control: rgb(237 231 216 / 0.17);
   --ch-border-strong: rgb(237 231 216 / 0.3);

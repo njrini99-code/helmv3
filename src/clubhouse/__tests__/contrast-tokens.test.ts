@@ -135,3 +135,36 @@ describe('Increase Contrast (B15)', () => {
     }
   });
 });
+
+describe('hairlines a touch darker (owner, 2026-10-24, decision 6)', () => {
+  /** A border token's ink and alpha in the light root or the dark block. */
+  const rgba = (name: string, theme: 'light' | 'dark'): [RGB, number] => {
+    const from = theme === 'light' ? 0 : tokens.indexOf("[data-fw-theme='dark']");
+    const m = new RegExp(`--${name}:\\s*rgb\\((\\d+) (\\d+) (\\d+) / ([\\d.]+)\\)`).exec(tokens.slice(from));
+    if (!m) throw new Error(`--${name} (${theme}) is not an rgb with alpha`);
+    return [[Number(m[1]), Number(m[2]), Number(m[3])], Number(m[4])];
+  };
+
+  it('the hairline is 0.10 in light and 0.12 at night, and still reads as a hairline on the page and on a card', () => {
+    const [lightInk, lightA] = rgba('ch-border-hairline', 'light');
+    const [darkInk, darkA] = rgba('ch-border-hairline', 'dark');
+    expect(lightA).toBe(0.1);
+    expect(darkA).toBe(0.12);
+    // A separator is decoration (WCAG 1.4.11 does not ask 3:1 of it); these hold it visibly darker than at 0.07 / 0.08
+    // (1.15 and 1.20 to 1.23) and well under Increase Contrast's line.
+    for (const bg of ['ch-bg-page', 'ch-bg-surface'] as const) {
+      const light = hex(token(bg, 'light'));
+      const dark = hex(token(bg, 'dark'));
+      expect(contrast(over(lightInk, lightA, light), light), `light on ${bg}`).toBeGreaterThanOrEqual(1.2);
+      expect(contrast(over(darkInk, darkA, dark), dark), `dark on ${bg}`).toBeGreaterThanOrEqual(1.33);
+    }
+  });
+
+  it('Increase Contrast still draws the hairline stronger in both themes', () => {
+    const ic = tokens.slice(tokens.indexOf('@media (prefers-contrast: more)'));
+    const icLight = Number(/--ch-border-hairline: rgb\(28 25 18 \/ ([\d.]+)\)/.exec(ic)![1]);
+    const icDark = Number(/--ch-border-hairline: rgb\(237 231 216 \/ ([\d.]+)\)/.exec(ic)![1]);
+    expect(icLight).toBeGreaterThan(rgba('ch-border-hairline', 'light')[1]);
+    expect(icDark).toBeGreaterThan(rgba('ch-border-hairline', 'dark')[1]);
+  });
+});
