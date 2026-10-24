@@ -343,6 +343,10 @@
   background: linear-gradient(180deg, #fbf8ef 0%, #e6e1d3 100%);
   box-shadow: var(--ch-board-double-shadow);
 }
+/* Row 46: the no-data mark (ui/NoData.tsx) reads at the tertiary ink, as an unplayed hole does. */
+.ch-nodata {
+  color: var(--ch-text-tertiary);
+}
 .ch-score--empty {
   /* A hole not played reads at 4.5:1 (A18), still quieter than a score. */
   color: var(--ch-text-tertiary);
