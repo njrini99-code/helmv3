@@ -14386,7 +14386,7 @@
         },
         {
           "name": "--ch-border-hairline",
-          "value": "rgb(28 25 18 / 0.07)",
+          "value": "rgb(28 25 18 / 0.1)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -15131,7 +15131,7 @@
         },
         {
           "name": "--ch-page-x-phone",
-          "value": "var(--ch-space-5)",
+          "value": "var(--ch-space-4)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -16386,7 +16386,7 @@
         },
         {
           "name": "--ch-border-hairline",
-          "value": "rgb(237 231 216 / 0.08)",
+          "value": "rgb(237 231 216 / 0.12)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
@@ -17223,6 +17223,11 @@
           "name": "--ch-phone-composer-bg",
           "value": "var(--ch-bg-surface)",
           "scope": ":root[data-reduce-transparency] [data-ui='clubhouse'],\n:root[data-reduce-transparency][data-fw-theme='dark'] [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-page-x-phone",
+          "value": "var(--ch-space-5)",
+          "scope": "@media (min-width: 414px) → [data-ui='clubhouse']"
         },
         {
           "name": "--ch-hairline-w",
