@@ -48,6 +48,7 @@ import { getTravelerClassConflicts } from '@/app/golf/actions/travel';
 import { CLASH_LINES, checkKey, clashSummary, tripWindow } from '../data/hub-shape';
 import { LIVE_HUB_WRITES, type ChHubWrites } from '../screens/hub/writes';
 import { ClubhouseMarker } from '../shell/context';
+import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome';
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '../preview/fixtures-hub';
@@ -85,13 +86,21 @@ function writes(over: Partial<ChHubWrites> = {}): ChHubWrites {
   };
 }
 const refuse = () => vi.fn(() => Promise.resolve({ success: false, error: 'refused' }));
+/** The shell's phone top bar, where the page's PhoneTop renders (it renders nothing without one). */
+function SlotHost() {
+  const { setSlot } = usePhoneChromeState();
+  return <div ref={setSlot} data-testid="phone-top" />;
+}
 function show(data: ChTeamHub, w: ChHubWrites = writes(), tab?: ChHubTab) {
   render(
     <LazyMotion features={domAnimation}>
       <ToastProvider>
-        <div className="ch-root" data-ui="clubhouse">
-          <TeamHub data={data} writes={w} initialTab={tab} viewerName="Maya Reyes" />
-        </div>
+        <PhoneChromeProvider>
+          <div className="ch-root" data-ui="clubhouse">
+            <SlotHost />
+            <TeamHub data={data} writes={w} initialTab={tab} viewerName="Maya Reyes" />
+          </div>
+        </PhoneChromeProvider>
       </ToastProvider>
     </LazyMotion>,
   );
@@ -2058,9 +2067,27 @@ describe('Team Hub · phone', () => {
     cleanup();
     show(PREVIEW_HUB_COACH);
     expect(screen.getByRole('main').classList.contains('is-phone')).toBe(true);
-    // The tabs, their panel and the coach's one primary action are all there.
+    // The tabs, their panel and the coach's one primary action are all there: the primary is the top bar's plus
+    // (B10.1), and the head no longer repeats it.
     expect(screen.getAllByRole('tab')).toHaveLength(5);
-    expect(screen.getByRole('button', { name: 'New announcement' })).toBeTruthy();
+    const top = screen.getByTestId('phone-top');
+    expect(within(top).getByRole('button', { name: 'New announcement' })).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'New announcement' })).toHaveLength(1);
+  });
+
+  it('101901 B10.1: the top bar plus follows the tab, as the desktop head does, and opens what it names', async () => {
+    const user = userEvent.setup();
+    show(PREVIEW_HUB_COACH);
+    const top = screen.getByTestId('phone-top');
+    await user.click(screen.getByRole('tab', { name: /^Travel/ }));
+    expect(within(top).getByRole('button', { name: 'Plan a trip' })).toBeTruthy();
+    await user.click(screen.getByRole('tab', { name: /^Tasks/ }));
+    await user.click(within(top).getByRole('button', { name: 'Assign a task' }));
+    expect(await screen.findByRole('dialog', { name: 'Assign a task' })).toBeTruthy();
+    cleanup();
+    // A player has no create action: the bar keeps its title alone.
+    show(PREVIEW_HUB_PLAYER);
+    expect(within(screen.getByTestId('phone-top')).queryAllByRole('button').filter((b) => b.getAttribute('aria-label'))).toHaveLength(0);
   });
 
   it('101901 on a phone the widgets stack, and Waiting on is a list whose rows open', async () => {

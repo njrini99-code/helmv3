@@ -27,6 +27,8 @@ import { useToast } from '../../ui/Toast';
 import { useAction } from '../../lib/use-action';
 import { haptic } from '../../lib/haptics';
 import { CH_PHONE_QUERY, useChPhone } from '../../lib/use-phone';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { changeTone, formatAvg, formatFixed, formatHcp, formatSigned, NO_DATA } from '../../lib/format';
 import { coachPlayerHref } from '../../data/coachhelm-views-shape';
@@ -147,6 +149,7 @@ export function Roster({ data }: { data: ChRoster }) {
   const teamRef = teamInSentence(data);
   const jr = useJoinRequests(teamRef, data.requests);
   const phone = useChPhone();
+  usePageKeys('Roster', phone ? null : ROW_KEYS);
   useEffect(() => {
     if (!focusRequests || phone) return;
     requestsRef.current?.focus();
@@ -658,6 +661,8 @@ export function Roster({ data }: { data: ChRoster }) {
   );
 }
 
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between players', keys: ['Up', 'Down'] }];
+
 /** A player's profile, where Stats is rebuilt for the coach; otherwise null (the peek opens instead). */
 const profileHref = (id: string) => rebuiltHref(`/golf/dashboard/stats?player=${id}`);
 
@@ -750,6 +755,10 @@ function RosterList({
             ))}
           </div>
         ) : (
+          <>
+          {/* B11: Up and Down walk the table's players (their name buttons), Home and End go to the ends, and the table is
+              one Tab stop. Inside the roster.list boundary, so it runs once that has hydrated. */}
+          <RovingRows selector=".ch-rs-list .ch-rs-who" within=".ch-rs-body" />
           <SideScroll className="ch-rs-list ch-sheet" role="table" aria-label="Roster" /* CH-3801: every value in a cell under a header */>
             <div className="ch-rs-row ch-rs-row--head ch-well-soft" role="row">
               <SortHeader k="name" sort={sortBy} onSort={onSort}>
@@ -825,6 +834,7 @@ function RosterList({
               </div>
             ))}
           </SideScroll>
+          </>
         )}
     </FormRange>
   );

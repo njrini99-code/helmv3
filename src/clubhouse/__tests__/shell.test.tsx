@@ -279,13 +279,13 @@ describe('Shell · page states', () => {
 
   it.each([
     ['load', 'CH-1205', '/golf/dashboard/rounds', 'Rounds didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /reported automatically/],
-    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /reported automatically/],
+    ['unknown', 'CH-1206', '/golf/dashboard/rounds/[id]/review', 'Rounds didn’t load', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/golf/dashboard/team-hub', 'Team Hub didn’t load', /Nothing you saved is lost\. Try again\./],
     ['load', 'CH-1205', '/golf/dashboard/my-development', 'My development didn’t load', /connection dropped/],
-    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /reported automatically/],
-    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /reported automatically/],
+    ['unknown', 'CH-1206', '/golf/dashboard', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
+    ['unknown', 'CH-1206', '/clubhouse-preview', 'Something went wrong on this page', /Nothing you saved is lost\. Try again\./],
     ['chunk', 'CH-1202', '/golf/dashboard/rounds', 'A newer version of GolfHelm is ready', /older version/],
-    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /busy/],
+    ['transient', 'CH-1204', '/golf/dashboard/rounds', 'GolfHelm is slow to respond', /didn’t answer in time\. Nothing you saved is lost/],
   ] as const)('%s → %s names the page from its route %s', async (kind, c, route, title, body) => {
     wrap(<RouteErrorView kind={kind as RouteErrorKind} isRetrying={false} retryCount={0} onRetry={vi.fn()} homePath="/golf/dashboard" route={route} />);
     await expectCode(c);

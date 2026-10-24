@@ -13,6 +13,8 @@ import { SectionBoundary } from '../../ui/SectionBoundary';
 import { haptic } from '../../lib/haptics';
 import { useChSessionState } from '../../lib/session-state';
 import { useRefresh } from '../../lib/use-refresh';
+import { RovingRows } from '../../ui/RovingRows';
+import { usePageKeys, type ChPageKey } from '../../shell/command/page-keys';
 import { chTrail } from '../../lib/track';
 import { formatToPar } from '../../lib/format';
 import { PhoneTop } from '../../shell/phone-chrome';
@@ -37,8 +39,11 @@ const opened = (id: string, from: 'hero' | 'card') => (e: MouseEvent) => {
 };
 
 /** Qualifiers list, coach and player. `mine` is a player's own entries (/my-qualifiers). */
+const ROW_KEYS: readonly ChPageKey[] = [{ label: 'Move between qualifiers', keys: ['Up', 'Down'] }];
+
 export function QualifiersList({ data }: { data: ChQList }) {
   const { refresh, refreshing } = useRefresh();
+  usePageKeys('Qualifiers', ROW_KEYS);
   const coach = data.role === 'coach';
   // A player's own list is only as good as the entries read: without it nothing says who they are entered in.
   const mineUnknown = data.mode === 'mine' && !!data.entriesError;
@@ -170,6 +175,9 @@ export function QualifiersList({ data }: { data: ChQList }) {
           )}
 
           <SectionBoundary surface="qualifiers.list" label="The qualifiers" code="CH-09211">
+            {/* B11: Up and Down walk the qualifiers (the hero, then the cards, in reading order), Home and End go to the
+                ends; the list is one Tab stop. */}
+            <RovingRows selector=".ch-qf-hero, .ch-qf-card" within=".ch-qf--list" />
             {!active.length && !concluded.length ? (
               <div className="ch-qf-empty ch-sheet">
                 <EmptyState

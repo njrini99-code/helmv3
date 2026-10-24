@@ -505,6 +505,25 @@ describe('Roster · empty', () => {
   });
 });
 
+describe('Roster · keyboard (B11)', () => {
+  it('row 63: ↓ and ↑ walk the desktop table’s players, which is one Tab stop', async () => {
+    const user = userEvent.setup();
+    wrap(roster());
+    await toList(user);
+    const rows = [...document.querySelectorAll<HTMLElement>('.ch-rs-list .ch-rs-who')];
+    expect(rows.length).toBeGreaterThan(2);
+    expect(rows.filter((r) => r.tabIndex === 0)).toHaveLength(1);
+    rows[0]!.focus();
+    fireEvent.keyDown(rows[0]!, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(rows[1]);
+    fireEvent.keyDown(rows[1]!, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(rows[0]);
+    fireEvent.keyDown(rows[0]!, { key: 'End' });
+    expect(document.activeElement).toBe(rows.at(-1));
+    expect(rows.filter((r) => r.tabIndex === 0)).toEqual([rows.at(-1)]);
+  });
+});
+
 describe('Roster · loading, haptics, accessibility', () => {
   it('a face (grid) or a name (list) goes to the player’s profile; only a Needs a look chip opens the peek', async () => {
     const user = userEvent.setup();

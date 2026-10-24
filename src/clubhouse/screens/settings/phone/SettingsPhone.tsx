@@ -12,7 +12,7 @@ import { initials } from '../../../lib/format';
 import { chTrail } from '../../../lib/track';
 import { PhoneTop, usePhoneStackHistory } from '../../../shell/phone-chrome';
 import { SECTIONS, type ChDevice, type ChSettingsData, type ChSettingsSection, type ChSettingsWrites } from '../model';
-import { useReportProblem, useSignOut } from '../hooks';
+import { useAppVersion, useReportProblem, useSignOut } from '../hooks';
 import { AccountPhone, EmailSheet, PasswordSheet, ProfileSheet } from './AccountPhone';
 import { CoachHelmPhone } from './CoachHelmPhone';
 import { GolfPhone } from './GolfPhone';
@@ -20,7 +20,7 @@ import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
 import { HeldSheetsContext, type ChHeldSheet } from './sheets';
-import { ActionRow, Group, LinkRow, NavRow } from './ui';
+import { ActionRow, Group, InfoRow, LinkRow, NavRow } from './ui';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 import { poppedByUA } from '../../../lib/ua-pop';
 import { LargeTitle } from '../../../ui/LargeTitle';
@@ -265,6 +265,7 @@ export function everyReadFailed(data: ChSettingsData): boolean {
 function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; writes: ChSettingsWrites; onOpen: (id: ChSettingsSection) => void; onProfile: () => void }) {
   const { report, opening } = useReportProblem();
   const { signOut, signingOut } = useSignOut(writes);
+  const version = useAppVersion();
   const coach = data.role === 'coach';
   const profile = data.profile.error ? null : data.profile.value;
   const name = profile?.fullName || data.email || 'Your profile';
@@ -308,6 +309,8 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
         <ActionRow label="Report a problem" disabled={opening} onClick={() => void report()} />
         <LinkRow label="Privacy policy" href="/privacy" />
         <LinkRow label="Terms of service" href="/terms" />
+        {/* About: which GolfHelm this is, for a problem report or support. */}
+        <InfoRow label="Version" value={<span className="ch-num">{version}</span>} />
       </Group>
 
       <div className="ch-setm-group is-end">

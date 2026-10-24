@@ -1,5 +1,5 @@
 import { LazyMotion, domAnimation } from 'motion/react';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -1235,8 +1235,19 @@ describe('Classes, on the phone', () => {
     expect(within(top).getByRole('heading', { level: 1, name: 'Classes' })).toBeTruthy();
     expect(within(top).queryByRole('button', { name: 'Back to More' })).toBeNull();
     expect(names()).toHaveLength(5);
-    await user.click(headerButton('Add class'));
+    // B10.1: the create action is the top bar's plus, in the bell's place, and the head no longer repeats it.
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).queryByRole('button', { name: 'Add class' })).toBeNull();
+    expect(within(document.querySelector<HTMLElement>('.ch-cl-h')!).getByRole('button', { name: 'Import schedule' })).toBeTruthy();
+    await user.click(within(top).getByRole('button', { name: 'Add class' }));
     expect(await screen.findByRole('dialog', { name: 'Add a class' })).toBeTruthy();
+  });
+
+  it('121901 B10.1: a first run has no plus (its empty state carries the add), and a failed read keeps it (CH-12201)', () => {
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: false } });
+    expect(within(screen.getByTestId('phone-top')).queryByRole('button', { name: 'Add class' })).toBeNull();
+    cleanup();
+    phoneView({ ...PREVIEW_CLASSES, classes: { list: [], error: true } });
+    expect(within(screen.getByTestId('phone-top')).getByRole('button', { name: 'Add class' })).toBeTruthy();
   });
 
   function phoneView(data: ChClassesPage) {
@@ -1507,7 +1518,7 @@ describe('Classes, writes that fail', () => {
     const w = show(PREVIEW_CLASSES, { sync });
     await fillGeog(user);
     await submitForm(user);
-    await expectCode('CH-12002', /GEOG 110 is saved, but not on your calendar.*GEOG 110: Could not determine semester dates\. Retry to try again\./);
+    await expectCode('CH-12002', /GEOG 110 is saved, but not on your calendar.*GEOG 110: Could not determine semester dates\. Try again\./);
     // The save itself worked and says so; only the calendar failed, so there is no "couldn't add" toast.
     expect(screen.getByText('Class added')).toBeTruthy();
     expect(code('CH-12001')).toBeNull();
@@ -1815,7 +1826,7 @@ describe('Classes, delete all', () => {
     await confirm(user);
     await expectCode(
       'CH-12006',
-      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Retry to finish\./,
+      /3 of 5 classes deleted.*ENGL 105 couldn’t be taken off your calendar, so it was kept\. EXSS 188 is off your calendar but still on your schedule\. Try again to finish\./,
     );
     expect(code('CH-12005')).toBeNull();
     expect(hapticSpy).toHaveBeenCalledWith('error');
@@ -1840,7 +1851,7 @@ describe('Classes, delete all', () => {
     show(PREVIEW_CLASSES, { removeAll });
     await user.click(deleteAll());
     await confirm(user);
-    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Retry to finish\./);
+    await expectCode('CH-12006', /Couldn’t finish deleting your classes.*STAT 201, ECON 310, BUSI 401 and more are off your calendar but still on your schedule\. Try again to finish\./);
     expect(names()).toHaveLength(5);
     expect(document.querySelector('.ch-cl-sync.is-failed')!.textContent).toContain('5 classes are not on your calendar');
   });
@@ -2067,7 +2078,7 @@ describe('Classes, import', () => {
     await reviewArrived();
     await user.click(inSheet().getByRole('button', { name: 'Remove STAT 201' }));
     await user.click(inSheet().getByRole('button', { name: 'Import 4 classes' }));
-    await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Retry to try again\./);
+    await expectCode('CH-12002', /1 of 4 classes are saved, but not on your calendar.*MATH 232: Could not determine semester dates\. Try again\./);
     expect(
       await inSheet().findByText("Some didn’t reach your calendar. Use Retry sync on the Classes page. Not on your calendar: PHIL 150 (no meeting days). Open the class to add what’s missing."),
     ).toBeTruthy();

@@ -190,6 +190,7 @@ Offline, no write is sent: the shell's toast names what did not happen, the erro
 | 90704 | CH-09905 | `RETURNING_TO_THE_LIST_FROM_A_QUALIFIER` | Returning to the list from a qualifier |
 | 90705 | CH-09906 | `PLAYER_A_LIVE_QUALIFIER_WITH_A_ROUND` | Player: a live qualifier with a round still to play, before its last day |
 | 90706 | CH-09907 | `PLAYER_THE_SQUAD_IS_CONFIRMED` | Player: the squad is confirmed |
+| 90707 | CH-09908 | `PLAYER_THEIR_OWN_RANKED_ROW_ON_A` | Player: their own ranked row on a board that draws a line |
 
 From the shell (P001): 10701 CH-1901, 10702 CH-1902, 10703 CH-1903,
 10704 CH-1905, 10705 CH-1909, 10706 CH-1910.

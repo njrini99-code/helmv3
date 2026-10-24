@@ -3022,7 +3022,8 @@
         "StatusPill",
         "ThruDots",
         "ToPar",
-        "ToParPlate"
+        "ToParPlate",
+        "ViewerLineCard"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -4165,7 +4166,16 @@
         "AccountSection"
       ],
       "styles": [
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -4474,7 +4484,16 @@
         "SettingsPhone"
       ],
       "styles": [
-        "src/clubhouse/styles/settings.css"
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/coachhelm.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/settings.css",
+        "src/clubhouse/styles/stats.css"
       ],
       "examples": [],
       "fixture": "Contextual module"
@@ -6101,7 +6120,8 @@
       "file": "src/clubhouse/ui/ContextMenu.tsx",
       "group": "ui",
       "exports": [
-        "CTX_HOLD_MS"
+        "CTX_HOLD_MS",
+        "MenuSheet"
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
@@ -6379,6 +6399,7 @@
       "file": "src/clubhouse/ui/Notices.tsx",
       "group": "ui",
       "exports": [
+        "FAILURE_COPY",
         "InlineNotice",
         "PageNotice",
         "RouteErrorView"
@@ -6543,6 +6564,16 @@
       "styles": [
         "src/clubhouse/styles/shell.css"
       ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
+      "file": "src/clubhouse/ui/RovingRows.tsx",
+      "group": "ui",
+      "exports": [
+        "RovingRows"
+      ],
+      "styles": [],
       "examples": [],
       "fixture": "Contextual module"
     },
@@ -7952,6 +7983,7 @@
         "ch-in__trip",
         "ch-in__up",
         "ch-in__who",
+        "ch-intro__action",
         "ch-intro__row",
         "ch-lane",
         "ch-lane__b",
@@ -9109,6 +9141,7 @@
         "ch-hl-plan__lines",
         "ch-hl-plan__player",
         "ch-hl-plan__pt",
+        "ch-hl-plan__send",
         "ch-hl-plan__start",
         "ch-hl-plan__thin",
         "ch-hl-plist",
@@ -11068,6 +11101,8 @@
         "ch-qf-who",
         "ch-qf-why",
         "ch-qf-you",
+        "ch-qf-you-line",
+        "ch-qf-you-line__me",
         "ch-qfm",
         "ch-qfm-acts",
         "ch-qfm-chip",
@@ -11086,9 +11121,12 @@
         "ch-qfm-lb__n",
         "ch-qfm-lb__nm",
         "ch-qfm-lb__row",
+        "ch-qfm-lb__score",
         "ch-qfm-lb__sub",
         "ch-qfm-lb__thru",
+        "ch-qfm-lb__tot",
         "ch-qfm-lbhead",
+        "ch-qfm-lbhead__stack",
         "ch-qfm-line",
         "ch-qfm-muted",
         "ch-qfm-rdh",

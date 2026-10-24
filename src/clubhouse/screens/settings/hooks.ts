@@ -7,6 +7,7 @@ import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preference
 import { useDistanceUnits } from '@/hooks/golf/use-distance-units';
 import type { DistancePreference } from '@/lib/golf/distance-units';
 import { areHapticsEnabled, setHapticsEnabled } from '@/lib/utils/haptics-pref';
+import { getNativeAppVersion } from '@/lib/utils/capacitor';
 import { useToast } from '../../ui/Toast';
 import { SIGN_OUT_FAILED } from '../../lib/sign-out-copy';
 import { useChClockPref } from '../../lib/use-clock';
@@ -520,4 +521,34 @@ export function useDevicePrefs() {
       if (v) haptic('select');
     },
   };
+}
+
+/** The release the web build was stamped with (the deploy's commit, NEXT_PUBLIC_SENTRY_RELEASE), short; null when unstamped. */
+export function releaseStamp(release: string | undefined = process.env.NEXT_PUBLIC_SENTRY_RELEASE): string | null {
+  const r = release?.trim();
+  return r ? r.slice(0, 7) : null;
+}
+
+/** Settings' Version line: the app's version and build in the iOS app, and the release it runs everywhere. */
+export function versionLine(native: { version: string; build: string } | null, release: string | null): string {
+  const app = native ? `${native.version} (${native.build})` : null;
+  if (app && release) return `${app} · ${release}`;
+  return app ?? (release ? `Build ${release}` : 'Web');
+}
+
+/**
+ * The Version row's words (A+ handoff 0.4, Settings: "an About row with the app version"). The first paint is the web
+ * build's release, which the server knows too, so nothing mismatches on hydration; in the iOS app the version and build
+ * arrive after mount from the native shell (src/lib/utils/capacitor.ts, the one place Capacitor is called).
+ */
+export function useAppVersion(): string {
+  const [native, setNative] = useState<{ version: string; build: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void getNativeAppVersion().then((v) => live && setNative(v));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return versionLine(native, releaseStamp());
 }

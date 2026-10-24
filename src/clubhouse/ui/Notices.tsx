@@ -75,6 +75,20 @@ export function partsSentence(parts: readonly string[]): string {
 }
 
 /**
+ * B10.3: the failure templates. A failure says what didn't happen, that nothing saved was lost, and what to do; it never
+ * says the error was reported (nobody on the page can act on that) and never guesses at a cause. Three shapes cover the
+ * screens: a read that failed (`load`), a part of a page that couldn't be drawn (`shown`) or a whole page (`page`), and
+ * offline (`offline`, the CH-1905 line).
+ */
+export const FAILURE_COPY = {
+  /** "Your rounds and this week’s schedule didn’t load. Nothing you saved is lost. Try again." */
+  load: (parts: readonly string[]) => `${partsSentence(parts)} didn’t load. Nothing you saved is lost. Try again.`,
+  shown: 'The rest of the page is fine. Try again.',
+  page: 'Nothing you saved is lost. Try again.',
+  offline: OFFLINE_LINE,
+} as const;
+
+/**
  * More than one part of a page could not load (CH-1209): the page says so once, under its head, with one Try again
  * that re-runs the whole page, and each failed part keeps its heading with a covered notice (`covered`) marking the
  * gap, without a button of its own. A single failed part keeps its own notice, so below two parts this renders
@@ -98,7 +112,7 @@ export function PageNotice({
     <InlineNotice
       code={code}
       title="Some of this page didn’t load"
-      body={`${partsSentence(parts)} didn’t load. Everything you saved is safe, and trying again usually clears it.`}
+      body={FAILURE_COPY.load(parts)}
       onRetry={onRetry}
       retrying={retrying}
     />
@@ -118,7 +132,7 @@ const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
   },
   transient: {
     title: 'GolfHelm is slow to respond',
-    body: 'The server is busy for a moment. This usually clears on its own within a few seconds.',
+    body: `GolfHelm didn’t answer in time. ${FAILURE_COPY.page}`,
   },
   load: {
     title: 'This page didn’t finish loading',
@@ -126,7 +140,7 @@ const COPY: Record<RouteErrorKind, { title: string; body: string }> = {
   },
   unknown: {
     title: 'Something went wrong on this page',
-    body: 'It has been reported automatically, with the details needed to fix it.',
+    body: FAILURE_COPY.page,
   },
 };
 

@@ -324,6 +324,10 @@ describe('Settings · 81xx validation', () => {
     await user.clear(screen.getByLabelText('Full name'));
     await expectCode('CH-8101', /Add your name/);
     expect(within(card('Profile')).getByRole('button', { name: 'Save changes' })).toBeDisabled();
+    // Row 86: Cmd-S from elsewhere in the card saves nothing and puts focus on the field to fix.
+    within(card('Profile')).getByRole('button', { name: 'Discard' }).focus();
+    await user.keyboard('{Meta>}s{/Meta}');
+    expect(document.activeElement).toBe(screen.getByLabelText('Full name'));
   });
 
   it('CH-8102 a player clears their first name', async () => {
@@ -337,6 +341,8 @@ describe('Settings · 81xx validation', () => {
     await user.type(screen.getByLabelText('New email'), 'nope');
     await user.click(screen.getByRole('button', { name: 'Send confirmation' }));
     await expectCode('CH-8103', /valid email/);
+    // Row 86: the refused send puts focus on the field it names.
+    expect(document.activeElement).toBe(screen.getByLabelText('New email'));
     await user.clear(screen.getByLabelText('New email'));
     await user.type(screen.getByLabelText('New email'), 'MAYA.REYES@unc.edu');
     await expectCode('CH-8104', /already your email/);
@@ -344,10 +350,10 @@ describe('Settings · 81xx validation', () => {
   });
 
   it.each([
-    ['CH-8105', '', 'new-password', 'new-password', /current password/],
-    ['CH-8106', 'old', 'short', 'short', /8 characters/],
-    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/],
-  ])('%s password checks', async (c, cur, next, confirm, text) => {
+    ['CH-8105', '', 'new-password', 'new-password', /current password/, 'Current password'],
+    ['CH-8106', 'old', 'short', 'short', /8 characters/, 'New password'],
+    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/, 'Confirm new password'],
+  ])('%s password checks; focus goes to the field it names (row 86)', async (c, cur, next, confirm, text, field) => {
     const { user, writes } = setup();
     if (cur) await user.type(screen.getByLabelText('Current password'), cur);
     await user.type(screen.getByLabelText('New password'), next);
@@ -356,6 +362,9 @@ describe('Settings · 81xx validation', () => {
     await expectCode(c, text);
     expect(writes.changePassword).not.toHaveBeenCalled();
     expect(hapticSpy).toHaveBeenCalledWith('warning');
+    const named = screen.getByLabelText(field);
+    expect(document.activeElement).toBe(named);
+    expect(named.getAttribute('aria-invalid')).toBe('true');
   });
 
   it('wave-6 Team on desktop opens on the team code, then Team details', () => {
@@ -1536,6 +1545,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
     expect(screen.getByRole('button', { name: 'Report a problem' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Privacy policy' }).getAttribute('href')).toBe('/privacy');
     expect(screen.getByRole('link', { name: 'Terms of service' }).getAttribute('href')).toBe('/terms');
+    // About (row 85): which GolfHelm this is; an unstamped web build says so plainly.
+    expect(screen.getByText('Version').closest('.ch-setm-row')!.textContent).toMatch(/Version\s*Web/);
     // Signing out is not destructive: the standard row ink, never the danger red.
     expect(screen.getByRole('button', { name: 'Sign out' }).className).toBe('ch-setm-signout');
     // Not the desktop page reflowed: no section rail.
@@ -2151,6 +2162,9 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8107', /don’t match/);
       expect(hapticSpy).toHaveBeenCalledWith('warning');
+      // Row 86: focus goes to the field the problem names, marked invalid.
+      expect(document.activeElement).toBe(within(sheet).getByLabelText('Confirm new password'));
+      expect(within(sheet).getByLabelText('Confirm new password').getAttribute('aria-invalid')).toBe('true');
       expect(writes.changePassword).not.toHaveBeenCalled();
       await user.clear(within(sheet).getByLabelText('Confirm new password'));
       await user.type(within(sheet).getByLabelText('Confirm new password'), 'new-password');

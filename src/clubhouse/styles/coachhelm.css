@@ -1977,6 +1977,12 @@ html:not([data-fw-theme='dark']) .ch-hl {
   font: var(--ch-type-14-strong);
   color: var(--ch-text-primary);
 }
+/* The player's version goes on: Send to (Messages, written but not sent) and Copy, side by side. */
+.ch-hl-plan__send {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ch-space-2);
+}
 @media (pointer: coarse) {
   .ch-hl-plan .ch-btn {
     min-height: 44px;

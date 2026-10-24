@@ -4168,6 +4168,10 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 .ch-h-legs {
   margin-top: 24px;
 }
+/* Row 79: the week's sheet comes first, so the form that follows it opens with the page's section rhythm. */
+.ch-h-main--desk > .ch-h-sheet + .ch-h-form {
+  margin-top: var(--ch-space-8);
+}
 .ch-h-legs > .ch-h-sec,
 .ch-h-main--desk[data-canopy] .ch-h-legs > .ch-h-sec {
   margin-top: 0;

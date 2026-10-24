@@ -560,6 +560,48 @@
   margin-right: 20px;
   margin-left: 20px;
 }
+/* "You vs the line" (CH-09908): the viewer's own row and its distance to the lines, flush under the board's head, on a
+   hairline, as the board's own rows sit. */
+.ch-qf-you-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-2);
+  margin: 0 20px var(--ch-space-3);
+  padding: var(--ch-space-3) 0;
+  border-block: var(--ch-hairline-w) solid var(--ch-border-subtle);
+}
+.ch-qf-you-line h3 {
+  font: var(--ch-type-13-strong);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-you-line__me {
+  display: flex;
+  align-items: center;
+  gap: var(--ch-space-2);
+  font: var(--ch-type-14);
+  color: var(--ch-text-secondary);
+}
+.ch-qf-you-line__me b {
+  font: var(--ch-type-15-strong);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-primary);
+}
+.ch-qf-you-line ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ch-space-1);
+  font: var(--ch-type-14);
+  color: var(--ch-text-primary);
+}
+.ch-qf-you-line li b {
+  font: var(--ch-type-14-strong);
+}
+@media (max-width: 820px) {
+  .ch-qf-you-line {
+    margin: 0 0 var(--ch-space-2);
+  }
+}
+
 .ch-qf-panel__head {
   display: flex;
   align-items: flex-start;
@@ -1983,6 +2025,20 @@
   .ch-qfm-lb__row > .ch-qf-plate,
   .ch-qfm-lb__row > .ch-qf-dash {
     justify-self: end;
+  }
+  /* Row 75: the plate with the round's strokes under it, as desktop's Total column; the header names both. */
+  .ch-qfm-lb__score,
+  .ch-qfm-lbhead__stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--ch-space-1);
+    justify-self: end;
+  }
+  .ch-qfm-lb__tot {
+    font: var(--ch-type-caption);
+    font-style: normal;
+    color: var(--ch-text-tertiary);
   }
   .ch-qfm-lb__thru {
     justify-self: end;

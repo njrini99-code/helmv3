@@ -2292,6 +2292,12 @@
     top: 0;
     right: 0;
   }
+  /* Row 81: the coach's More sits after the view switch, on its line. */
+  .ch-calm-head .ch-intro__action {
+    display: flex;
+    align-items: center;
+    gap: var(--ch-space-1);
+  }
 
   /* The week strip is ui/WeekStrip (B18, ui.css). */
   /* The chosen day: a section on its own double rule, the day in the section heading's sans, its counts beside it. */

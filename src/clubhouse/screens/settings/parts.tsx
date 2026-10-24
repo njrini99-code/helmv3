@@ -64,7 +64,8 @@ export function Card({
       const enter = e.key === 'Enter' && s.enterSaves && inField && !e.shiftKey && !e.isComposing;
       if (!chord && !enter) return;
       e.preventDefault();
-      if (s.dirty && !s.pending && !s.invalid) s.onSave();
+      if (s.dirty && !s.pending && s.invalid) focusProblemField(s.invalid);
+      else if (s.dirty && !s.pending) s.onSave();
     };
     el.addEventListener('keydown', onKeyDown);
     return () => el.removeEventListener('keydown', onKeyDown);
@@ -85,6 +86,16 @@ export function Card({
       {foot && <div className="ch-surface__foot">{foot}</div>}
     </section>
   );
+}
+
+/**
+ * A save refused for a field's problem moves focus to that field (A+ handoff 0.4, Settings: "the first invalid field
+ * getting focus"), so VoiceOver reads its error and typing fixes it. By the problem's `field` id, which the desktop card
+ * and the phone sheet share; nothing when the problem names no field.
+ */
+export function focusProblemField(problem: ChProblem | null | undefined): void {
+  if (!problem?.field || typeof document === 'undefined') return;
+  document.getElementById(problem.field)?.focus();
 }
 
 /** CH-8901: the one line beside email switches while customer email is off for everyone. */
